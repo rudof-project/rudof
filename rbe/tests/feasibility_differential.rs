@@ -11,7 +11,8 @@
 //! match is expected on some instances. See docs/src/internals/feasibility-model.md.
 
 use rbe::rbe_error::RbeError;
-use rbe::{Context, Key, MatchCond, Max, Pending, RbeStruct, RbeTable, Ref, SingleCond, Value};
+use rbe::{Context, Key, MatchCond, MatchKind, Max, Pending, RbeStruct, RbeTable, Ref, SingleCond, Value};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 struct C(char);
@@ -25,29 +26,41 @@ impl Value for C {}
 impl Ref for C {}
 impl Context for C {}
 
-type Cond = MatchCond<C, C, C, C>;
-type Table = RbeTable<C, C, C, C>;
+/// Test-only `MatchKind` payload
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+enum TestKind {
+    Any,
+    Is(char),
+}
+
+impl MatchKind<C, C, C, C> for TestKind {
+    fn eval(&self, v: &C, _ctx: &C) -> Result<Pending<C, C, C>, RbeError<C, C, C, C, Self>> {
+        match self {
+            TestKind::Any => Ok(Pending::empty()),
+            TestKind::Is(expected) => {
+                if v.0 == *expected {
+                    Ok(Pending::empty())
+                } else {
+                    Err(RbeError::MsgError {
+                        msg: format!("Value {v} != {expected}"),
+                    })
+                }
+            },
+        }
+    }
+}
+
+type Cond = MatchCond<C, C, C, C, TestKind>;
+type Table = RbeTable<C, C, C, C, TestKind>;
 
 /// A condition accepting only the given value.
 fn is(name: &str, expected: char) -> Cond {
-    MatchCond::single(SingleCond::new().with_name(name).with_cond(move |v: &C, _ctx: &C| {
-        if v.0 == expected {
-            Ok(Pending::empty())
-        } else {
-            Err(RbeError::MsgError {
-                msg: format!("Value {v} != {expected}"),
-            })
-        }
-    }))
+    MatchCond::single(SingleCond::new().with_name(name).with_kind(TestKind::Is(expected)))
 }
 
 /// A condition accepting any value.
 fn any(name: &str) -> Cond {
-    MatchCond::single(
-        SingleCond::new()
-            .with_name(name)
-            .with_cond(move |_v: &C, _ctx: &C| Ok(Pending::empty())),
-    )
+    MatchCond::single(SingleCond::new().with_name(name).with_kind(TestKind::Any))
 }
 
 /// `{ p [a]{1,2} | p . + ; q . }` — shared key across Or branches (the blowup pattern).

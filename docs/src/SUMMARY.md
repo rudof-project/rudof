@@ -35,6 +35,10 @@
 - [materialize](./cli_usage/materialize.md)
 - [mcp](./cli_usage/mcp.md)
 
+# How to
+
+- [Precompiled ShEx schemas](./using-rudof/precompiled-shex-schemas.md)
+
 # `rudof` as a library
 
 - [Docs](./library/docs.md)

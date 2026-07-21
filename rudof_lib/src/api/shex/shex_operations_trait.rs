@@ -1,8 +1,9 @@
 use crate::{
     Result,
     api::shex::implementations::{
-        add_node_shape_to_shapemap, check_shex_schema, load_shapemap, load_shex_schema, reset_shapemap, reset_shex,
-        reset_shex_schema, serialize_shapemap, serialize_shex_schema, serialize_shex_validation_results, validate_shex,
+        add_node_shape_to_shapemap, check_shex_schema, compile_shex_schema_to_file, load_shapemap, load_shex_schema,
+        load_shex_schema_precompiled, reset_shapemap, reset_shex, reset_shex_schema, serialize_shapemap,
+        serialize_shex_schema, serialize_shex_validation_results, validate_shex,
     },
     formats::{
         DataReaderMode, InputSpec, IriNormalizationMode, ResultShExValidationFormat, ShExFormat,
@@ -171,6 +172,36 @@ pub trait ShExOperations {
 
     /// Resets the shex validation.
     fn reset_shex(&mut self);
+
+    /// Writes the currently loaded ShEx `SchemaIR` to a writer as a precompiled cache.
+    ///
+    /// # Arguments
+    ///
+    /// * `writer` - The destination to write the cache to
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no schema is loaded or serialisation fails.
+    fn compile_shex_schema_to_file<W: io::Write>(
+        &self,
+        writer: &mut W
+    ) -> Result<()>;
+
+    /// Loads a precompiled ShEx `SchemaIR` cache from an input specification.
+    ///
+    /// # Arguments
+    ///
+    /// * `schema` - Input specification pointing at the cache
+    /// * `reader_mode` - Optional mode used to validate the cache; `Strict` rejects a cache whose `has_neg_cycle` bit is set
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the cache cannot be read or is incompatible.
+    fn load_shex_schema_precompiled(
+        &mut self,
+        schema: &InputSpec,
+        reader_mode: Option<&DataReaderMode>,
+    ) -> Result<()>;
 }
 
 impl ShExOperations for crate::Rudof {
@@ -271,5 +302,20 @@ impl ShExOperations for crate::Rudof {
 
     fn reset_shex(&mut self) {
         reset_shex(self)
+    }
+
+    fn compile_shex_schema_to_file<W: io::Write>(
+        &self,
+        writer: &mut W
+    ) -> Result<()> {
+        compile_shex_schema_to_file(self, writer)
+    }
+
+    fn load_shex_schema_precompiled(
+        &mut self,
+        schema: &InputSpec,
+        reader_mode: Option<&DataReaderMode>,
+    ) -> Result<()> {
+        load_shex_schema_precompiled(self, schema, reader_mode)
     }
 }

@@ -1,6 +1,7 @@
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
+use crate::ir::cache::{CACHE_VERSION, CacheFormat, CacheHeader, CacheReaderMode};
 use crate::ir::extend_alternative::{ExtendAlternative, cross_merge};
 use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::inheritance_graph::InheritanceGraph;
@@ -19,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+use std::io::{Read, Write};
 use std::sync::Arc;
 use std::sync::Mutex;
 // use tracing::trace;
@@ -806,6 +808,39 @@ impl SchemaIR {
     pub fn semantic_actions_registry_arc(&self) -> Arc<SemanticActionsRegistry> {
         self.semantic_actions_registry.clone()
     }
+
+    pub fn write<W: Write>(&self, mut w: W, fmt: CacheFormat) -> Result<()> {
+        let header = CacheHeader::new(fmt, self.has_neg_cycle());
+        header.write_to(&mut w)?;
+        fmt.write_to(self, &mut w)?;
+        Ok(())
+    }
+
+    pub fn read<R: Read>(r: R, registry: SemanticActionsRegistry, reader_mode: CacheReaderMode) -> Result<Self> {
+        let mut reader = std::io::BufReader::new(r);
+
+        let header = CacheHeader::read_from(&mut reader)?;
+        if header.version != CACHE_VERSION {
+            return Err(Box::new(SchemaIRError::CacheReadError {
+                msg: format!(
+                    "Incompatible cache version: found {}, expected {}",
+                    header.version, CACHE_VERSION
+                ),
+            }));
+        }
+
+        if reader_mode.is_strict() && header.has_neg_cycle {
+            return Err(Box::new(SchemaIRError::CacheReadError {
+                msg: "Cache built for a schema with negation cycles cannot be loaded in Strict mode".to_string(),
+            }));
+        }
+
+        let fmt = header.body_format().map_err(Box::new)?;
+        let mut ir = fmt.read_from(&mut reader)?;
+        ir.set_semantic_actions_registry(Arc::new(registry));
+
+        Ok(ir)
+    }
 }
 
 impl Display for SchemaIR {
@@ -868,7 +903,6 @@ impl Display for SchemaIR {
 mod tests {
     use std::collections::HashMap;
 
-    use nom::combinator::Consumed;
     use rudof_iri::iri;
 
     use super::SchemaIR;
@@ -1194,6 +1228,67 @@ mod tests {
             "0Extends1",
             include_str!("../../../shex_testsuite/shexTest/schemas/0Extends1.json"),
         );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_value_set_literal() {
+        let json = r#"{
+          "@context": "http://www.w3.org/ns/shex.jsonld",
+          "type": "Schema",
+          "shapes": [{
+            "type": "ShapeDecl",
+            "id": "http://example.org/A",
+            "shapeExpr": {
+              "type": "Shape",
+              "expression": {
+                "type": "TripleConstraint",
+                "predicate": "http://example.org/p",
+                "valueExpr": {
+                  "type": "NodeConstraint",
+                  "values": [ { "value": "A" } ]
+                }
+              }
+            }
+          }]
+        }"#;
+        round_trip_schema_json("value_set_literal", json);
+    }
+
+    #[test]
+    fn schema_ir_cache_round_trip_from_shexc() {
+        use crate::compact::shex_parser::ShExParser;
+        use crate::ir::cache::{CacheFormat, CacheReaderMode};
+        use rudof_iri::IriS;
+        use std::io::Cursor;
+
+        let shexc = r#"prefix : <http://example.org/>
+
+:A {
+  :p [ "A" ] ;
+}
+
+:S extends @:A {
+  :p [ "S" ]
+}
+"#;
+        let base = IriS::new_unchecked("file:///tmp/extends_basic.shex");
+        let schema = ShExParser::parse(shexc, Some(base.clone()), &base).expect("parse ShExC");
+
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &Some(base),
+        )
+        .expect("populate IR from ShExC-parsed schema");
+
+        let mut buf = Vec::new();
+        ir.write(&mut buf, CacheFormat::Bincode)
+            .expect("SchemaIR::write");
+
+        let _restored = SchemaIR::read(Cursor::new(buf), SemanticActionsRegistry::default(), CacheReaderMode::Strict)
+            .expect("SchemaIR::read");
     }
 
     #[test]

@@ -31,9 +31,10 @@ use crate::{
             SerializeShaclValidationResultsBuilder, ValidateShaclBuilder,
         },
         shex::builders::{
-            AddNodeShapeToShapemapBuilder, CheckShexSchemaBuilder, LoadShapemapBuilder, LoadShexSchemaBuilder,
-            ResetShapemapBuilder, ResetShexBuilder, ResetShexSchemaBuilder, SerializeShapemapBuilder,
-            SerializeShexSchemaBuilder, SerializeShexValidationResultsBuilder, ValidateShexBuilder,
+            AddNodeShapeToShapemapBuilder, CheckShexSchemaBuilder, CompileShexSchemaToFileBuilder, LoadShapemapBuilder,
+            LoadShexSchemaBuilder, LoadShexSchemaPrecompiledBuilder, ResetShapemapBuilder, ResetShexBuilder,
+            ResetShexSchemaBuilder, SerializeShapemapBuilder, SerializeShexSchemaBuilder,
+            SerializeShexValidationResultsBuilder, ValidateShexBuilder,
         },
     },
     errors::{RudofError, ShExError},
@@ -323,6 +324,30 @@ impl Rudof {
     /// Returns a `ResetShexSchemaBuilder` to clear the currently-loaded ShEx schema from state.
     pub fn reset_shex_schema<'a>(&'a mut self) -> ResetShexSchemaBuilder<'a> {
         ResetShexSchemaBuilder::new(self)
+    }
+
+    /// Returns a `CompileShexSchemaToFileBuilder` that writes the currently loaded
+    /// ShEx `SchemaIR` to `writer` as a precompiled cache.
+    ///
+    /// # Parameters
+    /// - `writer`: output target for the cache bytes.
+    pub fn compile_shex_schema_to_file<'a, W: io::Write>(
+        &'a self,
+        writer: &'a mut W,
+    ) -> CompileShexSchemaToFileBuilder<'a, W> {
+        CompileShexSchemaToFileBuilder::new(self, writer)
+    }
+
+    /// Returns a `LoadShexSchemaPrecompiledBuilder` to load a precompiled
+    /// ShEx `SchemaIR` cache from `schema` (`InputSpec`).
+    ///
+    /// # Parameters
+    /// - `schema`: input specification pointing at the cache.
+    pub fn load_shex_schema_precompiled<'a>(
+        &'a mut self,
+        schema: &'a InputSpec,
+    ) -> LoadShexSchemaPrecompiledBuilder<'a> {
+        LoadShexSchemaPrecompiledBuilder::new(self, schema)
     }
 
     /// Returns a `LoadShapemapBuilder` to load a ShEx shapemap from `shapemap` (`InputSpec`).

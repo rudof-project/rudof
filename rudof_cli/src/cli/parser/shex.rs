@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{DataReaderModeCli, ShExFormatCli};
 use clap::Args;
@@ -79,11 +81,11 @@ pub struct ShexArgs {
     pub show_dependencies: Option<bool>,
 
     #[arg(
-        long = "compile",
-        value_name = "BOOL",
-        help = "Compile Schema to Internal representation"
+        long = "compile-to",
+        value_name = "FILE",
+        help = "Compile the ShEx schema and write the precompiled SchemaIR cache to FILE."
     )]
-    pub compile: Option<bool>,
+    pub compile_to: Option<PathBuf>,
 
     #[command(flatten)]
     pub common: CommonArgsNoBackend,

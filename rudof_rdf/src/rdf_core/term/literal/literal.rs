@@ -164,7 +164,6 @@ pub enum ConcreteLiteral {
     /// A plain string literal, optionally with a language tag.
     StringLiteral {
         lexical_form: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
         lang: Option<Lang>,
     },
 

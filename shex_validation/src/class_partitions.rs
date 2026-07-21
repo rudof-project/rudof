@@ -26,22 +26,26 @@
 //! See docs/src/internals/feasibility-model.md §5 (step 4) and the Jena implementation it ports.
 
 use crate::Partitions;
-use rbe::{Context, Key, RbeTable, Ref, Value};
+use rbe::{Context, Key, MatchKind, RbeTable, Ref, Value};
+use serde::Serialize;
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::hash::Hash;
 
 /// Creates an iterator over the assignments of `neighs` to the triple expressions in
 /// `exprs` that are not refuted by the feasibility analysis. Drop-in replacement for
 /// [`crate::partitions_iter`]: emits a subset of its partitions containing every partition
 /// that the exact matcher accepts (enumeration order differs).
-pub fn class_partitions_iter<'a, T, K, V, R, Ctx>(
+pub fn class_partitions_iter<'a, T, K, V, R, Ctx, P>(
     neighs: &'a [(K, V, Ctx)],
-    exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx>>>,
-) -> ClassPartitionIterator<'a, T, K, V, R, Ctx>
+    exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx, P>>>,
+) -> ClassPartitionIterator<'a, T, K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
     T: std::hash::Hash + Eq + Clone,
 {
     ClassPartitionIterator::new(neighs, exprs)
@@ -53,15 +57,16 @@ struct Class<K, V, Ctx> {
     eligible: Vec<usize>,
 }
 
-pub struct ClassPartitionIterator<'a, T, K, V, R, Ctx>
+pub struct ClassPartitionIterator<'a, T, K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
     T: std::hash::Hash + Eq + Clone,
 {
-    buckets: Vec<(&'a T, &'a Vec<RbeTable<K, V, R, Ctx>>)>,
+    buckets: Vec<(&'a T, &'a Vec<RbeTable<K, V, R, Ctx, P>>)>,
     classes: Vec<Class<K, V, Ctx>>,
     /// counts[level] = committed count vector over classes[level].eligible; None above level.
     counts: Vec<Option<Vec<usize>>>,
@@ -73,16 +78,17 @@ where
     exhausted: bool,
 }
 
-impl<'a, T, K, V, R, Ctx> ClassPartitionIterator<'a, T, K, V, R, Ctx>
+impl<'a, T, K, V, R, Ctx, P> ClassPartitionIterator<'a, T, K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
     T: std::hash::Hash + Eq + Clone,
 {
-    fn new(neighs: &'a [(K, V, Ctx)], exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx>>>) -> Self {
-        let buckets: Vec<(&T, &Vec<RbeTable<K, V, R, Ctx>>)> = exprs.iter().collect();
+    fn new(neighs: &'a [(K, V, Ctx)], exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx, P>>>) -> Self {
+        let buckets: Vec<(&T, &Vec<RbeTable<K, V, R, Ctx, P>>)> = exprs.iter().collect();
 
         // Eligibility mirrors the previous enumerator: a bucket is eligible for a value
         // when some of its expressions mention the value's key.
@@ -223,7 +229,7 @@ where
         false
     }
 
-    fn current_partition(&self) -> Partitions<T, K, V, R, Ctx> {
+    fn current_partition(&self) -> Partitions<T, K, V, R, Ctx, P> {
         let perms = self.perms.as_ref().expect("expansion in progress");
         let mut subsets: Vec<Vec<(K, V, Ctx)>> = vec![Vec::new(); self.buckets.len()];
         for (i, class) in self.classes.iter().enumerate() {
@@ -239,15 +245,16 @@ where
     }
 }
 
-impl<T, K, V, R, Ctx> Iterator for ClassPartitionIterator<'_, T, K, V, R, Ctx>
+impl<T, K, V, R, Ctx, P> Iterator for ClassPartitionIterator<'_, T, K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
     T: std::hash::Hash + Eq + Clone,
 {
-    type Item = Partitions<T, K, V, R, Ctx>;
+    type Item = Partitions<T, K, V, R, Ctx, P>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.exhausted {
@@ -333,6 +340,7 @@ fn next_permutation(a: &mut [usize]) -> bool {
 mod tests {
     use super::*;
     use rbe::{MatchCond, Max, Pending, RbeStruct, SingleCond, rbe_error::RbeError};
+    use serde::{Deserialize, Serialize};
     use std::collections::{HashMap, HashSet};
 
     /// Local newtype so the rbe marker traits can be implemented (orphan rule).
@@ -348,27 +356,39 @@ mod tests {
     impl rbe::Ref for C {}
     impl rbe::Context for C {}
 
-    type Cond = MatchCond<C, C, C, C>;
-    type Table = RbeTable<C, C, C, C>;
+    /// Test-only `MatchKind` payload: accepts any value or only a given character.
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    enum TestKind {
+        Any,
+        Is(char),
+    }
+
+    impl MatchKind<C, C, C, C> for TestKind {
+        fn eval(&self, v: &C, _ctx: &C) -> Result<Pending<C, C, C>, RbeError<C, C, C, C, Self>> {
+            match self {
+                TestKind::Any => Ok(Pending::empty()),
+                TestKind::Is(expected) => {
+                    if v.0 == *expected {
+                        Ok(Pending::empty())
+                    } else {
+                        Err(RbeError::MsgError {
+                            msg: format!("{v} != {expected}"),
+                        })
+                    }
+                },
+            }
+        }
+    }
+
+    type Cond = MatchCond<C, C, C, C, TestKind>;
+    type Table = RbeTable<C, C, C, C, TestKind>;
 
     fn any(name: &str) -> Cond {
-        MatchCond::single(
-            SingleCond::new()
-                .with_name(name)
-                .with_cond(|_v: &C, _c: &C| Ok(Pending::empty())),
-        )
+        MatchCond::single(SingleCond::new().with_name(name).with_kind(TestKind::Any))
     }
 
     fn is(name: &str, expected: char) -> Cond {
-        MatchCond::single(SingleCond::new().with_name(name).with_cond(move |v: &C, _c: &C| {
-            if v.0 == expected {
-                Ok(Pending::empty())
-            } else {
-                Err(RbeError::MsgError {
-                    msg: format!("{v} != {expected}"),
-                })
-            }
-        }))
+        MatchCond::single(SingleCond::new().with_name(name).with_kind(TestKind::Is(expected)))
     }
 
     /// Bucket 'A' = { p .{1,1} ; q .{0,1} }, bucket 'B' = { p [a]{1,1} }.
@@ -386,7 +406,7 @@ mod tests {
         HashMap::from([('A', vec![ta]), ('B', vec![tb])])
     }
 
-    fn canonical(parts: &Partitions<char, C, C, C, C>) -> Vec<(char, Vec<(char, char)>)> {
+    fn canonical(parts: &Partitions<char, C, C, C, C, TestKind>) -> Vec<(char, Vec<(char, char)>)> {
         let mut result: Vec<(char, Vec<(char, char)>)> = parts
             .iter()
             .map(|(t, _, subset)| {
@@ -400,7 +420,7 @@ mod tests {
     }
 
     /// A partition is valid when every bucket's expressions accept its subset.
-    fn is_valid(parts: &Partitions<char, C, C, C, C>) -> bool {
+    fn is_valid(parts: &Partitions<char, C, C, C, C, TestKind>) -> bool {
         parts.iter().all(|(_, rbes, subset)| {
             rbes.iter().all(|rbe| match rbe.matches(subset.clone()) {
                 Ok(iter) => iter.into_iter().any(|r| r.is_ok()),
