@@ -199,7 +199,7 @@ impl<R: io::Read> TapReader<R> {
                             "Empty property id with property label {str_label} at line {}",
                             pos.line()
                         );
-                        if let Some(placeholder) = self.config.empty_property_placeholder() {
+                        if let Some(placeholder) = self.config.empty_property_placeholder().cloned() {
                             self.generate_property_id("", &placeholder, pos)
                         } else {
                             None
@@ -211,7 +211,7 @@ impl<R: io::Read> TapReader<R> {
                         .add_warning(TapReaderWarning::EmptyProperty { line: pos.line() });
                     None
                 }
-            } else if let Some(placeholder) = self.config.get_property_placeholder(&str) {
+            } else if let Some(placeholder) = self.config.get_property_placeholder(&str).cloned() {
                 self.generate_property_id(str.as_str().trim(), &placeholder, pos)
             } else {
                 let property_id = PropertyId::new(str.trim(), pos.line());
@@ -331,7 +331,7 @@ impl<R: io::Read> TapReader<R> {
             let value_constraint_type = self.read_value_constraint_type(rcd, pos)?;
             match value_constraint_type {
                 ValueConstraintType::PickList => {
-                    let values = parse_values(str.as_str(), *self.config.picklist_delimiter())?;
+                    let values = parse_values(str.as_str(), self.config.picklist_delimiter())?;
                     if !values.is_empty() {
                         trace!("Parsed picklist values: {values:?}");
                         statement.set_value_constraint(&ValueConstraint::picklist(values));
