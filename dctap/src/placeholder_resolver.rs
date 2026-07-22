@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum PlaceholderResolver {
     /// Stem resolver simply adds the generated id to the stem
-    Stem { #[serde(flatten)] stem: String },
+    Stem(String),
 }
 
 impl PlaceholderResolver {
@@ -14,12 +14,12 @@ impl PlaceholderResolver {
     }
 
     pub fn stem(stem: &str) -> PlaceholderResolver {
-        PlaceholderResolver::Stem { stem: stem.to_string() }
+        PlaceholderResolver::Stem(stem.to_string())
     }
 
     pub fn generate(&self, id: u64) -> String {
         match self {
-            PlaceholderResolver::Stem { stem } => format!("{stem}{id}"),
+            PlaceholderResolver::Stem(stem) => format!("{stem}{id}"),
         }
     }
 }
