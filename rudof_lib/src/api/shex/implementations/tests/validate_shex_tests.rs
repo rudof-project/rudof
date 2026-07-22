@@ -9,6 +9,7 @@ use crate::{
         DataFormat, InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat,
     },
 };
+use regex::Regex;
 //use std::str::FromStr;
 
 /// Helper: serialize validation results to string
@@ -86,7 +87,9 @@ fn test_validate_shex_success() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    assert!(serialized.contains("Results"));
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
+
+    assert!(re.is_match(&serialized));
 
     println!(
         "\n===== test_validate_shex_success =====\n{}============================================",
@@ -266,7 +269,9 @@ fn test_serialize_validation_results_compact() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    assert!(serialized.contains("Results"));
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
+
+    assert!(re.is_match(&serialized));
 
     println!(
         "\n===== test_serialize_validation_results_compact =====\n{}============================================",
@@ -317,7 +322,6 @@ fn test_serialize_validation_results_json() {
     // Test JSON format
     let serialized = serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Json));
 
-    assert!(serialized.contains("Results"));
     assert!(serialized.contains("{"));
     assert!(serialized.contains("}"));
 
@@ -423,7 +427,9 @@ fn test_serialize_validation_results_details() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Details));
 
-    assert!(serialized.contains("Results"));
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Details\s+│$").unwrap();
+
+    assert!(re.is_match(&serialized));
 
     println!(
         "\n===== test_serialize_validation_results_details =====\n{}============================================",
@@ -496,7 +502,9 @@ fn test_validate_shex_multiple_nodes() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    assert!(serialized.contains("Results"));
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
+
+    assert!(re.is_match(&serialized));
 
     println!(
         "\n===== test_validate_shex_multiple_nodes =====\n{}============================================",
