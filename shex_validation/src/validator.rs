@@ -26,9 +26,27 @@ pub struct Validator {
 }
 
 impl Validator {
+    /// Creates a validator, checking for negation cycles per the config.
+    ///
+    /// Equivalent to [`Validator::with_neg_cycle_check`] with
+    /// `check_neg_cycles = true`. Callers that have already verified the
+    /// dependency graph (e.g. loaders that trust a precompiled cache
+    /// header) should call [`Validator::with_neg_cycle_check`] with
+    /// `false` to skip the redundant Tarjan SCC pass.
     pub fn new(schema: &SchemaIR, config: &ValidatorConfig) -> Result<Validator> {
-        // trace!("Creating Validator...");
-        if config.check_negation_requirement.unwrap_or(true) && schema.has_neg_cycle() {
+        Self::with_neg_cycle_check(schema, config, true)
+    }
+
+    /// Creates a validator, optionally skipping the negation-cycle check.
+    ///
+    /// When `check_neg_cycles` is `false`, the constructor trusts the
+    /// caller and does not run Tarjan SCC on the dependency graph.
+    pub fn with_neg_cycle_check(
+        schema: &SchemaIR,
+        config: &ValidatorConfig,
+        check_neg_cycles: bool,
+    ) -> Result<Validator> {
+        if check_neg_cycles && config.check_negation_requirement.unwrap_or(true) && schema.has_neg_cycle() {
             trace!("Checking negation cycles...");
             let neg_cycles = schema.neg_cycles();
             trace!("Negation cycles: {neg_cycles:?}");

@@ -1,9 +1,9 @@
 use std::fmt::{self, Display};
 
 use rudof_iri::IriS;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct SemAct {
     name: IriS,
     code: Option<String>,

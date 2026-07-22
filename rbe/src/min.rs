@@ -115,7 +115,7 @@ impl<'de> Deserialize<'de> for Min {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_i32(MinVisitor)
+        deserializer.deserialize_u64(MinVisitor)
     }
 }
 

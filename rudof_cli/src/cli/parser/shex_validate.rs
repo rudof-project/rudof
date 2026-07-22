@@ -19,9 +19,26 @@ pub struct ShexValidateArgs {
         long = "schema",
         value_name = "INPUT",
         help = "Schema file name, URI or - (for stdin)",
-        required_unless_present = "list_external_resolvers"
+        required_unless_present_any = ["list_external_resolvers", "compiled_schema"],
+        conflicts_with = "compiled_schema"
     )]
     pub schema: Option<InputSpec>,
+
+    #[arg(
+        long = "compiled-schema",
+        value_name = "FILE",
+        help = "Precompiled ShEx SchemaIR cache file.",
+        conflicts_with_all = ["schema", "schema_format", "base_schema", "external_resolvers"]
+    )]
+    pub compiled_schema: Option<InputSpec>,
+
+    #[arg(
+        long = "compile-to",
+        value_name = "FILE",
+        help = "Compile the ShEx schema and write the precompiled SchemaIR cache to FILE.",
+        conflicts_with = "compiled_schema"
+    )]
+    pub compile_to: Option<PathBuf>,
 
     #[arg(
         short = 'f',

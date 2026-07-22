@@ -5,9 +5,10 @@ use super::{
 };
 use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Shape {
     closed: bool,
     extra: Vec<Pred>,

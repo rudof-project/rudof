@@ -1,5 +1,6 @@
 pub mod annotation;
 pub mod bnode;
+pub mod cond_kind;
 pub mod exclusion;
 pub mod iri_exclusion;
 pub mod iri_or_str;

@@ -1,10 +1,11 @@
 use crate::cli::parser::ShexValidateArgs;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use rudof_lib::Rudof;
 use rudof_lib::formats::IriNormalizationMode;
-use std::io::Write;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 
 /// Implementation of the `shex-validate` command.
 ///
@@ -49,14 +50,6 @@ impl Command for ShexValidateCommand {
             ctx.rudof.add_external_resolver(spec)?;
         }
 
-        // `schema` is `required_unless_present = list_external_resolvers`, so we
-        // know it must be Some here (the listing case returned earlier).
-        let schema = self
-            .args
-            .schema
-            .as_ref()
-            .ok_or_else(|| anyhow!("--schema is required for shex-validate"))?;
-
         let backend = resolve_backend(&self.args.common);
 
         let mut loading = ctx
@@ -73,16 +66,36 @@ impl Command for ShexValidateCommand {
         }
         loading.execute()?;
 
-        let mut shex_schema_loading = ctx
-            .rudof
-            .load_shex_schema(schema)
-            .with_reader_mode(&reader_mode)
-            .with_shex_schema_format(&schema_format);
-        if let Some(base) = self.args.base_schema.as_deref() {
-            shex_schema_loading = shex_schema_loading.with_base(base);
-        }
+        if let Some(compiled_schema) = self.args.compiled_schema.as_ref() {
+            ctx.rudof
+                .load_shex_schema_precompiled(compiled_schema)
+                .with_reader_mode(&reader_mode)
+                .execute()?;
+        } else {
+            let schema = self
+                .args
+                .schema
+                .as_ref()
+                .ok_or_else(|| anyhow!("--schema is required for shex-validate"))?;
 
-        shex_schema_loading.execute()?;
+            let mut shex_schema_loading = ctx
+                .rudof
+                .load_shex_schema(schema)
+                .with_reader_mode(&reader_mode)
+                .with_shex_schema_format(&schema_format);
+            if let Some(base) = self.args.base_schema.as_deref() {
+                shex_schema_loading = shex_schema_loading.with_base(base);
+            }
+
+            shex_schema_loading.execute()?;
+
+            if let Some(cache_path) = self.args.compile_to.as_deref() {
+                let file = File::create(cache_path)
+                    .with_context(|| format!("Failed to create precompiled cache file '{}'", cache_path.display()))?;
+                let mut writer = BufWriter::new(file);
+                ctx.rudof.compile_shex_schema_to_file(&mut writer).execute()?;
+            }
+        }
 
         if let Some(shapemap) = &self.args.shapemap {
             let mut shapemap_loading = ctx.rudof.load_shapemap(shapemap);

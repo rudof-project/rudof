@@ -32,7 +32,7 @@ impl SemanticActionsRegistry {
         self.extensions.push(Arc::from(extension));
     }
 
-    pub fn set_map_state(&mut self, map_state: &mut MapState) {
+    pub fn set_map_state(&self, map_state: &mut MapState) {
         for ext in &self.extensions {
             if let Some(map_ext) = ext.as_any().downcast_ref::<MapActionExtension>() {
                 map_ext.set_state(map_state.clone());

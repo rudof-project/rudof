@@ -4,7 +4,8 @@ use prefixmap::error::PrefixMapError;
 use rudof_iri::IriS;
 use rudof_iri::error::IriSError;
 use rudof_rdf::rdf_core::term::Object;
-use serde::Serialize;
+use serde::de::{Error as DeError, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
@@ -95,5 +96,28 @@ impl Serialize for ShapeLabel {
             ShapeLabel::BNode(bnode) => serializer.serialize_str(&bnode.to_string()),
             ShapeLabel::Start => serializer.serialize_str("Start"),
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for ShapeLabel {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct ShapeLabelVisitor;
+
+        impl Visitor<'_> for ShapeLabelVisitor {
+            type Value = ShapeLabel;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("a ShapeLabel encoded as a string (\"Start\", an IRI, or a blank node label)")
+            }
+
+            fn visit_str<E: DeError>(self, v: &str) -> Result<Self::Value, E> {
+                ShapeLabel::try_from(v).map_err(|e| E::custom(e.to_string()))
+            }
+        }
+
+        deserializer.deserialize_str(ShapeLabelVisitor)
     }
 }

@@ -1,6 +1,8 @@
 use crate::cli::parser::ShexArgs;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::Result;
+use anyhow::{Context, Result};
+use std::fs::File;
+use std::io::BufWriter;
 
 /// Implementation of the `shex` command.
 ///
@@ -58,6 +60,13 @@ impl Command for ShexCommand {
             shex_serialization = shex_serialization.with_show_time(show_time);
         }
         shex_serialization.execute()?;
+
+        if let Some(cache_path) = self.args.compile_to.as_deref() {
+            let file = File::create(cache_path)
+                .with_context(|| format!("Failed to create precompiled cache file '{}'", cache_path.display()))?;
+            let mut writer = BufWriter::new(file);
+            ctx.rudof.compile_shex_schema_to_file(&mut writer).execute()?;
+        }
 
         Ok(())
     }

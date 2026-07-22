@@ -6,19 +6,23 @@ use crate::Ref;
 use crate::Value;
 use crate::Values;
 use crate::failures::Failures;
+use crate::match_cond::MatchKind;
 use crate::rbe_cond::RbeCond;
+use core::hash::Hash;
 use either::Either;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use thiserror::Error;
 
 /// Represents a regular bag expression error.
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
-pub enum RbeError<K, V, R, Ctx>
+pub enum RbeError<K, V, R, Ctx, P = ()>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
     UnexpectedEmpty { x: K, open: bool },
@@ -38,14 +42,14 @@ where
 
     #[error("Min > Max in cardinality {card} for {expr}")]
     RangeLowerBoundBiggerMaxExpr {
-        expr: Box<RbeCond<K, V, R, Ctx>>,
+        expr: Box<RbeCond<K, V, R, Ctx, P>>,
         card: Cardinality,
     },
 
     #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
     NonNullableMatch {
-        non_nullable_rbe: Box<RbeCond<K, V, R, Ctx>>,
-        expr: Box<RbeCond<K, V, R, Ctx>>,
+        non_nullable_rbe: Box<RbeCond<K, V, R, Ctx, P>>,
+        expr: Box<RbeCond<K, V, R, Ctx, P>>,
     },
 
     #[error(
@@ -73,8 +77,8 @@ where
 
     #[error("Or values failed {e}\n {failures}")]
     OrValuesFail {
-        e: Box<RbeCond<K, V, R, Ctx>>,
-        failures: Failures<K, V, R, Ctx>,
+        e: Box<RbeCond<K, V, R, Ctx, P>>,
+        failures: Failures<K, V, R, Ctx, P>,
     },
 
     #[error("All values in or branch failed")]
@@ -84,8 +88,8 @@ where
     DerivIterError {
         error_msg: String,
         processed: Vec<(K, V, Ctx)>,
-        expr: Box<RbeCond<K, V, R, Ctx>>,
-        current: Box<RbeCond<K, V, R, Ctx>>,
+        expr: Box<RbeCond<K, V, R, Ctx, P>>,
+        current: Box<RbeCond<K, V, R, Ctx, P>>,
         key: K,
         open: bool,
     },
@@ -95,23 +99,24 @@ where
 
     #[error("No candidates. Expr: {rbe}, Values: [{values}]")]
     EmptyCandidates {
-        rbe: Box<RbeCond<K, V, R, Ctx>>,
+        rbe: Box<RbeCond<K, V, R, Ctx, P>>,
         values: Values<K, V, Ctx>,
     },
 
     #[error("No values for non-nullable expr: {rbe}")]
-    EmptyCandidatesNoValues { rbe: Box<RbeCond<K, V, R, Ctx>> },
+    EmptyCandidatesNoValues { rbe: Box<RbeCond<K, V, R, Ctx, P>> },
 
     #[error("RbeTable: Key {key} has no component associated. Available keys: {available_keys}")]
     RbeTableKeyWithoutComponent { key: K, available_keys: Keys<K> },
 }
 
-impl<K, V, R, Ctx> RbeError<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> RbeError<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     /// Renders this error the same way `Display` does, except every `key`
     /// and `value` it mentions is rendered through the caller-supplied
@@ -204,8 +209,8 @@ where
 /// to match), qualified through `show_key`. If `rbe` contains a `Fail` node,
 /// there are no real keys to report, so its underlying error(s) are shown
 /// instead, qualified through `show_key`/`show_value`.
-fn show_mandatory_values<K, V, R, Ctx>(
-    rbe: &RbeCond<K, V, R, Ctx>,
+fn show_mandatory_values<K, V, R, Ctx, P>(
+    rbe: &RbeCond<K, V, R, Ctx, P>,
     show_key: &impl Fn(&K) -> String,
     show_value: &impl Fn(&V) -> String,
 ) -> String
@@ -214,6 +219,7 @@ where
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     match rbe.mandatory_values() {
         Either::Right(values) => values.iter().map(show_key).collect::<Vec<_>>().join(", "),

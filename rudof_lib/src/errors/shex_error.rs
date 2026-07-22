@@ -79,4 +79,12 @@ pub enum ShExError {
     /// Failed to parse an external-shape resolver spec.
     #[error("Invalid external-shape resolver spec '{spec}': {error}")]
     InvalidExternalResolverSpec { spec: String, error: String },
+
+    /// Failed to write the precompiled ShEx IR cache to disk.
+    #[error("Failed to write precompiled ShEx cache: {error}")]
+    FailedWritingShExCache { error: String },
+
+    /// Failed to read a precompiled ShEx IR cache.
+    #[error("Failed to read precompiled ShEx cache: {error}")]
+    FailedReadingShExCache { error: String },
 }

@@ -40,6 +40,37 @@ $ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http:/
 ```
 
 
+## Precompiled schemas
+
+For workloads that validate against the same schema many times the AST to IR compilation step can be
+done once and cached to a file. See the [precompiled ShEx schemas how-to](../using-rudof/precompiled-shex-schemas.md)
+for the full workflow.
+
+### Loading a precompiled cache
+
+`--compiled-schema <FILE>` replaces `--schema`. Conflicts with `--schema`, `--schema-format`,
+`--base-schema`, and `--external-resolver`.
+
+```sh
+rudof shex-validate \
+  --compiled-schema user.ircache \
+  --shapemap examples/user.sm \
+  examples/user.ttl
+```
+
+### Compiling as a side-effect
+
+`--compile-to <FILE>` can be passed alongside `--schema`. Subsequent runs can then drop `--schema` and `--compile-to` and use
+`--compiled-schema` instead.
+
+```sh
+rudof shex-validate \
+  --schema examples/user.shex \
+  --compile-to user.ircache \
+  --shapemap examples/user.sm \
+  examples/user.ttl
+```
+
 ## External-shape resolvers
 
 A ShEx schema may declare a shape as `EXTERNAL`, meaning the definition lives outside the schema and is resolved by an implementation-defined mechanism. By default `rudof` rejects every `EXTERNAL` shape via the built-in `reject-all` resolver, so validation against an unsubstituted external shape always fails.
@@ -149,6 +180,8 @@ Arguments:
 
 Options:
   -s, --schema <INPUT>            Schema file name, URI or - (for stdin)
+      --compiled-schema <FILE>    Precompiled ShEx SchemaIR cache file. Conflicts with --schema, --schema-format, --base-schema, --external-resolver.
+      --compile-to <FILE>         Compile the ShEx schema and write the precompiled SchemaIR cache to FILE. Conflicts with --compiled-schema.
   -f, --schema-format <FORMAT>    ShEx Schema format [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
   -m, --shapemap <INPUT>          ShapeMap
       --shapemap-format <FORMAT>  ShapeMap format [possible values: compact, internal, json, details, csv]

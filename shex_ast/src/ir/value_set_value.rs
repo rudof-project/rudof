@@ -6,9 +6,10 @@ use rudof_rdf::rdf_core::term::{
     Object,
     literal::{ConcreteLiteral, Lang},
 };
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum ValueSetValue {
     IriStem {
         stem: IriS,
@@ -37,19 +38,19 @@ pub enum ValueSetValue {
     ObjectValue(ObjectValue),
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub enum StringOrLiteralStem {
     String(String),
     LiteralStem { stem: String },
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum IriOrWildcard {
     Iri(IriS),
     Wildcard { type_: String },
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum StringOrWildcard {
     String(String),
 
@@ -57,7 +58,7 @@ pub enum StringOrWildcard {
     Wildcard { type_: String },
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum LangOrWildcard {
     Lang(Lang),
 

@@ -18,6 +18,11 @@ impl Visitor<'_> for IriVisitor {
     where
         E: Error,
     {
+        // Accept the empty string so that `IriS::default()` (which uses
+        // `new_unchecked("")`) round-trips through serde.
+        if v.is_empty() {
+            return Ok(IriS::new_unchecked(""));
+        }
         match IriS::from_str(v) {
             Ok(iri) => Ok(iri),
             Err(IriSError::IriParseError { str, error: err }) => Err(E::custom(format!(

@@ -6,27 +6,10 @@ use std::fmt::Display;
 use std::result;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum LiteralExclusion {
     Literal(String),
     LiteralStem(String),
-}
-
-impl Serialize for LiteralExclusion {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            LiteralExclusion::Literal(lit) => serializer.serialize_str(lit.as_str()),
-            LiteralExclusion::LiteralStem(stem) => {
-                let mut map = serializer.serialize_map(Some(2))?;
-                map.serialize_entry("type", "LiteralStem")?;
-                map.serialize_entry("stem", stem)?;
-                map.end()
-            },
-        }
-    }
 }
 
 impl Display for LiteralExclusion {
@@ -38,27 +21,10 @@ impl Display for LiteralExclusion {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum IriExclusion {
     Iri(IriS),
     IriStem(IriS),
-}
-
-impl Serialize for IriExclusion {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            IriExclusion::Iri(iri) => serializer.serialize_str(iri.to_string().as_str()),
-            IriExclusion::IriStem(stem) => {
-                let mut map = serializer.serialize_map(Some(2))?;
-                map.serialize_entry("type", "IriStem")?;
-                map.serialize_entry("stem", stem)?;
-                map.end()
-            },
-        }
-    }
 }
 
 impl Display for IriExclusion {
@@ -70,27 +36,10 @@ impl Display for IriExclusion {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum LanguageExclusion {
     Language(Lang),
     LanguageStem(Lang),
-}
-
-impl Serialize for LanguageExclusion {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            LanguageExclusion::Language(lang) => serializer.serialize_str(&lang.to_string()),
-            LanguageExclusion::LanguageStem(stem) => {
-                let mut map = serializer.serialize_map(Some(2))?;
-                map.serialize_entry("type", "LanguageStem")?;
-                map.serialize_entry("stem", stem)?;
-                map.end()
-            },
-        }
-    }
 }
 
 impl Display for LanguageExclusion {

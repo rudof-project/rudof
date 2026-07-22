@@ -1,6 +1,7 @@
 pub mod actions;
 pub mod annotation;
 pub mod ast2ir;
+pub mod cache;
 pub mod dependency_graph;
 pub mod exclusion;
 pub mod extend_alternative;

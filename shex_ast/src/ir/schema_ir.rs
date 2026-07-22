@@ -1,6 +1,7 @@
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
+use crate::ir::cache::{CacheFormat, CacheHeader, CacheReaderMode};
 use crate::ir::extend_alternative::{ExtendAlternative, cross_merge};
 use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::inheritance_graph::InheritanceGraph;
@@ -15,16 +16,18 @@ use crate::{CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema a
 use crate::{Expr, Node, Pred, ResolveMethod};
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
+use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+use std::io::{Read, Write};
 use std::sync::Arc;
 use std::sync::Mutex;
 // use tracing::trace;
 
 type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct SchemaIR {
     labels_idx_map: HashMap<ShapeLabel, ShapeLabelIdx>,
     idx_labels_map: HashMap<ShapeLabelIdx, ShapeLabel>,
@@ -40,7 +43,8 @@ pub struct SchemaIR {
     dependency_graph: DependencyGraph,
     inheritance_graph: InheritanceGraph,
     abstract_shapes: HashSet<ShapeLabelIdx>,
-    semantic_actions_registry: SemanticActionsRegistry,
+    #[serde(skip)]
+    semantic_actions_registry: Arc<SemanticActionsRegistry>,
     start_acts: Vec<SemAct>,
 }
 
@@ -61,7 +65,7 @@ impl SchemaIR {
             dependency_graph: DependencyGraph::new(),
             inheritance_graph: InheritanceGraph::new(),
             abstract_shapes: HashSet::new(),
-            semantic_actions_registry: registry,
+            semantic_actions_registry: Arc::new(registry),
             start_acts: Vec::new(),
         }
     }
@@ -185,7 +189,7 @@ impl SchemaIR {
         self.inheritance_graph.descendants(idx)
     }
 
-    pub fn set_semantic_actions_registry(&mut self, registry: SemanticActionsRegistry) {
+    pub fn set_semantic_actions_registry(&mut self, registry: Arc<SemanticActionsRegistry>) {
         self.semantic_actions_registry = registry;
     }
 
@@ -234,7 +238,7 @@ impl SchemaIR {
                                     }
                                 },
                                 ShapeExpr::NodeConstraint(nc) => {
-                                    ncs.push(nc.clone());
+                                    ncs.push(*nc.clone());
                                 },
                                 _ => {
                                     rest_shapes.push(se.expr().clone());
@@ -799,6 +803,36 @@ impl SchemaIR {
     pub fn semantic_actions_registry(&self) -> &SemanticActionsRegistry {
         &self.semantic_actions_registry
     }
+
+    /// Returns a shared handle to the semantic actions registry.
+    pub fn semantic_actions_registry_arc(&self) -> Arc<SemanticActionsRegistry> {
+        self.semantic_actions_registry.clone()
+    }
+
+    pub fn write<W: Write>(&self, mut w: W, fmt: CacheFormat) -> Result<()> {
+        let header = CacheHeader::new(fmt, self.has_neg_cycle());
+        header.write_to(&mut w)?;
+        fmt.write_to(self, &mut w)?;
+        Ok(())
+    }
+
+    pub fn read<R: Read>(r: R, registry: SemanticActionsRegistry, reader_mode: CacheReaderMode) -> Result<Self> {
+        let mut reader = std::io::BufReader::new(r);
+
+        let header = CacheHeader::read_from(&mut reader)?;
+
+        if reader_mode.is_strict() && header.has_neg_cycle {
+            return Err(Box::new(SchemaIRError::CacheReadError {
+                msg: "Cache built for a schema with negation cycles cannot be loaded in Strict mode".to_string(),
+            }));
+        }
+
+        let fmt = header.body_format();
+        let mut ir = fmt.read_from(&mut reader)?;
+        ir.set_semantic_actions_registry(Arc::new(registry));
+
+        Ok(ir)
+    }
 }
 
 impl Display for SchemaIR {
@@ -1043,5 +1077,171 @@ mod tests {
         .into_iter()
         .collect();
         assert_eq!(references, expected);
+    }
+
+    fn round_trip_schema_json(name: &str, schema_json_str: &str) {
+        let schema: SchemaJson =
+            serde_json::from_str(schema_json_str).unwrap_or_else(|e| panic!("[{name}] parse ShEx JSON: {e}"));
+
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap_or_else(|e| panic!("[{name}] AST -> IR compile: {e}"));
+
+        let config = bincode::config::standard();
+        let bytes: Vec<u8> =
+            bincode::serde::encode_to_vec(&ir, config).unwrap_or_else(|e| panic!("[{name}] bincode encode: {e}"));
+        let (restored, consumed): (SchemaIR, usize) = bincode::serde::decode_from_slice(&bytes, config)
+            .unwrap_or_else(|e| panic!("[{name}] bincode decode: {e}"));
+        assert_eq!(consumed, bytes.len(), "[{name}] bincode did not consume every byte");
+
+        fn sorted_lines(s: &str) -> Vec<String> {
+            let mut lines: Vec<String> = s.lines().map(str::to_string).collect();
+            lines.sort();
+            lines
+        }
+        assert_eq!(
+            sorted_lines(&format!("{ir}")),
+            sorted_lines(&format!("{restored}")),
+            "[{name}] Display differs after bincode round-trip",
+        );
+
+        assert_eq!(
+            ir.shape_label_counter, restored.shape_label_counter,
+            "[{name}] shape_label_counter changed",
+        );
+        assert_eq!(
+            ir.labels_idx_map.len(),
+            restored.labels_idx_map.len(),
+            "[{name}] label count changed",
+        );
+
+        for (label, idx) in ir.labels_idx_map.iter() {
+            let restored_idx = restored
+                .get_shape_label_idx(label)
+                .unwrap_or_else(|_| panic!("[{name}] restored missing label {label}"));
+            assert_eq!(*idx, restored_idx, "[{name}] index for {label} differs");
+            let a_info = ir.find_shape_idx(idx).unwrap();
+            let b_info = restored.find_shape_idx(&restored_idx).unwrap();
+            assert_eq!(
+                format!("{}", a_info.expr()),
+                format!("{}", b_info.expr()),
+                "[{name}] shape expression for {label} differs",
+            );
+        }
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_and_of_two_shapes() {
+        let str = r#"{
+          "type": "Schema",
+          "@context": "http://www.w3.org/ns/shex.jsonld",
+          "shapes": [
+            { "type": "ShapeDecl", "id": "http://example.org/S",
+              "shapeExpr": { "type": "ShapeAnd", "shapeExprs": [
+                { "type": "Shape", "expression": {
+                  "type": "TripleConstraint",
+                  "predicate": "http://example.org/p",
+                  "valueExpr": "http://example.org/T" } },
+                { "type": "Shape", "expression": {
+                  "type": "TripleConstraint",
+                  "predicate": "http://example.org/p",
+                  "valueExpr": "http://example.org/U" } }
+              ] } },
+            { "type": "ShapeDecl", "id": "http://example.org/T",
+              "shapeExpr": { "type": "Shape" } },
+            { "type": "ShapeDecl", "id": "http://example.org/U",
+              "shapeExpr": { "type": "Shape" } }
+          ]
+        }"#;
+        round_trip_schema_json("and_of_two_shapes", str);
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_value_set_literal() {
+        let json = r#"{
+          "@context": "http://www.w3.org/ns/shex.jsonld",
+          "type": "Schema",
+          "shapes": [{
+            "type": "ShapeDecl",
+            "id": "http://example.org/A",
+            "shapeExpr": {
+              "type": "Shape",
+              "expression": {
+                "type": "TripleConstraint",
+                "predicate": "http://example.org/p",
+                "valueExpr": {
+                  "type": "NodeConstraint",
+                  "values": [ { "value": "A" } ]
+                }
+              }
+            }
+          }]
+        }"#;
+        round_trip_schema_json("value_set_literal", json);
+    }
+
+    #[test]
+    fn schema_ir_cache_round_trip_from_shexc() {
+        use crate::compact::shex_parser::ShExParser;
+        use crate::ir::cache::{CacheFormat, CacheReaderMode};
+        use rudof_iri::IriS;
+        use std::io::Cursor;
+
+        let shexc = r#"prefix : <http://example.org/>
+
+:A {
+  :p [ "A" ] ;
+}
+
+:S extends @:A {
+  :p [ "S" ]
+}
+"#;
+        let base = IriS::new_unchecked("file:///tmp/extends_basic.shex");
+        let schema = ShExParser::parse(shexc, Some(base.clone()), &base).expect("parse ShExC");
+
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &Some(base),
+        )
+        .expect("populate IR from ShExC-parsed schema");
+
+        let mut buf = Vec::new();
+        ir.write(&mut buf, CacheFormat::Bincode).expect("SchemaIR::write");
+
+        let _restored = SchemaIR::read(
+            Cursor::new(buf),
+            SemanticActionsRegistry::default(),
+            CacheReaderMode::Strict,
+        )
+        .expect("SchemaIR::read");
+    }
+
+    #[test]
+    fn schema_ir_cache_rejects_non_cache_input() {
+        use crate::ir::cache::CacheReaderMode;
+        use std::io::Cursor;
+
+        let junk = br#"{"version":1,"body_format":"bincode"}"#;
+
+        let err = SchemaIR::read(
+            Cursor::new(junk.as_slice()),
+            SemanticActionsRegistry::default(),
+            CacheReaderMode::Strict,
+        )
+        .expect_err("SchemaIR::read must reject input without magic bytes");
+        let msg = format!("{err}");
+        assert!(
+            msg.contains("Not a SchemaIR cache") || msg.contains("magic"),
+            "unexpected error message: {msg}",
+        );
     }
 }
