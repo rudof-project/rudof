@@ -32,9 +32,12 @@ rudof shex --schema examples/user.shex --compile-to user.ircache
 ```
 
 `rudof` loads the schema exactly as it would for validation
-and writes the resulting `SchemaIR` to `user.ircache`. The file is a binary
-[bincode](https://docs.rs/bincode) blob preceded by a single-line
-JSON header that records some metadata. You can inspect that first line with `head -1`.
+and writes the resulting `SchemaIR` to `user.ircache`. The file is a pure
+binary artefact: it starts with the magic bytes `RSIR`, followed by an on-disk
+envelope version, a length-prefixed [bincode](https://docs.rs/bincode)
+header (body format, `rudof` version, negation-cycle flag), and the
+bincode-encoded `SchemaIR` body. Because the file is not text, do not open it in
+editors that may rewrite line endings or normalise encoding.
 
 You can also compile as a side-effect of a validation run:
 

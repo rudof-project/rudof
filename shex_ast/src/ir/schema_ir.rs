@@ -1,7 +1,7 @@
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
-use crate::ir::cache::{CACHE_VERSION, CacheFormat, CacheHeader, CacheReaderMode};
+use crate::ir::cache::{CacheFormat, CacheHeader, CacheReaderMode};
 use crate::ir::extend_alternative::{ExtendAlternative, cross_merge};
 use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::inheritance_graph::InheritanceGraph;
@@ -820,14 +820,6 @@ impl SchemaIR {
         let mut reader = std::io::BufReader::new(r);
 
         let header = CacheHeader::read_from(&mut reader)?;
-        if header.version != CACHE_VERSION {
-            return Err(Box::new(SchemaIRError::CacheReadError {
-                msg: format!(
-                    "Incompatible cache version: found {}, expected {}",
-                    header.version, CACHE_VERSION
-                ),
-            }));
-        }
 
         if reader_mode.is_strict() && header.has_neg_cycle {
             return Err(Box::new(SchemaIRError::CacheReadError {
@@ -835,7 +827,7 @@ impl SchemaIR {
             }));
         }
 
-        let fmt = header.body_format().map_err(Box::new)?;
+        let fmt = header.body_format();
         let mut ir = fmt.read_from(&mut reader)?;
         ir.set_semantic_actions_registry(Arc::new(registry));
 
@@ -1231,5 +1223,25 @@ mod tests {
             CacheReaderMode::Strict,
         )
         .expect("SchemaIR::read");
+    }
+
+    #[test]
+    fn schema_ir_cache_rejects_non_cache_input() {
+        use crate::ir::cache::CacheReaderMode;
+        use std::io::Cursor;
+
+        let junk = br#"{"version":1,"body_format":"bincode"}"#;
+
+        let err = SchemaIR::read(
+            Cursor::new(junk.as_slice()),
+            SemanticActionsRegistry::default(),
+            CacheReaderMode::Strict,
+        )
+        .expect_err("SchemaIR::read must reject input without magic bytes");
+        let msg = format!("{err}");
+        assert!(
+            msg.contains("Not a SchemaIR cache") || msg.contains("magic"),
+            "unexpected error message: {msg}",
+        );
     }
 }
