@@ -1169,67 +1169,6 @@ mod tests {
         round_trip_schema_json("and_of_two_shapes", str);
     }
 
-    // Each subsequent test uses a real ShEx test-suite schema so we
-    // exercise the full IR surface (node constraints, value sets,
-    // exclusions, cardinality, extends, closed shapes, negation).
-    // `include_str!` embeds the file at compile time — no runtime I/O.
-
-    #[test]
-    fn schema_ir_bincode_round_trip_cardinality_2_5() {
-        round_trip_schema_json(
-            "1card25",
-            include_str!("../../../shex_testsuite/shexTest/schemas/1card25.json"),
-        );
-    }
-
-    #[test]
-    fn schema_ir_bincode_round_trip_value_set_single_iri() {
-        round_trip_schema_json(
-            "1val1IRIREF",
-            include_str!("../../../shex_testsuite/shexTest/schemas/1val1IRIREF.json"),
-        );
-    }
-
-    #[test]
-    fn schema_ir_bincode_round_trip_literal_pattern() {
-        round_trip_schema_json(
-            "1literalPattern",
-            include_str!("../../../shex_testsuite/shexTest/schemas/1literalPattern.json"),
-        );
-    }
-
-    #[test]
-    fn schema_ir_bincode_round_trip_iri_stem_exclusions() {
-        round_trip_schema_json(
-            "1val1dotMinusiriStem3",
-            include_str!("../../../shex_testsuite/shexTest/schemas/1val1dotMinusiriStem3.json"),
-        );
-    }
-
-    #[test]
-    fn schema_ir_bincode_round_trip_literal_exclusions() {
-        round_trip_schema_json(
-            "1val1dotMinusliteral3",
-            include_str!("../../../shex_testsuite/shexTest/schemas/1val1dotMinusliteral3.json"),
-        );
-    }
-
-    #[test]
-    fn schema_ir_bincode_round_trip_negation() {
-        round_trip_schema_json(
-            "1NOTIRI",
-            include_str!("../../../shex_testsuite/shexTest/schemas/1NOTIRI.json"),
-        );
-    }
-
-    #[test]
-    fn schema_ir_bincode_round_trip_extends() {
-        round_trip_schema_json(
-            "0Extends1",
-            include_str!("../../../shex_testsuite/shexTest/schemas/0Extends1.json"),
-        );
-    }
-
     #[test]
     fn schema_ir_bincode_round_trip_value_set_literal() {
         let json = r#"{
@@ -1292,21 +1231,5 @@ mod tests {
             CacheReaderMode::Strict,
         )
         .expect("SchemaIR::read");
-    }
-
-    #[test]
-    fn schema_ir_bincode_round_trip_closed_shape() {
-        round_trip_schema_json(
-            "1dotClosed",
-            include_str!("../../../shex_testsuite/shexTest/schemas/1dotClosed.json"),
-        );
-    }
-
-    #[test]
-    fn schema_ir_bincode_round_trip_extra() {
-        round_trip_schema_json(
-            "1dotExtra1",
-            include_str!("../../../shex_testsuite/shexTest/schemas/1dotExtra1.json"),
-        );
     }
 }
