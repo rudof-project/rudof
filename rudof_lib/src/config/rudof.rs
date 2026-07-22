@@ -50,8 +50,8 @@ pub struct RudofConfig {
     pub(crate) shex2sparql: ShEx2SparqlConfig,
     #[serde(rename = "service", default = "RudofConfig::default_service_config")]
     pub(crate) service: ServiceConfig,
-    // pub(crate) plantuml_path: Option<PathBuf>,
-    // pub(crate) comparator: Option<ComparatorConfig>,
+    #[serde(rename = "comparator", default = "RudofConfig::default_comparator_config")]
+    pub(crate) comparator: ComparatorConfig,
 }
 
 impl RudofConfig {
@@ -71,6 +71,7 @@ impl RudofConfig {
             tap: Self::default_tap_config(),
             tap2shex: Self::default_tap2shex_config(),
             shex2sparql: Self::default_shex2sparql_config(),
+            comparator: Self::default_comparator_config(),
         }
     }
 //
@@ -282,6 +283,7 @@ impl RudofConfig {
     #[inline] fn default_tap_config() -> TapConfig { TapConfig::default() }
     #[inline] fn default_tap2shex_config() -> Tap2ShExConfig { Tap2ShExConfig::default() }
     #[inline] fn default_shex2sparql_config() -> ShEx2SparqlConfig { ShEx2SparqlConfig::default() }
+    #[inline] fn default_comparator_config() -> ComparatorConfig { ComparatorConfig::default() }
 }
 
 impl Default for RudofConfig {
