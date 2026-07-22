@@ -297,21 +297,24 @@ fn show_errors(
     let mut result = String::new();
     match errors.len() {
         0 => {
-            result.push_str("No detailed error provided.\n");
+            result.push_str("No detailed error provided.");
         },
         1 => {
             let str = errors[0].show_qualified(nodes_prefixmap, schema, width)?;
-            result.push_str(&str);
+            result.push_str(str.trim_end_matches('\n'));
         },
         _ => {
             for (idx, error) in errors.iter().enumerate() {
                 result.push_str(
                     format!(
-                        "Error #{idx}: {}\n",
-                        error.show_qualified(nodes_prefixmap, schema, width)?
+                        "Error #{idx}: {}",
+                        error.show_qualified(nodes_prefixmap, schema, width)?.trim_end_matches('\n')
                     )
                     .as_str(),
                 );
+                if idx + 1 < errors.len() {
+                    result.push('\n');
+                }
             }
         },
     }
