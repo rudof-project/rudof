@@ -46,7 +46,8 @@ pub struct RudofConfig {
     pub(crate) tap: TapConfig,
     #[serde(rename = "tap2shex", default = "RudofConfig::default_tap2shex_config")]
     pub(crate) tap2shex: Tap2ShExConfig,
-    // pub(crate) shex2sparql: Option<ShEx2SparqlConfig>,
+    #[serde(rename = "shex2sparql", default = "RudofConfig::default_shex2sparql_config")]
+    pub(crate) shex2sparql: ShEx2SparqlConfig,
     #[serde(rename = "service", default = "RudofConfig::default_service_config")]
     pub(crate) service: ServiceConfig,
     // pub(crate) plantuml_path: Option<PathBuf>,
@@ -69,6 +70,7 @@ impl RudofConfig {
             shacl2shex: Self::default_shacl2shex_config(),
             tap: Self::default_tap_config(),
             tap2shex: Self::default_tap2shex_config(),
+            shex2sparql: Self::default_shex2sparql_config(),
         }
     }
 //
@@ -279,6 +281,7 @@ impl RudofConfig {
     #[inline] fn default_shacl2shex_config() -> Shacl2ShExConfig { Shacl2ShExConfig::default() }
     #[inline] fn default_tap_config() -> TapConfig { TapConfig::default() }
     #[inline] fn default_tap2shex_config() -> Tap2ShExConfig { Tap2ShExConfig::default() }
+    #[inline] fn default_shex2sparql_config() -> ShEx2SparqlConfig { ShEx2SparqlConfig::default() }
 }
 
 impl Default for RudofConfig {
