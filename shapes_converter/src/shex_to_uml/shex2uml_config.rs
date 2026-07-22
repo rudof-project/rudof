@@ -147,6 +147,7 @@ impl ShEx2UmlConfig {
 
     pub fn fixup(&mut self, cfg: ShExConfig) {
         if self.shex_needs_fixup {
+            self.shex_needs_fixup = false;
             self.shex = cfg;
         }
     }

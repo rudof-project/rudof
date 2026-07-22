@@ -135,10 +135,12 @@ impl ValidatorConfig {
 
     pub fn fixup(&mut self, rdf: RdfDataConfig, shex: ShExConfig) {
         if self.shex_needs_fixup {
+            self.shex_needs_fixup = false;
             self.shex = shex;
         }
 
         if self.rdf_data_needs_fixup {
+            self.rdf_data_needs_fixup = false;
             self.rdf_data = rdf;
         }
     }

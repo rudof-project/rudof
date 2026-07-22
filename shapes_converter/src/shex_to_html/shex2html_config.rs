@@ -211,10 +211,12 @@ impl ShEx2HtmlConfig {
     #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }
     pub fn fixup(&mut self, shex: ShExConfig, shex2uml: ShEx2UmlConfig) {
         if self.shex_needs_fixup {
+            self.shex_needs_fixup = false;
             self.shex = shex;
         }
 
         if self.shex2uml_needs_fixup {
+            self.shex2uml_needs_fixup = false;
             self.shex2uml = shex2uml;
         }
     }

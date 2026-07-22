@@ -49,6 +49,7 @@ impl ShaclConfig {
 
     pub fn fixup(&mut self, rdf_data: RdfDataConfig) {
         if self.data_needs_fixup {
+            self.data_needs_fixup = false;
             self.data = rdf_data;
         }
     }

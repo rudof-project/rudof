@@ -146,6 +146,7 @@ impl RdfDataConfig {
 
     pub fn fixup(&mut self, iri: Option<IriS>) {
         if self.base_needs_fixup {
+            self.base_needs_fixup = false;
             self.base = iri;
         }
     }

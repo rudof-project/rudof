@@ -53,11 +53,13 @@ impl ShExConfig {
     #[inline] fn default_base() -> Option<IriS> { None }
 
     pub fn fixup(&mut self, rdf_data_config: RdfDataConfig, base: Option<IriS>) {
-        if &self.rdf_config_needs_fixup {
+        if self.rdf_config_needs_fixup {
+            self.rdf_config_needs_fixup = false;
             self.rdf_config_shex = rdf_data_config;
         }
 
-        if &self.base_needs_fixup {
+        if self.base_needs_fixup {
+            self.base_needs_fixup = false;
             self.base = base;
         }
     }
