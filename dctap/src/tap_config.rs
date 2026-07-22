@@ -162,6 +162,7 @@ impl TapConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl TapConfig {
     #[inline] fn default_delimiter() -> char { ',' }
     #[inline] fn default_quote() -> char { '"' }
