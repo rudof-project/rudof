@@ -125,6 +125,8 @@ impl ValidatorConfig {
 }
 
 /// Serde stuff
+#[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl ValidatorConfig {
     #[inline] fn default_max_steps() -> Option<usize> { None }
     #[inline] fn default_rdf_data() -> RdfDataConfig { RdfDataConfig::new() }

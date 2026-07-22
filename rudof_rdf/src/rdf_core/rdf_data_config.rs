@@ -134,6 +134,7 @@ impl RdfDataConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl RdfDataConfig {
     #[inline]
     fn default_base() -> Option<IriS> { None }
@@ -211,6 +212,7 @@ pub struct EndpointDescription {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl EndpointDescription {
     #[inline]
     fn default_update_url() -> Option<IriS> { None }

@@ -73,6 +73,7 @@ impl Tap2ShExConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl Tap2ShExConfig {
     #[inline] fn default_datatype_base_iri() -> Option<IriS> { None }
     #[inline] fn default_prefixmap() -> PrefixMap { PrefixMap::basic() }

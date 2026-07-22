@@ -78,6 +78,7 @@ impl Shacl2ShExConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl Shacl2ShExConfig {
     #[inline] fn default_starting_shapes_mode() -> StartShapeMode { StartShapeMode::default() }
     #[inline] fn default_embed_bnodes() -> bool { false }

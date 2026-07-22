@@ -59,11 +59,9 @@ impl ServiceConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl ServiceConfig {
-    #[inline]
-    fn default_iri() -> Option<IriS> {
-        None
-    }
+    #[inline] fn default_iri() -> Option<IriS> { None }
 
     pub fn fixup(&mut self, base_iri: Option<IriS>) {
         if self.base_needs_fixup {

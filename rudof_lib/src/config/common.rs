@@ -62,6 +62,7 @@ impl CommonConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl CommonConfig {
     #[inline] fn default_base() -> Option<IriS> { None }
     #[inline] fn default_auto_base() -> bool { false }

@@ -270,6 +270,7 @@ impl RudofConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl RudofConfig {
     #[inline] fn default_version() -> Option<Version> { None }
     #[inline] fn default_common_config() -> CommonConfig { CommonConfig::new() }

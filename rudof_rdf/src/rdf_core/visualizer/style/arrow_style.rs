@@ -17,6 +17,7 @@ pub struct ArrowStyle {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl ArrowStyle {
     #[inline] fn default_line_color() -> UmlColor { UmlColor::Black }
     #[inline] fn default_line_thickness() -> ThicknessStyle { ThicknessStyle::Normal }

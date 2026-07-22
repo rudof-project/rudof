@@ -136,6 +136,7 @@ impl ShEx2UmlConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl ShEx2UmlConfig {
     #[inline] fn default_plantuml_path() -> PathBuf { discover_puml_path(None) }
     #[inline] fn default_annotation_label() -> Vec<IriS> { vec![RdfsVocab::rdfs_label()] }

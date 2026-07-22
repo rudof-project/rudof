@@ -75,6 +75,7 @@ impl NodeStyle {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl NodeStyle {
     #[inline] fn default_line_color() -> UmlColor { UmlColor::Black }
     #[inline] fn default_line_thickness() -> u32 { 10 }
@@ -167,6 +168,7 @@ pub struct RDFVisualizationConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl RDFVisualizationConfig {
     #[inline] fn default_uri_style() -> NodeStyle {
         NodeStyle {

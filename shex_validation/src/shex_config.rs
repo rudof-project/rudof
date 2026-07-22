@@ -41,6 +41,7 @@ pub struct ShExConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl ShExConfig {
     #[inline] fn default_show_extends() -> bool { true }
     #[inline] fn default_show_imports() -> bool { true }
