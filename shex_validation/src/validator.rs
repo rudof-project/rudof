@@ -308,7 +308,9 @@ fn show_errors(
                 result.push_str(
                     format!(
                         "Error #{idx}: {}",
-                        error.show_qualified(nodes_prefixmap, schema, width)?.trim_end_matches('\n')
+                        error
+                            .show_qualified(nodes_prefixmap, schema, width)?
+                            .trim_end_matches('\n')
                     )
                     .as_str(),
                 );
@@ -367,7 +369,9 @@ fn show_reasons(reasons: &[Reason], nodes_prefixmap: &PrefixMap, schema: &Schema
                 result.push_str(
                     format!(
                         "Reason #{idx}: {}",
-                        reason.show_qualified(nodes_prefixmap, schema, width)?.trim_end_matches('\n')
+                        reason
+                            .show_qualified(nodes_prefixmap, schema, width)?
+                            .trim_end_matches('\n')
                     )
                     .as_str(),
                 );
