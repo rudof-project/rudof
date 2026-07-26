@@ -15,6 +15,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Fixed
 - Fixed multiple SPARQL constraints for SHACL validation (#707)
 - Fixed ShEx validation output (#733, #734)
+- Fixes non-deterministic behavior of SHACL negative cycles detection (#735)
 ### Changed
 - Solves issue #721. Change the behaviour with recursive shapes in SHACL to give an error. 
   In the future we should attempt recursive shapes with non-negative cycles and use least-fixpoint semantics as suggested in the paper.
