@@ -47,7 +47,13 @@ impl ASTSchema {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&Object, &ASTShape)> {
-        self.shapes.iter()
+        // `self.shapes` is a `HashMap`, whose iteration order is randomized per process.
+        // Shape registration order feeds into dependency-graph construction (see
+        // `IRSchema::compile`), so we sort by a canonical string form here to make that
+        // order reproducible across runs.
+        let mut entries: Vec<(&Object, &ASTShape)> = self.shapes.iter().collect();
+        entries.sort_by_key(|(a, _)| a.to_string());
+        entries.into_iter()
     }
 
     pub fn get_shape(&self, sref: &Object) -> Option<&ASTShape> {
