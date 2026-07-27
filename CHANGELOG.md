@@ -13,6 +13,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - Now SHACL `NativeEngine` validator parses `sh:sparql` with `sparql` feature (#707)
 - Added SHACL Path serialization (#728)
 ### Fixed
+- Fixed issue #724 extra line breaks in ShEx validation output
 - Fixed multiple SPARQL constraints for SHACL validation (#707)
 - Fixed ShEx validation output (#733, #734)
 - Fixes non-deterministic behavior of SHACL negative cycles detection (#735)
