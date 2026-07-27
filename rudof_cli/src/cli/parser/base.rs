@@ -1,7 +1,8 @@
 use crate::cli::parser::{
-    CompareArgs, CompletionArgs, ConfigArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, MaterializeArgs, McpArgs,
-    NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs, ShaclArgs, ShaclValidateArgs,
-    ShapemapArgs, ShellArgs, ShexArgs, ShexCheckArgs, ShexValidateArgs, SparqlArgs, ValidateArgs,
+    CompareArgs, CompletionArgs, ConfigArgs, ConnectArgs, ConvertArgs, DCTapArgs, DataArgs, DdlArgs, GenerateArgs,
+    LoadArgs, MaterializeArgs, McpArgs, NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs,
+    ServiceArgs, ShaclArgs, ShaclValidateArgs, ShapemapArgs, ShellArgs, ShexArgs, ShexCheckArgs, ShexValidateArgs,
+    SparqlArgs, ValidateArgs,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
@@ -78,6 +79,12 @@ pub enum Command {
     Config(ConfigArgs),
     /// Start an interactive shell (REPL) session
     Shell(ShellArgs),
+    /// Connect to (or create) a LadybugDB database and store the connection details
+    Connect(ConnectArgs),
+    /// Generate property graph DDL (cypher | gql) derived from RDF data
+    Ddl(DdlArgs),
+    /// Load RDF data into a LadybugDB property graph database
+    Load(LoadArgs),
 }
 
 // ============================================================================

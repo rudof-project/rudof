@@ -12,6 +12,9 @@
 - [shell](./cli_usage/shell.md)
 - [mcp](./cli_usage/mcp.md)
 - [RDF backend (`--backend`)](./cli_usage/backend.md)
+- [connect](./cli_usage/connect.md)
+- [load](./cli_usage/load.md)
+- [ddl](./cli_usage/ddl.md)
 
 ## rudof technology commands
 

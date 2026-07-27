@@ -1,6 +1,13 @@
 # CHANGE LOG
 This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.com/).
 
+## Unreleased
+### Added
+- `connect <db>` command: opens (or creates) a LadybugDB database and stores the connection details in a TOML file (default `.rudof-connection.toml`) so stateless commands can reuse them (discussions #747, #748).
+- `ddl` command: derives a property graph schema from RDF data and emits DDL for the `cypher` or `gql` dialect (`--dialect cypher|gql`), without touching a database.
+- `load` command: validates RDF data against SHACL shapes and copies it into a LadybugDB property graph database (node/rel tables derived from the data; `--skip-validation` copies without validating). Replaces the earlier `lbug load-shacl`.
+- `query --cypher "..."` mode to run Cypher queries against a LadybugDB database selected via `--db <PATH>` or a connection details file.
+
 ## 0.3.13
 ### Added
 - `shex-validate --strategy dereference`: for Wikibase endpoints (Wikidata, MaRDI), answer lookups by dereferencing each entity's IRI over HTTP instead of SPARQL.

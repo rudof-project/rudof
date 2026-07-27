@@ -1,8 +1,11 @@
 use crate::cli::parser::QueryArgs;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::Result;
+use crate::commands::connect::ConnectionDetails;
+use anyhow::{Context, Result};
+use lbug::{Connection, Database, SystemConfig};
 use rudof_lib::formats::BackendSpec;
+use std::io::Write;
 
 /// Implementation of the `query` command.
 ///
@@ -32,6 +35,13 @@ impl Command for QueryCommand {
     /// (useful in the interactive shell, where state persists across
     /// commands).
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
+        // Cypher mode: query a LadybugDB database instead of the RDF/SPARQL
+        // pipeline (supports other query languages per the `query` verb, see
+        // discussion #747).
+        if let Some(cypher) = &self.args.cypher {
+            return execute_cypher(cypher, &self.args, ctx);
+        }
+
         let data_format = self.args.data_format.into();
         let reader_mode = self.args.reader_mode.into();
         let query_type = self.args.query_type.into();
@@ -90,4 +100,42 @@ impl Command for QueryCommand {
 
         Ok(())
     }
+}
+
+// ============================================================================
+// Cypher mode (query a LadybugDB database)
+// ============================================================================
+
+/// Run a Cypher query against a LadybugDB database given by `--db` or by the
+/// connection details file written by `rudof connect`.
+fn execute_cypher(cypher: &str, args: &QueryArgs, ctx: &mut CommandContext) -> Result<()> {
+    let details = ConnectionDetails::resolve(args.db.as_deref(), args.connection.as_deref())?;
+    let config = SystemConfig::default().read_only(details.read_only || args.read_only);
+
+    let db = Database::new(&details.path, config)
+        .with_context(|| format!("Failed to open LadybugDB database at '{}'", details.path.display()))?;
+    let conn = Connection::new(&db).context("Failed to connect to LadybugDB")?;
+
+    let result = conn.query(cypher).context("Cypher query failed")?;
+
+    writeln!(
+        ctx.writer,
+        "Query result ({} tuples, {} columns):",
+        result.get_num_tuples(),
+        result.get_num_columns()
+    )?;
+    writeln!(ctx.writer, "Columns: {:?}", result.get_column_names())?;
+    writeln!(
+        ctx.writer,
+        "Compiling time: {:.2}ms, Execution time: {:.2}ms",
+        result.get_compiling_time(),
+        result.get_execution_time()
+    )?;
+
+    // Iterate over the result
+    for row in result {
+        writeln!(ctx.writer, "  {:?}", row)?;
+    }
+
+    Ok(())
 }
