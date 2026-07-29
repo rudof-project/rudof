@@ -1225,6 +1225,49 @@ mod tests {
         .expect("SchemaIR::read");
     }
 
+    /// Regression: schemas with numeric facets (`MININCLUSIVE`, `MAXEXCLUSIVE`, …) embed a
+    /// `NumericLiteral` in `CondKind`. Its `Deserialize` impl must be compatible with
+    /// non-self-describing formats like bincode; otherwise the cache round-trip fails with
+    /// `Serde(AnyNotSupported)` for real-world schemas that use XSD numeric bounds
+    /// (e.g. FHIR-R5).
+    #[test]
+    fn schema_ir_cache_round_trip_with_numeric_facets() {
+        use crate::compact::shex_parser::ShExParser;
+        use crate::ir::cache::{CacheFormat, CacheReaderMode};
+        use rudof_iri::IriS;
+        use std::io::Cursor;
+
+        let shexc = r#"prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:S {
+  :age xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 150 ;
+  :ratio xsd:decimal MINEXCLUSIVE 0.0 ;
+}
+"#;
+        let base = IriS::new_unchecked("file:///tmp/numeric_facets.shex");
+        let schema = ShExParser::parse(shexc, Some(base.clone()), &base).expect("parse ShExC");
+
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &Some(base),
+        )
+        .expect("populate IR from ShExC-parsed schema");
+
+        let mut buf = Vec::new();
+        ir.write(&mut buf, CacheFormat::Bincode).expect("SchemaIR::write");
+
+        let _restored = SchemaIR::read(
+            Cursor::new(buf),
+            SemanticActionsRegistry::default(),
+            CacheReaderMode::Strict,
+        )
+        .expect("SchemaIR::read must round-trip schemas with numeric facets");
+    }
+
     #[test]
     fn schema_ir_cache_rejects_non_cache_input() {
         use crate::ir::cache::CacheReaderMode;

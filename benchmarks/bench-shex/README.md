@@ -16,6 +16,7 @@ Each Criterion benchmark splits into two groups (`<stage>_small`, `<stage>_large
 | `validator_init` | IR to `Validator` (negation-cycle check)          |
 | `validate`       | Run validation                                    |
 | `end_to_end`     | Full `rudof_lib` flow: load → validate → serialize |
+| `validate_precompiled` | Same case, two variants: `from_source` (ShExC) vs `from_precompiled` (`.rsir` cache) |
 
 ## Running
 
