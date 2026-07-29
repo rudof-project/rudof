@@ -229,13 +229,13 @@ picklist_delimiter = " "
         let s = r#"[dctap]
         delimiter = ","
 
-        [property_placeholders.y.Stem]
+        [property_placeholders.y]
         stem = "pending2"
 
-        [property_placeholders.x.Stem]
+        [property_placeholders.x]
         stem = "pending"
 
-        [empty_property_placeholder.Stem]
+        [empty_property_placeholder]
         stem = "empty"
 "#;
         let config = TapConfig::from_str(s).unwrap();
