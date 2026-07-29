@@ -26,13 +26,9 @@ fn bench_validate_precompiled(c: &mut Criterion) {
                 },
             };
 
-            group.bench_with_input(
-                BenchmarkId::new("from_source", &case.id),
-                case,
-                |b, case| {
-                    b.iter(|| run_from_source(&config, case));
-                },
-            );
+            group.bench_with_input(BenchmarkId::new("from_source", &case.id), case, |b, case| {
+                b.iter(|| run_from_source(&config, case));
+            });
 
             group.bench_with_input(
                 BenchmarkId::new("from_precompiled", &case.id),
@@ -133,7 +129,13 @@ fn precompiled_path(case: &Case) -> PathBuf {
 /// Case ids may contain characters that are awkward in file names (slashes, spaces). Fold them to `_` so a case id maps to exactly one cache file.
 fn sanitize(id: &str) -> String {
     id.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
