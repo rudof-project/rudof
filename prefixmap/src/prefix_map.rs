@@ -547,16 +547,16 @@ mod tests {
             .try_into()
             .unwrap();
 
-        let a = IriS::from_str("https://example.org/a").unwrap();
+        let a = IriS::new_unchecked("https://example.org/a");
         assert_eq!(pm.qualify(&a), ":a");
 
-        let knows = IriS::from_str("https://schema.org/knows").unwrap();
+        let knows = IriS::new_unchecked("https://schema.org/knows");
         assert_eq!(pm.qualify(&knows), "schema:knows");
 
-        let other = IriS::from_str("https://other.org/foo").unwrap();
+        let other = IriS::new_unchecked("https://other.org/foo");
         assert_eq!(pm.qualify(&other), "<https://other.org/foo>");
 
-        let relative = IriS::from_str("").unwrap();
-        assert_eq!(pm.qualify(&relative), "<file:///home/user/src/rust/rudof/relative>");
+        let relative = IriS::new_unchecked("relative");
+        assert_eq!(pm.qualify(&relative), "<relative>");
     }
 }
