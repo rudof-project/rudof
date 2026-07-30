@@ -179,6 +179,7 @@ pub enum ValidatorError {
 
     #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
     NodeShapeError { node: String, shape: String, error: String },
+
     #[error("Converting Term to RDFNode failed pending {term}")]
     TermToRDFNodeFailed { term: String },
 
@@ -437,6 +438,11 @@ impl ValidatorError {
                 let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
                 err.show_qualified(&show_pred, &show_node)
             },
+            ValidatorError::ClosedShapeWithRemainderPreds { remainder, declared } => format!(
+                "Closed shape but found properties {} which are not part of shape declared properties: {}",
+                remainder.show_qualified(nodes_prefixmap),
+                declared.show_qualified(&schema.prefixmap())
+            ),
             _ => format!("{self}"),
         };
         Ok(s)
