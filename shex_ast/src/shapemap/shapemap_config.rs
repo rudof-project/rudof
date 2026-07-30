@@ -21,11 +21,11 @@ pub struct ShapemapConfig {
     #[serde(rename = "fail_text", default = "ShapemapConfig::default_fail_text")]
     pub(crate) fail_text: String,
 
-    #[serde(skip)]
+    #[serde(skip, default = "ShapemapConfig::default_ok_color")]
     pub(crate) ok_color: Color,
-    #[serde(skip)]
+    #[serde(skip, default = "ShapemapConfig::default_fail_color")]
     pub(crate) fail_color: Color,
-    #[serde(skip)]
+    #[serde(skip, default = "ShapemapConfig::default_pending_color")]
     pub(crate) pending_color: Color,
 }
 
@@ -138,6 +138,12 @@ impl ShapemapConfig {
     #[inline] fn default_ok_color() -> Color { Color::Green }
     #[inline] fn default_fail_color() -> Color { Color::Green }
     #[inline] fn default_pending_color() -> Color { Color::Magenta }
+}
+
+impl Default for ShapemapConfig {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[derive(Error, Debug, Clone)]
