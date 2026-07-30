@@ -37,7 +37,8 @@ mod native {
             .collect()
     }
 
-    fn run_pipeline(case: &Case) -> Result<()> {
+    /// Preload schema, data and shapemap once; then time only `validate_shex`.
+    fn mean_validate_time(case: &Case) -> Result<f64> {
         let mut rudof = Rudof::new(RudofConfig::default());
         let schema_spec = InputSpec::Path(case.schema.clone());
         let data_spec = [InputSpec::Path(case.data.clone())];
@@ -59,15 +60,11 @@ mod native {
             .with_shapemap_format(&ShapeMapFormat::Compact)
             .execute()
             .context("load_shapemap")?;
-        rudof.validate_shex().execute().context("validate_shex")?;
-        Ok(())
-    }
 
-    fn mean_time(case: &Case) -> Result<f64> {
         let mut sum = 0.0;
         for _ in 0..RUNS_PER_SIZE {
             let t = Instant::now();
-            run_pipeline(case)?;
+            rudof.validate_shex().execute().context("validate_shex")?;
             sum += t.elapsed().as_secs_f64();
         }
         Ok(sum / RUNS_PER_SIZE as f64)
@@ -110,13 +107,16 @@ mod native {
         }
 
         println!("Corpus: {}", root.display());
-        println!("Runs per size: {} (reporting mean total, ms)\n", RUNS_PER_SIZE);
-        println!("{:>6}  {:>12}", "steps", "total (ms)");
-        println!("{:>6}  {:>12}", "-----", "----------");
+        println!(
+            "Runs per size: {} (reporting mean of validate_shex, ms)\n",
+            RUNS_PER_SIZE
+        );
+        println!("{:>6}  {:>15}", "steps", "validate (ms)");
+        println!("{:>6}  {:>15}", "-----", "-------------");
 
         for case in &cases {
-            let mean = mean_time(case)?;
-            println!("{:>6}  {:>12.2}", case.n, mean * 1000.0);
+            let mean = mean_validate_time(case)?;
+            println!("{:>6}  {:>15.4}", case.n, mean * 1000.0);
         }
         Ok(())
     }
