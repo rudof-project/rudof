@@ -193,6 +193,12 @@ impl ShEx2HtmlConfig {
     }
 }
 
+impl ShEx2HtmlConfig {
+    pub fn landing_page(&self) -> PathBuf {
+        self.target_folder.as_path().join(self.landing_page_name.as_str())
+    }
+}
+
 /// Serde stuff
 #[allow(dead_code)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
