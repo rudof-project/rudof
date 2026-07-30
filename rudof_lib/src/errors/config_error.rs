@@ -6,29 +6,22 @@ use thiserror::Error;
 pub enum RudofConfigError {
     /// Error reading configuration from a file path.
     #[error("Error reading config file from path {path}: {error}")]
-    ReadFromPath {
+    ReadError {
         path: String,
-        #[source]
-        error: io::Error,
+        error: String,
     },
 
     /// Error parsing TOML configuration from a file.
     #[error("Error parsing TOML config from path {path}: {error}")]
-    TomlParseFromPath {
+    TomlPathError {
         path: String,
-        #[source]
-        error: toml::de::Error,
+        error: String,
     },
 
     /// Error parsing TOML configuration from a string.
-    #[error("Error parsing TOML config from string: {error}\nContent:\n{content}")]
-    TomlParseFromString {
-        content: String,
-        #[source]
-        error: toml::de::Error,
+    #[error("Error parsing TOML config from string '{string}': {error}")]
+    TomlStringError {
+        string: String,
+        error: String,
     },
-
-    /// Generic configuration error with context message.
-    #[error("Configuration error: {msg}")]
-    Generic { msg: String },
 }
