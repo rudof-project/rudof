@@ -108,8 +108,8 @@ impl InMemoryGraph {
         self.graph.is_empty()
     }
 
-    pub fn set_default_base_prefixes(&mut self, default_base: &Option<IriS>) {
-        self.pm.set_default_base(default_base);
+    pub fn set_default_base_prefixes(&mut self, default_base: Option<IriS>) {
+        self.base = default_base;
     }
 
     /// Merges RDF data from a reader into the current graph.
@@ -161,7 +161,7 @@ impl InMemoryGraph {
         }
         if let Some(base) = base {
             let default_base = Some(IriS::new_unchecked(base));
-            self.set_default_base_prefixes(&default_base);
+            self.set_default_base_prefixes(default_base);
         }
         Ok(())
     }

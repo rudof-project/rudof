@@ -38,6 +38,7 @@ pub struct SchemaIR {
     inheritance_graph: InheritanceGraph,
     abstract_shapes: HashSet<ShapeLabelIdx>,
     semantic_actions_registry: SemanticActionsRegistry,
+    base: Option<IriS>,
 }
 
 impl SchemaIR {
@@ -58,6 +59,7 @@ impl SchemaIR {
             inheritance_graph: InheritanceGraph::new(),
             abstract_shapes: HashSet::new(),
             semantic_actions_registry: registry,
+            base: None,
         }
     }
 
@@ -65,8 +67,8 @@ impl SchemaIR {
         self.semantic_actions_registry.set_map_state(map_state);
     }
 
-    pub fn set_default_base_prefixes(&mut self, default_base: &IriS) {
-        self.prefixmap.set_default_base(&Some(default_base.clone()));
+    pub fn set_default_base_prefixes(&mut self, default_base: Option<IriS>) {
+        self.base = default_base;
     }
 
     /// Return the live `Arc<Mutex<MapState>>` from the registered `MapActionExtension`, if any.
@@ -280,7 +282,7 @@ impl SchemaIR {
         let mut compiler = AST2IR::with_registry(resolve_method, registry);
         compiler.compile(schema_json, &schema_json.source_iri(), base, self)?;
         if let Some(base) = base {
-            self.set_default_base_prefixes(base);
+            self.set_default_base_prefixes(base.clone().into());
         }
         Ok(())
     }
