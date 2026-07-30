@@ -6,7 +6,10 @@ use super::{
 use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Shape {
@@ -57,12 +60,27 @@ impl Shape {
 
     /// Get the references in this shape expression.
     pub fn references(&self, schema: &SchemaIR) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        let mut visited = HashSet::new();
+        self.references_visited(schema, &mut visited)
+    }
+
+    /// Like [`Self::references`] but threads a `visited` set through the traversal so
+    /// that cycles through `extends` (or through references reached from them) terminate
+    /// instead of recursing forever.
+    pub(crate) fn references_visited(
+        &self,
+        schema: &SchemaIR,
+        visited: &mut HashSet<ShapeLabelIdx>,
+    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         let mut result = self.get_value_expr_references();
         for e in &self.extends {
-            let info = schema.find_shape_idx(e).unwrap();
-            let refs = info.expr().references(schema);
-            for (p, v) in refs {
-                result.entry(p).or_default().extend(v);
+            if visited.insert(*e)
+                && let Some(info) = schema.find_shape_idx(e)
+            {
+                let refs = info.expr().references_visited(schema, visited);
+                for (p, v) in refs {
+                    result.entry(p).or_default().extend(v);
+                }
             }
         }
         result
