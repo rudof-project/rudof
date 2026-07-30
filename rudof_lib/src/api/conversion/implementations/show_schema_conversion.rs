@@ -188,7 +188,7 @@ fn show_schema_conversion_shex_to_sparql<W: io::Write>(
 
     load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
 
-    let converter = ShEx2Sparql::new(&rudof.config.shex2sparql_config());
+    let converter = ShEx2Sparql::new(rudof.config.shex2sparql());
     let sparql = converter
         .convert(rudof.shex_schema.as_ref().unwrap(), shape)
         .map_err(|error| ConversionError::FailedConversion {
@@ -222,7 +222,7 @@ fn show_schema_conversion_shex_to_uml<W: io::Write>(
 ) -> Result<()> {
     load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
 
-    let mut converter = ShEx2Uml::new(&rudof.config.shex2uml_config());
+    let mut converter = ShEx2Uml::new(rudof.config.shex2uml());
     converter
         .convert(rudof.shex_schema.as_ref().unwrap())
         .map_err(|error| ConversionError::FailedConversion {
@@ -239,7 +239,7 @@ fn show_schema_conversion_shex_to_uml<W: io::Write>(
         writer,
         input_format,
         output_format,
-        rudof.config.shex2uml_config().plantuml_path(),
+        rudof.config.shex2uml().plantuml_path(),
     )
 }
 
@@ -315,8 +315,8 @@ fn show_schema_conversion_shex_to_html<P: AsRef<Path>>(
 ) -> Result<()> {
     load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
 
-    let mut shex2html_config = rudof.config.shex2html_config();
-    shex2html_config = shex2html_config.with_target_folder(output_folder);
+    let shex2html_config = rudof.config.shex2html().clone()
+        .with_target_folder(output_folder);
 
     let mut converter = ShEx2Html::new(shex2html_config.clone());
     converter
@@ -332,7 +332,7 @@ fn show_schema_conversion_shex_to_html<P: AsRef<Path>>(
     let resolved_template = match templates_folder {
         Some(tf) => tf.to_path_buf(),
         None => shex2html_config
-            .template_folder
+            .template_folder()
             .map(PathBuf::from)
             .ok_or(ConversionError::FailedConversion {
                 input_mode: "shex".to_string(),
@@ -397,7 +397,7 @@ fn show_schema_conversion_shacl_to_shex<W: io::Write>(
         reader_mode,
     )?;
 
-    let mut converter = Shacl2ShEx::new(&rudof.config.shacl2shex_config());
+    let mut converter = Shacl2ShEx::new(rudof.config.shacl2shex());
     converter
         .convert(rudof.shacl_shapes.as_ref().unwrap())
         .map_err(|error| ConversionError::FailedConversion {
@@ -446,7 +446,7 @@ fn show_schema_conversion_dctap_to_shex<W: io::Write>(
 ) -> Result<()> {
     load_dctap(rudof, schema, Some(&(*input_format).try_into()?))?;
 
-    let converter = Tap2ShEx::new(&rudof.config.tap2shex_config());
+    let converter = Tap2ShEx::new(rudof.config.tap2shex());
     let shex_schema =
         converter
             .convert(rudof.dctap.as_ref().unwrap())
@@ -486,7 +486,7 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
 ) -> Result<()> {
     load_dctap(rudof, schema, Some(&(*input_format).try_into()?))?;
 
-    let converter = Tap2ShEx::new(&rudof.config.tap2shex_config());
+    let converter = Tap2ShEx::new(rudof.config.tap2shex());
     let shex_schema =
         converter
             .convert(rudof.dctap.as_ref().unwrap())
@@ -498,7 +498,7 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
                 error: error.to_string(),
             })?;
 
-    let mut converter = ShEx2Uml::new(&rudof.config.shex2uml_config());
+    let mut converter = ShEx2Uml::new(rudof.config.shex2uml());
     converter
         .convert(&shex_schema)
         .map_err(|error| ConversionError::FailedConversion {
@@ -515,7 +515,7 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
         writer,
         input_format,
         output_format,
-        rudof.config.shex2uml_config().plantuml_path(),
+        rudof.config.shex2uml().plantuml_path(),
     )
 }
 
@@ -529,7 +529,7 @@ fn show_schema_conversion_dctap_to_html<P: AsRef<std::path::Path>>(
 ) -> Result<()> {
     load_dctap(rudof, schema, Some(&(*input_format).try_into()?))?;
 
-    let converter = Tap2ShEx::new(&rudof.config.tap2shex_config());
+    let converter = Tap2ShEx::new(&rudof.config.tap2shex());
     let shex_schema =
         converter
             .convert(rudof.dctap.as_ref().unwrap())
@@ -541,8 +541,8 @@ fn show_schema_conversion_dctap_to_html<P: AsRef<std::path::Path>>(
                 error: error.to_string(),
             })?;
 
-    let mut shex2html_config = rudof.config.shex2html_config();
-    shex2html_config = shex2html_config.with_target_folder(output_folder);
+    let shex2html_config = rudof.config.shex2html().clone()
+        .with_target_folder(output_folder);
 
     let mut converter = ShEx2Html::new(shex2html_config.clone());
     converter
@@ -558,7 +558,7 @@ fn show_schema_conversion_dctap_to_html<P: AsRef<std::path::Path>>(
     let resolved_template = match templates_folder {
         Some(tf) => tf.to_path_buf(),
         None => shex2html_config
-            .template_folder
+            .template_folder()
             .map(PathBuf::from)
             .ok_or(ConversionError::FailedConversion {
                 input_mode: "shex".to_string(),

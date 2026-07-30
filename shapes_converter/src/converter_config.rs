@@ -1,11 +1,11 @@
 use dctap::TapConfig;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use std::io::Read;
 use std::path::Path;
 
 use crate::{ConverterError, ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
+#[derive(Deserialize, Debug, PartialEq, Clone, Default)]
 pub struct ConverterConfig {
     dctap: Option<TapConfig>,
     shex2html: Option<ShEx2HtmlConfig>,

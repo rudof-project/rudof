@@ -98,7 +98,7 @@ impl ShEx2HtmlConfig {
     }
 
     pub fn with_target_folder<P: AsRef<Path>>(mut self, folder: P) -> Self {
-        self.target_folder = folder;
+        self.target_folder = folder.as_ref().to_path_buf();
         self
     }
 
@@ -139,32 +139,32 @@ impl ShEx2HtmlConfig {
 }
 
 impl ShEx2HtmlConfig {
-    pub fn title(&self) -> String {
-        self.title
+    pub fn title(&self) -> &String {
+        &self.title
     }
 
-    pub fn landing_page_name(&self) -> String {
-        self.landing_page_name
+    pub fn landing_page_name(&self) -> &String {
+        &self.landing_page_name
     }
 
-    pub fn shape_template_name(&self) -> String {
-        self.shape_template_name
+    pub fn shape_template_name(&self) -> &String {
+        &self.shape_template_name
     }
 
     pub fn template_folder(&self) -> Option<&String> {
         self.template_folder.as_ref()
     }
 
-    pub fn css_file_name(&self) -> String {
-        self.css_file_name
+    pub fn css_file_name(&self) -> &String {
+        &self.css_file_name
     }
 
     pub fn target_folder(&self) -> &PathBuf {
         &self.target_folder
     }
 
-    pub fn color_property_name(&self) -> String {
-        self.color_property_name
+    pub fn color_property_name(&self) -> &String {
+        &self.color_property_name
     }
 
     pub fn annotation_label(&self) -> &Vec<IriS> {

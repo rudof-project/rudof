@@ -303,7 +303,7 @@ fn use_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint: SparqlEndpoint)
 
 fn init_rdf_data_with_config(rudof: &Rudof) -> Result<Data> {
     let rdf_data = RdfData::new()
-        .with_rdf_data_config(&rudof.config.rdf_data_config())
+        .with_rdf_data_config(rudof.config.rdf_data())
         .map_err(|error| {
             Box::new(DataError::RdfDataConfig {
                 error: error.to_string(),

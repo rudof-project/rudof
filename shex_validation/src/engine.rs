@@ -145,7 +145,7 @@ impl Engine {
     }
 
     pub fn set_max_steps(&mut self, max_steps: usize) {
-        self.config.set_max_steps(max_steps);
+        self.config = std::mem::take(&mut self.config).with_max_steps(max_steps.into());
     }
 
     pub fn new_step(&mut self) {
@@ -186,7 +186,7 @@ impl Engine {
         self.step_counter
     }
 
-    pub fn max_steps(&self) -> usize {
+    pub fn max_steps(&self) -> Option<usize> {
         self.config.max_steps()
     }
 

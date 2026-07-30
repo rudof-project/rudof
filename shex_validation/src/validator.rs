@@ -28,7 +28,7 @@ pub struct Validator {
 impl Validator {
     pub fn new(schema: &SchemaIR, config: &ValidatorConfig) -> Result<Validator> {
         // trace!("Creating Validator...");
-        if config.check_negation_requirement.unwrap_or(true) && schema.has_neg_cycle() {
+        if config.check_negation_requirement && schema.has_neg_cycle() {
             trace!("Checking negation cycles...");
             let neg_cycles = schema.neg_cycles();
             trace!("Negation cycles: {neg_cycles:?}");

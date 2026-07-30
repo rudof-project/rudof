@@ -73,7 +73,7 @@ impl ShEx2UmlConfig {
     }
 
     pub fn with_plantuml_path<P: AsRef<Path>>(mut self, path: P) -> Self {
-        self.plantuml_path = path;
+        self.plantuml_path = path.as_ref().to_path_buf();
         self
     }
 
@@ -161,7 +161,7 @@ impl<'de> Deserialize<'de> for ShEx2UmlConfig {
     {
         #[derive(Deserialize)]
         struct Raw {
-            #[serde(rename = "plantuml_path", default = "ShEx2UmlConfig::default_plantuml_path")]
+            #[serde(rename = "plantuml_path", default)]
             plantuml_path: Option<PathBuf>,
             #[serde(rename = "annotation_label", default = "ShEx2UmlConfig::default_annotation_label")]
             annotation_label: Vec<IriS>,

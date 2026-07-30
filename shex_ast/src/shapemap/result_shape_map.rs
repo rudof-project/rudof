@@ -31,53 +31,53 @@ impl ResultShapeMap {
         Self::default()
     }
 
-    pub fn ok_color(&self) -> Option<Color> {
+    pub fn ok_color(&self) -> &Color {
         self.config.ok_color()
     }
 
-    pub fn ok_text(&self) -> String {
+    pub fn ok_text(&self) -> &String {
         self.config.ok_text()
     }
 
-    pub fn fail_text(&self) -> String {
+    pub fn fail_text(&self) -> &String {
         self.config.fail_text()
     }
 
-    pub fn fail_color(&self) -> Option<Color> {
+    pub fn fail_color(&self) -> &Color {
         self.config.fail_color()
     }
 
-    pub fn pending_color(&self) -> Option<Color> {
+    pub fn pending_color(&self) -> &Color {
         self.config.pending_color()
     }
 
     pub fn set_ok_color(&mut self, color: Color) {
-        self.config.set_ok_color(color);
+        self.config = std::mem::take(&mut self.config).with_ok_color(color);
     }
 
     pub fn set_fail_color(&mut self, color: Color) {
-        self.config.set_fail_color(color);
+        self.config = std::mem::take(&mut self.config).with_fail_color(color);
     }
 
     pub fn set_pending_color(&mut self, color: Color) {
-        self.config.set_pending_color(color)
+        self.config = std::mem::take(&mut self.config).with_pending_color(color);
     }
 
-    pub fn nodes_prefixmap(&self) -> PrefixMap {
+    pub fn nodes_prefixmap(&self) -> &PrefixMap {
         self.config.nodes_prefixmap()
     }
 
-    pub fn shapes_prefixmap(&self) -> PrefixMap {
+    pub fn shapes_prefixmap(&self) -> &PrefixMap {
         self.config.shapes_prefixmap()
     }
 
     pub fn with_nodes_prefixmap(mut self, prefixmap: &PrefixMap) -> Self {
-        self.config = self.config.with_nodes_prefixmap(&prefixmap.clone());
+        self.config = self.config.with_nodes_prefixmap(prefixmap.clone());
         self
     }
 
     pub fn with_shapes_prefixmap(mut self, prefixmap: &PrefixMap) -> Self {
-        self.config = self.config.with_shapes_prefixmap(&prefixmap.clone());
+        self.config = self.config.with_shapes_prefixmap(prefixmap.clone());
         self
     }
 
@@ -212,25 +212,19 @@ impl ResultShapeMap {
             match status {
                 ValidationStatus::Conformant(conformant_info) => {
                     details = conformant_info.to_string();
-                    status_label = match self.ok_color() {
-                        None => ColoredString::from(self.ok_text()),
-                        Some(color) => self.ok_text().color(color).to_owned(),
-                    };
+                    status_label = self.ok_text().color(*self.ok_color());
                 },
                 ValidationStatus::NonConformant(non_conformant_info) => {
                     details = non_conformant_info.to_string();
-                    status_label = match self.fail_color() {
-                        None => ColoredString::from(self.fail_text()),
-                        Some(color) => self.fail_text().color(color).to_owned(),
-                    };
+                    status_label = self.fail_text().color(*self.fail_color());
                 },
                 ValidationStatus::Pending => {
                     details = "".to_owned();
-                    status_label = "Pending".color(self.pending_color().unwrap()).to_owned();
+                    status_label = "Pending".color(*self.pending_color());
                 },
                 ValidationStatus::Inconsistent(ci, nci) => {
                     details = format!("Conformant: {ci}, Non-conformant: {nci}");
-                    status_label = "Inconsistent".color(self.pending_color().unwrap()).to_owned();
+                    status_label = "Inconsistent".color(*self.pending_color());
                 },
             };
             if with_details {
@@ -270,25 +264,19 @@ impl ResultShapeMap {
             match status {
                 ValidationStatus::Conformant(conformant_info) => {
                     details = conformant_info.to_string();
-                    status_label = match self.ok_color() {
-                        None => ColoredString::from(self.ok_text()),
-                        Some(color) => self.ok_text().color(color).to_owned(),
-                    };
+                    status_label = self.ok_text().color(*self.ok_color());
                 },
                 ValidationStatus::NonConformant(non_conformant_info) => {
                     details = non_conformant_info.to_string();
-                    status_label = match self.fail_color() {
-                        None => ColoredString::from(self.fail_text()),
-                        Some(color) => self.fail_text().color(color).to_owned(),
-                    };
+                    status_label = self.fail_text().color(*self.fail_color());
                 },
                 ValidationStatus::Pending => {
                     details = "".to_owned();
-                    status_label = "Pending".color(self.pending_color().unwrap()).to_owned();
+                    status_label = "Pending".color(*self.pending_color());
                 },
                 ValidationStatus::Inconsistent(ci, nci) => {
                     details = format!("Conformant: {ci}, Non-conformant: {nci}");
-                    status_label = "Inconsistent".color(self.pending_color().unwrap()).to_owned();
+                    status_label = "Inconsistent".color(*self.pending_color());
                 },
             };
             if with_details {

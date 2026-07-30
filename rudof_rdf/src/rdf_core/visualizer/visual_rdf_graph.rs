@@ -12,6 +12,7 @@ use crate::rdf_core::{
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::io::Write;
+use crate::rdf_core::visualizer::style::Style;
 
 /// A visual representation of an RDF graph that can be converted to PlantUML diagrams.
 ///
@@ -265,7 +266,7 @@ impl VisualRDFGraph {
     /// # Returns
     /// * `Result<(), RdfVisualizerError>` - Ok if successful, Err with details on failure
     pub fn as_plantuml<W: Write>(&self, writer: &mut W, _mode: &UmlGenerationMode) -> Result<(), RdfVisualizerError> {
-        let style = self.config.get_style();
+        let style: Style = self.config.clone().into();
         writeln!(writer, "@startuml\n")?;
         writeln!(writer, "{}", style.as_uml())?;
 
@@ -410,20 +411,20 @@ fn triple_term_as_plantuml<W: Write>(
     writeln!(
         writer,
         "{triple_id}-->{subj_id} {} : {} \n",
-        graph.config.get_subject_arrow_style().as_plantuml(),
-        graph.config.get_subject_text()
+        graph.config.subject_arrow_style().as_plantuml(),
+        graph.config.subject_text()
     )?;
     writeln!(
         writer,
         "{triple_id}-->{pred_id} {} : {}\n",
-        graph.config.get_predicate_arrow_style().as_plantuml(),
-        graph.config.get_predicate_text()
+        graph.config.predicate_arrow_style().as_plantuml(),
+        graph.config.predicate_text()
     )?;
     writeln!(
         writer,
         "{triple_id}-->{obj_id} {} : {}\n",
-        graph.config.get_object_arrow_style().as_plantuml(),
-        graph.config.get_object_text()
+        graph.config.object_arrow_style().as_plantuml(),
+        graph.config.object_text()
     )?;
     Ok(())
 }

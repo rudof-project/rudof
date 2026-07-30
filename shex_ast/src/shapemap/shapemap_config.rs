@@ -106,12 +106,12 @@ impl ShapemapConfig {
         &self.shapes_prefixmap
     }
 
-    pub fn ok_text(&self) -> String {
-        self.ok_text
+    pub fn ok_text(&self) -> &String {
+        &self.ok_text
     }
 
-    pub fn fail_text(&self) -> String {
-        self.fail_text
+    pub fn fail_text(&self) -> &String {
+        &self.fail_text
     }
 
     pub fn ok_color(&self) -> &Color {

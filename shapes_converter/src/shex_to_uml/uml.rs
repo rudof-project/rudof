@@ -280,7 +280,7 @@ impl Uml {
     fn preamble(&self, writer: &mut impl Write, config: &ShEx2UmlConfig) -> Result<(), UmlError> {
         writeln!(writer, "hide empty members")?;
 
-        match config.direction.clone().unwrap_or_default() {
+        match config.direction {
             Direction::LeftToRight => {
                 writeln!(writer, "left to right direction")?;
             },
@@ -289,7 +289,7 @@ impl Uml {
             },
         }
 
-        match config.line_type.clone().unwrap_or_default() {
+        match config.line_type {
             LineType::Orthogonal => {
                 writeln!(writer, "skinparam linetype ortho")?;
             },
@@ -302,7 +302,7 @@ impl Uml {
         // Hide the class attribute icon
         writeln!(writer, "hide circles")?;
 
-        writeln!(writer, "skinparam shadowing {}", config.shadowing.unwrap_or_default())?;
+        writeln!(writer, "skinparam shadowing {}", config.shadowing)?;
 
         // The following parameters should be taken from the ocnfig file...
         writeln!(writer, "skinparam class {{")?;
