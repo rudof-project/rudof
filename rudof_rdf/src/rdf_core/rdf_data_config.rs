@@ -43,18 +43,22 @@ impl RdfDataConfig {
     }
 
     /// Adds a Wikidata SPARQL endpoint to the configuration.
-    ///
-    /// This method configures the Wikidata query service endpoint with appropriate prefixes
-    /// for convenient querying of Wikidata's knowledge graph.
-    ///
-    /// # Returns
-    /// The modified `RdfDataConfig` with the Wikidata endpoint added.
     pub fn with_wikidata(mut self) -> Self {
         let wikidata_name = "wikidata";
         let wikidata_iri = "https://query.wikidata.org/sparql";
         let wikidata = EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata().into());
 
         self.endpoints.insert(wikidata_name.to_string(), wikidata);
+        self
+    }
+
+    /// Adds a DBpedia SPARQL endpoint to the configuration.
+    pub fn with_dbpedia(mut self) -> Self {
+        let dbpedia_name = "dbpedia";
+        let dbpedia_iri = "https://dbpedia.org/sparql";
+        let dbpedia = EndpointDescription::new_unchecked(dbpedia_iri).with_prefixmap(PrefixMap::dbpedia().into());
+
+        self.endpoints.insert(dbpedia_name.to_string(), dbpedia);
         self
     }
 
@@ -155,12 +159,10 @@ impl RdfDataConfig {
 }
 
 impl Default for RdfDataConfig {
-    /// Returns the default RDF data configuration with Wikidata endpoint pre-configured.
-    ///
-    /// The default configuration includes the Wikidata SPARQL endpoint and automatic
-    /// base IRI detection enabled.
     fn default() -> Self {
-        Self::new().with_wikidata()
+        Self::new()
+            .with_wikidata()
+            .with_dbpedia()
     }
 }
 
