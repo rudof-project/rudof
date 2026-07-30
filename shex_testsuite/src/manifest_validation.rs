@@ -532,6 +532,6 @@ mod tests {
             let manifest_str = fs::read_to_string(manifest_path).unwrap();
             serde_json::from_str::<ManifestValidation>(&manifest_str).unwrap()
         };
-        assert_eq!(manifest.entry_names.len(), 1166);
+        assert_eq!(manifest.entry_names.len(), 1183);
     }
 }

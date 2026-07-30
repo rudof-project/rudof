@@ -123,6 +123,13 @@ mod tests {
     }
 
     #[test]
+    fn print_backslash_literal() {
+        ext()
+            .run_action(Some(r#"print("a\\b")"#), &SemanticActionContext::default())
+            .unwrap();
+    }
+
+    #[test]
     fn print_subject() {
         ext()
             .run_action(

@@ -1,0 +1,16 @@
+extends-closed-3diamond-split_fail-no-G0-0
+extends-closed-3diamond-split_fail-no-G0-0-0
+extends-closed-3diamond-split_fail-no-G0_0-0
+extends-closed-3diamond-split_fail-no_BOTTOM
+extends-closed-3diamond-split_fail-two-BOTTOMS
+extends-closed-3diamond-split_fail-two-G0-0s
+extends-closed-3diamond-split_fail-two-G0s
+extends-closed-3diamond-split_pass-bottom
+extends-closed-diamond_fail-no-G0
+extends-closed-diamond_fail-no-G0-0
+extends-closed-diamond_fail-no-G0-1
+extends-closed-diamond_fail-no_BOTTOM
+extends-closed-diamond_fail-two-BOTTOMS
+extends-closed-diamond_fail-two-G0-0s
+extends-closed-diamond_fail-two-G0s
+extends-closed-diamond_pass-bottom
