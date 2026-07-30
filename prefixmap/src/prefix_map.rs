@@ -254,6 +254,22 @@ impl PrefixMap {
         .unwrap();
         pm.without_default_colors().with_hyperlink(true)
     }
+
+    /// Default Uniprot prefix map
+    pub fn uniprot() -> PrefixMap {
+        let pm: PrefixMap = HashMap::from([
+            ("formats", "http://www.w3.org/ns/formats/"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("sd", "http://www.w3.org/ns/sparql-service-description#"),
+            ("taxon", "http://purl.uniprot.org/taxonomy/"),
+            ("up", "http://purl.uniprot.org/core/"),
+            ("void", "https://sparql.uniprot.org/.well-known/void#"),
+        ])
+            .try_into()
+            .unwrap();
+        pm.without_default_colors().with_hyperlink(true)
+    }
 }
 
 /// Qualifying IRIs against a [`PrefixMap`]
