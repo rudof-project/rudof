@@ -62,6 +62,16 @@ impl RdfDataConfig {
         self
     }
 
+    /// Adds a Uniprot SPARQL endpoint to the configuration.
+    pub fn with_uniprot(mut self) -> Self {
+        let uniprot_name = "uniprot";
+        let uniprot_iri = "https://sparql.uniprot.org/sparql";
+        let uniprot = EndpointDescription::new_unchecked(uniprot_iri).with_prefixmap(PrefixMap::uniprot().into());
+
+        self.endpoints.insert(uniprot_name.to_string(), uniprot);
+        self
+    }
+
     /// Loads an `RdfDataConfig` from a TOML file at the specified path.
     ///
     /// # Arguments
@@ -163,6 +173,7 @@ impl Default for RdfDataConfig {
         Self::new()
             .with_wikidata()
             .with_dbpedia()
+            .with_uniprot()
     }
 }
 
