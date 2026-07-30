@@ -37,7 +37,7 @@ impl ValidatorConfig {
             max_steps: Self::default_max_steps(),
             shex_needs_fixup: false,
             width: Self::default_width(),
-            rdf_data: Self.rdf_data,
+            rdf_data: Self::default_rdf_data(),
             shex: Self::default_shex(),
             shapemap: Self::default_shapemap(),
             rdf_data_needs_fixup: false,
