@@ -13,9 +13,6 @@ use std::str::FromStr;
 use semver::Version;
 use crate::config::CommonConfig;
 
-/// Embedded default configuration in TOML format.
-const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
-
 /// Main configuration structure for Rudof.
 ///
 /// This structure encapsulates all configuration options for Rudof operations,
