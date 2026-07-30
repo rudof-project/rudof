@@ -2,7 +2,7 @@ use crate::{IRes, LocatedParseError, Span, shex_parser_error::ParseError as ShEx
 use nom::{
     Err, Parser,
     branch::alt,
-    bytes::complete::{is_not, tag, tag_no_case},
+    bytes::complete::{is_not, tag, tag_no_case, take_until},
     character::complete::multispace1,
     combinator::value,
     multi::many0,
@@ -79,7 +79,9 @@ fn comment(input: Span) -> IRes<()> {
 }
 
 fn multi_comment(i: Span) -> IRes<()> {
-    value((), delimited(tag("/*"), is_not("*/"), tag("*/"))).parse(i)
+    // take_until, not is_not: is_not treats "*/" as a character set, so any '*' or '/'
+    // inside the comment body (e.g. a /** doc comment */) would end the match early
+    value((), delimited(tag("/*"), take_until("*/"), tag("*/"))).parse(i)
 }
 
 /// A combinator that recognises an arbitrary amount of whitespace and
@@ -123,4 +125,24 @@ pub(crate) fn tag_no_case_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRe
     map_error(delimited(tws0, tag_no_case(token), tws0), || {
         ShExParseError::ExpectedToken(token.to_string())
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parses_comment(input: &str) -> bool {
+        multi_comment(Span::new(input)).is_ok()
+    }
+
+    #[test]
+    fn multi_comment_accepts_stars_and_slashes() {
+        assert!(parses_comment("/* plain */"));
+        assert!(parses_comment("/** doc comment */"));
+        assert!(parses_comment("/* has * star */"));
+        assert!(parses_comment("/* has / slash */"));
+        assert!(parses_comment("/**/"));
+        assert!(parses_comment("/* multi\nline */"));
+        assert!(!parses_comment("/* unterminated"));
+    }
 }
