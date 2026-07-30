@@ -18,6 +18,7 @@ pub mod shexr;
 use crate::ir::semantic_action_context::SemanticActionContext;
 pub use ast::*;
 pub use compact::*;
+pub use ir::external_resolver::*;
 pub use ir::schema_ir_error::*;
 pub use ir::shape_label_idx::*;
 pub use node::*;

@@ -1,0 +1,4 @@
+prefix : <http://example.org/>
+
+:S  { $:a (:p [ 2 3 ] ) }
+:T { &:a ; &:a }

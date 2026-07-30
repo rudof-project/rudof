@@ -16,24 +16,21 @@ use super::helpers::*;
 /// Request parameters for displaying a ShEx schema.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ShowShexRequest {
-    /// ShEx schema content as a string
+    /// ShEx schema to parse. Accepts inline ShExC/ShExJ text, a URL, or a local file path.
     pub schema: String,
 
-    /// Input schema format.
-    /// Supported: shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple
-    /// Default: shexc
+    /// Format of the input schema. Currently supported for loading: shexc (default), shexj.
     pub schema_format: Option<String>,
 
-    /// Base IRI for resolving relative IRIs in the schema
+    /// Base IRI for resolving relative IRIs in the schema. Example: "http://example.org/"
     pub base_schema: Option<String>,
 
-    /// Shape selector to display only a specific shape.
-    /// Use IRI or prefixed name (e.g., ":Person" or "http://example.org/Person")
+    /// Display only a specific shape by IRI or prefixed name.
+    /// Example: ":Person" or "<http://example.org/Person>". When omitted, all shapes are shown.
     pub shape: Option<String>,
 
-    /// Output format for the schema.
-    /// Supported: shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple
-    /// Default: shexc
+    /// Output format for the serialized schema.
+    /// Supported: shexc (default), shexj, json, jsonld, internal.
     pub result_schema_format: Option<String>,
 }
 
@@ -218,14 +215,13 @@ pub async fn show_shex_impl(
 /// Request parameters for checking ShEx schema well-formedness.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CheckShexRequest {
-    /// ShEx schema content to check
+    /// ShEx schema to check. Accepts inline ShExC/ShExJ text, a URL, or a local file path.
     pub schema: String,
 
-    /// Input schema format.
-    /// Supported: shexc, shexj, turtle
+    /// Format of the input schema. Supported: shexc (default), shexj.
     pub schema_format: Option<String>,
 
-    /// Base IRI for resolving relative IRIs
+    /// Base IRI for resolving relative IRIs in the schema. Example: "http://example.org/"
     pub base_schema: Option<String>,
 }
 

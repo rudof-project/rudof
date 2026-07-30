@@ -1,13 +1,15 @@
 use rudof_rdf::rdf_core::RdfDataConfig;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
+use shex_ast::ir::external_resolver::{ExternalShapeResolver, ExternalShapeResolverRegistry};
 use shex_ast::shapemap::ShapemapConfig;
 use std::io::Read;
 use std::path::Path;
+use std::sync::Arc;
 
 use crate::{ShExConfig, ValidatorError};
 
 /// This struct can be used to customize the behavour of ShEx validators
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct ValidatorConfig {
     /// Maximum numbers of validation steps
     pub(crate) max_steps: Option<usize>,
@@ -29,6 +31,14 @@ pub struct ValidatorConfig {
     /// Width for pretty printing
     // TODO - This should be in rudof_lib
     pub(crate) width: usize,
+
+
+    /// Resolvers consulted for EXTERNAL shape expressions. Defaults to a
+    /// registry containing only `RejectAllExternalResolver`. Resolvers cannot
+    /// be loaded from TOML — they must be installed programmatically via
+    /// [`Self::with_external_resolver`].
+    #[serde(skip, default)]
+    pub(crate) external_resolvers: ExternalShapeResolverRegistry,
 }
 
 impl ValidatorConfig {
@@ -42,6 +52,7 @@ impl ValidatorConfig {
             shapemap: Self::default_shapemap(),
             rdf_data_needs_fixup: false,
             check_negation_requirement: Self::default_check_negation_requirement(),
+            external_resolvers: ExternalShapeResolverRegistry::default(),
         }
     }
 
@@ -96,6 +107,18 @@ impl ValidatorConfig {
         self.width = width;
         self
     }
+
+    /// Prepend a resolver to the EXTERNAL-shape resolver chain. Returns the
+    /// updated config for builder-style chaining.
+    pub fn with_external_resolver<R: ExternalShapeResolver + 'static>(mut self, r: R) -> Self {
+        self.external_resolvers = std::mem::take(&mut self.external_resolvers).with_resolver(r);
+        self
+    }
+
+    pub fn with_external_resolver_arc(mut self, r: Arc<dyn ExternalShapeResolver>) -> Self {
+        self.external_resolvers = std::mem::take(&mut self.external_resolvers).with_resolver_arc(r);
+        self
+    }
 }
 
 impl ValidatorConfig {
@@ -121,6 +144,10 @@ impl ValidatorConfig {
 
     pub fn width(&self) -> usize {
         self.width
+    }
+
+    pub fn external_resolvers(&self) -> &ExternalShapeResolverRegistry {
+        &self.external_resolvers
     }
 }
 

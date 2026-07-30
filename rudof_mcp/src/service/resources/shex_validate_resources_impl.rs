@@ -9,11 +9,14 @@
 //! - `rudof://formats/shex-validation-result` - ShEx validation result formats
 //! - `rudof://formats/validation-reader-modes` - Reader modes (strict/lax)
 //! - `rudof://formats/shex-validation-sort-options` - Result sort options
+//! - `rudof://shex/external-resolvers` - Available external-shape resolver kinds
 
 use rmcp::{
     ErrorData as McpError,
     model::{Annotated, RawResource, ReadResourceResult},
 };
+use rudof_lib::Rudof;
+use serde_json::json;
 
 use crate::service::resources::{json_resource_result, make_resource};
 use crate::service::tools::helpers::{
@@ -48,6 +51,12 @@ pub fn get_shex_validate_resources() -> Vec<Annotated<RawResource>> {
             "Available sort options for ShEx validation results",
             "application/json",
         ),
+        make_resource(
+            "rudof://shex/external-resolvers",
+            "Available External-Shape Resolvers",
+            "Built-in resolvers for ShEx EXTERNAL shape expressions",
+            "application/json",
+        ),
     ]
 }
 
@@ -61,6 +70,7 @@ pub fn handle_shex_validate_resource(uri: &str) -> Option<Result<ReadResourceRes
         "rudof://formats/shex-validation-result" => Some(get_shex_validation_result_formats(uri)),
         "rudof://formats/validation-reader-modes" => Some(get_reader_modes(uri)),
         "rudof://formats/shex-validation-sort-options" => Some(get_shex_validation_sort_options(uri)),
+        "rudof://shex/external-resolvers" => Some(get_external_resolvers(uri)),
         _ => None,
     }
 }
@@ -85,4 +95,23 @@ fn get_reader_modes(uri: &str) -> Result<ReadResourceResult, McpError> {
 fn get_shex_validation_sort_options(uri: &str) -> Result<ReadResourceResult, McpError> {
     let options = option_entries_json("sort_options", SHEX_VALIDATION_SORT_OPTION_ENTRIES, "node");
     json_resource_result(uri, &options)
+}
+
+/// Returns the list of built-in external-shape resolver kinds.
+///
+/// Clients pass entries from `resolvers[].spec_syntax` (substituting `<path>`
+/// where applicable) as the `external_resolvers` argument to `validate_shex`.
+fn get_external_resolvers(uri: &str) -> Result<ReadResourceResult, McpError> {
+    let resolvers: Vec<serde_json::Value> = Rudof::list_external_resolvers()
+        .into_iter()
+        .map(|info| {
+            json!({
+                "name": info.name,
+                "description": info.description,
+                "spec_syntax": info.spec_syntax,
+            })
+        })
+        .collect();
+    let body = json!({ "resolvers": resolvers });
+    json_resource_result(uri, &body)
 }

@@ -21,8 +21,10 @@ use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
+use shex_ast::ir::external_resolver::{DispatchOutcome, ExternalResolveCtx};
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::sem_act::SemAct;
 use shex_ast::ir::semantic_action_context::SemanticActionContext;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
@@ -74,6 +76,17 @@ impl Engine {
         while let Some(atom) = self.pop_pending() {
             match atom.clone() {
                 Atom::Pos((node, idx)) => {
+                    if !check_start_acts(schema.start_acts(), &node, &idx, schema)? {
+                        self.add_checked_neg(
+                            atom.clone(),
+                            vec![ValidatorError::StartActFailed {
+                                node: Box::new(node.clone()),
+                                idx,
+                            }],
+                        );
+                        // We can abort validation if start actions failed
+                        continue;
+                    }
                     let mut hyp = Vec::new();
                     match self.prove(&node, &idx, &mut hyp, schema, rdf)? {
                         Either::Right(reasons) => {
@@ -540,8 +553,39 @@ impl Engine {
                 }
             },
             ShapeExpr::External {} => {
-                debug!("External shape expression encountered for node {node} with shape {se}");
-                pass(Reason::External { node: node.clone() })
+                let label = schema.shape_label_from_idx(idx);
+                let ctx = ExternalResolveCtx {
+                    node,
+                    shape_idx: *idx,
+                    shape_label: label,
+                    schema,
+                };
+                match self.config.external_resolvers().dispatch(&ctx) {
+                    DispatchOutcome::Conformant { resolver, rationale } => {
+                        debug!("EXTERNAL conformant for {node}@{idx} via '{resolver}': {rationale}");
+                        pass(Reason::External {
+                            node: node.clone(),
+                            resolver,
+                            rationale,
+                        })
+                    },
+                    DispatchOutcome::NonConformant { resolver, rationale } => {
+                        debug!("EXTERNAL non-conformant for {node}@{idx} via '{resolver}': {rationale}");
+                        fail(ValidatorError::ExternalShapeRejected {
+                            node: Box::new(node.clone()),
+                            idx: *idx,
+                            resolver,
+                            rationale,
+                        })
+                    },
+                    DispatchOutcome::Abstain => {
+                        debug!("EXTERNAL unresolved for {node}@{idx}: no resolver answered");
+                        fail(ValidatorError::ExternalShapeUnresolved {
+                            node: Box::new(node.clone()),
+                            idx: *idx,
+                        })
+                    },
+                }
             },
             ShapeExpr::Ref { idx } => self.check_node_ref(node, idx, typing),
             ShapeExpr::Empty => pass(Reason::Empty { node: node.clone() }),
@@ -583,15 +627,31 @@ impl Engine {
         R: QueryRDF + NeighsRDF,
     {
         // trace!("check_node_shape: node = {node}, shape = {idx} [No extends]");
-        let (values, reminder) = self.neighs(node, shape.preds(), rdf)?;
+        let extra_preds = shape.extra().clone();
+        let mut candidate_preds = shape.preds();
+        for p in &extra_preds {
+            if !candidate_preds.contains(p) {
+                candidate_preds.push(p.clone());
+            }
+        }
+        let (values, reminder) = self.neighs(node, candidate_preds.clone(), rdf)?;
         let values_ctx = values
             .iter()
             .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .filter(|(pred, value, ctx)| {
+                // Strict predicates (not in EXTRA) always go into M^∈.
+                if !extra_preds.contains(pred) {
+                    return true;
+                }
+                // Lenient predicates (in EXTRA): only values that satisfy a leaf condition
+                // participate in the RBE; non-matching values fall into M^∉ and are ignored.
+                matches_any_leaf(shape.triple_expr(), pred, value, ctx)
+            })
             .collect::<Vec<_>>();
         if shape.is_closed() && !reminder.is_empty() {
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
                 remainder: Preds::new(reminder),
-                declared: Preds::new(shape.preds().into_iter().collect()),
+                declared: Preds::new(candidate_preds),
             });
         }
         check_expr_neigh(shape.triple_expr(), &values_ctx, node, shape, idx, typing)
@@ -610,12 +670,18 @@ impl Engine {
         R: NeighsRDF + QueryRDF,
     {
         // trace!("check_node_shape_extends: node={node}, shape={idx}");
-        let preds_extends = Vec::from_iter(schema.get_preds_extends(idx));
+        let extra_preds = shape.extra().clone();
+        let mut candidate_preds = Vec::from_iter(schema.get_preds_extends(idx));
+        for p in &extra_preds {
+            if !candidate_preds.contains(p) {
+                candidate_preds.push(p.clone());
+            }
+        }
         /*trace!(
             "Predicates in this shape with extends: [{}]",
-            preds_extends.iter().map(|p| p.to_string()).join(", ")
+            candidate_preds.iter().map(|p| p.to_string()).join(", ")
         );*/
-        let (values, reminder) = self.neighs(node, preds_extends, rdf)?;
+        let (values, reminder) = self.neighs(node, candidate_preds.clone(), rdf)?;
 
         if shape.is_closed() && !reminder.is_empty() {
             /*debug!(
@@ -624,7 +690,7 @@ impl Engine {
             );*/
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
                 remainder: Preds::new(reminder),
-                declared: Preds::new(shape.preds().into_iter().collect()),
+                declared: Preds::new(candidate_preds),
             });
         }
         /*if !reminder.is_empty() {
@@ -678,15 +744,21 @@ impl Engine {
         let values_ctx: Vec<_> = values_ctx_raw
             .into_iter()
             .filter(|(pred, value, ctx)| {
-                // Keep if the triple satisfies at least one leaf-bucket condition.
+                // Keep if the triple satisfies at least one leaf-bucket condition
+                // (conservatively: Ref conditions count as matching for M^∈ placement).
                 let matches_leaf = triple_exprs.values().any(|rbes| {
                     rbes.iter().any(|rbe| {
-                        rbe.components()
-                            .any(|(_, key, cond)| &key == pred && cond.matches(value, ctx).is_ok())
+                        rbe.components().any(|(_, key, cond)| {
+                            &key == pred && (cond_has_ref(&cond) || cond.matches(value, ctx).is_ok())
+                        })
                     })
                 });
                 if matches_leaf {
                     return true;
+                }
+                // EXTRA predicate with no satisfying leaf → goes into M^∉, exclude from partition.
+                if extra_preds.contains(pred) {
+                    return false;
                 }
                 // Triple is not needed by any leaf bucket.
                 // Keep it only if it is also NOT covered by any ancestor (case b: truly invalid).
@@ -1393,6 +1465,20 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
     PartitionsDisplay::new(&partitions_display)
 }
 
+fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, schema: &SchemaIR) -> Result<bool> {
+    let registry = schema.semantic_actions_registry();
+    let context = SemanticActionContext::new_start_act_context();
+    for act in start_acts {
+        let parameter = act.code().map(|code| code.as_str());
+        let result = registry.run_action(act.name(), parameter, &context);
+        if let Err(err) = result {
+            tracing::error!("Start action {act} failed with error: {err}");
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 /// Returns true if a MatchCond contains a shape reference (MatchCond::Ref),
 /// which means the condition delegates to a shape's typing check rather than
 /// directly verifying a value set.
@@ -1402,6 +1488,22 @@ fn cond_has_ref(cond: &MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContex
         MatchCond::And(vs) => vs.iter().any(cond_has_ref),
         MatchCond::Single(_) => false,
     }
+}
+
+/// Returns true if `(pred, value)` satisfies at least one leaf condition in `expr`.
+///
+/// For `MatchCond::Ref` leaves the value is kept in M^∈ conservatively — the RBE /
+/// pending-typing path already handles shape-reference validation correctly.
+fn matches_any_leaf(expr: &Expr, pred: &Pred, value: &Node, ctx: &SemanticActionContext) -> bool {
+    for (_, key, cond) in expr.components() {
+        if &key != pred {
+            continue;
+        }
+        if cond_has_ref(&cond) || cond.matches(value, ctx).is_ok() {
+            return true;
+        }
+    }
+    false
 }
 
 #[cfg(test)]

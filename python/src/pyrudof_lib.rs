@@ -579,6 +579,54 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Registers an external-shape resolver from a spec string.
+    ///
+    /// The spec follows the grammar ``<kind>[:<arg>]``. Built-in kinds (see
+    /// :meth:`list_external_resolvers`):
+    ///
+    /// * ``reject-all`` — reject any unhandled EXTERNAL shape.
+    /// * ``schema:<path>`` — substitute EXTERNAL declarations using a ShEx file.
+    ///
+    /// Resolvers are prepended to the chain, so the most recently added is
+    /// consulted first. Call this **before** :meth:`load_shex_schema` because
+    /// the compiler reads the chain during AST→IR.
+    ///
+    /// Args:
+    ///     spec (str): Resolver spec string.
+    ///
+    /// Raises:
+    ///     RudofError: If the spec is malformed or the resolver cannot be built.
+    pub fn add_external_resolver(&mut self, spec: &str) -> PyResult<()> {
+        self.inner.add_external_resolver(spec).map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Resets the external-shape resolver chain to the default
+    /// (``reject-all`` only).
+    pub fn clear_external_resolvers(&mut self) {
+        self.inner.clear_external_resolvers();
+    }
+
+    /// Returns the built-in external-shape resolver kinds.
+    ///
+    /// Returns:
+    ///     list[tuple[str, str, str]]: A list of ``(name, description, spec_syntax)``
+    ///     triples that document the kinds accepted by
+    ///     :meth:`add_external_resolver`.
+    #[staticmethod]
+    pub fn list_external_resolvers() -> Vec<(String, String, String)> {
+        rudof_lib::Rudof::list_external_resolvers()
+            .into_iter()
+            .map(|info| {
+                (
+                    info.name.to_string(),
+                    info.description.to_string(),
+                    info.spec_syntax.to_string(),
+                )
+            })
+            .collect()
+    }
+
     /// Validates the current RDF data against the loaded SHACL shapes.
     ///
     /// Performs comprehensive SHACL validation checking all constraints defined

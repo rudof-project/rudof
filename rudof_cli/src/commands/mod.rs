@@ -31,7 +31,7 @@ pub use materialize::MaterializeCommand;
 pub use mcp::McpCommand;
 pub use node::NodeCommand;
 pub use pgschema::PgschemaCommand;
-pub use pgschema_validate::PgSchemaValidateCommand;
+pub use pgschema_validate::PgschemaValidateCommand;
 pub use query::QueryCommand;
 pub use rdf_config::RdfConfigCommand;
 pub use service::ServiceCommand;

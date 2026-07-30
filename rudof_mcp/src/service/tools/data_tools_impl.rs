@@ -16,22 +16,21 @@ use crate::service::{errors::*, mcp_service::RudofMcpService};
 /// Request parameters for loading RDF data from various sources.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct LoadRdfDataFromSourcesRequest {
-    /// List of data sources to load. Each source can be:
-    /// - A file path (e.g., "/path/to/file.ttl")
-    /// - A URL (e.g., "https://example.org/data.ttl")
-    /// - Raw RDF content as a string
-    pub data: Vec<String>,
+    /// RDF data sources to load. Each entry can be a local file path (e.g. "/data/file.ttl"),
+    /// a URL (e.g. "https://example.org/data.ttl"), or inline RDF text.
+    /// Optional — omit or pass [] when using `endpoint` only.
+    pub data: Option<Vec<String>>,
 
-    /// RDF serialization format for parsing the data.
-    /// Supported: turtle, ntriples, rdfxml, jsonld, trig, nquads, n3
+    /// RDF serialization format of the data sources.
+    /// One of: turtle (default), ntriples, rdfxml, jsonld, trig, nquads, n3.
     pub data_format: Option<String>,
 
-    /// Base IRI for resolving relative IRIs in the data.
-    /// Example: "http://example.org/base/"
+    /// Base IRI for resolving relative IRIs in the data. Example: "http://example.org/"
     pub base: Option<String>,
 
-    /// SPARQL endpoint URL or registered endpoint name.
-    /// When provided, data will be loaded from this endpoint.
+    /// SPARQL endpoint URL to query live (e.g. "https://dbpedia.org/sparql").
+    /// Results are NOT merged into the store; queried on demand by execute_sparql_query.
+    /// When set, `data` may be omitted or [].
     pub endpoint: Option<String>,
 }
 
@@ -49,9 +48,8 @@ pub struct LoadRdfDataFromSourcesResponse {
 /// Request parameters for exporting RDF data.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportRdfDataRequest {
-    /// Output RDF serialization format.
-    /// Supported: turtle, ntriples, rdfxml, jsonld, trig, nquads, n3
-    /// Default: turtle
+    /// Serialization format for the output.
+    /// One of: turtle (default), ntriples, rdfxml, jsonld, trig, nquads, n3.
     pub format: Option<String>,
 }
 
@@ -69,8 +67,7 @@ pub struct ExportRdfDataResponse {
 /// Request parameters for generating an image visualization.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportImageRequest {
-    /// Image output format.
-    /// Supported: svg, png
+    /// Image format to generate. One of: svg, png.
     pub image_format: String,
 }
 
@@ -126,8 +123,20 @@ pub async fn load_rdf_data_from_sources_impl(
     }) = params;
     let mut rudof = service.rudof.lock().await;
 
+    let data_entries = data.unwrap_or_default();
+
+    // Must have at least one source: either data entries or an endpoint.
+    if data_entries.is_empty() && endpoint.is_none() {
+        return Ok(ToolExecutionError::with_hint(
+            "No data sources provided",
+            "Pass file paths, URLs, or inline RDF in `data`, or set `endpoint` to a SPARQL endpoint URL. \
+             Example endpoint-only call: {\"endpoint\": \"https://dbpedia.org/sparql\", \"data\": []}",
+        )
+        .into_call_tool_result());
+    }
+
     // Parse data specifications - return Tool Execution Error for invalid input
-    let data_specs: Vec<InputSpec> = match data
+    let data_specs: Vec<InputSpec> = match data_entries
         .iter()
         .map(|s| InputSpec::from_str(s))
         .collect::<Result<Vec<_>, _>>()
@@ -136,7 +145,8 @@ pub async fn load_rdf_data_from_sources_impl(
         Err(e) => {
             return Ok(ToolExecutionError::with_hint(
                 format!("Invalid data specification: {}", e),
-                "Provide valid file paths, URLs, or raw RDF content",
+                "Provide valid file paths, URLs, or raw RDF content. \
+                 If only querying a SPARQL endpoint, set endpoint and pass data: []",
             )
             .into_call_tool_result());
         },

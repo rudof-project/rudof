@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::components::MaxLength;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{NativeValidator, SparqlValidator, validate_ask_with, validate_with};
+use crate::validator::constraints::{BasicSparqlValidator, NativeValidator, validate_ask_with, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -58,7 +58,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxLength {
+impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
         component: &IRComponent,

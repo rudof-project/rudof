@@ -1,4 +1,4 @@
-use crate::cli::parser::PgSchemaValidateArgs;
+use crate::cli::parser::PgschemaValidateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
 
@@ -6,18 +6,18 @@ use anyhow::Result;
 ///
 /// This struct holds the specific arguments parsed by `clap` and
 /// implements the [Command] trait to execute PgSchema Validate command logic.
-pub struct PgSchemaValidateCommand {
+pub struct PgschemaValidateCommand {
     /// Arguments specific to PgSchema Validate command.
-    args: PgSchemaValidateArgs,
+    args: PgschemaValidateArgs,
 }
 
-impl PgSchemaValidateCommand {
-    pub fn new(args: PgSchemaValidateArgs) -> Self {
+impl PgschemaValidateCommand {
+    pub fn new(args: PgschemaValidateArgs) -> Self {
         Self { args }
     }
 }
 
-impl Command for PgSchemaValidateCommand {
+impl Command for PgschemaValidateCommand {
     /// Returns the unique identifier for this command.
     fn name(&self) -> &'static str {
         "pgschema-validate"

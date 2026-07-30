@@ -7,6 +7,7 @@
 use rudof_iri::IriS;
 use std::sync::OnceLock;
 
+mod owl;
 mod rdf;
 mod rdfs;
 mod shacl;
@@ -16,6 +17,7 @@ mod shexr;
 mod test_manifest;
 mod xsd;
 
+pub use owl::OwlVocab;
 pub use rdf::RdfVocab;
 pub use rdfs::RdfsVocab;
 pub use shacl::ShaclVocab;

@@ -35,7 +35,7 @@ impl RudofMcpService {
     /// Load RDF data into the server's in-memory datastore.
     #[tool(
         name = "load_rdf_data_from_sources",
-        description = "Load RDF data from remote sources (URLs, files, raw text) or SPARQL endpoint into the server's datastore",
+        description = "Load RDF triples into the server's in-memory datastore from URLs, local file paths, or inline RDF text. Each call is cumulative — triples are merged into existing data. `data` is optional — omit or pass [] when only using `endpoint`. To query a live SPARQL endpoint: set endpoint URL and pass data:[]. Call this before validate_shex, validate_shacl, execute_sparql_query, node_info, or export tools.",
         annotations(
             title = "Load RDF Data from Sources",
             read_only_hint = false,
@@ -54,7 +54,7 @@ impl RudofMcpService {
     /// Serialize the current RDF data to a specified format.
     #[tool(
         name = "export_rdf_data",
-        description = "Serialize and return the RDF stored on the server in the requested format",
+        description = "Serialize the server's in-memory RDF graph and return it as text. Use to inspect or export loaded data. Default format: turtle.",
         annotations(
             title = "Export RDF Data",
             read_only_hint = true,
@@ -70,7 +70,7 @@ impl RudofMcpService {
     /// Generate a PlantUML diagram representing the RDF graph structure.
     #[tool(
         name = "export_plantuml",
-        description = "Generate a PlantUML diagram of the RDF stored on the server",
+        description = "Generate a PlantUML class diagram of the RDF graph structure. Shows subjects, predicates, and objects as a visual graph. Requires data to be loaded first.",
         annotations(
             title = "Export PlantUML Diagram",
             read_only_hint = true,
@@ -86,7 +86,7 @@ impl RudofMcpService {
     /// Generate a visual image of the RDF graph.
     #[tool(
         name = "export_image",
-        description = "Generate an image (SVG or PNG) visualization of the RDF stored on the server",
+        description = "Render the server's RDF graph as an SVG or PNG image. Use for visual inspection of graph topology. Requires data to be loaded first.",
         annotations(
             title = "Export RDF Image Visualization",
             read_only_hint = true,
@@ -106,7 +106,7 @@ impl RudofMcpService {
     /// Retrieve detailed information about an RDF node.
     #[tool(
         name = "node_info",
-        description = "Show information about a node (outgoing/incoming arcs) from the RDF stored on the server",
+        description = "Inspect a specific RDF node's neighborhood: outgoing arcs (node as subject) and incoming arcs (node as object). Use to explore what properties a resource has and what other resources point to it. Requires data to be loaded first.",
         annotations(
             title = "Inspect RDF Node",
             read_only_hint = true,
@@ -126,7 +126,7 @@ impl RudofMcpService {
     /// Execute a SPARQL query against the loaded RDF data.
     #[tool(
         name = "execute_sparql_query",
-        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server. You can provide either a direct SPARQL query or a natural language description that will be converted to SPARQL using an LLM.",
+        description = "Execute a SPARQL query against the server's in-memory RDF graph. Supports SELECT, CONSTRUCT, and ASK (DESCRIBE not yet implemented). Provide a direct SPARQL string in `query` OR a natural language description in `query_natural_language` — not both. No `endpoint` parameter here — to query a live SPARQL endpoint, first call load_rdf_data_from_sources with {endpoint: 'https://...', data: []}. Requires data to be loaded first.",
         annotations(
             title = "Execute SPARQL Query",
             read_only_hint = true,
@@ -149,7 +149,7 @@ impl RudofMcpService {
     /// Validate RDF data against a ShEx schema.
     #[tool(
         name = "validate_shex",
-        description = "Validate the RDF data stored on the server against a ShEx schema",
+        description = "Validate the loaded RDF data against a ShEx schema. Requires a node–shape mapping: supply `shapemap` (e.g. ':alice@:Person') or `maybe_node` with an optional `maybe_shape` to auto-generate one. Requires data to be loaded first.",
         annotations(
             title = "Validate RDF with ShEx",
             read_only_hint = true,
@@ -165,7 +165,7 @@ impl RudofMcpService {
     /// Check if a ShEx schema is syntactically valid and well-formed.
     #[tool(
         name = "check_shex",
-        description = "Check if a ShEx schema is well-formed",
+        description = "Parse and verify that a ShEx schema is syntactically valid and well-formed without running any RDF validation. Use to catch schema errors before attempting validation. Does not require data to be loaded.",
         annotations(
             title = "Check ShEx Schema Well-Formedness",
             read_only_hint = true,
@@ -181,7 +181,7 @@ impl RudofMcpService {
     /// Parse and display a ShEx schema with optional analysis features.
     #[tool(
         name = "show_shex",
-        description = "Parse a ShEx schema and display it with optional compilation, statistics, and dependency analysis",
+        description = "Parse a ShEx schema and display it in the requested output format, with shape statistics and dependency analysis. Use to inspect, convert, or debug a schema. Does not require data to be loaded.",
         annotations(
             title = "Parse and Display ShEx Schema",
             read_only_hint = true,
@@ -197,7 +197,7 @@ impl RudofMcpService {
     /// Validate RDF data against a SHACL schema.
     #[tool(
         name = "validate_shacl",
-        description = "Validate the RDF data stored on the server against a SHACL schema",
+        description = "Validate the loaded RDF data against a SHACL shapes graph. Returns a standard SHACL validation report. If `shapes` is omitted, shapes embedded in the loaded data are used. Requires data to be loaded first.",
         annotations(
             title = "Validate RDF with SHACL",
             read_only_hint = true,

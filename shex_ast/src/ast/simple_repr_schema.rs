@@ -41,7 +41,7 @@ impl SimpleReprSchema {
             ShapeExpr::ShapeNot { shape_expr: _ } => todo!(),
             ShapeExpr::NodeConstraint(_) => todo!(),
             ShapeExpr::Shape(shape) => self.convert_shape(name, shape, schema),
-            ShapeExpr::External => todo!(),
+            ShapeExpr::External => SimpleReprShape::new(name),
             ShapeExpr::Ref(_) => todo!(),
         }
     }

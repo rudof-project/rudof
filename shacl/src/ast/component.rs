@@ -1,6 +1,6 @@
-use crate::types::{NodeKind, Value};
+use crate::types::{MessageMap, NodeKind, Value};
 use itertools::Itertools;
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
@@ -51,6 +51,12 @@ pub enum ASTComponent {
         siblings: Vec<Object>,
     },
     Deactivated(bool), // TODO - Replace with node expr
+    BasicSparql {
+        select: String,
+        message: Option<MessageMap>,
+        deactivated: Option<bool>,
+        prefixes: Option<PrefixMap>,
+    },
 }
 
 impl Display for ASTComponent {
@@ -132,6 +138,30 @@ impl Display for ASTComponent {
                 )
             },
             ASTComponent::Deactivated(b) => write!(f, "deactivated({b})"),
+            ASTComponent::BasicSparql {
+                prefixes,
+                message,
+                deactivated,
+                select,
+            } => write!(
+                f,
+                "basic_sparql: (select: {select}{}{}{})",
+                if let Some(deactivated) = deactivated {
+                    format!(", deactivated: {deactivated}")
+                } else {
+                    "".to_string()
+                },
+                if let Some(msg) = message {
+                    format!(", message: {msg}")
+                } else {
+                    "".to_string()
+                },
+                if let Some(prefixes) = prefixes {
+                    format!(", prefixes: {prefixes}")
+                } else {
+                    "".to_string()
+                }
+            ),
         }
     }
 }
@@ -167,6 +197,7 @@ impl From<ASTComponent> for IriS {
             ASTComponent::In(_) => ShaclVocab::sh_in(),
             ASTComponent::QualifiedValueShape { .. } => ShaclVocab::sh_qualified_value_shape(),
             ASTComponent::Deactivated(_) => ShaclVocab::sh_deactivated(),
+            ASTComponent::BasicSparql { .. } => ShaclVocab::sh_sparql(),
         }
     }
 }

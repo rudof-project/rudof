@@ -23,6 +23,8 @@ use rudof_rdf::{
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
 #[cfg(not(target_family = "wasm"))]
+use shex_ast::ir::external_resolver::SchemaExternalResolver;
+#[cfg(not(target_family = "wasm"))]
 use shex_ast::ir::shape_label::ShapeLabel;
 #[cfg(not(target_family = "wasm"))]
 use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_registry::SemanticActionsRegistry};
@@ -117,6 +119,8 @@ struct Action {
     data: String,
     map: Option<String>,
     focus: Option<Focus>,
+    #[serde(rename = "shapeExterns")]
+    shape_externs: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -239,7 +243,10 @@ impl ValidationEntry {
             error: err,
         })?;
         let path_iri = path_to_iri(&path_absolute)?;
-        let base_str = Some(path_iri.as_str());
+        // Append trailing slash so relative IRIs inside the folder resolve correctly
+        // per RFC 3986: without it, the last path segment is stripped on resolution.
+        let folder_iri_str = format!("{}/", path_iri.as_str());
+        let base_str = Some(folder_iri_str.as_str());
 
         let graph = InMemoryGraph::parse_data(
             &self.action.data,
@@ -258,6 +265,21 @@ impl ValidationEntry {
 
         trace!("Entry action: {:?}", self.action);
 
+        // If the test declares an externs schema (`shapeExterns`), load it as a
+        // `SchemaExternalResolver` and register it in the `ValidatorConfig`. The
+        // compiler now applies the registry automatically; no manual rewrite is needed.
+        let mut config = ValidatorConfig::default();
+        if let Some(externs_rel) = &self.action.shape_externs {
+            let externs_path = folder.join(externs_rel);
+            let resolver = SchemaExternalResolver::from_path(&externs_path).map_err(|error| {
+                ManifestError::ExternalResolverError {
+                    entry_name: self.name.clone(),
+                    error,
+                }
+            })?;
+            config = config.with_external_resolver(resolver);
+        }
+
         let mut map_state = MapState::default();
         let mut registry = SemanticActionsRegistry::default();
         registry.set_map_state(&mut map_state);
@@ -266,11 +288,16 @@ impl ValidationEntry {
         let base_iri = path_to_iri(&path_schema)?;
         trace!("Compiling schema, base: {base_iri}");
         compiler
-            .compile(&schema, &base_iri, &Some(base_iri.clone()), &mut compiled_schema)
+            .compile(
+                &schema,
+                &base_iri,
+                &Some(base_iri.clone()),
+                &mut compiled_schema,
+                config.external_resolvers(),
+            )
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;
         let schema = compiled_schema.clone();
-        let mut validator =
-            Validator::new(&compiled_schema, &ValidatorConfig::default()).map_err(ManifestError::ValidationError)?;
+        let mut validator = Validator::new(&compiled_schema, &config).map_err(ManifestError::ValidationError)?;
         let expected_type = parse_type(&self.type_)?;
         debug!("Schema compiled...expected type: {:?}", expected_type);
         trace!("Schema: {}", schema);
@@ -291,7 +318,7 @@ impl ValidationEntry {
                 })?;
             for entry in manifest_map.entries() {
                 let node = parse_node(entry.node(), base_str)?;
-                let shape = parse_shape(entry.shape())?;
+                let shape = parse_shape(entry.shape(), base_str)?;
                 let result = validator
                     .validate_node_shape(&node, &shape, &graph, &schema, &Some(graph.prefixmap().clone()))
                     .map_err(|e| Box::new(ManifestError::ValidationError(e)))?;
@@ -307,7 +334,7 @@ impl ValidationEntry {
         if let Some(focus) = &self.action.focus {
             trace!("Focus: {}", focus);
             let node = parse_focus(focus, base_str)?;
-            let shape = parse_maybe_shape(&self.action.shape)?;
+            let shape = parse_maybe_shape(&self.action.shape, base_str)?;
             trace!("Focus node: {}, shape: {}", node, shape);
 
             let result = validator
@@ -344,11 +371,11 @@ impl ValidationEntry {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, Box<ManifestError>> {
+fn parse_maybe_shape(shape: &Option<String>, base: Option<&str>) -> Result<ShapeLabel, Box<ManifestError>> {
     match &shape {
         None => Ok(ShapeLabel::Start),
         Some(str) => {
-            let shape = parse_shape(str)?;
+            let shape = parse_shape(str, base)?;
             Ok(shape)
         },
     }
@@ -399,8 +426,8 @@ fn parse_node(str: &str, base: Option<&str>) -> Result<Node, Box<ManifestError>>
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn parse_shape(str: &str) -> Result<ShapeLabel, Box<ManifestError>> {
-    let node = Node::parse(str, None).map_err(|e| {
+fn parse_shape(str: &str, base: Option<&str>) -> Result<ShapeLabel, Box<ManifestError>> {
+    let node = Node::parse(str, base).map_err(|e| {
         Box::new(ManifestError::ParsingShapeLabel {
             value: str.to_string(),
             error: e.to_string(),

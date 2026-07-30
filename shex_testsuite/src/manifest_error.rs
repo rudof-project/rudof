@@ -1,6 +1,7 @@
 use rudof_iri::error::IriSError;
 use rudof_rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
 use shex_ast::compact::ParseError;
+use shex_ast::ir::external_resolver::ExternalResolverError;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
 use shex_validation::ValidatorError;
@@ -143,4 +144,11 @@ pub enum ManifestError {
 
     #[error("Unable to perform operation in WASM: {0}")]
     WASMError(String),
+
+    #[error("Loading external shapes file for entry {entry_name}. Error: {error}")]
+    ExternalResolverError {
+        entry_name: String,
+        #[source]
+        error: ExternalResolverError,
+    },
 }

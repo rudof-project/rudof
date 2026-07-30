@@ -31,3 +31,4 @@ url.workspace = true
 
 [dev-dependencies]
 tracing-test.workspace = true
+rudof_rdf = { workspace = true, default-features = false, features = ["sparql"] }

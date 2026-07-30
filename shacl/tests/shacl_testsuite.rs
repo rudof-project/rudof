@@ -13,6 +13,8 @@ use std::path::Path;
 mod common;
 #[cfg(not(target_family = "wasm"))]
 mod core;
+#[cfg(not(target_family = "wasm"))]
+mod sparql;
 
 #[cfg(not(target_family = "wasm"))]
 fn test(path: String, mode: ShaclValidationMode) -> Result<(), TestSuiteError> {

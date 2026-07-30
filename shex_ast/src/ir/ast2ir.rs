@@ -1,5 +1,6 @@
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
+use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::map_action_extension::MapActionExtension;
 use crate::ir::map_state::MapState;
 use crate::ir::object_value::ObjectValue;
@@ -74,8 +75,18 @@ impl AST2IR {
         source_iri: &IriS,
         base: &Option<IriS>,
         compiled_schema: &mut SchemaIR,
+        external_resolvers: &ExternalShapeResolverRegistry,
     ) -> CResult<()> {
+        // Apply the external-shape resolver registry to the root schema before any other
+        // processing. Imported schemas are rewritten as they are resolved inside
+        // `collect_imports_labels`. Cloning is necessary because `rewrite_ast` takes ownership;
+        // it is also cheap relative to the rest of compilation.
+        let rewritten_root = external_resolvers.rewrite_ast(schema_ast.clone());
+        let schema_ast = &rewritten_root;
+
+        // Collect labels of all imported schemas first, so they are available when compiling the root schema's shape expressions. This also serves as a cycle check for imports.
         let mut visited = Vec::new();
+
         let mut imported_asts: Vec<(SchemaAST, IriS)> = Vec::new();
         /*trace!(
             "Compiling schema from {source_iri}. Base: {}",
@@ -92,9 +103,23 @@ impl AST2IR {
             &mut visited,
             base,
             &mut imported_asts,
+            external_resolvers,
         )?;
+
         // Root schema prefixmap wins (imported schemas' prefix maps are scoped to their own file).
         compiled_schema.set_prefixmap(schema_ast.prefixmap());
+
+        compiled_schema.set_semantic_actions_registry(self.semantic_actions_registry.clone());
+
+        // Collect start actions
+        if let Some(start_actions) = schema_ast.start_actions() {
+            let mut compiled_start_acts = Vec::new();
+            for sa in start_actions {
+                let compiled = self.cnv_sem_action(&sa, &compiled_schema.prefixmap())?;
+                compiled_start_acts.push(compiled);
+            }
+            compiled_schema.set_start_actions(compiled_start_acts);
+        }
         // Root labels (may include `start`).
 
         // trace!("Collecting shape labels for root schema {source_iri}");
@@ -105,6 +130,7 @@ impl AST2IR {
             self.collect_triple_expr_labels_schema(ast)?;
         }
         self.collect_triple_expr_labels_schema(schema_ast)?;
+
         // Phase 2: compile shape expressions in the order they were collected
         // (imports bottom-up, then root).
         for (ast, src) in imported_asts.iter() {
@@ -127,6 +153,7 @@ impl AST2IR {
         visited_sources: &mut Vec<IriS>,
         base: &Option<IriS>,
         imported_asts: &mut Vec<(SchemaAST, IriS)>,
+        external_resolvers: &ExternalShapeResolverRegistry,
     ) -> CResult<()> {
         let imports = schema_ast
             .imports_resolved(base)
@@ -137,12 +164,20 @@ impl AST2IR {
                 visited_sources.push(import_iri.clone());
                 // For imported schemas, the base for dereferencing is the source IRI of the importer.
                 let imported_schema = self.resolve(&import_iri, Some(source_iri))?;
-                // Spec: an imported schema must not declare startActs.
+                // Apply the external-resolver registry so EXTERNAL decls inside imported schemas are
+                // substituted before their labels are registered.
+                let imported_schema = external_resolvers.rewrite_ast(imported_schema);
+
+                // TODO: Maybe append imported semantic actions to the importer's registry instead of rejecting the schema if it declares start actions?
+                // This would allow more modularity and reuse of semantic actions across schemas,
+                // at the cost of making it less clear where a given start action is declared.
+                /* I removed the following line because I didn't find in the spec any explicit prohibition of start actions in imported schemas, and it was causing problems for some of my test cases. If this turns out to be a problem, we can always add it back in later.
                 if imported_schema.start_actions().is_some() {
                     return Err(Box::new(SchemaIRError::ImportIriError {
                         error: format!("Imported schema {import_iri} declares startActs (disallowed by ShEx spec)"),
                     }));
-                }
+                }*/
+
                 // Nested imports must resolve relative to the imported schema's URL (RFC 3986).
                 let nested_base = Some(import_iri.clone());
                 self.collect_imports_labels(
@@ -152,6 +187,7 @@ impl AST2IR {
                     visited_sources,
                     &nested_base,
                     imported_asts,
+                    external_resolvers,
                 )?;
                 // Register labels of this imported schema. Per spec, the imported schema's
                 // `start` is ignored — only shape declarations contribute.
@@ -698,7 +734,12 @@ impl AST2IR {
                     trace!("Returning NOT cond with idx {idx_not}");
                     Ok((mk_cond_ref(idx_not), display))
                 },
-                ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
+                ast::ShapeExpr::External => {
+                    let idx_ext = compiled_schema.new_index(source_iri);
+                    compiled_schema.replace_shape(&idx_ext, ShapeExpr::External {});
+                    let display = format!("EXTERNAL {idx_ext}");
+                    Ok((mk_cond_ref(idx_ext), display))
+                },
             }
         } else {
             Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
@@ -1411,7 +1452,11 @@ fn check_pattern(node: &Node, regex: &str, flags: Option<&str>, base: &Option<Ir
             flags: flags.map(|f| f.to_string()),
         })),
     }?;
-    if let Ok(re) = regex::Regex::new(regex) {
+    let effective_regex = match flags {
+        Some(f) if !f.is_empty() => format!("(?{f}){regex}"),
+        _ => regex.to_string(),
+    };
+    if let Ok(re) = regex::Regex::new(&effective_regex) {
         if re.is_match(&lexical_form) {
             Ok(())
         } else {
@@ -1703,13 +1748,6 @@ fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
             node: format!("{node}"),
         }))
     }
-}
-
-fn todo<A>(str: &str) -> CResult<A> {
-    panic!("TODO: {str}");
-    /*Err(Box::new(SchemaIRError::Todo {
-        msg: str.to_string(),
-    }))*/
 }
 
 fn cnv_iri_ref(iri: &IriRef, prefixmap: &PrefixMap) -> Result<IriS, Box<SchemaIRError>> {

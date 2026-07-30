@@ -1,11 +1,9 @@
-use either::Either::{self, Left};
-use tracing::debug;
-
 use crate::evidence::Evidence;
 use crate::key::Key;
 use crate::pgs_error::PgsError;
 use crate::record::Record;
 use crate::value_type::ValueType;
+use either::Either::{self, Left};
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
@@ -51,26 +49,16 @@ impl RecordType {
 
     /// Checks if the RecordType conforms to the given Record.
     pub fn conforms(&self, record: &Record) -> Either<Vec<PgsError>, Vec<Evidence>> {
-        debug!(
-            "Checking conformance of record: {} with {} open? {}",
-            record, self, self.open
-        );
         let record_keys = record.keys();
         let record_type_keys = self.keys();
         let (missing_record_type_keys, extra_record_keys) = compare_keys(&record_type_keys, &record_keys);
-        debug!(
-            "Missing record type keys: {:?}, Extra record keys: {:?}",
-            missing_record_type_keys, extra_record_keys
-        );
         if non_empty(&missing_record_type_keys) {
-            debug!("No conforms with missing keys: {:?}", missing_record_type_keys);
             return Left(vec![PgsError::MissingKeys {
                 keys: format!("{:?}", missing_record_type_keys),
                 record_type: self.to_string(),
             }]);
         }
         if non_empty(&extra_record_keys) && !self.open {
-            debug!("No conforms with extra keys: {:?} and not open", extra_record_keys);
             return Left(vec![PgsError::ExtraKeysNotOpen {
                 keys: format!("{:?}", extra_record_keys),
                 record_type: self.to_string(),
@@ -80,10 +68,8 @@ impl RecordType {
             if let Some(value_set) = record.get(key) {
                 let result = value_type.conforms(value_set);
                 if result.is_left() {
-                    debug!("Value type doesn't conform: {}, result: {:?}", value_type, result);
                     return result;
                 } else {
-                    debug!("Value {:?} conforms to type {value_type}", value_set);
                     // If the value type conforms, we can collect evidence
                     // let evidence = result.right().unwrap();
                     continue;

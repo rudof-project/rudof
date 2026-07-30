@@ -87,6 +87,10 @@ impl PrefixMap {
     pub fn aliases(&self) -> impl Iterator<Item = &String> {
         self.map.keys()
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &IriS)> {
+        self.map.iter()
+    }
 }
 
 // TODO - Probably should be a good idea to move this to rudof_lib

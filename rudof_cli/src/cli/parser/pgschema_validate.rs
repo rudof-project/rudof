@@ -5,7 +5,7 @@ use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `pgschema-validate` command
 #[derive(Debug, Clone, Args)]
-pub struct PgSchemaValidateArgs {
+pub struct PgschemaValidateArgs {
     #[arg(
         short = 's',
         long = "schema",

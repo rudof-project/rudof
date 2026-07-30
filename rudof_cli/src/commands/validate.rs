@@ -1,12 +1,12 @@
 use crate::{
     cli::{
         parser::{
-            CommonArgsOutputForceOverWrite, PgSchemaValidateArgs, ShaclValidateArgs, ShexValidateArgs, ValidateArgs,
+            CommonArgsOutputForceOverWrite, PgschemaValidateArgs, ShaclValidateArgs, ShexValidateArgs, ValidateArgs,
         },
         wrappers::ValidationModeCli,
     },
     commands::{
-        PgSchemaValidateCommand, ShaclValidateCommand, ShexValidateCommand,
+        PgschemaValidateCommand, ShaclValidateCommand, ShexValidateCommand,
         base::{Command, CommandContext},
     },
 };
@@ -30,11 +30,12 @@ impl ValidateCommand {
     fn to_shex_args(&self) -> Result<ShexValidateArgs> {
         Ok(ShexValidateArgs {
             data: self.args.data.clone(),
-            schema: self
-                .args
-                .schema
-                .clone()
-                .ok_or_else(|| anyhow!("schema is required for ShEx validation"))?,
+            schema: Some(
+                self.args
+                    .schema
+                    .clone()
+                    .ok_or_else(|| anyhow!("schema is required for ShEx validation"))?,
+            ),
             schema_format: self.args.schema_format,
             shapemap: self.args.shapemap.clone(),
             shapemap_format: Some(self.args.shapemap_format),
@@ -49,6 +50,8 @@ impl ValidateCommand {
             result_format: self.args.result_format.into(),
             map_state: self.args.map_state.clone(),
             strict_iris: false,
+            external_resolvers: Vec::new(),
+            list_external_resolvers: false,
             common: self.args.common.clone(),
         })
     }
@@ -71,9 +74,9 @@ impl ValidateCommand {
         })
     }
 
-    /// Convert ValidateArgs to PgSchemaValidateArgs
-    fn to_pgschema_args(&self) -> Result<PgSchemaValidateArgs> {
-        Ok(PgSchemaValidateArgs {
+    /// Convert ValidateArgs to PgschemaValidateArgs
+    fn to_pgschema_args(&self) -> Result<PgschemaValidateArgs> {
+        Ok(PgschemaValidateArgs {
             schema: self
                 .args
                 .schema
@@ -116,7 +119,7 @@ impl Command for ValidateCommand {
             },
             ValidationModeCli::PGSchema => {
                 let pgschema_args = self.to_pgschema_args()?;
-                let cmd = PgSchemaValidateCommand::new(pgschema_args);
+                let cmd = PgschemaValidateCommand::new(pgschema_args);
                 cmd.execute(ctx)
             },
         }

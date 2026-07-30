@@ -351,9 +351,10 @@ impl NumericLiteral {
             | NumericLiteral::NonPositiveInteger(_)
             | NumericLiteral::Byte(_)
             | NumericLiteral::Short(_) => Some(0),
-            // For decimals, find position of decimal point and count digits after it
+            // For decimals, normalize (strip trailing zeros for XSD canonical
+            // form), then count digits after the decimal point.
             NumericLiteral::Decimal(d) => {
-                let s = d.to_string();
+                let s = d.normalize().to_string();
                 Some(s.find('.').map_or(0, |pos| s.len() - pos - 1))
             },
             // Float/double don't have meaningful fraction digits
@@ -584,5 +585,35 @@ impl From<NumericLiteral> for oxrdf::Literal {
                 oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::NON_POSITIVE_INTEGER)
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    fn dec(s: &str) -> NumericLiteral {
+        NumericLiteral::Decimal(Decimal::from_str(s).unwrap())
+    }
+
+    #[test]
+    fn fraction_digits_strips_trailing_zeros() {
+        // Canonical XSD form: trailing zeros in the fractional part don't count.
+        assert_eq!(dec("1.23450").fraction_digits(), Some(4));
+        assert_eq!(dec("01.23450").fraction_digits(), Some(4));
+    }
+
+    #[test]
+    fn fraction_digits_without_trailing_zeros() {
+        assert_eq!(dec("1.2345").fraction_digits(), Some(4));
+        assert_eq!(dec("-1.2345").fraction_digits(), Some(4));
+    }
+
+    #[test]
+    fn fraction_digits_integer_valued_decimal() {
+        // "1.0" normalizes to "1" — 0 fractional digits.
+        assert_eq!(dec("1.0").fraction_digits(), Some(0));
+        assert_eq!(dec("1").fraction_digits(), Some(0));
     }
 }

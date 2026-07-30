@@ -377,7 +377,8 @@ proptest! {
         prop_assert_eq!(lit.total_digits(), Some(expected_digits));
     }
 
-    /// Decimal fraction_digits should match digits after decimal point
+    /// Decimal fraction_digits should match digits after the decimal point
+    /// in the XSD canonical form (i.e. with trailing zeros stripped).
     #[test]
     fn decimal_fraction_digits_correct(
         whole in -1000i64..1000i64,
@@ -385,7 +386,7 @@ proptest! {
     ) {
         if let Ok(NumericLiteral::Decimal(d)) = NumericLiteral::decimal_from_parts(whole, fraction) {
             let lit = NumericLiteral::Decimal(d);
-            let s = d.to_string();
+            let s = d.normalize().to_string();
             let expected_frac_digits = s.find('.').map_or(0, |pos| s.len() - pos - 1);
             prop_assert_eq!(lit.fraction_digits(), Some(expected_frac_digits));
         }

@@ -17,26 +17,25 @@ use std::str::FromStr;
 /// Request parameters for SHACL validation.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShaclRequest {
-    /// SHACL shapes content. If not provided, uses shapes from current data.
+    /// SHACL shapes graph. Accepts inline text, a URL, or a local file path.
+    /// When omitted, shapes embedded in the loaded RDF data are used.
     pub shapes: Option<String>,
 
-    /// SHACL shapes format.
-    /// Supported: turtle, ntriples, rdfxml, jsonld, trig, n3, nquads, internal
+    /// Format of the shapes graph. One of: turtle (default), ntriples, rdfxml, jsonld, trig, nquads, n3.
     pub shapes_format: Option<String>,
 
-    /// Base IRI for resolving relative IRIs in shapes
+    /// Base IRI for resolving relative IRIs in the shapes. Example: "http://example.org/"
     pub base: Option<String>,
 
-    /// Validation engine mode.
-    /// Supported: native, sparql
+    /// SHACL validation engine. One of: native (default), sparql.
     pub mode: Option<String>,
 
-    /// Output result format.
-    /// Supported: compact, details, minimal, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads
+    /// Output format for the validation report.
+    /// One of: details (default), compact, minimal, csv, turtle, ntriples, rdfxml, trig, n3, nquads.
+    /// Note: json is listed but not yet implemented.
     pub result_format: Option<String>,
 
-    /// Sort order for results.
-    /// Supported: severity, node, component, value, path, sourceshape, details
+    /// Sort order for results. One of: severity (default), node, component, value, path, sourceshape, details.
     pub sort_by: Option<String>,
 }
 

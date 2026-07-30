@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::cache::{SharedValidationCache, ValidationCache};
-use crate::validator::constraints::{ShaclComponent, SparqlValidator, ValidatorDeref};
+use crate::validator::constraints::{BasicSparqlValidator, ShaclComponent, ValidatorDeref};
 use crate::validator::engine::{Engine, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
@@ -36,7 +36,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ValidationError> {
         let shacl_component = ShaclComponent::new(component);
-        let validator: &dyn SparqlValidator<S> = shacl_component.deref();
+        let validator: &dyn BasicSparqlValidator<S> = shacl_component.deref();
 
         validator.validate_sparql(
             component,
@@ -64,8 +64,8 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", node};
 
-        select(store, &query, "this")?;
-        unimplemented!()
+        let results = select(store, &query, "this")?;
+        Ok(FocusNodes::new(results))
     }
 
     fn target_class(&self, store: &S, class: &Object) -> Result<FocusNodes<S>, ValidationError> {
@@ -84,8 +84,8 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", class};
 
-        select(store, &query, "this")?;
-        unimplemented!()
+        let results = select(store, &query, "this")?;
+        Ok(FocusNodes::new(results))
     }
 
     fn target_subject_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, ValidationError> {
@@ -96,8 +96,8 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, &query, "this")?;
-        unimplemented!()
+        let results = select(store, &query, "this")?;
+        Ok(FocusNodes::new(results))
     }
 
     fn target_object_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, ValidationError> {
@@ -108,12 +108,25 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, &query, "this")?;
-        unimplemented!()
+        let results = select(store, &query, "this")?;
+        Ok(FocusNodes::new(results))
     }
 
-    fn implicit_target_class(&self, _: &S, _: &Object) -> Result<FocusNodes<S>, ValidationError> {
-        unimplemented!()
+    fn implicit_target_class(&self, store: &S, shape: &Object) -> Result<FocusNodes<S>, ValidationError> {
+        let shape_term: S::Term = shape.clone().into();
+
+        let query = formatdoc! {"
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+            SELECT DISTINCT ?this
+            WHERE {{
+                ?this rdf:type/rdfs:subClassOf* {} .
+            }}
+        ", shape_term};
+
+        let results = select(store, &query, "this")?;
+        Ok(FocusNodes::new(results))
     }
 
     fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>) {

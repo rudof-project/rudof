@@ -1,0 +1,13 @@
+prefix :     <http://example.org/>
+prefix xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+# `:Address` is declared EXTERNAL: its definition lives in a separate file
+# (see `examples/address.shex`) and is plugged in at validation time via the
+# `--external-resolver schema:<path>` flag.
+
+:Person {
+  :name     xsd:string ;
+  :address  @:Address
+}
+
+:Address EXTERNAL

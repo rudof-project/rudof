@@ -232,6 +232,10 @@ impl Schema {
         self.shapes.clone()
     }
 
+    pub fn shapes_mut(&mut self) -> Option<&mut Vec<ShapeDecl>> {
+        self.shapes.as_mut()
+    }
+
     pub fn get_type(&self) -> String {
         self.type_.clone()
     }

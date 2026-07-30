@@ -29,6 +29,13 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
 
     fn runner(mode: &ShaclValidationMode) -> Box<dyn Engine<S>>;
 
+    /// Called once before validation begins. Implementations that need lazy
+    /// initialization (e.g. building an in-memory SPARQL store from a graph)
+    /// should do so here.
+    fn prepare_store(&mut self) -> Result<(), ValidationError> {
+        Ok(())
+    }
+
     /// Executes the Validation of the provided Graph, in any of the supported
     /// formats, against the shapes graph passed as an argument. As a result,
     /// the Validation Report generated from the validation process is returned.
@@ -48,6 +55,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         shapes_graph: &IRSchema,
         mode: &ShaclValidationMode,
     ) -> Result<ValidationReport, ValidationError> {
+        self.prepare_store()?;
         let store = self.store();
 
         // Build shared indexes once. Forked engines share

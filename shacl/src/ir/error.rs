@@ -4,7 +4,7 @@ use crate::rdf::error::ShaclParserError;
 use prefixmap::IriRefError;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::utils::RDFRegexError;
-use rudof_rdf::rdf_core::{Rdf, SHACLPath};
+use rudof_rdf::rdf_core::{RDFError, Rdf, SHACLPath};
 use rudof_rdf::rdf_impl::InMemoryGraphError;
 use thiserror::Error;
 
@@ -35,6 +35,9 @@ pub enum IRError {
 
     #[error(transparent)]
     RdfRegexError(#[from] Box<RDFRegexError>),
+
+    #[error(transparent)]
+    RDFError(#[from] Box<RDFError>),
 }
 
 impl IRError {
@@ -77,5 +80,11 @@ impl From<InMemoryGraphError> for IRError {
 impl From<RDFRegexError> for IRError {
     fn from(value: RDFRegexError) -> Self {
         Self::RdfRegexError(Box::new(value))
+    }
+}
+
+impl From<RDFError> for IRError {
+    fn from(value: RDFError) -> Self {
+        Self::RDFError(Box::new(value))
     }
 }
