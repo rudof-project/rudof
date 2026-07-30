@@ -242,19 +242,17 @@ impl PrefixMap {
     /// Default DBpedia prefix map
     pub fn dbpedia() -> PrefixMap {
         let pm: PrefixMap = HashMap::from([
-            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
-            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
-            ("owl", "http://www.w3.org/2002/07/owl#"),
-            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
-            ("dbr", "http://dbpedia.org/resource/"),
+            ("dbc", "http://dbpedia.org/class/"),
             ("dbo", "http://dbpedia.org/ontology/"),
             ("dbp", "http://dbpedia.org/property/"),
+            ("dbr", "http://dbpedia.org/resource/"),
             ("foaf", "http://xmlns.com/foaf/0.1/"),
-            ("dc", "http://purl.org/dc/terms/"),
+            ("geo", "http://www.w3.org/2003/01/geo/wgs84_pos#"),
+            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
         ])
         .try_into()
         .unwrap();
-        pm
+        pm.without_default_colors().with_hyperlink(true)
     }
 }
 
