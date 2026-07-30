@@ -46,8 +46,8 @@ impl ShExConfig {
     #[inline] fn default_show_extends() -> bool { true }
     #[inline] fn default_show_imports() -> bool { true }
     #[inline] fn default_show_shapes() -> bool { true }
-    #[inline] fn default_show_dependencies() -> bool { true }
-    #[inline] fn default_show_ir() -> bool { true }
+    #[inline] fn default_show_dependencies() -> bool { false }
+    #[inline] fn default_show_ir() -> bool { false }
     #[inline] fn default_shex_format() -> ShExFormat { ShExFormat::ShExC }
     #[inline] fn default_check_well_formed() -> bool { true }
     #[inline] fn default_rdf_config_shex() -> RdfDataConfig { RdfDataConfig::new() }
