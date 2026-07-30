@@ -3,7 +3,7 @@ use thiserror::Error;
 
 /// Errors related to Rudof configuration loading and parsing.
 #[derive(Error, Debug)]
-pub enum ConfigError {
+pub enum RudofConfigError {
     /// Error reading configuration from a file path.
     #[error("Error reading config file from path {path}: {error}")]
     ReadFromPath {
