@@ -1,5 +1,5 @@
-use crate::{PlaceholderResolver, TapError};
-use serde::{Deserialize, Serialize};
+use crate::{PlaceholderResolver};
+use serde::{Deserialize};
 use std::io::Read;
 use std::str::FromStr;
 use std::{collections::HashMap, path::Path};

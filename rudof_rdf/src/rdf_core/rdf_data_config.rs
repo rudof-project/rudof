@@ -1,5 +1,5 @@
 use crate::rdf_core::{RDFError, visualizer::RDFVisualizationConfig};
-use std::{collections::HashMap, io, path::Path, str::FromStr};
+use std::{collections::HashMap, path::Path, str::FromStr};
 
 use prefixmap::PrefixMap;
 

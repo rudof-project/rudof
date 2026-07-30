@@ -1,6 +1,6 @@
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::RdfDataConfig;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer};
 use shex_ast::ShExFormat;
 use std::io::Read;
 use std::path::Path;

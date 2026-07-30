@@ -1,10 +1,10 @@
 use rudof_rdf::rdf_core::RdfDataConfig;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer};
 use shex_ast::shapemap::ShapemapConfig;
 use std::io::Read;
 use std::path::Path;
 
-use crate::{MAX_STEPS, ShExConfig, ValidatorError};
+use crate::{ShExConfig, ValidatorError};
 
 /// This struct can be used to customize the behavour of ShEx validators
 #[derive(Debug, PartialEq, Clone)]

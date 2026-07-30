@@ -1,4 +1,3 @@
-use std::io;
 use thiserror::Error;
 
 /// Errors related to Rudof configuration loading and parsing.

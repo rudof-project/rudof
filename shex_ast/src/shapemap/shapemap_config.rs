@@ -3,7 +3,7 @@ use std::path::Path;
 
 use colored::*;
 use prefixmap::PrefixMap;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use thiserror::Error;
 
 

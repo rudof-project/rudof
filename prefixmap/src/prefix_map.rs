@@ -234,8 +234,8 @@ impl PrefixMap {
             ("wdv", "https://www.wikidata.org/value/"),
             ("wikibase", "https://wikiba.se/ontology#"),
         ])
-        .try_into()
-        .unwrap();
+            .try_into()
+            .unwrap();
         pm.without_default_colors().with_hyperlink(true)
     }
 
@@ -250,8 +250,8 @@ impl PrefixMap {
             ("geo", "http://www.w3.org/2003/01/geo/wgs84_pos#"),
             ("xsd", "http://www.w3.org/2001/XMLSchema#"),
         ])
-        .try_into()
-        .unwrap();
+            .try_into()
+            .unwrap();
         pm.without_default_colors().with_hyperlink(true)
     }
 
@@ -557,7 +557,7 @@ mod tests {
 
     #[test]
     fn test_qualify_with_base() {
-        let mut pm: PrefixMap = HashMap::from([("", "https://example.org/"), ("schema", "https://schema.org/")])
+        let pm: PrefixMap = HashMap::from([("", "https://example.org/"), ("schema", "https://schema.org/")])
             .try_into()
             .unwrap();
 

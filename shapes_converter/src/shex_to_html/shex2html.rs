@@ -124,14 +124,13 @@ impl ShEx2Html {
         let environment = create_env(path);
         let landing_page = self.config.landing_page();
         let template = environment.get_template(self.config.landing_page_name.as_str())?;
-        let landing_page_name = self.config.landing_page_name();
         let out = OpenOptions::new()
             .write(true)
             .truncate(true)
             .create(true)
             .open(landing_page)
             .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage {
-                name: landing_page_name,
+                name: self.config.landing_page_name().clone(),
                 error: e,
             })?;
 

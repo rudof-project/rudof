@@ -1,5 +1,5 @@
 use serde::{Deserialize, Deserializer};
-use dctap::{PrefixCC, TapConfig};
+use dctap::{TapConfig};
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 
