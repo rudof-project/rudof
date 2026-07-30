@@ -145,10 +145,10 @@ impl RdfDataConfig {
     #[inline]
     fn default_rdf_visualization() -> RDFVisualizationConfig { RDFVisualizationConfig::default() }
 
-    pub fn fixup(&mut self, iri: Option<IriS>) {
+    pub fn fixup(&mut self, base: Option<IriS>) {
         if self.base_needs_fixup {
             self.base_needs_fixup = false;
-            self.base = iri;
+            self.base = base;
         }
     }
 
