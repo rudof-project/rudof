@@ -83,38 +83,52 @@ impl ShapeExpr {
         self.references_visited(schema, &mut visited)
     }
 
-    fn references_visited(
+    pub(crate) fn references_visited(
         &self,
         schema: &SchemaIR,
         visited: &mut HashSet<ShapeLabelIdx>,
     ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match self {
             ShapeExpr::ShapeOr { exprs, .. } => exprs.iter().fold(HashMap::new(), |mut acc, expr| {
-                let refs = schema
-                    .find_shape_idx(expr)
-                    .map(|info| info.expr().references_visited(schema, visited))
-                    .unwrap_or_default();
+                let refs = if visited.insert(*expr) {
+                    schema
+                        .find_shape_idx(expr)
+                        .map(|info| info.expr().references_visited(schema, visited))
+                        .unwrap_or_default()
+                } else {
+                    HashMap::new()
+                };
                 for (p, v) in refs {
                     acc.entry(p).or_default().extend(v);
                 }
                 acc
             }),
             ShapeExpr::ShapeAnd { exprs, .. } => exprs.iter().fold(HashMap::new(), |mut acc, expr| {
-                let refs = schema
-                    .find_shape_idx(expr)
-                    .map(|info| info.expr().references_visited(schema, visited))
-                    .unwrap_or_default();
+                let refs = if visited.insert(*expr) {
+                    schema
+                        .find_shape_idx(expr)
+                        .map(|info| info.expr().references_visited(schema, visited))
+                        .unwrap_or_default()
+                } else {
+                    HashMap::new()
+                };
                 for (p, v) in refs {
                     acc.entry(p).or_default().extend(v);
                 }
                 acc
             }),
-            ShapeExpr::ShapeNot { expr, .. } => schema
-                .find_shape_idx(expr)
-                .map(|info| info.expr().references_visited(schema, visited))
-                .unwrap_or_default(),
+            ShapeExpr::ShapeNot { expr, .. } => {
+                if visited.insert(*expr) {
+                    schema
+                        .find_shape_idx(expr)
+                        .map(|info| info.expr().references_visited(schema, visited))
+                        .unwrap_or_default()
+                } else {
+                    HashMap::new()
+                }
+            },
             ShapeExpr::NodeConstraint(_nc) => HashMap::new(),
-            ShapeExpr::Shape(s) => s.references(schema).clone(),
+            ShapeExpr::Shape(s) => s.references_visited(schema, visited),
             ShapeExpr::External {} => HashMap::new(),
             ShapeExpr::Ref { idx } => {
                 let mut map = HashMap::new();
