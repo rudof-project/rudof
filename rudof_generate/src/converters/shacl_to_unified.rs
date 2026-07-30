@@ -5,7 +5,7 @@ use crate::unified_constraints::{
 };
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 use shacl::ast::{ASTComponent, ASTNodeShape, ASTPropertyShape, ASTSchema, ASTShape};
 use shacl::rdf::ShaclParser;
 use shacl::types::{NodeKind, Target, Value};
@@ -38,7 +38,7 @@ impl ShaclToUnified {
     pub async fn convert_schema(&self, schema_data: String) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let schema = tokio::task::spawn_blocking(move || {
             // Parse RDF data
-            let graph = InMemoryGraph::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
+            let graph = OxigraphInMemory::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
                 .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
 
             // Parse SHACL schema from RDF

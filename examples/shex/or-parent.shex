@@ -1,0 +1,5 @@
+PREFIX : <http://e/>
+:A1 CLOSED { :p . }
+:A2 CLOSED { :r . }
+:AOr @:A1 OR @:A2
+:C EXTENDS @:AOr { :q . }

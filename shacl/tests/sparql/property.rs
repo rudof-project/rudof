@@ -9,6 +9,7 @@ mod tests {
     #[test]
     fn sparql_001() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "sparql-001");
+        test(path.clone(), ShaclValidationMode::Native)?;
         test(path, ShaclValidationMode::Sparql)
     }
 }

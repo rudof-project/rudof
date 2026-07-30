@@ -1,4 +1,4 @@
-use crate::cli::parser::CommonArgsAll;
+use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{DataFormatCli, GenerationSchemaFormatCli};
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -42,5 +42,5 @@ pub struct GenerateArgs {
     pub parallel: Option<usize>,
 
     #[command(flatten)]
-    pub common: CommonArgsAll,
+    pub common: CommonArgsNoBackend,
 }

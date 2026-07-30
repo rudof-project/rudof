@@ -96,14 +96,6 @@ pub struct ValidateArgs {
     pub data_format: DataFormatCli,
 
     #[arg(
-        short = 'e',
-        long = "endpoint",
-        value_name = "ENDPOINT",
-        help = "Endpoint with RDF data"
-    )]
-    pub endpoint: Option<String>,
-
-    #[arg(
         long = "max-steps",
         value_name = "NUMBER",
         help = "max steps to run during validation",

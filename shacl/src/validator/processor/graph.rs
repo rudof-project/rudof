@@ -62,6 +62,10 @@ impl ShaclProcessor<RdfData> for GraphValidation {
             ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
         }
     }
+
+    fn prepare_store(&mut self) -> Result<(), ValidationError> {
+        self.store.store_mut().check_store().map_err(ValidationError::from)
+    }
 }
 
 impl From<Graph> for GraphValidation {

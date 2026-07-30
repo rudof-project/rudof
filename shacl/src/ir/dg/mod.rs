@@ -55,6 +55,11 @@ impl DependencyGraph {
         is_cyclic_directed(&self.graph)
     }
 
+    pub fn cycles(&self) -> Vec<Vec<ShapeLabelIdx>> {
+        let scc = tarjan_scc(&self.graph);
+        scc.into_iter().filter(|component| component.len() > 1).collect()
+    }
+
     pub fn has_neg_cycle(&self) -> bool {
         let neg_cycles = self.neg_cycles();
         !neg_cycles.is_empty()

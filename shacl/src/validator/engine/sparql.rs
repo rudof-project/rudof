@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::cache::{SharedValidationCache, ValidationCache};
-use crate::validator::constraints::{BasicSparqlValidator, ShaclComponent, ValidatorDeref};
+use crate::validator::constraints::{BasicSparqlValidator, ShaclComponent, ValidatorDeref, object_as_sparql};
 use crate::validator::engine::{Engine, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
@@ -42,6 +42,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             component,
             shape,
             store,
+            self,
             value_nodes,
             source_shape,
             maybe_path,
@@ -51,28 +52,21 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     // If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     // in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &Object) -> Result<FocusNodes<S>, ValidationError> {
+    //
+    // We resolve this directly instead of issuing a SPARQL `BIND` because the latter
+    // round-trips the term through the backend's literal parser, which canonicalises
+    // some lexical forms (e.g. `"4.0"^^xsd:decimal` → `"4"^^xsd:decimal`) and diverges
+    // from the Native engine's behaviour.
+    fn target_node(&self, _: &S, node: &Object) -> Result<FocusNodes<S>, ValidationError> {
         let node: S::Term = node.clone().into();
         if node.is_blank_node() {
             return Err(ValidationError::TargetNodeBNode);
         }
-
-        let query = formatdoc! {"
-            SELECT DISTINCT ?this
-            WHERE {{
-                BIND ({} AS ?this)
-            }}
-        ", node};
-
-        let results = select(store, &query, "this")?;
-        Ok(FocusNodes::new(results))
+        Ok(FocusNodes::single(node))
     }
 
     fn target_class(&self, store: &S, class: &Object) -> Result<FocusNodes<S>, ValidationError> {
-        let class: S::Term = class.clone().into();
-        if !class.is_iri() {
-            return Err(ValidationError::TargetClassNotIri);
-        }
+        let class_sparql = object_as_sparql(class).ok_or(ValidationError::TargetClassNotIri)?;
 
         let query = formatdoc! {"
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -80,9 +74,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
             SELECT DISTINCT ?this
             WHERE {{
-                ?this rdf:type/rdfs:subClassOf* {} .
+                ?this rdf:type/rdfs:subClassOf* {class_sparql} .
             }}
-        ", class};
+        "};
 
         let results = select(store, &query, "this")?;
         Ok(FocusNodes::new(results))
@@ -92,7 +86,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
-                ?this {} ?any .
+                ?this <{}> ?any .
             }}
         ", predicate};
 
@@ -104,7 +98,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
-                ?any {} ?this.
+                ?any <{}> ?this.
             }}
         ", predicate};
 
@@ -113,7 +107,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     }
 
     fn implicit_target_class(&self, store: &S, shape: &Object) -> Result<FocusNodes<S>, ValidationError> {
-        let shape_term: S::Term = shape.clone().into();
+        let shape_sparql = object_as_sparql(shape).ok_or(ValidationError::TargetClassNotIri)?;
 
         let query = formatdoc! {"
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -121,9 +115,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
             SELECT DISTINCT ?this
             WHERE {{
-                ?this rdf:type/rdfs:subClassOf* {} .
+                ?this rdf:type/rdfs:subClassOf* {shape_sparql} .
             }}
-        ", shape_term};
+        "};
 
         let results = select(store, &query, "this")?;
         Ok(FocusNodes::new(results))

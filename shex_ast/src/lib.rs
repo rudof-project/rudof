@@ -15,6 +15,7 @@ pub mod shapemap;
 pub mod shex_format;
 pub mod shexr;
 
+use crate::ast::cond_kind::CondKind;
 use crate::ir::semantic_action_context::SemanticActionContext;
 pub use ast::*;
 pub use compact::*;
@@ -31,8 +32,8 @@ pub use shexr::*;
 /// The result type used in this crate, which is a `Result` that can contain any error that implements the `SchemaIRError` trait.
 type CResult<T> = Result<T, Box<SchemaIRError>>;
 
-/// The type of conditions used in this crate, which is a `MatchCond` that takes `Pred`, `Node`, `ShapeLabelIdx`, and `SemanticActionContext` as type parameters.
-type Cond = MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext>;
+/// The type of conditions used in this crate
+type Cond = MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>;
 
-/// The type of expressions used in this crate, which is a `RbeTable` that takes `Pred`, `Node`, `ShapeLabelIdx`, and `SemanticActionContext` as type parameters.
-pub type Expr = rbe::RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>;
+/// The type of expressions used in this crate
+pub type Expr = rbe::RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>;

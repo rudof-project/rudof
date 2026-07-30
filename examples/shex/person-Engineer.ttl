@@ -1,0 +1,11 @@
+BASE <http://instance.example/>
+PREFIX ex: <http://a.example/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX schema: <http://schema.org/>
+
+<#alice> ex:id <TheAlice> ; ex:rolls ex:Engineer , ex:Human ;
+  foaf:name "alice" ; foaf:mbox <mailto:alice@co.example> ;
+  ex:SlideRoolLength 11 ; ex:PocketProtectorMaterial "plastic" ;
+  ex:badgeNumber 58008 ;
+  .

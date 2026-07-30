@@ -4,6 +4,7 @@ use prefixmap::{PrefixMap, PrefixMapError};
 use rbe::RbeTable;
 use shex_ast::{
     Node, Pred, ShapeLabelIdx,
+    ast::cond_kind::CondKind,
     ir::{schema_ir::SchemaIR, semantic_action_context::SemanticActionContext},
 };
 
@@ -48,14 +49,14 @@ impl Display for PartitionsDisplay {
 #[derive(Debug, Clone)]
 pub struct PartitionDisplay {
     maybe_label: Option<ShapeLabelIdx>,
-    rbes: Vec<RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>>,
+    rbes: Vec<RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>>,
     neighs: Vec<(Pred, Node, SemanticActionContext)>,
 }
 
 impl PartitionDisplay {
     pub fn new(
         maybe_label: Option<ShapeLabelIdx>,
-        rbes: &[RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>],
+        rbes: &[RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>],
         neighs: &[(Pred, Node, SemanticActionContext)],
     ) -> PartitionDisplay {
         PartitionDisplay {
@@ -108,7 +109,7 @@ fn show_idx(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
 }
 
 fn show_rbe_qualified(
-    rbe: &RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
+    rbe: &RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>,
     nodes_prefixmap: &PrefixMap,
     _schema: &SchemaIR,
     width: usize,

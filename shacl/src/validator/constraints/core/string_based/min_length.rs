@@ -1,17 +1,22 @@
 use crate::error::ValidationError;
 use crate::ir::components::MinLength;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{BasicSparqlValidator, NativeValidator, validate_ask_with, validate_with};
+use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
-use indoc::formatdoc;
-use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::literal::Literal;
 use rudof_rdf::rdf_core::term::{Iri, Term};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+
+#[cfg(feature = "sparql")]
+use crate::validator::constraints::{BasicSparqlValidator, term_as_sparql, validate_ask_with_opt};
+#[cfg(feature = "sparql")]
+use indoc::formatdoc;
+#[cfg(feature = "sparql")]
+use rudof_rdf::rdf_core::query::QueryRDF;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native(
@@ -27,22 +32,15 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     ) -> Result<Vec<ValidationResult>, ValidationError> {
         let min_length_fn = |vn: &S::Term| {
             if vn.is_blank_node() {
-                true
-            } else if vn.is_iri() {
-                let iri = match S::term_as_iri(vn) {
-                    Ok(iri) => iri,
-                    Err(_) => todo!(),
-                };
-                iri.as_str().len() < self.min_length() as usize
-            } else if vn.is_literal() {
-                let lit = match S::term_as_literal(vn) {
-                    Ok(lit) => lit,
-                    Err(_) => todo!(),
-                };
-                lit.lexical_form().len() < self.min_length() as usize
-            } else {
-                true
+                return true;
             }
+            if let Ok(iri) = S::term_as_iri(vn) {
+                return iri.as_str().len() < self.min_length() as usize;
+            }
+            if let Ok(lit) = S::term_as_literal(vn) {
+                return lit.lexical_form().len() < self.min_length() as usize;
+            }
+            true
         };
 
         validate_with(
@@ -58,31 +56,37 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for MinLength {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
         component: &IRComponent,
         shape: &IRShape,
         store: &S,
+        _: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ValidationError> {
-        let query_fn = |vn: &S::Term| {
-            formatdoc! {
-                " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
-                vn, self.min_length()
+        let min = self.min_length();
+
+        let query_fn = |vn: &S::Term| -> Option<String> {
+            if vn.is_blank_node() {
+                return Some("ASK { FILTER(false) }".to_string());
             }
+            let vn_sparql = term_as_sparql::<S>(vn)?;
+            Some(formatdoc! {"
+                ASK {{ FILTER(STRLEN(STR({vn_sparql})) >= {min}) }}
+            "})
         };
 
-        validate_ask_with(
+        validate_ask_with_opt(
             component,
             shape,
             store,
             value_nodes,
             query_fn,
-            &format!("MinLength({}) not satisfied", self.min_length()),
+            &format!("MinLength({min}) not satisfied"),
             maybe_path,
         )
     }

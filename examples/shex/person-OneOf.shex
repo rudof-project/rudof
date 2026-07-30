@@ -1,0 +1,31 @@
+BASE <http://schema.example/>
+PREFIX ex: <http://a.example/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX schema: <http://schema.org/>
+
+<RoleCode> [ ex:Manager ex:Engineer ex:Laboror ex:Human ex:Robot ]
+
+<Person> CLOSED {
+  ex:id IRI ; ex:rolls @<RoleCode>+ ; 
+  (
+    foaf:name . ; foaf:mbox IRI ;
+  |
+    schema:name . ; schema:mbox IRI
+  ) ;
+  (
+    ex:sunglassesBrand . ; ex:tieMaterial .
+  |
+    ex:SlideRoolLength . ; ex:PocketProtectorMaterial .
+  |
+    ex:glovesSize . ; ex:bootSize .
+  ) ;
+  ex:badgeNumber xsd:integer
+} AND NOT EXTRA ex:rolls { ex:rolls [ex:Robot] }
+AND (
+  ({ex:sunglassesBrand . ; ex:tieMaterial .} AND EXTRA ex:rolls { ex:rolls [ex:Manager] })
+  OR
+  ({ex:SlideRoolLength . ; ex:PocketProtectorMaterial .} AND EXTRA ex:rolls { ex:rolls [ex:Engineer] })
+  OR
+  ({ex:glovesSize . ; ex:bootSize .} AND EXTRA ex:rolls { ex:rolls [ex:Laboror] })
+)

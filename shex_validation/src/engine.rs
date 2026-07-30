@@ -5,6 +5,7 @@ use crate::Reasons;
 use crate::ValidatorConfig;
 use crate::ValidatorErrors;
 use crate::atom;
+use crate::ref_typing::RefTyping;
 use crate::validator_error::*;
 use either::Either;
 use indexmap::IndexSet;
@@ -21,6 +22,8 @@ use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
+use shex_ast::ast::cond_kind::CondKind;
+use shex_ast::ir::extend_alternative::ExtendAlternative;
 use shex_ast::ir::external_resolver::{DispatchOutcome, ExternalResolveCtx};
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
@@ -40,7 +43,6 @@ type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
-type Typing = HashSet<(Node, ShapeLabelIdx)>;
 
 #[derive(Debug, Clone)]
 pub struct Engine {
@@ -282,29 +284,30 @@ impl Engine {
         hyp.push((node.clone(), *label));
         let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
             hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
-        let mut matched = HashSet::new();
+        let mut typing = RefTyping::new();
         let candidates = self.dep(node, label, schema, rdf)?;
         let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
         for (n1, l1) in cleaned_candidates {
-            // TODO: Change structure to collect errors and reasons instead of using a HashSet
             match self.prove(&n1, &l1, hyp, schema, rdf)? {
                 Either::Right(_reasons) => {
                     /*debug!(
                         "Proved {n1}@{l1} while proving {node}@{label}: {}",
                         rs.iter().map(|r| format!("{r}")).join(", ")
                     );*/
-                    matched.insert((n1.clone(), l1));
+                    typing.insert_passed(n1.clone(), l1);
                 },
-                Either::Left(_errors) => {
+                Either::Left(errors) => {
                     /*debug!(
                         "Failed to prove {n1}@{l1} while proving {node}@{label}: {}",
                         errors.iter().map(|e| format!("{e}")).join(", ")
                     );*/
-                    // Should we collect errors here?
+                    typing.insert_failed(n1.clone(), l1, errors);
                 },
             }
         }
-        let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
+        for (n, l) in hyp_as_set.iter() {
+            typing.insert_passed(n.clone(), *l);
+        }
         let result = self.check_node_idx(node, label, schema, rdf, &mut typing, hyp)?;
         hyp.pop();
         /*debug!(
@@ -327,7 +330,7 @@ impl Engine {
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
         hyp: &mut Vec<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult>
     where
@@ -451,7 +454,7 @@ impl Engine {
         se: &ShapeExpr,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
@@ -533,13 +536,13 @@ impl Engine {
             },
             ShapeExpr::NodeConstraint(nc) => {
                 // TODO: In the case of a node constraint...is the context only the subject?
-                let ctx = SemanticActionContext::subject(node);
+                let ctx = SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc());
                 match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => {
                         // We ignore pending nodes here, as node constraints are not expected to generate pending nodes
                         pass(Reason::NodeConstraint {
                             node: node.clone(),
-                            nc: nc.clone(),
+                            nc: (**nc).clone(),
                         })
                     },
                     Err(err) => fail(ValidatorError::RbeError(err)),
@@ -592,12 +595,7 @@ impl Engine {
         }
     }
 
-    fn check_node_ref(
-        &self,
-        node: &Node,
-        idx: &ShapeLabelIdx,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
-    ) -> Result<ValidationResult> {
+    fn check_node_ref(&self, node: &Node, idx: &ShapeLabelIdx, typing: &mut RefTyping) -> Result<ValidationResult> {
         /*debug!("Checking node {node} with shape ref {idx}"); */
 
         // If the node is already in the typing, we can return true
@@ -607,9 +605,11 @@ impl Engine {
                 idx: *idx,
             })
         } else {
+            let errors = typing.errors_for(&(node.clone(), *idx));
             fail(ValidatorError::ShapeRefFailed {
                 node: Box::new(node.clone()),
                 idx: *idx,
+                errors: ValidatorErrors::new(errors),
             })
         }
     }
@@ -619,9 +619,9 @@ impl Engine {
         idx: &ShapeLabelIdx,
         node: &Node,
         shape: &Shape,
-        _schema: &SchemaIR,
+        schema: &SchemaIR,
         rdf: &R,
-        typing: &mut Typing,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: QueryRDF + NeighsRDF,
@@ -637,7 +637,13 @@ impl Engine {
         let (values, reminder) = self.neighs(node, candidate_preds.clone(), rdf)?;
         let values_ctx = values
             .iter()
-            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .map(|(p, v)| {
+                (
+                    p.clone(),
+                    v.clone(),
+                    SemanticActionContext::triple(node, p, v).with_registry(schema.semantic_actions_registry_arc()),
+                )
+            })
             .filter(|(pred, value, ctx)| {
                 // Strict predicates (not in EXTRA) always go into M^∈.
                 if !extra_preds.contains(pred) {
@@ -664,12 +670,31 @@ impl Engine {
         shape: &Shape,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
     {
         // trace!("check_node_shape_extends: node={node}, shape={idx}");
+
+        // When some extended parent resolves to several alternatives (it contains a
+        // ShapeOr), validate by trying every selection of one alternative per parent.
+        // Parents with a single alternative keep the historical code path below.
+        // See docs/src/internals/feasibility-model.md §3-§4.
+        let parent_alternatives: Vec<Vec<ExtendAlternative>> =
+            shape.extends().iter().map(|e| schema.extend_alternatives(e)).collect();
+        if parent_alternatives.iter().any(|alts| alts.len() > 1) {
+            return self.check_node_shape_extends_selections(
+                idx,
+                node,
+                shape,
+                schema,
+                rdf,
+                typing,
+                &parent_alternatives,
+            );
+        }
+
         let extra_preds = shape.extra().clone();
         let mut candidate_preds = Vec::from_iter(schema.get_preds_extends(idx));
         for p in &extra_preds {
@@ -717,7 +742,13 @@ impl Engine {
         );*/
         let values_ctx_raw: Vec<_> = values
             .iter()
-            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .map(|(p, v)| {
+                (
+                    p.clone(),
+                    v.clone(),
+                    SemanticActionContext::triple(node, p, v).with_registry(schema.semantic_actions_registry_arc()),
+                )
+            })
             .collect();
 
         // Collect every triple-expression reachable from the parent shapes through the full
@@ -807,7 +838,21 @@ impl Engine {
             }
         }
 
-        let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
+        // Feasibility guard: refute in time linear in the expressions when some bucket
+        // cannot be satisfied by any assignment of its candidate triples, instead of
+        // enumerating partitions. Sound: candidate counts over-approximate any share.
+        for rbes in triple_exprs.values() {
+            for rbe in rbes {
+                if !rbe.feasible_neighs(&values_ctx) {
+                    return fail(ValidatorError::TripleExprRefuted {
+                        node: Box::new(node.clone()),
+                        idx: *idx,
+                    });
+                }
+            }
+        }
+
+        let parts_iter = crate::class_partitions_iter(&values_ctx, &triple_exprs);
         let mut parts_peekable = parts_iter.peekable();
         if let Some(_parts) = parts_peekable.peek() {
             // There are some partitions to check, we will check them one by one until we find one that works or we exhaust all of them. We use peekable to avoid computing the first partition twice (once for the debug message and once for the loop). We could also compute the first partition before the loop and then use a regular iterator, but this way we avoid computing any partition if there are no partitions at all.
@@ -906,6 +951,296 @@ impl Engine {
         }
     }
 
+    /// Validates a shape with extends when some extended parent resolves to several
+    /// alternatives: tries every selection of one alternative per parent until one
+    /// conforms. See docs/src/internals/feasibility-model.md §3-§4.
+    fn check_node_shape_extends_selections<R>(
+        &self,
+        idx: &ShapeLabelIdx,
+        node: &Node,
+        shape: &Shape,
+        schema: &SchemaIR,
+        rdf: &R,
+        typing: &mut RefTyping,
+        parent_alternatives: &[Vec<ExtendAlternative>],
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
+        let mut selector = vec![0usize; parent_alternatives.len()];
+        let mut errors_selections = Vec::new();
+        loop {
+            // The current selection: one alternative per parent, merged (buckets deduplicated,
+            // so an ancestor reached through several parents becomes a single bucket).
+            let mut sigma = ExtendAlternative::default();
+            for (i, alts) in parent_alternatives.iter().enumerate() {
+                sigma = sigma.merge(&alts[selector[i]]);
+            }
+            match self.check_node_selection(idx, node, shape, schema, rdf, typing, &sigma)? {
+                Either::Right(reasons) => {
+                    return pass(Reason::ShapeExtends {
+                        node: node.clone(),
+                        shape: Box::new(shape.clone()),
+                        reasons: Reasons::new(reasons),
+                    });
+                },
+                Either::Left(errors) => errors_selections.extend(errors),
+            }
+            // Advance to the next selection
+            let mut level = 0;
+            loop {
+                if level == selector.len() {
+                    // All selections failed
+                    return fail(ValidatorError::ShapeFailed {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        errors: errors_selections,
+                    });
+                }
+                selector[level] += 1;
+                if selector[level] < parent_alternatives[level].len() {
+                    break;
+                }
+                selector[level] = 0;
+                level += 1;
+            }
+        }
+    }
+
+    /// Validates the node against one selection: the shape's own triple expression and the
+    /// selection's bucket shapes must be satisfied by a partition of the selection-local
+    /// neighbourhood, and the selection's constraints must hold for the node.
+    fn check_node_selection<R>(
+        &self,
+        idx: &ShapeLabelIdx,
+        node: &Node,
+        shape: &Shape,
+        schema: &SchemaIR,
+        rdf: &R,
+        typing: &mut RefTyping,
+        sigma: &ExtendAlternative,
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
+        // Partition buckets and matchable predicates are selection-local: an unselected
+        // ShapeOr branch contributes no candidates, and CLOSED is judged against the
+        // selected alphabet only.
+        let mut bucket_exprs: HashMap<Option<ShapeLabelIdx>, Vec<Expr>> = HashMap::new();
+        bucket_exprs.insert(None, vec![shape.triple_expr().clone()]);
+        let mut candidate_preds = shape.preds();
+        for b in sigma.bucket_shapes() {
+            if let Some(ShapeExpr::Shape(bucket_shape)) = schema.find_shape_idx(b).map(|info| info.expr()) {
+                bucket_exprs.insert(Some(*b), vec![bucket_shape.triple_expr().clone()]);
+                for p in bucket_shape.preds() {
+                    if !candidate_preds.contains(&p) {
+                        candidate_preds.push(p);
+                    }
+                }
+            }
+        }
+        let extra_preds = shape.extra().clone();
+        for p in &extra_preds {
+            if !candidate_preds.contains(p) {
+                candidate_preds.push(p.clone());
+            }
+        }
+
+        let (values, reminder) = self.neighs(node, candidate_preds.clone(), rdf)?;
+        if shape.is_closed() && !reminder.is_empty() {
+            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(reminder),
+                declared: Preds::new(candidate_preds),
+            });
+        }
+
+        let values_ctx: Vec<_> = values
+            .iter()
+            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .filter(|(pred, value, ctx)| {
+                let matches_leaf = bucket_exprs.values().any(|rbes| {
+                    rbes.iter().any(|rbe| {
+                        rbe.components().any(|(_, key, cond)| {
+                            &key == pred && (cond_has_ref(&cond) || cond.matches(value, ctx).is_ok())
+                        })
+                    })
+                });
+                if matches_leaf {
+                    return true;
+                }
+                // EXTRA predicate with no satisfying leaf goes into M^∉; other non-matching
+                // triples stay so the partition correctly fails (forced assignment).
+                !extra_preds.contains(pred)
+            })
+            .collect();
+
+        // Feasibility guard: refute the selection in time linear in the expressions when
+        // some bucket cannot be satisfied by any assignment of its candidate triples.
+        // Sound: the per-component candidate counts over-approximate any partition's share.
+        for rbes in bucket_exprs.values() {
+            for rbe in rbes {
+                if !rbe.feasible_neighs(&values_ctx) {
+                    return Ok(Either::Left(vec![ValidatorError::TripleExprRefuted {
+                        node: Box::new(node.clone()),
+                        idx: *idx,
+                    }]));
+                }
+            }
+        }
+
+        // The selection's constraint conjuncts must hold for the node
+        let mut reasons = Vec::new();
+        for c in sigma.constraints() {
+            match self.check_node_constraint_expr(c, node, schema, rdf, typing)? {
+                Either::Left(errors) => {
+                    return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        extends: *c,
+                        errors: ValidatorErrors::new(errors),
+                    }]));
+                },
+                Either::Right(rs) => reasons.extend(rs),
+            }
+        }
+
+        // Partition search over the selection's buckets
+        let parts_iter = crate::class_partitions_iter(&values_ctx, &bucket_exprs);
+        let mut parts_peekable = parts_iter.peekable();
+        if parts_peekable.peek().is_none() {
+            return fail(ValidatorError::ShapeFailedNoPartitions {
+                node: Box::new(node.clone()),
+                shape: Box::new(shape.clone()),
+                idx: *idx,
+            });
+        }
+        let mut errors_in_partitions = Vec::new();
+        for (npart, partition) in parts_peekable.enumerate() {
+            let partition_display = create_partitions_display(&partition);
+            let mut ok_partition = true;
+            let mut errors_in_loop = Vec::new();
+            let mut reasons_in_loop = Vec::new();
+            for (maybe_label, rbes, neighs_subset) in partition.iter() {
+                let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
+                match result {
+                    Either::Right(rs) => {
+                        reasons_in_loop.push(Reason::PartitionComponent {
+                            maybe_label: *maybe_label,
+                            node: node.clone(),
+                            shape: Box::new(shape.clone()),
+                            idx: *idx,
+                            partition_idx: npart,
+                            partition: partition_display.clone(),
+                            neighs: neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", "),
+                            reasons: Reasons::new(rs),
+                        });
+                    },
+                    Either::Left(errs) => {
+                        errors_in_loop.push(ValidatorError::PartitionComponentFailed {
+                            maybe_label: *maybe_label,
+                            node: Box::new(node.clone()),
+                            shape: Box::new(shape.clone()),
+                            idx: *idx,
+                            partition_idx: npart,
+                            partition: partition_display.clone(),
+                            neighs: neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", "),
+                            errors: ValidatorErrors::new(errs),
+                        });
+                        ok_partition = false;
+                        break;
+                    },
+                }
+            }
+            if ok_partition {
+                reasons.extend(reasons_in_loop);
+                return Ok(Either::Right(reasons));
+            } else {
+                errors_in_partitions.push(ValidatorError::PartitionFailed {
+                    node: Box::new(node.clone()),
+                    shape: Box::new(shape.clone()),
+                    idx: *idx,
+                    partition: partition_display.clone(),
+                    errors: ValidatorErrors::new(errors_in_loop),
+                });
+            }
+        }
+        Ok(Either::Left(errors_in_partitions))
+    }
+
+    /// Evaluates a conjunct constraint of a selection directly, without relying on
+    /// precomputed typing for anonymous sub-expressions.
+    fn check_node_constraint_expr<R>(
+        &self,
+        cidx: &ShapeLabelIdx,
+        node: &Node,
+        schema: &SchemaIR,
+        rdf: &R,
+        typing: &mut RefTyping,
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
+        let Some(se) = schema.find_shape_idx(cidx).map(|info| info.expr().clone()) else {
+            return pass(Reason::Empty { node: node.clone() });
+        };
+        match &se {
+            ShapeExpr::NodeConstraint(nc) => {
+                let ctx = SemanticActionContext::subject(node);
+                match nc.cond().matches(node, &ctx) {
+                    Ok(_pending) => pass(Reason::NodeConstraint {
+                        node: node.clone(),
+                        nc: (**nc).clone(),
+                    }),
+                    Err(err) => fail(ValidatorError::RbeError(err)),
+                }
+            },
+            ShapeExpr::Shape(s) => {
+                if s.extends().is_empty() {
+                    self.check_node_shape(cidx, node, s, schema, rdf, typing)
+                } else {
+                    self.check_node_shape_extends(cidx, node, s, schema, rdf, typing)
+                }
+            },
+            ShapeExpr::ShapeNot { expr } => match self.check_node_constraint_expr(expr, node, schema, rdf, typing)? {
+                Either::Left(errors) => pass(Reason::ShapeNot {
+                    node: node.clone(),
+                    shape_expr: se.clone(),
+                    errors_evidences: ValidatorErrors::new(errors),
+                }),
+                Either::Right(rs) => fail(ValidatorError::ShapeNotError {
+                    node: Box::new(node.clone()),
+                    shape_expr: Box::new(se.clone()),
+                    reasons: Reasons::new(rs),
+                }),
+            },
+            ShapeExpr::ShapeAnd { exprs } => {
+                let mut reasons = Vec::new();
+                for e in exprs {
+                    match self.check_node_constraint_expr(e, node, schema, rdf, typing)? {
+                        Either::Left(errors) => return Ok(Either::Left(errors)),
+                        Either::Right(rs) => reasons.extend(rs),
+                    }
+                }
+                Ok(Either::Right(reasons))
+            },
+            ShapeExpr::ShapeOr { exprs } => {
+                let mut errors = Vec::new();
+                for e in exprs {
+                    match self.check_node_constraint_expr(e, node, schema, rdf, typing)? {
+                        Either::Right(reasons) => return Ok(Either::Right(reasons)),
+                        Either::Left(errs) => errors.extend(errs),
+                    }
+                }
+                Ok(Either::Left(errors))
+            },
+            ShapeExpr::Ref { idx } => self.check_node_constraint_expr(idx, node, schema, rdf, typing),
+            ShapeExpr::Empty => pass(Reason::Empty { node: node.clone() }),
+            ShapeExpr::External {} => self.check_node_shape_expr(cidx, node, &se, schema, rdf, typing),
+        }
+    }
+
     fn check_node_extends_main_shape<R>(
         &self,
         node: &Node,
@@ -913,7 +1248,7 @@ impl Engine {
         shape: &Shape,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: QueryRDF + NeighsRDF,
@@ -949,7 +1284,14 @@ impl Engine {
                     let (all_values, _) = self.neighs(node, main_preds, rdf)?;
                     let all_values_ctx: Vec<_> = all_values
                         .iter()
-                        .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+                        .map(|(p, v)| {
+                            (
+                                p.clone(),
+                                v.clone(),
+                                SemanticActionContext::triple(node, p, v)
+                                    .with_registry(schema.semantic_actions_registry_arc()),
+                            )
+                        })
                         .collect();
                     // Keep only triples where the value satisfies some component's condition
                     let filtered: Vec<_> = all_values_ctx
@@ -1006,7 +1348,10 @@ impl Engine {
             }
             // We also validate the node constraints of the main shape
             for nc in ncs {
-                match nc.cond().matches(node, &SemanticActionContext::subject(node)) {
+                match nc.cond().matches(
+                    node,
+                    &SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc()),
+                ) {
                     Ok(_pending) => {
                         reasons.push(Reason::ParentShapeNodeConstraint {
                             node: node.clone(),
@@ -1033,7 +1378,10 @@ impl Engine {
                     && let Some((ref_ncs, _, _)) = schema.get_main_shape_constraints(ref_idx)
                 {
                     for nc in ref_ncs {
-                        match nc.cond().matches(node, &SemanticActionContext::subject(node)) {
+                        match nc.cond().matches(
+                            node,
+                            &SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc()),
+                        ) {
                             Ok(_) => {},
                             Err(error) => {
                                 errors.push(ValidatorError::ParentShapeNodeConstraintFailed {
@@ -1152,11 +1500,12 @@ impl Engine {
         Ok((result, reminder_preds))
     }
 
-    fn cnv_err<S>(&self, _err: S::Err) -> ValidatorError
+    fn cnv_err<S>(&self, err: S::Err) -> ValidatorError
     where
         S: NeighsRDF,
     {
-        todo!()
+        tracing::trace!("cnv_err: {err}");
+        ValidatorError::SRDFError { error: err.to_string() }
     }
 
     fn get_rdf_node<S>(&self, node: &Node, _rdf: &S) -> S::Term
@@ -1303,7 +1652,7 @@ fn check_exprs_neigh(
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
-    typing: &Typing,
+    typing: &RefTyping,
 ) -> Result<ValidationResult> {
     for rbe in exprs.iter() {
         let result = check_expr_neigh(rbe, neighs, node, shape, idx, typing)?;
@@ -1329,28 +1678,57 @@ fn check_expr_neigh(
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
-    typing: &Typing,
+    typing: &RefTyping,
 ) -> Result<ValidationResult> {
     /*trace!(
         "Checking expr {} with neighs: [{}]",
         expr,
         neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
     );*/
-    let result_iter = expr.matches(neighs.to_vec())?;
-    let mut result_iter = result_iter.peekable();
-    if result_iter.peek().is_none() {
+    let mut result_iter = expr.matches(neighs.to_vec())?;
+    let first_result = result_iter.next();
+    if first_result.is_none() {
         /*debug!(
             "expr {expr} produced no candidates for neighs: [{}]",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
         );*/
+        let mut reasons: Vec<NoMatchReason> = result_iter
+            .failed_candidates()
+            .iter()
+            .map(|(candidate, predicate, value, error)| NoMatchReason::ConditionFailed {
+                candidate: candidate.clone(),
+                predicate: predicate.clone(),
+                value: value.clone(),
+                error: error.clone(),
+            })
+            .collect();
+        for (candidate, err) in result_iter.failed_cardinality() {
+            match expr.cardinality_violations(err) {
+                Ok(violations) => {
+                    for (predicate, expected, current) in violations {
+                        reasons.push(NoMatchReason::CardinalityFailed {
+                            candidate: candidate.clone(),
+                            predicate,
+                            expected,
+                            current,
+                        });
+                    }
+                },
+                Err(detail) => reasons.push(NoMatchReason::Other {
+                    candidate: candidate.clone(),
+                    detail,
+                }),
+            }
+        }
         return fail(ValidatorError::NoMatchesFound {
             node: Box::new(node.clone()),
             shape: Box::new(shape.clone()),
             idx: *idx,
+            reasons,
         });
     }
     let mut errors = Vec::new();
-    for result in result_iter {
+    for result in first_result.into_iter().chain(result_iter) {
         /*trace!(
             "Result of {expr} with neighs: {}: {:?}",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
@@ -1359,24 +1737,47 @@ fn check_expr_neigh(
         match result {
             Ok(pending_values) => {
                 if !pending_values.is_empty() {
+                    /*tracing::trace!(
+                        "Pending values for expr {expr} with neighs: [{}]:\n{pending_values}",
+                        neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
+                    );*/
                     let mut failed_pending = Vec::new();
                     // Check if all pending values are in typing
-                    for (n, idx) in pending_values.iter() {
+                    for (n, idx, ks) in pending_values.iter_vr() {
                         let pair = (n.clone(), *idx);
                         if !typing.contains(&pair) {
-                            failed_pending.push(pair)
+                            /*tracing::trace!(
+                                "Pending value ({},{}) is not in typing, keys: [{}]",
+                                n.clone(),
+                                *idx,
+                                ks.iter().map(|k| k.to_string()).join(", ")
+                            );*/
+                            failed_pending.push((
+                                n.clone(),
+                                *idx,
+                                ks.iter().cloned().collect::<Vec<_>>(),
+                                typing.errors_for(&pair),
+                            ))
                             // TODO: if (stop_at_first) break
                             // We don't need to compute all the failed pending values once we find the first pair
                         }
                     }
                     if failed_pending.is_empty() {
+                        //tracing::trace!("All pending values were in typing {pending_values}");
                         return pass(Reason::Shape {
                             node: node.clone(),
                             shape: Box::new(shape.clone()),
                             idx: *idx,
+                            // TODO: Add pending_values to reason
                         });
                     } else {
-                        //trace!("Failed pending values: {:?}", failed_pending);
+                        /*tracing::trace!(
+                            "Failed pending values: {}",
+                            failed_pending
+                                .iter()
+                                .map(|(n, idx, _ks)| format!("{n}@{idx}"))
+                                .join(", ")
+                        );*/
                         errors.push(ValidatorError::FailedPending {
                             failed_pending: failed_pending.clone(),
                         })
@@ -1467,7 +1868,7 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
 
 fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, schema: &SchemaIR) -> Result<bool> {
     let registry = schema.semantic_actions_registry();
-    let context = SemanticActionContext::new_start_act_context();
+    let context = SemanticActionContext::new_start_act_context().with_registry(schema.semantic_actions_registry_arc());
     for act in start_acts {
         let parameter = act.code().map(|code| code.as_str());
         let result = registry.run_action(act.name(), parameter, &context);
@@ -1482,7 +1883,7 @@ fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, s
 /// Returns true if a MatchCond contains a shape reference (MatchCond::Ref),
 /// which means the condition delegates to a shape's typing check rather than
 /// directly verifying a value set.
-fn cond_has_ref(cond: &MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext>) -> bool {
+fn cond_has_ref(cond: &MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>) -> bool {
     match cond {
         MatchCond::Ref(_) => true,
         MatchCond::And(vs) => vs.iter().any(cond_has_ref),
@@ -1512,7 +1913,7 @@ mod tests {
     use crate::ValidatorConfig;
     use rudof_iri::IriS;
     use rudof_rdf::rdf_core::RDFFormat;
-    use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+    use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 
     // :alice :knows :bob .
     // :carol :knows :alice .
@@ -1524,8 +1925,8 @@ mod tests {
         :alice :age 30 .
     "#;
 
-    fn make_graph() -> InMemoryGraph {
-        InMemoryGraph::from_str(TEST_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
+    fn make_graph() -> OxigraphInMemory {
+        OxigraphInMemory::from_str(TEST_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
     }
 
     fn engine() -> Engine {

@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::ir::{shape_expr::ShapeExpr, shape_label::ShapeLabel, source_idx::SourceIdx};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct ShapeExprInfo {
     label: Option<ShapeLabel>,
     expr: ShapeExpr,

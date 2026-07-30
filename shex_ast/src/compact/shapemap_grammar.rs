@@ -2,7 +2,7 @@ use crate::shapemap::{NodeSelector, Pattern, SHACLPathRef, ShapeSelector};
 use crate::{
     IRes, ParseError, Span,
     compact::grammar::{map_error, tag_no_case_tws, token_tws, tws0},
-    compact::shex_grammar::shape_expr_label,
+    compact::shex_grammar::{blank_node, shape_expr_label},
     iri, literal,
 };
 use crate::{ObjectValue, string};
@@ -151,8 +151,17 @@ fn extended(i: Span) -> IRes<NodeSelector> {
 }
 
 fn subject_term(i: Span) -> IRes<NodeSelector> {
+    alt((bnode_selector, iri_selector)).parse(i)
+}
+
+fn iri_selector(i: Span) -> IRes<NodeSelector> {
     let (i, iri) = iri(i)?;
     Ok((i, NodeSelector::iri_ref(iri)))
+}
+
+fn bnode_selector(i: Span) -> IRes<NodeSelector> {
+    let (i, bn) = blank_node(i)?;
+    Ok((i, NodeSelector::bnode(bn.value())))
 }
 
 fn literal_selector(i: Span) -> IRes<NodeSelector> {

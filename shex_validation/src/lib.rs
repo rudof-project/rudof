@@ -2,11 +2,13 @@
 //!
 //!
 pub mod atom;
+pub mod class_partitions;
 pub mod engine;
 pub mod k_partitions;
 pub mod partition;
 pub mod reason;
 pub mod reasons;
+mod ref_typing;
 mod result_value;
 pub mod rule;
 pub mod schema_without_imports;
@@ -21,6 +23,7 @@ pub mod validator_error;
 pub mod validator_errors;
 
 pub use crate::atom::*;
+pub use crate::class_partitions::*;
 pub use crate::engine::*;
 pub use crate::k_partitions::*;
 pub use crate::partition::*;

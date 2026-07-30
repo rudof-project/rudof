@@ -1,4 +1,4 @@
-use crate::cli::parser::CommonArgsAll;
+use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, ResultServiceFormatCli};
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -46,5 +46,5 @@ pub struct ServiceArgs {
     pub base_data: Option<String>,
 
     #[command(flatten)]
-    pub common: CommonArgsAll,
+    pub common: CommonArgsNoBackend,
 }

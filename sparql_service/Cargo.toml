@@ -12,6 +12,7 @@ repository.workspace = true
 [features]
 default = ["sparql"]
 sparql = ["dep:oxigraph", "dep:sparesults", "rudof_rdf/sparql"]
+qlever = ["sparql", "rudof_rdf/qlever"]
 
 [dependencies]
 colored.workspace = true

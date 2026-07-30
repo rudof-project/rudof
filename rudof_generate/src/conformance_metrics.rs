@@ -3,7 +3,7 @@ use crate::{DataGeneratorError, Result};
 use oxrdf::{NamedOrBlankNode, Term};
 use regex::Regex;
 use rudof_rdf::rdf_core::NeighsRDF;
-use rudof_rdf::rdf_impl::InMemoryGraph;
+use rudof_rdf::rdf_impl::OxigraphInMemory;
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -27,7 +27,7 @@ pub struct ConformanceMetrics {
 
 impl ConformanceMetrics {
     pub fn from_graph_and_model(
-        graph: &InMemoryGraph,
+        graph: &OxigraphInMemory,
         model: &UnifiedConstraintModel,
         translation_metrics: TranslationMetrics,
     ) -> Result<Self> {

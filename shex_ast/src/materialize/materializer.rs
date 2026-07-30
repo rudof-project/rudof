@@ -57,7 +57,7 @@ impl Materializer {
     /// source.
     ///
     /// The graph type `G` must implement [`BuildRDF`].  Use
-    /// [`rudof_rdf::rdf_impl::InMemoryGraph`] for an in-memory implementation.
+    /// [`rudof_rdf::rdf_impl::OxigraphInMemory`] for an in-memory implementation.
     ///
     /// If `initial_node` is `Some`, it is used as the root subject; otherwise a
     /// fresh blank node is created.
@@ -300,7 +300,7 @@ mod tests {
     use oxrdf::{NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
     use rudof_iri::{IriS, iri};
     use rudof_rdf::rdf_core::{Any, NeighsRDF};
-    use rudof_rdf::rdf_impl::InMemoryGraph;
+    use rudof_rdf::rdf_impl::OxigraphInMemory;
 
     use super::*;
     use crate::Node;
@@ -319,17 +319,17 @@ mod tests {
         serde_json::from_str(json).expect("valid ShEx JSON")
     }
 
-    fn count_triples(graph: &InMemoryGraph) -> usize {
+    fn count_triples(graph: &OxigraphInMemory) -> usize {
         graph.triples().unwrap().count()
     }
 
-    fn has_triple_with_pred_obj(graph: &InMemoryGraph, pred_iri: &str, obj_iri: &str) -> bool {
+    fn has_triple_with_pred_obj(graph: &OxigraphInMemory, pred_iri: &str, obj_iri: &str) -> bool {
         let pred = OxNamedNode::new_unchecked(pred_iri);
         let obj = OxTerm::NamedNode(OxNamedNode::new_unchecked(obj_iri));
         graph.contains(&Any, &pred, &obj).unwrap_or(false)
     }
 
-    fn has_triple_with_pred(graph: &InMemoryGraph, pred_iri: &str) -> bool {
+    fn has_triple_with_pred(graph: &OxigraphInMemory, pred_iri: &str) -> bool {
         let pred = OxNamedNode::new_unchecked(pred_iri);
         graph.contains(&Any, &pred, &Any).unwrap_or(false)
     }
@@ -347,7 +347,7 @@ mod tests {
             }"#,
         );
         let map_state = MapState::default();
-        let result: Result<InMemoryGraph, _> = materializer().materialize(&schema, &map_state, None);
+        let result: Result<OxigraphInMemory, _> = materializer().materialize(&schema, &map_state, None);
         assert!(result.is_err(), "expected error but got Ok");
         assert!(matches!(result.unwrap_err(), MaterializeError::NoStartShape));
     }
@@ -387,7 +387,7 @@ mod tests {
             Node::iri(iri!("http://example.org/Alice")),
         );
 
-        let graph: InMemoryGraph = materializer().materialize(&schema, &map_state, None).unwrap();
+        let graph: OxigraphInMemory = materializer().materialize(&schema, &map_state, None).unwrap();
 
         assert_eq!(count_triples(&graph), 1, "expected exactly one triple");
         assert!(
@@ -426,7 +426,7 @@ mod tests {
         );
 
         let map_state = MapState::default();
-        let graph: InMemoryGraph = materializer().materialize(&schema, &map_state, None).unwrap();
+        let graph: OxigraphInMemory = materializer().materialize(&schema, &map_state, None).unwrap();
 
         assert_eq!(count_triples(&graph), 0, "no triple expected when map IRI is absent");
     }
@@ -484,7 +484,7 @@ mod tests {
             Node::iri(iri!("http://example.org/age42")),
         );
 
-        let graph: InMemoryGraph = materializer().materialize(&schema, &map_state, None).unwrap();
+        let graph: OxigraphInMemory = materializer().materialize(&schema, &map_state, None).unwrap();
 
         assert_eq!(count_triples(&graph), 2);
         assert!(has_triple_with_pred_obj(
@@ -548,7 +548,7 @@ mod tests {
             Node::iri(iri!("http://example.org/Madrid")),
         );
 
-        let graph: InMemoryGraph = materializer().materialize(&schema, &map_state, None).unwrap();
+        let graph: OxigraphInMemory = materializer().materialize(&schema, &map_state, None).unwrap();
 
         // 2 triples: (root, address, bnode) and (bnode, city, Madrid)
         assert_eq!(count_triples(&graph), 2);
@@ -599,7 +599,7 @@ mod tests {
         );
 
         let initial = Node::iri(iri!("http://example.org/Bob"));
-        let graph: InMemoryGraph = materializer().materialize(&schema, &map_state, Some(initial)).unwrap();
+        let graph: OxigraphInMemory = materializer().materialize(&schema, &map_state, Some(initial)).unwrap();
 
         assert_eq!(count_triples(&graph), 1);
 
@@ -647,7 +647,7 @@ mod tests {
             Node::iri(iri!("http://example.org/Thing")),
         );
 
-        let graph: InMemoryGraph = materializer().materialize(&schema, &map_state, None).unwrap();
+        let graph: OxigraphInMemory = materializer().materialize(&schema, &map_state, None).unwrap();
 
         assert_eq!(count_triples(&graph), 1);
         assert!(has_triple_with_pred_obj(
@@ -692,7 +692,7 @@ mod tests {
             Node::iri(iri!("http://example.org/Value")),
         );
 
-        let graph: InMemoryGraph = materializer().materialize(&schema, &map_state, None).unwrap();
+        let graph: OxigraphInMemory = materializer().materialize(&schema, &map_state, None).unwrap();
         assert_eq!(count_triples(&graph), 0, "non-Map sem act should not produce triples");
     }
 }

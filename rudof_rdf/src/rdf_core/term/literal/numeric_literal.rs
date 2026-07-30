@@ -1,5 +1,6 @@
 use core::fmt;
 use std::fmt::Display;
+use std::str::FromStr;
 
 use crate::rdf_core::RDFError;
 use crate::rdf_core::vocabs::XsdVocab;
@@ -7,16 +8,14 @@ use rust_decimal::{
     Decimal,
     prelude::{FromPrimitive, ToPrimitive},
 };
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::hash::Hash;
 
 /// Represents RDF numeric literals with XSD datatype semantics.
 ///
 /// This enum supports all XSD numeric types and provides type-safe
-/// conversions between them. Uses `#[serde(untagged)]` for flexible
-/// deserialization from JSON/other formats.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(untagged)]
+/// conversions between them.
+#[derive(Debug, Clone)]
 pub enum NumericLiteral {
     Integer(i128),
     Byte(i8),
@@ -453,12 +452,14 @@ impl Hash for NumericLiteral {
     }
 }
 
-/// Custom serialization to preserve numeric types in target format.
 impl Serialize for NumericLiteral {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
+        if !serializer.is_human_readable() {
+            return NumericLiteralTagged::from(self).serialize(serializer);
+        }
         match self {
             NumericLiteral::Integer(n) => serializer.serialize_i128(*n),
             NumericLiteral::Decimal(d) => {
@@ -482,6 +483,132 @@ impl Serialize for NumericLiteral {
             NumericLiteral::NegativeInteger(n) => serializer.serialize_i128(*n),
             NumericLiteral::NonPositiveInteger(n) => serializer.serialize_i128(*n),
         }
+    }
+}
+
+/// Deserialize dispatches on the format kind:
+///   * human-readable - untagged behaviour (any scalar → best-fit variant),
+///   * binary - tagged mirror enum with a lossless representation.
+impl<'de> Deserialize<'de> for NumericLiteral {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            NumericLiteralUntagged::deserialize(deserializer).map(Into::into)
+        } else {
+            NumericLiteralTagged::deserialize(deserializer)
+                .and_then(|t| NumericLiteral::try_from(t).map_err(serde::de::Error::custom))
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum NumericLiteralUntagged {
+    Integer(i128),
+    Byte(i8),
+    Short(i16),
+    NonNegativeInteger(u128),
+    UnsignedLong(u64),
+    UnsignedInt(u32),
+    UnsignedShort(u16),
+    UnsignedByte(u8),
+    PositiveInteger(u128),
+    NegativeInteger(i128),
+    NonPositiveInteger(i128),
+    Long(i64),
+    Decimal(Decimal),
+    Double(f64),
+    Float(f32),
+}
+
+impl From<NumericLiteralUntagged> for NumericLiteral {
+    fn from(u: NumericLiteralUntagged) -> Self {
+        match u {
+            NumericLiteralUntagged::Integer(n) => NumericLiteral::Integer(n),
+            NumericLiteralUntagged::Byte(n) => NumericLiteral::Byte(n),
+            NumericLiteralUntagged::Short(n) => NumericLiteral::Short(n),
+            NumericLiteralUntagged::NonNegativeInteger(n) => NumericLiteral::NonNegativeInteger(n),
+            NumericLiteralUntagged::UnsignedLong(n) => NumericLiteral::UnsignedLong(n),
+            NumericLiteralUntagged::UnsignedInt(n) => NumericLiteral::UnsignedInt(n),
+            NumericLiteralUntagged::UnsignedShort(n) => NumericLiteral::UnsignedShort(n),
+            NumericLiteralUntagged::UnsignedByte(n) => NumericLiteral::UnsignedByte(n),
+            NumericLiteralUntagged::PositiveInteger(n) => NumericLiteral::PositiveInteger(n),
+            NumericLiteralUntagged::NegativeInteger(n) => NumericLiteral::NegativeInteger(n),
+            NumericLiteralUntagged::NonPositiveInteger(n) => NumericLiteral::NonPositiveInteger(n),
+            NumericLiteralUntagged::Long(n) => NumericLiteral::Long(n),
+            NumericLiteralUntagged::Decimal(d) => NumericLiteral::Decimal(d),
+            NumericLiteralUntagged::Double(d) => NumericLiteral::Double(d),
+            NumericLiteralUntagged::Float(f) => NumericLiteral::Float(f),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+enum NumericLiteralTagged {
+    Integer(i128),
+    Byte(i8),
+    Short(i16),
+    NonNegativeInteger(u128),
+    UnsignedLong(u64),
+    UnsignedInt(u32),
+    UnsignedShort(u16),
+    UnsignedByte(u8),
+    PositiveInteger(u128),
+    NegativeInteger(i128),
+    NonPositiveInteger(i128),
+    Long(i64),
+    Decimal(String),
+    Double(f64),
+    Float(f32),
+}
+
+impl From<&NumericLiteral> for NumericLiteralTagged {
+    fn from(n: &NumericLiteral) -> Self {
+        match n {
+            NumericLiteral::Integer(n) => NumericLiteralTagged::Integer(*n),
+            NumericLiteral::Byte(n) => NumericLiteralTagged::Byte(*n),
+            NumericLiteral::Short(n) => NumericLiteralTagged::Short(*n),
+            NumericLiteral::NonNegativeInteger(n) => NumericLiteralTagged::NonNegativeInteger(*n),
+            NumericLiteral::UnsignedLong(n) => NumericLiteralTagged::UnsignedLong(*n),
+            NumericLiteral::UnsignedInt(n) => NumericLiteralTagged::UnsignedInt(*n),
+            NumericLiteral::UnsignedShort(n) => NumericLiteralTagged::UnsignedShort(*n),
+            NumericLiteral::UnsignedByte(n) => NumericLiteralTagged::UnsignedByte(*n),
+            NumericLiteral::PositiveInteger(n) => NumericLiteralTagged::PositiveInteger(*n),
+            NumericLiteral::NegativeInteger(n) => NumericLiteralTagged::NegativeInteger(*n),
+            NumericLiteral::NonPositiveInteger(n) => NumericLiteralTagged::NonPositiveInteger(*n),
+            NumericLiteral::Long(n) => NumericLiteralTagged::Long(*n),
+            NumericLiteral::Decimal(d) => NumericLiteralTagged::Decimal(d.to_string()),
+            NumericLiteral::Double(d) => NumericLiteralTagged::Double(*d),
+            NumericLiteral::Float(f) => NumericLiteralTagged::Float(*f),
+        }
+    }
+}
+
+impl TryFrom<NumericLiteralTagged> for NumericLiteral {
+    type Error = String;
+
+    fn try_from(t: NumericLiteralTagged) -> Result<Self, Self::Error> {
+        Ok(match t {
+            NumericLiteralTagged::Integer(n) => NumericLiteral::Integer(n),
+            NumericLiteralTagged::Byte(n) => NumericLiteral::Byte(n),
+            NumericLiteralTagged::Short(n) => NumericLiteral::Short(n),
+            NumericLiteralTagged::NonNegativeInteger(n) => NumericLiteral::NonNegativeInteger(n),
+            NumericLiteralTagged::UnsignedLong(n) => NumericLiteral::UnsignedLong(n),
+            NumericLiteralTagged::UnsignedInt(n) => NumericLiteral::UnsignedInt(n),
+            NumericLiteralTagged::UnsignedShort(n) => NumericLiteral::UnsignedShort(n),
+            NumericLiteralTagged::UnsignedByte(n) => NumericLiteral::UnsignedByte(n),
+            NumericLiteralTagged::PositiveInteger(n) => NumericLiteral::PositiveInteger(n),
+            NumericLiteralTagged::NegativeInteger(n) => NumericLiteral::NegativeInteger(n),
+            NumericLiteralTagged::NonPositiveInteger(n) => NumericLiteral::NonPositiveInteger(n),
+            NumericLiteralTagged::Long(n) => NumericLiteral::Long(n),
+            NumericLiteralTagged::Decimal(s) => Decimal::from_str(&s)
+                .map(NumericLiteral::Decimal)
+                .map_err(|e| format!("decoding NumericLiteral::Decimal(\"{s}\"): {e}"))?,
+            NumericLiteralTagged::Double(d) => NumericLiteral::Double(d),
+            NumericLiteralTagged::Float(f) => NumericLiteral::Float(f),
+        })
     }
 }
 

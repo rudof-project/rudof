@@ -1,7 +1,7 @@
 use shacl::rdf::ShaclWriter;
 
 use crate::{Result, Rudof, errors::ShaclError, formats::ShaclFormat};
-use rudof_rdf::rdf_impl::InMemoryGraph;
+use rudof_rdf::rdf_impl::OxigraphInMemory;
 use std::io;
 
 pub fn serialize_shacl_schema<W: io::Write>(
@@ -19,7 +19,7 @@ pub fn serialize_shacl_schema<W: io::Write>(
         },
         _ => {
             let rdf_format = shacl_format.try_into()?;
-            let mut shacl_writer: ShaclWriter<InMemoryGraph> = ShaclWriter::new();
+            let mut shacl_writer: ShaclWriter<OxigraphInMemory> = ShaclWriter::new();
 
             shacl_writer
                 .register(shacl_shapes)

@@ -10,6 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+either.workspace = true
 hashbag.workspace = true
 indexmap.workspace = true
 itertools.workspace = true
@@ -21,6 +22,7 @@ toml.workspace = true
 tracing = { workspace = true }
 
 [dev-dependencies]
+bincode.workspace = true
 indoc.workspace = true
 proptest.workspace = true
 tracing-test.workspace = true

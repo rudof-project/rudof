@@ -20,8 +20,6 @@ pub fn serialize_shex_validation_results<W: io::Write>(
 
     match result_shex_validation_format {
         ResultShExValidationFormat::Compact => {
-            writeln!(writer, "Results:").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
-
             shex_validation_results
                 .as_table(writer, Some(&sort_order.into()), Some(false), Some(terminal_width()))
                 .map_err(|e| ShExError::FailedSerializingShExValidationResults {
@@ -38,8 +36,6 @@ pub fn serialize_shex_validation_results<W: io::Write>(
                 })?;
         },
         ResultShExValidationFormat::Details => {
-            writeln!(writer, "Results:").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
-
             shex_validation_results
                 .as_table(writer, Some(&sort_order.into()), Some(true), Some(terminal_width()))
                 .map_err(|e| ShExError::FailedSerializingShExValidationResults {
@@ -48,8 +44,6 @@ pub fn serialize_shex_validation_results<W: io::Write>(
                 })?;
         },
         ResultShExValidationFormat::Json => {
-            writeln!(writer, "Results:").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
-
             let str = serde_json::to_string_pretty(&shex_validation_results).map_err(|e| {
                 ShExError::FailedSerializingShExValidationResults {
                     format: "json".to_string(),

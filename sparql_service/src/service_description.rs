@@ -10,7 +10,7 @@ use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use rudof_rdf::{
     rdf_core::RDFFormat,
-    rdf_impl::{InMemoryGraph, ReaderMode},
+    rdf_impl::{OxigraphInMemory, ReaderMode},
 };
 use serde::{Deserialize, Serialize};
 #[cfg(not(target_family = "wasm"))]
@@ -98,7 +98,7 @@ impl ServiceDescription {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
-        let rdf = InMemoryGraph::from_path(path, format, base, reader_mode)?;
+        let rdf = OxigraphInMemory::from_path(path, format, base, reader_mode)?;
         let mut parser = ServiceDescriptionParser::new(rdf);
         let service = parser.parse()?;
         Ok(service)
@@ -111,7 +111,7 @@ impl ServiceDescription {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
-        let rdf = InMemoryGraph::from_reader(read, source_name, format, base, reader_mode)?;
+        let rdf = OxigraphInMemory::from_reader(read, source_name, format, base, reader_mode)?;
         let mut parser = ServiceDescriptionParser::new(rdf);
         let service = parser.parse()?;
         Ok(service)

@@ -31,9 +31,10 @@ use crate::{
             SerializeShaclValidationResultsBuilder, ValidateShaclBuilder,
         },
         shex::builders::{
-            AddNodeShapeToShapemapBuilder, CheckShexSchemaBuilder, LoadShapemapBuilder, LoadShexSchemaBuilder,
-            ResetShapemapBuilder, ResetShexBuilder, ResetShexSchemaBuilder, SerializeShapemapBuilder,
-            SerializeShexSchemaBuilder, SerializeShexValidationResultsBuilder, ValidateShexBuilder,
+            AddNodeShapeToShapemapBuilder, CheckShexSchemaBuilder, CompileShexSchemaToFileBuilder, LoadShapemapBuilder,
+            LoadShexSchemaBuilder, LoadShexSchemaPrecompiledBuilder, ResetShapemapBuilder, ResetShexBuilder,
+            ResetShexSchemaBuilder, SerializeShapemapBuilder, SerializeShexSchemaBuilder,
+            SerializeShexValidationResultsBuilder, ValidateShexBuilder,
         },
     },
     errors::{RudofError, ShExError},
@@ -325,6 +326,30 @@ impl Rudof {
         ResetShexSchemaBuilder::new(self)
     }
 
+    /// Returns a `CompileShexSchemaToFileBuilder` that writes the currently loaded
+    /// ShEx `SchemaIR` to `writer` as a precompiled cache.
+    ///
+    /// # Parameters
+    /// - `writer`: output target for the cache bytes.
+    pub fn compile_shex_schema_to_file<'a, W: io::Write>(
+        &'a self,
+        writer: &'a mut W,
+    ) -> CompileShexSchemaToFileBuilder<'a, W> {
+        CompileShexSchemaToFileBuilder::new(self, writer)
+    }
+
+    /// Returns a `LoadShexSchemaPrecompiledBuilder` to load a precompiled
+    /// ShEx `SchemaIR` cache from `schema` (`InputSpec`).
+    ///
+    /// # Parameters
+    /// - `schema`: input specification pointing at the cache.
+    pub fn load_shex_schema_precompiled<'a>(
+        &'a mut self,
+        schema: &'a InputSpec,
+    ) -> LoadShexSchemaPrecompiledBuilder<'a> {
+        LoadShexSchemaPrecompiledBuilder::new(self, schema)
+    }
+
     /// Returns a `LoadShapemapBuilder` to load a ShEx shapemap from `shapemap` (`InputSpec`).
     ///
     /// # Parameters
@@ -367,6 +392,11 @@ impl Rudof {
         writer: &'a mut W,
     ) -> SerializeShexValidationResultsBuilder<'a, W> {
         SerializeShexValidationResultsBuilder::new(self, writer)
+    }
+
+    /// Returns the result of the most recent `validate_shex()` call, if any.
+    pub fn shex_validation_results(&self) -> Option<&ResultShapeMap> {
+        self.shex_validation_results.as_ref()
     }
 
     /// Returns a `ResetShexBuilder` to clear ShEx validation state and results.

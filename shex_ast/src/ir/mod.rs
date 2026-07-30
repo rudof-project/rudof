@@ -1,8 +1,10 @@
 pub mod actions;
 pub mod annotation;
 pub mod ast2ir;
+pub mod cache;
 pub mod dependency_graph;
 pub mod exclusion;
+pub mod extend_alternative;
 pub mod external_resolver;
 pub mod inheritance_graph;
 pub mod node_constraint;

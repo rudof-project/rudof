@@ -1,8 +1,8 @@
-# `python` (`pyrudof`)
+# `bindings/python` (`pyrudof`)
 
 ## Overview
 
-The `python` crate (published as `pyrudof`) is the Python bindings layer for the Rudof ecosystem.
+The `bindings/python` crate (published as `pyrudof`) is the Python bindings layer for the Rudof ecosystem.
 It exposes the Rust APIs from [`rudof_lib`](./rudof_lib.md) and `rudof_generate` to Python users through [PyO3](https://pyo3.rs/) and [maturin](https://www.maturin.rs/).
 
 ### Scope of exposed functionality
@@ -54,7 +54,7 @@ The test system is manifest-driven and intentionally avoids duplicate test logic
 For each manifest entry, the generated test:
 
 1. Checks `skip_test` policy.
-2. Runs the script as a subprocess (`python <source_file>`) with `cwd` set to `python/examples`.
+2. Runs the script as a subprocess (`python <source_file>`) with `cwd` set to `bindings/python/examples`.
 3. Asserts exit code is zero.
 4. Verifies configured `expected_output` substrings if provided.
 

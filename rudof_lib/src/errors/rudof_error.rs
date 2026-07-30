@@ -64,6 +64,11 @@ pub enum RudofError {
     #[error("Query error: {0}")]
     Query(#[from] QueryError),
 
+    #[error(
+        "Unsupported result format for SELECT query: '{format}'. Valid formats are: {}", .formats.join(", ") 
+    )]
+    UnsupportedResultQueryFormatSelect { format: String, formats: Vec<String> },
+
     /// Generate synthetic RDF data errors.
     #[error("Generate error: {0}")]
     Generate(#[from] GenerationError),

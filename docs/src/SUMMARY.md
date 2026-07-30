@@ -9,6 +9,12 @@
 
 `rudof` supports the following commands:
 
+## Common options
+
+- [RDF backend (`--backend`)](./cli_usage/backend.md)
+
+## Commands
+
 - [node](./cli_usage/node.md)
 - [data](./cli_usage/data.md)
 - [query](./cli_usage/sparql.md)
@@ -29,6 +35,10 @@
 - [materialize](./cli_usage/materialize.md)
 - [mcp](./cli_usage/mcp.md)
 
+# How to
+
+- [Precompiled ShEx schemas](./using-rudof/precompiled-shex-schemas.md)
+
 # `rudof` as a library
 
 - [Docs](./library/docs.md)
@@ -41,13 +51,14 @@
 - [Architecture](./internals/architecture.md)
   - [`rudof_iri`](./internals/crates/rudof_iri.md)
   - [`prefixmap`](./internals/crates/prefixmap.md)
-  - [`python`](./internals/crates/python.md)
+  - [`bindings/python`](./internals/crates/python.md)
   - [`rudof_cli`](./internals/crates/rudof_cli.md)
   - [`rudof_lib`](./internals/crates/rudof_lib.md)
   - [`rudof_rdf`](./internals/crates/rudof_rdf.md)
   - [`rudof_mcp`](./internals/crates/rudof_mcp.md)
 - [ADRs](./internals/ADRs.md)
 - [IRI normalization](./internals/iri-normalization.md)
+- [Feasibility model](./internals/feasibility-model.md)
 
 # More information
 

@@ -50,14 +50,6 @@ pub struct QueryArgs {
     pub query: InputSpec,
 
     #[arg(
-        short = 'e',
-        long = "endpoint",
-        value_name = "Endpoint",
-        help = "Endpoint with RDF data (URL or name)"
-    )]
-    pub endpoint: Option<String>,
-
-    #[arg(
         short = 'r',
         long = "result-format",
         ignore_case = true,

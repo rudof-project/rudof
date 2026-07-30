@@ -52,17 +52,31 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 
     /// Attempts to convert this literal to an integer value.
     ///
-    /// Returns `Some(isize)` if the literal has datatype `xsd:integer` and
-    /// a valid parseable lexical form.
+    /// Accepts `xsd:integer` and every XSD type derived from it
+    /// (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, the unsigned
+    /// counterparts, and the `(non)Positive`/`(non)Negative` variants).
+    /// Returns `Some(isize)` when the datatype is in that set and the
+    /// lexical form parses as `isize`.
     fn to_integer(&self) -> Option<isize> {
         let datatype = self.datatype();
         let iri = datatype.get_iri().ok()?;
 
-        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#integer" {
-            return None;
+        match iri.as_str() {
+            "http://www.w3.org/2001/XMLSchema#integer"
+            | "http://www.w3.org/2001/XMLSchema#long"
+            | "http://www.w3.org/2001/XMLSchema#int"
+            | "http://www.w3.org/2001/XMLSchema#short"
+            | "http://www.w3.org/2001/XMLSchema#byte"
+            | "http://www.w3.org/2001/XMLSchema#unsignedLong"
+            | "http://www.w3.org/2001/XMLSchema#unsignedInt"
+            | "http://www.w3.org/2001/XMLSchema#unsignedShort"
+            | "http://www.w3.org/2001/XMLSchema#unsignedByte"
+            | "http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+            | "http://www.w3.org/2001/XMLSchema#positiveInteger"
+            | "http://www.w3.org/2001/XMLSchema#nonPositiveInteger"
+            | "http://www.w3.org/2001/XMLSchema#negativeInteger" => self.lexical_form().parse().ok(),
+            _ => None,
         }
-
-        self.lexical_form().parse().ok()
     }
 
     /// Attempts to convert this literal to a datetime value.
@@ -148,11 +162,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 #[allow(clippy::enum_variant_names)]
 pub enum ConcreteLiteral {
     /// A plain string literal, optionally with a language tag.
-    StringLiteral {
-        lexical_form: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        lang: Option<Lang>,
-    },
+    StringLiteral { lexical_form: String, lang: Option<Lang> },
 
     /// A literal with an explicit datatype IRI.
     DatatypeLiteral { lexical_form: String, datatype: IriRef },
@@ -837,10 +847,18 @@ impl ConcreteLiteral {
 
     /// Parses a decimal from its string representation using `rust_decimal::Decimal`.
     ///
+    /// Explicitly rejects scientific notation (e.g. `1E0`) because the XSD
+    /// `decimal` lexical space forbids it — only `[+-]?[0-9]*(\.[0-9]+)?` is
+    /// valid. Some versions of `rust_decimal` accept E-notation, which would
+    /// silently produce the wrong datatype.
+    ///
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a `Decimal`.
     pub fn parse_decimal(s: &str) -> Result<Decimal, String> {
+        if s.contains('e') || s.contains('E') {
+            return Err("Invalid decimal: unknown character".to_string());
+        }
         s.parse::<Decimal>()
             .map_err(|e| format!("Cannot convert {s} to decimal: {e}"))
     }

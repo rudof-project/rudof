@@ -25,6 +25,20 @@ pub struct RdfDataConfig {
 
     /// Configuration for RDF visualization appearance and styling.
     pub(crate) rdf_visualization: RDFVisualizationConfig,
+
+    /// Optional QLever backend configuration. Reading this section from TOML only records the user's preferences, the QLever container is not started
+    /// until the caller explicitly invokes [`QleverGraphContainer::from_path`](crate::rdf_impl::QleverGraphContainer::from_path) or `from_reader`.
+    #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+    pub qlever: Option<crate::rdf_impl::QleverConfig>,
+}
+
+impl PartialEq for RdfDataConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.base == other.base
+            && self.endpoints == other.endpoints
+            && self.automatic_base == other.automatic_base
+            && self.rdf_visualization == other.rdf_visualization
+    }
 }
 
 impl RdfDataConfig {
@@ -39,6 +53,8 @@ impl RdfDataConfig {
             endpoints: Self::default_endpoints(),
             automatic_base: Self::default_automatic_base(),
             rdf_visualization: Self::default_rdf_visualization(),
+            #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+            qlever: None,
         }
     }
 

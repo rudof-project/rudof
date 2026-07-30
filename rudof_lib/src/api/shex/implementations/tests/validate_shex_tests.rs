@@ -9,6 +9,7 @@ use crate::{
         DataFormat, InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat,
     },
 };
+use regex::Regex;
 //use std::str::FromStr;
 
 /// Helper: serialize validation results to string
@@ -86,7 +87,9 @@ fn test_validate_shex_success() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    assert!(serialized.contains("Results"));
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
+
+    assert!(re.is_match(&serialized));
 
     println!(
         "\n===== test_validate_shex_success =====\n{}============================================",
@@ -266,7 +269,9 @@ fn test_serialize_validation_results_compact() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    assert!(serialized.contains("Results"));
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
+
+    assert!(re.is_match(&serialized));
 
     println!(
         "\n===== test_serialize_validation_results_compact =====\n{}============================================",
@@ -317,7 +322,6 @@ fn test_serialize_validation_results_json() {
     // Test JSON format
     let serialized = serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Json));
 
-    assert!(serialized.contains("Results"));
     assert!(serialized.contains("{"));
     assert!(serialized.contains("}"));
 
@@ -423,7 +427,9 @@ fn test_serialize_validation_results_details() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Details));
 
-    assert!(serialized.contains("Results"));
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Details\s+│$").unwrap();
+
+    assert!(re.is_match(&serialized));
 
     println!(
         "\n===== test_serialize_validation_results_details =====\n{}============================================",
@@ -496,10 +502,108 @@ fn test_validate_shex_multiple_nodes() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    assert!(serialized.contains("Results"));
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
+
+    assert!(re.is_match(&serialized));
 
     println!(
         "\n===== test_validate_shex_multiple_nodes =====\n{}============================================",
         serialized
+    );
+}
+
+/// Regression test for the IRI-pattern bug triggered by `--base-schema`/`--base-data`.
+#[test]
+fn test_validate_shex_iri_pattern_with_base_schema() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+
+    let data = InputSpec::str(
+        r#"PREFIX ex: <http://a.example/>
+           ex:n1 ex:p1 "ab"^^ex:dt1 ."#,
+    );
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        Some("http://a.example/"),
+        None,
+        None,
+        None,
+        None,
+    )
+    .unwrap();
+
+    let schema = InputSpec::str(
+        r#"<http://a.example/S1> IRI /^https?:\/\// {
+             <http://a.example/p1> <http://a.example/dt1>
+           }"#,
+    );
+    load_shex_schema(
+        &mut rudof,
+        &schema,
+        Some(&ShExFormat::ShExC),
+        Some("http://a.example/"),
+        None,
+    )
+    .unwrap();
+
+    let shapemap = InputSpec::str(r#"<http://a.example/n1>@<http://a.example/S1>"#);
+    load_shapemap(
+        &mut rudof,
+        &shapemap,
+        Some(&ShapeMapFormat::Compact),
+        Some("http://a.example/"),
+        Some("http://a.example/"),
+    )
+    .unwrap();
+
+    validate_shex(&mut rudof).unwrap();
+    let serialized =
+        serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
+    assert!(
+        serialized.contains("OK"),
+        "Expected OK status (pattern ^https?:// must match full IRI even when base is set). Got:\n{serialized}",
+    );
+    assert!(!serialized.contains("FAIL"), "Got unexpected FAIL:\n{serialized}");
+}
+
+/// Regression test for the ShapeMap parser rejecting `_:label` as a focus node.
+#[test]
+fn test_validate_shex_bnode_focus_in_shapemap() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+
+    let data = InputSpec::str(r#"_:abcd <http://a.example/p1> <http://a.example/o1> ."#);
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .unwrap();
+
+    let schema = InputSpec::str(
+        r#"<http://a.example/S1> IRI {
+             <http://a.example/p1> .
+           }"#,
+    );
+    load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
+
+    let shapemap = InputSpec::str(r#"_:abcd@<http://a.example/S1>"#);
+    load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
+
+    validate_shex(&mut rudof).unwrap();
+    let serialized =
+        serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
+    assert!(
+        serialized.contains("_:abcd"),
+        "Expected focus _:abcd to appear in results:\n{serialized}",
+    );
+    assert!(
+        serialized.contains("FAIL"),
+        "Expected FAIL (BNode focus against IRI shape):\n{serialized}",
     );
 }

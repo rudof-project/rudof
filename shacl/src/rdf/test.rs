@@ -6,7 +6,7 @@ mod tests {
     use rudof_iri::iri;
     use rudof_rdf::rdf_core::RDFFormat;
     use rudof_rdf::rdf_core::term::Object;
-    use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+    use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 
     #[test]
     fn test_language_in() {
@@ -21,7 +21,7 @@ mod tests {
         "#;
 
         let shape_id = Object::iri(iri!("http://example.org/TestShape"));
-        let graph = InMemoryGraph::from_str(shape, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
+        let graph = OxigraphInMemory::from_str(shape, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let ast = ShaclParser::new(graph).parse().unwrap();
         let shape = match ast.get_shape(&shape_id).unwrap() {
             ASTShape::NodeShape(ns) => ns,
@@ -49,7 +49,7 @@ mod tests {
         "#;
         let shape_id = Object::iri(iri!("http://example.org/Shape"));
 
-        let rdf = InMemoryGraph::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let rdf = OxigraphInMemory::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let ast = ShaclParser::new(rdf).parse().unwrap();
         let shape = ast.get_shape(&shape_id).unwrap();
         let expected_node_shape = ASTNodeShape::new(shape_id)

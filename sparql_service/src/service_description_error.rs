@@ -1,4 +1,4 @@
-use rudof_rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
+use rudof_rdf::{rdf_core::RDFError, rdf_impl::OxigraphInMemoryError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -15,6 +15,6 @@ pub enum ServiceDescriptionError {
     #[error(transparent)]
     SRDFGraphError {
         #[from]
-        error: InMemoryGraphError,
+        error: OxigraphInMemoryError,
     },
 }

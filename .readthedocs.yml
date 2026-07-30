@@ -2,7 +2,7 @@ version: 2
 
 sphinx:
   builder: html
-  configuration: python/docs/conf.py
+  configuration: bindings/python/docs/conf.py
 
 build:
   os: ubuntu-22.04
@@ -21,9 +21,9 @@ build:
 
 python:
   install:
-    - requirements: python/requirements.dev.txt
+    - requirements: bindings/python/requirements.dev.txt
     - method: pip
-      path: python
+      path: bindings/python
 
 submodules:
   include: all

@@ -10,27 +10,31 @@ mod tests {
     #[ignore]
     fn node_validator_001() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "nodeValidator-001");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 
     #[test]
     #[ignore]
     fn optional_001() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "optional-001");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 
     #[test]
     #[ignore]
     fn property_validator_select_001() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "propertyValidator-select-001");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 
     #[test]
     #[ignore]
     fn validator_001() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "validator-001");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 }

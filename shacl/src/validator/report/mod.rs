@@ -154,17 +154,17 @@ impl Display for ValidationReport {
             writeln!(f, "{} errors found", self.results.len())?;
 
             for result in self.results.iter() {
-                writeln!(f, "{}", &self.shapes_pm.qualify(&result.severity().into()))?;
+                writeln!(f, "{}", self.shapes_pm.qualify(&result.severity().into()))?;
 
                 writeln!(
                     f,
                     " node: {} {}\n{}{}{}{}",
-                    &self.nodes_pm.show(result.focus_node()),
-                    &self.shapes_pm.show(result.constraint_component()),
+                    self.nodes_pm.show(result.focus_node()),
+                    self.shapes_pm.show(result.constraint_component()),
                     result.message(),
-                    &self.shapes_pm.show(&result.path()),
-                    &self.shapes_pm.show(&result.source()),
-                    &self.nodes_pm.show(&result.value()),
+                    self.shapes_pm.show(&result.path()),
+                    self.shapes_pm.show(&result.source()),
+                    self.nodes_pm.show(&result.value()),
                 )?;
             }
 

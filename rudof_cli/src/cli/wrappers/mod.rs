@@ -1,3 +1,4 @@
+mod backend;
 mod comparison;
 mod conversion;
 mod data;
@@ -13,6 +14,7 @@ mod shapemap;
 mod shex;
 mod validation;
 
+pub use backend::*;
 pub use comparison::*;
 pub use conversion::*;
 pub use data::*;
@@ -60,9 +62,10 @@ macro_rules! cli_wrapper {
             fn from(cli: $cli) -> Self {
                 let s = cli.to_string();
                 s.parse().unwrap_or_else(|e| {
+                    let available = vec![$( stringify!($variant).to_lowercase() ),*];
                     panic!(
-                        "CLI enum variant {:?} doesn't match lib enum: {:?}",
-                        cli, e
+                        "CLI enum variant {} doesn't match lib enum: {}\n{}",
+                        cli, e, available.join(", ")
                     )
                 })
             }

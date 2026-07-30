@@ -2,7 +2,7 @@ use crate::error::ValidationError;
 use crate::ir::IRSchema;
 use crate::rdf::ShaclParser;
 use rudof_rdf::rdf_core::RDFFormat;
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 use std::io::BufRead;
 
 pub struct ShaclDataManager;
@@ -14,7 +14,7 @@ impl ShaclDataManager {
         rdf_format: &RDFFormat,
         base: Option<&str>,
     ) -> Result<IRSchema, ValidationError> {
-        let graph = InMemoryGraph::from_reader(reader, source_name, rdf_format, base, &ReaderMode::default())?;
+        let graph = OxigraphInMemory::from_reader(reader, source_name, rdf_format, base, &ReaderMode::default())?;
 
         match ShaclParser::new(graph).parse() {
             Ok(ast) => Ok(IRSchema::compile(&ast)?),

@@ -126,14 +126,7 @@ fn triple_expr2patterns(
                 triple_expr2patterns(&tew.te, ps, config, schema, var_builder)
             }
         },
-        TripleExpr::TripleConstraint {
-            inverse,
-            predicate,
-            value_expr: _,
-            min: _,
-            max: _,
-            ..
-        } => {
+        TripleExpr::TripleConstraint { inverse, predicate, .. } => {
             // TODO: check min and max cardinalities
             if let Some(true) = inverse {
                 todo!()

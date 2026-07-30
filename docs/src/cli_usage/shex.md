@@ -165,6 +165,20 @@ Result:
 :b-><http://example.org/User>  Shape passed for node http://example.org/b: :User
 ```
 
+## Precompiling the schema to a SchemaIR cache
+
+The `--compile-to <FILE>` option runs the AST to IR compilation and writes
+the resulting `SchemaIR` to `FILE`. That file can then be reused by
+`shex-validate --compiled-schema <FILE>` to skip parsing and
+compilation on subsequent runs.
+
+```sh
+rudof shex --schema examples/user.shex --compile-to user.ircache
+```
+
+See the [precompiled ShEx schemas how-to](../using-rudof/precompiled-shex-schemas.md)
+for the full compile - validate workflow.
+
 ## ShEx command
 
 The general format of the ShEx subcommand is:
@@ -192,6 +206,8 @@ Options:
           RDF Reader mode [default: strict] [possible values: lax, strict]
       --force-overwrite
 
+      --compile-to <FILE>
+          Compile the ShEx schema and write the precompiled SchemaIR cache to FILE.
   -c, --config-file <Config file name>
           Config file path, if unset it assumes default config
   -h, --help

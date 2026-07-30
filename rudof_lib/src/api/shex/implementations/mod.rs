@@ -1,7 +1,9 @@
 mod add_node_shape_to_shapemap;
 mod check_shex_schema;
+mod compile_shex_schema_to_file;
 mod load_shapemap;
 mod load_shex_schema;
+mod load_shex_schema_precompiled;
 mod reset_shapemap;
 mod reset_shex;
 mod reset_shex_schema;
@@ -12,8 +14,10 @@ mod validate_shex;
 
 pub use add_node_shape_to_shapemap::add_node_shape_to_shapemap;
 pub use check_shex_schema::check_shex_schema;
+pub use compile_shex_schema_to_file::compile_shex_schema_to_file;
 pub use load_shapemap::load_shapemap;
 pub use load_shex_schema::load_shex_schema;
+pub use load_shex_schema_precompiled::load_shex_schema_precompiled;
 pub use reset_shapemap::reset_shapemap;
 pub use reset_shex::reset_shex;
 pub use reset_shex_schema::reset_shex_schema;

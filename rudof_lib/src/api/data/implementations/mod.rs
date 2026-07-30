@@ -9,6 +9,8 @@ mod show_node_info;
 
 pub use list_endpoints::list_endpoints;
 pub use load_data::load_data;
+#[cfg(feature = "qlever")]
+pub use load_data::load_data_via_qlever;
 pub use load_service_description::load_service_description;
 pub use reset_data::reset_data;
 pub use reset_service_description::reset_service_description;

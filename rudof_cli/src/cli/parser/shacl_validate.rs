@@ -65,21 +65,14 @@ pub struct ShaclValidateArgs {
     )]
     pub base_shapes: Option<String>,
 
-    #[arg(
-        short = 'e',
-        long = "endpoint",
-        value_name = "ENDPOINT",
-        help = "Endpoint with RDF data (URL or name)"
-    )]
-    pub endpoint: Option<String>,
-
     /// Execution mode
     #[arg(
         short = 'm',
         long = "mode",
         value_name = "MODE",
         ignore_case = true,
-        help = "Execution mode",
+        help = "Validation mode. `native` usually used with the in-memory store and \
+                `sparql` is intended for remote SPARQL endpoints and Qlever.",
         default_value_t = ShaclValidationModeCli::Native,
         value_enum
     )]
