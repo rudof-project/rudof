@@ -1,0 +1,18 @@
+[package]
+name = "bench-issue730"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "bench-issue730"
+path = "src/main.rs"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+shex_ast.workspace = true
+shex_validation.workspace = true
+rudof_rdf = { workspace = true, features = ["sparql"] }
+rudof_iri.workspace = true
+anyhow.workspace = true
+zip.workspace = true

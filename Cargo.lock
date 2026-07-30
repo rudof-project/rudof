@@ -301,6 +301,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "bench-issue730"
+version = "0.3.7"
+dependencies = [
+ "anyhow",
+ "rudof_iri",
+ "rudof_rdf",
+ "shex_ast",
+ "shex_validation",
+ "zip 2.4.2",
+]
+
+[[package]]
 name = "bench-shex"
 version = "0.3.7"
 dependencies = [
