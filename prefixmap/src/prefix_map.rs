@@ -3,35 +3,64 @@ use crate::{IriRef, Show};
 use colored::*;
 use indexmap::IndexMap;
 use rudof_iri::*;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::MapAccess, de::Visitor, ser::SerializeMap};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
 /// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PrefixMap {
     /// Proper prefix map associations of an alias [`String`] to an [`IriS`]
-    #[serde(flatten)]
     pub map: IndexMap<String, IriS>,
 
     // TODO - The following properties should be handled by rudof_lib
 
     /// Color of prefix aliases when qualifying an IRI that has an alias
-    #[serde(skip)]
     qualify_prefix_color: Option<Color>,
 
     /// Color of local names when qualifying an IRI that has an alias
-    #[serde(skip)]
     qualify_localname_color: Option<Color>,
 
     /// Color of semicolon when qualifying an IRI that has an alias
-    #[serde(skip)]
     qualify_semicolon_color: Option<Color>,
 
     /// Whether to generate hyperlink when qualifying an IRI
-    #[serde(skip)]
     hyperlink: bool,
+}
+
+impl Serialize for PrefixMap {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(Some(self.map.len()))?;
+        for (k, v) in &self.map {
+            map.serialize_entry(k, v)?;
+        }
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for PrefixMap {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct PrefixMapVisitor;
+
+        impl<'de> Visitor<'de> for PrefixMapVisitor {
+            type Value = PrefixMap;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a map of prefix to IRI")
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, mut access: A) -> Result<Self::Value, A::Error> {
+                let mut map = IndexMap::new();
+                while let Some((k, v)) = access.next_entry::<String, IriS>()? {
+                    map.insert(k, v);
+                }
+                Ok(PrefixMap { map, ..Default::default() })
+            }
+        }
+
+        deserializer.deserialize_map(PrefixMapVisitor)
+    }
 }
 
 /// Methods for [`PrefixMap`] manipulation
