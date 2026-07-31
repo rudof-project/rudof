@@ -32,15 +32,6 @@ pub struct RdfDataConfig {
     pub qlever: Option<crate::rdf_impl::QleverConfig>,
 }
 
-impl PartialEq for RdfDataConfig {
-    fn eq(&self, other: &Self) -> bool {
-        self.base == other.base
-            && self.endpoints == other.endpoints
-            && self.automatic_base == other.automatic_base
-            && self.rdf_visualization == other.rdf_visualization
-    }
-}
-
 impl RdfDataConfig {
     /// Creates a new `RdfDataConfig` with default settings.
     ///
