@@ -26,4 +26,8 @@ impl Preds {
             .join(", ");
         format!("[{}]", preds_str)
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Pred> {
+        self.values.iter()
+    }
 }

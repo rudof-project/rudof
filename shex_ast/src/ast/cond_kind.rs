@@ -3,6 +3,7 @@ use crate::{
     ast::NodeKind,
     ir::{semantic_action_context::SemanticActionContext, value_set::ValueSet},
 };
+use prefixmap::IriRef;
 use rbe::{MatchKind, Pending, RbeError};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::{
@@ -58,51 +59,51 @@ impl MatchKind<Pred, Node, ShapeLabelIdx, SemanticActionContext> for CondKind {
             CondKind::Any => empty(),
             CondKind::NodeKind(nk) => match check_node_node_kind(v, nk) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("NodeKind error: {e:?}")),
+                Err(e) => error(format!("NodeKind error: {e}")),
             },
             CondKind::Datatype { iri, .. } => match check_node_datatype(v, iri) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("Datatype error: {e:?}")),
+                Err(e) => Err(datatype_error_to_rbe(v, &e)),
             },
             CondKind::Length(n) => match check_node_length(v, *n) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("Length error: {e:?}")),
+                Err(e) => error(format!("Length error: {e}")),
             },
             CondKind::MinLength(n) => match check_node_min_length(v, *n) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("MinLength error: {e:?}")),
+                Err(e) => error(format!("MinLength error: {e}")),
             },
             CondKind::MaxLength(n) => match check_node_max_length(v, *n) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("MaxLength error: {e:?}")),
+                Err(e) => error(format!("MaxLength error: {e}")),
             },
             CondKind::Pattern { regex, flags, base } => match check_pattern(v, regex, flags.as_deref(), base) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("Pattern error: {e:?}")),
+                Err(e) => error(format!("Pattern error: {e}")),
             },
             CondKind::MinInclusive(n) => match check_node_min_inclusive(v, n.clone()) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("MinInclusive error: {e:?}")),
+                Err(e) => error(format!("MinInclusive error: {e}")),
             },
             CondKind::MinExclusive(n) => match check_node_min_exclusive(v, n.clone()) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("MinExclusive error: {e:?}")),
+                Err(e) => error(format!("MinExclusive error: {e}")),
             },
             CondKind::MaxInclusive(n) => match check_node_max_inclusive(v, n.clone()) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("MaxInclusive error: {e:?}")),
+                Err(e) => error(format!("MaxInclusive error: {e}")),
             },
             CondKind::MaxExclusive(n) => match check_node_max_exclusive(v, n.clone()) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("MaxExclusive error: {e:?}")),
+                Err(e) => error(format!("MaxExclusive error: {e}")),
             },
             CondKind::TotalDigits(n) => match check_node_total_digits(v, *n) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("TotalDigits error: {e:?}")),
+                Err(e) => error(format!("TotalDigits error: {e}")),
             },
             CondKind::FractionDigits(n) => match check_node_fraction_digits(v, *n) {
                 Ok(_) => empty(),
-                Err(e) => error(format!("FractionDigits error: {e:?}")),
+                Err(e) => error(format!("FractionDigits error: {e}")),
             },
             CondKind::ValueSet(vs) => {
                 if vs.check_value(v.as_object()) {
@@ -121,6 +122,62 @@ impl MatchKind<Pred, Node, ShapeLabelIdx, SemanticActionContext> for CondKind {
                 )),
             },
         }
+    }
+}
+
+/// Converts a datatype-check failure into an [`RbeError`], keeping the
+/// expected/found datatype IRIs (and, where relevant, the checked node)
+/// structured as `Node`s rather than flattening them into a plain string.
+/// This lets a caller with a `PrefixMap` (e.g. `ValidatorError::show_qualified`)
+/// render them as qualified names (`xsd:integer`) instead of full IRIs.
+fn datatype_error_to_rbe(
+    node: &Node,
+    err: &SchemaIRError,
+) -> RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind> {
+    let iri_ref_node = |r: &IriRef| r.get_iri().map(|iri| Node::iri(iri.clone()));
+    match err {
+        SchemaIRError::DatatypeDontMatch { found, expected, .. } => {
+            if let Ok(found_node) = iri_ref_node(found) {
+                return RbeError::CondFailed {
+                    prefix: "Datatype error".to_string(),
+                    details: vec![
+                        ("found".to_string(), found_node),
+                        ("expected".to_string(), Node::iri(expected.clone())),
+                        ("lexical form".to_string(), node.clone()),
+                    ],
+                };
+            }
+        },
+        SchemaIRError::DatatypeNoLiteral { expected, .. } => {
+            return RbeError::CondFailed {
+                prefix: "Datatype error: not a literal".to_string(),
+                details: vec![
+                    ("expected datatype".to_string(), Node::iri((**expected).clone())),
+                    ("found".to_string(), node.clone()),
+                ],
+            };
+        },
+        SchemaIRError::WrongDatatypeLiteralMatch {
+            expected,
+            datatype,
+            error,
+            ..
+        } => {
+            if let Ok(datatype_node) = iri_ref_node(datatype) {
+                return RbeError::CondFailed {
+                    prefix: format!("Datatype error: {error}"),
+                    details: vec![
+                        ("expected".to_string(), Node::iri(expected.clone())),
+                        ("declared datatype".to_string(), datatype_node),
+                        ("lexical form".to_string(), node.clone()),
+                    ],
+                };
+            }
+        },
+        _ => {},
+    }
+    RbeError::MsgError {
+        msg: format!("Datatype error: {err}"),
     }
 }
 

@@ -97,6 +97,14 @@ where
     #[error("{msg}")]
     MsgError { msg: String },
 
+    /// A condition (`P`) rejected a value for a reason that involves other
+    /// qualifiable values (e.g. an expected vs. found datatype IRI). Kept
+    /// structured — rather than flattened into [`RbeError::MsgError`] — so a
+    /// caller with a `PrefixMap` can render `details` through `show_value`
+    /// instead of full IRIs.
+    #[error("{prefix}: {}", details.iter().map(|(label, v)| format!("{label} {v}")).collect::<Vec<_>>().join(", "))]
+    CondFailed { prefix: String, details: Vec<(String, V)> },
+
     #[error("No candidates. Expr: {rbe}, Values: [{values}]")]
     EmptyCandidates {
         rbe: Box<RbeCond<K, V, R, Ctx, P>>,
@@ -187,6 +195,14 @@ where
                 show_key(key)
             ),
             RbeError::MsgError { msg } => msg.clone(),
+            RbeError::CondFailed { prefix, details } => format!(
+                "{prefix}: {}",
+                details
+                    .iter()
+                    .map(|(label, v)| format!("{label} {}", show_value(v)))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             RbeError::EmptyCandidates { rbe, values } => format!(
                 "No candidates. Mandatory values: [{}], Values: [{}]",
                 show_mandatory_values(rbe, show_key, show_value),

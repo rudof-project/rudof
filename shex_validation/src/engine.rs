@@ -1728,7 +1728,7 @@ fn check_expr_neigh(
         });
     }
     let mut errors = Vec::new();
-    for result in first_result.into_iter().chain(result_iter) {
+    for result in first_result.into_iter().chain(result_iter.by_ref()) {
         /*trace!(
             "Result of {expr} with neighs: {}: {:?}",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
@@ -1793,6 +1793,25 @@ fn check_expr_neigh(
             },
             Err(err) => {
                 // debug!("Result with error: {err}");
+                // The failing candidate's (predicate, value) pair is recorded in
+                // `failed_candidates` as soon as its condition is checked (see
+                // `IterCartesianProduct::next` in rbe_table.rs), even though we
+                // bailed out here instead of exhausting the iterator. Recover it
+                // so the reported error can name the node and property involved,
+                // not just the bare condition failure.
+                if let Some((candidate, predicate, value, error)) = result_iter.failed_candidates().last() {
+                    return fail(ValidatorError::NoMatchesFound {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        reasons: vec![NoMatchReason::ConditionFailed {
+                            candidate: candidate.clone(),
+                            predicate: predicate.clone(),
+                            value: value.clone(),
+                            error: error.clone(),
+                        }],
+                    });
+                }
                 return fail(ValidatorError::RbeError(err));
             },
         }
