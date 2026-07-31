@@ -4,6 +4,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ## [Unreleased]
 ### Added
 ### Fixed
+- Fixes issue #730: exponential ShEx validation time on nested/chained shapes. `Engine::prove` now memoizes `(node, shape)` proof results across recursive calls, so each pair is proved at most once instead of once per path. Proofs that assumed a pair still being proved higher up the recursion stack are excluded from the cache, so validation results are unchanged.
 ### Changed
 ### Removed
 
