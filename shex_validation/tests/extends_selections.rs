@@ -25,7 +25,13 @@ fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
     let mut compiler = AST2IR::new(&ResolveMethod::default(), map_state);
     let mut compiled = SchemaIR::new(registry);
     compiler
-        .compile(&ast, &base, &Some(base.clone()), &mut compiled, config.external_resolvers())
+        .compile(
+            &ast,
+            &base,
+            &Some(base.clone()),
+            &mut compiled,
+            config.external_resolvers(),
+        )
         .expect("compile to IR");
     compiled
 }

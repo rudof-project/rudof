@@ -976,7 +976,14 @@ impl Engine {
                             }
                         }
                         for te in constraint_tes {
-                            match check_exprs_neigh(std::slice::from_ref(te), &constraint_neighs, node, shape, idx, typing)? {
+                            match check_exprs_neigh(
+                                std::slice::from_ref(te),
+                                &constraint_neighs,
+                                node,
+                                shape,
+                                idx,
+                                typing,
+                            )? {
                                 Either::Right(_) => {},
                                 Either::Left(errs) => {
                                     errors_in_loop.push(ValidatorError::ShapeExtendsError {
@@ -1270,7 +1277,8 @@ impl Engine {
                         }
                     }
                     for te in tes {
-                        match check_exprs_neigh(std::slice::from_ref(te), &constraint_neighs, node, shape, idx, typing)? {
+                        match check_exprs_neigh(std::slice::from_ref(te), &constraint_neighs, node, shape, idx, typing)?
+                        {
                             Either::Right(_) => {},
                             Either::Left(errs) => {
                                 errors_in_loop.push(ValidatorError::ShapeExtendsError {
