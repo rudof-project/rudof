@@ -1167,20 +1167,46 @@ impl Engine {
             }
         }
 
-        // The selection's constraint conjuncts must hold for the node
+        // The selection's constraint conjuncts.  Those expressible as triple expressions
+        // are validated by split-constraint logic once a partition succeeds (below),
+        // against the union of the triples the partition allocated to the buckets in the
+        // constraint's scope — mirroring check_node_shape_extends.  NodeConstraint
+        // conjuncts involve no triples and are checked against the node right away;
+        // anything else (e.g. a NOT conjunct) keeps the whole-neighbourhood check.
         let mut reasons = Vec::new();
+        let mut split_constraints: Vec<(ShapeLabelIdx, &[ShapeLabelIdx], Vec<Expr>)> = Vec::new();
         for c in sigma.constraints() {
-            match self.check_node_constraint_expr(c, node, schema, rdf, typing)? {
-                Either::Left(errors) => {
+            let mut tes = Vec::new();
+            match try_split_constraint(schema, c.expr(), node, &mut tes) {
+                Some(true) => {
+                    if !tes.is_empty() {
+                        split_constraints.push((*c.expr(), c.scope(), tes));
+                    }
+                },
+                Some(false) => {
                     return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
                         node: Box::new(node.clone()),
                         shape: Box::new(shape.clone()),
                         idx: *idx,
-                        extends: *c,
-                        errors: ValidatorErrors::new(errors),
+                        extends: *c.expr(),
+                        errors: ValidatorErrors::new(vec![ValidatorError::TripleExprRefuted {
+                            node: Box::new(node.clone()),
+                            idx: *c.expr(),
+                        }]),
                     }]));
                 },
-                Either::Right(rs) => reasons.extend(rs),
+                None => match self.check_node_constraint_expr(c.expr(), node, schema, rdf, typing)? {
+                    Either::Left(errors) => {
+                        return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
+                            node: Box::new(node.clone()),
+                            shape: Box::new(shape.clone()),
+                            idx: *idx,
+                            extends: *c.expr(),
+                            errors: ValidatorErrors::new(errors),
+                        }]));
+                    },
+                    Either::Right(rs) => reasons.extend(rs),
+                },
             }
         }
 
@@ -1200,7 +1226,9 @@ impl Engine {
             let mut ok_partition = true;
             let mut errors_in_loop = Vec::new();
             let mut reasons_in_loop = Vec::new();
+            let mut allocated: HashMap<Option<ShapeLabelIdx>, Vec<_>> = HashMap::new();
             for (maybe_label, rbes, neighs_subset) in partition.iter() {
+                allocated.insert(*maybe_label, neighs_subset.clone());
                 let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                 match result {
                     Either::Right(rs) => {
@@ -1229,6 +1257,34 @@ impl Engine {
                         ok_partition = false;
                         break;
                     },
+                }
+            }
+            if ok_partition {
+                // Split-constraint validation: each constraint sees the union of the
+                // triples this partition allocated to the buckets in its scope.
+                'constraints: for (cidx, scope, tes) in &split_constraints {
+                    let mut constraint_neighs = Vec::new();
+                    for b in *scope {
+                        if let Some(more) = allocated.get(&Some(*b)) {
+                            constraint_neighs.extend(more.iter().cloned());
+                        }
+                    }
+                    for te in tes {
+                        match check_exprs_neigh(std::slice::from_ref(te), &constraint_neighs, node, shape, idx, typing)? {
+                            Either::Right(_) => {},
+                            Either::Left(errs) => {
+                                errors_in_loop.push(ValidatorError::ShapeExtendsError {
+                                    node: Box::new(node.clone()),
+                                    shape: Box::new(shape.clone()),
+                                    idx: *idx,
+                                    extends: *cidx,
+                                    errors: ValidatorErrors::new(errs),
+                                });
+                                ok_partition = false;
+                                break 'constraints;
+                            },
+                        }
+                    }
                 }
             }
             if ok_partition {
@@ -1645,6 +1701,42 @@ fn collect_all_exprs_for_shape(
         }
     } else {
         vec![]
+    }
+}
+
+/// Classify a selection constraint for split-constraint validation.  Returns
+/// `Some(true)` with the constraint's triple expressions pushed onto `out` when the
+/// (dereferenced) expression is expressible as triple expressions over its split scope
+/// — a Shape without extends, a NodeConstraint (checked against the node immediately),
+/// or a conjunction of such.  `Some(false)` reports a NodeConstraint the node fails.
+/// `None` means the constraint is not split-validatable (e.g. a negation or a shape
+/// with its own extends) and must keep the whole-neighbourhood check.
+fn try_split_constraint(schema: &SchemaIR, cidx: &ShapeLabelIdx, node: &Node, out: &mut Vec<Expr>) -> Option<bool> {
+    match schema.find_shape_idx(cidx).map(|info| info.expr()) {
+        Some(ShapeExpr::Shape(s)) if s.extends().is_empty() => {
+            out.push(s.triple_expr().clone());
+            Some(true)
+        },
+        Some(ShapeExpr::NodeConstraint(nc)) => {
+            let ctx = SemanticActionContext::subject(node);
+            Some(nc.cond().matches(node, &ctx).is_ok())
+        },
+        Some(ShapeExpr::Ref { idx }) => try_split_constraint(schema, idx, node, out),
+        Some(ShapeExpr::ShapeAnd { exprs }) => {
+            let mark = out.len();
+            for e in exprs {
+                match try_split_constraint(schema, e, node, out) {
+                    Some(true) => {},
+                    Some(false) => return Some(false),
+                    None => {
+                        out.truncate(mark);
+                        return None;
+                    },
+                }
+            }
+            Some(true)
+        },
+        _ => None,
     }
 }
 
