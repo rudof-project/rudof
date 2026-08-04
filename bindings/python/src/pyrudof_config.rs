@@ -8,7 +8,7 @@ use std::path::Path;
 use pyo3::{PyErr, PyResult, Python, pyclass, pymethods};
 use rudof_lib::{
     RudofConfig,
-    errors::{RudofConfigError, RudofError},
+    errors::{ConfigError, RudofError},
 };
 
 /// Contains the configuration parameters for Rudof.
@@ -58,7 +58,7 @@ impl PyRudofConfig {
 
 /// Convert a `ConfigError` into a Python exception by first turning it
 /// into a `RudofError` and delegating to the shared `cnv_err` helper.
-fn cnv_config_err(e: RudofConfigError) -> PyErr {
+fn cnv_config_err(e: ConfigError) -> PyErr {
     let r: RudofError = e.into();
     crate::pyrudof_lib::cnv_err(r)
 }

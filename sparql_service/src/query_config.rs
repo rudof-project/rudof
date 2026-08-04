@@ -47,12 +47,4 @@ impl Default for QueryConfig {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum QueryConfigError {
-    #[cfg(not(target_family = "wasm"))]
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: std::io::Error },
 
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: toml::de::Error },
-}

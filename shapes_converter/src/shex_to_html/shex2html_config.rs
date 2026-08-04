@@ -235,11 +235,4 @@ impl Default for ShEx2HtmlConfig {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ShEx2HtmlConfigError {
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: io::Error },
 
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: toml::de::Error },
-}

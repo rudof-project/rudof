@@ -6,7 +6,7 @@ use thiserror::Error;
 pub enum RudofError {
     /// Configuration errors.
     #[error("Configuration error: {0}")]
-    Config(#[from] RudofConfigError),
+    Config(#[from] ConfigError),
 
     /// Input specification and source errors.
     #[error("Input specification error: {0}")]

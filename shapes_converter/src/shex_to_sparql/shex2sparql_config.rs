@@ -82,11 +82,4 @@ impl Default for ShEx2SparqlConfig {
     }
 }
 
-#[derive(Error, Debug, Clone)]
-pub enum ShEx2SparqlConfigError {
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: String },
 
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: String },
-}

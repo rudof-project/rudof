@@ -146,14 +146,5 @@ impl Default for ShapemapConfig {
     }
 }
 
-#[derive(Error, Debug, Clone)]
-pub enum ShapemapConfigError {
-    #[error("Error reading config file from path {path}: {error}")]
-    FromPath { path: String, error: String },
 
-    #[error("Error reading config file from file {file}: {error}")]
-    FromFile { file: String, error: String },
 
-    #[error("Error reading config file from path {path}: {error}")]
-    Toml { path: String, error: String },
-}

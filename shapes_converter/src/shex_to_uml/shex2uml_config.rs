@@ -168,15 +168,3 @@ fn discover_puml_path(path: Option<PathBuf>) -> PathBuf {
         }
     })
 }
-
-#[derive(Error, Debug)]
-pub enum ShEx2UmlConfigError {
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfig { path_name: String, error: io::Error },
-
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    Toml { path_name: String, error: toml::de::Error },
-
-    #[error("Accessing environment variable {var_name}: {error}")]
-    EnvVar { var_name: String, error: VarError },
-}

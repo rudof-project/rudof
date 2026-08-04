@@ -191,11 +191,4 @@ impl Default for ShExConfig {
     }
 }
 
-#[derive(Error, Debug, Clone)]
-pub enum ShExConfigError {
-    #[error("Error reading config file from path {path}: {error}")]
-    FromPathError { path: String, error: String },
 
-    #[error("Error reading config file from path {path}: {error}")]
-    TomlError { path: String, error: String },
-}
