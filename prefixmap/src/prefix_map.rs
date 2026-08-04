@@ -9,7 +9,7 @@ use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
 /// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Eq, Default)]
 pub struct PrefixMap {
     /// Proper prefix map associations of an alias [`String`] to an [`IriS`]
     pub map: IndexMap<String, IriS>,
@@ -27,6 +27,12 @@ pub struct PrefixMap {
 
     /// Whether to generate hyperlink when qualifying an IRI
     hyperlink: bool,
+}
+
+impl PartialEq for PrefixMap {
+    fn eq(&self, other: &Self) -> bool {
+        self.map == other.map
+    }
 }
 
 impl Serialize for PrefixMap {
