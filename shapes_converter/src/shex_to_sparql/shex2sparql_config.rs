@@ -76,29 +76,6 @@ impl ShEx2SparqlConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for ShEx2SparqlConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "this_variable_name", default = "ShEx2SparqlConfig::default_this_variable_name")]
-            this_variable_name: String,
-            #[serde(rename = "shex", default)]
-            shex: Option<ShExConfig>,
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-
-        Ok(Self {
-            this_variable_name: raw.this_variable_name,
-            shex_needs_fixup: raw.shex.is_none(),
-            shex: raw.shex.unwrap_or(Self::default_shex())
-        })
-    }
-}
-
 impl Default for ShEx2SparqlConfig {
     fn default() -> Self {
         Self::new()

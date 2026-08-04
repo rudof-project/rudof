@@ -186,38 +186,5 @@ impl Default for ValidatorConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for ValidatorConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "max_steps", default = "ValidatorConfig::default_max_steps")]
-            max_steps: Option<usize>,
-            #[serde(rename = "rdf", default)]
-            rdf_data: Option<RdfDataConfig>,
-            #[serde(rename = "shex", default)]
-            shex: Option<ShExConfig>,
-            #[serde(rename = "shapemap", default = "ValidatorConfig::default_shapemap")]
-            shapemap: ShapemapConfig,
-            #[serde(rename = "check_negation", default = "ValidatorConfig::default_check_negation_requirement")]
-            check_negation_requirement: bool,
-            #[serde(rename = "width", default = "ValidatorConfig::default_width")]
-            width: usize,
-        }
 
-        let raw = Raw::deserialize(deserializer)?;
 
-        Ok(Self {
-            max_steps: raw.max_steps,
-            rdf_data_needs_fixup: raw.rdf_data.is_none(),
-            rdf_data: raw.rdf_data.unwrap_or(Self::default_rdf_data()),
-            shex_needs_fixup: raw.shex.is_none(),
-            shex: raw.shex.unwrap_or(Self::default_shex()),
-            width: raw.width,
-            shapemap: raw.shapemap,
-            check_negation_requirement: raw.check_negation_requirement,
-        })
-    }
-}

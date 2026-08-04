@@ -77,25 +77,8 @@ impl Default for ServiceConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for ServiceConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "base_iri", default)]
-            base: Option<IriS>
-        }
 
-        let raw = Raw::deserialize(deserializer)?;
 
-        Ok(Self {
-            base_needs_fixup: raw.base.is_none(),
-            base: raw.base,
-        })
-    }
-}
 
 #[derive(Error, Debug)]
 pub enum ServiceConfigError {

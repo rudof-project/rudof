@@ -56,26 +56,6 @@ impl ShaclConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for ShaclConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "rdf", default)]
-            data: Option<RdfDataConfig>
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-
-        Ok(Self {
-            data_needs_fixup: raw.data.is_none(),
-            data: raw.data.unwrap_or(Self::default_data_config())
-        })
-    }
-}
-
 impl Default for ShaclConfig {
     fn default() -> Self {
         Self::new()

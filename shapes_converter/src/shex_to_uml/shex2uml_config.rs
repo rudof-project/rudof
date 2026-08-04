@@ -154,44 +154,6 @@ impl ShEx2UmlConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for ShEx2UmlConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "plantuml_path", default)]
-            plantuml_path: Option<PathBuf>,
-            #[serde(rename = "annotation_label", default = "ShEx2UmlConfig::default_annotation_label")]
-            annotation_label: Vec<IriS>,
-            #[serde(rename = "replace_iri", default = "ShEx2UmlConfig::default_replace_iri_by_label")]
-            replace_iri_by_label: bool,
-            #[serde(rename = "shadowing", default = "ShEx2UmlConfig::default_shadowing")]
-            shadowing: bool,
-            #[serde(rename = "line_type", default = "ShEx2UmlConfig::default_line_type")]
-            line_type: LineType,
-            #[serde(rename = "direction", default = "ShEx2UmlConfig::default_direction")]
-            direction: Direction,
-            #[serde(rename = "shex", default)]
-            shex: Option<ShExConfig>,
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-
-        Ok(Self {
-            plantuml_path: discover_puml_path(raw.plantuml_path),
-            annotation_label: raw.annotation_label,
-            replace_iri_by_label: raw.replace_iri_by_label,
-            shadowing: raw.shadowing,
-            line_type: raw.line_type,
-            direction: raw.direction,
-            shex_needs_fixup: raw.shex.is_none(),
-            shex: raw.shex.unwrap_or(Self::default_shex()),
-        })
-    }
-}
-
 impl Default for ShEx2UmlConfig {
     fn default() -> Self {
         Self::new()

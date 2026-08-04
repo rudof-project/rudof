@@ -229,63 +229,6 @@ impl ShEx2HtmlConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for ShEx2HtmlConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "title", default = "ShEx2HtmlConfig::default_title")]
-            title: String,
-            #[serde(rename = "landing_page", default = "ShEx2HtmlConfig::default_landing_page_name")]
-            landing_page_name: String,
-            #[serde(rename = "shape_template", default = "ShEx2HtmlConfig::default_shape_template_name")]
-            shape_template_name: String,
-            #[serde(rename = "template_folder", default = "ShEx2HtmlConfig::default_template_folder")]
-            template_folder: Option<String>,
-            #[serde(rename = "css_file", default = "ShEx2HtmlConfig::default_css_file_name")]
-            css_file_name: String,
-            #[serde(rename = "target_folder", default = "ShEx2HtmlConfig::default_target_folder")]
-            target_folder: PathBuf,
-            #[serde(rename = "property_color", default = "ShEx2HtmlConfig::default_color_property_name")]
-            color_property_name: String,
-            #[serde(rename = "annotation_label", default = "ShEx2HtmlConfig::default_annotation_label")]
-            annotation_label: Vec<IriS>,
-            #[serde(rename = "replace_iri_by_label", default = "ShEx2HtmlConfig::default_replace_iri_by_label")]
-            replace_iri_by_label: bool,
-            #[serde(rename = "embed_svg_schema", default = "ShEx2HtmlConfig::default_embed_svg_schema")]
-            embed_svg_schema: bool,
-            #[serde(rename = "embed_svg_shape", default = "ShEx2HtmlConfig::default_embed_svg_shape")]
-            embed_svg_shape: bool,
-            #[serde(rename = "shex2uml", default)]
-            shex2uml: Option<ShEx2UmlConfig>,
-            #[serde(rename = "shex", default)]
-            shex: Option<ShExConfig>,
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-
-        Ok(Self {
-            title: raw.title,
-            landing_page_name: raw.landing_page_name,
-            shape_template_name: raw.shape_template_name,
-            template_folder: raw.template_folder,
-            css_file_name: raw.css_file_name,
-            target_folder: raw.target_folder,
-            color_property_name: raw.color_property_name,
-            annotation_label: raw.annotation_label,
-            replace_iri_by_label: raw.replace_iri_by_label,
-            embed_svg_schema: raw.embed_svg_schema,
-            embed_svg_shape: raw.embed_svg_shape,
-            shex2uml_needs_fixup: raw.shex2uml.is_none(),
-            shex2uml: raw.shex2uml.unwrap_or(Self::default_shex2uml()),
-            shex_needs_fixup: raw.shex.is_none(),
-            shex: raw.shex.unwrap_or(Self::default_shex())
-        })
-    }
-}
-
 impl Default for ShEx2HtmlConfig {
     fn default() -> Self {
         Self::new()

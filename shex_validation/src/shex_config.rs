@@ -66,51 +66,6 @@ impl ShExConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for ShExConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "show_extends", default = "ShExConfig::default_show_extends")]
-            show_extends: bool,
-            #[serde(rename = "show_imports", default = "ShExConfig::default_show_imports")]
-            show_imports: bool,
-            #[serde(rename = "show_shapes", default = "ShExConfig::default_show_shapes")]
-            show_shapes: bool,
-            #[serde(rename = "show_dependencies", default = "ShExConfig::default_show_dependencies")]
-            show_dependencies: bool,
-            #[serde(rename = "show_ir", default = "ShExConfig::default_show_ir")]
-            show_ir: bool,
-            #[serde(rename = "shex_format", default = "ShExConfig::default_shex_format")]
-            shex_format: ShExFormat,
-            #[serde(rename = "check_well_formed", default = "ShExConfig::default_check_well_formed")]
-            check_well_formed: bool,
-            #[serde(rename = "rdf", default)]
-            rdf_config_shex: Option<RdfDataConfig>,
-            #[serde(rename = "base_iri", default)]
-            base: Option<IriS>,
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-
-        Ok(Self {
-            show_extends: raw.show_extends,
-            show_imports: raw.show_imports,
-            show_shapes: raw.show_shapes,
-            show_dependencies: raw.show_dependencies,
-            show_ir: raw.show_ir,
-            shex_format: raw.shex_format,
-            check_well_formed: raw.check_well_formed,
-            rdf_config_needs_fixup: raw.rdf_config_shex.is_none(),
-            rdf_config_shex: raw.rdf_config_shex.unwrap_or(Self::default_rdf_config_shex()),
-            base_needs_fixup: raw.base.is_none(),
-            base: raw.base,
-        })
-    }
-}
-
 impl ShExConfig {
     pub fn new() -> Self {
         Self {

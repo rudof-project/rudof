@@ -184,34 +184,6 @@ impl Default for RdfDataConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for RdfDataConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "base_iri", default)]
-            base: Option<IriS>,
-            #[serde(rename = "endpoints", default = "RdfDataConfig::default_endpoints")]
-            endpoints: HashMap<String, EndpointDescription>,
-            #[serde(rename = "local_base", default = "RdfDataConfig::default_automatic_base")]
-            automatic_base: bool,
-            #[serde(rename = "rdf_visualization", default = "RdfDataConfig::default_rdf_visualization")]
-            rdf_visualization: RDFVisualizationConfig,
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-
-        Ok(Self {
-            base_needs_fixup: raw.base.is_none(),
-            base: raw.base,
-            endpoints: raw.endpoints,
-            automatic_base: raw.automatic_base,
-            rdf_visualization: raw.rdf_visualization
-        })
-    }
-}
 
 /// Description of a SPARQL endpoint for querying RDF data.
 ///

@@ -92,37 +92,6 @@ impl Tap2ShExConfig {
     }
 }
 
-impl<'de> Deserialize<'de> for Tap2ShExConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        #[derive(Deserialize)]
-        struct Raw {
-            #[serde(rename = "base_iri", default)]
-            base: Option<IriS>,
-            #[serde(rename = "datatype_base_iri", default = "Tap2ShExConfig::default_datatype_base_iri")]
-            datatype_base_iri: Option<IriS>,
-            #[serde(rename = "prefixmap", default = "Tap2ShExConfig::default_prefixmap")]
-            prefixmap: PrefixMap,
-            #[serde(rename = "dctap", default)]
-            dctap: Option<TapConfig>
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-
-        Ok(Self {
-            base_iri_needs_fixup: raw.base.is_none(),
-            base_iri: raw.base,
-            datatype_base_iri: raw.datatype_base_iri,
-            prefixmap: raw.prefixmap,
-            dctap_needs_fixup: raw.dctap.is_none(),
-            dctap: raw.dctap.unwrap_or(Self::default_dctap()),
-            // prefix_cc: None,
-        })
-    }
-}
-
 impl Tap2ShExConfig {
 
     // TODO: Refactor Tap2ShExError to reduce its size and avoid the result_large_err warning
