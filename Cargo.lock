@@ -1122,6 +1122,7 @@ dependencies = [
  "calamine",
  "csv",
  "itertools 0.14.0",
+ "rudof_config",
  "rudof_iri",
  "serde",
  "serde_json",
@@ -3725,6 +3726,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rudof_config"
+version = "0.3.7"
+dependencies = [
+ "dirs",
+ "serde",
+ "thiserror 2.0.18",
+ "toml",
+]
+
+[[package]]
 name = "rudof_generate"
 version = "0.3.7"
 dependencies = [
@@ -3774,7 +3785,6 @@ dependencies = [
  "colored",
  "crossterm",
  "dctap",
- "dirs",
  "either",
  "oxrdf",
  "pgschema",
@@ -3782,6 +3792,7 @@ dependencies = [
  "rdf_config",
  "regex",
  "reqwest",
+ "rudof_config",
  "rudof_generate",
  "rudof_iri",
  "rudof_rdf",
@@ -3859,6 +3870,7 @@ dependencies = [
  "proptest",
  "regex",
  "reqwest",
+ "rudof_config",
  "rudof_iri",
  "rust_decimal",
  "serde",
@@ -4364,6 +4376,7 @@ dependencies = [
  "petgraph 0.8.3",
  "prefixmap",
  "rayon",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "serde",
@@ -4378,6 +4391,7 @@ name = "shapes_comparator"
 version = "0.3.7"
 dependencies = [
  "prefixmap",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "serde",
@@ -4401,6 +4415,7 @@ dependencies = [
  "minijinja",
  "prefixmap",
  "rdf_config",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "serde",
@@ -4443,6 +4458,7 @@ dependencies = [
  "pretty",
  "rbe",
  "regex",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "rust_decimal",
@@ -4484,6 +4500,7 @@ dependencies = [
  "itertools 0.14.0",
  "prefixmap",
  "rbe",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "serde",
@@ -4658,6 +4675,7 @@ dependencies = [
  "oxrdfio",
  "oxsdatatypes",
  "prefixmap",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "rust_decimal",
