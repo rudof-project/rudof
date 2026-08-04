@@ -108,6 +108,11 @@ impl ValidatorConfig {
         self
     }
 
+    pub fn with_external_shape_resolver_registry(mut self, r: ExternalShapeResolverRegistry) -> Self {
+        self.external_resolvers = r;
+        self
+    }
+
     /// Prepend a resolver to the EXTERNAL-shape resolver chain. Returns the
     /// updated config for builder-style chaining.
     pub fn with_external_resolver<R: ExternalShapeResolver + 'static>(mut self, r: R) -> Self {
