@@ -1,3 +1,4 @@
+use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
 #[cfg(not(target_family = "wasm"))]
 use std::io::Read;
@@ -46,4 +47,5 @@ impl Default for QueryConfig {
     }
 }
 
+impl TomlConfig for QueryConfig {}
 

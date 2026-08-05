@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use std::io::Read;
+use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
@@ -212,5 +213,7 @@ impl Default for ShEx2HtmlConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for ShEx2HtmlConfig {}
 
 

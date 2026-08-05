@@ -1,3 +1,4 @@
+use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
@@ -165,5 +166,7 @@ impl Default for ShExConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for ShExConfig {}
 
 

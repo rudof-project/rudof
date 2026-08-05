@@ -1,4 +1,5 @@
 use crate::error::ShaclConfigError;
+use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use std::fs::File;
 use std::io::Read;
@@ -44,3 +45,5 @@ impl Default for ShaclConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for ShaclConfig {}

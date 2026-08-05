@@ -1,3 +1,4 @@
+use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -53,3 +54,5 @@ impl Default for ComparatorConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for ComparatorConfig {}

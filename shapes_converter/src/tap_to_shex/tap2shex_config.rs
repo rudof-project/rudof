@@ -1,6 +1,7 @@
 use dctap::{TapConfig};
 use serde::{Deserialize, Serialize};
 use prefixmap::PrefixMap;
+use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 
 use super::Tap2ShExError;
@@ -140,3 +141,5 @@ impl Default for Tap2ShExConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for Tap2ShExConfig {}

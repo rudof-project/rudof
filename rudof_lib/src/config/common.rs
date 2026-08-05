@@ -1,3 +1,4 @@
+use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
 use rudof_iri::{iri_once, IriS};
 
@@ -74,3 +75,5 @@ impl Default for CommonConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for CommonConfig {}

@@ -4,6 +4,7 @@ use std::path::Path;
 use colored::*;
 use prefixmap::PrefixMap;
 use thiserror::Error;
+use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
 
 
@@ -127,6 +128,8 @@ impl Default for ShapemapConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for ShapemapConfig {}
 
 
 

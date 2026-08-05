@@ -1,3 +1,4 @@
+use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Deserializer, Serialize};
 use shex_ast::ir::external_resolver::{ExternalShapeResolver, ExternalShapeResolverRegistry};
@@ -154,6 +155,8 @@ impl Default for ValidatorConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for ValidatorConfig {}
 
 
 

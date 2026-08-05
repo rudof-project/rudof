@@ -1,3 +1,4 @@
+use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
 use rudof_rdf::rdf_core::RdfDataConfig;
 #[cfg(not(target_family = "wasm"))]
@@ -93,6 +94,8 @@ impl Default for Shacl2ShExConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for Shacl2ShExConfig {}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
 #[serde(rename_all = "snake_case")]

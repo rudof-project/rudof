@@ -5,6 +5,7 @@ use std::{
 };
 use std::io::Read;
 use std::path::Path;
+use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
@@ -137,6 +138,8 @@ impl Default for ShEx2UmlConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for ShEx2UmlConfig {}
 
 fn discover_puml_path(path: Option<PathBuf>) -> PathBuf {
     path.unwrap_or_else(|| {

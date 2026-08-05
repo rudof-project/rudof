@@ -3,6 +3,7 @@ use std::{io::Read, path::Path};
 
 use thiserror::Error;
 
+use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 
@@ -47,6 +48,7 @@ impl Default for ServiceConfig {
     }
 }
 
+impl TomlConfig for ServiceConfig {}
 
 
 

@@ -2,7 +2,9 @@ use crate::{PlaceholderResolver};
 use std::io::Read;
 use std::str::FromStr;
 use std::{collections::HashMap, path::Path};
+use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Represents configuration file structure of DCTAP files
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -176,6 +178,7 @@ impl Default for TapConfig {
     }
 }
 
+impl TomlConfig for TapConfig {}
 
 #[cfg(test)]
 mod tests {
@@ -184,6 +187,7 @@ mod tests {
     // use tracing_test::traced_test;
 
     use crate::PlaceholderResolver;
+    use rudof_config::TomlConfig;
 
     use super::TapConfig;
 

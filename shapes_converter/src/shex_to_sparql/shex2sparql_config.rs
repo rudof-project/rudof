@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;
@@ -56,5 +57,7 @@ impl Default for ShEx2SparqlConfig {
         Self::new()
     }
 }
+
+impl TomlConfig for ShEx2SparqlConfig {}
 
 

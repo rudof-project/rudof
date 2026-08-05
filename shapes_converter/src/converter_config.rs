@@ -2,6 +2,7 @@ use dctap::TapConfig;
 use serde::{Deserialize};
 use std::io::Read;
 use std::path::Path;
+use rudof_config::TomlConfig;
 
 use crate::{ConverterError, ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 
@@ -14,6 +15,8 @@ pub struct ConverterConfig {
     shacl2shex: Option<Shacl2ShExConfig>,
     shex2uml: Option<ShEx2UmlConfig>,
 }
+
+impl TomlConfig for ConverterConfig {}
 
 impl ConverterConfig {
     pub fn tap_config(&self) -> TapConfig {

@@ -3,6 +3,7 @@ use std::{collections::HashMap, path::Path, str::FromStr};
 
 use prefixmap::PrefixMap;
 
+use rudof_config::TomlConfig;
 use rudof_iri::{IriS, error::IriSError};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::io::Read;
@@ -165,6 +166,7 @@ impl Default for RdfDataConfig {
     }
 }
 
+impl TomlConfig for RdfDataConfig {}
 
 /// Description of a SPARQL endpoint for querying RDF data.
 ///
