@@ -18,9 +18,26 @@ pub struct QueryConfig {
 impl QueryConfig {
     pub fn new() -> QueryConfig {
         Self {
-            data_config: Some(RdfDataConfig::default()),
+            data_config: Self::default_data_config(),
         }
     }
+
+    pub fn with_data_config(mut self, cfg: RdfDataConfig) -> Self {
+        self.data_config = cfg;
+        self
+    }
+}
+
+impl QueryConfig {
+    pub fn data_config(&self) -> &RdfDataConfig {
+        &self.data_config
+    }
+}
+
+#[allow(dead_code)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+impl QueryConfig {
+    #[inline] fn default_data_config() -> RdfDataConfig { RdfDataConfig::default() }
 }
 
 impl Default for QueryConfig {
