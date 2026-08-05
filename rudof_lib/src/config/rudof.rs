@@ -5,6 +5,8 @@ use crate::errors::RudofConfigError;
 use dctap::TapConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Deserializer};
+#[cfg(not(target_family = "wasm"))]
+use shacl::validator::ShaclConfig;
 use shapes_comparator::ComparatorConfig;
 use shapes_converter::{ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 use shex_validation::{ShExConfig, ValidatorConfig};
@@ -33,7 +35,10 @@ pub struct RudofConfig {
     pub(crate) shex: ShExConfig,
     #[serde(rename = "shex_validator", default = "RudofConfig::default_shex_validator_config")]
     pub(crate) shex_validator: ValidatorConfig,
-    #[serde(rename = "shex2uml", default = "RudofConfig::default_shex2uml_config")]
+    #[cfg(not(target_family = "wasm"))]
+    #[serde(rename = "shacl")]
+    pub(crate) shacl: ShaclConfig,
+    #[serde(rename = "shex2uml")]
     pub(crate) shex2uml: ShEx2UmlConfig,
     #[serde(rename = "shex2html", default = "RudofConfig::default_shex2html_config")]
     pub(crate) shex2html: ShEx2HtmlConfig,
@@ -61,6 +66,8 @@ impl RudofConfig {
             rdf_data: Self::default_rdf_data_config(),
             shex: Self::default_shex_config(),
             shex_validator: Self::default_shex_validator_config(),
+            #[cfg(not(target_family = "wasm"))]
+            shacl: Self::default_shacl_config(),
             shex2uml: Self::default_shex2uml_config(),
             shex2html: Self::default_shex2html_config(),
             shacl2shex: Self::default_shacl2shex_config(),
@@ -125,6 +132,12 @@ impl RudofConfig {
 
     pub fn with_shex_validator(mut self, cfg: ValidatorConfig) -> Self {
         self.shex_validator = cfg;
+        self
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    pub fn with_shacl(mut self, cfg: ShaclConfig) -> Self {
+        self.shacl = cfg;
         self
     }
 
@@ -194,6 +207,11 @@ impl RudofConfig {
         &self.shex_validator
     }
 
+    #[cfg(not(target_family = "wasm"))]
+    pub fn shacl(&self) -> &ShaclConfig {
+        &self.shacl
+    }
+
     pub fn shex2uml(&self) -> &ShEx2UmlConfig {
         &self.shex2uml
     }
@@ -233,6 +251,8 @@ impl RudofConfig {
     #[inline] fn default_rdf_data_config() -> RdfDataConfig { RdfDataConfig::default() }
     #[inline] fn default_shex_config() -> ShExConfig { ShExConfig::default() }
     #[inline] fn default_shex_validator_config() -> ValidatorConfig { ValidatorConfig::default() }
+    #[cfg(not(target_family = "wasm"))]
+    #[inline] fn default_shacl_config() -> ShaclConfig { ShaclConfig::default() }
     #[inline] fn default_shex2uml_config() -> ShEx2UmlConfig { ShEx2UmlConfig::default() }
     #[inline] fn default_shex2html_config() -> ShEx2HtmlConfig { ShEx2HtmlConfig::default() }
     #[inline] fn default_shacl2shex_config() -> Shacl2ShExConfig { Shacl2ShExConfig::default() }
