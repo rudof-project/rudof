@@ -25,9 +25,7 @@ pub struct ShEx2HtmlConfig {
     pub(crate) embed_svg_schema: bool,
     pub(crate) embed_svg_shape: bool,
     pub(crate) shex2uml: ShEx2UmlConfig,
-    shex2uml_needs_fixup: bool,
     pub(crate) shex: ShExConfig, // TODO - Maybe remove, a copy of ShexConfig is in Shex2umlConfig
-    shex_needs_fixup: bool,
 }
 
 impl ShEx2HtmlConfig {
@@ -45,9 +43,7 @@ impl ShEx2HtmlConfig {
             embed_svg_schema: Self::default_embed_svg_schema(),
             embed_svg_shape: Self::default_embed_svg_shape(),
             shex2uml: Self::default_shex2uml(),
-            shex2uml_needs_fixup: false,
             shex: Self::default_shex(),
-            shex_needs_fixup: false,
         }
     }
 
@@ -216,17 +212,6 @@ impl ShEx2HtmlConfig {
     #[inline] fn default_embed_svg_shape() -> bool { true }
     #[inline] fn default_shex2uml() -> ShEx2UmlConfig { ShEx2UmlConfig::default() }
     #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }
-    pub fn fixup(&mut self, shex: ShExConfig, shex2uml: ShEx2UmlConfig) {
-        if self.shex_needs_fixup {
-            self.shex_needs_fixup = false;
-            self.shex = shex;
-        }
-
-        if self.shex2uml_needs_fixup {
-            self.shex2uml_needs_fixup = false;
-            self.shex2uml = shex2uml;
-        }
-    }
 }
 
 impl Default for ShEx2HtmlConfig {

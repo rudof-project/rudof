@@ -16,11 +16,9 @@ pub struct ValidatorConfig {
 
     /// Configuration of RDF data readers
     pub(crate) rdf_data: RdfDataConfig,
-    rdf_data_needs_fixup: bool,
 
     /// Configuration of ShEx schemas
     pub(crate) shex: ShExConfig,
-    shex_needs_fixup: bool,
 
     /// Configuration of Shapemaps
     pub(crate) shapemap: ShapemapConfig,
@@ -45,12 +43,10 @@ impl ValidatorConfig {
     pub fn new() -> Self {
         Self {
             max_steps: Self::default_max_steps(),
-            shex_needs_fixup: false,
             width: Self::default_width(),
             rdf_data: Self::default_rdf_data(),
             shex: Self::default_shex(),
             shapemap: Self::default_shapemap(),
-            rdf_data_needs_fixup: false,
             check_negation_requirement: Self::default_check_negation_requirement(),
             external_resolvers: ExternalShapeResolverRegistry::default(),
         }
@@ -166,18 +162,6 @@ impl ValidatorConfig {
     #[inline] fn default_shapemap() -> ShapemapConfig { ShapemapConfig::new() }
     #[inline] fn default_check_negation_requirement() -> bool { true }
     #[inline] fn default_width() -> usize { 80 }
-
-    pub fn fixup(&mut self, rdf: RdfDataConfig, shex: ShExConfig) {
-        if self.shex_needs_fixup {
-            self.shex_needs_fixup = false;
-            self.shex = shex;
-        }
-
-        if self.rdf_data_needs_fixup {
-            self.rdf_data_needs_fixup = false;
-            self.rdf_data = rdf;
-        }
-    }
 }
 
 impl Default for ValidatorConfig {

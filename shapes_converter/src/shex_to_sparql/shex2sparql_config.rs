@@ -9,7 +9,6 @@ use thiserror::Error;
 pub struct ShEx2SparqlConfig {
     pub(crate) this_variable_name: String,
     pub(crate) shex: ShExConfig,
-    shex_needs_fixup: bool,
 }
 
 /// Serde stuff
@@ -18,13 +17,6 @@ pub struct ShEx2SparqlConfig {
 impl ShEx2SparqlConfig {
     #[inline] fn default_this_variable_name() -> String { "this".to_string() }
     #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }
-
-    pub fn fixup(&mut self, shex: ShExConfig) {
-        if self.shex_needs_fixup {
-            self.shex_needs_fixup = false;
-            self.shex = shex;
-        }
-    }
 }
 
 impl ShEx2SparqlConfig {
@@ -32,7 +24,6 @@ impl ShEx2SparqlConfig {
         Self {
             this_variable_name: Self::default_this_variable_name(),
             shex: Self::default_shex(),
-            shex_needs_fixup: false,
         }
     }
 

@@ -8,11 +8,11 @@ use super::Tap2ShExError;
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tap2ShExConfig {
     pub(crate) base_iri: Option<IriS>,
-    base_iri_needs_fixup: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+
     pub(crate) datatype_base_iri: Option<IriS>,
     pub(crate) prefixmap: PrefixMap,
     pub(crate) dctap: TapConfig,
-    dctap_needs_fixup: bool,
 
     // TODO - Can we remove this and use the prefix map?
     // #[serde(skip)]
@@ -23,11 +23,9 @@ impl Tap2ShExConfig {
     pub fn new() -> Self {
         Self {
             base_iri: None,
-            base_iri_needs_fixup: false,
             datatype_base_iri: Self::default_datatype_base_iri(),
             prefixmap: Self::default_prefixmap(),
             dctap: Self::default_dctap(),
-            dctap_needs_fixup: false,
             // prefix_cc: None,
         }
     }
@@ -78,18 +76,6 @@ impl Tap2ShExConfig {
     #[inline] fn default_datatype_base_iri() -> Option<IriS> { None }
     #[inline] fn default_prefixmap() -> PrefixMap { PrefixMap::basic() }
     #[inline] fn default_dctap() -> TapConfig { TapConfig::default() }
-
-    pub fn fixup(&mut self, base_iri: Option<IriS>, dctap: TapConfig) {
-        if self.dctap_needs_fixup {
-            self.dctap_needs_fixup = false;
-            self.dctap = dctap;
-        }
-
-        if self.base_iri_needs_fixup {
-            self.base_iri_needs_fixup = false;
-            self.base_iri = base_iri;
-        }
-    }
 }
 
 impl Tap2ShExConfig {

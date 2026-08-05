@@ -15,7 +15,6 @@ use std::io::Read;
 pub struct RdfDataConfig {
     /// Default base IRI to resolve relative IRIs. If `None`, relative IRIs will be treated as errors.
     pub(crate) base: Option<IriS>,
-    base_needs_fixup: bool,
 
     /// SPARQL endpoints for querying RDF data. Each endpoint is identified by a unique name.
     pub(crate) endpoints: HashMap<String, EndpointDescription>,
@@ -40,7 +39,6 @@ impl RdfDataConfig {
     pub fn new() -> RdfDataConfig {
         RdfDataConfig {
             base: Self::default_base(),
-            base_needs_fixup: false,
             endpoints: Self::default_endpoints(),
             automatic_base: Self::default_automatic_base(),
             rdf_visualization: Self::default_rdf_visualization(),
@@ -165,14 +163,6 @@ impl RdfDataConfig {
     fn default_automatic_base() -> bool { true }
     #[inline]
     fn default_rdf_visualization() -> RDFVisualizationConfig { RDFVisualizationConfig::default() }
-
-    pub fn fixup(&mut self, base: Option<IriS>) {
-        if self.base_needs_fixup {
-            self.base_needs_fixup = false;
-            self.base = base;
-        }
-    }
-
 }
 
 impl Default for RdfDataConfig {

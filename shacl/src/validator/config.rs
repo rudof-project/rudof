@@ -9,14 +9,12 @@ use serde::{Deserialize, Deserializer};
 #[derive(PartialEq, Debug, Clone)]
 pub struct ShaclConfig {
     pub(crate) data: RdfDataConfig,
-    data_needs_fixup: bool,
 }
 
 impl ShaclConfig {
     pub fn new() -> Self {
         Self {
             data: Self::default_data_config(),
-            data_needs_fixup: false
         }
     }
 
@@ -47,13 +45,6 @@ impl ShaclConfig {
 #[cfg_attr(rustfmt, rustfmt_skip)]
 impl ShaclConfig {
     #[inline] fn default_data_config() -> RdfDataConfig { RdfDataConfig::default() }
-
-    pub fn fixup(&mut self, rdf_data: RdfDataConfig) {
-        if self.data_needs_fixup {
-            self.data_needs_fixup = false;
-            self.data = rdf_data;
-        }
-    }
 }
 
 impl Default for ShaclConfig {

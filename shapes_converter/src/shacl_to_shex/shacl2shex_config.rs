@@ -85,10 +85,6 @@ impl Shacl2ShExConfig {
     #[cfg(not(target_family = "wasm"))]
     #[inline] fn default_shacl() -> ShaclConfig { ShaclConfig::default() }
     #[inline] fn default_add_target_class() -> bool { false }
-
-    fn fixup(&mut self, rdf_data: RdfDataConfig) {
-        self.shacl.fixup(rdf_data)
-    }
 }
 
 impl Default for Shacl2ShExConfig {

@@ -32,11 +32,9 @@ pub struct ShExConfig {
 
     /// Information about RDF data config which is used for Schemas represented in RDF
     pub(crate) rdf_config_shex: RdfDataConfig,
-    rdf_config_needs_fixup: bool,
 
     /// Default IRI to resolve relative IRIs
     pub(crate) base: Option<IriS>,
-    base_needs_fixup: bool,
 }
 
 /// Serde stuff
@@ -52,18 +50,6 @@ impl ShExConfig {
     #[inline] fn default_check_well_formed() -> bool { true }
     #[inline] fn default_rdf_config_shex() -> RdfDataConfig { RdfDataConfig::new() }
     #[inline] fn default_base() -> Option<IriS> { None }
-
-    pub fn fixup(&mut self, rdf_data_config: RdfDataConfig, base: Option<IriS>) {
-        if self.rdf_config_needs_fixup {
-            self.rdf_config_needs_fixup = false;
-            self.rdf_config_shex = rdf_data_config;
-        }
-
-        if self.base_needs_fixup {
-            self.base_needs_fixup = false;
-            self.base = base;
-        }
-    }
 }
 
 impl ShExConfig {
@@ -76,10 +62,8 @@ impl ShExConfig {
             show_ir: Self::default_show_ir(),
             check_well_formed: Self::default_check_well_formed(),
             rdf_config_shex: Self::default_rdf_config_shex(),
-            rdf_config_needs_fixup: false,
             shex_format: Self::default_shex_format(),
             base: Self::default_base(),
-            base_needs_fixup: false,
         }
     }
 

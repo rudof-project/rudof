@@ -34,7 +34,6 @@ pub struct ShEx2UmlConfig {
 
     /// Configuration for ShEx. If `None`, the default configuration is used.
     pub(crate) shex: ShExConfig,
-    shex_needs_fixup: bool,
 }
 
 impl ShEx2UmlConfig {
@@ -46,7 +45,6 @@ impl ShEx2UmlConfig {
             shadowing: Self::default_shadowing(),
             line_type: Self::default_line_type(),
             direction: Self::default_direction(),
-            shex_needs_fixup: false,
             shex: Self::default_shex()
         }
     }
@@ -145,13 +143,6 @@ impl ShEx2UmlConfig {
     #[inline] fn default_line_type() -> LineType { LineType::default() }
     #[inline] fn default_direction() -> Direction { Direction::default() }
     #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }
-
-    pub fn fixup(&mut self, cfg: ShExConfig) {
-        if self.shex_needs_fixup {
-            self.shex_needs_fixup = false;
-            self.shex = cfg;
-        }
-    }
 }
 
 impl Default for ShEx2UmlConfig {
