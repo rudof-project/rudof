@@ -43,7 +43,7 @@ impl RdfDataConfig {
             automatic_base: Self::default_automatic_base(),
             rdf_visualization: Self::default_rdf_visualization(),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
-            qlever: None,
+            qlever: Self::default_qlever(),
         }
     }
 
@@ -96,6 +96,12 @@ impl RdfDataConfig {
         self.rdf_visualization = cfg;
         self
     }
+
+    #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+    pub fn with_qlever(mut self, cfg: Option<crate::rdf_impl::QleverConfig>) -> Self {
+        self.qlever = cfg;
+        self
+    }
 }
 
 impl RdfDataConfig {
@@ -119,6 +125,11 @@ impl RdfDataConfig {
     pub fn rdf_visualization_config(&self) -> &RDFVisualizationConfig {
         &self.rdf_visualization
     }
+
+    #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+    pub fn qlever(&self) -> Option<&crate::rdf_impl::QleverConfig> {
+        self.qlever.as_ref()
+    }
 }
 
 /// Serde stuff
@@ -133,6 +144,10 @@ impl RdfDataConfig {
     fn default_automatic_base() -> bool { true }
     #[inline]
     fn default_rdf_visualization() -> RDFVisualizationConfig { RDFVisualizationConfig::default() }
+
+    #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+    #[inline]
+    fn default_qlever() -> Option<crate::rdf_impl::QleverConfig> { None }
 }
 
 impl Default for RdfDataConfig {
