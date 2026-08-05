@@ -4,12 +4,14 @@ use std::{io::Read, path::Path};
 use thiserror::Error;
 
 use rudof_iri::IriS;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define configuration of RDF data readers
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ServiceConfig {
     /// Default base to resolve relative IRIs, if it is `None` relative IRIs will be marked as errors`
+    #[serde(rename = "base_iri", skip_serializing_if = "Option::is_none")]
     pub(crate) base: Option<IriS>,
 }
 

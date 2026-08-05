@@ -1,12 +1,13 @@
 use rudof_iri::IriS;
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ComparatorConfig {
-    #[serde(rename = "prefixes_equivalences", default = "ComparatorConfig::default_prefixes_equivalences")]
+    #[serde(rename = "prefixes_equivalences", skip_serializing_if = "HashSet::is_empty")]
     pub(crate) prefixes_equivalences: HashSet<(IriS, IriS)>,
-    #[serde(rename = "ignore_value_constraints", default = "ComparatorConfig::default_ignore_value_constraints")]
+    #[serde(rename = "ignore_value_constraints")]
     pub(crate) ignore_value_constraints: bool,
 }
 

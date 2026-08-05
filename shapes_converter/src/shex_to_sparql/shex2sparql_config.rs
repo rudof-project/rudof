@@ -1,13 +1,16 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ShEx2SparqlConfig {
+    #[serde(rename = "this_variable_name")]
     pub(crate) this_variable_name: String,
+    #[serde(rename = "shex", skip_serializing)]
     pub(crate) shex: ShExConfig,
 }
 

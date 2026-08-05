@@ -7,32 +7,40 @@ use std::io::Read;
 use std::path::Path;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;
 
 use crate::shex_to_uml::{Direction, LineType};
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ShEx2UmlConfig {
+    #[serde(rename = "plantuml_path")]
     pub(crate) plantuml_path: PathBuf,
 
     /// A list of IRIs to use as annotation labels in the generated PlantUML diagram. If empty, the default is `rdfs:label`.
+    #[serde(rename = "annotation_label", skip_serializing_if = "Vec::is_empty")]
     pub(crate) annotation_label: Vec<IriS>,
 
     /// Whether to replace IRIs by their labels in the generated PlantUML diagram. If `None`, the default is `true`.
+    #[serde(rename = "replace_iri")]
     pub(crate) replace_iri_by_label: bool,
 
     /// Whether to use shadowing in the generated PlantUML diagram. If `None`, the default is `true`.
+    #[serde(rename = "shadowing")]
     pub(crate) shadowing: bool,
 
     /// The line type to use in the generated PlantUML diagram. If `None`, the default is `LineType::Polyline`.
+    #[serde(rename = "line_type")]
     pub(crate) line_type: LineType,
 
     /// The direction of the generated PlantUML diagram. If `None`, the default is `Direction::TopToBottom`.
+    #[serde(rename = "direction")]
     pub(crate) direction: Direction,
 
     /// Configuration for ShEx. If `None`, the default configuration is used.
+    #[serde(rename = "shex", skip_serializing)]
     pub(crate) shex: ShExConfig,
 }
 

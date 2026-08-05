@@ -1,20 +1,21 @@
 use crate::{PlaceholderResolver};
-use serde::{Deserialize};
 use std::io::Read;
 use std::str::FromStr;
 use std::{collections::HashMap, path::Path};
+use serde::{Deserialize, Serialize};
 
 /// Represents configuration file structure of DCTAP files
-#[derive(Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(default)]
 pub struct TapConfig {
     /// Character that is used to separate columns in CSV
-    #[serde(rename = "delimiter", default = "TapConfig::default_delimiter")]
+    #[serde(rename = "delimiter")]
     pub(crate) delimiter: char,
 
     /// The quote character to use when parsing CSV.
     /// The default is `"`.
     /// It can be used to indicate single quotes instead of double quotes.
-    #[serde(rename = "quote", default = "TapConfig::default_quote")]
+    #[serde(rename = "quote")]
     pub(crate) quote: char,
 
     /// Whether the number of fields in records is allowed to change or not.
@@ -24,11 +25,11 @@ pub struct TapConfig {
     /// number of fields in a previous record.
     ///
     /// When enabled, this error checking is turned off. It is enabled by default.
-    #[serde(rename = "flexible", default = "TapConfig::default_flexible")]
+    #[serde(rename = "flexible")]
     pub(crate) flexible: bool,
 
     /// Character that is used to separate values in a picklist cell. The default value is `|`
-    #[serde(rename = "picklist_delimiter", default = "TapConfig::default_picklist_delimiter")]
+    #[serde(rename = "picklist_delimiter")]
     pub(crate) picklist_delimiter: char,
 
     /// Table that can be used to generate values for some keys.
@@ -43,7 +44,7 @@ pub struct TapConfig {
     ///
     /// <div class="warning">This field is experimental and the syntax may change</div>
     ///
-    #[serde(rename = "property_placeholders", default = "TapConfig::default_property_placeholders")]
+    #[serde(rename = "property_placeholders", skip_serializing_if = "HashMap::is_empty")]
     pub(crate) property_placeholders: HashMap<String, PlaceholderResolver>,
 
     /// Indicates how to generate a value for a row whose property ID is empty.
@@ -52,14 +53,14 @@ pub struct TapConfig {
     ///
     /// <div class="warning">This field is experimental and the syntax may change</div>
     ///
-    #[serde(rename = "empty_property_placeholder", default = "TapConfig::default_empty_property_placeholder")]
+    #[serde(rename = "empty_property_placeholder", skip_serializing_if = "Option::is_none")]
     pub(crate) empty_property_placeholder: Option<PlaceholderResolver>,
 
     /// String that is used to separate values in a value shape cell. The default value is whitespace.
     ///
     /// <div class="warning">This field is experimental and the syntax may change</div>
     ///
-    #[serde(rename = "value_shape_delimiter", default = "TapConfig::default_value_shape_delimiter")]
+    #[serde(rename = "value_shape_delimiter")]
     pub(crate) value_shape_delimiter: char,
 }
 

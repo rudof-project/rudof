@@ -1,16 +1,18 @@
 use rudof_rdf::rdf_core::RdfDataConfig;
-use serde::{Deserialize};
 #[cfg(not(target_family = "wasm"))]
 use std::io::Read;
 #[cfg(not(target_family = "wasm"))]
 use std::path::Path;
 use thiserror::Error;
+use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define configuration of RDF data readers
-#[derive(Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[serde(default)]
 pub struct QueryConfig {
     /// Default base to resolve relative IRIs, if it is `None` relative IRIs will be marked as errors`
-    pub data_config: Option<RdfDataConfig>,
+    #[serde(rename = "rdf", skip_serializing)]
+    pub(crate) data_config: RdfDataConfig,
 }
 
 impl QueryConfig {

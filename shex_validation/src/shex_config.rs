@@ -1,39 +1,49 @@
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::RdfDataConfig;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Serialize};
 use shex_ast::ShExFormat;
 use std::io::Read;
 use std::path::Path;
 use thiserror::Error;
 
 /// This struct can be used to customize the behavour of ShEx validators
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ShExConfig {
     /// Show information about extended shapes
+    #[serde(rename = "show_extends")]
     pub(crate) show_extends: bool,
 
     /// Show information about schema imports
+    #[serde(rename = "show_imports")]
     pub(crate) show_imports: bool,
 
     /// Show information about shapes
+    #[serde(rename = "show_shapes")]
     pub(crate) show_shapes: bool,
 
     /// Show dependencies
+    #[serde(rename = "show_dependencies")]
     pub(crate) show_dependencies: bool,
 
     /// Show ShEx Schema Internal Representation
+    #[serde(rename = "show_ir")]
     pub(crate) show_ir: bool,
 
     /// Default ShEx format
+    #[serde(rename = "shex_format")]
     pub(crate) shex_format: ShExFormat,
 
     /// Check if schema is well formed
+    #[serde(rename = "check_well_formed")]
     pub(crate) check_well_formed: bool,
 
     /// Information about RDF data config which is used for Schemas represented in RDF
+    #[serde(rename = "rdf", skip_serializing)]
     pub(crate) rdf_config_shex: RdfDataConfig,
 
     /// Default IRI to resolve relative IRIs
+    #[serde(rename = "base_iri", skip_serializing_if = "Option::is_none")]
     pub(crate) base: Option<IriS>,
 }
 

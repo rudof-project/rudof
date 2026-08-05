@@ -1,17 +1,20 @@
-use serde::{Deserialize, Deserializer};
 use dctap::{TapConfig};
+use serde::{Deserialize, Serialize};
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 
 use super::Tap2ShExError;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Tap2ShExConfig {
+    #[serde(rename = "base_iri", skip_serializing_if = "Option::is_none")]
     pub(crate) base_iri: Option<IriS>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-
+    #[serde(rename = "datatype_base_iri", skip_serializing_if = "Option::is_none")]
     pub(crate) datatype_base_iri: Option<IriS>,
+    #[serde(rename = "prefixmap", skip_serializing_if = "PrefixMap::is_empty")]
     pub(crate) prefixmap: PrefixMap,
+    #[serde(rename = "dctap", skip_serializing)]
     pub(crate) dctap: TapConfig,
 
     // TODO - Can we remove this and use the prefix map?

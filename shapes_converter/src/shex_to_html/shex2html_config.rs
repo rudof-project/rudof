@@ -5,26 +5,40 @@ use std::{
 use std::io::Read;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;
 
 use crate::ShEx2UmlConfig;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ShEx2HtmlConfig {
+    #[serde(rename = "title")]
     pub(crate) title: String,
+    #[serde(rename = "landing_page")]
     pub(crate) landing_page_name: String,
+    #[serde(rename = "shape_template")]
     pub(crate) shape_template_name: String,
+    #[serde(rename = "template_folder", skip_serializing_if = "Option::is_none")]
     pub(crate) template_folder: Option<String>,
+    #[serde(rename = "css_file")]
     pub(crate) css_file_name: String,
+    #[serde(rename = "target_folder")]
     pub(crate) target_folder: PathBuf,
+    #[serde(rename = "property_color")]
     pub(crate) color_property_name: String,
+    #[serde(rename = "annotation_label", skip_serializing_if = "Vec::is_empty")]
     pub(crate) annotation_label: Vec<IriS>,
+    #[serde(rename = "replace_iri_by_label")]
     pub(crate) replace_iri_by_label: bool,
+    #[serde(rename = "embed_svg_schema")]
     pub(crate) embed_svg_schema: bool,
+    #[serde(rename = "embed_svg_shape")]
     pub(crate) embed_svg_shape: bool,
+    #[serde(rename = "shex2uml", skip_serializing)]
     pub(crate) shex2uml: ShEx2UmlConfig,
+    #[serde(rename = "shex", skip_serializing)]
     pub(crate) shex: ShExConfig, // TODO - Maybe remove, a copy of ShexConfig is in Shex2umlConfig
 }
 

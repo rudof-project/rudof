@@ -3,11 +3,13 @@ use rudof_rdf::rdf_core::RdfDataConfig;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define the configuration of SHACL
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ShaclConfig {
+    #[serde(rename = "rdf", skip_serializing)]
     pub(crate) data: RdfDataConfig,
 }
 

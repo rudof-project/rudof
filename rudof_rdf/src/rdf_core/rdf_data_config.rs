@@ -11,24 +11,30 @@ use std::io::Read;
 ///
 /// This struct defines how RDF data should be processed, including base IRI resolution,
 /// SPARQL endpoints for querying external data, and visualization preferences.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct RdfDataConfig {
     /// Default base IRI to resolve relative IRIs. If `None`, relative IRIs will be treated as errors.
+    #[serde(rename = "base_iri", skip_serializing_if = "Option::is_none")]
     pub(crate) base: Option<IriS>,
 
     /// SPARQL endpoints for querying RDF data. Each endpoint is identified by a unique name.
+    #[serde(rename = "endpoints", skip_serializing_if = "HashMap::is_empty")]
     pub(crate) endpoints: HashMap<String, EndpointDescription>,
 
     /// If true, automatically set the base IRI to the local file or URI of the document being processed.
+    #[serde(rename = "local_base")]
     pub(crate) automatic_base: bool,
 
     /// Configuration for RDF visualization appearance and styling.
+    #[serde(rename = "visualization")]
     pub(crate) rdf_visualization: RDFVisualizationConfig,
 
     /// Optional QLever backend configuration. Reading this section from TOML only records the user's preferences, the QLever container is not started
     /// until the caller explicitly invokes [`QleverGraphContainer::from_path`](crate::rdf_impl::QleverGraphContainer::from_path) or `from_reader`.
     #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
-    pub qlever: Option<crate::rdf_impl::QleverConfig>,
+    #[serde(rename = "qlever", skip_serializing_if = "Option::is_none")]
+    pub(crate) qlever: Option<crate::rdf_impl::QleverConfig>,
 }
 
 impl RdfDataConfig {

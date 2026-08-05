@@ -9,25 +9,32 @@ use std::sync::Arc;
 use crate::{ShExConfig, ValidatorError};
 
 /// This struct can be used to customize the behavour of ShEx validators
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ValidatorConfig {
     /// Maximum numbers of validation steps
+    #[serde(rename = "max_steps", skip_serializing_if = "Option::is_none")]
     pub(crate) max_steps: Option<usize>,
 
     /// Configuration of RDF data readers
+    #[serde(rename = "rdf", skip_serializing)]
     pub(crate) rdf_data: RdfDataConfig,
 
     /// Configuration of ShEx schemas
+    #[serde(rename = "shex", skip_serializing)]
     pub(crate) shex: ShExConfig,
 
     /// Configuration of Shapemaps
+    #[serde(rename = "shapemap")]
     pub(crate) shapemap: ShapemapConfig,
 
     /// Whether to check the negation requirement (default: true)
+    #[serde(rename = "check_negation")]
     pub(crate) check_negation_requirement: bool,
 
     /// Width for pretty printing
     // TODO - This should be in rudof_lib
+    #[serde(rename = "width")]
     pub(crate) width: usize,
 
 
@@ -35,7 +42,7 @@ pub struct ValidatorConfig {
     /// registry containing only `RejectAllExternalResolver`. Resolvers cannot
     /// be loaded from TOML — they must be installed programmatically via
     /// [`Self::with_external_resolver`].
-    #[serde(skip, default)]
+    #[serde(skip)]
     pub(crate) external_resolvers: ExternalShapeResolverRegistry,
 }
 

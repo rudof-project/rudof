@@ -3,29 +3,30 @@ use std::path::Path;
 
 use colored::*;
 use prefixmap::PrefixMap;
-use serde::{Deserialize};
 use thiserror::Error;
+use serde::{Deserialize, Serialize};
 
 
-#[derive(Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(default)]
 pub struct ShapemapConfig {
-    #[serde(rename = "nodes_prefixmap", default = "ShapemapConfig::default_nodes_prefixmap")]
+    #[serde(rename = "nodes_pm", skip_serializing_if = "PrefixMap::is_empty")]
     pub(crate) nodes_prefixmap: PrefixMap,
-    #[serde(rename = "shapes_prefixmap", default = "ShapemapConfig::default_shapes_prefixmap")]
+    #[serde(rename = "shapes_pm", skip_serializing_if = "PrefixMap::is_empty")]
     pub(crate) shapes_prefixmap: PrefixMap,
 
     // TODO - Color stuff should be in rudof_lib
 
-    #[serde(rename = "ok_text", default = "ShapemapConfig::default_ok_text")]
+    #[serde(rename = "ok_text")]
     pub(crate) ok_text: String,
-    #[serde(rename = "fail_text", default = "ShapemapConfig::default_fail_text")]
+    #[serde(rename = "fail_text")]
     pub(crate) fail_text: String,
 
-    #[serde(skip, default = "ShapemapConfig::default_ok_color")]
+    #[serde(skip)]
     pub(crate) ok_color: Color,
-    #[serde(skip, default = "ShapemapConfig::default_fail_color")]
+    #[serde(skip)]
     pub(crate) fail_color: Color,
-    #[serde(skip, default = "ShapemapConfig::default_pending_color")]
+    #[serde(skip)]
     pub(crate) pending_color: Color,
 }
 

@@ -4,23 +4,24 @@ use rudof_rdf::rdf_core::RdfDataConfig;
 use shacl::validator::ShaclConfig;
 
 /// Defines the configuration of the converter
-#[derive(Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[serde(default)]
 pub struct Shacl2ShExConfig {
     /// Starting shapes mode. Default: NonBNodes
-    #[serde(rename = "starting_shapes_mode", default = "Shacl2ShExConfig::default_starting_shapes_mode")]
+    #[serde(rename = "starting_shapes_mode")]
     pub(crate) starting_shapes_mode: StartShapeMode,
 
     /// If true, embed blank nodes in the ShEx schema
-    #[serde(rename = "embed_bnodes", default = "Shacl2ShExConfig::default_embed_bnodes")]
+    #[serde(rename = "embed_bnodes")]
     pub(crate) embed_bnodes: bool,
 
     /// SHACL configuration
     #[cfg(not(target_family = "wasm"))]
-    #[serde(rename = "shacl", default = "Shacl2ShExConfig::default_shacl")]
+    #[serde(rename = "shacl", skip_serializing)]
     pub(crate) shacl: ShaclConfig,
 
     /// Add an `rdf:type` constraint for `sh:targetClass` declarations
-    #[serde(rename = "add_target_class", default = "Shacl2ShExConfig::default_add_target_class")]
+    #[serde(rename = "add_target_class")]
     pub(crate) add_target_class: bool,
 }
 
