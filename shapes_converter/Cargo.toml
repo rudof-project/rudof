@@ -13,6 +13,7 @@ repository.workspace = true
 chrono = "0.4.42"
 dctap.workspace = true
 either.workspace = true
+rudof_config.workspace = true
 rudof_iri.workspace = true
 mie.workspace = true
 minijinja = { version = "=2.12.0", features = ["loader"] }
