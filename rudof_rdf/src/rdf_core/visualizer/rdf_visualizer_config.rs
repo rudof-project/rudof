@@ -97,7 +97,7 @@ impl Default for NodeStyle {
 ///
 /// This struct allows customization of node and edge styles, labels, and shapes for different RDF term types.
 /// All fields are optional and will fall back to default values if not specified.
-#[derive(Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RDFVisualizationConfig {
     // === URI node styling ===
     #[serde(rename = "uri_style", default = "RDFVisualizationConfig::default_uri_style")]

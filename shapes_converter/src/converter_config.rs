@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::{ConverterError, ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 
-#[derive(Deserialize, Debug, PartialEq, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 pub struct ConverterConfig {
     dctap: Option<TapConfig>,
     shex2html: Option<ShEx2HtmlConfig>,
