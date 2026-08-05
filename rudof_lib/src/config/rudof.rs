@@ -4,7 +4,7 @@ use std::path::Path;
 use crate::errors::RudofConfigError;
 use dctap::TapConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Serialize};
 #[cfg(not(target_family = "wasm"))]
 use shacl::validator::ShaclConfig;
 use shapes_comparator::ComparatorConfig;
@@ -20,39 +20,40 @@ use crate::config::CommonConfig;
 /// This structure encapsulates all configuration options for Rudof operations,
 /// including RDF data handling, schema validation (ShEx and SHACL), conversions,
 /// and visualization settings.
-#[derive(Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(default)]
 pub struct RudofConfig {
-    #[serde(rename = "version", default = "RudofConfig::default_version")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) version: Option<Version>,
 
-    #[serde(flatten, default = "RudofConfig::default_common_config")]
+    #[serde(flatten)]
     pub(crate) common: CommonConfig,
 
     // ---
-    #[serde(rename = "rdf", default = "RudofConfig::default_rdf_data_config")]
+    #[serde(rename = "rdf")]
     pub(crate) rdf_data: RdfDataConfig,
-    #[serde(rename = "shex", default = "RudofConfig::default_shex_config")]
+    #[serde(rename = "shex")]
     pub(crate) shex: ShExConfig,
-    #[serde(rename = "shex_validator", default = "RudofConfig::default_shex_validator_config")]
+    #[serde(rename = "shex_validator")]
     pub(crate) shex_validator: ValidatorConfig,
     #[cfg(not(target_family = "wasm"))]
     #[serde(rename = "shacl")]
     pub(crate) shacl: ShaclConfig,
     #[serde(rename = "shex2uml")]
     pub(crate) shex2uml: ShEx2UmlConfig,
-    #[serde(rename = "shex2html", default = "RudofConfig::default_shex2html_config")]
+    #[serde(rename = "shex2html")]
     pub(crate) shex2html: ShEx2HtmlConfig,
-    #[serde(rename = "shacl2shex", default = "RudofConfig::default_shacl2shex_config")]
+    #[serde(rename = "shacl2shex")]
     pub(crate) shacl2shex: Shacl2ShExConfig,
-    #[serde(rename = "tap", default = "RudofConfig::default_tap_config")]
+    #[serde(rename = "tap")]
     pub(crate) tap: TapConfig,
-    #[serde(rename = "tap2shex", default = "RudofConfig::default_tap2shex_config")]
+    #[serde(rename = "tap2shex")]
     pub(crate) tap2shex: Tap2ShExConfig,
-    #[serde(rename = "shex2sparql", default = "RudofConfig::default_shex2sparql_config")]
+    #[serde(rename = "shex2sparql")]
     pub(crate) shex2sparql: ShEx2SparqlConfig,
-    #[serde(rename = "service", default = "RudofConfig::default_service_config")]
+    #[serde(rename = "service")]
     pub(crate) service: ServiceConfig,
-    #[serde(rename = "comparator", default = "RudofConfig::default_comparator_config")]
+    #[serde(rename = "comparator")]
     pub(crate) comparator: ComparatorConfig,
 }
 
