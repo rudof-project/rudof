@@ -42,25 +42,6 @@ impl ShapemapConfig {
         }
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ShapemapConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| ShapemapConfigError::FromPath {
-            path: path_name.clone(),
-            error: e.to_string(),
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s).map_err(|e| ShapemapConfigError::FromFile {
-            file: path_name.clone(),
-            error: e.to_string(),
-        })?;
-
-        let config: ShapemapConfig = toml::from_str(s.as_str()).map_err(|e| ShapemapConfigError::Toml {
-            path: path_name.clone(),
-            error: e.to_string(),
-        })?;
-        Ok(config)
-    }
-
     pub fn with_nodes_prefixmap(mut self, pm: PrefixMap) -> Self {
         self.nodes_prefixmap = pm;
         self

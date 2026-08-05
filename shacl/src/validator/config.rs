@@ -18,16 +18,6 @@ impl ShaclConfig {
         }
     }
 
-    #[cfg(not(target_family = "wasm"))]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ShaclConfigError> {
-        let mut f = File::open(path)?;
-
-        let mut s = String::new();
-        f.read_to_string(&mut s)?;
-
-        toml::from_str(s.as_str()).map_err(|e| ShaclConfigError::UnmarshallError(e.into()))
-    }
-
     pub fn with_rdf_data(mut self, data: RdfDataConfig) -> Self {
         self.data = data;
         self

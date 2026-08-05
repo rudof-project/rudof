@@ -49,27 +49,6 @@ impl ShEx2UmlConfig {
         }
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ShEx2UmlConfig, ShEx2UmlConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = fs::File::open(path).map_err(|e| ShEx2UmlConfigError::ReadingConfig {
-            path_name: path_name.clone(),
-            error: e,
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ShEx2UmlConfigError::ReadingConfig {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
-
-        let config: ShEx2UmlConfig =
-            toml::from_str(s.as_str()).map_err(|e| ShEx2UmlConfigError::Toml {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
-        Ok(config)
-    }
-
     pub fn with_plantuml_path<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.plantuml_path = path.as_ref().to_path_buf();
         self

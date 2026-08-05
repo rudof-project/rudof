@@ -77,36 +77,6 @@ impl RdfDataConfig {
         self
     }
 
-    /// Loads an `RdfDataConfig` from a TOML file at the specified path.
-    ///
-    /// # Arguments
-    /// * `path` - Path to the TOML configuration file.
-    ///
-    /// # Returns
-    /// A `Result` containing the parsed configuration or an error if reading/parsing fails.
-    ///
-    /// # Errors
-    /// Returns `RDFError` if the file cannot be read or the TOML is invalid.
-    #[cfg(not(target_family = "wasm"))]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<RdfDataConfig, RDFError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| RDFError::ReadingConfigError {
-            path_name: path_name.clone(),
-            error: e,
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| RDFError::ReadingConfigError {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
-        let config: RdfDataConfig = toml::from_str(s.as_str()).map_err(|e| RDFError::TomlError {
-            path_name: path_name.to_string(),
-            error: e,
-        })?;
-        Ok(config)
-    }
-
     pub fn with_base(mut self, iri: Option<IriS>) -> Self {
         self.base = iri;
         self

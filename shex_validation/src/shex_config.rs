@@ -67,25 +67,6 @@ impl ShExConfig {
         }
     }
 
-    #[cfg(not(target_family = "wasm"))]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ShExConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| ShExConfigError::FromPathError {
-            path: path_name.clone(),
-            error: e.to_string(),
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s).map_err(|e| ShExConfigError::FromPathError {
-            path: path_name.clone(),
-            error: e.to_string(),
-        })?;
-        let config: ShExConfig = toml::from_str(s.as_str()).map_err(|e| ShExConfigError::TomlError {
-            path: path_name.clone(),
-            error: e.to_string(),
-        })?;
-        Ok(config)
-    }
-
     pub fn with_show_extends(mut self, flag: bool) -> Self {
         self.show_extends = flag;
         self

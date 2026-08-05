@@ -76,13 +76,6 @@ impl TapConfig {
         }
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Self {
-        let mut f = std::fs::File::open(path).unwrap();
-        let mut s = String::new();
-        f.read_to_string(&mut s).unwrap();
-        toml::from_str(s.as_str()).unwrap()
-    }
-
     pub fn with_delimiter(mut self, c: char) -> Self {
         self.delimiter = c;
         self
@@ -182,13 +175,6 @@ impl Default for TapConfig {
     }
 }
 
-impl FromStr for TapConfig {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s).map_err(|e| format!("Failed to parse TapConfig: {e}"))
-    }
-}
 
 #[cfg(test)]
 mod tests {

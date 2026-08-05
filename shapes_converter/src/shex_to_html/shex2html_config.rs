@@ -47,27 +47,6 @@ impl ShEx2HtmlConfig {
         }
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ShEx2HtmlConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = fs::File::open(path).map_err(|e| ShEx2HtmlConfigError::ReadingConfigError {
-            path_name: path_name.clone(),
-            error: e,
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ShEx2HtmlConfigError::ReadingConfigError {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
-
-        let config: ShEx2HtmlConfig =
-            toml::from_str(s.as_str()).map_err(|e| ShEx2HtmlConfigError::TomlError {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
-        Ok(config)
-    }
-
     pub fn with_title(mut self, title: String) -> Self {
         self.title = title;
         self

@@ -27,25 +27,6 @@ impl ShEx2SparqlConfig {
         }
     }
 
-    #[cfg(not(target_family = "wasm"))]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ShEx2SparqlConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = File::open(path).map_err(|e| ShEx2SparqlConfigError::ReadingConfigError {
-            error: e.to_string(),
-            path_name: path_name.clone(),
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s).map_err(|e| ShEx2SparqlConfigError::ReadingConfigError {
-            error: e.to_string(),
-            path_name: path_name.clone(),
-        })?;
-        let config: ShEx2SparqlConfig = toml::from_str(&s.as_str()).map_err(|e| ShEx2SparqlConfigError::TomlError {
-            error: e.to_string(),
-            path_name: path_name.clone(),
-        })?;
-        Ok(config)
-    }
-
     pub fn with_this_variable_name(mut self, name: String) -> Self {
         self.this_variable_name = name;
         self
