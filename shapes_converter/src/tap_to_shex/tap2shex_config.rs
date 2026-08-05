@@ -1,5 +1,5 @@
-use dctap::{TapConfig};
 use serde::{Deserialize, Serialize};
+use dctap::TapConfig;
 use prefixmap::PrefixMap;
 use rudof_config::TomlConfig;
 use rudof_iri::IriS;
@@ -17,10 +17,6 @@ pub struct Tap2ShExConfig {
     pub(crate) prefixmap: PrefixMap,
     #[serde(rename = "dctap", skip_serializing)]
     pub(crate) dctap: TapConfig,
-
-    // TODO - Can we remove this and use the prefix map?
-    // #[serde(skip)]
-    // prefix_cc: Option<PrefixCC>,
 }
 
 impl Tap2ShExConfig {
@@ -30,7 +26,6 @@ impl Tap2ShExConfig {
             datatype_base_iri: Self::default_datatype_base_iri(),
             prefixmap: Self::default_prefixmap(),
             dctap: Self::default_dctap(),
-            // prefix_cc: None,
         }
     }
 

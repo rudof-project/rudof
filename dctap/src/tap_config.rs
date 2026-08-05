@@ -1,7 +1,4 @@
-use crate::{PlaceholderResolver};
-use std::io::Read;
-use std::str::FromStr;
-use std::{collections::HashMap, path::Path};
+use crate::PlaceholderResolver;
 use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -182,7 +179,7 @@ impl TomlConfig for TapConfig {}
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, str::FromStr};
+    use std::collections::HashMap;
     // use tracing::debug;
     // use tracing_test::traced_test;
 

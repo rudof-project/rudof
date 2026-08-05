@@ -1,13 +1,11 @@
 use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use shex_ast::ir::external_resolver::{ExternalShapeResolver, ExternalShapeResolverRegistry};
 use shex_ast::shapemap::ShapemapConfig;
-use std::io::Read;
-use std::path::Path;
 use std::sync::Arc;
 
-use crate::{ShExConfig, ValidatorError};
+use crate::ShExConfig;
 
 /// This struct can be used to customize the behavour of ShEx validators
 #[derive(Debug, Clone, Serialize, Deserialize)]

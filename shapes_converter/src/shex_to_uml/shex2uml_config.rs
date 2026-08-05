@@ -1,16 +1,12 @@
 use std::{
-    env::{self, VarError},
-    fs, io,
-    path::PathBuf,
+    env,
+    path::{Path, PathBuf},
 };
-use std::io::Read;
-use std::path::Path;
 use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use thiserror::Error;
 
 use crate::shex_to_uml::{Direction, LineType};
 

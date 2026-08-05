@@ -1,11 +1,8 @@
 use dctap::TapConfig;
-use serde::{Deserialize};
-use std::io::Read;
-use std::path::Path;
 use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
 
-use crate::{ConverterError, ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
+use crate::{ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 pub struct ConverterConfig {

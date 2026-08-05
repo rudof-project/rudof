@@ -3,9 +3,6 @@ use rudof_iri::IriS;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shex_ast::ShExFormat;
-use std::io::Read;
-use std::path::Path;
-use thiserror::Error;
 
 /// This struct can be used to customize the behavour of ShEx validators
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

@@ -1,10 +1,5 @@
 use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
-#[cfg(not(target_family = "wasm"))]
-use std::io::Read;
-#[cfg(not(target_family = "wasm"))]
-use std::path::Path;
-use thiserror::Error;
 use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define configuration of RDF data readers
@@ -17,7 +12,7 @@ pub struct QueryConfig {
 }
 
 impl QueryConfig {
-    pub fn new() -> QueryConfig {
+    pub fn new() -> Self {
         Self {
             data_config: Self::default_data_config(),
         }

@@ -1,8 +1,3 @@
-#[cfg(not(target_family = "wasm"))]
-use std::{io::Read, path::Path};
-
-use thiserror::Error;
-
 use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
@@ -17,7 +12,7 @@ pub struct ServiceConfig {
 }
 
 impl ServiceConfig {
-    pub fn new() -> ServiceConfig {
+    pub fn new() -> Self {
         Self {
             base: Self::default_iri(),
         }

@@ -1,9 +1,5 @@
-use crate::error::ShaclConfigError;
 use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define the configuration of SHACL

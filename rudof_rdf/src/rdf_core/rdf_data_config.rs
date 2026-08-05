@@ -1,12 +1,11 @@
-use crate::rdf_core::{RDFError, visualizer::RDFVisualizationConfig};
-use std::{collections::HashMap, path::Path, str::FromStr};
+use crate::rdf_core::visualizer::RDFVisualizationConfig;
+use std::{collections::HashMap, str::FromStr};
 
 use prefixmap::PrefixMap;
 
 use rudof_config::TomlConfig;
 use rudof_iri::{IriS, error::IriSError};
-use serde::{Deserialize, Deserializer, Serialize};
-use std::io::Read;
+use serde::{Deserialize, Serialize};
 
 /// Configuration for RDF data readers and visualization settings.
 ///
@@ -43,7 +42,7 @@ impl RdfDataConfig {
     ///
     /// The default configuration has no base IRI, no endpoints, automatic base detection enabled,
     /// and no custom visualization settings.
-    pub fn new() -> RdfDataConfig {
+    pub fn new() -> Self {
         RdfDataConfig {
             base: Self::default_base(),
             endpoints: Self::default_endpoints(),

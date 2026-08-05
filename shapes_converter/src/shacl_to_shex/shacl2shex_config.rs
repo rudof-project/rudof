@@ -1,6 +1,5 @@
 use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
-use rudof_rdf::rdf_core::RdfDataConfig;
 #[cfg(not(target_family = "wasm"))]
 use shacl::validator::ShaclConfig;
 
