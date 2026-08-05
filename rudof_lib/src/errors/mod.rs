@@ -37,3 +37,6 @@ pub use shacl_error::ShaclError;
 pub use shapemap_error::ShapeMapError;
 pub use shex_error::ShExError;
 pub use validation_error::ValidationError;
+
+// Reexport config error also
+pub use rudof_config::ConfigError;

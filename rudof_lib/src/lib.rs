@@ -43,3 +43,6 @@ pub mod config;
 pub use rudof::*;
 #[cfg(not(target_family = "wasm"))]
 pub use crate::config::RudofConfig;
+
+/// Reexport config trait and error
+pub use rudof_config::{ConfigError, TomlConfig};
