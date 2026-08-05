@@ -211,7 +211,7 @@ mod tests {
 delimiter = ","
 picklist_delimiter = " "
 "#;
-        let config = TapConfig::from_str(s).unwrap();
+        let config = TapConfig::from_toml_str(s).unwrap();
         assert_eq!(config.delimiter(), ',');
     }
 
@@ -229,7 +229,7 @@ picklist_delimiter = " "
         [empty_property_placeholder]
         stem = "empty"
 "#;
-        let config = TapConfig::from_str(s).unwrap();
+        let config = TapConfig::from_toml_str(s).unwrap();
         /*let mut property_placeholders = HashMap::new();
         property_placeholders.insert("x".to_string(), PlaceholderResolver::stem("pending"));
         property_placeholders.insert("y".to_string(), PlaceholderResolver::stem("pending2"));

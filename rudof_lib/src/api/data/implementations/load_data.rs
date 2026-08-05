@@ -383,7 +383,7 @@ pub fn load_data_via_qlever(
     };
 
     // Honour any `[qlever]` section in the loaded config.
-    let qlever_config = rudof.config.rdf_data_config().qlever.clone().unwrap_or_default();
+    let qlever_config = rudof.config.rdf_data().qlever.clone().unwrap_or_default();
 
     // Drive the async loader on the process-wide QLever runtime so the
     // reactor outlives the resulting `QleverServer`. If we created a local
@@ -403,7 +403,7 @@ pub fn load_data_via_qlever(
         })?;
 
     let mut rdf_data = RdfData::new()
-        .with_rdf_data_config(&rudof.config.rdf_data_config())
+        .with_rdf_data_config(rudof.config.rdf_data())
         .map_err(|error| {
             Box::new(DataError::RdfDataConfig {
                 error: error.to_string(),
