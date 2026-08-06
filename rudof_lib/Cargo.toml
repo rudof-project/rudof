@@ -25,6 +25,7 @@ sparql = [ "shacl/sparql", "sparql_service/sparql", "rudof_rdf/sparql" ]
 
 [dependencies]
 tokio = { workspace = true, optional = true }
+rudof_config.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 colored.workspace = true
@@ -37,7 +38,6 @@ prefixmap.workspace = true
 pgschema.workspace = true
 rdf_config.workspace = true
 reqwest.workspace = true
-rudof_config.workspace = true
 regex.workspace = true
 rudof_generate.workspace = true
 rudof_rdf.workspace = true

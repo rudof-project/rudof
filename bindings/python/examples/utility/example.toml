@@ -1,0 +1,96 @@
+[rdf]
+base_iri = "http://base/"
+
+[rdf.endpoints.wikidata]
+query_url = "https://query.wikidata.org/sparql"
+
+[rdf.endpoints.wikidata.prefixmap]
+bd = "http://www.bigdata.com/rdf#"
+cc = "http://creativecommons.org/ns#"
+dct = "http://purl.org/dc/terms/"
+geo = "http://www.opengis.net/ont/geosparql#"
+hint = "http://www.bigdata.com/queryHints#"
+ontolex = "http://www.w3.org/ns/lemon/ontolex#"
+owl = "http://www.w3.org/2002/07/owl#"
+prov = "http://www.w3.org/ns/prov#"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+schema = "http://schema.org/"
+skos = "http://www.w3.org/2004/02/skos/core#"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+p = "http://www.wikidata.org/prop/"
+pq = "http://www.wikidata.org/prop/qualifier/"
+pqn = "http://www.wikidata.org/prop/qualifier/value-normalized/"
+pqv = "http://www.wikidata.org/prop/qualifier/value/"
+pr = "http://www.wikidata.org/prop/reference/"
+prn = "http://www.wikidata.org/prop/reference/value-normalized/"
+prv = "http://www.wikidata.org/prop/reference/value/"
+psv = "http://www.wikidata.org/prop/statement/value/"
+ps = "http://www.wikidata.org/prop/statement/"
+psn = "http://www.wikidata.org/prop/statement/value-normalized/"
+wd = "http://www.wikidata.org/entity/"
+wdata = "http://www.wikidata.org/wiki/Special:EntityData/"
+wdno = "http://www.wikidata.org/prop/novalue/"
+wdref = "http://www.wikidata.org/reference/"
+wds = "http://www.wikidata.org/entity/statement/"
+wdt = "http://www.wikidata.org/prop/direct/"
+wdtn = "http://www.wikidata.org/prop/direct-normalized/"
+wdv = "http://www.wikidata.org/value/"
+wikibase = "http://wikiba.se/ontology#"
+genid = "http://www.wikidata.org/.well-known/genid/"
+
+[rdf.endpoints.dbpedia]
+query_url = "http://dbpedia.org/sparql"
+
+[rdf.endpoints.dbpedia.prefixmap]
+dbc = "http://dbpedia.org/class/"
+dbo = "http://dbpedia.org/ontology/"
+dbp = "http://dbpedia.org/property/"
+dbr = "http://dbpedia.org/resource/"
+foaf = "http://xmlns.com/foaf/0.1/"
+geo = "http://www.w3.org/2003/01/geo/wgs84_pos#"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+
+[rdf.endpoints.uniprot]
+query_url = "https://sparql.uniprot.org/sparql"
+
+[rdf.endpoints.uniprot.prefixmap]
+formats = "http://www.w3.org/ns/formats/"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+sd = "http://www.w3.org/ns/sparql-service-description#"
+taxon = "http://purl.uniprot.org/taxonomy/"
+up = "http://purl.uniprot.org/core/"
+void = "https://sparql.uniprot.org/.well-known/void#"
+
+[shex]
+show_imports = true
+show_shapes = true
+show_extends = true
+show_dependencies = false
+show_ir = false
+check_well_formed = true
+
+[shex_validator]
+check_negation_requirement = true
+
+
+[tap]
+delimiter = ','
+quote = '"'
+flexible = true
+picklist_delimiter = ' '
+
+[tap2shex]
+base_iri = "http://example.org/"
+
+[tap2shex.prefixmap]
+dct = "http://purl.org/dc/terms/"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+owl = "http://www.w3.org/2002/07/owl#"
+foaf = "http://xmlns.com/foaf/0.1/"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+sdo = "https://schema.org/"
+schema = "http://schema.org/"
+ex = "http://example.org/"
