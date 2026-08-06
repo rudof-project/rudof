@@ -1,29 +1,39 @@
-use std::{fs, io};
-
+use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+#[serde(default)]
 pub struct ShEx2RdfConfigConfig {}
 
 impl ShEx2RdfConfigConfig {
-    pub fn from_file(file_name: &str) -> Result<ShEx2SparqlConfig, ShEx2SparqlConfigError> {
-        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2RdfConfigConfigError::ReadingConfigError {
-            path_name: file_name.to_string(),
-            error: e,
-        })?;
-        toml::from_str::<ShEx2RdfConfigConfig>(&config_str).map_err(|e| ShEx2SparqlConfigError::TomlError {
-            path_name: file_name.to_string(),
-            error: e,
-        })
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ShEx2RdfConfigConfigError {
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: io::Error },
+impl TomlConfig for ShEx2RdfConfigConfig {}
 
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: toml::Error },
+#[cfg(test)]
+mod tests {
+    use super::ShEx2RdfConfigConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        assert_eq!(ShEx2RdfConfigConfig::new(), ShEx2RdfConfigConfig::default());
+    }
+
+    #[test]
+    fn empty_toml_is_default() {
+        let c = ShEx2RdfConfigConfig::from_toml_str("").unwrap();
+        assert_eq!(c, ShEx2RdfConfigConfig::default());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShEx2RdfConfigConfig::default();
+        let s = c.to_toml_string().unwrap();
+        let d = ShEx2RdfConfigConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
 }
