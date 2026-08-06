@@ -213,6 +213,43 @@ impl RudofConfig {
     }
 }
 
+impl RudofConfig {
+    /// Returns config version, paired with rudof version
+    fn current_version() -> Version {
+        Version::parse(env!("CARGO_PKG_VERSION"))
+            .expect("CARGO_PKG_VERSION is a valid semver")
+    }
+
+    /// Checks the config's declared version against this build
+    ///
+    /// # Errors
+    ///
+    /// ([`ConfigError::IncompatibleVersion`]) if the config's **major** version
+    /// is newer than this build's, Warns on any other version mismatch
+    fn check_version(&self) -> Result<(), ConfigError> {
+        let Some(config_version) = self.version.as_ref() else {
+            tracing::warn!("config file does not declare a version");
+            return Ok(())
+        };
+        let rudof_version = Self::current_version();
+
+        if config_version.major > rudof_version.major {
+            return Err(ConfigError::IncompatibleVersion {
+                config: config_version.to_string(),
+                rudof: rudof_version.to_string(),
+            });
+        }
+
+        if *config_version != rudof_version {
+            tracing::warn!(
+                "config file targets rudof {config_version}, but this is rudof {rudof_version}; \
+                 some settings may be ignored or behave differently"
+            );
+        }
+        Ok(())
+    }
+}
+
 /// Serde stuff
 #[allow(dead_code)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
