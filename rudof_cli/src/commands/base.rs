@@ -2,9 +2,10 @@ use crate::cli::parser::{
     Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsNoBackend, CommonArgsOutputForceOverWrite,
 };
 use crate::commands::{
-    CompareCommand, CompletionCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand, MaterializeCommand,
-    McpCommand, NodeCommand, PgschemaCommand, PgschemaValidateCommand, QueryCommand, RdfConfigCommand, ServiceCommand,
-    ShaclCommand, ShaclValidateCommand, ShapemapCommand, ShexCommand, ShexValidateCommand, ValidateCommand,
+    CompareCommand, CompletionCommand, ConfigCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand,
+    MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand, PgschemaValidateCommand, QueryCommand,
+    RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand, ShapemapCommand, ShexCommand,
+    ShexValidateCommand, ValidateCommand,
 };
 use crate::output::{ColorSupport, get_writer};
 use anyhow::Result;
@@ -119,6 +120,7 @@ impl CommandFactory {
             CliCommand::Materialize(args) => Ok(Box::new(MaterializeCommand::new(args))),
             CliCommand::PgschemaValidate(args) => Ok(Box::new(PgschemaValidateCommand::new(args))),
             CliCommand::Completion(args) => Ok(Box::new(CompletionCommand::new(args))),
+            CliCommand::Config(args) => Ok(Box::new(ConfigCommand::new(args))),
         }
     }
 }
@@ -234,6 +236,11 @@ fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
         }),
         CliCommand::Completion(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Config(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
+            config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
