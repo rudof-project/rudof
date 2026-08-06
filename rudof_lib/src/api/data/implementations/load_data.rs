@@ -382,7 +382,7 @@ pub fn load_data_via_qlever(
         None => None,
     };
 
-    // Honour any `[qlever]` section in the loaded config.
+    // Honour any `[rdf.qlever]` section in the loaded config.
     let qlever_config = rudof.config.rdf_data().qlever.clone().unwrap_or_default();
 
     // Drive the async loader on the process-wide QLever runtime so the

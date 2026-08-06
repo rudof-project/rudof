@@ -1,4 +1,4 @@
-﻿# `rudof_lib`
+# `rudof_lib`
 
 `rudof_lib` is the centralized, programmatic facade for the entire Rudof ecosystem. It exposes a stable entry point (`Rudof`) that hides the complexity of dealing with numerous specialized underlying subcrates (`shacl_validation`, `shex_validation`, `rudof_rdf`, `pgschema`, etc.).
 
@@ -25,7 +25,7 @@ while keeping implementations modular and testable. Below is a more detailed des
 
 - **`src/lib.rs`**: Core entry, exposing the essential (`Rudof`, `RudofConfig`, errors and formats).
 - **`src/rudof.rs`**: Houses the central `Rudof` state container. Contains methods grouped by domain returning configured builder instances.
-- **`src/rudof_config.rs`**: Houses `RudofConfig`for configuration handling and defaults.
+- **`src/config/rudof.rs`**: Houses `RudofConfig` for configuration handling, layered discovery, and cross-section resolution.
 - **`src/api/`**: The functional brain of the library. Divided by domain (`data`, `shex`, `shacl`, etc.). Each domain contains three subparts:
     - **`builders/`**: The public builder types (`*Builder`) that callers
       instantiate via `Rudof` methods. Builders configure the operation
