@@ -45,6 +45,17 @@ pub struct ValidatorConfig {
     pub(crate) external_resolvers: ExternalShapeResolverRegistry,
 }
 
+impl PartialEq for ValidatorConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.max_steps == other.max_steps &&
+            self.rdf_data == other.rdf_data &&
+            self.shex == other.shex &&
+            self.shapemap == other.shapemap &&
+            self.check_negation_requirement == other.check_negation_requirement &&
+            self.width == other.width
+    }
+}
+
 impl ValidatorConfig {
     pub fn new() -> Self {
         Self {
