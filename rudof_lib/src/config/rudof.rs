@@ -81,35 +81,6 @@ impl RudofConfig {
         cfg
     }
 
-    /// Loads a [`RudofConfig`] from a TOML file.
-    ///
-    /// # Arguments
-    ///
-    /// * `path` - Path to the TOML configuration file
-    ///
-    /// # Errors
-    ///
-    /// * [`RudofConfigError::ReadError`] - If the file cannot be opened or read
-    /// * [`RudofConfigError::TomlPathError`] - If the TOML content is invalid
-    #[cfg(not(target_family = "wasm"))]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, RudofConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = File::open(path).map_err(|e| RudofConfigError::ReadError {
-            error: e.to_string(),
-            path: path_name.to_string(),
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s).map_err(|e| RudofConfigError::ReadError {
-            error: e.to_string(),
-            path: path_name.to_string(),
-        })?;
-        let mut config: RudofConfig = toml::from_str(s.as_str()).map_err(|e| RudofConfigError::TomlPathError {
-            error: e.to_string(),
-            path: path_name.to_string(),
-        })?;
-        config.fixup();
-        Ok(config)
-    }
 
     pub fn with_version(mut self, version: Option<Version>) -> Self {
         self.version = version;
