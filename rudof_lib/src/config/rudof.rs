@@ -254,7 +254,7 @@ impl RudofConfig {
 #[allow(dead_code)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 impl RudofConfig {
-    #[inline] fn default_version() -> Option<Version> { None }
+    #[inline] fn default_version() -> Option<Version> { Some(Self::current_version()) }
     #[inline] fn default_common_config() -> CommonConfig { CommonConfig::default() }
     #[inline] fn default_service_config() -> ServiceConfig { ServiceConfig::default() }
     #[inline] fn default_rdf_data_config() -> RdfDataConfig { RdfDataConfig::default() }
