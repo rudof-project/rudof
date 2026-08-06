@@ -394,3 +394,148 @@ impl FromStr for RudofConfig {
         <Self as TomlConfig>::from_toml_str(s)
     }
 }
+
+#[cfg(all(test, not(target_family = "wasm")))]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn closest_rudof_toml_wins() {
+        let tmp = std::env::temp_dir().join(format!("rudof_discover_{}", std::process::id()));
+        let nested = tmp.join("a").join("b");
+        fs::create_dir_all(&nested).unwrap();
+
+        fs::write(tmp.join("rudof.toml"), r#"base_iri = "http://root/""#).unwrap();
+        fs::write(nested.join("rudof.toml"), r#"base_iri = "http://nested/""#).unwrap();
+
+        let files = find_config_files_from(&nested, "rudof.toml");
+
+        assert_eq!(files.first().unwrap(), &tmp.join("rudof.toml"));
+        assert_eq!(files.last().unwrap(), &nested.join("rudof.toml"));
+
+        let mut merged = toml::Table::new();
+        for path in &files {
+            merge_tables(&mut merged, read_toml_table(path).unwrap());
+        }
+        assert_eq!(merged["base_iri"].as_str(), Some("http://nested/"));
+
+        fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn from_table_empty_yields_defaults() {
+        let from_table = RudofConfig::from_table(toml::Table::new()).unwrap();
+        assert_eq!(from_table, RudofConfig::default());
+    }
+
+    #[test]
+    fn version_incompatible_major_is_rejected() {
+        let result = RudofConfig::from_str(r#"version = "999.0.0""#);
+        assert!(matches!(result, Err(ConfigError::IncompatibleVersion { .. })));
+    }
+
+    #[test]
+    fn version_matching_current_is_accepted() {
+        let v = env!("CARGO_PKG_VERSION");
+        let cfg = RudofConfig::from_str(&format!(r#"version = "{v}""#)).unwrap();
+        assert_eq!(cfg.version(), Some(&Version::parse(v).unwrap()));
+    }
+
+    #[test]
+    fn version_absent_is_stamped_with_current() {
+        let cfg = RudofConfig::from_str(r#"base_iri = "http://x/""#).unwrap();
+        assert_eq!(
+            cfg.version(),
+            RudofConfig::default_version().as_ref()
+        );
+    }
+
+    #[test]
+    fn resolve_propagates_common_base_to_sections() {
+        let cfg = RudofConfig::from_str("base_iri = \"http://common/\"\n").unwrap();
+        let base = Some("http://common/");
+        assert_eq!(cfg.rdf_data().base().map(|i| i.as_str()), base);
+        assert_eq!(cfg.shex().base().map(|i| i.as_str()), base);
+        assert_eq!(cfg.service().base().map(|i| i.as_str()), base);
+        assert_eq!(cfg.tap2shex().base_iri().map(|i| i.as_str()), base);
+    }
+
+    #[test]
+    fn resolve_preserves_per_section_base_override() {
+        let cfg = RudofConfig::from_str(
+            r#"
+            base_iri = "http://common/"
+            [rdf]
+            base_iri = "http://rdf-specific/"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(cfg.rdf_data().base().map(|i| i.as_str()), Some("http://rdf-specific/"));
+        assert_eq!(cfg.shex().base().map(|i| i.as_str()), Some("http://common/"));
+    }
+
+    #[test]
+    fn resolve_injects_canonical_sections() {
+        let cfg = RudofConfig::from_str(
+            r#"
+            [shex]
+            show_imports = false
+            [tap]
+            delimiter = ";"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(cfg.shex().show_imports(), false);
+        assert_eq!(cfg.tap().delimiter(), ';');
+        assert_eq!(cfg.shex_validator().shex(), cfg.shex());
+        assert_eq!(cfg.shex_validator().rdf_data(), cfg.rdf_data());
+        assert_eq!(cfg.shex2uml().shex(), cfg.shex());
+        assert_eq!(cfg.shex2html().shex(), cfg.shex());
+        assert_eq!(cfg.shex2html().shex2uml(), cfg.shex2uml());
+        assert_eq!(cfg.shex2sparql().shex(), cfg.shex());
+        assert_eq!(cfg.tap2shex().dctap(), cfg.tap());
+        assert_eq!(cfg.shex().rdf_config_shex(), cfg.rdf_data());
+        assert_eq!(cfg.shacl().rdf_data(), cfg.rdf_data());
+    }
+
+    #[test]
+    fn rudof_config_toml_round_trip() {
+        let original = RudofConfig::from_str(
+            r#"
+            base_iri = "http://ex/"
+            [shex]
+            show_imports = false
+            [shex_validator]
+            max_steps = 42
+            "#,
+        )
+        .unwrap();
+        let serialized = toml::to_string(&original).unwrap();
+        let reparsed = RudofConfig::from_str(&serialized).unwrap();
+        assert_eq!(original, reparsed);
+    }
+
+    #[test]
+    fn default_rudof_config_toml_round_trip() {
+        let original = RudofConfig::default();
+        let serialized = toml::to_string(&original).unwrap();
+        let reparsed = RudofConfig::from_str(&serialized).unwrap();
+        assert_eq!(original, reparsed);
+    }
+
+    #[test]
+    fn discover_layers_partial_override_keeps_defaults() {
+        let mut merged = toml::Table::new();
+        merge_tables(
+            &mut merged,
+            toml::from_str(r#"base_iri = "http://layered/""#).unwrap(),
+        );
+        let layered = RudofConfig::from_table(merged).unwrap();
+        let defaults = RudofConfig::default();
+
+        assert_eq!(layered.shex().show_imports(), defaults.shex().show_imports());
+        assert_eq!(layered.shex_validator().max_steps(), defaults.shex_validator().max_steps());
+        assert_eq!(layered.rdf_data().base().map(|i| i.as_str()), Some("http://layered/"));
+    }
+}
