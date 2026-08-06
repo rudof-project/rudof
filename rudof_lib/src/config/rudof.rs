@@ -78,7 +78,7 @@ impl RudofConfig {
             shex2sparql: Self::default_shex2sparql_config(),
             comparator: Self::default_comparator_config(),
         };
-        cfg.fixup();
+        cfg.resolve();
         cfg
     }
 
@@ -325,18 +325,50 @@ impl RudofConfig {
     #[inline] fn default_shex2sparql_config() -> ShEx2SparqlConfig { ShEx2SparqlConfig::default() }
     #[inline] fn default_comparator_config() -> ComparatorConfig { ComparatorConfig::default() }
 
-    pub fn fixup(&mut self) {
-        self.service.fixup(self.common.base.clone());
-        self.rdf_data.fixup(self.common.base.clone());
-        self.shex.fixup(self.rdf_data.clone(),
-            self.common.base.clone());
-        self.shex_validator.fixup(self.rdf_data.clone(),
-            self.shex.clone());
-        self.shex2uml.fixup(self.shex.clone());
-        self.shex2html.fixup(self.shex.clone(),
-            self.shex2uml.clone());
-        self.tap2shex.fixup(self.common.base.clone(), self.tap.clone());
-        self.shex2sparql.fixup(self.shex.clone());
+    /// Resolves cross-section inheritance after all config layers have been merged
+    pub fn resolve(&mut self) {
+        let base = self.common.base().cloned();
+
+        // Base propagation
+        if self.rdf_data.base().is_none() {
+            self.rdf_data = self.rdf_data.clone().with_base(base.clone());
+        }
+        if self.service.base().is_none() {
+            self.service = self.service.clone().with_base(base.clone());
+        }
+        if self.shex.base().is_none() {
+            self.shex = self.shex.clone().with_base(base.clone());
+        }
+        if self.tap2shex.base_iri().is_none() {
+            self.tap2shex = self.tap2shex.clone().with_base_iri(base.clone());
+        }
+
+        // RDF propagation
+        self.shex = self.shex.clone().with_rdf_config_shex(self.rdf_data.clone());
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.shacl = self.shacl.clone().with_rdf_data(self.rdf_data.clone());
+        }
+
+        // Tap propagation
+        self.tap2shex = self.tap2shex.clone().with_dctap(self.tap.clone());
+
+        // ShEx and RDF propagation
+        self.shex_validator = self
+            .shex_validator
+            .clone()
+            .with_shex(self.shex.clone())
+            .with_rdf_data(self.rdf_data.clone());
+
+        // ShEx propagation
+        self.shex2uml = self.shex2uml.clone().with_shex(self.shex.clone());
+        self.shex2html = self
+            .shex2html
+            .clone()
+            .with_shex(self.shex.clone())
+            .with_shex2uml(self.shex2uml.clone());
+        self.shex2sparql = self.shex2sparql.clone().with_shex(self.shex.clone());
     }
 }
 
