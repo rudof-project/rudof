@@ -14,7 +14,7 @@ pub struct ComparatorConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ComparatorConfig {
     #[inline] fn default_prefixes_equivalences() -> HashSet<(IriS, IriS)> { HashSet::new() }
     #[inline] fn default_ignore_value_constraints() -> bool { false }
@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn partial_toml_fills_remaining_defaults() {
         let c = ComparatorConfig::from_toml_str(r#"ignore_value_constraints = true"#).unwrap();
-        assert_eq!(c.ignore_value_constraints(), true);
+        assert!(c.ignore_value_constraints());
     }
 
     #[test]

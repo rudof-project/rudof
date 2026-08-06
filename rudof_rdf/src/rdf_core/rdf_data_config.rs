@@ -57,7 +57,7 @@ impl RdfDataConfig {
     pub fn with_wikidata(mut self) -> Self {
         let wikidata_name = "wikidata";
         let wikidata_iri = "https://query.wikidata.org/sparql";
-        let wikidata = EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata().into());
+        let wikidata = EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata());
 
         self.endpoints.insert(wikidata_name.to_string(), wikidata);
         self
@@ -67,7 +67,7 @@ impl RdfDataConfig {
     pub fn with_dbpedia(mut self) -> Self {
         let dbpedia_name = "dbpedia";
         let dbpedia_iri = "https://dbpedia.org/sparql";
-        let dbpedia = EndpointDescription::new_unchecked(dbpedia_iri).with_prefixmap(PrefixMap::dbpedia().into());
+        let dbpedia = EndpointDescription::new_unchecked(dbpedia_iri).with_prefixmap(PrefixMap::dbpedia());
 
         self.endpoints.insert(dbpedia_name.to_string(), dbpedia);
         self
@@ -77,7 +77,7 @@ impl RdfDataConfig {
     pub fn with_uniprot(mut self) -> Self {
         let uniprot_name = "uniprot";
         let uniprot_iri = "https://sparql.uniprot.org/sparql";
-        let uniprot = EndpointDescription::new_unchecked(uniprot_iri).with_prefixmap(PrefixMap::uniprot().into());
+        let uniprot = EndpointDescription::new_unchecked(uniprot_iri).with_prefixmap(PrefixMap::uniprot());
 
         self.endpoints.insert(uniprot_name.to_string(), uniprot);
         self
@@ -140,7 +140,7 @@ impl RdfDataConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl RdfDataConfig {
     #[inline]
     fn default_base() -> Option<IriS> { None }
@@ -186,7 +186,7 @@ pub struct EndpointDescription {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl EndpointDescription {
     #[inline]
     fn default_update_url() -> Option<IriS> { None }
@@ -281,8 +281,8 @@ mod tests {
             local_base = false
         "#).unwrap();
         assert_eq!(c.base().map(|i| i.as_str()), Some("http://ex/"));
-        assert_eq!(c.automatic_base(), false);
-        assert_eq!(c.endpoints(), &RdfDataConfig::default_endpoints());
+        assert!(!c.automatic_base());
+        assert_eq!(c.endpoints(), RdfDataConfig::default().endpoints());
     }
 
     #[test]

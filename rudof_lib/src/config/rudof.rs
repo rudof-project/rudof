@@ -106,10 +106,9 @@ impl RudofConfig {
         let mut merged = toml::Table::new();
 
         // Platform-specific user config directory
-        if let Some(path) = user_config_file("rudof", "config.toml") {
-            if path.is_file() {
-                merge_tables(&mut merged, read_toml_table(&path)?);
-            }
+        if let Some(path) = user_config_file("rudof", "config.toml") &&
+            path.is_file() {
+            merge_tables(&mut merged, read_toml_table(&path)?);
         }
 
         // `rudof.toml` files from the filesystem root down to the CWD
@@ -304,7 +303,7 @@ impl RudofConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl RudofConfig {
     #[inline] fn default_version() -> Option<Version> { Some(Self::current_version()) }
     #[inline] fn default_common_config() -> CommonConfig { CommonConfig::default() }
@@ -486,7 +485,7 @@ mod tests {
             "#,
         )
         .unwrap();
-        assert_eq!(cfg.shex().show_imports(), false);
+        assert!(!cfg.shex().show_imports());
         assert_eq!(cfg.tap().delimiter(), ';');
         assert_eq!(cfg.shex_validator().shex(), cfg.shex());
         assert_eq!(cfg.shex_validator().rdf_data(), cfg.rdf_data());

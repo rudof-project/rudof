@@ -186,7 +186,7 @@ impl ShEx2HtmlConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ShEx2HtmlConfig {
     #[inline] fn default_title() -> String { "ShEx schema".to_string() }
     #[inline] fn default_landing_page_name() -> String { "index.html".to_string() }

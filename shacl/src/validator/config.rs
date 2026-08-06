@@ -31,7 +31,7 @@ impl ShaclConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ShaclConfig {
     #[inline] fn default_data_config() -> RdfDataConfig { RdfDataConfig::default() }
 }

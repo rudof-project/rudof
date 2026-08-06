@@ -31,7 +31,7 @@ impl QueryConfig {
 }
 
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl QueryConfig {
     #[inline] fn default_data_config() -> RdfDataConfig { RdfDataConfig::default() }
 }

@@ -205,8 +205,8 @@ impl ResultShapeMap {
 
         let cmp = self.get_comparator(&sort_mode);
         for (node, label, status) in self.iter().sorted_by(cmp) {
-            let node_label = show_node(node, &self.nodes_prefixmap());
-            let shape_label = show_shapelabel(label, &self.shapes_prefixmap());
+            let node_label = show_node(node, self.nodes_prefixmap());
+            let shape_label = show_shapelabel(label, self.shapes_prefixmap());
             let details;
             let status_label;
             match status {
@@ -257,8 +257,8 @@ impl ResultShapeMap {
 
         let cmp = self.get_comparator(sort_mode);
         for (node, label, status) in self.iter().sorted_by(cmp) {
-            let node_label = show_node(node, &self.nodes_prefixmap());
-            let shape_label = show_shapelabel(label, &self.shapes_prefixmap());
+            let node_label = show_node(node, self.nodes_prefixmap());
+            let shape_label = show_shapelabel(label, self.shapes_prefixmap());
             let details;
             let status_label;
             match status {

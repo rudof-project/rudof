@@ -529,7 +529,7 @@ fn show_schema_conversion_dctap_to_html<P: AsRef<std::path::Path>>(
 ) -> Result<()> {
     load_dctap(rudof, schema, Some(&(*input_format).try_into()?))?;
 
-    let converter = Tap2ShEx::new(&rudof.config.tap2shex());
+    let converter = Tap2ShEx::new(rudof.config.tap2shex());
     let shex_schema =
         converter
             .convert(rudof.dctap.as_ref().unwrap())

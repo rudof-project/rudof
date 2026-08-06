@@ -47,7 +47,7 @@ pub struct ShExConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ShExConfig {
     #[inline] fn default_show_extends() -> bool { true }
     #[inline] fn default_show_imports() -> bool { true }
@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn partial_toml_fills_remaining_defaults() {
         let c: ShExConfig = toml::from_str(r#"show_imports = false"#).unwrap();
-        assert_eq!(c.show_imports(), false);
+        assert!(!c.show_imports());
         assert_eq!(c.show_extends(), ShExConfig::default_show_extends());
         assert_eq!(c.check_well_formed(), ShExConfig::default_check_well_formed());
     }

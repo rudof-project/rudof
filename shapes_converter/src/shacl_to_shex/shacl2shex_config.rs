@@ -79,7 +79,7 @@ impl Shacl2ShExConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl Shacl2ShExConfig {
     #[inline] fn default_starting_shapes_mode() -> StartShapeMode { StartShapeMode::default() }
     #[inline] fn default_embed_bnodes() -> bool { false }
@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn partial_toml_fills_remaining_defaults() {
         let c = Shacl2ShExConfig::from_toml_str(r#"embed_bnodes = true"#).unwrap();
-        assert_eq!(c.embed_bnodes(), true);
+        assert!(c.embed_bnodes());
         assert_eq!(c.add_target_class(), Shacl2ShExConfig::default_add_target_class());
     }
 

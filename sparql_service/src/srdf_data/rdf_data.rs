@@ -82,7 +82,7 @@ impl RdfData {
         let endpoints = rdf_data_config.endpoints();
         for (name, endpoint_description) in endpoints.iter() {
             let sparql_endpoint =
-                OxigraphEndpoint::new(endpoint_description.query_url(), &endpoint_description.prefixmap())
+                OxigraphEndpoint::new(endpoint_description.query_url(), endpoint_description.prefixmap())
                     .map_err(|e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
                         name: name.clone(),
                         url: endpoint_description.query_url().to_string(),

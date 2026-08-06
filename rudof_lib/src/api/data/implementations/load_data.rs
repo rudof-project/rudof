@@ -383,7 +383,7 @@ pub fn load_data_via_qlever(
     };
 
     // Honour any `[rdf.qlever]` section in the loaded config.
-    let qlever_config = rudof.config.rdf_data().qlever.clone().unwrap_or_default();
+    let qlever_config = rudof.config.rdf_data().qlever().cloned().unwrap_or_default();
 
     // Drive the async loader on the process-wide QLever runtime so the
     // reactor outlives the resulting `QleverServer`. If we created a local

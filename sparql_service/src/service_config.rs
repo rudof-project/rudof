@@ -32,7 +32,7 @@ impl ServiceConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ServiceConfig {
     #[inline] fn default_iri() -> Option<IriS> { None }
 }

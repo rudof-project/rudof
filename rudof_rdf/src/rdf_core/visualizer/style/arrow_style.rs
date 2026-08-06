@@ -17,7 +17,7 @@ pub struct ArrowStyle {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ArrowStyle {
     #[inline] fn default_line_color() -> UmlColor { UmlColor::Black }
     #[inline] fn default_line_thickness() -> ThicknessStyle { ThicknessStyle::Normal }
@@ -77,9 +77,9 @@ impl ArrowStyle {
     pub fn as_plantuml(&self) -> String {
         format!(
             "#line:{};{}text:{}",
-            &self.line_color.as_plantuml().to_lowercase(),
-            &self.line_thickness.as_plantuml().to_lowercase(),
-            &self.text_color.as_plantuml().to_lowercase()
+            self.line_color.as_plantuml().to_lowercase(),
+            self.line_thickness.as_plantuml().to_lowercase(),
+            self.text_color.as_plantuml().to_lowercase()
         )
     }
 }

@@ -149,7 +149,7 @@ impl ValidatorConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ValidatorConfig {
     #[inline] fn default_max_steps() -> Option<usize> { None }
     #[inline] fn default_rdf_data() -> RdfDataConfig { RdfDataConfig::new() }
@@ -186,7 +186,7 @@ mod tests {
             check_negation = false
         "#).unwrap();
         assert_eq!(c.max_steps(), Some(7));
-        assert_eq!(c.check_negation_requirement(), false);
+        assert!(!c.check_negation_requirement());
         assert_eq!(c.width(), ValidatorConfig::default_width());
     }
 

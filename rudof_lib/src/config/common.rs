@@ -50,7 +50,7 @@ impl CommonConfig {
         }
 
         if self.auto_base {
-            return Some(&default_base())
+            return Some(default_base())
         }
 
         None
@@ -64,7 +64,7 @@ impl CommonConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl CommonConfig {
     #[inline] fn default_base() -> Option<IriS> { None }
     #[inline] fn default_auto_base() -> bool { false }
@@ -93,7 +93,7 @@ mod tests {
     #[test]
     fn partial_toml_fills_remaining_defaults() {
         let c = CommonConfig::from_toml_str(r#"auto_base = true"#).unwrap();
-        assert_eq!(c.auto_base(), true);
+        assert!(c.auto_base());
     }
 
     #[test]

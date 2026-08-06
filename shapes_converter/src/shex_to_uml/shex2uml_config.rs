@@ -118,7 +118,7 @@ impl ShEx2UmlConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ShEx2UmlConfig {
     #[inline] fn default_plantuml_path() -> PathBuf { discover_puml_path(None) }
     #[inline] fn default_annotation_label() -> Vec<IriS> { vec![RdfsVocab::rdfs_label()] }
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     fn partial_toml_fills_remaining_defaults() {
         let c = ShEx2UmlConfig::from_toml_str(r#"replace_iri = true"#).unwrap();
-        assert_eq!(c.replace_iri_by_label(), true);
+        assert!(c.replace_iri_by_label());
         assert_eq!(c.shadowing(), ShEx2UmlConfig::default_shadowing());
     }
 

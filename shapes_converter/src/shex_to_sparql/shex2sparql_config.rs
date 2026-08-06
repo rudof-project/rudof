@@ -13,7 +13,7 @@ pub struct ShEx2SparqlConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ShEx2SparqlConfig {
     #[inline] fn default_this_variable_name() -> String { "this".to_string() }
     #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }

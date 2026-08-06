@@ -108,7 +108,7 @@ impl ShapemapConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ShapemapConfig {
     #[inline] fn default_nodes_prefixmap() -> PrefixMap { PrefixMap::new() }
     #[inline] fn default_shapes_prefixmap() -> PrefixMap { PrefixMap::new() }

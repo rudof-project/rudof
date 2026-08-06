@@ -92,7 +92,7 @@ impl ConverterConfig {
 
 /// Serde stuff
 #[allow(dead_code)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl ConverterConfig {
     #[inline] fn default_dctap() -> TapConfig { TapConfig::default() }
     #[inline] fn default_shex2html() -> ShEx2HtmlConfig { ShEx2HtmlConfig::default() }
