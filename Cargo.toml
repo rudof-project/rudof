@@ -24,6 +24,7 @@ members = [
     "shex_validation",
     "sparql_service",
     "benchmarks/bench-shex",
+    "benchmarks/bench-issue730",
 ]
 
 default-members = ["rudof_cli"]
