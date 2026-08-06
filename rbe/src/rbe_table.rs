@@ -190,6 +190,12 @@ where
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
+        // Values that had more than one candidate component but matched none of them.
+        // Such a value can never be part of a successful cartesian-product combination,
+        // so we record why here (rather than bailing out of `matches` with a hard `Err`,
+        // which would surface as a fatal error instead of a normal non-conformant result)
+        // and let the empty per-value candidate list propagate the failure naturally.
+        let mut prefilter_failed = Vec::new();
         for (key, value, ctx) in &values {
             let components = self.key_components.get(key).unwrap_or(&cs_empty);
             let mut pairs = Vec::new();
@@ -214,7 +220,7 @@ where
                 if pairs.is_empty()
                     && let Some(err) = last_err
                 {
-                    return Err(err);
+                    prefilter_failed.push((key.clone(), value.clone(), err));
                 }
             } else {
                 for component in components {
@@ -265,7 +271,10 @@ where
                 state: mp,
                 rbe: self.rbe.clone(),
                 open: self.open,
-                failed: Vec::new(),
+                failed: prefilter_failed
+                    .into_iter()
+                    .map(|(key, value, err)| (Vec::new(), key, value, err))
+                    .collect(),
                 failed_cardinality: Vec::new(),
             }))
         }
@@ -804,8 +813,15 @@ mod tests {
             RbeStruct::symbol(c2, 1, Max::IntMax(1)),
         ]));
 
-        // matches() itself returns Err because 'z' matches no component
-        let result = rbe_table.matches(vs);
-        assert!(result.is_err());
+        // matches() itself must not return a hard Err: a value that satisfies no
+        // component is a normal non-match, reported through the iterator so callers
+        // can collect it alongside other validation failures instead of aborting.
+        let mut iter = rbe_table.matches(vs).unwrap();
+        assert_eq!(iter.next(), None);
+        let failed = iter.failed_candidates();
+        assert_eq!(failed.len(), 1);
+        let (_candidate, key, value, _err) = &failed[0];
+        assert_eq!(*key, 'p');
+        assert_eq!(*value, 'z');
     }
 }
