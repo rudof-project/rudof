@@ -1,137 +1,156 @@
-use std::io::Read;
-use std::path::Path;
-
 use colored::*;
 use prefixmap::PrefixMap;
+use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 
-pub struct ShapemapConfigMain {
-    /// Specific shapemap configuration
-    pub shex: Option<ShapemapConfig>,
-}
-
-impl ShapemapConfigMain {
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ShapemapConfigMain, ShapemapConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| ShapemapConfigError::FromPath {
-            path: path_name.clone(),
-            error: e.to_string(),
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s).map_err(|e| ShapemapConfigError::FromFile {
-            file: path_name.clone(),
-            error: e.to_string(),
-        })?;
-
-        let config: ShapemapConfigMain = toml::from_str(s.as_str()).map_err(|e| ShapemapConfigError::Toml {
-            path: path_name.clone(),
-            error: e.to_string(),
-        })?;
-        Ok(config)
-    }
-}
-
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(default)]
 pub struct ShapemapConfig {
-    nodes_prefixmap: PrefixMap,
-    shapes_prefixmap: PrefixMap,
+    #[serde(rename = "nodes_pm", skip_serializing_if = "PrefixMap::is_empty")]
+    pub(crate) nodes_prefixmap: PrefixMap,
+    #[serde(rename = "shapes_pm", skip_serializing_if = "PrefixMap::is_empty")]
+    pub(crate) shapes_prefixmap: PrefixMap,
 
-    // TODO: Color doesn't implement Serialize/Deserialize...
-    #[serde(skip)]
-    ok_color: Option<Color>,
+    // TODO - Color stuff should be in rudof_lib
 
-    ok_text: Option<String>,
-
-    fail_text: Option<String>,
-
-    #[serde(skip)]
-    fail_color: Option<Color>,
+    #[serde(rename = "ok_text")]
+    pub(crate) ok_text: String,
+    #[serde(rename = "fail_text")]
+    pub(crate) fail_text: String,
 
     #[serde(skip)]
-    pending_color: Option<Color>,
+    pub(crate) ok_color: Color,
+    #[serde(skip)]
+    pub(crate) fail_color: Color,
+    #[serde(skip)]
+    pub(crate) pending_color: Color,
 }
 
-impl Default for ShapemapConfig {
-    fn default() -> Self {
+impl ShapemapConfig {
+    pub fn new() -> Self {
         Self {
-            nodes_prefixmap: Default::default(),
-            shapes_prefixmap: Default::default(),
-            ok_color: Some(Color::Green),
-            fail_color: Some(Color::Red),
-            pending_color: Some(Color::Magenta),
-            ok_text: Some("OK".to_string()),
-            fail_text: Some("FAIL".to_string()),
+            nodes_prefixmap: Self::default_nodes_prefixmap(),
+            shapes_prefixmap: Self::default_shapes_prefixmap(),
+            ok_text: Self::default_ok_text(),
+            fail_text: Self::default_fail_text(),
+            ok_color: Self::default_ok_color(),
+            fail_color: Self::default_fail_color(),
+            pending_color: Self::default_pending_color(),
         }
+    }
+
+    pub fn with_nodes_prefixmap(mut self, pm: PrefixMap) -> Self {
+        self.nodes_prefixmap = pm;
+        self
+    }
+
+    pub fn with_shapes_prefixmap(mut self, pm: PrefixMap) -> Self {
+        self.shapes_prefixmap = pm;
+        self
+    }
+
+    pub fn with_ok_text(mut self, text: String) -> Self {
+        self.ok_text = text;
+        self
+    }
+
+    pub fn with_fail_text(mut self, text: String) -> Self {
+        self.fail_text = text;
+        self
+    }
+
+    pub fn with_ok_color(mut self, color: Color) -> Self {
+        self.ok_color = color;
+        self
+    }
+
+    pub fn with_fail_color(mut self, color: Color) -> Self {
+        self.fail_color = color;
+        self
+    }
+
+    pub fn with_pending_color(mut self, color: Color) -> Self {
+        self.pending_color = color;
+        self
     }
 }
 
 impl ShapemapConfig {
-    pub fn ok_text(&self) -> String {
-        match &self.ok_text {
-            None => "OK".to_string(),
-            Some(t) => t.clone(),
-        }
+    pub fn nodes_prefixmap(&self) -> &PrefixMap {
+        &self.nodes_prefixmap
     }
 
-    pub fn fail_text(&self) -> String {
-        match &self.fail_text {
-            None => "FAIL".to_string(),
-            Some(t) => t.clone(),
-        }
+    pub fn shapes_prefixmap(&self) -> &PrefixMap {
+        &self.shapes_prefixmap
     }
 
-    pub fn ok_color(&self) -> Option<Color> {
-        self.ok_color
-    }
-    pub fn fail_color(&self) -> Option<Color> {
-        self.fail_color
-    }
-    pub fn pending_color(&self) -> Option<Color> {
-        self.pending_color
-    }
-    pub fn set_ok_color(&mut self, color: Color) {
-        self.ok_color = Some(color);
+    pub fn ok_text(&self) -> &String {
+        &self.ok_text
     }
 
-    pub fn set_fail_color(&mut self, color: Color) {
-        self.fail_color = Some(color);
+    pub fn fail_text(&self) -> &String {
+        &self.fail_text
     }
 
-    pub fn set_pending_color(&mut self, color: Color) {
-        self.pending_color = Some(color)
+    pub fn ok_color(&self) -> &Color {
+        &self.ok_color
     }
 
-    pub fn nodes_prefixmap(&self) -> PrefixMap {
-        self.nodes_prefixmap.clone()
+    pub fn fail_color(&self) -> &Color {
+        &self.fail_color
     }
 
-    pub fn shapes_prefixmap(&self) -> PrefixMap {
-        self.shapes_prefixmap.clone()
-    }
-
-    pub fn with_nodes_prefixmap(mut self, prefixmap: &PrefixMap) -> Self {
-        self.nodes_prefixmap = prefixmap.clone();
-        self
-    }
-
-    pub fn with_shapes_prefixmap(mut self, prefixmap: &PrefixMap) -> Self {
-        self.shapes_prefixmap = prefixmap.clone();
-        self
+    pub fn pending_color(&self) -> &Color {
+        &self.pending_color
     }
 }
 
-#[derive(Error, Debug, Clone)]
-pub enum ShapemapConfigError {
-    #[error("Error reading config file from path {path}: {error}")]
-    FromPath { path: String, error: String },
+/// Serde stuff
+#[allow(dead_code)]
+#[rustfmt::skip]
+impl ShapemapConfig {
+    #[inline] fn default_nodes_prefixmap() -> PrefixMap { PrefixMap::new() }
+    #[inline] fn default_shapes_prefixmap() -> PrefixMap { PrefixMap::new() }
+    #[inline] fn default_ok_text() -> String { "OK".to_string() }
+    #[inline] fn default_fail_text() -> String { "FAIL".to_string() }
+    #[inline] fn default_ok_color() -> Color { Color::Green }
+    #[inline] fn default_fail_color() -> Color { Color::Green }
+    #[inline] fn default_pending_color() -> Color { Color::Magenta }
+}
 
-    #[error("Error reading config file from file {file}: {error}")]
-    FromFile { file: String, error: String },
+impl Default for ShapemapConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-    #[error("Error reading config file from path {path}: {error}")]
-    Toml { path: String, error: String },
+impl TomlConfig for ShapemapConfig {}
+
+#[cfg(test)]
+mod tests {
+    use super::ShapemapConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        let c = ShapemapConfig::default();
+        assert_eq!(c.ok_text(), &ShapemapConfig::default_ok_text());
+        assert_eq!(c.fail_text(), &ShapemapConfig::default_fail_text());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ShapemapConfig::from_toml_str(r#"ok_text = "YES""#).unwrap();
+        assert_eq!(c.ok_text(), "YES");
+        assert_eq!(c.fail_text(), &ShapemapConfig::default_fail_text());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShapemapConfig::default().with_ok_text("YES".to_string());
+        let s = c.to_toml_string().unwrap();
+        let d = ShapemapConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
 }

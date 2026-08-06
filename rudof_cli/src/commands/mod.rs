@@ -1,6 +1,7 @@
 mod base;
 mod compare;
 mod completion;
+mod config;
 mod convert;
 mod data;
 mod dctap;
@@ -23,6 +24,7 @@ mod validate;
 pub use base::{CommandContext, CommandFactory};
 pub use compare::CompareCommand;
 pub use completion::CompletionCommand;
+pub use config::ConfigCommand;
 pub use convert::ConvertCommand;
 pub use data::DataCommand;
 pub use dctap::DctapCommand;

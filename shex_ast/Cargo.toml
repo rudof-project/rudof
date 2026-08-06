@@ -14,6 +14,7 @@ bincode.workspace = true
 colored.workspace = true
 const_format.workspace = true
 csv.workspace = true
+rudof_config.workspace = true
 rudof_iri.workspace = true
 itertools.workspace = true
 lazy-regex.workspace = true

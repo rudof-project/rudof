@@ -1,44 +1,39 @@
+use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
-#[cfg(not(target_family = "wasm"))]
-use std::io::Read;
-#[cfg(not(target_family = "wasm"))]
-use std::path::Path;
-use thiserror::Error;
 
 /// This struct can be used to define configuration of RDF data readers
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[serde(default)]
 pub struct QueryConfig {
     /// Default base to resolve relative IRIs, if it is `None` relative IRIs will be marked as errors`
-    pub data_config: Option<RdfDataConfig>,
+    #[serde(rename = "rdf", skip_serializing)]
+    pub(crate) data_config: RdfDataConfig,
 }
 
 impl QueryConfig {
-    pub fn new() -> QueryConfig {
+    pub fn new() -> Self {
         Self {
-            data_config: Some(RdfDataConfig::default()),
+            data_config: Self::default_data_config(),
         }
     }
 
-    #[cfg(not(target_family = "wasm"))]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<QueryConfig, QueryConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| QueryConfigError::ReadingConfigError {
-            path_name: path_name.clone(),
-            error: e,
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| QueryConfigError::ReadingConfigError {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
-        let config: QueryConfig = toml::from_str(s.as_str()).map_err(|e| QueryConfigError::TomlError {
-            path_name: path_name.to_string(),
-            error: e,
-        })?;
-        Ok(config)
+    pub fn with_data_config(mut self, cfg: RdfDataConfig) -> Self {
+        self.data_config = cfg;
+        self
     }
+}
+
+impl QueryConfig {
+    pub fn data_config(&self) -> &RdfDataConfig {
+        &self.data_config
+    }
+}
+
+#[allow(dead_code)]
+#[rustfmt::skip]
+impl QueryConfig {
+    #[inline] fn default_data_config() -> RdfDataConfig { RdfDataConfig::default() }
 }
 
 impl Default for QueryConfig {
@@ -47,12 +42,24 @@ impl Default for QueryConfig {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum QueryConfigError {
-    #[cfg(not(target_family = "wasm"))]
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: std::io::Error },
+impl TomlConfig for QueryConfig {}
 
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: toml::de::Error },
+#[cfg(test)]
+mod tests {
+    use super::QueryConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn empty_toml_yields_defaults() {
+        let c = QueryConfig::from_toml_str("").unwrap();
+        assert_eq!(c, QueryConfig::default());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = QueryConfig::default();
+        let s = c.to_toml_string().unwrap();
+        let d = QueryConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
 }

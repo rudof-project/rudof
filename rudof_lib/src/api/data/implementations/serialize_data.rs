@@ -65,7 +65,7 @@ fn serialize_rdf_data<W: io::Write>(
                 })
             })?;
     } else {
-        let visualization_config = rudof.config.rdf_data_config().rdf_visualization_config();
+        let visualization_config = rudof.config.rdf_data().rdf_visualization_config().clone();
         let converter = VisualRDFGraph::from_rdf(data.unwrap_rdf_mut(), visualization_config).map_err(|e| {
             Box::new(DataError::FailedSerializingData {
                 format: result_data_format.to_string(),
@@ -79,7 +79,7 @@ fn serialize_rdf_data<W: io::Write>(
                     writer,
                     result_data_format.try_into()?,
                     &UmlGenerationMode::all(),
-                    rudof.config.plantuml_path(),
+                    rudof.config.shex2uml().plantuml_path(),
                 )
                 .map_err(|e| {
                     Box::new(DataError::FailedSerializingData {

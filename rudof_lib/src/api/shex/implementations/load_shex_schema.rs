@@ -139,7 +139,7 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
 
     let mut schema_ir = SchemaIR::new(registry);
 
-    let validator_config = rudof.config.validator_config();
+    let validator_config = rudof.config.shex_validator();
     schema_ir
         .populate_from_schema_json(
             &schema,
@@ -168,7 +168,7 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
         DataReaderMode::Lax => {},
     }
 
-    let validator = ShExValidator::new(&schema_ir, &rudof.config.validator_config()).map_err(|_| {
+    let validator = ShExValidator::new(&schema_ir, rudof.config.shex_validator()).map_err(|_| {
         ShExError::FailedCompilingShExSchema {
             error: "Failed to create ShEx validator.".to_string(),
         }

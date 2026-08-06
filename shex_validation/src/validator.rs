@@ -46,7 +46,7 @@ impl Validator {
         config: &ValidatorConfig,
         check_neg_cycles: bool,
     ) -> Result<Validator> {
-        if check_neg_cycles && config.check_negation_requirement.unwrap_or(true) && schema.has_neg_cycle() {
+        if check_neg_cycles && config.check_negation_requirement && schema.has_neg_cycle() {
             trace!("Checking negation cycles...");
             let neg_cycles = schema.neg_cycles();
             trace!("Negation cycles: {neg_cycles:?}");

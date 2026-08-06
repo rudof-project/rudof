@@ -79,17 +79,16 @@ impl RdfData {
     }
 
     pub fn with_rdf_data_config(mut self, rdf_data_config: &RdfDataConfig) -> Result<Self, RdfDataError> {
-        if let Some(endpoints) = &rdf_data_config.endpoints {
-            for (name, endpoint_description) in endpoints.iter() {
-                let sparql_endpoint =
-                    OxigraphEndpoint::new(endpoint_description.query_url(), &endpoint_description.prefixmap())
-                        .map_err(|e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
-                            name: name.clone(),
-                            url: endpoint_description.query_url().to_string(),
-                            err: Box::new(e),
-                        })?;
-                self.add_endpoint(name, sparql_endpoint);
-            }
+        let endpoints = rdf_data_config.endpoints();
+        for (name, endpoint_description) in endpoints.iter() {
+            let sparql_endpoint =
+                OxigraphEndpoint::new(endpoint_description.query_url(), endpoint_description.prefixmap())
+                    .map_err(|e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
+                        name: name.clone(),
+                        url: endpoint_description.query_url().to_string(),
+                        err: Box::new(e),
+                    })?;
+            self.add_endpoint(name, sparql_endpoint);
         }
         Ok(self)
     }

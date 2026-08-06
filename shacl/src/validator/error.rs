@@ -2,8 +2,6 @@ use crate::error::{IRError, ShaclParserError};
 use rudof_rdf::rdf_core::{RDFError, Rdf};
 use rudof_rdf::rdf_impl::{OxigraphEndpointError, OxigraphInMemoryError};
 use sparql_service::RdfDataError;
-use std::io;
-use std::io::Error;
 use thiserror::Error;
 
 // TODO - Maybe move to validation module
@@ -115,23 +113,3 @@ impl From<OxigraphInMemoryError> for ValidationError {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ShaclConfigError {
-    #[error(transparent)]
-    IOError(#[from] Box<io::Error>),
-
-    #[error(transparent)]
-    UnmarshallError(#[from] Box<toml::de::Error>),
-}
-
-impl From<io::Error> for ShaclConfigError {
-    fn from(value: Error) -> Self {
-        Self::IOError(Box::new(value))
-    }
-}
-
-impl From<toml::de::Error> for ShaclConfigError {
-    fn from(value: toml::de::Error) -> Self {
-        Self::UnmarshallError(Box::new(value))
-    }
-}

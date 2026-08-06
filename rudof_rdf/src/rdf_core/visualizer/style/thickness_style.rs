@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents the available line thickness and style options in PlantUML.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+#[serde(rename_all = "snake_case")]
 pub enum ThicknessStyle {
     Bold,
+    #[default]
     Normal,
     Dashed,
     Dotted,

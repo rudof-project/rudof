@@ -65,7 +65,7 @@ The `qlever` backend routes data loading through a locally-launched QLever Docke
 
 A QLever run has two phases, **build the index** (once) and **serve it** (every time). The build phase is idempotent: if the on-disk index already exists, it is skipped and the serve phase starts immediately.
 
-1. **Resolve the index directory.** Either `[qlever].index_dir` from the TOML config, or a per-input fingerprint under the platform cache dir (typically `~/.cache/rudof/qlever/<fingerprint>/`). The fingerprint is derived from each input's path, format, graph IRI, and compression family, so different inputs get different directories and unrelated runs don't collide.
+1. **Resolve the index directory.** Either `[rdf.qlever].index_dir` from the TOML config, or a per-input fingerprint under the platform cache dir (typically `~/.cache/rudof/qlever/<fingerprint>/`). The fingerprint is derived from each input's path, format, graph IRI, and compression family, so different inputs get different directories and unrelated runs don't collide.
 2. **Skip if already built.** QLever writes a `<name>.meta-data.json` marker last; if it's there, `rudof` jumps straight to step 6.
 3. **Docker pre-flight.** Connect to the local Docker daemon, ping it, and pull the `adfreiburg/qlever` image if it isn't present locally (~1 GB on first run).
 4. **Probe the image's CLI.** The upstream image has shipped two generations of binaries — v1 (`IndexBuilderMain` / `ServerMain`) and v2 (`qlever-index` / `qlever-server`). `rudof` runs each candidate with `-h` once to pick the one that works for the pinned image tag.
@@ -76,7 +76,7 @@ A QLever run has two phases, **build the index** (once) and **serve it** (every 
 6. **Serve the index.** A long-running container is started, the QLever HTTP port is mapped to an ephemeral host port (or to `host_port` if configured), and `rudof` polls a SPARQL readiness probe until it succeeds.
 7. **Query.** All subsequent `rudof` operations go over SPARQL-over-HTTP against the running container.
 
-The index is **persisted by default** across `rudof` invocations, so the next run with the same inputs short-circuits at step 2 and goes straight to serving. Set `auto_delete_if_created = true` in the `[qlever]` config to wipe the index on shutdown when the current run created it.
+The index is **persisted by default** across `rudof` invocations, so the next run with the same inputs short-circuits at step 2 and goes straight to serving. Set `auto_delete_if_created = true` in the `[rdf.qlever]` config to wipe the index on shutdown when the current run created it.
 
 ### Streaming compressed dumps
 
@@ -121,10 +121,10 @@ streaming compressed input (bz2) via /usr/bin/lbzip2 (parallel)
 
 ### Configuring the QLever backend
 
-QLever-specific settings live in a `[qlever]` section of the TOML config file passed via `--config-file`:
+QLever-specific settings live in a `[rdf.qlever]` section of the TOML config file passed via `--config-file`:
 
 ```toml
-[qlever]
+[rdf.qlever]
 # Docker image. Defaults: adfreiburg/qlever : commit-a307781.
 image_name = "adfreiburg/qlever"
 image_tag  = "commit-a307781"
@@ -167,9 +167,9 @@ run_as_host_user = true
 server_readiness_timeout_secs = 60
 ```
 
-All `[qlever]` fields are optional (an empty `[qlever]` section is enough to start QLever with sensible defaults).
+All `[rdf.qlever]` fields are optional (an empty `[rdf.qlever]` section is enough to start QLever with sensible defaults).
 
-> **Note:** The `[qlever]` section in the config is only recognised when `rudof` is built with the `qlever` feature.
+> **Note:** The `[rdf.qlever]` section in the config is only recognised when `rudof` is built with the `qlever` feature.
 
 ### Limitations
 

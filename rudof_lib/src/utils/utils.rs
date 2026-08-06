@@ -41,7 +41,7 @@ pub fn get_base_iri(rudof: &mut Rudof, base_iri: Option<&str>) -> Result<IriS> {
         })?;
 
         Ok(base_iri.clone())
-    } else if let Some(base_iri) = rudof.config.shex_config().base.as_ref() {
+    } else if let Some(base_iri) = rudof.config.shex().base() {
         Ok(base_iri.clone())
     } else {
         #[cfg(target_family = "wasm")]

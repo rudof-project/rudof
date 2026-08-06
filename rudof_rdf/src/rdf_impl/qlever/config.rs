@@ -34,7 +34,7 @@ pub(crate) const DEFAULT_SERVER_READINESS_TIMEOUT_SECS: u64 = 60;
 ///
 /// Most fields are `Option<_>` so an empty TOML section is enough to boot QLever with its own defaults;
 /// the few non-optional fields hardcoded defaults.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct QleverConfig {
