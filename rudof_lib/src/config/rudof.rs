@@ -3,6 +3,7 @@ use std::io::Read;
 use std::path::Path;
 use crate::errors::RudofConfigError;
 use dctap::TapConfig;
+use rudof_config::{ConfigError, TomlConfig, find_config_files_from, merge_tables, read_toml_table, user_config_file};
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 #[cfg(not(target_family = "wasm"))]
@@ -291,20 +292,22 @@ impl Default for RudofConfig {
     }
 }
 
-impl FromStr for RudofConfig {
-    type Err = RudofConfigError;
-
-    /// Parses a `RudofConfig` from a TOML string.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`RudofConfigError::TomlParseFromString`] if the TOML content is invalid.
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut config: RudofConfig = toml::from_str(s).map_err(|e| RudofConfigError::TomlStringError {
-            string: s.to_string(),
+impl TomlConfig for RudofConfig {
+    fn from_toml_str(s: &str) -> Result<Self, ConfigError> {
+        let mut config: RudofConfig = toml::from_str(s).map_err(|e| ConfigError::Parse {
+            location: "<string>".to_string(),
             error: e.to_string(),
         })?;
-        config.fixup();
+        config.check_version()?;
+        config.resolve();
         Ok(config)
+    }
+}
+
+impl FromStr for RudofConfig {
+    type Err = ConfigError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        <Self as TomlConfig>::from_toml_str(s)
     }
 }
