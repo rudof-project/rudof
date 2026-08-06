@@ -22,7 +22,7 @@ pub struct Tap2ShExConfig {
 impl Tap2ShExConfig {
     pub fn new() -> Self {
         Self {
-            base_iri: None,
+            base_iri: Self::default_base_iri(),
             datatype_base_iri: Self::default_datatype_base_iri(),
             prefixmap: Self::default_prefixmap(),
             dctap: Self::default_dctap(),
@@ -72,6 +72,7 @@ impl Tap2ShExConfig {
 #[allow(dead_code)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 impl Tap2ShExConfig {
+    #[inline] fn default_base_iri() -> Option<IriS> { None }
     #[inline] fn default_datatype_base_iri() -> Option<IriS> { None }
     #[inline] fn default_prefixmap() -> PrefixMap { PrefixMap::basic() }
     #[inline] fn default_dctap() -> TapConfig { TapConfig::default() }
