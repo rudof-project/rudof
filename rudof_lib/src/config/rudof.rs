@@ -1,7 +1,4 @@
-use std::fs::File;
-use std::io::Read;
 use std::path::Path;
-use crate::errors::RudofConfigError;
 use dctap::TapConfig;
 use rudof_config::{ConfigError, TomlConfig, find_config_files_from, merge_tables, read_toml_table, user_config_file};
 use rudof_rdf::rdf_core::RdfDataConfig;
