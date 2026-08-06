@@ -1,4 +1,4 @@
-show_time = true
+base_iri = "http://example.org/"
 
 [shex]
 show_imports = true

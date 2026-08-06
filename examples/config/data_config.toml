@@ -1,2 +1,2 @@
-[rdf_data]
-base = "http://example.org/"
+[rdf]
+base_iri = "http://example.org/"
