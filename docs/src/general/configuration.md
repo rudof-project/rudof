@@ -67,6 +67,8 @@ section only; sections that don't set their own inherit the common one. Shared s
 such as `[rdf]`, `[shex]` and `[tap]` are automatically injected into the subsystems that
 build on them (validation, conversion, SHACL), so you configure them **once**.
 
+> You can generate a starting template with `rudof config -o rudof.toml` and then edit it to your needs.
+
 ## Loading configs programmatically
 
 Every configuration struct in rudof implements the `TomlConfig` trait from the
