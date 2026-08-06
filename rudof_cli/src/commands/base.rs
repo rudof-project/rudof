@@ -66,11 +66,7 @@ impl CommandContext {
         let common = extract_common(cmd);
 
         // Load config
-        let config = match &common.config() {
-            Some(path) => RudofConfig::from_path(path)?,
-            None => RudofConfig::default(),
-        };
-        //tracing::trace!("Loaded configuration: {:?}", config);
+        let config = RudofConfig::discover(common.config().map(|p| p.as_path()))?;
 
         // Initialize Rudof with the loaded configuration
         let rudof = Rudof::new(config);

@@ -82,6 +82,60 @@ impl RudofConfig {
         cfg
     }
 
+    /// Loads the configuration, either from an explicit file or by discovering
+    /// and merging the standard locations.
+    ///
+    /// When no explicit file is given, sources are merged per-key, from lowest to
+    /// highest precedence:
+    /// 1. The built-in defaults ([`RudofConfig::default`]).
+    /// 2. The platform-specific user config file:
+    ///    - Linux: `~/.config/rudof/config.toml`
+    ///    - Windows: `%LOCALAPPDATA%\rudof\config.toml`
+    ///    - macOS: `~/Library/Application Support/rudof/config.toml`
+    /// 3. Every `rudof.toml` found by walking from the filesystem root down to the
+    ///    current working directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ConfigError`] if any read file cannot be read or contains invalid
+    /// TOML. Missing discovered files are silently skipped.
+    #[cfg(not(target_family = "wasm"))]
+    pub fn discover(explicit: Option<&Path>) -> Result<Self, ConfigError> {
+        // Explicit file
+        if let Some(path) = explicit {
+            return Self::from_path(path);
+        }
+
+        let mut merged = toml::Table::new();
+
+        // Platform-specific user config directory
+        if let Some(path) = user_config_file("rudof", "config.toml") {
+            if path.is_file() {
+                merge_tables(&mut merged, read_toml_table(&path)?);
+            }
+        }
+
+        // `rudof.toml` files from the filesystem root down to the CWD
+        if let Ok(cwd) = std::env::current_dir() {
+            for path in find_config_files_from(&cwd, "rudof.toml") {
+                merge_tables(&mut merged, read_toml_table(&path)?);
+            }
+        }
+
+        Self::from_table(merged)
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    fn from_table(table: toml::Table) -> Result<Self, ConfigError> {
+        let mut config: RudofConfig =
+            toml::Value::Table(table).try_into().map_err(|e: toml::de::Error| ConfigError::Parse {
+                location: "<merged config>".to_string(),
+                error: e.to_string(),
+            })?;
+        config.check_version()?;
+        config.resolve();
+        Ok(config)
+    }
 
     pub fn with_version(mut self, version: Option<Version>) -> Self {
         self.version = version;
