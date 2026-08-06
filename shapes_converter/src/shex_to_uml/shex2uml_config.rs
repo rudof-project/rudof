@@ -145,3 +145,31 @@ fn discover_puml_path(path: Option<PathBuf>) -> PathBuf {
         }
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ShEx2UmlConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        let c = ShEx2UmlConfig::default();
+        assert_eq!(c.replace_iri_by_label(), ShEx2UmlConfig::default_replace_iri_by_label());
+        assert_eq!(c.shadowing(), ShEx2UmlConfig::default_shadowing());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ShEx2UmlConfig::from_toml_str(r#"replace_iri = true"#).unwrap();
+        assert_eq!(c.replace_iri_by_label(), true);
+        assert_eq!(c.shadowing(), ShEx2UmlConfig::default_shadowing());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShEx2UmlConfig::default().with_replace_iri_by_label(true);
+        let s = c.to_toml_string().unwrap();
+        let d = ShEx2UmlConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

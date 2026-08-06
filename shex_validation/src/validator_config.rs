@@ -167,5 +167,34 @@ impl Default for ValidatorConfig {
 
 impl TomlConfig for ValidatorConfig {}
 
+#[cfg(test)]
+mod tests {
+    use super::ValidatorConfig;
 
+    #[test]
+    fn defaults() {
+        let c = ValidatorConfig::default();
+        assert_eq!(c.max_steps(), ValidatorConfig::default_max_steps());
+        assert_eq!(c.check_negation_requirement(), ValidatorConfig::default_check_negation_requirement());
+        assert_eq!(c.width(), ValidatorConfig::default_width());
+    }
 
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c: ValidatorConfig = toml::from_str(r#"
+            max_steps = 7
+            check_negation = false
+        "#).unwrap();
+        assert_eq!(c.max_steps(), Some(7));
+        assert_eq!(c.check_negation_requirement(), false);
+        assert_eq!(c.width(), ValidatorConfig::default_width());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ValidatorConfig::default().with_max_steps(Some(42)).with_width(120);
+        let s = toml::to_string(&c).unwrap();
+        let d: ValidatorConfig = toml::from_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

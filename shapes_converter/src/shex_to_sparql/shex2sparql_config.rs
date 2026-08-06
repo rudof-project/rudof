@@ -56,4 +56,27 @@ impl Default for ShEx2SparqlConfig {
 
 impl TomlConfig for ShEx2SparqlConfig {}
 
+#[cfg(test)]
+mod tests {
+    use super::ShEx2SparqlConfig;
+    use rudof_config::TomlConfig;
 
+    #[test]
+    fn defaults() {
+        assert_eq!(ShEx2SparqlConfig::default().this_variable_name(), &ShEx2SparqlConfig::default_this_variable_name());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ShEx2SparqlConfig::from_toml_str(r#"this_variable_name = "self""#).unwrap();
+        assert_eq!(c.this_variable_name(), "self");
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShEx2SparqlConfig::default().with_this_variable_name("self".to_string());
+        let s = c.to_toml_string().unwrap();
+        let d = ShEx2SparqlConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

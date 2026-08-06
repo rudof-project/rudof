@@ -44,3 +44,22 @@ impl Default for QueryConfig {
 
 impl TomlConfig for QueryConfig {}
 
+#[cfg(test)]
+mod tests {
+    use super::QueryConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn empty_toml_yields_defaults() {
+        let c = QueryConfig::from_toml_str("").unwrap();
+        assert_eq!(c, QueryConfig::default());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = QueryConfig::default();
+        let s = c.to_toml_string().unwrap();
+        let d = QueryConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

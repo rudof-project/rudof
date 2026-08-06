@@ -127,5 +127,30 @@ impl Default for ShapemapConfig {
 
 impl TomlConfig for ShapemapConfig {}
 
+#[cfg(test)]
+mod tests {
+    use super::ShapemapConfig;
+    use rudof_config::TomlConfig;
 
+    #[test]
+    fn defaults() {
+        let c = ShapemapConfig::default();
+        assert_eq!(c.ok_text(), &ShapemapConfig::default_ok_text());
+        assert_eq!(c.fail_text(), &ShapemapConfig::default_fail_text());
+    }
 
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ShapemapConfig::from_toml_str(r#"ok_text = "YES""#).unwrap();
+        assert_eq!(c.ok_text(), "YES");
+        assert_eq!(c.fail_text(), &ShapemapConfig::default_fail_text());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShapemapConfig::default().with_ok_text("YES".to_string());
+        let s = c.to_toml_string().unwrap();
+        let d = ShapemapConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

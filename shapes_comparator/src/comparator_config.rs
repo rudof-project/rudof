@@ -56,3 +56,30 @@ impl Default for ComparatorConfig {
 }
 
 impl TomlConfig for ComparatorConfig {}
+
+#[cfg(test)]
+mod tests {
+    use super::ComparatorConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        let c = ComparatorConfig::default();
+        assert_eq!(c.ignore_value_constraints(), ComparatorConfig::default_ignore_value_constraints());
+        assert_eq!(c.prefixes_equivalences(), &ComparatorConfig::default_prefixes_equivalences());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ComparatorConfig::from_toml_str(r#"ignore_value_constraints = true"#).unwrap();
+        assert_eq!(c.ignore_value_constraints(), true);
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ComparatorConfig::default().with_ignore_value_constraints(true);
+        let s = c.to_toml_string().unwrap();
+        let d = ComparatorConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

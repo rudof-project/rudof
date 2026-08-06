@@ -45,6 +45,27 @@ impl Default for ServiceConfig {
 
 impl TomlConfig for ServiceConfig {}
 
+#[cfg(test)]
+mod tests {
+    use super::ServiceConfig;
+    use rudof_config::TomlConfig;
 
+    #[test]
+    fn defaults() {
+        assert_eq!(ServiceConfig::default().base(), ServiceConfig::default_iri().as_ref());
+    }
 
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ServiceConfig::from_toml_str(r#"base_iri = "http://ex/""#).unwrap();
+        assert_eq!(c.base().map(|i| i.as_str()), Some("http://ex/"));
+    }
 
+    #[test]
+    fn toml_round_trip() {
+        let c = ServiceConfig::new().with_base(Some(rudof_iri::IriS::new_unchecked("http://ex/")));
+        let s = c.to_toml_string().unwrap();
+        let d = ServiceConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

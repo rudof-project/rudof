@@ -59,3 +59,35 @@ impl ConverterConfig {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ConverterConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        let c = ConverterConfig::default();
+        assert_eq!(c.tap_config(), &ConverterConfig::default_dctap());
+    }
+
+    #[test]
+    fn partial_toml_sets_one_subconfig() {
+        let c = ConverterConfig::from_toml_str(r#"
+            [dctap]
+            delimiter = ";"
+        "#).unwrap();
+        assert_eq!(c.tap_config().delimiter(), ';');
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ConverterConfig::from_toml_str(r#"
+            [dctap]
+            delimiter = ";"
+        "#).unwrap();
+        let s = c.to_toml_string().unwrap();
+        let d = ConverterConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

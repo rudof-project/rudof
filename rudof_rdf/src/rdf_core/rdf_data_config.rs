@@ -269,3 +269,45 @@ impl FromStr for EndpointDescription {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::RdfDataConfig;
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c: RdfDataConfig = toml::from_str(r#"
+            base_iri = "http://ex/"
+            local_base = false
+        "#).unwrap();
+        assert_eq!(c.base().map(|i| i.as_str()), Some("http://ex/"));
+        assert_eq!(c.automatic_base(), false);
+        assert_eq!(c.endpoints(), &RdfDataConfig::default_endpoints());
+    }
+
+    #[test]
+    fn toml_round_trip_with_endpoints() {
+        let s = r#"
+            base_iri = "http://ex/"
+            [endpoints.demo]
+            query_url = "https://example.org/sparql"
+        "#;
+        let c: RdfDataConfig = toml::from_str(s).unwrap();
+        let out = toml::to_string(&c).unwrap();
+        let d: RdfDataConfig = toml::from_str(&out).unwrap();
+        assert_eq!(c, d);
+        assert!(d.endpoints().contains_key("demo"));
+    }
+
+    #[cfg(feature = "qlever")]
+    #[test]
+    fn qlever_section_parses_from_rdf_qlever() {
+        let s = r#"
+            base_iri = "http://ex/"
+            [qlever]
+            host_port = 7042
+        "#;
+        let c: RdfDataConfig = toml::from_str(s).unwrap();
+        assert!(c.qlever.is_some());
+    }
+}

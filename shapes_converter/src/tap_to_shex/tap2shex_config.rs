@@ -138,3 +138,31 @@ impl Default for Tap2ShExConfig {
 }
 
 impl TomlConfig for Tap2ShExConfig {}
+
+#[cfg(test)]
+mod tests {
+    use super::Tap2ShExConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        let c = Tap2ShExConfig::default();
+        assert_eq!(c.base_iri(), Tap2ShExConfig::default_base_iri().as_ref());
+        assert_eq!(c.prefixmap(), &Tap2ShExConfig::default_prefixmap());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = Tap2ShExConfig::from_toml_str(r#"base_iri = "http://ex/""#).unwrap();
+        assert_eq!(c.base_iri().map(|i| i.as_str()), Some("http://ex/"));
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = Tap2ShExConfig::default()
+            .with_base_iri(Some(rudof_iri::IriS::new_unchecked("http://ex/")));
+        let s = c.to_toml_string().unwrap();
+        let d = Tap2ShExConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

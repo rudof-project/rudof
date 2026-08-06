@@ -166,4 +166,38 @@ impl Default for ShExConfig {
 
 impl TomlConfig for ShExConfig {}
 
+#[cfg(test)]
+mod tests {
+    use super::ShExConfig;
+    use rudof_iri::IriS;
 
+    #[test]
+    fn defaults() {
+        let c = ShExConfig::default();
+        assert_eq!(c.show_extends(), ShExConfig::default_show_extends());
+        assert_eq!(c.show_imports(), ShExConfig::default_show_imports());
+        assert_eq!(c.show_shapes(), ShExConfig::default_show_shapes());
+        assert_eq!(c.show_dependencies(), ShExConfig::default_show_dependencies());
+        assert_eq!(c.show_ir(), ShExConfig::default_show_ir());
+        assert_eq!(c.check_well_formed(), ShExConfig::default_check_well_formed());
+        assert_eq!(c.base(), ShExConfig::default_base().as_ref());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c: ShExConfig = toml::from_str(r#"show_imports = false"#).unwrap();
+        assert_eq!(c.show_imports(), false);
+        assert_eq!(c.show_extends(), ShExConfig::default_show_extends());
+        assert_eq!(c.check_well_formed(), ShExConfig::default_check_well_formed());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShExConfig::default()
+            .with_show_imports(false)
+            .with_base(Some(IriS::new_unchecked("http://example.org/")));
+        let s = toml::to_string(&c).unwrap();
+        let d: ShExConfig = toml::from_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

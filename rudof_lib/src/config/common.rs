@@ -77,3 +77,30 @@ impl Default for CommonConfig {
 }
 
 impl TomlConfig for CommonConfig {}
+
+#[cfg(test)]
+mod tests {
+    use super::CommonConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        let c = CommonConfig::default();
+        assert_eq!(c.auto_base(), CommonConfig::default_auto_base());
+        assert_eq!(c.base(), CommonConfig::default_base().as_ref());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = CommonConfig::from_toml_str(r#"auto_base = true"#).unwrap();
+        assert_eq!(c.auto_base(), true);
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = CommonConfig::default().with_auto_base(true);
+        let s = c.to_toml_string().unwrap();
+        let d = CommonConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

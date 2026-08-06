@@ -104,3 +104,31 @@ pub enum StartShapeMode {
     #[serde(rename = "non-bnodes")]
     NonBNodes,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Shacl2ShExConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        let c = Shacl2ShExConfig::default();
+        assert_eq!(c.embed_bnodes(), Shacl2ShExConfig::default_embed_bnodes());
+        assert_eq!(c.add_target_class(), Shacl2ShExConfig::default_add_target_class());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = Shacl2ShExConfig::from_toml_str(r#"embed_bnodes = true"#).unwrap();
+        assert_eq!(c.embed_bnodes(), true);
+        assert_eq!(c.add_target_class(), Shacl2ShExConfig::default_add_target_class());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = Shacl2ShExConfig::default().with_embed_bnodes(true);
+        let s = c.to_toml_string().unwrap();
+        let d = Shacl2ShExConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}

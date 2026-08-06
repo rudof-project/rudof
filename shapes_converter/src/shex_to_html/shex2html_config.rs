@@ -211,4 +211,28 @@ impl Default for ShEx2HtmlConfig {
 
 impl TomlConfig for ShEx2HtmlConfig {}
 
+#[cfg(test)]
+mod tests {
+    use super::ShEx2HtmlConfig;
+    use rudof_config::TomlConfig;
 
+    #[test]
+    fn defaults() {
+        assert_eq!(ShEx2HtmlConfig::default().title(), &ShEx2HtmlConfig::default_title());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ShEx2HtmlConfig::from_toml_str(r#"title = "My schema""#).unwrap();
+        assert_eq!(c.title(), "My schema");
+        assert_eq!(c.landing_page_name(), &ShEx2HtmlConfig::default_landing_page_name());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShEx2HtmlConfig::default().with_title("My schema".to_string());
+        let s = c.to_toml_string().unwrap();
+        let d = ShEx2HtmlConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+}
