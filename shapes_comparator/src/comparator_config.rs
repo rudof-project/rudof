@@ -65,8 +65,14 @@ mod tests {
     #[test]
     fn defaults() {
         let c = ComparatorConfig::default();
-        assert_eq!(c.ignore_value_constraints(), ComparatorConfig::default_ignore_value_constraints());
-        assert_eq!(c.prefixes_equivalences(), &ComparatorConfig::default_prefixes_equivalences());
+        assert_eq!(
+            c.ignore_value_constraints(),
+            ComparatorConfig::default_ignore_value_constraints()
+        );
+        assert_eq!(
+            c.prefixes_equivalences(),
+            &ComparatorConfig::default_prefixes_equivalences()
+        );
     }
 
     #[test]

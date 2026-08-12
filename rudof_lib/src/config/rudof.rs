@@ -1,7 +1,8 @@
-use std::path::Path;
+use crate::config::CommonConfig;
 use dctap::TapConfig;
 use rudof_config::{ConfigError, TomlConfig, find_config_files_from, merge_tables, read_toml_table, user_config_file};
 use rudof_rdf::rdf_core::RdfDataConfig;
+use semver::Version;
 use serde::{Deserialize, Serialize};
 #[cfg(not(target_family = "wasm"))]
 use shacl::validator::ShaclConfig;
@@ -9,9 +10,8 @@ use shapes_comparator::ComparatorConfig;
 use shapes_converter::{ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
+use std::path::Path;
 use std::str::FromStr;
-use semver::Version;
-use crate::config::CommonConfig;
 
 /// Main configuration structure for Rudof.
 ///
@@ -106,8 +106,9 @@ impl RudofConfig {
         let mut merged = toml::Table::new();
 
         // Platform-specific user config directory
-        if let Some(path) = user_config_file("rudof", "config.toml") &&
-            path.is_file() {
+        if let Some(path) = user_config_file("rudof", "config.toml")
+            && path.is_file()
+        {
             merge_tables(&mut merged, read_toml_table(&path)?);
         }
 
@@ -124,10 +125,12 @@ impl RudofConfig {
     #[cfg(not(target_family = "wasm"))]
     fn from_table(table: toml::Table) -> Result<Self, ConfigError> {
         let mut config: RudofConfig =
-            toml::Value::Table(table).try_into().map_err(|e: toml::de::Error| ConfigError::Parse {
-                location: "<merged config>".to_string(),
-                error: e.to_string(),
-            })?;
+            toml::Value::Table(table)
+                .try_into()
+                .map_err(|e: toml::de::Error| ConfigError::Parse {
+                    location: "<merged config>".to_string(),
+                    error: e.to_string(),
+                })?;
         config.check_version()?;
         config.resolve();
         Ok(config)
@@ -267,8 +270,7 @@ impl RudofConfig {
 impl RudofConfig {
     /// Returns config version, paired with rudof version
     fn current_version() -> Version {
-        Version::parse(env!("CARGO_PKG_VERSION"))
-            .expect("CARGO_PKG_VERSION is a valid semver")
+        Version::parse(env!("CARGO_PKG_VERSION")).expect("CARGO_PKG_VERSION is a valid semver")
     }
 
     /// Checks the config's declared version against this build
@@ -280,7 +282,7 @@ impl RudofConfig {
     fn check_version(&self) -> Result<(), ConfigError> {
         let Some(config_version) = self.version.as_ref() else {
             tracing::warn!("config file does not declare a version");
-            return Ok(())
+            return Ok(());
         };
         let rudof_version = Self::current_version();
 
@@ -444,10 +446,7 @@ mod tests {
     #[test]
     fn version_absent_is_stamped_with_current() {
         let cfg = RudofConfig::from_str(r#"base_iri = "http://x/""#).unwrap();
-        assert_eq!(
-            cfg.version(),
-            RudofConfig::default_version().as_ref()
-        );
+        assert_eq!(cfg.version(), RudofConfig::default_version().as_ref());
     }
 
     #[test]
@@ -526,15 +525,15 @@ mod tests {
     #[test]
     fn discover_layers_partial_override_keeps_defaults() {
         let mut merged = toml::Table::new();
-        merge_tables(
-            &mut merged,
-            toml::from_str(r#"base_iri = "http://layered/""#).unwrap(),
-        );
+        merge_tables(&mut merged, toml::from_str(r#"base_iri = "http://layered/""#).unwrap());
         let layered = RudofConfig::from_table(merged).unwrap();
         let defaults = RudofConfig::default();
 
         assert_eq!(layered.shex().show_imports(), defaults.shex().show_imports());
-        assert_eq!(layered.shex_validator().max_steps(), defaults.shex_validator().max_steps());
+        assert_eq!(
+            layered.shex_validator().max_steps(),
+            defaults.shex_validator().max_steps()
+        );
         assert_eq!(layered.rdf_data().base().map(|i| i.as_str()), Some("http://layered/"));
     }
 }

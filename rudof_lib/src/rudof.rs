@@ -181,7 +181,10 @@ impl Rudof {
             spec: spec.to_string(),
             error: e.to_string(),
         })?;
-        let vc = self.config.shex_validator().clone()
+        let vc = self
+            .config
+            .shex_validator()
+            .clone()
             .with_external_resolver_arc(resolver);
         self.config = std::mem::take(&mut self.config).with_shex_validator(vc);
         Ok(())
@@ -190,7 +193,10 @@ impl Rudof {
     /// Reset the external-shape resolver chain to the default
     /// (only `RejectAllExternalResolver`).
     pub fn clear_external_resolvers(&mut self) {
-        let vc = self.config.shex_validator().clone()
+        let vc = self
+            .config
+            .shex_validator()
+            .clone()
             .with_external_shape_resolver_registry(ExternalShapeResolverRegistry::default());
         self.config = std::mem::take(&mut self.config).with_shex_validator(vc);
     }

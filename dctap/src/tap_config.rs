@@ -150,7 +150,7 @@ impl TapConfig {
 
     pub fn get_property_placeholder(&self, k: &String) -> Option<&PlaceholderResolver> {
         if k.is_empty() {
-            return self.empty_property_placeholder()
+            return self.empty_property_placeholder();
         }
         self.property_placeholders.get(k)
     }

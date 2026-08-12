@@ -1,4 +1,4 @@
-use crate::rdf_core::visualizer::style::{ArrowStyle, Style, UmlColor, ThicknessStyle};
+use crate::rdf_core::visualizer::style::{ArrowStyle, Style, ThicknessStyle, UmlColor};
 use serde::{Deserialize, Serialize};
 
 /// Enum representing the available UML node shapes for visualization.
@@ -14,13 +14,29 @@ pub enum UmlShape {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct NodeStyle {
-    #[serde(rename = "line_color", default = "NodeStyle::default_line_color", skip_serializing_if = "NodeStyle::is_default_line_color")]
+    #[serde(
+        rename = "line_color",
+        default = "NodeStyle::default_line_color",
+        skip_serializing_if = "NodeStyle::is_default_line_color"
+    )]
     pub(crate) line_color: UmlColor,
-    #[serde(rename = "line_thickness", default = "NodeStyle::default_line_thickness", skip_serializing_if = "NodeStyle::is_default_line_thickness")]
+    #[serde(
+        rename = "line_thickness",
+        default = "NodeStyle::default_line_thickness",
+        skip_serializing_if = "NodeStyle::is_default_line_thickness"
+    )]
     pub(crate) line_thickness: u32,
-    #[serde(rename = "background_color", default = "NodeStyle::default_background_color", skip_serializing_if = "NodeStyle::is_default_background_color")]
+    #[serde(
+        rename = "background_color",
+        default = "NodeStyle::default_background_color",
+        skip_serializing_if = "NodeStyle::is_default_background_color"
+    )]
     pub(crate) background_color: UmlColor,
-    #[serde(rename = "round_corner", default = "NodeStyle::default_round_corner", skip_serializing_if = "NodeStyle::is_default_round_corner")]
+    #[serde(
+        rename = "round_corner",
+        default = "NodeStyle::default_round_corner",
+        skip_serializing_if = "NodeStyle::is_default_round_corner"
+    )]
     pub(crate) round_corner: u32,
 }
 
@@ -116,11 +132,17 @@ pub struct RDFVisualizationConfig {
     pub(crate) reifier_style: NodeStyle,
 
     // === Asserted triple term styling ===
-    #[serde(rename = "asserted_style", default = "RDFVisualizationConfig::default_asserted_style")]
+    #[serde(
+        rename = "asserted_style",
+        default = "RDFVisualizationConfig::default_asserted_style"
+    )]
     pub(crate) asserted_style: NodeStyle,
 
     // === Non-asserted triple term styling ===
-    #[serde(rename = "non_asserted_style", default = "RDFVisualizationConfig::default_non_asserted_style")]
+    #[serde(
+        rename = "non_asserted_style",
+        default = "RDFVisualizationConfig::default_non_asserted_style"
+    )]
     pub(crate) non_asserted_style: NodeStyle,
 
     // === Labels and shapes ===
@@ -128,7 +150,10 @@ pub struct RDFVisualizationConfig {
     #[serde(rename = "subject_label", default = "RDFVisualizationConfig::default_subject_label")]
     pub(crate) triple_term_subject_label: String,
     /// Label for predicate triple term.
-    #[serde(rename = "predicate_label", default = "RDFVisualizationConfig::default_predicate_label")]
+    #[serde(
+        rename = "predicate_label",
+        default = "RDFVisualizationConfig::default_predicate_label"
+    )]
     pub(crate) triple_term_predicate_label: String,
     /// Label for object triple term.
     #[serde(rename = "object_label", default = "RDFVisualizationConfig::default_object_label")]
@@ -137,21 +162,36 @@ pub struct RDFVisualizationConfig {
     #[serde(rename = "reifies_label", default = "RDFVisualizationConfig::default_reifies_label")]
     pub(crate) reifies_label: String,
     /// Shape for unasserted triple.
-    #[serde(rename = "unasserted_triple_shape", default = "RDFVisualizationConfig::default_unasserted_triple_shape")]
+    #[serde(
+        rename = "unasserted_triple_shape",
+        default = "RDFVisualizationConfig::default_unasserted_triple_shape"
+    )]
     pub(crate) unasserted_triple_shape: UmlShape,
     /// Shape for asserted triple.
-    #[serde(rename = "asserted_triple_shape", default = "RDFVisualizationConfig::default_asserted_triple_shape")]
+    #[serde(
+        rename = "asserted_triple_shape",
+        default = "RDFVisualizationConfig::default_asserted_triple_shape"
+    )]
     pub(crate) asserted_triple_shape: UmlShape,
 
     // === Arrow styles ===
     /// Arrow style for subject.
-    #[serde(rename = "subject_arrow_style", default = "RDFVisualizationConfig::default_subject_arrow_style")]
+    #[serde(
+        rename = "subject_arrow_style",
+        default = "RDFVisualizationConfig::default_subject_arrow_style"
+    )]
     pub(crate) subject_arrow_style: ArrowStyle,
     /// Arrow style for predicate.
-    #[serde(rename = "predicate_arrow_style", default = "RDFVisualizationConfig::default_predicate_arrow_style")]
+    #[serde(
+        rename = "predicate_arrow_style",
+        default = "RDFVisualizationConfig::default_predicate_arrow_style"
+    )]
     pub(crate) predicate_arrow_style: ArrowStyle,
     /// Arrow style for object.
-    #[serde(rename = "object_arrow_style", default = "RDFVisualizationConfig::default_object_arrow_style")]
+    #[serde(
+        rename = "object_arrow_style",
+        default = "RDFVisualizationConfig::default_object_arrow_style"
+    )]
     pub(crate) object_arrow_style: ArrowStyle,
 
     // === Text for subject, predicate, object ===
@@ -159,7 +199,10 @@ pub struct RDFVisualizationConfig {
     #[serde(rename = "subject_text", default = "RDFVisualizationConfig::default_subject_text")]
     pub(crate) subject_text: String,
     /// Text for predicate.
-    #[serde(rename = "predicate_text", default = "RDFVisualizationConfig::default_predicate_text")]
+    #[serde(
+        rename = "predicate_text",
+        default = "RDFVisualizationConfig::default_predicate_text"
+    )]
     pub(crate) predicate_text: String,
     /// Text for object.
     #[serde(rename = "object_text", default = "RDFVisualizationConfig::default_object_text")]

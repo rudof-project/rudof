@@ -112,4 +112,3 @@ impl From<OxigraphInMemoryError> for ValidationError {
         Self::OxigraphInMemoryError(Box::new(value))
     }
 }
-

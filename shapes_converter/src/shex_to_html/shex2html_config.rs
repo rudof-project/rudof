@@ -1,9 +1,9 @@
-use std::path::{Path, PathBuf};
 use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
+use std::path::{Path, PathBuf};
 
 use crate::ShEx2UmlConfig;
 

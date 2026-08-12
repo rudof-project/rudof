@@ -315,8 +315,7 @@ fn show_schema_conversion_shex_to_html<P: AsRef<Path>>(
 ) -> Result<()> {
     load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
 
-    let shex2html_config = rudof.config.shex2html().clone()
-        .with_target_folder(output_folder);
+    let shex2html_config = rudof.config.shex2html().clone().with_target_folder(output_folder);
 
     let mut converter = ShEx2Html::new(shex2html_config.clone());
     converter
@@ -541,8 +540,7 @@ fn show_schema_conversion_dctap_to_html<P: AsRef<std::path::Path>>(
                 error: error.to_string(),
             })?;
 
-    let shex2html_config = rudof.config.shex2html().clone()
-        .with_target_folder(output_folder);
+    let shex2html_config = rudof.config.shex2html().clone().with_target_folder(output_folder);
 
     let mut converter = ShEx2Html::new(shex2html_config.clone());
     converter

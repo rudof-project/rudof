@@ -9,10 +9,10 @@ use crate::rdf_core::{
     },
 };
 
+use crate::rdf_core::visualizer::style::Style;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::io::Write;
-use crate::rdf_core::visualizer::style::Style;
 
 /// A visual representation of an RDF graph that can be converted to PlantUML diagrams.
 ///

@@ -1,8 +1,8 @@
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 use rudof_iri::MimeType;
 use rudof_rdf::rdf_core::RDFFormat;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 /// Contains possible ShEx formats
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -36,7 +36,7 @@ impl MimeType for ShExFormat {
 impl Serialize for ShExFormat {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         serializer.serialize_str(&self.to_string().to_lowercase())
     }
@@ -45,11 +45,10 @@ impl Serialize for ShExFormat {
 impl<'de> Deserialize<'de> for ShExFormat {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         let str = String::deserialize(deserializer)?;
-        ShExFormat::from_str(&str)
-            .map_err(serde::de::Error::custom)
+        ShExFormat::from_str(&str).map_err(serde::de::Error::custom)
     }
 }
 

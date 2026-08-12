@@ -123,19 +123,25 @@ mod tests {
 
     #[test]
     fn partial_toml_sets_one_subconfig() {
-        let c = ConverterConfig::from_toml_str(r#"
+        let c = ConverterConfig::from_toml_str(
+            r#"
             [dctap]
             delimiter = ";"
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         assert_eq!(c.tap_config().delimiter(), ';');
     }
 
     #[test]
     fn toml_round_trip() {
-        let c = ConverterConfig::from_toml_str(r#"
+        let c = ConverterConfig::from_toml_str(
+            r#"
             [dctap]
             delimiter = ";"
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let s = c.to_toml_string().unwrap();
         let d = ConverterConfig::from_toml_str(&s).unwrap();
         assert_eq!(c, d);

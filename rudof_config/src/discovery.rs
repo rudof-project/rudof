@@ -7,10 +7,10 @@ pub fn merge_tables(base: &mut toml::Table, overlay: toml::Table) {
         match (base.get_mut(&key), overlay_value) {
             (Some(toml::Value::Table(base_table)), toml::Value::Table(overlay_table)) => {
                 merge_tables(base_table, overlay_table);
-            }
+            },
             (_, overlay_value) => {
                 base.insert(key, overlay_value);
-            }
+            },
         }
     }
 }

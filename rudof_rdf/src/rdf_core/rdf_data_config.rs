@@ -158,10 +158,7 @@ impl RdfDataConfig {
 
 impl Default for RdfDataConfig {
     fn default() -> Self {
-        Self::new()
-            .with_wikidata()
-            .with_dbpedia()
-            .with_uniprot()
+        Self::new().with_wikidata().with_dbpedia().with_uniprot()
     }
 }
 
@@ -177,10 +174,18 @@ pub struct EndpointDescription {
     #[serde(rename = "query_url")]
     pub(crate) query_url: IriS,
     /// Optional URL for SPARQL update operations.
-    #[serde(rename = "update_url", default = "EndpointDescription::default_update_url", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "update_url",
+        default = "EndpointDescription::default_update_url",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub(crate) update_url: Option<IriS>,
     /// Optional prefix map for abbreviating IRIs in queries.
-    #[serde(rename = "prefixmap", default = "EndpointDescription::default_prefixmap", skip_serializing_if = "PrefixMap::is_empty")]
+    #[serde(
+        rename = "prefixmap",
+        default = "EndpointDescription::default_prefixmap",
+        skip_serializing_if = "PrefixMap::is_empty"
+    )]
     pub(crate) prefixmap: PrefixMap,
 }
 
@@ -226,7 +231,6 @@ impl EndpointDescription {
 }
 
 impl EndpointDescription {
-
     /// Returns the query URL for this endpoint.
     ///
     /// # Returns
@@ -276,10 +280,13 @@ mod tests {
 
     #[test]
     fn partial_toml_fills_remaining_defaults() {
-        let c: RdfDataConfig = toml::from_str(r#"
+        let c: RdfDataConfig = toml::from_str(
+            r#"
             base_iri = "http://ex/"
             local_base = false
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         assert_eq!(c.base().map(|i| i.as_str()), Some("http://ex/"));
         assert!(!c.automatic_base());
         assert_eq!(c.endpoints(), RdfDataConfig::default().endpoints());

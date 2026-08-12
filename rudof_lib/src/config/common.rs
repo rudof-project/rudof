@@ -1,6 +1,6 @@
 use rudof_config::TomlConfig;
+use rudof_iri::{IriS, iri_once};
 use serde::{Deserialize, Serialize};
-use rudof_iri::{iri_once, IriS};
 
 iri_once!(default_base, "http://base");
 
@@ -46,11 +46,11 @@ impl CommonConfig {
     /// If `base` is not set and auto_base is `true` returns http://base
     pub fn base(&self) -> Option<&IriS> {
         if let Some(iri) = &self.base {
-            return Some(iri)
+            return Some(iri);
         }
 
         if self.auto_base {
-            return Some(default_base())
+            return Some(default_base());
         }
 
         None

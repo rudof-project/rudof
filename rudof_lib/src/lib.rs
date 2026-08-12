@@ -40,9 +40,9 @@ pub(crate) mod utils;
 pub mod config;
 
 #[cfg(not(target_family = "wasm"))]
-pub use rudof::*;
-#[cfg(not(target_family = "wasm"))]
 pub use crate::config::RudofConfig;
+#[cfg(not(target_family = "wasm"))]
+pub use rudof::*;
 
 // Reexport config trait and error
 pub use rudof_config::{ConfigError, TomlConfig};

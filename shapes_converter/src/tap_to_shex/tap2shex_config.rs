@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
 use dctap::TapConfig;
 use prefixmap::PrefixMap;
 use rudof_config::TomlConfig;
 use rudof_iri::IriS;
+use serde::{Deserialize, Serialize};
 
 use super::Tap2ShExError;
 
@@ -79,7 +79,6 @@ impl Tap2ShExConfig {
 }
 
 impl Tap2ShExConfig {
-
     // TODO: Refactor Tap2ShExError to reduce its size and avoid the result_large_err warning
     #[allow(clippy::result_large_err)]
     pub fn resolve_iri(&self, str: &str, line: u64) -> Result<IriS, Tap2ShExError> {
@@ -160,8 +159,7 @@ mod tests {
 
     #[test]
     fn toml_round_trip() {
-        let c = Tap2ShExConfig::default()
-            .with_base_iri(Some(rudof_iri::IriS::new_unchecked("http://ex/")));
+        let c = Tap2ShExConfig::default().with_base_iri(Some(rudof_iri::IriS::new_unchecked("http://ex/")));
         let s = c.to_toml_string().unwrap();
         let d = Tap2ShExConfig::from_toml_str(&s).unwrap();
         assert_eq!(c, d);

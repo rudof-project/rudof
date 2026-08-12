@@ -63,7 +63,10 @@ mod tests {
 
     #[test]
     fn defaults() {
-        assert_eq!(ShEx2SparqlConfig::default().this_variable_name(), &ShEx2SparqlConfig::default_this_variable_name());
+        assert_eq!(
+            ShEx2SparqlConfig::default().this_variable_name(),
+            &ShEx2SparqlConfig::default_this_variable_name()
+        );
     }
 
     #[test]

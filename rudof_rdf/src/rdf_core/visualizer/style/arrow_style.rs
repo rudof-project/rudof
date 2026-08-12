@@ -5,13 +5,25 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ArrowStyle {
     /// Color of the arrow line.
-    #[serde(rename = "line_color", default = "ArrowStyle::default_line_color", skip_serializing_if = "ArrowStyle::is_default_line_color")]
+    #[serde(
+        rename = "line_color",
+        default = "ArrowStyle::default_line_color",
+        skip_serializing_if = "ArrowStyle::is_default_line_color"
+    )]
     pub(crate) line_color: UmlColor,
     /// Thickness and style of the arrow line.
-    #[serde(rename = "line_thickness", default = "ArrowStyle::default_line_thickness", skip_serializing_if = "ArrowStyle::is_default_line_thickness")]
+    #[serde(
+        rename = "line_thickness",
+        default = "ArrowStyle::default_line_thickness",
+        skip_serializing_if = "ArrowStyle::is_default_line_thickness"
+    )]
     pub(crate) line_thickness: ThicknessStyle,
     /// Color of the arrow text/label.
-    #[serde(rename = "text_color", default = "ArrowStyle::default_text_color", skip_serializing_if = "ArrowStyle::is_default_text_color")]
+    #[serde(
+        rename = "text_color",
+        default = "ArrowStyle::default_text_color",
+        skip_serializing_if = "ArrowStyle::is_default_text_color"
+    )]
     pub(crate) text_color: UmlColor,
 }
 

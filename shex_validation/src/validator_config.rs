@@ -36,7 +36,6 @@ pub struct ValidatorConfig {
     #[serde(rename = "width")]
     pub(crate) width: usize,
 
-
     /// Resolvers consulted for EXTERNAL shape expressions. Defaults to a
     /// registry containing only `RejectAllExternalResolver`. Resolvers cannot
     /// be loaded from TOML — they must be installed programmatically via
@@ -47,12 +46,12 @@ pub struct ValidatorConfig {
 
 impl PartialEq for ValidatorConfig {
     fn eq(&self, other: &Self) -> bool {
-        self.max_steps == other.max_steps &&
-            self.rdf_data == other.rdf_data &&
-            self.shex == other.shex &&
-            self.shapemap == other.shapemap &&
-            self.check_negation_requirement == other.check_negation_requirement &&
-            self.width == other.width
+        self.max_steps == other.max_steps
+            && self.rdf_data == other.rdf_data
+            && self.shex == other.shex
+            && self.shapemap == other.shapemap
+            && self.check_negation_requirement == other.check_negation_requirement
+            && self.width == other.width
     }
 }
 
@@ -175,16 +174,22 @@ mod tests {
     fn defaults() {
         let c = ValidatorConfig::default();
         assert_eq!(c.max_steps(), ValidatorConfig::default_max_steps());
-        assert_eq!(c.check_negation_requirement(), ValidatorConfig::default_check_negation_requirement());
+        assert_eq!(
+            c.check_negation_requirement(),
+            ValidatorConfig::default_check_negation_requirement()
+        );
         assert_eq!(c.width(), ValidatorConfig::default_width());
     }
 
     #[test]
     fn partial_toml_fills_remaining_defaults() {
-        let c: ValidatorConfig = toml::from_str(r#"
+        let c: ValidatorConfig = toml::from_str(
+            r#"
             max_steps = 7
             check_negation = false
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         assert_eq!(c.max_steps(), Some(7));
         assert!(!c.check_negation_requirement());
         assert_eq!(c.width(), ValidatorConfig::default_width());

@@ -56,10 +56,13 @@ mod tests {
 
     #[test]
     fn partial_toml_sets_rdf_base() {
-        let c = ShaclConfig::from_toml_str(r#"
+        let c = ShaclConfig::from_toml_str(
+            r#"
             [rdf]
             base_iri = "http://ex/"
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         assert_eq!(c.rdf_data().base().map(|i| i.as_str()), Some("http://ex/"));
     }
 

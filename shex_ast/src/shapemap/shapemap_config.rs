@@ -3,7 +3,6 @@ use prefixmap::PrefixMap;
 use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(default)]
 pub struct ShapemapConfig {
@@ -13,7 +12,6 @@ pub struct ShapemapConfig {
     pub(crate) shapes_prefixmap: PrefixMap,
 
     // TODO - Color stuff should be in rudof_lib
-
     #[serde(rename = "ok_text")]
     pub(crate) ok_text: String,
     #[serde(rename = "fail_text")]

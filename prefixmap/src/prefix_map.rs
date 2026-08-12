@@ -15,7 +15,6 @@ pub struct PrefixMap {
     pub map: IndexMap<String, IriS>,
 
     // TODO - The following properties should be handled by rudof_lib
-
     /// Color of prefix aliases when qualifying an IRI that has an alias
     qualify_prefix_color: Option<Color>,
 
@@ -61,7 +60,10 @@ impl<'de> Deserialize<'de> for PrefixMap {
                 while let Some((k, v)) = access.next_entry::<String, IriS>()? {
                     map.insert(k, v);
                 }
-                Ok(PrefixMap { map, ..Default::default() })
+                Ok(PrefixMap {
+                    map,
+                    ..Default::default()
+                })
             }
         }
 
@@ -273,8 +275,8 @@ impl PrefixMap {
             ("wdv", "https://www.wikidata.org/value/"),
             ("wikibase", "https://wikiba.se/ontology#"),
         ])
-            .try_into()
-            .unwrap();
+        .try_into()
+        .unwrap();
         pm.without_default_colors().with_hyperlink(true)
     }
 
@@ -289,8 +291,8 @@ impl PrefixMap {
             ("geo", "http://www.w3.org/2003/01/geo/wgs84_pos#"),
             ("xsd", "http://www.w3.org/2001/XMLSchema#"),
         ])
-            .try_into()
-            .unwrap();
+        .try_into()
+        .unwrap();
         pm.without_default_colors().with_hyperlink(true)
     }
 
@@ -305,8 +307,8 @@ impl PrefixMap {
             ("up", "http://purl.uniprot.org/core/"),
             ("void", "https://sparql.uniprot.org/.well-known/void#"),
         ])
-            .try_into()
-            .unwrap();
+        .try_into()
+        .unwrap();
         pm.without_default_colors().with_hyperlink(true)
     }
 }
@@ -337,8 +339,7 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
-        self.qualify_optional(iri)
-            .unwrap_or_else(|| format!("<{}>", iri))
+        self.qualify_optional(iri).unwrap_or_else(|| format!("<{}>", iri))
     }
 
     /// Qualifies an IRI against a [`PrefixMap`]

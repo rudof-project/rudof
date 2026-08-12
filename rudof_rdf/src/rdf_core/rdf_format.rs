@@ -129,7 +129,7 @@ impl FromStr for RDFFormat {
 impl<'de> Deserialize<'de> for RDFFormat {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         let string = String::deserialize(deserializer)?;
         RDFFormat::from_str(&string).map_err(serde::de::Error::custom)

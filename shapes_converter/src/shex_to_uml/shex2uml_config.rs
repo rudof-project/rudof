@@ -1,12 +1,12 @@
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
 use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 use crate::shex_to_uml::{Direction, LineType};
 
@@ -50,7 +50,7 @@ impl ShEx2UmlConfig {
             shadowing: Self::default_shadowing(),
             line_type: Self::default_line_type(),
             direction: Self::default_direction(),
-            shex: Self::default_shex()
+            shex: Self::default_shex(),
         }
     }
 
@@ -88,7 +88,6 @@ impl ShEx2UmlConfig {
         self.shex = cfg;
         self
     }
-
 }
 
 impl ShEx2UmlConfig {
@@ -115,7 +114,6 @@ impl ShEx2UmlConfig {
     }
 }
 
-
 /// Serde stuff
 #[allow(dead_code)]
 #[rustfmt::skip]
@@ -138,11 +136,9 @@ impl Default for ShEx2UmlConfig {
 impl TomlConfig for ShEx2UmlConfig {}
 
 fn discover_puml_path(path: Option<PathBuf>) -> PathBuf {
-    path.unwrap_or_else(|| {
-        match env::var("RUDOF_PUML") {
-            Ok(value) => Path::new(value.as_str()).to_path_buf(),
-            Err(_) => Path::new("plantuml.jar").to_path_buf(),
-        }
+    path.unwrap_or_else(|| match env::var("RUDOF_PUML") {
+        Ok(value) => Path::new(value.as_str()).to_path_buf(),
+        Err(_) => Path::new("plantuml.jar").to_path_buf(),
     })
 }
 
