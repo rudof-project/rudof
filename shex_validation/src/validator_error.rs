@@ -462,12 +462,6 @@ impl ValidatorError {
             ValidatorError::PrefixMapError(err) => format!("Prefix map error: {}", err),
             ValidatorError::ShapeLabelNotFoundError { .. } => "Shape label not found".to_string(),
             ValidatorError::ShapeExtendsError { .. } => "Shape extends error".to_string(),
-            ValidatorError::ValidatorConfigFromPathError { path, error } => {
-                format!("Validator config from path {}: error: {}", path, error)
-            },
-            ValidatorError::ValidatorConfigTomlError { path, error } => {
-                format!("Validator config TOML for path {}: error: {}", path, error)
-            },
             ValidatorError::AddingNonConformantError { node, label, error } => {
                 format!(
                     "Adding non-conformant for node: {} and label: {}, error: {}",
@@ -564,8 +558,8 @@ impl ValidatorError {
             },
             ValidatorError::ClosedShapeWithRemainderPreds { declared, remainder } => {
                 let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
-                let declared_str = declared.iter().map(|p| show_pred(p)).collect::<Vec<_>>().join(", ");
-                let remainder_str = remainder.iter().map(|p| show_pred(p)).collect::<Vec<_>>().join(", ");
+                let declared_str = declared.iter().map(show_pred).collect::<Vec<_>>().join(", ");
+                let remainder_str = remainder.iter().map(show_pred).collect::<Vec<_>>().join(", ");
                 tree.leaves
                     .push(Tree::new(format!("Allowed properties: {declared_str}")));
                 tree.leaves
