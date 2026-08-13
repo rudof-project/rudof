@@ -22,7 +22,6 @@ toml.workspace = true
 tracing = { workspace = true }
 
 [dev-dependencies]
-bincode.workspace = true
 indoc.workspace = true
 proptest.workspace = true
 tracing-test.workspace = true
