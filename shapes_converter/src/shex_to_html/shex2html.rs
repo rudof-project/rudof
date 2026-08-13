@@ -22,7 +22,7 @@ pub struct ShEx2Html {
 
 impl ShEx2Html {
     pub fn new(config: ShEx2HtmlConfig) -> ShEx2Html {
-        let uml_config = config.shex2uml_config();
+        let uml_config = config.shex2uml.clone();
         ShEx2Html {
             config,
             current_html: HtmlSchema::new(),
@@ -56,7 +56,7 @@ impl ShEx2Html {
                 let str = create_svg_shape(
                     &self.current_uml_converter,
                     &shape.name().name(),
-                    self.config.plantuml_path(),
+                    self.config.shex2uml.plantuml_path(),
                 )?;
                 shape.set_svg_shape(str.as_str());
             }
@@ -83,7 +83,7 @@ impl ShEx2Html {
             str_writer.by_ref(),
             ImageFormat::SVG,
             &UmlGenerationMode::all(),
-            self.config.shex2uml_config().plantuml_path(),
+            self.config.shex2uml.plantuml_path(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
         Ok(str)
@@ -103,7 +103,7 @@ impl ShEx2Html {
             str_writer.by_ref(),
             ImageFormat::SVG,
             &UmlGenerationMode::neighs(name),
-            self.config.shex2uml_config().plantuml_path(),
+            self.config.shex2uml.plantuml_path(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
         Ok(str)
@@ -124,14 +124,13 @@ impl ShEx2Html {
         let environment = create_env(path);
         let landing_page = self.config.landing_page();
         let template = environment.get_template(self.config.landing_page_name.as_str())?;
-        let landing_page_name = self.config.landing_page_name();
         let out = OpenOptions::new()
             .write(true)
             .truncate(true)
             .create(true)
             .open(landing_page)
             .map_err(|e| ShEx2HtmlError::ErrorCreatingLandingPage {
-                name: landing_page_name,
+                name: self.config.landing_page_name().clone(),
                 error: e,
             })?;
 

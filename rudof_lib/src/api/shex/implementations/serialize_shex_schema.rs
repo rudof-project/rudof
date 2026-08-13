@@ -39,7 +39,7 @@ pub fn serialize_shex_schema<W: io::Write>(
         serialize_schema(rudof, shex_format, show_colors, writer)?;
     }
 
-    if rudof.config.show_ir() {
+    if rudof.config.shex().show_ir() {
         serialize_schema_ir(rudof, writer)?;
     }
 
@@ -101,7 +101,7 @@ fn serialize_statistics<W: io::Write>(rudof: &Rudof, writer: &mut W) -> Result<(
 
     writeln!(writer, "\n\n\nStatistics:").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
 
-    if rudof.config.show_imports() {
+    if rudof.config.shex().show_imports() {
         writeln!(
             writer,
             "- Local shapes: {} / Total shapes {}",
@@ -110,7 +110,7 @@ fn serialize_statistics<W: io::Write>(rudof: &Rudof, writer: &mut W) -> Result<(
         .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
     }
 
-    if rudof.config.show_shapes() {
+    if rudof.config.shex().show_shapes() {
         writeln!(writer, "- Shapes:",).map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
         for (label, source, _) in &stats.shapes {
             let from_msg = if stats.has_imports {

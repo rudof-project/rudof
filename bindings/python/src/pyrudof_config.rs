@@ -7,7 +7,7 @@ use std::path::Path;
 
 use pyo3::{PyErr, PyResult, Python, pyclass, pymethods};
 use rudof_lib::{
-    RudofConfig,
+    RudofConfig, TomlConfig,
     errors::{ConfigError, RudofError},
 };
 

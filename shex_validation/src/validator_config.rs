@@ -1,124 +1,106 @@
+use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shex_ast::ir::external_resolver::{ExternalShapeResolver, ExternalShapeResolverRegistry};
 use shex_ast::shapemap::ShapemapConfig;
-use std::io::Read;
-use std::path::Path;
 use std::sync::Arc;
 
-use crate::{MAX_STEPS, ShExConfig, ValidatorError};
-
-const DEFAULT_WIDTH: usize = 80;
+use crate::ShExConfig;
 
 /// This struct can be used to customize the behavour of ShEx validators
-#[derive(Deserialize, Serialize, Debug, Clone)]
-
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ValidatorConfig {
     /// Maximum numbers of validation steps
-    pub max_steps: Option<usize>,
+    #[serde(rename = "max_steps", skip_serializing_if = "Option::is_none")]
+    pub(crate) max_steps: Option<usize>,
 
     /// Configuration of RDF data readers
-    pub rdf_data: Option<RdfDataConfig>,
+    #[serde(rename = "rdf", skip_serializing)]
+    pub(crate) rdf_data: RdfDataConfig,
 
     /// Configuration of ShEx schemas
-    pub shex: Option<ShExConfig>,
+    #[serde(rename = "shex", skip_serializing)]
+    pub(crate) shex: ShExConfig,
 
     /// Configuration of Shapemaps
-    pub shapemap: Option<ShapemapConfig>,
+    #[serde(rename = "shapemap")]
+    pub(crate) shapemap: ShapemapConfig,
 
     /// Whether to check the negation requirement (default: true)
-    pub check_negation_requirement: Option<bool>,
+    #[serde(rename = "check_negation")]
+    pub(crate) check_negation_requirement: bool,
 
     /// Width for pretty printing
-    pub width: Option<usize>,
+    // TODO - This should be in rudof_lib
+    #[serde(rename = "width")]
+    pub(crate) width: usize,
 
     /// Resolvers consulted for EXTERNAL shape expressions. Defaults to a
     /// registry containing only `RejectAllExternalResolver`. Resolvers cannot
     /// be loaded from TOML — they must be installed programmatically via
     /// [`Self::with_external_resolver`].
-    #[serde(skip, default)]
-    pub external_resolvers: ExternalShapeResolverRegistry,
+    #[serde(skip)]
+    pub(crate) external_resolvers: ExternalShapeResolverRegistry,
 }
 
-impl Default for ValidatorConfig {
-    fn default() -> Self {
-        Self {
-            max_steps: None,
-            rdf_data: Some(RdfDataConfig::default()),
-            shex: Some(ShExConfig::default()),
-            shapemap: Some(ShapemapConfig::default()),
-            check_negation_requirement: Some(true),
-            width: Some(80),
-            external_resolvers: ExternalShapeResolverRegistry::default(),
-        }
+impl PartialEq for ValidatorConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.max_steps == other.max_steps
+            && self.rdf_data == other.rdf_data
+            && self.shex == other.shex
+            && self.shapemap == other.shapemap
+            && self.check_negation_requirement == other.check_negation_requirement
+            && self.width == other.width
     }
 }
 
 impl ValidatorConfig {
-    /// Obtain a `ValidatorConfig` from a path file in TOML format
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ValidatorConfig, ValidatorError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| ValidatorError::ValidatorConfigFromPathError {
-            path: path_name.clone(),
-            error: e.to_string(),
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ValidatorError::ValidatorConfigFromPathError {
-                path: path_name.clone(),
-                error: e.to_string(),
-            })?;
-
-        let config: ValidatorConfig =
-            toml::from_str(s.as_str()).map_err(|e| ValidatorError::ValidatorConfigTomlError {
-                path: path_name.clone(),
-                error: e.to_string(),
-            })?;
-        Ok(config)
-    }
-
-    pub fn set_max_steps(&mut self, max_steps: usize) {
-        self.max_steps = Some(max_steps);
-    }
-
-    pub fn max_steps(&self) -> usize {
-        self.max_steps.unwrap_or(MAX_STEPS)
-    }
-
-    pub fn rdf_data_config(&self) -> RdfDataConfig {
-        match &self.rdf_data {
-            None => RdfDataConfig::default(),
-            Some(sc) => sc.clone(),
+    pub fn new() -> Self {
+        Self {
+            max_steps: Self::default_max_steps(),
+            width: Self::default_width(),
+            rdf_data: Self::default_rdf_data(),
+            shex: Self::default_shex(),
+            shapemap: Self::default_shapemap(),
+            check_negation_requirement: Self::default_check_negation_requirement(),
+            external_resolvers: ExternalShapeResolverRegistry::default(),
         }
     }
 
-    pub fn shex_config(&self) -> ShExConfig {
-        match &self.shex {
-            None => ShExConfig::default(),
-            Some(sc) => sc.clone(),
-        }
+    pub fn with_max_steps(mut self, steps: Option<usize>) -> Self {
+        self.max_steps = steps;
+        self
     }
 
-    pub fn shapemap_config(&self) -> ShapemapConfig {
-        match &self.shapemap {
-            None => ShapemapConfig::default(),
-            Some(sc) => sc.clone(),
-        }
+    pub fn with_rdf_data(mut self, cfg: RdfDataConfig) -> Self {
+        self.rdf_data = cfg;
+        self
     }
 
-    pub fn width(&self) -> usize {
-        match self.width {
-            None => DEFAULT_WIDTH,
-            Some(w) => w,
-        }
+    pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
+        self.shex = cfg;
+        self
     }
 
-    pub fn set_check_negation_requirement(&mut self, check: bool) {
-        self.check_negation_requirement = Some(check);
+    pub fn with_shapemap(mut self, cfg: ShapemapConfig) -> Self {
+        self.shapemap = cfg;
+        self
     }
 
-    pub fn external_resolvers(&self) -> &ExternalShapeResolverRegistry {
-        &self.external_resolvers
+    pub fn with_check_negation_requirement(mut self, flag: bool) -> Self {
+        self.check_negation_requirement = flag;
+        self
+    }
+
+    pub fn with_width(mut self, width: usize) -> Self {
+        self.width = width;
+        self
+    }
+
+    pub fn with_external_shape_resolver_registry(mut self, r: ExternalShapeResolverRegistry) -> Self {
+        self.external_resolvers = r;
+        self
     }
 
     /// Prepend a resolver to the EXTERNAL-shape resolver chain. Returns the
@@ -131,5 +113,93 @@ impl ValidatorConfig {
     pub fn with_external_resolver_arc(mut self, r: Arc<dyn ExternalShapeResolver>) -> Self {
         self.external_resolvers = std::mem::take(&mut self.external_resolvers).with_resolver_arc(r);
         self
+    }
+}
+
+impl ValidatorConfig {
+    pub fn max_steps(&self) -> Option<usize> {
+        self.max_steps
+    }
+
+    pub fn rdf_data(&self) -> &RdfDataConfig {
+        &self.rdf_data
+    }
+
+    pub fn shex(&self) -> &ShExConfig {
+        &self.shex
+    }
+
+    pub fn shapemap(&self) -> &ShapemapConfig {
+        &self.shapemap
+    }
+
+    pub fn check_negation_requirement(&self) -> bool {
+        self.check_negation_requirement
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn external_resolvers(&self) -> &ExternalShapeResolverRegistry {
+        &self.external_resolvers
+    }
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+#[rustfmt::skip]
+impl ValidatorConfig {
+    #[inline] fn default_max_steps() -> Option<usize> { None }
+    #[inline] fn default_rdf_data() -> RdfDataConfig { RdfDataConfig::new() }
+    #[inline] fn default_shex() -> ShExConfig { ShExConfig::new() }
+    #[inline] fn default_shapemap() -> ShapemapConfig { ShapemapConfig::new() }
+    #[inline] fn default_check_negation_requirement() -> bool { true }
+    #[inline] fn default_width() -> usize { 80 }
+}
+
+impl Default for ValidatorConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TomlConfig for ValidatorConfig {}
+
+#[cfg(test)]
+mod tests {
+    use super::ValidatorConfig;
+
+    #[test]
+    fn defaults() {
+        let c = ValidatorConfig::default();
+        assert_eq!(c.max_steps(), ValidatorConfig::default_max_steps());
+        assert_eq!(
+            c.check_negation_requirement(),
+            ValidatorConfig::default_check_negation_requirement()
+        );
+        assert_eq!(c.width(), ValidatorConfig::default_width());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c: ValidatorConfig = toml::from_str(
+            r#"
+            max_steps = 7
+            check_negation = false
+        "#,
+        )
+        .unwrap();
+        assert_eq!(c.max_steps(), Some(7));
+        assert!(!c.check_negation_requirement());
+        assert_eq!(c.width(), ValidatorConfig::default_width());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ValidatorConfig::default().with_max_steps(Some(42)).with_width(120);
+        let s = toml::to_string(&c).unwrap();
+        let d: ValidatorConfig = toml::from_str(&s).unwrap();
+        assert_eq!(c, d);
     }
 }

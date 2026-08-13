@@ -1,6 +1,7 @@
 mod base;
 mod compare;
 mod completion;
+mod config;
 mod convert;
 mod data;
 mod dctap;
@@ -23,6 +24,7 @@ mod validate;
 pub use base::*;
 pub use compare::*;
 pub use completion::*;
+pub use config::*;
 pub use convert::*;
 pub use data::*;
 pub use dctap::*;

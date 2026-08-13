@@ -27,15 +27,14 @@ impl CacheReaderMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum CacheFormat {
     #[default]
-    Bincode,
+    Postcard,
 }
 
 impl CacheFormat {
     pub(crate) fn write_to<W: Write>(&self, schema_ir: &SchemaIR, writer: &mut W) -> Result<(), Box<SchemaIRError>> {
         match self {
-            CacheFormat::Bincode => {
-                let config = bincode::config::standard();
-                let bytes = bincode::serde::encode_to_vec(schema_ir, config)
+            CacheFormat::Postcard => {
+                let bytes = postcard::to_stdvec(schema_ir)
                     .map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
                 writer
                     .write_all(&bytes)
@@ -47,13 +46,12 @@ impl CacheFormat {
 
     pub(crate) fn read_from<R: Read>(&self, reader: &mut R) -> Result<SchemaIR, Box<SchemaIRError>> {
         match self {
-            CacheFormat::Bincode => {
+            CacheFormat::Postcard => {
                 let mut body = Vec::new();
                 reader
                     .read_to_end(&mut body)
                     .map_err(|e| Box::new(SchemaIRError::CacheReadError { msg: e.to_string() }))?;
-                let config = bincode::config::standard();
-                let (ir, _consumed): (SchemaIR, usize) = bincode::serde::decode_from_slice(&body, config)
+                let ir: SchemaIR = postcard::from_bytes(&body)
                     .map_err(|e| Box::new(SchemaIRError::CacheReadError { msg: e.to_string() }))?;
                 Ok(ir)
             },
@@ -84,9 +82,8 @@ impl CacheHeader {
     }
 
     pub(crate) fn write_to<W: Write>(&self, writer: &mut W) -> Result<(), Box<SchemaIRError>> {
-        let config = bincode::config::standard();
-        let header_bytes = bincode::serde::encode_to_vec(self, config)
-            .map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
+        let header_bytes =
+            postcard::to_stdvec(self).map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
         let header_len: u32 = header_bytes.len().try_into().map_err(|_| {
             Box::new(SchemaIRError::CacheWriteError {
                 msg: "cache header exceeds u32::MAX bytes".to_string(),
@@ -137,13 +134,11 @@ impl CacheHeader {
         let mut header_bytes = vec![0u8; header_len];
         read_exact(reader, &mut header_bytes, "header body")?;
 
-        let config = bincode::config::standard();
-        let (header, _consumed): (CacheHeader, usize) = bincode::serde::decode_from_slice(&header_bytes, config)
-            .map_err(|e| {
-                Box::new(SchemaIRError::CacheReadError {
-                    msg: format!("decoding header: {e}"),
-                })
-            })?;
+        let header: CacheHeader = postcard::from_bytes(&header_bytes).map_err(|e| {
+            Box::new(SchemaIRError::CacheReadError {
+                msg: format!("decoding header: {e}"),
+            })
+        })?;
         Ok(header)
     }
 }

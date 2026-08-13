@@ -1,6 +1,6 @@
 use crate::cli::parser::{
-    CompareArgs, CompletionArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, MaterializeArgs, McpArgs, NodeArgs,
-    PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs, ShaclArgs, ShaclValidateArgs,
+    CompareArgs, CompletionArgs, ConfigArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, MaterializeArgs, McpArgs,
+    NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs, ShaclArgs, ShaclValidateArgs,
     ShapemapArgs, ShexArgs, ShexValidateArgs, ValidateArgs,
 };
 use clap::{Args, Parser, Subcommand};
@@ -72,6 +72,8 @@ pub enum Command {
     PgschemaValidate(PgschemaValidateArgs),
     /// Generates a shell completion script for the specified shell
     Completion(CompletionArgs),
+    /// Dump the effective configuration rudof is using as TOML
+    Config(ConfigArgs),
 }
 
 // ============================================================================

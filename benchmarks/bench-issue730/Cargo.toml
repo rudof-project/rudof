@@ -1,0 +1,15 @@
+[package]
+name = "bench-issue730"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "bench-issue730"
+path = "src/main.rs"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+rudof_lib.workspace = true
+anyhow.workspace = true
+zip.workspace = true

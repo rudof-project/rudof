@@ -2,7 +2,6 @@
 //!
 //!
 pub mod converter_config;
-pub mod converter_error;
 pub mod landing_html_template;
 pub mod service_to_mie;
 pub mod shacl_to_shex;
@@ -18,7 +17,6 @@ use shex_ast::Annotation;
 use shex_ast::ObjectValue;
 
 pub use crate::converter_config::*;
-pub use crate::converter_error::*;
 pub use crate::service_to_mie::service2mie::*;
 pub use crate::shacl_to_shex::shacl2shex::*;
 pub use crate::shacl_to_shex::shacl2shex_config::*;

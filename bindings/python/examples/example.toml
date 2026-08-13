@@ -1,11 +1,10 @@
-[rdf_data]
-base = "http://base/"
+[rdf]
+base_iri = "http://base/"
 
-# Wikidata endpoint
-[rdf_data.endpoints.wikidata]
+[rdf.endpoints.wikidata]
 query_url = "https://query.wikidata.org/sparql"
 
-[rdf_data.endpoints.wikidata.prefixmap]
+[rdf.endpoints.wikidata.prefixmap]
 bd = "http://www.bigdata.com/rdf#"
 cc = "http://creativecommons.org/ns#"
 dct = "http://purl.org/dc/terms/"
@@ -40,10 +39,10 @@ wdv = "http://www.wikidata.org/value/"
 wikibase = "http://wikiba.se/ontology#"
 genid = "http://www.wikidata.org/.well-known/genid/"
 
-[rdf_data.endpoints.dbpedia]
+[rdf.endpoints.dbpedia]
 query_url = "http://dbpedia.org/sparql"
 
-[rdf_data.endpoints.dbpedia.prefixmap]
+[rdf.endpoints.dbpedia.prefixmap]
 dbc = "http://dbpedia.org/class/"
 dbo = "http://dbpedia.org/ontology/"
 dbp = "http://dbpedia.org/property/"
@@ -52,10 +51,10 @@ foaf = "http://xmlns.com/foaf/0.1/"
 geo = "http://www.w3.org/2003/01/geo/wgs84_pos#"
 xsd = "http://www.w3.org/2001/XMLSchema#"
 
-[rdf_data.endpoints.uniprot]
+[rdf.endpoints.uniprot]
 query_url = "https://sparql.uniprot.org/sparql"
 
-[rdf_data.endpoints.uniprot.prefixmap]
+[rdf.endpoints.uniprot.prefixmap]
 formats = "http://www.w3.org/ns/formats/"
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 rdfs = "http://www.w3.org/2000/01/rdf-schema#"
@@ -64,76 +63,17 @@ taxon = "http://purl.uniprot.org/taxonomy/"
 up = "http://purl.uniprot.org/core/"
 void = "https://sparql.uniprot.org/.well-known/void#"
 
-# Configuration about ShEx
 [shex]
 show_imports = true
 show_shapes = true
 show_extends = true
 show_dependencies = false
 show_ir = false
-# shex_format = ShExC
-check_well_formed = true # Check is schema is well formed
-# base = "http://base/"    # Base IRI to resolve relative IRIs
-
-# [shex_validator]
-
-# Configuration for RDF data readers of ShExR
-# [shex_validator.rdf_data]
-
-# Configuration of ShEx schemas for validation
-# [shex_validator.shex]
-
-# [shex_validator.shapemap]
+check_well_formed = true
 
 [shex_validator]
-# Checks whether the schema is well-formed before validation
 check_negation_requirement = true
 
-# Default width for pretty printing results of validation
-width = 80
-# Maximum number of validation steps (if None, no limit)
-# max_steps = 30
-
-# [shex_validator.rdf_data]
-# Configuration for RDF data readers of ShExR
-
-# [shex_validators.shex]
-# Configuration of ShEx schemas for validation
-
-# [shex_validator.shapemap]
-# Configuration for Shapemap schemas for validation
-
-[shex2uml]
-# The line type can be "Orthogonal", "Polyline" or "Default". If `None`, the default value is `Default`.
-line_type = "Polyline"
-
-# shex2uml.plantuml_path = "path/to/plantuml.jar"
-annotation_label = ["http://www.w3.org/2000/01/rdf-schema#label"]
-replace_iri_by_label = false
-
-shadowing = true
-
-# [shex2uml.shex] # ShExConfig
-
-# [shex2html]
-# landing_page_name = "Name for landing page"
-# shape_template_name = "Name of template file"
-# css_file_name = "CSS file name" (Optional)
-title = "Title"
-# target_folder = "default/target/folder"
-# color_property_name = ""
-# replace_iri_by_label = true/false
-# annotation_label = "iri"
-# embed_svg_schema = true/false
-# embed_svg_shape = true/false
-# [shex2html.shex2uml] # ShEx2UMLConfig
-# [shex2html.shex] # ShExConfig
-
-# [shacl2shex]
-# starting_shapes_mode = NonBNodes
-# embed_bnodes = true/false (embed blank nodes in ShEx schema)
-# [shacl2shex.shacl] # ShaclConfig
-# add_target_class = true/false # if true, add rdf:type for sh:targetClass declarations
 
 [tap]
 delimiter = ','
@@ -141,11 +81,6 @@ quote = '"'
 flexible = true
 picklist_delimiter = ' '
 
-# [tap.property_place_holders]
-# empty_property_placeholder = "stem"
-
-
-# Configuration about DCTAP to ShEx converter
 [tap2shex]
 base_iri = "http://example.org/"
 
@@ -159,17 +94,3 @@ xsd = "http://www.w3.org/2001/XMLSchema#"
 sdo = "https://schema.org/"
 schema = "http://schema.org/"
 ex = "http://example.org/"
-
-# [tap2shex.prefix_cc]
-
-# [shex2sparql]
-
-# [service]
-base = "http://base/"
-
-# Visualizations require the plantuml.jar file which is usually available at: https://github.com/plantuml/plantuml/releases
-# plantuml_path = "path/to/plantuml.jar"
-
-# [comparator]
-# ignore_value_constraints = true|false
-# [comparator.prefixes_equivalences]

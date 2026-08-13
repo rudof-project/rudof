@@ -24,7 +24,7 @@ impl Tap2ShEx {
     // TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
     #[allow(clippy::result_large_err)]
     pub fn convert(&self, tap: &DCTap) -> Result<Schema, Tap2ShExError> {
-        let mut schema = Schema::new(&iri!("http://default/")).with_prefixmap(Some(self.config.prefixmap()));
+        let mut schema = Schema::new(&iri!("http://default/")).with_prefixmap(Some(self.config.prefixmap().clone()));
         for tap_shape in tap.shapes() {
             let shape_decl = tapshape_to_shape(tap_shape, &self.config)?;
             schema.add_shape_decl(&shape_decl)
@@ -132,7 +132,7 @@ fn parse_shape_ref(
         let line_no = shape_refs.line();
         let mut shapes = Vec::new();
         for s in shape_refs.str().split_whitespace() {
-            if s == config.tap_config().value_shape_delimiter() {
+            if s == config.dctap().value_shape_delimiter().to_string() {
                 continue;
             }
             let sid = ShapeId::new(s, line_no);

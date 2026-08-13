@@ -52,6 +52,8 @@ pub struct Engine {
     step_counter: usize,
     reasons: HashMap<PosAtom, Vec<Reason>>,
     errors: HashMap<NegAtom, Vec<ValidatorError>>,
+    typing: HashMap<(Node, ShapeLabelIdx), ValidationResult>,
+    hyp_touched: bool,
 }
 
 impl Engine {
@@ -63,6 +65,8 @@ impl Engine {
             step_counter: 0,
             reasons: HashMap::new(),
             errors: HashMap::new(),
+            typing: HashMap::new(),
+            hyp_touched: false,
         }
     }
 
@@ -160,7 +164,7 @@ impl Engine {
     }
 
     pub fn set_max_steps(&mut self, max_steps: usize) {
-        self.config.set_max_steps(max_steps);
+        self.config = std::mem::take(&mut self.config).with_max_steps(max_steps.into());
     }
 
     pub fn new_step(&mut self) {
@@ -201,7 +205,7 @@ impl Engine {
         self.step_counter
     }
 
-    pub fn max_steps(&self) -> usize {
+    pub fn max_steps(&self) -> Option<usize> {
         self.config.max_steps()
     }
 
@@ -270,8 +274,12 @@ impl Engine {
 
     // Implements algorithm presented in page 14 of this paper:
     // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
+    //
+    // Memoized: results are cached in `self.typing` and reused across recursive
+    // calls, so a `(node, shape)` pair reachable from several sibling branches is
+    // proved once instead of once per path.
     pub(crate) fn prove<R>(
-        &self,
+        &mut self,
         node: &Node,
         label: &ShapeLabelIdx,
         hyp: &mut Vec<(Node, ShapeLabelIdx)>,
@@ -281,26 +289,31 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
-        hyp.push((node.clone(), *label));
+        let key = (node.clone(), *label);
+        if let Some(cached) = self.typing.get(&key) {
+            return Ok(cached.clone());
+        }
+
+        let saved_hyp_touched = self.hyp_touched;
+        self.hyp_touched = false;
+
+        hyp.push(key.clone());
         let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
             hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
         let mut typing = RefTyping::new();
         let candidates = self.dep(node, label, schema, rdf)?;
+
+        if candidates.iter().any(|c| hyp_as_set.contains(c)) {
+            self.hyp_touched = true;
+        }
+
         let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
         for (n1, l1) in cleaned_candidates {
             match self.prove(&n1, &l1, hyp, schema, rdf)? {
                 Either::Right(_reasons) => {
-                    /*debug!(
-                        "Proved {n1}@{l1} while proving {node}@{label}: {}",
-                        rs.iter().map(|r| format!("{r}")).join(", ")
-                    );*/
                     typing.insert_passed(n1.clone(), l1);
                 },
                 Either::Left(errors) => {
-                    /*debug!(
-                        "Failed to prove {n1}@{l1} while proving {node}@{label}: {}",
-                        errors.iter().map(|e| format!("{e}")).join(", ")
-                    );*/
                     typing.insert_failed(n1.clone(), l1, errors);
                 },
             }
@@ -310,22 +323,19 @@ impl Engine {
         }
         let result = self.check_node_idx(node, label, schema, rdf, &mut typing, hyp)?;
         hyp.pop();
-        /*debug!(
-            "{} {node}@{label} with result: {}, hyp: [{}]",
-            if result.is_right() { "Proved" } else { "Failed to prove" },
-            show_result(
-                &result,
-                &rdf.prefixmap().unwrap_or_default(),
-                schema,
-                self.config.width()
-            )?,
-            hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
-        );*/
+
+        let mine = self.hyp_touched;
+        if !mine {
+            self.typing.insert(key, result.clone());
+        }
+
+        self.hyp_touched = saved_hyp_touched || mine;
+
         Ok(result)
     }
 
     pub(crate) fn check_node_idx<R>(
-        &self,
+        &mut self,
         node: &Node,
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
@@ -402,7 +412,7 @@ impl Engine {
     }
 
     fn check_descendants<R>(
-        &self,
+        &mut self,
         node: &Node,
         idx: &ShapeLabelIdx,
         descendants: Vec<ShapeLabelIdx>,

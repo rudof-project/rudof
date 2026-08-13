@@ -261,7 +261,7 @@ source_file = "utility/rudof_config_from_path.py"
 title = "RudofConfig From Path"
 description = "Create RudofConfig from a TOML file and initialize Rudof"
 category = "utility"
-files = {}
+files = { config = "example.toml" }
 expected_output = []
 
 [[example]]
@@ -270,7 +270,7 @@ source_file = "utility/rudof_update_config.py"
 title = "Rudof Update Config"
 description = "Update the configuration of an existing Rudof instance"
 category = "utility"
-files = {}
+files = { config = "example.toml" }
 expected_output = []
 
 [[example]]

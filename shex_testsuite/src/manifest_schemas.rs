@@ -282,7 +282,7 @@ mod tests {
             let manifest_str = fs::read_to_string(manifest_path).unwrap();
             serde_json::from_str::<ManifestSchemas>(&manifest_str).unwrap()
         };
-        assert_eq!(manifest.len(), 433);
+        assert_eq!(manifest.len(), 435);
     }
 }
 

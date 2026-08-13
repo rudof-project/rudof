@@ -80,9 +80,9 @@ impl Style {
 /// A `StereotypeStyle` configured for reifier nodes.
 fn reifier_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
     StereotypeStyle::new("reifier")
-        .with_background_color(config.reifier_background_color())
-        .with_line_color(config.reifier_line_color())
-        .with_line_thickness(config.reifier_line_thickness())
+        .with_background_color(config.reifier_style.background_color().clone())
+        .with_line_color(config.reifier_style.line_color().clone())
+        .with_line_thickness(config.reifier_style.line_thickness())
 }
 
 /// Creates a stereotype style for literal nodes based on the configuration.
@@ -94,9 +94,9 @@ fn reifier_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
 /// A `StereotypeStyle` configured for literal nodes.
 fn literal_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
     StereotypeStyle::new("literal")
-        .with_background_color(config.literal_background_color())
-        .with_line_color(config.literal_line_color())
-        .with_line_thickness(config.literal_line_thickness())
+        .with_background_color(config.literal_style.background_color().clone())
+        .with_line_color(config.literal_style.line_color().clone())
+        .with_line_thickness(config.literal_style.line_thickness())
 }
 
 /// Creates a stereotype style for URI nodes based on the configuration.
@@ -108,10 +108,10 @@ fn literal_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
 /// A `StereotypeStyle` configured for URI nodes.
 fn uri_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
     StereotypeStyle::new("uri")
-        .with_background_color(config.uri_background_color())
-        .with_line_color(config.uri_line_color())
-        .with_line_thickness(config.uri_line_thickness())
-        .with_round_corner(config.uri_round_corner())
+        .with_background_color(config.uri_style.background_color().clone())
+        .with_line_color(config.uri_style.line_color().clone())
+        .with_line_thickness(config.uri_style.line_thickness())
+        .with_round_corner(config.uri_style.round_corner())
 }
 
 /// Creates a stereotype style for blank nodes based on the configuration.
@@ -123,10 +123,10 @@ fn uri_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
 /// A `StereotypeStyle` configured for blank nodes.
 fn bnode_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
     StereotypeStyle::new("bnode")
-        .with_background_color(config.bnode_background_color())
-        .with_line_color(config.bnode_line_color())
-        .with_line_thickness(config.bnode_line_thickness())
-        .with_round_corner(config.bnode_round_corner())
+        .with_background_color(config.bnode_style.background_color().clone())
+        .with_line_color(config.bnode_style.line_color().clone())
+        .with_line_thickness(config.bnode_style.line_thickness())
+        .with_round_corner(config.bnode_style.round_corner())
 }
 
 /// Creates a stereotype style for asserted triple terms based on the configuration.
@@ -138,9 +138,9 @@ fn bnode_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
 /// A `StereotypeStyle` configured for asserted triple terms.
 fn asserted_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
     StereotypeStyle::new("asserted")
-        .with_background_color(config.asserted_background_color())
-        .with_line_color(config.asserted_line_color())
-        .with_line_thickness(config.asserted_line_thickness())
+        .with_background_color(config.asserted_style.background_color().clone())
+        .with_line_color(config.asserted_style.line_color().clone())
+        .with_line_thickness(config.asserted_style.line_thickness())
 }
 
 /// Creates a stereotype style for non-asserted triple terms based on the configuration.
@@ -152,10 +152,10 @@ fn asserted_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
 /// A `StereotypeStyle` configured for non-asserted triple terms.
 fn non_asserted_style(config: &RDFVisualizationConfig) -> StereotypeStyle {
     StereotypeStyle::new("non_asserted")
-        .with_background_color(config.non_asserted_background_color())
-        .with_line_color(config.non_asserted_line_color())
-        .with_line_thickness(config.non_asserted_line_thickness())
-        .with_round_corner(config.non_asserted_round_corner())
+        .with_background_color(config.non_asserted_style.background_color().clone())
+        .with_line_color(config.non_asserted_style.line_color().clone())
+        .with_line_thickness(config.non_asserted_style.line_thickness())
+        .with_round_corner(config.non_asserted_style.round_corner())
 }
 
 impl Default for Style {

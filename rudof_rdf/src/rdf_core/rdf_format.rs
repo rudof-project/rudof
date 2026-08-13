@@ -1,24 +1,31 @@
 use crate::rdf_core::RDFError;
 use rudof_iri::MimeType;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 
 /// Represents RDF serialization formats
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Serialize)]
 pub enum RDFFormat {
     /// Turtle (Terse RDF Triple Language) format.
     #[default]
+    #[serde(rename(serialize = "turtle"))]
     Turtle,
     /// N-Triples format.
+    #[serde(rename(serialize = "ntriples"))]
     NTriples,
+    #[serde(rename(serialize = "rdf-xml"))]
     Rdfxml,
+    #[serde(rename(serialize = "trig"))]
     TriG,
     /// N3 (Notation3) format.
+    #[serde(rename(serialize = "n3"))]
     N3,
     /// N-Quads format.
+    #[serde(rename(serialize = "nquads"))]
     NQuads,
     /// JSON-LD (JSON for Linking Data) format.
+    #[serde(rename(serialize = "jsonld"))]
     JsonLd,
 }
 
@@ -116,6 +123,16 @@ impl FromStr for RDFFormat {
                 format: format!("Format {s} not supported").to_string(),
             }),
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for RDFFormat {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let string = String::deserialize(deserializer)?;
+        RDFFormat::from_str(&string).map_err(serde::de::Error::custom)
     }
 }
 
