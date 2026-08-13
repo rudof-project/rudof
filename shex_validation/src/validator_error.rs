@@ -262,12 +262,6 @@ pub enum ValidatorError {
         reasons: Reasons,
     },
 
-    #[error("Error reading config file from path {path}: {error}")]
-    ValidatorConfigFromPathError { path: String, error: String },
-
-    #[error("Error reading config file from path {path}: {error}")]
-    ValidatorConfigTomlError { path: String, error: String },
-
     #[error("Adding non conformant {node}@{label} error: {error}")]
     AddingNonConformantError { node: String, label: String, error: String },
 
@@ -544,8 +538,6 @@ impl ValidatorError {
             | ValidatorError::RbeError(..)
             | ValidatorError::PrefixMapError(..)
             | ValidatorError::ShapeLabelNotFoundError { .. }
-            | ValidatorError::ValidatorConfigFromPathError { .. }
-            | ValidatorError::ValidatorConfigTomlError { .. }
             | ValidatorError::AddingNonConformantError { .. }
             | ValidatorError::AddingConformantError { .. }
             | ValidatorError::AddingPendingError { .. }

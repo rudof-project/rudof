@@ -45,6 +45,7 @@ pub struct SchemaIR {
     abstract_shapes: HashSet<ShapeLabelIdx>,
     #[serde(skip)]
     semantic_actions_registry: Arc<SemanticActionsRegistry>,
+    base: Option<IriS>,
     start_acts: Vec<SemAct>,
 }
 
@@ -66,6 +67,7 @@ impl SchemaIR {
             inheritance_graph: InheritanceGraph::new(),
             abstract_shapes: HashSet::new(),
             semantic_actions_registry: Arc::new(registry),
+            base: None,
             start_acts: Vec::new(),
         }
     }
@@ -74,16 +76,16 @@ impl SchemaIR {
         self.semantic_actions_registry.set_map_state(map_state);
     }
 
+    pub fn set_default_base_prefixes(&mut self, default_base: Option<IriS>) {
+        self.base = default_base;
+    }
+
     pub fn set_start_actions(&mut self, start_acts: Vec<SemAct>) {
         self.start_acts = start_acts;
     }
 
     pub fn start_acts(&self) -> &Vec<SemAct> {
         &self.start_acts
-    }
-
-    pub fn set_default_base_prefixes(&mut self, default_base: &IriS) {
-        self.prefixmap.set_default_base(&Some(default_base.clone()));
     }
 
     /// Return the live `Arc<Mutex<MapState>>` from the registered `MapActionExtension`, if any.
@@ -383,7 +385,7 @@ impl SchemaIR {
         // `AST2IR::compile` applies `external_resolvers` to the root and imported schemas.
         compiler.compile(schema_json, &schema_json.source_iri(), base, self, external_resolvers)?;
         if let Some(base) = base {
-            self.set_default_base_prefixes(base);
+            self.set_default_base_prefixes(base.clone().into());
         }
         Ok(())
     }

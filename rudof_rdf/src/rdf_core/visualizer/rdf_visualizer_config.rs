@@ -1,22 +1,112 @@
-use crate::rdf_core::visualizer::style::{
-    ArrowStyle, DEFAULT_OBJECT_ARROW_STYLE, DEFAULT_PREDICATE_ARROW_STYLE, DEFAULT_SUBJECT_ARROW_STYLE, Style, UmlColor,
-};
+use crate::rdf_core::visualizer::style::{ArrowStyle, Style, ThicknessStyle, UmlColor};
 use serde::{Deserialize, Serialize};
 
-/// Default text subject label used when no custom values are provided.
-const DEFAULT_SUBJECT_TEXT: &str = "subj";
-/// Default text predicate label used when no custom values are provided.
-const DEFAULT_PREDICATE_TEXT: &str = "pred";
-/// Default text object label used when no custom values are provided.
-const DEFAULT_OBJECT_TEXT: &str = "obj";
-
 /// Enum representing the available UML node shapes for visualization.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+#[serde(rename = "snake_case")]
 pub enum UmlShape {
     /// Cloud shape.
     Cloud,
     /// Rectangle shape.
+    #[default]
     Rectangle,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct NodeStyle {
+    #[serde(
+        rename = "line_color",
+        default = "NodeStyle::default_line_color",
+        skip_serializing_if = "NodeStyle::is_default_line_color"
+    )]
+    pub(crate) line_color: UmlColor,
+    #[serde(
+        rename = "line_thickness",
+        default = "NodeStyle::default_line_thickness",
+        skip_serializing_if = "NodeStyle::is_default_line_thickness"
+    )]
+    pub(crate) line_thickness: u32,
+    #[serde(
+        rename = "background_color",
+        default = "NodeStyle::default_background_color",
+        skip_serializing_if = "NodeStyle::is_default_background_color"
+    )]
+    pub(crate) background_color: UmlColor,
+    #[serde(
+        rename = "round_corner",
+        default = "NodeStyle::default_round_corner",
+        skip_serializing_if = "NodeStyle::is_default_round_corner"
+    )]
+    pub(crate) round_corner: u32,
+}
+
+impl NodeStyle {
+    pub fn new() -> Self {
+        Self {
+            round_corner: Self::default_round_corner(),
+            line_color: Self::default_line_color(),
+            line_thickness: Self::default_line_thickness(),
+            background_color: Self::default_background_color(),
+        }
+    }
+
+    pub fn with_line_color(mut self, color: UmlColor) -> Self {
+        self.line_color = color;
+        self
+    }
+
+    pub fn with_line_thickness(mut self, v: u32) -> Self {
+        self.line_thickness = v;
+        self
+    }
+
+    pub fn with_background_color(mut self, color: UmlColor) -> Self {
+        self.background_color = color;
+        self
+    }
+
+    pub fn with_round_corner(mut self, v: u32) -> Self {
+        self.round_corner = v;
+        self
+    }
+}
+
+impl NodeStyle {
+    pub fn line_color(&self) -> &UmlColor {
+        &self.line_color
+    }
+
+    pub fn line_thickness(&self) -> u32 {
+        self.line_thickness
+    }
+
+    pub fn background_color(&self) -> &UmlColor {
+        &self.background_color
+    }
+
+    pub fn round_corner(&self) -> u32 {
+        self.round_corner
+    }
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+#[rustfmt::skip]
+impl NodeStyle {
+    #[inline] fn default_line_color() -> UmlColor { UmlColor::Black }
+    #[inline] fn default_line_thickness() -> u32 { 10 }
+    #[inline] fn default_background_color() -> UmlColor { UmlColor::White }
+    #[inline] fn default_round_corner() -> u32 { 0 }
+    #[inline] fn is_default_line_color(value: &UmlColor) -> bool { value == &Self::default_line_color() }
+    #[inline] fn is_default_line_thickness(value: &u32) -> bool { value == &Self::default_line_thickness() }
+    #[inline] fn is_default_background_color(value: &UmlColor) -> bool { value == &Self::default_background_color() }
+    #[inline] fn is_default_round_corner(value: &u32) -> bool { value == &Self::default_round_corner() }
+}
+
+impl Default for NodeStyle {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Configuration object controlling the visual appearance of RDF graphs.
@@ -26,415 +116,425 @@ pub enum UmlShape {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RDFVisualizationConfig {
     // === URI node styling ===
-    /// Stroke color of URI nodes.
-    uri_line_color: Option<UmlColor>,
-    /// Stroke thickness of URI nodes.
-    uri_line_thickness: Option<u32>,
-    /// Background color of URI nodes.
-    uri_background_color: Option<UmlColor>,
-    /// Corner radius of URI node shapes.
-    uri_round_corner: Option<u32>,
+    #[serde(rename = "uri_style", default = "RDFVisualizationConfig::default_uri_style")]
+    pub(crate) uri_style: NodeStyle,
 
     // === Blank node styling ===
-    /// Stroke color of blank nodes.
-    bnode_line_color: Option<UmlColor>,
-    /// Stroke thickness of blank nodes.
-    bnode_line_thickness: Option<u32>,
-    /// Background color of blank nodes.
-    bnode_background_color: Option<UmlColor>,
-    /// Corner radius of blank node shapes.
-    bnode_round_corner: Option<u32>,
+    #[serde(rename = "bnode_style", default = "RDFVisualizationConfig::default_bnode_style")]
+    pub(crate) bnode_style: NodeStyle,
 
     // === Literal node styling ===
-    /// Stroke color of literal nodes.
-    literal_line_color: Option<UmlColor>,
-    /// Stroke thickness of literal nodes.
-    literal_line_thickness: Option<u32>,
-    /// Background color of literal nodes.
-    literal_background_color: Option<UmlColor>,
-    /// Corner radius of literal node shapes.
-    literal_round_corner: Option<u32>,
+    #[serde(rename = "literal_style", default = "RDFVisualizationConfig::default_literal_style")]
+    pub(crate) literal_style: NodeStyle,
 
     // === Reifier node styling ===
-    /// Stroke color of reifier nodes.
-    reifier_line_color: Option<UmlColor>,
-    /// Stroke thickness of reifier nodes.
-    reifier_line_thickness: Option<u32>,
-    /// Background color of reifier nodes.
-    reifier_background_color: Option<UmlColor>,
-    /// Corner radius of reifier node shapes.
-    reifier_round_corner: Option<u32>,
+    #[serde(rename = "reifier_style", default = "RDFVisualizationConfig::default_reifier_style")]
+    pub(crate) reifier_style: NodeStyle,
 
     // === Asserted triple term styling ===
-    /// Stroke color of asserted triple terms.
-    asserted_line_color: Option<UmlColor>,
-    /// Stroke thickness of asserted triple terms.
-    asserted_line_thickness: Option<u32>,
-    /// Background color of asserted triple terms.
-    asserted_background_color: Option<UmlColor>,
-    /// Corner radius of asserted triple term shapes.
-    asserted_round_corner: Option<u32>,
+    #[serde(
+        rename = "asserted_style",
+        default = "RDFVisualizationConfig::default_asserted_style"
+    )]
+    pub(crate) asserted_style: NodeStyle,
 
     // === Non-asserted triple term styling ===
-    /// Stroke color of non-asserted triple terms.
-    non_asserted_line_color: Option<UmlColor>,
-    /// Stroke thickness of non-asserted triple terms.
-    non_asserted_line_thickness: Option<u32>,
-    /// Background color of non-asserted triple terms.
-    non_asserted_background_color: Option<UmlColor>,
-    /// Corner radius of non-asserted triple term shapes.
-    non_asserted_round_corner: Option<u32>,
+    #[serde(
+        rename = "non_asserted_style",
+        default = "RDFVisualizationConfig::default_non_asserted_style"
+    )]
+    pub(crate) non_asserted_style: NodeStyle,
 
     // === Labels and shapes ===
     /// Label for subject triple term.
-    triple_term_subject_label: Option<String>,
+    #[serde(rename = "subject_label", default = "RDFVisualizationConfig::default_subject_label")]
+    pub(crate) triple_term_subject_label: String,
     /// Label for predicate triple term.
-    triple_term_predicate_label: Option<String>,
+    #[serde(
+        rename = "predicate_label",
+        default = "RDFVisualizationConfig::default_predicate_label"
+    )]
+    pub(crate) triple_term_predicate_label: String,
     /// Label for object triple term.
-    triple_term_object_label: Option<String>,
+    #[serde(rename = "object_label", default = "RDFVisualizationConfig::default_object_label")]
+    pub(crate) triple_term_object_label: String,
     /// Label for reification.
-    reifies_label: Option<String>,
+    #[serde(rename = "reifies_label", default = "RDFVisualizationConfig::default_reifies_label")]
+    pub(crate) reifies_label: String,
     /// Shape for unasserted triple.
-    unasserted_triple_shape: Option<UmlShape>,
+    #[serde(
+        rename = "unasserted_triple_shape",
+        default = "RDFVisualizationConfig::default_unasserted_triple_shape"
+    )]
+    pub(crate) unasserted_triple_shape: UmlShape,
     /// Shape for asserted triple.
-    asserted_triple_shape: Option<UmlShape>,
+    #[serde(
+        rename = "asserted_triple_shape",
+        default = "RDFVisualizationConfig::default_asserted_triple_shape"
+    )]
+    pub(crate) asserted_triple_shape: UmlShape,
 
     // === Arrow styles ===
     /// Arrow style for subject.
-    subject_arrow_style: Option<ArrowStyle>,
+    #[serde(
+        rename = "subject_arrow_style",
+        default = "RDFVisualizationConfig::default_subject_arrow_style"
+    )]
+    pub(crate) subject_arrow_style: ArrowStyle,
     /// Arrow style for predicate.
-    predicate_arrow_style: Option<ArrowStyle>,
+    #[serde(
+        rename = "predicate_arrow_style",
+        default = "RDFVisualizationConfig::default_predicate_arrow_style"
+    )]
+    pub(crate) predicate_arrow_style: ArrowStyle,
     /// Arrow style for object.
-    object_arrow_style: Option<ArrowStyle>,
+    #[serde(
+        rename = "object_arrow_style",
+        default = "RDFVisualizationConfig::default_object_arrow_style"
+    )]
+    pub(crate) object_arrow_style: ArrowStyle,
 
     // === Text for subject, predicate, object ===
     /// Text for subject.
-    subject_text: Option<String>,
+    #[serde(rename = "subject_text", default = "RDFVisualizationConfig::default_subject_text")]
+    pub(crate) subject_text: String,
     /// Text for predicate.
-    predicate_text: Option<String>,
+    #[serde(
+        rename = "predicate_text",
+        default = "RDFVisualizationConfig::default_predicate_text"
+    )]
+    pub(crate) predicate_text: String,
     /// Text for object.
-    object_text: Option<String>,
+    #[serde(rename = "object_text", default = "RDFVisualizationConfig::default_object_text")]
+    pub(crate) object_text: String,
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+#[rustfmt::skip]
+impl RDFVisualizationConfig {
+    #[inline] fn default_uri_style() -> NodeStyle {
+        NodeStyle {
+            line_color: UmlColor::Blue,
+            line_thickness: 1,
+            background_color: UmlColor::White,
+            round_corner: 25,
+        }
+    }
+    #[inline] fn default_bnode_style() -> NodeStyle {
+        NodeStyle {
+            line_color: UmlColor::Blue,
+            line_thickness: 1,
+            background_color: UmlColor::Gray,
+            round_corner: 25,
+        }
+    }
+    #[inline] fn default_literal_style() -> NodeStyle {
+        NodeStyle {
+            line_color: UmlColor::Black,
+            line_thickness: 1,
+            background_color: UmlColor::Cyan,
+            round_corner: 0,
+        }
+    }
+    #[inline] fn default_reifier_style() -> NodeStyle {
+        NodeStyle {
+            line_color: UmlColor::Black,
+            line_thickness: 1,
+            background_color: UmlColor::Yellow,
+            round_corner: 0,
+        }
+    }
+    #[inline] fn default_asserted_style() -> NodeStyle {
+        NodeStyle {
+            line_color: UmlColor::Black,
+            line_thickness: 2,
+            background_color: UmlColor::White,
+            round_corner: 0,
+        }
+    }
+    #[inline] fn default_non_asserted_style() -> NodeStyle {
+        NodeStyle {
+            line_color: UmlColor::Blue,
+            line_thickness: 2,
+            background_color: UmlColor::White,
+            round_corner: 0,
+        }
+    }
+
+    #[inline] fn default_subject_label() -> String { "subject".to_string() }
+    #[inline] fn default_predicate_label() -> String { "predicate".to_string() }
+    #[inline] fn default_object_label() -> String { "object".to_string() }
+    #[inline] fn default_reifies_label() -> String { "reifies".to_string() }
+
+    #[inline] fn default_unasserted_triple_shape() -> UmlShape { UmlShape::Cloud }
+    #[inline] fn default_asserted_triple_shape() -> UmlShape { UmlShape::Rectangle }
+
+    #[inline] fn default_subject_arrow_style() -> ArrowStyle {
+        ArrowStyle {
+            line_color: UmlColor::Blue,
+            text_color: UmlColor::Blue,
+            line_thickness: ThicknessStyle::Dashed,
+        }
+    }
+    #[inline] fn default_predicate_arrow_style() -> ArrowStyle {
+        ArrowStyle {
+            line_color: UmlColor::Red,
+            text_color: UmlColor::Red,
+            line_thickness: ThicknessStyle::Dashed,
+        }
+    }
+    #[inline] fn default_object_arrow_style() -> ArrowStyle {
+        ArrowStyle {
+            line_color: UmlColor::Green,
+            text_color: UmlColor::Green,
+            line_thickness: ThicknessStyle::Dashed,
+        }
+    }
+
+    #[inline] fn default_subject_text() -> String { "subj".to_string() }
+    #[inline] fn default_predicate_text() -> String { "pred".to_string() }
+    #[inline] fn default_object_text() -> String { "obj".to_string() }
 }
 
 impl RDFVisualizationConfig {
     /// Creates a new configuration with default values.
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            asserted_style: Self::default_asserted_style(),
+            uri_style: Self::default_uri_style(),
+            bnode_style: Self::default_bnode_style(),
+            literal_style: Self::default_literal_style(),
+            non_asserted_style: Self::default_non_asserted_style(),
+            reifier_style: Self::default_reifier_style(),
+
+            triple_term_subject_label: Self::default_subject_label(),
+            triple_term_predicate_label: Self::default_predicate_label(),
+            triple_term_object_label: Self::default_object_label(),
+            reifies_label: Self::default_reifies_label(),
+
+            unasserted_triple_shape: Self::default_unasserted_triple_shape(),
+            asserted_triple_shape: Self::default_asserted_triple_shape(),
+
+            subject_arrow_style: Self::default_subject_arrow_style(),
+            predicate_arrow_style: Self::default_predicate_arrow_style(),
+            object_arrow_style: Self::default_object_arrow_style(),
+
+            subject_text: Self::default_subject_text(),
+            predicate_text: Self::default_predicate_text(),
+            object_text: Self::default_object_text(),
+        }
     }
 
-    /// Sets the background color for literal nodes.
-    pub fn with_literal_background_color(mut self, color: UmlColor) -> Self {
-        self.literal_background_color = Some(color);
+    /// Sets the asserted nodes style
+    pub fn with_asserted(mut self, style: NodeStyle) -> Self {
+        self.asserted_style = style;
         self
     }
 
-    /// Sets the label for the subject triple term.
+    /// Sets the uri nodes style
+    pub fn with_uri(mut self, style: NodeStyle) -> Self {
+        self.uri_style = style;
+        self
+    }
+
+    /// Sets the blank nodes style
+    pub fn with_bnode(mut self, style: NodeStyle) -> Self {
+        self.bnode_style = style;
+        self
+    }
+
+    /// Sets the literal nodes style
+    pub fn with_literal(mut self, style: NodeStyle) -> Self {
+        self.literal_style = style;
+        self
+    }
+
+    /// Sets the non asserted nodes style
+    pub fn with_non_asserted(mut self, style: NodeStyle) -> Self {
+        self.non_asserted_style = style;
+        self
+    }
+
+    /// Sets the reifier nodes style
+    pub fn with_reifier(mut self, style: NodeStyle) -> Self {
+        self.reifier_style = style;
+        self
+    }
+
+    /// Sets the subject triple term label
     pub fn with_triple_term_subject_label(mut self, label: String) -> Self {
-        self.triple_term_subject_label = Some(label);
+        self.triple_term_subject_label = label;
         self
     }
 
-    /// Sets the label for the predicate triple term.
+    /// Sets the predicate triple term label
     pub fn with_triple_term_predicate_label(mut self, label: String) -> Self {
-        self.triple_term_predicate_label = Some(label);
+        self.triple_term_predicate_label = label;
         self
     }
 
-    /// Sets the label for the object triple term.
+    /// Sets the object triple term label
     pub fn with_triple_term_object_label(mut self, label: String) -> Self {
-        self.triple_term_object_label = Some(label);
+        self.triple_term_object_label = label;
         self
     }
 
-    /// Sets the label for reification.
+    /// Sets the reification label
     pub fn with_reifies_label(mut self, label: String) -> Self {
-        self.reifies_label = Some(label);
+        self.reifies_label = label;
         self
     }
 
-    /// Gets the stroke color for URI nodes.
-    pub fn uri_line_color(&self) -> UmlColor {
-        self.uri_line_color.clone().unwrap_or(URI_LINE_COLOR)
+    /// Sets the unasserted triples shape
+    pub fn with_unasserted_triple_shapes(mut self, shape: UmlShape) -> Self {
+        self.unasserted_triple_shape = shape;
+        self
     }
 
-    /// Gets the stroke thickness for URI nodes.
-    pub fn uri_line_thickness(&self) -> u32 {
-        self.uri_line_thickness.unwrap_or(URI_LINE_THICKNESS)
+    /// Sets the asserted triples shape
+    pub fn with_asserted_triple_shapes(mut self, shape: UmlShape) -> Self {
+        self.asserted_triple_shape = shape;
+        self
     }
 
-    /// Gets the background color for URI nodes.
-    pub fn uri_background_color(&self) -> UmlColor {
-        self.uri_background_color.clone().unwrap_or(URI_BACKGROUND_COLOR)
+    // Sets the subject arrow style
+    pub fn with_subject_arrow_style(mut self, style: ArrowStyle) -> Self {
+        self.subject_arrow_style = style;
+        self
     }
 
-    /// Gets the corner radius for URI node shapes.
-    pub fn uri_round_corner(&self) -> u32 {
-        self.uri_round_corner.unwrap_or(URI_ROUND_CORNER)
+    /// Sets the predicate arrow style
+    pub fn with_predicate_arrow_style(mut self, style: ArrowStyle) -> Self {
+        self.predicate_arrow_style = style;
+        self
     }
 
-    /// Gets the stroke color for blank nodes.
-    pub fn bnode_line_color(&self) -> UmlColor {
-        self.bnode_line_color.clone().unwrap_or(BNODE_LINE_COLOR)
+    /// Sets the object arrow style
+    pub fn with_object_arrow_style(mut self, style: ArrowStyle) -> Self {
+        self.object_arrow_style = style;
+        self
     }
 
-    /// Gets the stroke thickness for blank nodes.
-    pub fn bnode_line_thickness(&self) -> u32 {
-        self.bnode_line_thickness.unwrap_or(BNODE_LINE_THICKNESS)
+    /// Sets the subject text
+    pub fn with_subject_text(mut self, text: String) -> Self {
+        self.subject_text = text;
+        self
     }
 
-    /// Gets the background color for blank nodes.
-    pub fn bnode_background_color(&self) -> UmlColor {
-        self.bnode_background_color.clone().unwrap_or(BNODE_BACKGROUND_COLOR)
+    /// Sets the predicate text
+    pub fn with_predicate_text(mut self, text: String) -> Self {
+        self.predicate_text = text;
+        self
     }
 
-    /// Gets the corner radius for blank node shapes.
-    pub fn bnode_round_corner(&self) -> u32 {
-        self.bnode_round_corner.unwrap_or(BNODE_ROUND_CORNER)
-    }
-
-    /// Gets the stroke color for literal nodes.
-    pub fn literal_line_color(&self) -> UmlColor {
-        self.literal_line_color.clone().unwrap_or(LITERAL_LINE_COLOR)
-    }
-
-    /// Gets the stroke thickness for literal nodes.
-    pub fn literal_line_thickness(&self) -> u32 {
-        self.literal_line_thickness.unwrap_or(LITERAL_LINE_THICKNESS)
-    }
-
-    /// Gets the background color for literal nodes.
-    pub fn literal_background_color(&self) -> UmlColor {
-        self.literal_background_color
-            .clone()
-            .unwrap_or(LITERAL_BACKGROUND_COLOR)
-    }
-
-    /// Gets the corner radius for literal node shapes.
-    pub fn literal_round_corner(&self) -> u32 {
-        self.literal_round_corner.unwrap_or(LITERAL_ROUND_CORNER)
-    }
-
-    /// Gets the stroke color for reifier nodes.
-    pub fn reifier_line_color(&self) -> UmlColor {
-        self.reifier_line_color.clone().unwrap_or(REIFIER_LINE_COLOR)
-    }
-
-    /// Gets the stroke thickness for reifier nodes.
-    pub fn reifier_line_thickness(&self) -> u32 {
-        self.reifier_line_thickness.unwrap_or(REIFIER_LINE_THICKNESS)
-    }
-
-    /// Gets the background color for reifier nodes.
-    pub fn reifier_background_color(&self) -> UmlColor {
-        self.reifier_background_color
-            .clone()
-            .unwrap_or(REIFIER_BACKGROUND_COLOR)
-    }
-
-    /// Gets the corner radius for reifier node shapes.
-    pub fn reifier_round_corner(&self) -> u32 {
-        self.reifier_round_corner.unwrap_or(REIFIER_ROUND_CORNER)
-    }
-
-    /// Gets the stroke color for asserted triple terms.
-    pub fn asserted_line_color(&self) -> UmlColor {
-        self.asserted_line_color.clone().unwrap_or(URI_LINE_COLOR)
-    }
-
-    /// Gets the stroke thickness for asserted triple terms.
-    pub fn asserted_line_thickness(&self) -> u32 {
-        self.asserted_line_thickness.unwrap_or(URI_LINE_THICKNESS)
-    }
-
-    /// Gets the background color for asserted triple terms.
-    pub fn asserted_background_color(&self) -> UmlColor {
-        self.asserted_background_color.clone().unwrap_or(URI_BACKGROUND_COLOR)
-    }
-
-    /// Gets the corner radius for asserted triple term shapes.
-    pub fn asserted_round_corner(&self) -> u32 {
-        self.asserted_round_corner.unwrap_or(URI_ROUND_CORNER)
-    }
-
-    /// Gets the stroke color for non-asserted triple terms.
-    pub fn non_asserted_line_color(&self) -> UmlColor {
-        self.non_asserted_line_color.clone().unwrap_or(BNODE_LINE_COLOR)
-    }
-
-    /// Gets the stroke thickness for non-asserted triple terms.
-    pub fn non_asserted_line_thickness(&self) -> u32 {
-        self.non_asserted_line_thickness.unwrap_or(BNODE_LINE_THICKNESS)
-    }
-
-    /// Gets the background color for non-asserted triple terms.
-    pub fn non_asserted_background_color(&self) -> UmlColor {
-        self.non_asserted_background_color
-            .clone()
-            .unwrap_or(BNODE_BACKGROUND_COLOR)
-    }
-
-    /// Gets the corner radius for non-asserted triple term shapes.
-    pub fn non_asserted_round_corner(&self) -> u32 {
-        self.non_asserted_round_corner.unwrap_or(BNODE_ROUND_CORNER)
-    }
-
-    /// Returns a `Style` object constructed from this configuration.
-    pub fn get_style(&self) -> Style {
-        Style::from_config(self)
-    }
-
-    /// Gets the arrow style for subject edges.
-    pub fn get_subject_arrow_style(&self) -> ArrowStyle {
-        self.subject_arrow_style.clone().unwrap_or(DEFAULT_SUBJECT_ARROW_STYLE)
-    }
-
-    /// Gets the label text for subject edges.
-    pub fn get_subject_text(&self) -> String {
-        self.subject_text.clone().unwrap_or(DEFAULT_SUBJECT_TEXT.into())
-    }
-
-    /// Gets the arrow style for predicate edges.
-    pub fn get_predicate_arrow_style(&self) -> ArrowStyle {
-        self.predicate_arrow_style
-            .clone()
-            .unwrap_or(DEFAULT_PREDICATE_ARROW_STYLE)
-    }
-
-    /// Gets the label text for predicate edges.
-    pub fn get_predicate_text(&self) -> String {
-        self.predicate_text.clone().unwrap_or(DEFAULT_PREDICATE_TEXT.into())
-    }
-
-    /// Gets the arrow style for object edges.
-    pub fn get_object_arrow_style(&self) -> ArrowStyle {
-        self.object_arrow_style.clone().unwrap_or(DEFAULT_OBJECT_ARROW_STYLE)
-    }
-
-    /// Gets the label text for object edges.
-    pub fn get_object_text(&self) -> String {
-        self.object_text.clone().unwrap_or(DEFAULT_OBJECT_TEXT.into())
+    /// Sets the object text
+    pub fn with_object_text(mut self, text: String) -> Self {
+        self.object_text = text;
+        self
     }
 }
 
-// === Default values for visualizer configuration ===
+impl RDFVisualizationConfig {
+    /// Gets the uri nodes style
+    pub fn uri_style(&self) -> &NodeStyle {
+        &self.uri_style
+    }
 
-/// Default stroke color for URI nodes.
-const URI_LINE_COLOR: UmlColor = UmlColor::Blue;
-/// Default stroke thickness for URI nodes.
-const URI_LINE_THICKNESS: u32 = 1;
-/// Default background color for URI nodes.
-const URI_BACKGROUND_COLOR: UmlColor = UmlColor::White;
-/// Default corner radius for URI node shapes.
-const URI_ROUND_CORNER: u32 = 25;
+    /// Gets the blank nodes style
+    pub fn bnode_style(&self) -> &NodeStyle {
+        &self.bnode_style
+    }
 
-/// Default stroke color for blank nodes.
-const BNODE_LINE_COLOR: UmlColor = UmlColor::Blue;
-/// Default stroke thickness for blank nodes.
-const BNODE_LINE_THICKNESS: u32 = 1;
-/// Default background color for blank nodes.
-const BNODE_BACKGROUND_COLOR: UmlColor = UmlColor::Gray;
-/// Default corner radius for blank node shapes.
-const BNODE_ROUND_CORNER: u32 = 25;
+    /// Gets the literal nodes style
+    pub fn literal_style(&self) -> &NodeStyle {
+        &self.literal_style
+    }
 
-/// Default stroke color for literal nodes.
-const LITERAL_LINE_COLOR: UmlColor = UmlColor::Black;
-/// Default stroke thickness for literal nodes.
-const LITERAL_LINE_THICKNESS: u32 = 1;
-/// Default background color for literal nodes.
-const LITERAL_BACKGROUND_COLOR: UmlColor = UmlColor::Cyan;
-/// Default corner radius for literal node shapes.
-const LITERAL_ROUND_CORNER: u32 = 0;
+    /// Gets the reifier nodes style
+    pub fn reifier_style(&self) -> &NodeStyle {
+        &self.reifier_style
+    }
 
-/// Default stroke color for reifier nodes.
-const REIFIER_LINE_COLOR: UmlColor = UmlColor::Black;
-/// Default stroke thickness for reifier nodes.
-const REIFIER_LINE_THICKNESS: u32 = 1;
-/// Default background color for reifier nodes.
-const REIFIER_BACKGROUND_COLOR: UmlColor = UmlColor::Yellow;
-/// Default corner radius for reifier node shapes.
-const REIFIER_ROUND_CORNER: u32 = 0;
+    /// Gets the asserted nodes style
+    pub fn asserted_style(&self) -> &NodeStyle {
+        &self.asserted_style
+    }
 
-/// Default stroke color for asserted triple terms.
-const ASSERTED_LINE_COLOR: UmlColor = UmlColor::Black;
-/// Default stroke thickness for asserted triple terms.
-const ASSERTED_LINE_THICKNESS: u32 = 2;
-/// Default background color for asserted triple terms.
-const ASSERTED_BACKGROUND_COLOR: UmlColor = UmlColor::White;
-/// Default corner radius for asserted triple term shapes.
-const ASSERTED_ROUND_CORNER: u32 = 0;
+    /// Gets the non asserted nodes style
+    pub fn non_asserted_style(&self) -> &NodeStyle {
+        &self.non_asserted_style
+    }
 
-/// Default stroke color for non-asserted triple terms.
-const NON_ASSERTED_LINE_COLOR: UmlColor = UmlColor::Blue;
-/// Default stroke thickness for non-asserted triple terms.
-const NON_ASSERTED_LINE_THICKNESS: u32 = 2;
-/// Default background color for non-asserted triple terms.
-const NON_ASSERTED_BACKGROUND_COLOR: UmlColor = UmlColor::White;
-/// Default corner radius for non-asserted triple term shapes.
-const NON_ASSERTED_ROUND_CORNER: u32 = 0;
+    /// Gets the subject triple term label
+    pub fn triple_term_subject_label(&self) -> &String {
+        &self.triple_term_subject_label
+    }
 
-/// Default label for subject triple term.
-const TRIPLE_TERM_SUBJECT_LABEL: &str = "subject";
-/// Default label for predicate triple term.
-const TRIPLE_TERM_PREDICATE_LABEL: &str = "predicate";
-/// Default label for object triple term.
-const TRIPLE_TERM_OBJECT_LABEL: &str = "object";
-/// Default label for reification.
-const REIFIES_LABEL: &str = "reifies";
+    /// Gets the predicate triple term label
+    pub fn triple_term_predicate_label(&self) -> &String {
+        &self.triple_term_predicate_label
+    }
 
-/// Default shape for asserted triple.
-const ASSERTED_TRIPLE_SHAPE: UmlShape = UmlShape::Rectangle;
-/// Default shape for non-asserted triple.
-const NON_ASSERTED_TRIPLE_SHAPE: UmlShape = UmlShape::Cloud;
+    /// Gets the object triple term label
+    pub fn triple_term_object_label(&self) -> &String {
+        &self.triple_term_object_label
+    }
+
+    /// Gets the reification label
+    pub fn reifies_label(&self) -> &String {
+        &self.reifies_label
+    }
+
+    /// Gets the unasserted triples shape
+    pub fn unasserted_triple_shape(&self) -> &UmlShape {
+        &self.unasserted_triple_shape
+    }
+
+    /// Gets the asserted triples shape
+    pub fn asserted_triple_shape(&self) -> &UmlShape {
+        &self.asserted_triple_shape
+    }
+
+    /// Gets the subject arrow style
+    pub fn subject_arrow_style(&self) -> &ArrowStyle {
+        &self.subject_arrow_style
+    }
+
+    /// Gets the predicate arrow style
+    pub fn predicate_arrow_style(&self) -> &ArrowStyle {
+        &self.predicate_arrow_style
+    }
+
+    /// Gets the object arrow style
+    pub fn object_arrow_style(&self) -> &ArrowStyle {
+        &self.object_arrow_style
+    }
+
+    /// Gets the subject text
+    pub fn subject_text(&self) -> &String {
+        &self.subject_text
+    }
+
+    /// Gets the predicate text
+    pub fn predicate_text(&self) -> &String {
+        &self.predicate_text
+    }
+
+    /// Gets the object text
+    pub fn object_text(&self) -> &String {
+        &self.object_text
+    }
+}
+
+impl From<RDFVisualizationConfig> for Style {
+    fn from(value: RDFVisualizationConfig) -> Self {
+        Style::from_config(&value)
+    }
+}
 
 impl Default for RDFVisualizationConfig {
-    /// Returns a configuration with all fields set to their default values.
     fn default() -> Self {
-        RDFVisualizationConfig {
-            uri_line_color: Some(URI_LINE_COLOR),
-            uri_line_thickness: Some(URI_LINE_THICKNESS),
-            uri_background_color: Some(URI_BACKGROUND_COLOR),
-            uri_round_corner: Some(URI_ROUND_CORNER),
-
-            bnode_line_color: Some(BNODE_LINE_COLOR),
-            bnode_line_thickness: Some(BNODE_LINE_THICKNESS),
-            bnode_background_color: Some(BNODE_BACKGROUND_COLOR),
-            bnode_round_corner: Some(BNODE_ROUND_CORNER),
-
-            literal_line_color: Some(LITERAL_LINE_COLOR),
-            literal_line_thickness: Some(LITERAL_LINE_THICKNESS),
-            literal_background_color: Some(LITERAL_BACKGROUND_COLOR),
-            literal_round_corner: Some(LITERAL_ROUND_CORNER),
-
-            reifier_line_color: Some(REIFIER_LINE_COLOR),
-            reifier_line_thickness: Some(REIFIER_LINE_THICKNESS),
-            reifier_background_color: Some(REIFIER_BACKGROUND_COLOR),
-            reifier_round_corner: Some(REIFIER_ROUND_CORNER),
-
-            asserted_line_color: Some(ASSERTED_LINE_COLOR),
-            asserted_line_thickness: Some(ASSERTED_LINE_THICKNESS),
-            asserted_background_color: Some(ASSERTED_BACKGROUND_COLOR),
-            asserted_round_corner: Some(ASSERTED_ROUND_CORNER),
-
-            non_asserted_line_color: Some(NON_ASSERTED_LINE_COLOR),
-            non_asserted_line_thickness: Some(NON_ASSERTED_LINE_THICKNESS),
-            non_asserted_background_color: Some(NON_ASSERTED_BACKGROUND_COLOR),
-            non_asserted_round_corner: Some(NON_ASSERTED_ROUND_CORNER),
-
-            triple_term_subject_label: Some(TRIPLE_TERM_SUBJECT_LABEL.into()),
-            triple_term_predicate_label: Some(TRIPLE_TERM_PREDICATE_LABEL.into()),
-            triple_term_object_label: Some(TRIPLE_TERM_OBJECT_LABEL.into()),
-
-            reifies_label: Some(REIFIES_LABEL.into()),
-            unasserted_triple_shape: Some(NON_ASSERTED_TRIPLE_SHAPE),
-            asserted_triple_shape: Some(ASSERTED_TRIPLE_SHAPE),
-
-            subject_arrow_style: Some(DEFAULT_SUBJECT_ARROW_STYLE),
-            predicate_arrow_style: Some(DEFAULT_PREDICATE_ARROW_STYLE),
-            object_arrow_style: Some(DEFAULT_OBJECT_ARROW_STYLE),
-
-            subject_text: Some(DEFAULT_SUBJECT_TEXT.into()),
-            predicate_text: Some(DEFAULT_PREDICATE_TEXT.into()),
-            object_text: Some(DEFAULT_OBJECT_TEXT.into()),
-        }
+        Self::new()
     }
 }

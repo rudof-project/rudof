@@ -126,7 +126,7 @@ fn get_coshamo<R: io::Read>(
         ComparisonMode::Shacl => todo!("Not yet implemented comparison between SHACL files"),
         ComparisonMode::ShEx => {
             let shex = read_shex_only(reader, &(*format).into(), base, source_name)?;
-            let mut converter = CoShaMoConverter::new(&rudof.config.comparator_config());
+            let mut converter = CoShaMoConverter::new(rudof.config.comparator());
             let coshamo =
                 converter
                     .populate_from_shex(&shex, label)

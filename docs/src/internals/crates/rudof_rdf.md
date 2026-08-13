@@ -115,7 +115,7 @@ Key choices:
 
 #### Configuring via TOML
 
-Setting `[qlever]` in the rudof config TOML deserializes into a `QleverConfig`. The struct is exposed through `RdfDataConfig::qlever` and is only present when the `qlever` feature is compiled in.
+Setting `[rdf.qlever]` in the rudof config TOML deserializes into a `QleverConfig`. The struct is exposed through `RdfDataConfig::qlever` and is only present when the `qlever` feature is compiled in.
 
 ## Usage
 

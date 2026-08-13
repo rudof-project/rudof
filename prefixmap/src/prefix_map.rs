@@ -3,37 +3,72 @@ use crate::{IriRef, Show};
 use colored::*;
 use indexmap::IndexMap;
 use rudof_iri::*;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::MapAccess, de::Visitor, ser::SerializeMap};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
 /// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default)]
-#[serde(transparent)]
+#[derive(Debug, Clone, Eq, Default)]
 pub struct PrefixMap {
     /// Proper prefix map associations of an alias [`String`] to an [`IriS`]
     pub map: IndexMap<String, IriS>,
 
-    /// Default base IRI for resolving relative IRIs
-    #[serde(skip)]
-    pub default_base: Option<IriS>,
-
+    // TODO - The following properties should be handled by rudof_lib
     /// Color of prefix aliases when qualifying an IRI that has an alias
-    #[serde(skip)]
     qualify_prefix_color: Option<Color>,
 
     /// Color of local names when qualifying an IRI that has an alias
-    #[serde(skip)]
     qualify_localname_color: Option<Color>,
 
     /// Color of semicolon when qualifying an IRI that has an alias
-    #[serde(skip)]
     qualify_semicolon_color: Option<Color>,
 
     /// Whether to generate hyperlink when qualifying an IRI
-    #[serde(skip)]
     hyperlink: bool,
+}
+
+impl PartialEq for PrefixMap {
+    fn eq(&self, other: &Self) -> bool {
+        self.map == other.map
+    }
+}
+
+impl Serialize for PrefixMap {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(Some(self.map.len()))?;
+        for (k, v) in &self.map {
+            map.serialize_entry(k, v)?;
+        }
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for PrefixMap {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct PrefixMapVisitor;
+
+        impl<'de> Visitor<'de> for PrefixMapVisitor {
+            type Value = PrefixMap;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a map of prefix to IRI")
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, mut access: A) -> Result<Self::Value, A::Error> {
+                let mut map = IndexMap::new();
+                while let Some((k, v)) = access.next_entry::<String, IriS>()? {
+                    map.insert(k, v);
+                }
+                Ok(PrefixMap {
+                    map,
+                    ..Default::default()
+                })
+            }
+        }
+
+        deserializer.deserialize_map(PrefixMapVisitor)
+    }
 }
 
 /// Methods for [`PrefixMap`] manipulation
@@ -41,11 +76,6 @@ impl PrefixMap {
     /// Creates an empty map
     pub fn new() -> PrefixMap {
         PrefixMap::default()
-    }
-
-    /// Sets the default base IRI for resolving relative IRIs
-    pub fn set_default_base(&mut self, default_base: &Option<IriS>) {
-        self.default_base = default_base.clone();
     }
 
     /// Returns the number of prefix associations in the [`PrefixMap`]
@@ -93,10 +123,6 @@ impl PrefixMap {
     /// Returns an iterator over the aliases in the [`PrefixMap`]
     pub fn aliases(&self) -> impl Iterator<Item = &String> {
         self.map.keys()
-    }
-
-    pub fn default_base(&self) -> Option<&IriS> {
-        self.default_base.as_ref()
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&String, &IriS)> {
@@ -253,6 +279,38 @@ impl PrefixMap {
         .unwrap();
         pm.without_default_colors().with_hyperlink(true)
     }
+
+    /// Default DBpedia prefix map
+    pub fn dbpedia() -> PrefixMap {
+        let pm: PrefixMap = HashMap::from([
+            ("dbc", "http://dbpedia.org/class/"),
+            ("dbo", "http://dbpedia.org/ontology/"),
+            ("dbp", "http://dbpedia.org/property/"),
+            ("dbr", "http://dbpedia.org/resource/"),
+            ("foaf", "http://xmlns.com/foaf/0.1/"),
+            ("geo", "http://www.w3.org/2003/01/geo/wgs84_pos#"),
+            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
+        ])
+        .try_into()
+        .unwrap();
+        pm.without_default_colors().with_hyperlink(true)
+    }
+
+    /// Default Uniprot prefix map
+    pub fn uniprot() -> PrefixMap {
+        let pm: PrefixMap = HashMap::from([
+            ("formats", "http://www.w3.org/ns/formats/"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("sd", "http://www.w3.org/ns/sparql-service-description#"),
+            ("taxon", "http://purl.uniprot.org/taxonomy/"),
+            ("up", "http://purl.uniprot.org/core/"),
+            ("void", "https://sparql.uniprot.org/.well-known/void#"),
+        ])
+        .try_into()
+        .unwrap();
+        pm.without_default_colors().with_hyperlink(true)
+    }
 }
 
 /// Qualifying IRIs against a [`PrefixMap`]
@@ -281,16 +339,7 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
-        self.qualify_optional(iri)
-            .unwrap_or_else(|| format!("<{}>", self.relativize(iri)))
-    }
-
-    fn relativize(&self, iri: &IriS) -> String {
-        if let Some(base) = self.default_base() {
-            iri.relative_from(base)
-        } else {
-            iri.as_str().to_string()
-        }
+        self.qualify_optional(iri).unwrap_or_else(|| format!("<{}>", iri))
     }
 
     /// Qualifies an IRI against a [`PrefixMap`]
@@ -548,22 +597,20 @@ mod tests {
 
     #[test]
     fn test_qualify_with_base() {
-        let mut pm: PrefixMap = HashMap::from([("", "https://example.org/"), ("schema", "https://schema.org/")])
+        let pm: PrefixMap = HashMap::from([("", "https://example.org/"), ("schema", "https://schema.org/")])
             .try_into()
             .unwrap();
 
-        pm.set_default_base(&Some(IriS::from_str("file:///home/user/src/rust/rudof/").unwrap()));
-
-        let a = IriS::from_str("https://example.org/a").unwrap();
+        let a = IriS::new_unchecked("https://example.org/a");
         assert_eq!(pm.qualify(&a), ":a");
 
-        let knows = IriS::from_str("https://schema.org/knows").unwrap();
+        let knows = IriS::new_unchecked("https://schema.org/knows");
         assert_eq!(pm.qualify(&knows), "schema:knows");
 
-        let other = IriS::from_str("https://other.org/foo").unwrap();
+        let other = IriS::new_unchecked("https://other.org/foo");
         assert_eq!(pm.qualify(&other), "<https://other.org/foo>");
 
-        let relative = IriS::from_str("file:///home/user/src/rust/rudof/relative").unwrap();
+        let relative = IriS::new_unchecked("relative");
         assert_eq!(pm.qualify(&relative), "<relative>");
     }
 }

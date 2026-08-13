@@ -1,45 +1,40 @@
-#[cfg(not(target_family = "wasm"))]
-use std::{io::Read, path::Path};
-
-use thiserror::Error;
-
+use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define configuration of RDF data readers
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ServiceConfig {
     /// Default base to resolve relative IRIs, if it is `None` relative IRIs will be marked as errors`
-    pub base: Option<IriS>,
+    #[serde(rename = "base_iri", skip_serializing_if = "Option::is_none")]
+    pub(crate) base: Option<IriS>,
 }
 
 impl ServiceConfig {
-    pub fn new() -> ServiceConfig {
+    pub fn new() -> Self {
         Self {
-            base: Some(IriS::new_unchecked("base://")),
+            base: Self::default_iri(),
         }
     }
 
-    #[cfg(not(target_family = "wasm"))]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ServiceConfig, ServiceConfigError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| ServiceConfigError::ReadingConfigError {
-            path_name: path_name.clone(),
-            error: e,
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ServiceConfigError::ReadingConfigError {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
-
-        let config: ServiceConfig = toml::from_str(s.as_str()).map_err(|e| ServiceConfigError::TomlError {
-            path_name: path_name.to_string(),
-            error: e,
-        })?;
-        Ok(config)
+    pub fn with_base(mut self, iri: Option<IriS>) -> Self {
+        self.base = iri;
+        self
     }
+}
+
+impl ServiceConfig {
+    pub fn base(&self) -> Option<&IriS> {
+        self.base.as_ref()
+    }
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+#[rustfmt::skip]
+impl ServiceConfig {
+    #[inline] fn default_iri() -> Option<IriS> { None }
 }
 
 impl Default for ServiceConfig {
@@ -48,12 +43,29 @@ impl Default for ServiceConfig {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ServiceConfigError {
-    #[cfg(not(target_family = "wasm"))]
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: std::io::Error },
+impl TomlConfig for ServiceConfig {}
 
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: toml::de::Error },
+#[cfg(test)]
+mod tests {
+    use super::ServiceConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        assert_eq!(ServiceConfig::default().base(), ServiceConfig::default_iri().as_ref());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ServiceConfig::from_toml_str(r#"base_iri = "http://ex/""#).unwrap();
+        assert_eq!(c.base().map(|i| i.as_str()), Some("http://ex/"));
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ServiceConfig::new().with_base(Some(rudof_iri::IriS::new_unchecked("http://ex/")));
+        let s = c.to_toml_string().unwrap();
+        let d = ServiceConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
 }

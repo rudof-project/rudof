@@ -1,50 +1,85 @@
-use std::{fs, io};
-
+use rudof_config::TomlConfig;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use thiserror::Error;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ShEx2SparqlConfig {
-    pub this_variable_name: String,
-    pub shex: Option<ShExConfig>,
+    #[serde(rename = "this_variable_name")]
+    pub(crate) this_variable_name: String,
+    #[serde(rename = "shex", skip_serializing)]
+    pub(crate) shex: ShExConfig,
 }
 
-impl Default for ShEx2SparqlConfig {
-    fn default() -> Self {
+/// Serde stuff
+#[allow(dead_code)]
+#[rustfmt::skip]
+impl ShEx2SparqlConfig {
+    #[inline] fn default_this_variable_name() -> String { "this".to_string() }
+    #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }
+}
+
+impl ShEx2SparqlConfig {
+    pub fn new() -> Self {
         Self {
-            this_variable_name: "this".to_string(),
-            shex: Some(ShExConfig::default()),
+            this_variable_name: Self::default_this_variable_name(),
+            shex: Self::default_shex(),
         }
+    }
+
+    pub fn with_this_variable_name(mut self, name: String) -> Self {
+        self.this_variable_name = name;
+        self
+    }
+
+    pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
+        self.shex = cfg;
+        self
     }
 }
 
 impl ShEx2SparqlConfig {
-    pub fn from_file(file_name: &str) -> Result<ShEx2SparqlConfig, ShEx2SparqlConfigError> {
-        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2SparqlConfigError::ReadingConfigError {
-            path_name: file_name.to_string(),
-            error: e,
-        })?;
-        toml::from_str::<ShEx2SparqlConfig>(&config_str).map_err(|e| ShEx2SparqlConfigError::TomlError {
-            path_name: file_name.to_string(),
-            error: e,
-        })
+    pub fn this_variable_name(&self) -> &String {
+        &self.this_variable_name
     }
 
-    /// Get the ShExConfig if it has been declared or the default one
-    pub fn shex_config(&self) -> ShExConfig {
-        match &self.shex {
-            None => ShExConfig::default(),
-            Some(sc) => sc.clone(),
-        }
+    pub fn shex(&self) -> &ShExConfig {
+        &self.shex
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ShEx2SparqlConfigError {
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: io::Error },
+impl Default for ShEx2SparqlConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: toml::de::Error },
+impl TomlConfig for ShEx2SparqlConfig {}
+
+#[cfg(test)]
+mod tests {
+    use super::ShEx2SparqlConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        assert_eq!(
+            ShEx2SparqlConfig::default().this_variable_name(),
+            &ShEx2SparqlConfig::default_this_variable_name()
+        );
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ShEx2SparqlConfig::from_toml_str(r#"this_variable_name = "self""#).unwrap();
+        assert_eq!(c.this_variable_name(), "self");
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShEx2SparqlConfig::default().with_this_variable_name("self".to_string());
+        let s = c.to_toml_string().unwrap();
+        let d = ShEx2SparqlConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
 }

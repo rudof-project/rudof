@@ -22,10 +22,9 @@ fn read_dctap_csv(rudof: &mut Rudof, dctap: &InputSpec) -> Result<()> {
             message: format!("Failed to open data source '{}': {error}", dctap.source_name()),
         })?;
 
-    let dctap =
-        DCTap::from_reader(dctap_reader, &rudof.config.dctap_config()).map_err(|error| DCTapError::DataSourceSpec {
-            message: format!("Failed to read data source '{}': {error}", dctap.source_name()),
-        })?;
+    let dctap = DCTap::from_reader(dctap_reader, rudof.config.tap()).map_err(|error| DCTapError::DataSourceSpec {
+        message: format!("Failed to read data source '{}': {error}", dctap.source_name()),
+    })?;
 
     rudof.dctap = Some(dctap);
 
@@ -35,11 +34,10 @@ fn read_dctap_csv(rudof: &mut Rudof, dctap: &InputSpec) -> Result<()> {
 fn read_dctap_excel_formats(rudof: &mut Rudof, dctap: &InputSpec) -> Result<()> {
     match dctap {
         InputSpec::Path(path_buf) => {
-            let dctap = DCTap::from_excel(path_buf, None, &rudof.config.dctap_config()).map_err(|error| {
-                DCTapError::DataSourceSpec {
+            let dctap =
+                DCTap::from_excel(path_buf, None, rudof.config.tap()).map_err(|error| DCTapError::DataSourceSpec {
                     message: format!("Failed to read data source '{}': {error}", dctap.source_name()),
-                }
-            })?;
+                })?;
 
             rudof.dctap = Some(dctap);
         },

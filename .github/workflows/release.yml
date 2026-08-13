@@ -76,7 +76,7 @@ jobs:
           # Bump workspace version
           sed -i "0,/^version = \"${OLD}\"/{s/^version = \"${OLD}\"/version = \"${NEW}\"/}" Cargo.toml
           # Bump only internal workspace crates in [workspace.dependencies]
-          INTERNAL_CRATES="dctap|mie|pgschema|prefixmap|pyrudof|rbe|rbe_testsuite|rdf_config|rudof_cli|rudof_iri|rudof_rdf|rudof_generate|rudof_lib|rudof_mcp|shacl|shapes_comparator|shapes_converter|shex_ast|shex_testsuite|shex_validation|sparql_service"
+          INTERNAL_CRATES="dctap|mie|pgschema|prefixmap|pyrudof|rbe|rbe_testsuite|rdf_config|rudof_cli|rudof_config|rudof_iri|rudof_rdf|rudof_generate|rudof_lib|rudof_mcp|shacl|shapes_comparator|shapes_converter|shex_ast|shex_testsuite|shex_validation|sparql_service"
           sed -i -E "/^(${INTERNAL_CRATES}) = \{/{s/version = \"${OLD}\"/version = \"${NEW}\"/}" Cargo.toml
 
       - name: Verify version was updated

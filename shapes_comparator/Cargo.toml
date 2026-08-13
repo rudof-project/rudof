@@ -10,6 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+rudof_config.workspace = true
 rudof_iri.workspace = true
 prefixmap.workspace = true
 serde.workspace = true

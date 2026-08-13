@@ -1,117 +1,238 @@
-use std::{
-    fs, io,
-    path::{Path, PathBuf},
-};
-
+use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use thiserror::Error;
+use std::path::{Path, PathBuf};
 
 use crate::ShEx2UmlConfig;
 
-pub const DEFAULT_COLOR_PROPERTY_NAME: &str = "blue";
-pub const DEFAULT_LANDING_PAGE_NAME: &str = "index.html";
-pub const DEFAULT_SHAPE_TEMPLATE_NAME: &str = "shape.html";
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ShEx2HtmlConfig {
-    pub landing_page_name: String,
-    pub shape_template_name: String,
-    pub template_folder: Option<String>,
-    pub css_file_name: Option<String>,
-    pub title: String,
-    pub target_folder: Option<PathBuf>,
-    pub color_property_name: Option<String>,
-    pub replace_iri_by_label: Option<bool>,
-    pub annotation_label: Vec<IriS>,
-    pub embed_svg_schema: bool,
-    pub embed_svg_shape: bool,
-    pub shex2uml: Option<ShEx2UmlConfig>,
-    pub shex: Option<ShExConfig>,
+    #[serde(rename = "title")]
+    pub(crate) title: String,
+    #[serde(rename = "landing_page")]
+    pub(crate) landing_page_name: String,
+    #[serde(rename = "shape_template")]
+    pub(crate) shape_template_name: String,
+    #[serde(rename = "template_folder", skip_serializing_if = "Option::is_none")]
+    pub(crate) template_folder: Option<String>,
+    #[serde(rename = "css_file")]
+    pub(crate) css_file_name: String,
+    #[serde(rename = "target_folder")]
+    pub(crate) target_folder: PathBuf,
+    #[serde(rename = "property_color")]
+    pub(crate) color_property_name: String,
+    #[serde(rename = "annotation_label", skip_serializing_if = "Vec::is_empty")]
+    pub(crate) annotation_label: Vec<IriS>,
+    #[serde(rename = "replace_iri_by_label")]
+    pub(crate) replace_iri_by_label: bool,
+    #[serde(rename = "embed_svg_schema")]
+    pub(crate) embed_svg_schema: bool,
+    #[serde(rename = "embed_svg_shape")]
+    pub(crate) embed_svg_shape: bool,
+    #[serde(rename = "shex2uml", skip_serializing)]
+    pub(crate) shex2uml: ShEx2UmlConfig,
+    #[serde(rename = "shex", skip_serializing)]
+    pub(crate) shex: ShExConfig, // TODO - Maybe remove, a copy of ShexConfig is in Shex2umlConfig
 }
 
-impl Default for ShEx2HtmlConfig {
-    fn default() -> Self {
+impl ShEx2HtmlConfig {
+    pub fn new() -> Self {
         Self {
-            title: "ShEx schema".to_string(),
-            landing_page_name: DEFAULT_LANDING_PAGE_NAME.to_string(),
-            shape_template_name: DEFAULT_SHAPE_TEMPLATE_NAME.to_string(),
-            template_folder: None,
-            css_file_name: Some("shex2html.css".to_string()),
-            target_folder: None,
-            color_property_name: Some(DEFAULT_COLOR_PROPERTY_NAME.to_string()),
-            annotation_label: vec![RdfsVocab::rdfs_label()],
-            replace_iri_by_label: None,
-            embed_svg_schema: true,
-            embed_svg_shape: true,
-            shex2uml: Some(ShEx2UmlConfig::new()),
-            shex: Some(ShExConfig::default()),
+            title: Self::default_title(),
+            landing_page_name: Self::default_landing_page_name(),
+            shape_template_name: Self::default_shape_template_name(),
+            template_folder: Self::default_template_folder(),
+            css_file_name: Self::default_css_file_name(),
+            target_folder: Self::default_target_folder(),
+            color_property_name: Self::default_color_property_name(),
+            annotation_label: Self::default_annotation_label(),
+            replace_iri_by_label: Self::default_replace_iri_by_label(),
+            embed_svg_schema: Self::default_embed_svg_schema(),
+            embed_svg_shape: Self::default_embed_svg_shape(),
+            shex2uml: Self::default_shex2uml(),
+            shex: Self::default_shex(),
         }
+    }
+
+    pub fn with_title(mut self, title: String) -> Self {
+        self.title = title;
+        self
+    }
+
+    pub fn with_landing_page_name(mut self, name: String) -> Self {
+        self.landing_page_name = name;
+        self
+    }
+
+    pub fn with_shape_template_name(mut self, name: String) -> Self {
+        self.shape_template_name = name;
+        self
+    }
+
+    pub fn with_template_folder(mut self, folder: Option<String>) -> Self {
+        self.template_folder = folder;
+        self
+    }
+
+    pub fn with_css_file_name(mut self, name: String) -> Self {
+        self.css_file_name = name;
+        self
+    }
+
+    pub fn with_target_folder<P: AsRef<Path>>(mut self, folder: P) -> Self {
+        self.target_folder = folder.as_ref().to_path_buf();
+        self
+    }
+
+    pub fn with_color_property_name(mut self, color: String) -> Self {
+        self.color_property_name = color;
+        self
+    }
+
+    pub fn with_annotation_label(mut self, labels: Vec<IriS>) -> Self {
+        self.annotation_label = labels;
+        self
+    }
+
+    pub fn with_replace_iri_by_label(mut self, flag: bool) -> Self {
+        self.replace_iri_by_label = flag;
+        self
+    }
+
+    pub fn with_embed_svg_schema(mut self, flag: bool) -> Self {
+        self.embed_svg_schema = flag;
+        self
+    }
+
+    pub fn with_embed_svg_shape(mut self, flag: bool) -> Self {
+        self.embed_svg_shape = flag;
+        self
+    }
+
+    pub fn with_shex2uml(mut self, cfg: ShEx2UmlConfig) -> Self {
+        self.shex2uml = cfg;
+        self
+    }
+
+    pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
+        self.shex = cfg;
+        self
     }
 }
 
 impl ShEx2HtmlConfig {
-    /// Get the ShEx config if it has been declared or the default one
-    pub fn shex_config(&self) -> ShExConfig {
-        match &self.shex {
-            None => ShExConfig::default(),
-            Some(sc) => sc.clone(),
-        }
+    pub fn title(&self) -> &String {
+        &self.title
     }
 
-    pub fn with_target_folder<P: AsRef<Path>>(mut self, target_folder: P) -> Self {
-        self.target_folder = Some(target_folder.as_ref().to_path_buf());
-        self
+    pub fn landing_page_name(&self) -> &String {
+        &self.landing_page_name
     }
 
-    pub fn target_folder(&self) -> PathBuf {
-        match &self.target_folder {
-            Some(tf) => tf.to_owned(),
-            None => Path::new(".").to_path_buf(),
-        }
+    pub fn shape_template_name(&self) -> &String {
+        &self.shape_template_name
     }
 
-    pub fn landing_page(&self) -> PathBuf {
-        match &self.target_folder {
-            Some(tf) => tf.as_path().join(self.landing_page_name.as_str()),
-            None => Path::new(self.landing_page_name.as_str()).to_path_buf(),
-        }
+    pub fn template_folder(&self) -> Option<&String> {
+        self.template_folder.as_ref()
     }
 
-    pub fn landing_page_name(&self) -> String {
-        self.landing_page().to_string_lossy().to_string()
+    pub fn css_file_name(&self) -> &String {
+        &self.css_file_name
     }
 
-    pub fn from_file(file_name: &str) -> Result<ShEx2HtmlConfig, ShEx2HtmlConfigError> {
-        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2HtmlConfigError::ReadingConfigError {
-            path_name: file_name.to_string(),
-            error: e,
-        })?;
-        toml::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| ShEx2HtmlConfigError::TomlError {
-            path_name: file_name.to_string(),
-            error: e,
-        })
+    pub fn target_folder(&self) -> &PathBuf {
+        &self.target_folder
     }
 
-    pub fn shex2uml_config(&self) -> ShEx2UmlConfig {
-        match &self.shex2uml {
-            None => ShEx2UmlConfig::default(),
-            Some(s) => s.clone(),
-        }
+    pub fn color_property_name(&self) -> &String {
+        &self.color_property_name
     }
 
-    pub fn plantuml_path(&self) -> PathBuf {
-        self.shex2uml_config().plantuml_path()
+    pub fn annotation_label(&self) -> &Vec<IriS> {
+        self.annotation_label.as_ref()
+    }
+
+    pub fn replace_iri_by_label(&self) -> bool {
+        self.replace_iri_by_label
+    }
+
+    pub fn embed_svg_schema(&self) -> bool {
+        self.embed_svg_schema
+    }
+
+    pub fn embed_svg_shape(&self) -> bool {
+        self.embed_svg_shape
+    }
+
+    pub fn shex2uml(&self) -> &ShEx2UmlConfig {
+        &self.shex2uml
+    }
+
+    /// Get the ShEx config
+    pub fn shex(&self) -> &ShExConfig {
+        &self.shex
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ShEx2HtmlConfigError {
-    #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: io::Error },
+impl ShEx2HtmlConfig {
+    pub fn landing_page(&self) -> PathBuf {
+        self.target_folder.as_path().join(self.landing_page_name.as_str())
+    }
+}
 
-    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: toml::de::Error },
+/// Serde stuff
+#[allow(dead_code)]
+#[rustfmt::skip]
+impl ShEx2HtmlConfig {
+    #[inline] fn default_title() -> String { "ShEx schema".to_string() }
+    #[inline] fn default_landing_page_name() -> String { "index.html".to_string() }
+    #[inline] fn default_shape_template_name() -> String { "shape.html".to_string() }
+    #[inline] fn default_template_folder() -> Option<String> { None }
+    #[inline] fn default_css_file_name() -> String { "shex2html.css".to_string() }
+    #[inline] fn default_target_folder() -> PathBuf { Path::new(".").to_path_buf() }
+    #[inline] fn default_color_property_name() -> String { "blue".to_string() }
+    #[inline] fn default_annotation_label() -> Vec<IriS> { vec![ RdfsVocab::rdfs_label() ] }
+    #[inline] fn default_replace_iri_by_label() -> bool { true }
+    #[inline] fn default_embed_svg_schema() -> bool { true }
+    #[inline] fn default_embed_svg_shape() -> bool { true }
+    #[inline] fn default_shex2uml() -> ShEx2UmlConfig { ShEx2UmlConfig::default() }
+    #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }
+}
+
+impl Default for ShEx2HtmlConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TomlConfig for ShEx2HtmlConfig {}
+
+#[cfg(test)]
+mod tests {
+    use super::ShEx2HtmlConfig;
+    use rudof_config::TomlConfig;
+
+    #[test]
+    fn defaults() {
+        assert_eq!(ShEx2HtmlConfig::default().title(), &ShEx2HtmlConfig::default_title());
+    }
+
+    #[test]
+    fn partial_toml_fills_remaining_defaults() {
+        let c = ShEx2HtmlConfig::from_toml_str(r#"title = "My schema""#).unwrap();
+        assert_eq!(c.title(), "My schema");
+        assert_eq!(c.landing_page_name(), &ShEx2HtmlConfig::default_landing_page_name());
+    }
+
+    #[test]
+    fn toml_round_trip() {
+        let c = ShEx2HtmlConfig::default().with_title("My schema".to_string());
+        let s = c.to_toml_string().unwrap();
+        let d = ShEx2HtmlConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
 }

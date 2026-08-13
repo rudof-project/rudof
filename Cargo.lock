@@ -1131,6 +1131,7 @@ dependencies = [
  "calamine",
  "csv",
  "itertools 0.14.0",
+ "rudof_config",
  "rudof_iri",
  "serde",
  "serde_json",
@@ -1187,6 +1188,27 @@ dependencies = [
  "block-buffer",
  "crypto-common",
  "subtle",
+]
+
+[[package]]
+name = "dirs"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3e8aa94d75141228480295a7d0e7feb620b1a5ad9f12bc40be62411e38cce4e"
+dependencies = [
+ "dirs-sys",
+]
+
+[[package]]
+name = "dirs-sys"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e01a3366d27ee9890022452ee61b2b63a67e6f13f58900b651ff5665f0bb1fab"
+dependencies = [
+ "libc",
+ "option-ext",
+ "redox_users",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2247,6 +2269,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
+name = "libredox"
+version = "0.1.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c943259e342f1e06ff2da7a83eabdfe7f92ce10262688dbf1895ff0b3e6e4652"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "libtest-mimic"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2586,6 +2617,12 @@ name = "openssl-probe"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
+
+[[package]]
+name = "option-ext"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "oxhttp"
@@ -3466,6 +3503,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "redox_users"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4e608c6638b9c18977b00b475ac1f28d14e84b27d8d42f70e0bf1e3dec127ac"
+dependencies = [
+ "getrandom 0.2.17",
+ "libredox",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "ref-cast"
 version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3687,6 +3735,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rudof_config"
+version = "0.3.7"
+dependencies = [
+ "dirs",
+ "serde",
+ "thiserror 2.0.18",
+ "toml",
+]
+
+[[package]]
 name = "rudof_generate"
 version = "0.3.7"
 dependencies = [
@@ -3743,9 +3801,11 @@ dependencies = [
  "rdf_config",
  "regex",
  "reqwest",
+ "rudof_config",
  "rudof_generate",
  "rudof_iri",
  "rudof_rdf",
+ "semver 1.0.28",
  "serde",
  "serde_json",
  "shacl",
@@ -3819,6 +3879,7 @@ dependencies = [
  "proptest",
  "regex",
  "reqwest",
+ "rudof_config",
  "rudof_iri",
  "rust_decimal",
  "serde",
@@ -4150,6 +4211,10 @@ name = "semver"
 version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
+dependencies = [
+ "serde",
+ "serde_core",
+]
 
 [[package]]
 name = "semver-parser"
@@ -4320,6 +4385,7 @@ dependencies = [
  "petgraph 0.8.3",
  "prefixmap",
  "rayon",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "serde",
@@ -4334,6 +4400,7 @@ name = "shapes_comparator"
 version = "0.3.7"
 dependencies = [
  "prefixmap",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "serde",
@@ -4357,6 +4424,7 @@ dependencies = [
  "minijinja",
  "prefixmap",
  "rdf_config",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "serde",
@@ -4399,6 +4467,7 @@ dependencies = [
  "pretty",
  "rbe",
  "regex",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "rust_decimal",
@@ -4440,6 +4509,7 @@ dependencies = [
  "itertools 0.14.0",
  "prefixmap",
  "rbe",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "serde",
@@ -4614,6 +4684,7 @@ dependencies = [
  "oxrdfio",
  "oxsdatatypes",
  "prefixmap",
+ "rudof_config",
  "rudof_iri",
  "rudof_rdf",
  "rust_decimal",

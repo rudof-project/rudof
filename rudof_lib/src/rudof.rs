@@ -181,17 +181,24 @@ impl Rudof {
             spec: spec.to_string(),
             error: e.to_string(),
         })?;
-        let vc = self.config.validator_config().with_external_resolver_arc(resolver);
-        self.config.set_validator_config(vc);
+        let vc = self
+            .config
+            .shex_validator()
+            .clone()
+            .with_external_resolver_arc(resolver);
+        self.config = std::mem::take(&mut self.config).with_shex_validator(vc);
         Ok(())
     }
 
     /// Reset the external-shape resolver chain to the default
     /// (only `RejectAllExternalResolver`).
     pub fn clear_external_resolvers(&mut self) {
-        let mut vc = self.config.validator_config();
-        vc.external_resolvers = ExternalShapeResolverRegistry::default();
-        self.config.set_validator_config(vc);
+        let vc = self
+            .config
+            .shex_validator()
+            .clone()
+            .with_external_shape_resolver_registry(ExternalShapeResolverRegistry::default());
+        self.config = std::mem::take(&mut self.config).with_shex_validator(vc);
     }
 
     /// Enumerate the built-in external-shape resolver kinds. Each entry

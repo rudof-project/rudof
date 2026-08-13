@@ -127,11 +127,11 @@ rudof convert -m shacl -x shex -s simple_shacl.ttl -f turtle -o simple.shex
 
 ### Specifying base IRI to handle relative IRIs
 
-If the RDF data contains relative IRIs, it is necessary to resolve them by specifying a base IRI. It can be done by providing a base declaration in the `rdf_data` entry of the configuration file. For example, assuming the configuration file contains `examples/config/data_config.toml`
+If the RDF data contains relative IRIs, it is necessary to resolve them by specifying a base IRI. It can be done by providing a base declaration in the `[rdf]` entry of the configuration file. For example, assuming the configuration file contains `examples/config/data_config.toml`
 
 ```toml
-[rdf_data]
-base = "http://example.org/"
+[rdf]
+base_iri = "http://example.org/"
 ```
 
 it is possible to specify the conversion as:

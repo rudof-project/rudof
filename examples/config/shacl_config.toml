@@ -1,2 +1,2 @@
-[rdf_data]
-base = "http://example.org/"
+[shacl.rdf]
+base_iri = "http://example.org/"

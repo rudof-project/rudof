@@ -3,6 +3,9 @@ use crate::{
     api::conversion::implementations::show_schema_conversion::show_schema_conversion,
     formats::{ConversionFormat, ConversionMode, InputSpec, ResultConversionFormat, ResultConversionMode},
 };
+use prefixmap::PrefixMap;
+use rudof_iri::IriS;
+use shapes_converter::Tap2ShExConfig;
 
 /// Helper: serialize conversion to string
 fn serialize_conversion_to_string(
@@ -184,7 +187,10 @@ ex:PersonShape a sh:NodeShape ;
 
 #[test]
 fn test_convert_dctap_to_uml() {
-    let mut rudof = Rudof::new(RudofConfig::default());
+    let tap_cfg = Tap2ShExConfig::new()
+        .with_prefixmap(PrefixMap::wikidata())
+        .with_base_iri(IriS::new_unchecked("http://test.com/").into());
+    let mut rudof = Rudof::new(RudofConfig::default().with_tap2shex(tap_cfg));
 
     let schema_input = InputSpec::str(
         r#"shapeID,propertyID,mandatory,repeatable,valueDataType
