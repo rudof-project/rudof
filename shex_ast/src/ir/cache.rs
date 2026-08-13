@@ -82,8 +82,8 @@ impl CacheHeader {
     }
 
     pub(crate) fn write_to<W: Write>(&self, writer: &mut W) -> Result<(), Box<SchemaIRError>> {
-        let header_bytes = postcard::to_stdvec(self)
-            .map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
+        let header_bytes =
+            postcard::to_stdvec(self).map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
         let header_len: u32 = header_bytes.len().try_into().map_err(|_| {
             Box::new(SchemaIRError::CacheWriteError {
                 msg: "cache header exceeds u32::MAX bytes".to_string(),
@@ -134,8 +134,11 @@ impl CacheHeader {
         let mut header_bytes = vec![0u8; header_len];
         read_exact(reader, &mut header_bytes, "header body")?;
 
-        let header: CacheHeader = postcard::from_bytes(&header_bytes)
-            .map_err(|e| Box::new(SchemaIRError::CacheReadError { msg: format!("decoding header: {e}") }))?;
+        let header: CacheHeader = postcard::from_bytes(&header_bytes).map_err(|e| {
+            Box::new(SchemaIRError::CacheReadError {
+                msg: format!("decoding header: {e}"),
+            })
+        })?;
         Ok(header)
     }
 }

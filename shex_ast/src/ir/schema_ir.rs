@@ -1094,10 +1094,9 @@ mod tests {
         )
         .unwrap_or_else(|e| panic!("[{name}] AST -> IR compile: {e}"));
 
-    let bytes: Vec<u8> =
-        postcard::to_stdvec(&ir).unwrap_or_else(|e| panic!("[{name}] postcard encode: {e}"));
-    let restored: SchemaIR =
-        postcard::from_bytes(&bytes).unwrap_or_else(|e| panic!("[{name}] postcard decode: {e}"));
+        let bytes: Vec<u8> = postcard::to_stdvec(&ir).unwrap_or_else(|e| panic!("[{name}] postcard encode: {e}"));
+        let restored: SchemaIR =
+            postcard::from_bytes(&bytes).unwrap_or_else(|e| panic!("[{name}] postcard decode: {e}"));
 
         fn sorted_lines(s: &str) -> Vec<String> {
             let mut lines: Vec<String> = s.lines().map(str::to_string).collect();
