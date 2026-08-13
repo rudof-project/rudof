@@ -1,3 +1,4 @@
+use prefixmap::PrefixMap;
 use rbe::Key;
 use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
@@ -27,6 +28,15 @@ impl Pred {
 
     pub fn is_direct(&self) -> bool {
         self.is_direct
+    }
+
+    pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
+        let iri_str = prefixmap.qualify(&self.iri);
+        if self.is_direct {
+            iri_str
+        } else {
+            format!("^{}", iri_str)
+        }
     }
 }
 

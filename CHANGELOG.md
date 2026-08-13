@@ -8,6 +8,19 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.3.8
+
+### Added
+- We refactored the way configuration files work in rudof as described in [this PR](https://github.com/rudof-project/rudof/pull/749) with a layered system
+
+### Changed
+- We replaced the dependency from `bincode` by `postcard` #745
+
+### Fixed
+- Solves stack overflow with FHIR files #739
+- Improves some of the ShEx error messages solving issue #742
+- Improves the non-deterministic behaviour of SHACL with negative cycles detection solving issue #735
+
 ## 0.3.7
 ### Added
 - Adds support for disjunctions in ShEx extends

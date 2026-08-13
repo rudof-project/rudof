@@ -51,6 +51,7 @@ pub enum NoMatchReason {
 impl NoMatchReason {
     fn show_qualified(&self, nodes_prefixmap: &PrefixMap) -> String {
         let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
+        let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
         let show_candidate = |candidate: &[(Pred, Node)]| {
             candidate
                 .iter()
@@ -65,10 +66,11 @@ impl NoMatchReason {
                 value,
                 error,
             } => format!(
-                "Candidate [{}] rejected: {} {}: {error}",
+                "Candidate [{}] rejected: {} {}: {}",
                 show_candidate(candidate),
                 show_pred(predicate),
                 value.show_qualified(nodes_prefixmap),
+                error.show_qualified(&show_pred, &show_node),
             ),
             NoMatchReason::CardinalityFailed {
                 candidate,
@@ -179,6 +181,7 @@ pub enum ValidatorError {
 
     #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
     NodeShapeError { node: String, shape: String, error: String },
+
     #[error("Converting Term to RDFNode failed pending {term}")]
     TermToRDFNodeFailed { term: String },
 
@@ -431,7 +434,73 @@ impl ValidatorError {
                 let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
                 err.show_qualified(&show_pred, &show_node)
             },
-            _ => format!("{self}"),
+            ValidatorError::ClosedShapeWithRemainderPreds { .. } => {
+                "Closed shape but found extra properties".to_string()
+            },
+            ValidatorError::ParentShapeFailed { .. } => "Parent shape failed".to_string(),
+            ValidatorError::ShapeExtendsNoMainShape { .. } => {
+                "Shape extends another shape but the parent shape has no main shape".to_string()
+            },
+            ValidatorError::ParentShapeNodeConstraintFailed { .. } => "Parent shape node constraint failed".to_string(),
+            ValidatorError::ParentShapeMainShapeFailed { .. } => "Parent shape main shape failed".to_string(),
+            ValidatorError::FillingShapeMapNodes { .. } => {
+                "Filling node from node selector to validate failed".to_string()
+            },
+            ValidatorError::AbstractShapeNoDescendants { .. } => "Abstract shape has no descendants".to_string(),
+            ValidatorError::NodeShapeError { .. } => "Creating shapemap from node and shape failed".to_string(),
+            ValidatorError::TermToRDFNodeFailed { .. } => "Converting Term to RDFNode failed".to_string(),
+            ValidatorError::ReasonSerializationError { .. } => "Serialization of reason failed".to_string(),
+            ValidatorError::ErrorSerializationError { .. } => "Serialization of error failed".to_string(),
+            ValidatorError::NegCycleError { .. } => "Negation cycle error".to_string(),
+            ValidatorError::SRDFError { .. } => "SRDF error".to_string(),
+            ValidatorError::NotFoundShapeLabel { .. } => "Shape label not found".to_string(),
+            ValidatorError::NotFoundShapeLabelWithIndex { .. } => "Shape label not found with index".to_string(),
+            ValidatorError::ConversionObjectIri { .. } => "Conversion of object IRI failed".to_string(),
+            ValidatorError::SchemaIRError { .. } => "Schema IRI error".to_string(),
+            ValidatorError::ShapeMapError { .. } => "Shape map error".to_string(),
+            ValidatorError::RbeFailed() => "Regular expression failed".to_string(),
+            ValidatorError::PrefixMapError(err) => format!("Prefix map error: {}", err),
+            ValidatorError::ShapeLabelNotFoundError { .. } => "Shape label not found".to_string(),
+            ValidatorError::ShapeExtendsError { .. } => "Shape extends error".to_string(),
+            ValidatorError::AddingNonConformantError { node, label, error } => {
+                format!(
+                    "Adding non-conformant for node: {} and label: {}, error: {}",
+                    node, label, error
+                )
+            },
+            ValidatorError::AddingConformantError { node, label, error } => format!(
+                "Adding conformant for node: {} and label: {}, error: {}",
+                node, label, error
+            ),
+            ValidatorError::AddingPendingError { node, label, error } => format!(
+                "Adding pending for node: {} and label: {}, error: {}",
+                node, label, error
+            ),
+            ValidatorError::ShapeExprNotFound { idx } => {
+                format!("Shape expression {} not found", show_label(idx, schema, width))
+            },
+            ValidatorError::StartActFailed { node, idx } => format!(
+                "Start action failed for node: {} and shape: {}",
+                show_node(node),
+                show_label(idx, schema, width)
+            ),
+            ValidatorError::ExternalShapeRejected {
+                node,
+                idx,
+                resolver,
+                rationale,
+            } => format!(
+                "External shape {} rejected for node: {} and resolver {}: {}",
+                show_label(idx, schema, width),
+                show_node(node),
+                resolver,
+                rationale
+            ),
+            ValidatorError::ExternalShapeUnresolved { node, idx } => format!(
+                "External shape {} for node {} could not be resolved by any registered resolver",
+                show_label(idx, schema, width),
+                show_node(node),
+            ),
         };
         Ok(s)
     }
@@ -487,6 +556,16 @@ impl ValidatorError {
                 }
                 Ok(())
             },
+            ValidatorError::ClosedShapeWithRemainderPreds { declared, remainder } => {
+                let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
+                let declared_str = declared.iter().map(show_pred).collect::<Vec<_>>().join(", ");
+                let remainder_str = remainder.iter().map(show_pred).collect::<Vec<_>>().join(", ");
+                tree.leaves
+                    .push(Tree::new(format!("Allowed properties: {declared_str}")));
+                tree.leaves
+                    .push(Tree::new(format!("Extra properties found: {remainder_str}")));
+                Ok(())
+            },
             ValidatorError::FailedPending { failed_pending } => {
                 let show_pred = |p: &IriS| nodes_prefixmap.qualify(p);
                 for (n, s, ks, errs) in failed_pending {
@@ -534,7 +613,6 @@ impl ValidatorError {
             | ValidatorError::SchemaIRError { .. }
             | ValidatorError::ShapeMapError { .. }
             | ValidatorError::RbeFailed()
-            | ValidatorError::ClosedShapeWithRemainderPreds { .. }
             | ValidatorError::RbeError(..)
             | ValidatorError::PrefixMapError(..)
             | ValidatorError::ShapeLabelNotFoundError { .. }
@@ -554,10 +632,59 @@ impl ValidatorError {
         schema: &SchemaIR,
         width: usize,
     ) -> Result<String, PrefixMapError> {
+        // A shape made of a single triple constraint (the overwhelmingly common
+        // case) rejected on its one and only candidate reduces to a single
+        // `ConditionFailed` reason. Render that flat, naming the node and
+        // property involved, instead of the generic
+        // "Shape ... failed ...: no candidates matched" + one-line tree.
+        if let ValidatorError::NoMatchesFound { node, reasons, .. } = self
+            && let [NoMatchReason::ConditionFailed { predicate, error, .. }] = reasons.as_slice()
+        {
+            // Datatype IRIs in the error (e.g. xsd:int) come from the schema, not
+            // necessarily from the validated data, so they may be unqualified in
+            // `nodes_prefixmap` alone (e.g. a data file that never mentions xsd:).
+            // Fall back to the schema's prefix map, keeping the data's own
+            // prefixes (for the node/value themselves) as the priority.
+            let mut combined = schema.prefixmap();
+            combined.merge(nodes_prefixmap.clone());
+            return Ok(describe_condition_error(node, Some(predicate), error, &combined));
+        }
         let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
         let mut tree = Tree::new(root_str);
         self.build_tree(&mut tree, nodes_prefixmap, schema, width)?;
         Ok(format!("{tree}"))
+    }
+}
+
+/// Renders a condition failure (e.g. a datatype mismatch from `CondKind::Datatype`)
+/// naming the node and, when known, the property that carried the offending
+/// value — e.g. "Datatype error on node :x for property :age: expected xsd:int,
+/// found xsd:integer, lexical form "30"^^xsd:integer".
+fn describe_condition_error(
+    node: &Node,
+    predicate: Option<&Pred>,
+    error: &RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>,
+    nodes_prefixmap: &PrefixMap,
+) -> String {
+    let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
+    let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
+    let location = match predicate {
+        Some(p) => format!("on node {} for property {}", show_node(node), show_pred(p)),
+        None => format!("on node {}", show_node(node)),
+    };
+    match error {
+        RbeError::CondFailed { prefix, details } => {
+            let details_str = details
+                .iter()
+                .map(|(label, v)| format!("{label} {}", show_node(v)))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("{prefix} {location}: {details_str}")
+        },
+        other => format!(
+            "Condition failed {location}: {}",
+            other.show_qualified(&show_pred, &show_node)
+        ),
     }
 }
 

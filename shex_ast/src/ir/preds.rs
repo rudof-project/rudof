@@ -1,3 +1,4 @@
+use prefixmap::PrefixMap;
 use serde::Serialize;
 
 use crate::Pred;
@@ -14,5 +15,19 @@ impl Preds {
 
     pub fn preds(&self) -> &Vec<Pred> {
         &self.values
+    }
+
+    pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
+        let preds_str = self
+            .values
+            .iter()
+            .map(|pred| pred.show_qualified(prefixmap))
+            .collect::<Vec<String>>()
+            .join(", ");
+        format!("[{}]", preds_str)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Pred> {
+        self.values.iter()
     }
 }
