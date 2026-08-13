@@ -1094,12 +1094,9 @@ mod tests {
         )
         .unwrap_or_else(|e| panic!("[{name}] AST -> IR compile: {e}"));
 
-        let config = bincode::config::standard();
-        let bytes: Vec<u8> =
-            bincode::serde::encode_to_vec(&ir, config).unwrap_or_else(|e| panic!("[{name}] bincode encode: {e}"));
-        let (restored, consumed): (SchemaIR, usize) = bincode::serde::decode_from_slice(&bytes, config)
-            .unwrap_or_else(|e| panic!("[{name}] bincode decode: {e}"));
-        assert_eq!(consumed, bytes.len(), "[{name}] bincode did not consume every byte");
+        let bytes: Vec<u8> = postcard::to_stdvec(&ir).unwrap_or_else(|e| panic!("[{name}] postcard encode: {e}"));
+        let restored: SchemaIR =
+            postcard::from_bytes(&bytes).unwrap_or_else(|e| panic!("[{name}] postcard decode: {e}"));
 
         fn sorted_lines(s: &str) -> Vec<String> {
             let mut lines: Vec<String> = s.lines().map(str::to_string).collect();
@@ -1109,7 +1106,7 @@ mod tests {
         assert_eq!(
             sorted_lines(&format!("{ir}")),
             sorted_lines(&format!("{restored}")),
-            "[{name}] Display differs after bincode round-trip",
+            "[{name}] Display differs after postcard round-trip",
         );
 
         assert_eq!(
@@ -1138,7 +1135,7 @@ mod tests {
     }
 
     #[test]
-    fn schema_ir_bincode_round_trip_and_of_two_shapes() {
+    fn schema_ir_postcard_round_trip_and_of_two_shapes() {
         let str = r#"{
           "type": "Schema",
           "@context": "http://www.w3.org/ns/shex.jsonld",
@@ -1164,7 +1161,7 @@ mod tests {
     }
 
     #[test]
-    fn schema_ir_bincode_round_trip_value_set_literal() {
+    fn schema_ir_postcard_round_trip_value_set_literal() {
         let json = r#"{
           "@context": "http://www.w3.org/ns/shex.jsonld",
           "type": "Schema",
@@ -1217,7 +1214,7 @@ mod tests {
         .expect("populate IR from ShExC-parsed schema");
 
         let mut buf = Vec::new();
-        ir.write(&mut buf, CacheFormat::Bincode).expect("SchemaIR::write");
+        ir.write(&mut buf, CacheFormat::Postcard).expect("SchemaIR::write");
 
         let _restored = SchemaIR::read(
             Cursor::new(buf),
@@ -1229,7 +1226,7 @@ mod tests {
 
     /// Regression: schemas with numeric facets (`MININCLUSIVE`, `MAXEXCLUSIVE`, …) embed a
     /// `NumericLiteral` in `CondKind`. Its `Deserialize` impl must be compatible with
-    /// non-self-describing formats like bincode; otherwise the cache round-trip fails with
+    /// non-self-describing formats like postcard; otherwise the cache round-trip fails with
     /// `Serde(AnyNotSupported)` for real-world schemas that use XSD numeric bounds
     /// (e.g. FHIR-R5).
     #[test]
@@ -1260,7 +1257,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         .expect("populate IR from ShExC-parsed schema");
 
         let mut buf = Vec::new();
-        ir.write(&mut buf, CacheFormat::Bincode).expect("SchemaIR::write");
+        ir.write(&mut buf, CacheFormat::Postcard).expect("SchemaIR::write");
 
         let _restored = SchemaIR::read(
             Cursor::new(buf),
@@ -1275,7 +1272,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         use crate::ir::cache::CacheReaderMode;
         use std::io::Cursor;
 
-        let junk = br#"{"version":1,"body_format":"bincode"}"#;
+        let junk = br#"{"version":1,"body_format":"postcard"}"#;
 
         let err = SchemaIR::read(
             Cursor::new(junk.as_slice()),

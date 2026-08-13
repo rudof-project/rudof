@@ -10,7 +10,6 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-bincode.workspace = true
 colored.workspace = true
 const_format.workspace = true
 csv.workspace = true
@@ -21,6 +20,7 @@ lazy-regex.workspace = true
 nom.workspace = true
 nom_locate.workspace = true
 petgraph.workspace = true
+postcard.workspace = true
 prefixmap.workspace = true
 pretty.workspace = true
 rbe.workspace = true

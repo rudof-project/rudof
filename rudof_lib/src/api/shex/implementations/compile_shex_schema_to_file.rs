@@ -8,7 +8,7 @@ pub fn compile_shex_schema_to_file<W: Write>(rudof: &Rudof, writer: &mut W) -> R
     let schema_ir = rudof.shex_schema_ir.as_ref().ok_or(ShExError::NoShExSchemaLoaded)?;
 
     schema_ir
-        .write(writer, CacheFormat::Bincode)
+        .write(writer, CacheFormat::Postcard)
         .map_err(|error| ShExError::FailedWritingShExCache {
             error: error.to_string(),
         })?;
