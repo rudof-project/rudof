@@ -49,9 +49,15 @@ pub trait TomlConfig: Sized + Default + Serialize + DeserializeOwned {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
         let path = path.as_ref();
         let location = path.display().to_string();
-        let contents = std::fs::read_to_string(path).map_err(|e| ConfigError::Read {
-            location: location.clone(),
-            error: e.to_string(),
+        let contents = std::fs::read_to_string(path).map_err(|e| {
+            let attempted = std::path::absolute(path)
+                .unwrap_or_else(|_| path.to_path_buf())
+                .display()
+                .to_string();
+            ConfigError::Read {
+                location: location.clone(),
+                error: format!("{e}. Path attempted: {attempted}"),
+            }
         })?;
         Self::from_toml_str(&contents).map_err(|e| match e {
             ConfigError::Parse { error, .. } => ConfigError::Parse { location, error },
