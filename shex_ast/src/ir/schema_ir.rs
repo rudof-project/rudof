@@ -309,8 +309,9 @@ impl SchemaIR {
                     constraints.push(self.dereference(e));
                 }
                 let base = main_alts.unwrap_or_else(|| vec![ExtendAlternative::default()]);
-                let conjunct_constraints = ExtendAlternative::with_constraints(constraints);
-                base.into_iter().map(|a| a.merge(&conjunct_constraints)).collect()
+                base.into_iter()
+                    .map(|a| a.with_scoped_constraints(&constraints))
+                    .collect()
             },
             Some(ShapeExpr::Empty) | None => vec![ExtendAlternative::default()],
             // NodeConstraint, ShapeNot, External (Ref is impossible after dereference)
