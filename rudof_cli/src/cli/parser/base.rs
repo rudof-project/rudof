@@ -48,8 +48,6 @@ pub enum Command {
     /// Show information about a node in an RDF Graph
     Node(NodeArgs),
     /// Show information about SHACL shapes
-    /// The SHACL schema can be passed through the data options or the optional schema options to provide an interface similar
-    /// to Shacl-validate
     Shacl(ShaclArgs),
     // Show information and process DCTAP files
     #[command(name = "dctap")]

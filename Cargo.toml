@@ -33,7 +33,7 @@ default-members = ["rudof_cli"]
 version = "0.3.7"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-description = "RDF data shapes implementation in Rust"
+description = "RDF and Knowledge Graphs processing tool"
 repository = "https://github.com/rudof-project/rudof"
 homepage = "https://rudof-project.github.io/rudof"
 readme = "./README.md"
@@ -302,7 +302,10 @@ petgraph = { version = "0.8", features = ["serde-1"] }
 postcard = { version = "1", features = ["use-std"] }
 prefixmap = { version = "0.3.7", path = "./prefixmap" }
 pretty = { version = "0.12" }
-proptest = { version = "1.11.0", default-features = false, features = ["std", "bit-set"] }
+proptest = { version = "1.11.0", default-features = false, features = [
+    "std",
+    "bit-set",
+] }
 pyrudof = { version = "0.3.7", path = "./bindings/python" }
 rand = "0.8"
 rayon = "1.7"

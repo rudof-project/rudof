@@ -8,6 +8,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.3.9 (Unpublished)
+
+### Fixed
+- fix(shapemap fail color): It was printing the default FAIL color in Green instead of Red
+
+### Changed
+- We moved NoMatchReason to its own module
+
 ## 0.3.8
 
 ### Added

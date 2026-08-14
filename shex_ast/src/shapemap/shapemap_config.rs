@@ -113,7 +113,7 @@ impl ShapemapConfig {
     #[inline] fn default_ok_text() -> String { "OK".to_string() }
     #[inline] fn default_fail_text() -> String { "FAIL".to_string() }
     #[inline] fn default_ok_color() -> Color { Color::Green }
-    #[inline] fn default_fail_color() -> Color { Color::Green }
+    #[inline] fn default_fail_color() -> Color { Color::Red }
     #[inline] fn default_pending_color() -> Color { Color::Magenta }
 }
 
