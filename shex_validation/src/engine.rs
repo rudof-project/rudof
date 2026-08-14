@@ -5,6 +5,7 @@ use crate::Reasons;
 use crate::ValidatorConfig;
 use crate::ValidatorErrors;
 use crate::atom;
+use crate::no_match_reason::NoMatchReason;
 use crate::ref_typing::RefTyping;
 use crate::validator_error::*;
 use either::Either;
