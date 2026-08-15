@@ -412,6 +412,35 @@ where
 
 /// Parser for a single integer value.
 #[derive(Debug, Clone)]
+pub struct SingleLiteralPropertyParser<RDF> {
+    property: IriS,
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF> SingleLiteralPropertyParser<RDF> {
+    pub fn new(property: IriS) -> Self {
+        SingleLiteralPropertyParser {
+            property,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<RDF> RDFNodeParse<RDF> for SingleLiteralPropertyParser<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = RDF::Literal;
+
+    fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
+        SingleValuePropertyParser::new(self.property.clone())
+            .parse_focused(rdf)
+            .and_then(|term| term_to_literal::<RDF>(&term))
+    }
+}
+
+/// Parser for a single integer value.
+#[derive(Debug, Clone)]
 pub struct SingleIntegerPropertyParser<RDF> {
     property: IriS,
     _marker: PhantomData<RDF>,

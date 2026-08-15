@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use std::collections::HashMap;
 use std::collections::hash_map::IntoIter;
@@ -75,16 +74,27 @@ impl From<String> for MessageMap {
 
 impl Display for MessageMap {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "MessageMap {{")?;
+        let mut entries: Vec<_> = self.messages.iter().collect();
 
-        let data = self
-            .iter()
-            .map(|(l, msg)| match l {
-                None => format!("default: {:?}", msg),
-                Some(l) => format!("{:?}: {:?}", l, msg),
-            })
-            .join(", ");
+        entries.sort_by_key(|(lang, _)| lang.as_ref());
 
-        write!(f, "{data}}}")
+        if entries.len() == 1 {
+            if let Some((None, msg)) = entries.first() {
+                return write!(f, "\"{msg}\"");
+            }
+        }
+
+        for (i, (lang, msg)) in entries.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+
+            match lang {
+                None => write!(f, "\"{msg}\"")?,
+                Some(lang) => write!(f, "\"{msg}\"@{lang}")?,
+            }
+        }
+
+        Ok(())
     }
 }

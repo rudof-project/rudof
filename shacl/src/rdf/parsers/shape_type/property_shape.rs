@@ -1,6 +1,6 @@
 use crate::ast::ASTPropertyShape;
 use crate::rdf::parsers::components::components;
-use crate::rdf::parsers::non_shape::message;
+use crate::rdf::parsers::non_shape::{description, message, name, order};
 use crate::rdf::parsers::{path, property, reifier_shape, severity, targets};
 use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
@@ -28,6 +28,18 @@ pub(crate) fn property_shape<RDF: FocusRDF + 'static>() -> impl RDFNodeParse<RDF
                 message()
                     .optional()
                     .flat_map(move |msg| Ok(ps.clone().with_message(msg)))
+            })
+            .then(|ps| name().optional().flat_map(move |name| Ok(ps.clone().with_name(name))))
+            .then(|ps| {
+                order().optional().flat_map(move |order| {
+                    println!("Parsed order: {:?}", order);
+                    Ok(ps.clone().with_order(order))
+                })
+            })
+            .then(|ps| {
+                description()
+                    .optional()
+                    .flat_map(move |desc| Ok(ps.clone().with_description(desc)))
             })
             .then(|ps| reifier_shape().flat_map(move |r_shape| Ok(ps.clone().with_reifier_shape(r_shape))))
             .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))

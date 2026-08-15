@@ -4439,6 +4439,7 @@ dependencies = [
  "rudof_config",
  "rudof_iri",
  "rudof_rdf",
+ "rust_decimal",
  "serde",
  "sparql_service",
  "thiserror 2.0.18",
