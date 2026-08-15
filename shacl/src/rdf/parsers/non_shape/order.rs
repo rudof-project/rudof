@@ -14,7 +14,7 @@ pub(crate) fn order<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = OrderVal
             parse_order_value(concrete_literal)
         },
         Err(_e) => Err(RDFError::ParseFailError {
-            msg: format!("Failed to convert literal to concrete literal"),
+            msg: "Failed to convert literal to concrete literal".to_string(),
         }),
     })
 }

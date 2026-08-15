@@ -236,8 +236,9 @@ impl IRPropertyShape {
             let lit: RDF::Literal = match order {
                 OrderValue::Integer(i) => (*i).into(),
                 OrderValue::Decimal(d) => {
-                    let decimal_literal = ConcreteLiteral::NumericLiteral(NumericLiteral::Decimal(d.clone()));
-                    let literal: RDF::Literal = decimal_literal.try_into().unwrap_or_else(|_| unreachable!());
+                    let decimal_literal = ConcreteLiteral::NumericLiteral(NumericLiteral::Decimal(*d));
+                    let literal: RDF::Literal =
+                        <ConcreteLiteral as std::convert::Into<RDF::Literal>>::into(decimal_literal);
                     literal
                 },
             };

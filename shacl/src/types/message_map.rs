@@ -78,10 +78,10 @@ impl Display for MessageMap {
 
         entries.sort_by_key(|(lang, _)| lang.as_ref());
 
-        if entries.len() == 1 {
-            if let Some((None, msg)) = entries.first() {
-                return write!(f, "\"{msg}\"");
-            }
+        if entries.len() == 1
+            && let Some((None, msg)) = entries.first()
+        {
+            return write!(f, "\"{msg}\"");
         }
 
         for (i, (lang, msg)) in entries.iter().enumerate() {
