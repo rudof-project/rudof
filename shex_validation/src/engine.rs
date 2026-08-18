@@ -1433,7 +1433,16 @@ impl Engine {
                     .triple_expr()
                     .components()
                     .all(|(_, _, cond)| !cond_has_ref(&cond));
-                if !main_preds.is_empty() && no_shape_refs {
+                // Skip this shortcut when the ancestor's predicates overlap with the child
+                // shape's own declared predicates. In that case a single triple can satisfy
+                // both the ancestor's condition (e.g. a datatype constraint) and the child's
+                // own, more specific condition (e.g. a value set), and how many triples go to
+                // each side is exactly the counting problem the partition algorithm in
+                // check_node_shape_extends solves; this exhaustive pre-filter cannot (it can
+                // only keep-or-exclude a triple wholesale, not split a run of them between
+                // the two buckets in the right proportions).
+                let overlaps_child_preds = shape.preds().iter().any(|p| main_preds.contains(p));
+                if !main_preds.is_empty() && no_shape_refs && !overlaps_child_preds {
                     let (all_values, _) = self.neighs(node, main_preds, rdf)?;
                     let all_values_ctx: Vec<_> = all_values
                         .iter()
