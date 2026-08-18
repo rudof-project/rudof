@@ -16,8 +16,8 @@ pub struct ASTNodeShape {
     // ignored_properties: Vec<IriRef>,
     message: Option<MessageMap>,
     severity: Option<Severity>,
-    name: MessageMap,
-    description: MessageMap,
+    name: Option<MessageMap>,
+    description: Option<MessageMap>,
     group: Option<Object>,
     // source_iri: Option<IriRef>,
 }
@@ -31,8 +31,8 @@ impl ASTNodeShape {
             property_shapes: Vec::new(),
             message: None,
             severity: None,
-            name: MessageMap::new(),
-            description: MessageMap::new(),
+            name: None,
+            description: None,
             group: None,
         }
     }
@@ -82,12 +82,12 @@ impl ASTNodeShape {
         &self.property_shapes
     }
 
-    pub fn name(&self) -> &MessageMap {
-        &self.name
+    pub fn name(&self) -> Option<&MessageMap> {
+        self.name.as_ref()
     }
 
-    pub fn description(&self) -> &MessageMap {
-        &self.description
+    pub fn description(&self) -> Option<&MessageMap> {
+        self.description.as_ref()
     }
 
     pub fn message(&self) -> Option<&MessageMap> {

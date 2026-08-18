@@ -1,11 +1,11 @@
 use crate::ast::error::ASTError;
 use crate::ast::reifier_info::ReifierInfo;
 use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
+use crate::ir::OrderValue;
 use crate::types::{ClosedInfo, MessageMap, Severity, Target};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
@@ -22,9 +22,9 @@ pub struct ASTPropertyShape {
     deactivated: bool,
     message: Option<MessageMap>,
     severity: Option<Severity>,
-    name: MessageMap,
-    description: MessageMap,
-    order: Option<NumericLiteral>,
+    name: Option<MessageMap>,
+    description: Option<MessageMap>,
+    order: Option<OrderValue>,
     group: Option<Object>,
     // source_iri: Option<IriRef>,
     // annotations: Vec<(IriRef, RDFNode)>
@@ -46,8 +46,8 @@ impl ASTPropertyShape {
             deactivated: false,
             message: None,
             severity: None,
-            name: MessageMap::new(),
-            description: MessageMap::new(),
+            name: None,
+            description: None,
             order: None,
             group: None,
             reifier_info: None,
@@ -57,17 +57,17 @@ impl ASTPropertyShape {
         }
     }
 
-    pub fn with_name(mut self, name: MessageMap) -> Self {
+    pub fn with_name(mut self, name: Option<MessageMap>) -> Self {
         self.name = name;
         self
     }
 
-    pub fn with_description(mut self, description: MessageMap) -> Self {
+    pub fn with_description(mut self, description: Option<MessageMap>) -> Self {
         self.description = description;
         self
     }
 
-    pub fn with_order(mut self, order: Option<NumericLiteral>) -> Self {
+    pub fn with_order(mut self, order: Option<OrderValue>) -> Self {
         self.order = order;
         self
     }
@@ -144,12 +144,12 @@ impl ASTPropertyShape {
         &self.path
     }
 
-    pub fn name(&self) -> &MessageMap {
-        &self.name
+    pub fn name(&self) -> Option<&MessageMap> {
+        self.name.as_ref()
     }
 
-    pub fn description(&self) -> &MessageMap {
-        &self.description
+    pub fn description(&self) -> Option<&MessageMap> {
+        self.description.as_ref()
     }
 
     pub fn is_closed(&self) -> &bool {
@@ -176,7 +176,7 @@ impl ASTPropertyShape {
         &self.property_shapes
     }
 
-    pub fn order(&self) -> Option<&NumericLiteral> {
+    pub fn order(&self) -> Option<&OrderValue> {
         self.order.as_ref()
     }
 
@@ -235,6 +235,10 @@ impl Display for ASTPropertyShape {
         for reifier in self.reifier_info.iter() {
             writeln!(f, "\tReifierInfo {reifier}")?
         }
+        for message in self.message.iter() {
+            writeln!(f, "\tMessage {message}")?
+        }
+
         for component in self.components.iter() {
             writeln!(f, "\t{component}")?
         }

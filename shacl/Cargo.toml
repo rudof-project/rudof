@@ -12,19 +12,20 @@ repository.workspace = true
 
 [features]
 default = ["sparql"]
-sparql = ["sparql_service/sparql", "rudof_rdf/sparql" ]
+sparql = ["sparql_service/sparql", "rudof_rdf/sparql"]
 
 [dependencies]
 anyhow.workspace = true
 dashmap.workspace = true
 indoc.workspace = true
 itertools.workspace = true
-rudof_config.workspace = true
-rudof_iri.workspace = true
 petgraph.workspace = true
 prefixmap.workspace = true
 rayon.workspace = true
 rudof_rdf.workspace = true
+rudof_config.workspace = true
+rudof_iri.workspace = true
+rust_decimal.workspace = true
 serde.workspace = true
 sparql_service.workspace = true
 thiserror.workspace = true
@@ -32,4 +33,4 @@ toml.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
