@@ -184,6 +184,33 @@ impl MimeType for DataFormat {
     }
 }
 
+impl DataFormat {
+    /// Best-effort mapping from an HTTP `Content-Type` value to a `DataFormat`.
+    ///
+    /// Accepts values with parameters (e.g. `"text/turtle; charset=utf-8"`),
+    /// matching only on the media type. Used to pick a parser for the body
+    /// returned when dereferencing a URI, based on the server's response
+    /// rather than a value the caller specified up front.
+    pub fn from_mime_type(content_type: &str) -> Option<DataFormat> {
+        let media_type = content_type
+            .split(';')
+            .next()
+            .unwrap_or(content_type)
+            .trim()
+            .to_ascii_lowercase();
+        match media_type.as_str() {
+            "text/turtle" | "application/x-turtle" => Some(DataFormat::Turtle),
+            "application/n-triples" | "text/plain" => Some(DataFormat::NTriples),
+            "application/rdf+xml" | "application/xml" | "text/xml" => Some(DataFormat::RdfXml),
+            "application/trig" => Some(DataFormat::TriG),
+            "text/n3" | "text/rdf+n3" => Some(DataFormat::N3),
+            "application/n-quads" => Some(DataFormat::NQuads),
+            "application/ld+json" | "application/json" => Some(DataFormat::JsonLd),
+            _ => None,
+        }
+    }
+}
+
 // ============================================================================
 // DataReaderMode
 // ============================================================================

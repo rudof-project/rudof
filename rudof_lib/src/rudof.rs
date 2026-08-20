@@ -8,7 +8,7 @@ use crate::{
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
         },
         data::builders::{
-            ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, ResetDataBuilder,
+            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, ResetDataBuilder,
             ResetServiceDescriptionBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder,
             ShowNodeInfoBuilder,
         },
@@ -292,6 +292,21 @@ impl Rudof {
     /// Returns a `ListEndpointsBuilder` that enumerates known endpoints.
     pub fn list_endpoints<'a>(&'a mut self) -> ListEndpointsBuilder<'a> {
         ListEndpointsBuilder::new(self)
+    }
+
+    /// Returns whether RDF or PG data is currently loaded in `Rudof`'s state.
+    pub fn has_data(&self) -> bool {
+        self.data.is_some()
+    }
+
+    /// Returns a `DereferenceBuilder` to fetch `uri` over HTTP(S) — content-negotiating
+    /// for an RDF serialization and following redirects — and merge the result into
+    /// `Rudof`'s state.
+    ///
+    /// # Parameters
+    /// - `uri`: the absolute IRI to dereference.
+    pub fn dereference<'a>(&'a mut self, uri: &'a str) -> DereferenceBuilder<'a> {
+        DereferenceBuilder::new(self, uri)
     }
 
     // ========================================================================

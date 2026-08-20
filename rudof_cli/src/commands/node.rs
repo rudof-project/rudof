@@ -48,6 +48,10 @@ impl Command for NodeCommand {
                 loading = loading.with_base(base);
             }
             loading.execute()?;
+        } else if !ctx.rudof.has_data()
+            && let Some(uri) = dereferenceable_uri(&self.args.node)
+        {
+            ctx.rudof.dereference(uri).with_reader_mode(&reader_mode).execute()?;
         }
 
         let iri_mode = if self.args.strict_iris {
@@ -71,5 +75,24 @@ impl Command for NodeCommand {
         showing_node_info.execute()?;
 
         Ok(())
+    }
+}
+
+/// Extracts an absolute `http(s)://` IRI from a node selector string, if it
+/// names one directly (optionally wrapped in `<>`), so `node` can fall back
+/// to dereferencing it when no data or endpoint was given.
+///
+/// Prefixed names (`ex:Q80`) and blank nodes (`_:b1`) return `None` — there
+/// is nothing to fetch without data already loaded to resolve the prefix.
+fn dereferenceable_uri(node: &str) -> Option<&str> {
+    let trimmed = node.trim();
+    let inner = trimmed
+        .strip_prefix('<')
+        .and_then(|rest| rest.strip_suffix('>'))
+        .unwrap_or(trimmed);
+    if inner.starts_with("http://") || inner.starts_with("https://") {
+        Some(inner)
+    } else {
+        None
     }
 }

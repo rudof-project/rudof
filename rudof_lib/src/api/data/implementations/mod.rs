@@ -1,3 +1,4 @@
+mod dereference;
 mod list_endpoints;
 mod load_data;
 mod load_service_description;
@@ -7,6 +8,7 @@ mod serialize_data;
 mod serialize_service_description;
 mod show_node_info;
 
+pub use dereference::dereference;
 pub use list_endpoints::list_endpoints;
 pub use load_data::load_data;
 #[cfg(feature = "qlever")]

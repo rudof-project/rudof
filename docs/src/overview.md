@@ -1,11 +1,15 @@
 # Overview
 
 `rudof` is a tool to help describe and validate Knowledge Graphs. 
-It supports Graph data like [RDF](https://www.w3.org/RDF/) and [RDF 1.2](https://www.w3.org/TR/rdf12-concepts/), 
- as well as Labeled Property Graphs as well as Query languages like [SPARQL](https://www.w3.org/TR/sparql11-query/) and [SPARQL 1.2](https://www.w3.org/TR/sparql12-query/).
 
-It implements several technologies for describing and validating Knowledge Graph data like
- [ShEx](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) for RDF data as well as [PG-Schema](https://arxiv.org/abs/2211.10962) for Property Graphs.
+
+It supports:
+
+- [RDF](https://www.w3.org/RDF/) and [RDF 1.2](https://www.w3.org/TR/rdf12-concepts/)
+- [Labeled Property Graph](https://en.wikipedia.org/wiki/Property_graph) data with [YarsPG](https://github.com/lszeremeta/yarspg) syntax.
+- Query languages: [SPARQL](https://www.w3.org/TR/sparql11-query/) and [SPARQL 1.2](https://www.w3.org/TR/sparql12-query/).
+- RDF validation languages: [ShEx](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) 
+- Labeled property graph schemas: [PG-Schema](https://arxiv.org/abs/2211.10962).
 
 The library is implemented in [Rust](https://www.rust-lang.org/) and it also provides [Python bindings](https://pyrudof.readthedocs.io/en/stable/), a [Rust API](https://docs.rs/rudof_lib/) and an interactive [Shell](https://rudof-project.github.io/rudof/cli_usage/shell.html).
 
