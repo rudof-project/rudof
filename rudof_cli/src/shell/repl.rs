@@ -59,16 +59,16 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
                         if let Err(err) = dispatch(line, ctx) {
                             writeln!(std::io::stderr(), "Error: {err:#}")?;
                         }
-                    }
+                    },
                 }
                 ctx.writer.flush()?;
-            }
+            },
             Err(ReadlineError::Interrupted) => continue,
             Err(ReadlineError::Eof) => break,
             Err(err) => {
                 writeln!(std::io::stderr(), "Readline error: {err}")?;
                 break;
-            }
+            },
         }
     }
 
@@ -110,7 +110,7 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
         Err(err) => {
             writeln!(ctx.writer, "{err}")?;
             return Ok(());
-        }
+        },
     };
 
     if matches!(parsed, CliCommand::Shell(_)) {
@@ -213,7 +213,17 @@ fn endpoint_url(ctx: &CommandContext, name: &str) -> Option<String> {
 /// only the state owned by the matching `rudof` subcommand, leaving
 /// everything else untouched.
 const RESET_TARGETS: &[&str] = &[
-    "data", "shex", "shacl", "pgschema", "shapemap", "dctap", "service", "query", "typemap", "rdf-config", "endpoint",
+    "data",
+    "shex",
+    "shacl",
+    "pgschema",
+    "shapemap",
+    "dctap",
+    "service",
+    "query",
+    "typemap",
+    "rdf-config",
+    "endpoint",
 ];
 
 fn handle_reset(args: &[String], ctx: &mut CommandContext) -> Result<()> {
@@ -368,7 +378,10 @@ fn print_help(ctx: &mut CommandContext) -> Result<()> {
     writeln!(ctx.writer, "Shell-only commands:")?;
     writeln!(ctx.writer, "  help, ?        Show this help message")?;
     writeln!(ctx.writer, "  exit, quit     Exit the shell")?;
-    writeln!(ctx.writer, "  !<command>     Run <command> in the system shell (e.g. !ls, !code file.shex)")?;
+    writeln!(
+        ctx.writer,
+        "  !<command>     Run <command> in the system shell (e.g. !ls, !code file.shex)"
+    )?;
     writeln!(
         ctx.writer,
         "  endpoint [NAME]  Show the active SPARQL endpoint, or activate a registered one"

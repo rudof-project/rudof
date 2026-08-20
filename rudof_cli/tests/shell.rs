@@ -69,7 +69,10 @@ fn shell_prints_banner_and_exits_cleanly_on_exit() {
     let out = run_shell("exit\n");
     // The ASCII art banner is printed on startup, before the tip line.
     assert!(out.stdout.contains(r"|_|    \____|\____|\___/|_|"));
-    assert!(out.stdout.contains("Type 'help' for available commands, 'exit' to quit."));
+    assert!(
+        out.stdout
+            .contains("Type 'help' for available commands, 'exit' to quit.")
+    );
     assert_eq!(out.code, 0);
 }
 
@@ -217,7 +220,10 @@ fn shell_output_flag_redirects_to_file_instead_of_printing() {
 
     assert!(out_file.exists(), "expected {} to be created", out_file.display());
     let written = std::fs::read_to_string(&out_file).expect("failed to read redirected output file");
-    assert!(written.contains("Alice"), "expected the data in the output file, got:\n{written}");
+    assert!(
+        written.contains("Alice"),
+        "expected the data in the output file, got:\n{written}"
+    );
 
     // The command's actual output went to the file, not the terminal.
     assert!(
@@ -540,7 +546,10 @@ fn shell_endpoint_with_no_active_endpoint_points_at_the_command() {
 #[test]
 fn shell_endpoint_activates_a_registered_endpoint_and_reports_it_back() {
     let out = run_shell("endpoint wikidata\nexit\n");
-    assert!(out.stdout.contains("Active endpoint: wikidata (https://query.wikidata.org/sparql)"));
+    assert!(
+        out.stdout
+            .contains("Active endpoint: wikidata (https://query.wikidata.org/sparql)")
+    );
     assert_eq!(out.code, 0);
 }
 
@@ -631,7 +640,9 @@ fn shell_reset_shex_also_drops_the_compiled_validator() {
 #[test]
 fn shell_reset_bare_clears_everything() {
     let data = fixture("shell_data.ttl");
-    let out = run_shell(&format!("data {data}\nendpoint wikidata\nreset\ndata\nendpoint\nexit\n"));
+    let out = run_shell(&format!(
+        "data {data}\nendpoint wikidata\nreset\ndata\nendpoint\nexit\n"
+    ));
 
     assert!(out.stderr.contains("No data loaded"));
     assert!(out.stdout.contains("No endpoint is currently active."));
@@ -654,7 +665,9 @@ fn shell_reset_all_is_an_alias_for_bare_reset() {
 fn shell_reset_accepts_multiple_targets() {
     let data = fixture("shell_data.ttl");
     let schema = fixture("shell_schema.shex");
-    let out = run_shell(&format!("data {data}\nshex {schema}\nreset data shex\ndata\nshex\nexit\n"));
+    let out = run_shell(&format!(
+        "data {data}\nshex {schema}\nreset data shex\ndata\nshex\nexit\n"
+    ));
 
     assert!(out.stdout.contains("Reset: data, shex."));
     assert!(out.stderr.contains("No data loaded"));

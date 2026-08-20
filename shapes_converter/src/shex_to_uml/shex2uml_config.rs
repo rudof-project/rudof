@@ -186,7 +186,10 @@ mod tests {
         unsafe {
             std::env::remove_var("PLANTUML");
         }
-        assert_eq!(super::discover_puml_path(None), std::path::PathBuf::from("plantuml.jar"));
+        assert_eq!(
+            super::discover_puml_path(None),
+            std::path::PathBuf::from("plantuml.jar")
+        );
 
         // SAFETY: test-only mutation of the process environment, scoped to
         // this single test.
