@@ -1,22 +1,33 @@
 # Overview
 
-`rudof` is a library that implements [Shape Expressions](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) and other technologies in the [RDF](https://www.w3.org/RDF/) ecosystem.
-The library is implemented in [Rust](https://www.rust-lang.org/) and it also provides [Python bindings](https://pyrudof.readthedocs.io/en/stable/).
+`rudof` is a tool to help describe and validate Knowledge Graphs. 
+It supports Graph data like [RDF](https://www.w3.org/RDF/) and [RDF 1.2](https://www.w3.org/TR/rdf12-concepts/), 
+ as well as Labeled Property Graphs as well as Query languages like [SPARQL](https://www.w3.org/TR/sparql11-query/) and [SPARQL 1.2](https://www.w3.org/TR/sparql12-query/).
 
-`rudof` can be used as a command line tool or can be embedded as a library using [`cargo`](https://crates.io/).
-It can be used to validate RDF data represented with different syntaxes like Turtle, NTriples, to name a few.
-As well as RDF data available through SPARQL endpoints like Wikidata.
-`rudof` can also be used to convert between different RDF data validation technologies (like ShEx, SHACL, or DCTAP), and to generate UML like visualizations and HTML views.
+It implements several technologies for describing and validating Knowledge Graph data like
+ [ShEx](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) for RDF data as well as [PG-Schema](https://arxiv.org/abs/2211.10962) for Property Graphs.
 
-The main contributions of `rudof` are:
+The library is implemented in [Rust](https://www.rust-lang.org/) and it also provides [Python bindings](https://pyrudof.readthedocs.io/en/stable/), a [Rust API](https://docs.rs/rudof_lib/) and an interactive [Shell](https://rudof-project.github.io/rudof/cli_usage/shell.html).
 
-- We publish binaries in Linux, Windows and Apple which can be downloaded [here](https://github.com/weso/shex-rs/releases/).
-- The source code is available in the [Github repository](https://github.com/rudof-project/rudof).
-- A [Paper about `rudof`](assets/pdf/rudof_demo.pdf) was presented at [International Semantic Web Conference](https://iswc2024.semanticweb.org/event/3715c6fc-e2d7-47eb-8c01-5fe4ac589a52/summary) (Baltimore, USA, October 2024) in the Demos and Posters session.
+`rudof` can be used to validate RDF data represented with different syntaxes like Turtle, NTriples, etc.
+   as well as RDF data available through SPARQL endpoints like Wikidata.
+It can also be used to convert between different RDF data validation technologies (like ShEx, SHACL, or DCTAP), and to generate UML like visualizations and HTML views.
+
+More links about `rudof`:
+
+- [Linux, Windows and macOS binaries](https://github.com/weso/shex-rs/releases/).
+- [Source code in Github repository](https://github.com/rudof-project/rudof).
 - The [List of issues](https://github.com/rudof-project/rudof/issues).
 - The [Discussions](https://github.com/rudof-project/rudof/discussions) page.
 - A set of [How-to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides) is also published.
 - The collection of [Frequently-Asked-Questions](https://github.com/rudof-project/rudof/wiki/FAQ).
+
+## Publications and tutorials
+
+- [rudof-MCP: A Model Context Protocol Server for Semantic Web Operations](https://labra.weso.es/publication/2026_mcp_rudof/) , Samuel Bustamante Larriet, Diego Martín Fernández, Álvaro García Fernández, Daniel Fernández Álvarez, Jose Emilio Labra Gayo, Extended Semantic Web Conference, ESWC26, Posters and Demos - 2026
+- [PG-Schema with Property Constraints validator in Rudof](https://labra.weso.es/publication/2026_rudof_pgschema_pc/), Jose Emilio Labra Gayo, Dominik Tomaszuk, Diego Martín Fernández, Samuel Bustamante Larriet, Álvaro García Fernández, Daniel Fernández Álvarez, Knowledge Capture and Knowledge Representation Conference, KCAP25, Posters and Demos - 2025
+- [Introduction to `rudof for Wikibase users](https://docs.google.com/presentation/d/1K7lDn3Kln3IYku_m0dUxz-_ERfMwzf8_vPQCETXZCGQ). [Wikibase stakeholders Group meeting](https://notepad.rhizome.org/wbsg-2026-07-02). Video recording of the presentation is available [here](https://video.rhizome.org/w/kJXNskK6xusKU1xaqvGfak).
+- A [rudof: A Rust Library for handling RDF data models and Shapes](https://labra.weso.es/publication/2024_rudof_demo/) was presented at [International Semantic Web Conference](https://iswc2024.semanticweb.org/event/3715c6fc-e2d7-47eb-8c01-5fe4ac589a52/summary) (Baltimore, USA, October 2024) in the Demos and Posters session.
 
 ## Modules
 
