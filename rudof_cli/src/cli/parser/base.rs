@@ -1,7 +1,7 @@
 use crate::cli::parser::{
     CompareArgs, CompletionArgs, ConfigArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, MaterializeArgs, McpArgs,
     NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs, ShaclArgs, ShaclValidateArgs,
-    ShapemapArgs, ShexArgs, ShexValidateArgs, ValidateArgs,
+    ShapemapArgs, ShellArgs, ShexArgs, ShexValidateArgs, ValidateArgs,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
@@ -72,6 +72,8 @@ pub enum Command {
     Completion(CompletionArgs),
     /// Dump the effective configuration rudof is using as TOML
     Config(ConfigArgs),
+    /// Start an interactive shell (REPL) session
+    Shell(ShellArgs),
 }
 
 // ============================================================================

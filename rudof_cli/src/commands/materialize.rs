@@ -26,16 +26,19 @@ impl Command for MaterializeCommand {
         let reader_mode = self.args.reader_mode.into();
         let result_format = self.args.result_format.into();
 
-        // 1. Load ShEx schema
-        let mut shex_loading = ctx
-            .rudof
-            .load_shex_schema(&self.args.schema)
-            .with_shex_schema_format(&schema_format)
-            .with_reader_mode(&reader_mode);
-        if let Some(base) = self.args.base.as_deref() {
-            shex_loading = shex_loading.with_base(base);
+        // 1. Load ShEx schema (reuse the one already loaded in the session
+        //    when `--schema` is omitted).
+        if let Some(schema) = &self.args.schema {
+            let mut shex_loading = ctx
+                .rudof
+                .load_shex_schema(schema)
+                .with_shex_schema_format(&schema_format)
+                .with_reader_mode(&reader_mode);
+            if let Some(base) = self.args.base.as_deref() {
+                shex_loading = shex_loading.with_base(base);
+            }
+            shex_loading.execute()?;
         }
-        shex_loading.execute()?;
 
         // 2. Load MapState from file (if provided)
         if let Some(map_state_path) = &self.args.map_state {

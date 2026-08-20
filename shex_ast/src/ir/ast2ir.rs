@@ -1108,7 +1108,10 @@ fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(value_set.show_qualified(prefixmap).as_str())
-            .with_kind(CondKind::ValueSet(value_set)),
+            .with_kind(CondKind::ValueSet {
+                vs: value_set,
+                prefixmap: prefixmap.clone(),
+            }),
     )
 }
 

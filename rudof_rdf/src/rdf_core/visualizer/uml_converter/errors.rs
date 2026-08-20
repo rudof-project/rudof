@@ -12,10 +12,22 @@ pub enum UmlConverterError {
     /// - `path`: The paths that were searched for the PlantUML jar file
     /// - `error`: Detailed description of why the file could not be found
     #[error(
-        "No PlantUML jar file found\nThe environment variable `PLANTUML` should point
-    to a plantuml.jar file\nSearching jar file in: {path}: {error}"
+        "No PlantUML jar file found\nPLANTUML points to: {plantuml_env}\nShould point to a plantuml.jar file\nSearching jar file in: {path}\nError: {error}"
     )]
-    NoPlantUMLFile { path: String, error: String },
+    NoPlantUMLFile2 {
+        path: String,
+        error: String,
+        plantuml_env: String,
+    },
+
+    #[error(
+        "PlantUML jar file not found (2)\nPLANTUML points to: {plantuml_env}\nShould point to a plantuml.jar file\nSearching jar file in: {path}\nError: {error}"
+    )]
+    NoPlantUMLFile {
+        path: String,
+        error: String,
+        plantuml_env: String,
+    },
 
     /// Error when Java is not installed or not found in the system PATH.
     ///

@@ -507,6 +507,11 @@ impl Rudof {
         ResetQueryResultsBuilder::new(self)
     }
 
+    /// Returns the results of the most recent `run_query()` call, if any.
+    pub fn query_results(&self) -> Option<&QueryResult> {
+        self.query_results.as_ref()
+    }
+
     // ========================================================================
     // ComparisonOperations methods
     // ========================================================================
@@ -681,12 +686,14 @@ impl Rudof {
     /// # Parameters
     /// - `schema`: input specification for the schema (e.g., ShEx file)
     /// - `schema_format`: format of the provided schema
-    /// - `number_entities`: approximate number of target entities to generate
+    /// - `number_entities`: approximate number of target entities to generate. `None` defers to
+    ///   the `entity_count` set by [`GenerateDataBuilder::with_config_file`], or the generator's
+    ///   own default if neither is given.
     pub fn generate_data<'a>(
         &'a self,
         schema: &'a InputSpec,
         schema_format: &'a GenerationSchemaFormat,
-        number_entities: usize,
+        number_entities: Option<usize>,
     ) -> GenerateDataBuilder<'a> {
         GenerateDataBuilder::new(self, schema, schema_format, number_entities)
     }

@@ -1,0 +1,7 @@
+@prefix sd: <http://www.w3.org/ns/sparql-service-description#> .
+@prefix ent: <http://www.w3.org/ns/entailment/> .
+
+<http://example.org/sparql> a sd:Service ;
+    sd:endpoint <http://example.org/sparql> ;
+    sd:supportedLanguage sd:SPARQL11Query ;
+    sd:defaultEntailmentRegime ent:Simple .

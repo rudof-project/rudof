@@ -4,7 +4,13 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 /// Main configuration structure for the data generator
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Every field, and every field of the structs it nests, has a sensible
+/// default (see the respective `Default` impls), so a config file only
+/// needs to set what it wants to override — down to an empty file, which
+/// is equivalent to [`GeneratorConfig::default()`].
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct GeneratorConfig {
     pub generation: GenerationConfig,
     pub field_generators: FieldGeneratorConfig,
@@ -14,6 +20,7 @@ pub struct GeneratorConfig {
 
 /// Configuration for data generation parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct GenerationConfig {
     /// Number of entities to generate
     pub entity_count: usize,
@@ -28,36 +35,44 @@ pub struct GenerationConfig {
 
     // --- Coherence Control Parameters ---
     /// Probability (0.0 to 1.0) that a property will be included
-    #[serde(default = "default_property_fill_probability")]
     pub property_fill_probability: f64,
 
     /// Whether to ignore minimum cardinality constraints (treat minCount as 0)
-    #[serde(default)]
     pub ignore_min_cardinality: bool,
 
     /// Maximum number of properties per instance (0 = unlimited)
-    #[serde(default)]
     pub max_properties_per_instance: usize,
 
     /// Strategy for selecting properties when count is limited
-    #[serde(default)]
     pub property_selection_strategy: PropertySelectionStrategy,
 
     /// Variance in property count (0.0 to 1.0)
-    #[serde(default)]
     pub property_count_variance: f64,
 
     /// List of properties to explicitly exclude
-    #[serde(default)]
     pub excluded_properties: Vec<String>,
 
     /// Per-type coherence settings overrides
-    #[serde(default)]
     pub type_overrides: HashMap<String, TypeOverrideConfig>,
 }
 
-fn default_property_fill_probability() -> f64 {
-    1.0
+impl Default for GenerationConfig {
+    fn default() -> Self {
+        Self {
+            entity_count: 1000,
+            seed: None,
+            entity_distribution: EntityDistribution::default(),
+            cardinality_strategy: CardinalityStrategy::default(),
+            schema_format: None,
+            property_fill_probability: 1.0,
+            ignore_min_cardinality: false,
+            max_properties_per_instance: 0,
+            property_selection_strategy: PropertySelectionStrategy::default(),
+            property_count_variance: 0.0,
+            excluded_properties: Vec::new(),
+            type_overrides: HashMap::new(),
+        }
+    }
 }
 
 /// Strategy for selecting which properties to keep when limiting count
@@ -88,9 +103,16 @@ pub enum SchemaFormat {
 }
 
 /// How to distribute entities across different shapes
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+///
+/// In TOML/JSON, the payload-carrying variants are externally tagged, e.g.:
+/// ```toml
+/// [generation.entity_distribution]
+/// Weighted = { "http://example.org/Person" = 0.5, "http://example.org/Course" = 0.5 }
+/// ```
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub enum EntityDistribution {
     /// Equal distribution across all shapes
+    #[default]
     Equal,
     /// Weighted distribution based on shape importance
     Weighted(HashMap<String, f64>),
@@ -99,7 +121,7 @@ pub enum EntityDistribution {
 }
 
 /// Strategy for handling cardinalities in relationships
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum CardinalityStrategy {
     /// Use minimum cardinalities
     Minimum,
@@ -108,23 +130,24 @@ pub enum CardinalityStrategy {
     /// Random within cardinality bounds
     Random,
     /// Balanced approach favoring realistic distributions
+    #[default]
     Balanced,
 }
 
 /// Configuration for field value generators
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct FieldGeneratorConfig {
     /// Default generator settings
     pub default: DefaultFieldConfig,
     /// Per-datatype specific configurations
-    #[serde(default)]
     pub datatypes: HashMap<String, DatatypeConfig>,
     /// Per-property specific configurations
-    #[serde(default)]
     pub properties: HashMap<String, PropertyConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct DefaultFieldConfig {
     /// Locale for text generation (e.g., "en", "es", "fr")
     pub locale: String,
@@ -132,11 +155,21 @@ pub struct DefaultFieldConfig {
     pub quality: DataQuality,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+impl Default for DefaultFieldConfig {
+    fn default() -> Self {
+        Self {
+            locale: "en".to_string(),
+            quality: DataQuality::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
 pub enum DataQuality {
-    Low,    // Simple random data
+    Low, // Simple random data
+    #[default]
     Medium, // Realistic patterns
-    High,   // Complex realistic data with correlations
+    High, // Complex realistic data with correlations
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -159,6 +192,7 @@ pub struct PropertyConfig {
 
 /// Output configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct OutputConfig {
     /// Output file path
     pub path: PathBuf,
@@ -175,8 +209,22 @@ pub struct OutputConfig {
     pub parallel_file_count: usize,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+impl Default for OutputConfig {
+    fn default() -> Self {
+        Self {
+            path: PathBuf::from("output.ttl"),
+            format: OutputFormat::default(),
+            compress: false,
+            write_stats: true,
+            parallel_writing: false,
+            parallel_file_count: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
 pub enum OutputFormat {
+    #[default]
     Turtle,
     NTriples,
     // NOTE: Only Turtle and NTriples are supported.
@@ -185,6 +233,7 @@ pub enum OutputFormat {
 
 /// Parallelization configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ParallelConfig {
     /// Number of worker threads (None = auto-detect)
     pub worker_threads: Option<usize>,
@@ -196,47 +245,13 @@ pub struct ParallelConfig {
     pub parallel_fields: bool,
 }
 
-impl Default for GeneratorConfig {
+impl Default for ParallelConfig {
     fn default() -> Self {
         Self {
-            generation: GenerationConfig {
-                entity_count: 1000,
-                seed: None,
-                entity_distribution: EntityDistribution::Equal,
-                cardinality_strategy: CardinalityStrategy::Balanced,
-                schema_format: None, // Auto-detect
-
-                // Coherence defaults (High Coherence)
-                property_fill_probability: 1.0,
-                ignore_min_cardinality: false,
-                max_properties_per_instance: 0,
-                property_selection_strategy: PropertySelectionStrategy::All,
-                property_count_variance: 0.0,
-                excluded_properties: Vec::new(),
-                type_overrides: HashMap::new(),
-            },
-            field_generators: FieldGeneratorConfig {
-                default: DefaultFieldConfig {
-                    locale: "en".to_string(),
-                    quality: DataQuality::Medium,
-                },
-                datatypes: HashMap::new(),
-                properties: HashMap::new(),
-            },
-            output: OutputConfig {
-                path: PathBuf::from("output.ttl"),
-                format: OutputFormat::Turtle,
-                compress: false,
-                write_stats: true,
-                parallel_writing: false,
-                parallel_file_count: 0, // 0 means auto-detect optimal count
-            },
-            parallel: ParallelConfig {
-                worker_threads: None,
-                batch_size: 100,
-                parallel_shapes: true,
-                parallel_fields: true,
-            },
+            worker_threads: None,
+            batch_size: 100,
+            parallel_shapes: true,
+            parallel_fields: true,
         }
     }
 }

@@ -2,6 +2,7 @@ use crate::cli::parser::ShaclArgs;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
+use rudof_lib::formats::BackendSpec;
 
 /// Implementation of the `shacl` command.
 ///
@@ -25,6 +26,11 @@ impl Command for ShaclCommand {
     }
 
     /// Executes the Shacl command logic.
+    ///
+    /// With no `data` and no `--shapes`, there is nothing new to load, so
+    /// this just re-serializes whatever SHACL shapes are already loaded in
+    /// the session (useful in the interactive shell, where state persists
+    /// across commands).
     #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let data_format = self.args.data_format.into();
@@ -33,33 +39,38 @@ impl Command for ShaclCommand {
         let result_format = self.args.result_shapes_format.into();
 
         let backend = resolve_backend(&self.args.common);
+        let has_data_source = !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_));
 
-        let mut loading = ctx
-            .rudof
-            .load_data()
-            .with_data_format(&data_format)
-            .with_reader_mode(&reader_mode)
-            .with_backend(backend);
-        if !self.args.data.is_empty() {
-            loading = loading.with_data(&self.args.data);
+        if has_data_source {
+            let mut loading = ctx
+                .rudof
+                .load_data()
+                .with_data_format(&data_format)
+                .with_reader_mode(&reader_mode)
+                .with_backend(backend);
+            if !self.args.data.is_empty() {
+                loading = loading.with_data(&self.args.data);
+            }
+            if let Some(base) = self.args.base_data.as_deref() {
+                loading = loading.with_base(base);
+            }
+            loading.execute()?;
         }
-        if let Some(base) = self.args.base_data.as_deref() {
-            loading = loading.with_base(base);
-        }
-        loading.execute()?;
 
-        let mut loading_schema = ctx
-            .rudof
-            .load_shacl_shapes()
-            .with_shacl_schema_format(&shacl_schema_format)
-            .with_reader_mode(&reader_mode);
-        if let Some(shacl_schema) = &self.args.shapes {
-            loading_schema = loading_schema.with_shacl_schema(shacl_schema);
+        if has_data_source || self.args.shapes.is_some() {
+            let mut loading_schema = ctx
+                .rudof
+                .load_shacl_shapes()
+                .with_shacl_schema_format(&shacl_schema_format)
+                .with_reader_mode(&reader_mode);
+            if let Some(shacl_schema) = &self.args.shapes {
+                loading_schema = loading_schema.with_shacl_schema(shacl_schema);
+            }
+            if let Some(base) = self.args.base_shapes.as_deref() {
+                loading_schema = loading_schema.with_base(base);
+            }
+            loading_schema.execute()?;
         }
-        if let Some(base) = self.args.base_shapes.as_deref() {
-            loading_schema = loading_schema.with_base(base);
-        }
-        loading_schema.execute()?;
 
         ctx.rudof
             .serialize_shacl_shapes(&mut ctx.writer)

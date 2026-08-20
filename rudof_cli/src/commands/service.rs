@@ -24,20 +24,27 @@ impl Command for ServiceCommand {
     }
 
     /// Executes the Service command logic.
+    ///
+    /// With no `--service`, there is nothing new to load, so this just
+    /// re-serializes whatever service description is already loaded in the
+    /// session (useful in the interactive shell, where state persists
+    /// across commands).
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let reader_mode = self.args.reader_mode.into();
         let format = self.args.service_format.into();
         let result_format = self.args.result_service_format.into();
 
-        let mut load_service_description = ctx
-            .rudof
-            .load_service_description(&self.args.service)
-            .with_data_format(&format)
-            .with_reader_mode(&reader_mode);
-        if let Some(base) = &self.args.base_data.as_deref() {
-            load_service_description = load_service_description.with_base(base);
+        if let Some(service) = &self.args.service {
+            let mut load_service_description = ctx
+                .rudof
+                .load_service_description(service)
+                .with_data_format(&format)
+                .with_reader_mode(&reader_mode);
+            if let Some(base) = &self.args.base_data.as_deref() {
+                load_service_description = load_service_description.with_base(base);
+            }
+            load_service_description.execute()?;
         }
-        load_service_description.execute()?;
 
         ctx.rudof
             .serialize_service_description(&mut ctx.writer)

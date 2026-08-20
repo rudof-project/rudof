@@ -24,19 +24,30 @@ impl Command for PgschemaValidateCommand {
     }
 
     /// Executes the PgSchema Validate command logic.
+    ///
+    /// With no `data`/`--schema`/`--typemap`, there is nothing new to load
+    /// for that piece: this reuses whatever is already loaded in the
+    /// session (useful in the interactive shell, where state persists
+    /// across commands).
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let data_format = self.args.data_format.into();
         let result_format = self.args.result_validation_format.into();
 
-        ctx.rudof
-            .load_data()
-            .with_data(&self.args.data)
-            .with_data_format(&data_format)
-            .execute()?;
+        if !self.args.data.is_empty() {
+            ctx.rudof
+                .load_data()
+                .with_data(&self.args.data)
+                .with_data_format(&data_format)
+                .execute()?;
+        }
 
-        ctx.rudof.load_pg_schema(&self.args.schema).execute()?;
+        if let Some(schema) = &self.args.schema {
+            ctx.rudof.load_pg_schema(schema).execute()?;
+        }
 
-        ctx.rudof.load_typemap(&self.args.typemap).execute()?;
+        if let Some(typemap) = &self.args.typemap {
+            ctx.rudof.load_typemap(typemap).execute()?;
+        }
 
         ctx.rudof.validate_pgschema().execute()?;
 

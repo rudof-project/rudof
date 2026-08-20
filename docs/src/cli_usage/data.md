@@ -110,8 +110,4 @@ See the [RDF backend (`--backend`) reference](./backend.md) for full documentati
 
 ## RDF Config file
 
-The parameter `--config-file`  (`-c` in short form) can be used to pass a configuration file in [TOML](https://toml.io/) format.
-
-The fields that it can contain are:
-
-- base (IRI): Default base declaration to resulve relative IRIs
+`--config-file` (`-c` in short form) passes a [TOML](https://toml.io/) configuration file, including the `[rdf]` section (base IRI, registered SPARQL endpoints). See [Configuration](../general/configuration.md) and [config](./config.md).

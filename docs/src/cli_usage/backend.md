@@ -1,6 +1,6 @@
 # The `--backend` flag
 
-The `--backend` flag controls where RDF data is loaded and how it is queried. It is available on all commands that consume RDF data: `data`, `node`, `query`, `shacl`, `shacl-validate` and `shex-validate`.
+The `--backend` flag controls where RDF data is loaded and how it is queried. It is available on all commands that consume RDF data: `data`, `node`, `query`, `shacl`, `shacl-validate`, `shex-validate` and `validate`.
 
 ## Accepted values
 
@@ -41,6 +41,8 @@ rudof node -n :a --endpoint https://my.sparql.server/sparql
 ```
 
 `--endpoint` and `--backend` are mutually exclusive, passing both is rejected at the command line.
+
+Inside `rudof shell`, `endpoint <NAME>` activates a registered endpoint once for the rest of the session instead of repeating `-e` on every line, see [shell](./shell.md).
 
 ## The `qlever` backend
 

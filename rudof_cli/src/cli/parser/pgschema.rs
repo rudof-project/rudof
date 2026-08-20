@@ -10,9 +10,9 @@ pub struct PgschemaArgs {
         short = 's',
         long = "schema",
         value_name = "INPUT",
-        help = "Schema, FILE, URI or - for stdin"
+        help = "Schema, FILE, URI or - for stdin. If omitted, shows the currently loaded schema"
     )]
-    pub schema: InputSpec,
+    pub schema: Option<InputSpec>,
 
     #[arg(
         short = 'f',

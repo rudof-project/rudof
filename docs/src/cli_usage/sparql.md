@@ -91,7 +91,7 @@ rudof query -q wikidata.sparql -e wikidata
 
 ## Registered endpoints
 
-`rudof` contains a list of registered endpoints like wikidata that can be invoked by their name.
+`rudof` registers `wikidata`, `dbpedia` and `uniprot` by default; `-e <NAME>` looks them up by name instead of a full URL. Run `rudof config` to see the full list, including any endpoints added in your own TOML config. Inside `rudof shell`, `endpoint <NAME>` activates one for the rest of the session, see [shell](./shell.md).
 
 ## Selecting the RDF backend
 

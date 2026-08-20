@@ -13,7 +13,7 @@ pub async fn generate_data(
     result_generation_format: Option<&DataFormat>,
     output: Option<&PathBuf>,
     config_file: Option<&PathBuf>,
-    number_entities: usize,
+    number_entities: Option<usize>,
     seed: Option<u64>,
     parallel: Option<usize>,
 ) -> Result<()> {
@@ -66,7 +66,7 @@ fn init_defaults(
     output: Option<&PathBuf>,
     seed: Option<u64>,
     parallel: Option<usize>,
-    entity_count: usize,
+    entity_count: Option<usize>,
 ) -> Result<(GeneratorConfig, PathBuf)> {
     let mut config = if let Some(config_path) = config_file {
         if config_path.extension().and_then(|s| s.to_str()) == Some("toml") {
@@ -80,7 +80,9 @@ fn init_defaults(
         GeneratorConfig::default()
     };
 
-    config.generation.entity_count = entity_count;
+    if let Some(entity_count) = entity_count {
+        config.generation.entity_count = entity_count;
+    }
     if let Some(output_path) = output {
         config.output.path = output_path.clone();
     }

@@ -1,9 +1,9 @@
 use crate::cli::parser::ShexValidateArgs;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use rudof_lib::Rudof;
-use rudof_lib::formats::IriNormalizationMode;
+use rudof_lib::formats::{BackendSpec, IriNormalizationMode};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 
@@ -51,33 +51,30 @@ impl Command for ShexValidateCommand {
         }
 
         let backend = resolve_backend(&self.args.common);
+        let has_data_source = !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_));
 
-        let mut loading = ctx
-            .rudof
-            .load_data()
-            .with_data_format(&data_format)
-            .with_reader_mode(&reader_mode)
-            .with_backend(backend);
-        if !self.args.data.is_empty() {
-            loading = loading.with_data(&self.args.data);
+        if has_data_source {
+            let mut loading = ctx
+                .rudof
+                .load_data()
+                .with_data_format(&data_format)
+                .with_reader_mode(&reader_mode)
+                .with_backend(backend);
+            if !self.args.data.is_empty() {
+                loading = loading.with_data(&self.args.data);
+            }
+            if let Some(base) = self.args.base_data.as_deref() {
+                loading = loading.with_base(base);
+            }
+            loading.execute()?;
         }
-        if let Some(base) = self.args.base_data.as_deref() {
-            loading = loading.with_base(base);
-        }
-        loading.execute()?;
 
         if let Some(compiled_schema) = self.args.compiled_schema.as_ref() {
             ctx.rudof
                 .load_shex_schema_precompiled(compiled_schema)
                 .with_reader_mode(&reader_mode)
                 .execute()?;
-        } else {
-            let schema = self
-                .args
-                .schema
-                .as_ref()
-                .ok_or_else(|| anyhow!("--schema is required for shex-validate"))?;
-
+        } else if let Some(schema) = self.args.schema.as_ref() {
             let mut shex_schema_loading = ctx
                 .rudof
                 .load_shex_schema(schema)
@@ -96,6 +93,9 @@ impl Command for ShexValidateCommand {
                 ctx.rudof.compile_shex_schema_to_file(&mut writer).execute()?;
             }
         }
+        // Neither `--schema` nor `--compiled-schema` given: reuse whatever
+        // ShEx schema is already loaded in the session (or fail below with
+        // a clear "no schema loaded" error if there isn't one).
 
         if let Some(shapemap) = &self.args.shapemap {
             let mut shapemap_loading = ctx.rudof.load_shapemap(shapemap);

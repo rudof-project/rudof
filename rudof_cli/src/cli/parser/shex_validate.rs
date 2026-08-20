@@ -18,8 +18,7 @@ pub struct ShexValidateArgs {
         short = 's',
         long = "schema",
         value_name = "INPUT",
-        help = "Schema file name, URI or - (for stdin)",
-        required_unless_present_any = ["list_external_resolvers", "compiled_schema"],
+        help = "Schema file name, URI or - (for stdin). If omitted, reuses the currently loaded schema",
         conflicts_with = "compiled_schema"
     )]
     pub schema: Option<InputSpec>,

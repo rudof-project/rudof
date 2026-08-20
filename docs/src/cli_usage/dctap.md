@@ -57,26 +57,23 @@ The general format of the DCTAP subcommand is:
 
 ```sh
 ❯ rudof dctap --help
-Show information and process DCTAP files
-
-Usage: rudof dctap [OPTIONS] --source-file <DCTap source file>
+Usage: rudof dctap [OPTIONS]
 
 Options:
-  -s, --source-file <DCTap source file>
-
+  -s, --source-file <FILE>      DCTap source file. If omitted, shows the currently loaded DCTap
   -f, --format <DCTap file format>
           [default: csv] [possible values: csv, xlsx, xlsb, xlsm, xls]
   -r, --result-format <Ouput results format>
           [default: internal] [possible values: internal, json]
   -c, --config-file <Config file name>
-          Config file path, if unset it assumes default config
+          Config file name
   -o, --output-file <Output file name, default = terminal>
-
       --force-overwrite
-
   -h, --help
           Print help
 ```
+
+`--source-file` is optional: a bare `rudof dctap` shows the DCTap already loaded in the current session (relevant inside `rudof shell`).
 
 ## DCTAP Configuration file
 

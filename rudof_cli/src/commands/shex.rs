@@ -25,21 +25,28 @@ impl Command for ShexCommand {
     }
 
     /// Executes the ShEx command.
+    ///
+    /// With no `--schema`, there is nothing new to load, so this just
+    /// re-serializes whatever schema is already loaded in the session
+    /// (useful in the interactive shell, where state persists across
+    /// commands).
     #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let schema_format = self.args.schema_format.into();
         let reader_mode = self.args.reader_mode.into();
         let result_schema_format = self.args.result_schema_format.into();
 
-        let mut shex_schema_loading = ctx
-            .rudof
-            .load_shex_schema(&self.args.schema)
-            .with_reader_mode(&reader_mode)
-            .with_shex_schema_format(&schema_format);
-        if let Some(base) = &self.args.base {
-            shex_schema_loading = shex_schema_loading.with_base(base);
+        if let Some(schema) = &self.args.schema {
+            let mut shex_schema_loading = ctx
+                .rudof
+                .load_shex_schema(schema)
+                .with_reader_mode(&reader_mode)
+                .with_shex_schema_format(&schema_format);
+            if let Some(base) = &self.args.base {
+                shex_schema_loading = shex_schema_loading.with_base(base);
+            }
+            shex_schema_loading.execute()?;
         }
-        shex_schema_loading.execute()?;
 
         let mut shex_serialization = ctx
             .rudof

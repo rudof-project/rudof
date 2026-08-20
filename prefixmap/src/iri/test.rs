@@ -63,7 +63,7 @@ mod deref_tests {
 
             for local in &locals {
                 iris_ref.push(IriRef::Prefixed { prefix: String::from(""), local: local.clone() });
-                result.push(IriRef::Iri(IriS::new(&format!("https://example.org/{}", local.clone()))?));
+                result.push(IriRef::Iri(IriS::new(&format!("http://example.org/{}", local.clone()))?));
             }
 
             let deref_iri = iris_ref.deref_iri(None, Some(&pm));

@@ -158,19 +158,21 @@ rudof generate -s education.ttl -n 10000 -p 8 -o huge_dataset.ttl
 
 - `-n, --entities <COUNT>` - Number of entities to generate (default: 10)
 - `-o, --output-file <FILE>` - Where to save the generated data (default: stdout)
-- `-r, --result-format <FORMAT>` - Output format: `turtle`, `ntriples`, `rdfxml`, `trig`, `n3`, `nquads` (default: `turtle`)
+- `-r, --result-format <FORMAT>` - Output format: `turtle`, `ntriples`, `rdfxml`, `trig`, `n3`, `nquads`, `jsonld`, `pg` (default: `turtle`)
 
 ### Advanced Options
 
 - `-f, --schema-format <FORMAT>` - Force schema format: `auto`, `shex`, or `shacl` (default: `auto`)
 - `--seed <NUMBER>` - Random seed for reproducible results
 - `-p, --parallel <THREADS>` - Number of CPU threads to use (default: auto)
-- `-c, --config <FILE>` - Use a configuration file for advanced settings
 - `--force-overwrite` - Overwrite output file if it exists
+- `--generator-config <FILE>` - Fine-grained generation settings (TOML or JSON), see below
+
+`rudof generate` also accepts `-c, --config-file <FILE>`, the standard rudof TOML config shared by every subcommand (see [Configuration](../general/configuration.md)). That is a different file from `--generator-config` below and has no effect on generation.
 
 ## Using Configuration Files (Advanced)
 
-For more control, you can use a configuration file:
+`--generator-config <FILE>` loads the fine-grained generation settings below (`[generation]`, `[field_generators]`, `[output]`, `[parallel]`). `--entities`, `--result-format`, `--seed`, `--parallel` and `--output-file` on the command line override the matching setting in the file when both are given; everything else (entity distribution, cardinality strategy, per-field generators, ...) only comes from the file.
 
 ### Basic Configuration File
 
@@ -206,7 +208,7 @@ parallel_fields = true
 
 **Use it:**
 ```sh
-rudof generate -s person.shex -c generator_config.toml
+rudof generate --schema person.shex --generator-config generator_config.toml
 ```
 
 ### Minimal Configuration
@@ -343,7 +345,7 @@ batch_size = 250
 
 **Generate:**
 ```sh
-rudof generate -s courses.ttl -c large_config.toml
+rudof generate --schema courses.ttl --generator-config large_config.toml
 ```
 
 ## Understanding the Output
@@ -450,6 +452,6 @@ rudof generate -s schema.shex -n 50 --seed 3 -o dataset3.ttl
 ## Need More Help?
 
 - Check the examples in the `examples/` directory
-- Look at `data_generator/examples/` for more configuration examples
+- Look at `rudof_generate/examples/` for more configuration examples
 - Read the [FAQ](../references/faq.md) for common questions
 - Join the [discussion](https://github.com/rudof-project/rudof/discussions) for community help

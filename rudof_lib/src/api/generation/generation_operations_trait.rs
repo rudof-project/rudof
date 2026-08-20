@@ -16,7 +16,8 @@ pub trait GenerationOperations {
     /// * `result_generation_format` - Optional output format for the generated RDF data (uses default if None)
     /// * `output` - Optional file path to write the generated data (prints to console if None)
     /// * `config_file` - Optional path to a configuration file for generation settings
-    /// * `number_entities` - Number of entities to generate
+    /// * `number_entities` - Number of entities to generate. `None` leaves the `entity_count`
+    ///   from `config_file` (or the generator's own default) in effect
     /// * `seed` - Optional random seed for reproducible generation (uses random seed if None)
     /// * `parallel` - Optional number of parallel threads (uses 2 by default)
     ///
@@ -30,7 +31,7 @@ pub trait GenerationOperations {
         result_generation_format: Option<&DataFormat>,
         output: Option<&PathBuf>,
         config_file: Option<&PathBuf>,
-        number_entities: usize,
+        number_entities: Option<usize>,
         seed: Option<u64>,
         parallel: Option<usize>,
     ) -> Result<()>;
@@ -44,7 +45,7 @@ impl GenerationOperations for Rudof {
         result_generation_format: Option<&DataFormat>,
         output: Option<&PathBuf>,
         config_file: Option<&PathBuf>,
-        number_entities: usize,
+        number_entities: Option<usize>,
         seed: Option<u64>,
         parallel: Option<usize>,
     ) -> Result<()> {

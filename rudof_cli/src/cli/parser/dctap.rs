@@ -6,8 +6,13 @@ use rudof_lib::formats::InputSpec;
 /// Arguments for the `dctap` command
 #[derive(Debug, Clone, Args)]
 pub struct DCTapArgs {
-    #[arg(short = 's', long = "source-file", value_name = "FILE", help = "DCTap source file")]
-    pub file: InputSpec,
+    #[arg(
+        short = 's',
+        long = "source-file",
+        value_name = "FILE",
+        help = "DCTap source file. If omitted, shows the currently loaded DCTap"
+    )]
+    pub file: Option<InputSpec>,
 
     #[arg(
         short = 'f',
