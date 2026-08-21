@@ -7,7 +7,7 @@ rudof config
 ```
 
 ```toml
-version = "0.3.8"
+version = "0.3.9"
 auto_base = false
 
 [rdf]

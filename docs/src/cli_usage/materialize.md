@@ -68,16 +68,16 @@ Materialize an RDF graph using a ShExJ schema and a MapState file:
 
 ```sh
 $ rudof materialize -s examples/shex/person_map.shexj -f shexj -m examples/shex/person_map_state.json
-_:1 <http://example.org/name> <http://example.org/Alice> ;
-	<http://example.org/email> <mailto:alice@example.org> .
+_:1 <http://example.org/email> <mailto:alice@example.org> ;
+	<http://example.org/name> <http://example.org/Alice> .
 ```
 
 By default the root subject node is a fresh blank node. Use `--node` to provide a named IRI instead:
 
 ```sh
 $ rudof materialize -s examples/shex/person_map.shexj -f shexj -m examples/shex/person_map_state.json -n "http://example.org/alice"
-<http://example.org/alice> <http://example.org/name> <http://example.org/Alice> ;
-	<http://example.org/email> <mailto:alice@example.org> .
+<http://example.org/alice> <http://example.org/email> <mailto:alice@example.org> ;
+	<http://example.org/name> <http://example.org/Alice> .
 ```
 
 ## Choosing the output format
@@ -87,8 +87,8 @@ Supported values include `turtle`, `ntriples`, `rdfxml`, `trig`, `n3`, and `nqua
 
 ```sh
 $ rudof materialize -s examples/shex/person_map.shexj -f shexj -m examples/shex/person_map_state.json -r ntriples
-_:1 <http://example.org/name> <http://example.org/Alice> .
 _:1 <http://example.org/email> <mailto:alice@example.org> .
+_:1 <http://example.org/name> <http://example.org/Alice> .
 ```
 
 ## Writing the result to a file
@@ -104,16 +104,16 @@ rudof materialize -s examples/shex/person_map.shexj -f shexj -m examples/shex/pe
 ```sh
 Materialize an RDF graph from a ShEx schema and Map semantic-action state
 
-Usage: rudof materialize [OPTIONS] --schema <INPUT>
+Usage: rudof materialize [OPTIONS]
 
 Options:
-  -s, --schema <INPUT>          ShEx schema, FILE, URI or - for stdin
+  -s, --schema <INPUT>          ShEx schema, FILE, URI or - for stdin. If omitted, reuses the currently loaded schema
   -f, --schema-format <FORMAT>  ShEx schema format (ShExC, ShExJ, ...), default = ShExC [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
       --reader-mode <MODE>      RDF reader mode (strict or lax) [default: strict] [possible values: lax, strict]
   -b, --base <IRI>              Base IRI for the schema
   -m, --map-state <FILE>        JSON file containing the MapState produced by ShEx validation with Map semantic actions
   -n, --node <IRI>              IRI of the root subject node; a fresh blank node is used when omitted
-  -r, --result-format <FORMAT>  RDF output format for the materialized graph (Turtle, NTriples, ...) [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, compact, json, plantuml, svg, png]
+  -r, --result-format <FORMAT>  RDF output format for the materialized graph (Turtle, NTriples, ...) [default: turtle] [possible values: turtle, ntriples, jsonld, rdfxml, trig, n3, nquads, compact, json, plantuml, svg, png]
   -c, --config-file <FILE>      Config file name
   -o, --output-file <FILE>      Output file name, default = terminal
       --force-overwrite         Force overwrite to output file if it already exists

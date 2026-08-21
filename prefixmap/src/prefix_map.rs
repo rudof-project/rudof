@@ -128,6 +128,11 @@ impl PrefixMap {
         self.map.get(str)
     }
 
+    /// Removes the association for `alias`, returning its [`IriS`] if it existed
+    pub fn remove_prefix(&mut self, alias: &str) -> Option<IriS> {
+        self.map.shift_remove(alias)
+    }
+
     /// Merges another [`PrefixMap`] into this one.
     ///
     // Returns an error if any of the aliases in the other [`PrefixMap`] already exist in this one.

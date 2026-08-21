@@ -336,6 +336,7 @@ rustemo = "0.9.1"
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"
 rustyline = { version = "18.0", default-features = false, features = [
+    "custom-bindings",
     "with-file-history",
 ] }
 schemars = "1.0.4"

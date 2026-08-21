@@ -51,9 +51,9 @@ This crate is a foundational dependency for many other Rudof crates, including:
 
 - [`rudof_lib`](./rudof_lib.md)
 - [`rudof_cli`](./rudof_cli.md)
-- [`shacl_ast`](./shacl_ast.md), [`shacl_ir`](./shacl_ir.md), [`shacl_rdf`](./shacl_rdf.md), [`shacl_validation`](./shacl_validation.md)
-- [`shex_ast`](./shex_ast.md), [`shex_validation`](./shex_validation.md)
-- [`shex_testsuite`](./shex_testsuite.md), [`shapes_comparator`](./shapes_comparator.md), [`shapes_converter`](./shapes_converter.md), [`sparql_service`](./sparql_service.md), and others.
+- [`shacl`](https://docs.rs/shacl)
+- [`shex_ast`](https://docs.rs/shex_ast), [`shex_validation`](https://docs.rs/shex_validation)
+- [`shapes_comparator`](https://docs.rs/shapes_comparator), [`shapes_converter`](https://docs.rs/shapes_converter), [`sparql_service`](https://docs.rs/sparql_service), and others.
 
 ## Cargo features
 
@@ -149,33 +149,33 @@ use rudof_iri::IriS;
 struct PersonShape {
     id: Object,
     name: String,
-    known_langs: Vec,
+    known_langs: Vec<Lang>,
 }
 
 // --- Individual field parsers (reusable building blocks) ---
 
 /// Reads the single string value of sh:name on the current focus node.
-fn parse_name() -> impl RDFNodeParse {
+fn parse_name<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = String> {
     let sh_name = IriS::new_unchecked("http://www.w3.org/ns/shacl#name");
     SingleStringPropertyParser::new(sh_name)
 }
 
-/// Reads sh:languageIn ( "en" "fr" ) and returns a Vec.
-fn parse_language_in() -> impl RDFNodeParse> {
+/// Reads sh:languageIn ( "en" "fr" ) and returns a Vec<Lang>.
+fn parse_language_in<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Lang>> {
     let sh_language_in = IriS::new_unchecked("http://www.w3.org/ns/shacl#languageIn");
     ListParser::new()
-        .flat_map(|terms: Vec| {
-            let langs: Vec = terms.iter().flat_map(RDF::term_as_lang).collect();
+        .flat_map(|terms: Vec<RDF::Term>| {
+            let langs: Vec<Lang> = terms.iter().flat_map(RDF::term_as_lang).collect();
             Ok(langs)
         })
         .map_property(sh_language_in)
-        .map(|mut vecs| vecs.pop().unwrap_or_default())
+        .map(|mut vecs: Vec<Vec<Lang>>| vecs.pop().unwrap_or_default())
 }
 
 // --- Composite parser built with the fluent API ---
 
 /// Combines all field parsers into a single `PersonShape`.
-fn person_shape_parser() -> impl RDFNodeParse {
+fn person_shape_parser<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = PersonShape> {
     ObjectParser::new()
         .then(move |id: Object| {
             parse_name()
@@ -222,7 +222,7 @@ fn main() {
         .expect("Parsing failed");
 
     println!("Parsed: {:?}", person);
-    // Parsed: PersonShape { id: Iri { .. "http://example.org/Alice" },
+    // Parsed: PersonShape { id: Iri {IriS { iri: NamedNode { iri: "http://example.org/Alice" } }},
     //                       name: "Alice",
     //                       known_langs: [Lang { lang: "en" }, Lang { lang: "fr" }] }
 }

@@ -3,13 +3,18 @@ use crate::commands::{CommandContext, CommandFactory, extract_common};
 use crate::shell::completer::ShellHelper;
 use anyhow::{Context, Result, anyhow};
 use clap::{CommandFactory as ClapCommandFactory, Parser};
-use rustyline::Editor;
+use rudof_lib::{RudofConfig, TomlConfig};
 use rustyline::error::ReadlineError;
 use rustyline::history::DefaultHistory;
+use rustyline::{Cmd, Editor, EventHandler, KeyEvent};
 use std::io::Write as _;
 use std::process::Command;
 
-const PROMPT: &str = "rudof> ";
+pub(super) const PROMPT: &str = "rudof> ";
+// Shown for continuation lines of a multi-line command, e.g. a SPARQL query
+// spanning several lines inside an open quote. Padded to line up under
+// `PROMPT`.
+pub(super) const CONTINUATION_PROMPT: &str = "   ... ";
 
 const BANNER: &str = r"                 _        ___
                 | |      / __)
@@ -27,10 +32,59 @@ struct ReplLine {
     command: CliCommand,
 }
 
+/// Reads one full command from `editor`, prompting for further lines (with
+/// [`CONTINUATION_PROMPT`]) while the input read so far has unbalanced
+/// quoting, so a multi-line inline value (e.g. a SPARQL query passed to
+/// `query -q '...'`) can be typed directly instead of requiring a file.
+/// `shlex::split` returning `None` is exactly the "still inside an open
+/// quote" signal, since that's the same tokenizer [`dispatch`] uses to
+/// split the finished line.
+fn read_command(editor: &mut Editor<ShellHelper, DefaultHistory>) -> Result<String, ReadlineError> {
+    let mut buffer = editor.readline(PROMPT)?;
+    while !buffer.trim().is_empty() && shlex::split(&buffer).is_none() {
+        // Continuation lines are their own `readline` call, so the helper
+        // can't otherwise tell them apart from a fresh command line; tell it
+        // explicitly so it doesn't color a continuation line's first word as
+        // if it were a subcommand name.
+        if let Some(helper) = editor.helper() {
+            helper.set_continuation(true);
+        }
+        let result = editor.readline(CONTINUATION_PROMPT);
+        if let Some(helper) = editor.helper() {
+            helper.set_continuation(false);
+        }
+        match result {
+            Ok(next) => {
+                buffer.push('\n');
+                buffer.push_str(&next);
+            },
+            Err(err @ ReadlineError::Eof) => {
+                let _ = writeln!(
+                    std::io::stderr(),
+                    "Warning: input ended with an unterminated quote; discarding: {buffer}"
+                );
+                return Err(err);
+            },
+            Err(err) => return Err(err),
+        }
+    }
+    Ok(buffer)
+}
+
 pub fn run(ctx: &mut CommandContext) -> Result<()> {
     let command_names = command_names();
     let mut editor: Editor<ShellHelper, DefaultHistory> = Editor::new()?;
     editor.set_helper(Some(ShellHelper::new(command_names)));
+
+    // A key to force-insert a newline instead of submitting, e.g. to keep
+    // extending a recalled history entry that already parses as "complete"
+    // (matched quoting) and would otherwise run on Enter. Ctrl-J is a plain
+    // control byte every terminal delivers unambiguously; Alt-Enter is
+    // added too since it works in many terminals, though some intercept it
+    // for their own fullscreen toggle before it ever reaches this program —
+    // Ctrl-J is the one to rely on.
+    editor.bind_sequence(KeyEvent::ctrl('J'), EventHandler::Simple(Cmd::Newline));
+    editor.bind_sequence(KeyEvent::alt('\r'), EventHandler::Simple(Cmd::Newline));
 
     let history_path = history_file();
     if let Some(path) = &history_path {
@@ -43,7 +97,7 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
     ctx.writer.flush()?;
 
     loop {
-        match editor.readline(PROMPT) {
+        match read_command(&mut editor) {
             Ok(line) => {
                 let line = line.trim();
                 if line.is_empty() {
@@ -101,6 +155,14 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
 
     if tokens[0] == "reset" {
         return handle_reset(&tokens[1..], ctx);
+    }
+
+    if tokens[0] == "prefixes" {
+        return handle_prefixes(&tokens[1..], ctx);
+    }
+
+    if tokens[0] == "config" && tokens.get(1).is_some_and(|sub| sub == "get" || sub == "set") {
+        return handle_config(&tokens[1..], ctx);
     }
 
     apply_bare_resource_convenience(&mut tokens);
@@ -278,6 +340,164 @@ fn reset_target(target: &str, ctx: &mut CommandContext) {
     }
 }
 
+/// Shell-only `prefixes [add ALIAS IRI | rm ALIAS | rename OLD NEW | copy OLD NEW]` command.
+///
+/// With no argument, shows the current default `PrefixMap` -- the prefix
+/// declarations assumed and prepended by default to RDF data, SPARQL
+/// queries, ShEx schemas and SHACL shapes, independently of whatever
+/// prefixes a loaded resource already declares.
+fn handle_prefixes(args: &[String], ctx: &mut CommandContext) -> Result<()> {
+    match args {
+        [] => show_prefixes(ctx),
+        [add, alias, iri] if add == "add" => {
+            ctx.rudof.add_prefix(alias, iri).execute()?;
+            writeln!(ctx.writer, "Added prefix {alias}: <{iri}>")?;
+            Ok(())
+        },
+        [rm, alias] if rm == "rm" => {
+            ctx.rudof.remove_prefix(alias).execute()?;
+            writeln!(ctx.writer, "Removed prefix {alias}")?;
+            Ok(())
+        },
+        [rename, old_alias, new_alias] if rename == "rename" => {
+            ctx.rudof.rename_prefix(old_alias, new_alias).execute()?;
+            writeln!(ctx.writer, "Renamed prefix {old_alias} to {new_alias}")?;
+            Ok(())
+        },
+        [copy, old_alias, new_alias] if copy == "copy" => {
+            ctx.rudof.copy_prefix(old_alias, new_alias).execute()?;
+            writeln!(ctx.writer, "Copied prefix {old_alias} to {new_alias}")?;
+            Ok(())
+        },
+        _ => {
+            writeln!(
+                ctx.writer,
+                "Usage: prefixes [add ALIAS IRI | rm ALIAS | rename OLD NEW | copy OLD NEW]"
+            )?;
+            Ok(())
+        },
+    }
+}
+
+fn show_prefixes(ctx: &mut CommandContext) -> Result<()> {
+    let prefixes = ctx.rudof.prefixes().execute();
+    if prefixes.is_empty() {
+        writeln!(ctx.writer, "No default prefixes are defined.")?;
+        return Ok(());
+    }
+    write!(ctx.writer, "{prefixes}")?;
+    Ok(())
+}
+
+/// Shell-only `config get [KEY]` / `config set KEY VALUE` commands.
+///
+/// `KEY` is a dot-separated path into the effective TOML configuration (e.g.
+/// `base_iri`, or `shex_validator.max_steps`). `config` with no `get`/`set`
+/// subcommand falls through to the ordinary top-level `config` command,
+/// which dumps the whole configuration as TOML.
+fn handle_config(args: &[String], ctx: &mut CommandContext) -> Result<()> {
+    match args {
+        [get] if get == "get" => show_config(None, ctx),
+        [get, key] if get == "get" => show_config(Some(key), ctx),
+        [set, key, value] if set == "set" => set_config(key, value, ctx),
+        _ => {
+            writeln!(ctx.writer, "Usage: config get [KEY] | config set KEY VALUE")?;
+            Ok(())
+        },
+    }
+}
+
+fn show_config(key: Option<&str>, ctx: &mut CommandContext) -> Result<()> {
+    let toml_str = ctx.rudof.config().execute().to_toml_string()?;
+    let Some(key) = key else {
+        writeln!(ctx.writer, "{toml_str}")?;
+        return Ok(());
+    };
+
+    let root: toml::Value = toml::from_str(&toml_str)?;
+    match config_lookup(&root, key) {
+        Some(value) => {
+            writeln!(ctx.writer, "{}", format_config_value(value))?;
+            Ok(())
+        },
+        None => unknown_config_key(key, ctx),
+    }
+}
+
+fn set_config(key: &str, value: &str, ctx: &mut CommandContext) -> Result<()> {
+    let toml_str = ctx.rudof.config().execute().to_toml_string()?;
+    let mut root: toml::Value = toml::from_str(&toml_str)?;
+
+    if config_set_path(&mut root, key, parse_config_scalar(value)).is_none() {
+        return unknown_config_key(key, ctx);
+    }
+
+    let updated_toml = toml::to_string(&root)?;
+    let updated_config =
+        RudofConfig::from_toml_str(&updated_toml).map_err(|err| anyhow!("invalid value for '{key}': {err}"))?;
+
+    // Re-derive the effective TOML from the *parsed* config, not the raw
+    // table just edited, to confirm the key was actually recognized: a
+    // typo'd key would otherwise be silently dropped by serde (no section
+    // in this config uses `deny_unknown_fields`) and have no effect.
+    let effective_toml = updated_config.to_toml_string()?;
+    let effective_root: toml::Value = toml::from_str(&effective_toml)?;
+    let Some(confirmed) = config_lookup(&effective_root, key) else {
+        return unknown_config_key(key, ctx);
+    };
+    let confirmed = confirmed.clone();
+
+    ctx.rudof.update_config(updated_config).execute();
+    writeln!(ctx.writer, "{key} = {}", format_config_value(&confirmed))?;
+    Ok(())
+}
+
+fn unknown_config_key(key: &str, ctx: &mut CommandContext) -> Result<()> {
+    writeln!(ctx.writer, "Unknown config key '{key}'.")?;
+    writeln!(ctx.writer, "Use 'config' with no arguments to see all available keys.")?;
+    Ok(())
+}
+
+fn config_lookup<'a>(root: &'a toml::Value, key: &str) -> Option<&'a toml::Value> {
+    key.split('.').try_fold(root, |current, segment| current.get(segment))
+}
+
+/// Assigns `new_value` at the dotted `key` path, in place, creating the leaf
+/// if needed (e.g. an unset `Option` field omitted from the TOML dump) as
+/// long as every parent segment already exists as a table. Returns `None`
+/// without modifying `root` if some parent segment doesn't resolve.
+fn config_set_path(root: &mut toml::Value, key: &str, new_value: toml::Value) -> Option<()> {
+    let mut current = root;
+    let mut segments = key.split('.').peekable();
+    while let Some(segment) = segments.next() {
+        if segments.peek().is_none() {
+            current.as_table_mut()?.insert(segment.to_string(), new_value);
+            return Some(());
+        }
+        current = current.get_mut(segment)?;
+    }
+    None
+}
+
+fn parse_config_scalar(value: &str) -> toml::Value {
+    if let Ok(b) = value.parse::<bool>() {
+        toml::Value::Boolean(b)
+    } else if let Ok(i) = value.parse::<i64>() {
+        toml::Value::Integer(i)
+    } else if let Ok(f) = value.parse::<f64>() {
+        toml::Value::Float(f)
+    } else {
+        toml::Value::String(value.to_string())
+    }
+}
+
+fn format_config_value(value: &toml::Value) -> String {
+    match value {
+        toml::Value::String(s) => s.clone(),
+        other => other.to_string(),
+    }
+}
+
 fn registered_endpoints_line(ctx: &CommandContext) -> String {
     let mut names: Vec<&str> = ctx
         .rudof
@@ -391,6 +611,22 @@ fn print_help(ctx: &mut CommandContext) -> Result<()> {
         "  reset [TARGET...]  Clear session state ({}), or everything with no argument",
         RESET_TARGETS.join(", ")
     )?;
+    writeln!(
+        ctx.writer,
+        "  config get [KEY]      Show the whole config, or one dotted key (e.g. shex_validator.max_steps)"
+    )?;
+    writeln!(
+        ctx.writer,
+        "  config set KEY VALUE  Change one config value for the rest of the session"
+    )?;
+    writeln!(
+        ctx.writer,
+        "  prefixes [add ALIAS IRI | rm ALIAS | rename OLD NEW | copy OLD NEW]"
+    )?;
+    writeln!(
+        ctx.writer,
+        "                     Show, or manage, the default prefix declarations"
+    )?;
     Ok(())
 }
 
@@ -404,6 +640,7 @@ fn command_names() -> Vec<String> {
     names.push("quit".to_string());
     names.push("endpoint".to_string());
     names.push("reset".to_string());
+    names.push("prefixes".to_string());
     names
 }
 

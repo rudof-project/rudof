@@ -50,7 +50,7 @@ If you try to check that schema with rudof, it informs about the error:
 
 ```sh
 $ rudof shex -s examples/shex/non_stratified.shex
-Error: Negation cycle error on :S
+Error: ShEx error: Failed to compile ShEx schema: Schema contains negative cycles in its dependency graph. Found 1 negative cycle(s).
 ```
 
 ## Obtaining information about a shape
@@ -159,10 +159,11 @@ The command runs ShEx validation:
 
 ```sh
 rudof shex-validate --schema user.shex --node :a --shape-label :User user.ttl
-Result:
-:c-><http://example.org/User>  Shape passed for node http://example.org/c: :User
-:a-><http://example.org/User>  Shape passed for node http://example.org/a: :User
-:b-><http://example.org/User>  Shape passed for node http://example.org/b: :User
+╭──────┬───────┬────────┬───────────────────────╮
+│ Node │ Shape │ Status │ Details               │
+├──────┼───────┼────────┼───────────────────────┤
+│ :a   │ :User │ OK     │ Shape passed :a@:User │
+╰──────┴───────┴────────┴───────────────────────╯
 ```
 
 ## Precompiling the schema to a SchemaIR cache

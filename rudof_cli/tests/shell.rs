@@ -114,10 +114,32 @@ fn shell_unknown_subcommand_reports_error_and_keeps_session_alive() {
 
 #[cfg(not(target_family = "wasm"))]
 #[test]
-fn shell_rejects_unterminated_quotes_without_ending_the_session() {
+fn shell_treats_unterminated_quote_as_multiline_continuation() {
+    // An open quote (e.g. a SPARQL query passed inline to `-q`) makes the
+    // shell keep reading further lines as part of the same command instead
+    // of dispatching or erroring immediately, so a query can be typed
+    // across several lines at the prompt.
+    let data = fixture("shell_data.ttl");
+    let script = format!("query -q 'SELECT ?s ?p ?o WHERE {{\n?s ?p ?o .\n}}' {data}\nexit\n");
+    let out = run_shell(&script);
+    assert!(
+        out.stdout.contains("Alice"),
+        "expected query results, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_discards_unterminated_quote_left_open_at_eof() {
+    // If stdin closes while still inside an open quote, the pending
+    // command is discarded with a warning instead of being misparsed —
+    // and the lines absorbed as continuation input (`help`, `exit`) never
+    // ran as commands in their own right.
     let out = run_shell("data \"unterminated\nhelp\nexit\n");
-    assert!(out.stderr.contains("check quoting"));
-    assert!(out.stdout.contains("Shell-only commands:"));
+    assert!(out.stderr.contains("unterminated quote"));
+    assert!(!out.stdout.contains("Shell-only commands:"));
     assert_eq!(out.code, 0);
 }
 
@@ -710,6 +732,261 @@ fn shell_node_bare_identifier_convenience_does_not_apply_alongside_other_flags()
     assert!(
         out.stdout.contains("does not exist"),
         "expected a clap parse error when combined with another flag, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_config_bare_dumps_the_whole_config_as_toml() {
+    let out = run_shell("config\nexit\n");
+    assert!(out.stdout.contains("auto_base = false"));
+    assert!(out.stdout.contains("[shex]"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_config_get_reports_a_single_key() {
+    let out = run_shell("config get auto_base\nexit\n");
+    assert!(out.stdout.contains("false"));
+    assert!(!out.stdout.contains("Unknown config key"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_config_get_rejects_unknown_key() {
+    let out = run_shell("config get not.a.real.key\nexit\n");
+    assert!(out.stdout.contains("Unknown config key 'not.a.real.key'."));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_config_set_changes_a_value_for_the_rest_of_the_session() {
+    let out = run_shell("config set auto_base true\nconfig get auto_base\nexit\n");
+    assert!(out.stdout.contains("auto_base = true"));
+    let occurrences = out.stdout.matches("true").count();
+    assert_eq!(
+        occurrences, 2,
+        "expected both the confirmation and the follow-up get to report true, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_config_set_can_populate_an_unset_optional_field() {
+    // `base_iri` is `None` by default, so it's omitted from the TOML dump
+    // entirely -- setting it still has to work.
+    let out = run_shell("config set base_iri http://example.org/\nconfig get base_iri\nexit\n");
+    assert!(out.stdout.contains("base_iri = http://example.org/"));
+    assert!(out.stdout.contains("http://example.org/"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_config_set_rejects_a_typo_key_without_applying_it() {
+    let out = run_shell("config set shex.sho_imports true\nexit\n");
+    assert!(out.stdout.contains("Unknown config key 'shex.sho_imports'."));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_config_set_rejects_a_value_of_the_wrong_type() {
+    let out = run_shell("config set auto_base not-a-bool\nexit\n");
+    assert!(out.stderr.contains("invalid value for 'auto_base'"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_prefixes_bare_reports_empty_by_default() {
+    let out = run_shell("prefixes\nexit\n");
+    assert!(out.stdout.contains("No default prefixes are defined."));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_prefixes_add_then_shows_it() {
+    let out = run_shell("prefixes add rdf http://www.w3.org/1999/02/22-rdf-syntax-ns#\nprefixes\nexit\n");
+    assert!(
+        out.stdout
+            .contains("Added prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>")
+    );
+    assert!(
+        out.stdout
+            .contains("prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>")
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_prefixes_rm_removes_it() {
+    let out =
+        run_shell("prefixes add rdf http://www.w3.org/1999/02/22-rdf-syntax-ns#\nprefixes rm rdf\nprefixes\nexit\n");
+    assert!(out.stdout.contains("Removed prefix rdf"));
+    assert!(out.stdout.contains("No default prefixes are defined."));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_prefixes_rm_unknown_alias_reports_error() {
+    let out = run_shell("prefixes rm rdf\nexit\n");
+    assert!(out.stderr.contains("Unknown prefix alias 'rdf'"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_prefixes_rename_changes_the_alias_keeping_the_iri() {
+    let out = run_shell(
+        "prefixes add rdf http://www.w3.org/1999/02/22-rdf-syntax-ns#\nprefixes rename rdf rdf1\nprefixes\nexit\n",
+    );
+    assert!(out.stdout.contains("Renamed prefix rdf to rdf1"));
+    assert!(
+        out.stdout
+            .contains("prefix rdf1: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>")
+    );
+    // Only the "Added prefix rdf: ..." confirmation from the setup line
+    // mentions `rdf` at all -- the final listing (its own line, starting
+    // with "prefix ") should show only `rdf1` now.
+    assert!(!out.stdout.contains("\nprefix rdf:"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_prefixes_copy_adds_new_alias_keeping_the_old_one() {
+    let out = run_shell(
+        "prefixes add rdf http://www.w3.org/1999/02/22-rdf-syntax-ns#\nprefixes copy rdf rdf1\nprefixes\nexit\n",
+    );
+    assert!(out.stdout.contains("Copied prefix rdf to rdf1"));
+    assert!(
+        out.stdout
+            .contains("prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>")
+    );
+    assert!(
+        out.stdout
+            .contains("prefix rdf1: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>")
+    );
+    assert_eq!(out.code, 0);
+}
+
+// The following tests cover the default prefixes being applied when
+// loading `data`, `shex`, `shacl`, `query` and `shapemap` -- each of those
+// fixtures uses a `p:` alias it never declares itself, so they only parse
+// once a `prefixes add p ...` default is in scope.
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_data_without_a_default_prefix_reports_a_parse_error() {
+    let data = fixture("shell_data_no_prefix.ttl");
+    let out = run_shell(&format!("data {data}\nexit\n"));
+    assert!(
+        out.stderr.contains("has not been declared") || out.stderr.contains("not declared"),
+        "expected an undeclared-prefix parse error, got:\n{}",
+        out.stderr
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_data_resolves_prefixed_names_using_default_prefixes() {
+    let data = fixture("shell_data_no_prefix.ttl");
+    let script = format!("prefixes add p http://example.org/\ndata {data}\ndata\nexit\n");
+    let out = run_shell(&script);
+    assert!(
+        out.stdout.contains("Alice"),
+        "expected the data to load using the default prefix, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_node_resolves_a_default_prefixed_selector() {
+    let data = fixture("shell_data_no_prefix.ttl");
+    let script = format!("prefixes add p http://example.org/\ndata {data}\nnode p:alice\nexit\n");
+    let out = run_shell(&script);
+    assert!(
+        out.stdout.contains("p:alice"),
+        "expected `node` to resolve the default-prefixed selector, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_shex_resolves_prefixed_names_using_default_prefixes() {
+    let schema = fixture("shell_schema_no_prefix.shex");
+    let script = format!(
+        "prefixes add p http://example.org/\nprefixes add xsd http://www.w3.org/2001/XMLSchema#\nshex {schema}\nexit\n"
+    );
+    let out = run_shell(&script);
+    assert!(
+        out.stdout.contains("PersonShape"),
+        "expected the schema to load using the default prefixes, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_shacl_resolves_prefixed_names_using_default_prefixes() {
+    let shapes = fixture("shell_shapes_no_prefix.ttl");
+    let script = format!(
+        "prefixes add p http://example.org/\nprefixes add xsd http://www.w3.org/2001/XMLSchema#\nprefixes add sh http://www.w3.org/ns/shacl#\nshacl {shapes}\nexit\n"
+    );
+    let out = run_shell(&script);
+    assert!(
+        out.stdout.contains("SHACL shapes graph IR"),
+        "expected the shapes to load using the default prefixes, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_query_resolves_prefixed_names_using_default_prefixes() {
+    let data = fixture("shell_data_no_prefix.ttl");
+    let query = fixture("shell_query_no_prefix.rq");
+    let script = format!("prefixes add p http://example.org/\ndata {data}\nquery -q {query}\nexit\n");
+    let out = run_shell(&script);
+    assert!(
+        out.stdout.contains("Alice"),
+        "expected the query to resolve using the default prefix, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_shapemap_resolves_prefixed_names_using_default_prefixes() {
+    let data = fixture("shell_data_no_prefix.ttl");
+    let schema = fixture("shell_schema_no_prefix.shex");
+    let shapemap = fixture("shell_shapemap_no_prefix.sm");
+    let script = format!(
+        "prefixes add p http://example.org/\nprefixes add xsd http://www.w3.org/2001/XMLSchema#\ndata {data}\nshex {schema}\nshapemap {shapemap}\nexit\n"
+    );
+    let out = run_shell(&script);
+    assert!(
+        out.stdout.contains("PersonShape"),
+        "expected the shapemap to resolve using the default prefixes, got:\n{}",
         out.stdout
     );
     assert_eq!(out.code, 0);

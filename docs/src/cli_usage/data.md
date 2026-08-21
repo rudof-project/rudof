@@ -37,25 +37,23 @@ The output would be something like:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<rdf:RDF xmlns:="http://example.org/"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
-        <rdf:Description rdf:about="http://example.org/cs101">
-                <name>Computer Science</name>
-        </rdf:Description>
-        <rdf:Description rdf:about="http://example.org/b">
-                <name>Bob</name>
-                <name>Robert</name>
-        </rdf:Description>
-        <rdf:Description rdf:about="http://example.org/a">
-                <enrolledIn rdf:resource="http://example.org/cs101"/>
-                <birthdate rdf:datatype="http://www.w3.org/2001/XMLSchema#date">1990-05-02</birthdate>
-                <name>Alice</name>
-        </rdf:Description>
+<rdf:RDF xmlns="http://example.org/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:xsd="http://www.w3.org/2001/XMLSchema#" xmlns:its="http://www.w3.org/2005/11/its">
+	<rdf:Description rdf:about="http://example.org/b">
+		<name>Bob</name>
+		<name>Robert</name>
+	</rdf:Description>
+	<rdf:Description rdf:about="http://example.org/cs101">
+		<name>Computer Science</name>
+	</rdf:Description>
+	<rdf:Description rdf:about="http://example.org/a">
+		<name>Alice</name>
+		<birthdate rdf:datatype="http://www.w3.org/2001/XMLSchema#date">1990-05-02</birthdate>
+		<enrolledIn rdf:resource="http://example.org/cs101"/>
+	</rdf:Description>
 </rdf:RDF>
 ```
 
-It is possible to convert RDF data to a visual representation using the options `svg`, `png` or `plantuml` (see [RDF visualization](##RDF-visualization) section).
+It is possible to convert RDF data to a visual representation using the options `svg`, `png` or `plantuml` (see [RDF visualization](#rdf-visualization) section).
 
 ## Obtaining information about an RDF data located remotely
 

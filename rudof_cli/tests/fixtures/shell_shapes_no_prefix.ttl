@@ -1,0 +1,7 @@
+p:PersonShape a sh:NodeShape ;
+    sh:targetClass p:Person ;
+    sh:property [
+        sh:path p:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] .

@@ -43,21 +43,20 @@ graph TD;
  application(application);
  application -->|Rust| rudof_lib ;
  application --> |Python| pyrudof ;
- rudof_iri --> oxigraph;
+ rudof_iri --> oxrdf;
  rudof_iri --> reqwest ;
  dctap --> calamine ;
  dctap --> csv ;
  sparql_service --> oxigraph ;
+ rudof_rdf --> oxigraph ;
 subgraph rudof
     rudof_lib[<a href='https://crates.io/crates/rudof_lib'>rudof_lib</a>];
     rudof_cli[<a href='https://crates.io/crates/rudof_cli'>rudof_cli</a>];
     pyrudof[<a href='https://pypi.org/project/pyrudof/'>pyrudof</a>];
     shex_ast[<a href='https://crates.io/crates/shex_ast'>shex_ast</a>];
-    srdf[<a href='https://crates.io/crates/srdf'>srdf</a>];
+    rudof_rdf[<a href='https://crates.io/crates/rudof_rdf'>rudof_rdf</a>];
     shex_validation[<a href='https://crates.io/crates/shex_validation'>shex_validation</a>];
-    shacl_validation[<a href='https://crates.io/crates/shacl_validation'>shacl_validation</a>];
-    shacl_ir[<a href='https://crates.io/crates/shacl_ir'>shacl_ir</a>];
-    shacl_ast[<a href='https://crates.io/crates/shacl_ast'>shacl_ast</a>];
+    shacl[<a href='https://crates.io/crates/shacl'>shacl</a>];
     rudof_iri[<a href='https://crates.io/crates/rudof_iri'>rudof_iri</a>];
     prefixmap[<a href='https://crates.io/crates/prefixmap'>prefixmap</a>];
     rbe[<a href='https://crates.io/crates/rbe'>rbe</a>];
@@ -68,34 +67,34 @@ subgraph rudof
 
  pyrudof --> rudof_lib ;
  rudof_cli --> rudof_lib ;
- shex_ast --> srdf ;
+ shex_ast --> rudof_rdf ;
  shex_validation-->shex_ast;
- srdf-->rudof_iri;
- shacl_ir --> shacl_ast;
- shacl_ast-->srdf;
- shacl_validation-->shacl_ir;
+ rudof_rdf-->rudof_iri;
+ shacl-->rudof_rdf;
+ shacl-->sparql_service;
  shex_ast-->prefixmap;
- srdf-->prefixmap;
+ rudof_rdf-->prefixmap;
  shex_validation-->rbe;
  dctap-->prefixmap;
  dctap --> rudof_iri;
 
  shapes_comparator-->shex_ast;
- shapes_comparator-->shacl_ast;
- shapes_converter-->shacl_ast;
+ shapes_comparator-->shacl;
+ shapes_converter-->shacl;
  shapes_converter-->shex_ast;
  shapes_converter-->dctap;
  prefixmap --> rudof_iri ;
  shex_validation --> shex_ast
  sparql_service --> rudof_iri ;
  rudof_lib --> shex_validation ;
- rudof_lib --> shacl_validation ;
+ rudof_lib --> shacl ;
  rudof_lib --> shapes_converter ;
  rudof_lib --> sparql_service ;
  rudof_lib --> shapes_comparator ;
 end
 subgraph external dependencies
  oxigraph[<a href='https://crates.io/crates/oxigraph'>oxigraph</a>] ;
+ oxrdf[<a href='https://crates.io/crates/oxrdf'>oxrdf</a>] ;
  calamine[<a href='https://docs.rs/calamine/latest/calamine/'>calamine</a>] ;
  reqwest[<a href='https://docs.rs/reqwest/latest/reqwest/'>reqwest</a>] ;
  csv[<a href='https://docs.rs/csv/latest/csv/'>csv</a>]
@@ -103,16 +102,14 @@ end
 ```
 
 - [ShEx Validation algorithm](https://docs.rs/shex_validation/).
-- [ShEx Compact syntax parser](https://docs.rs/shex_compact), a ShEx Compact syntax parser that follows the [ShEx compact grammar](https://shex.io/shex-semantics/index.html#shexc).
-- [ShEx AST](https://docs.rs/shex_ast), that represents the [ShEx Abstract syntax](https://shex.io/shex-semantics/index.html#shape-expressions-shexj) based on ShExJ (JSON-LD).
-- [SRDF](https://docs.rs/srdf), a Simple RDF Interface in Rust.
+- [ShEx AST](https://docs.rs/shex_ast), that represents the [ShEx Abstract syntax](https://shex.io/shex-semantics/index.html#shape-expressions-shexj) based on ShExJ (JSON-LD), and bundles the ShEx Compact syntax parser that follows the [ShEx compact grammar](https://shex.io/shex-semantics/index.html#shexc).
+- [Rudof RDF](https://docs.rs/rudof_rdf), a RDF Interface in Rust.
 - [PrefixMap](https://docs.rs/prefixmap): Turtle based prefixMap representation
-- [Conversions between different RDF data modelling technologies](https://docs.rs/shapes_convert).
+- [Conversions between different RDF data modelling technologies](https://docs.rs/shapes_converter).
 - [Comparator between shapes](https://docs.rs/shapes_comparator).
-- [SHACL AST](https://docs.rs/shacl_ast), that represents the [SHACL core abstract syntax](https://www.w3.org/TR/shacl).
-- [SHACL Validation algorithm](https://docs.rs/shacl_validation/).
+- [SHACL](https://docs.rs/shacl), that represents the [SHACL core abstract syntax](https://www.w3.org/TR/shacl) and implements the SHACL validation algorithm.
 - [RBE](https://docs.rs/rbe), Regular Bag Expressions.
-- [ShEx testsuite](https://docs.rs/shex_testsuite/), the Code in charge of checking the [ShEx testsuite](https://shexspec.github.io/test-suite/).
+- [ShEx testsuite](https://github.com/rudof-project/rudof/tree/master/shex_testsuite), the code in charge of checking the [ShEx testsuite](https://shexspec.github.io/test-suite/).
 
 ## Related projects
 

@@ -1,0 +1,2 @@
+p:alice a p:Person ;
+    p:name "Alice" .

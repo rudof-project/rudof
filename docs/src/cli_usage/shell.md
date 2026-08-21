@@ -27,6 +27,20 @@ Same syntax as the CLI, minus the `rudof` prefix:
 rudof> data examples/user.ttl
 ```
 
+## Multi-line input
+
+If a line ends with an open quote, the shell doesn't submit it — it keeps reading further lines, shown with a `   ... ` continuation prompt, until the quote closes. This lets a multi-line value (e.g. a SPARQL query passed inline to `-q`) be typed directly at the prompt instead of requiring a separate file:
+
+```
+rudof> query -q 'SELECT ?s ?p ?o WHERE {
+   ... ?s ?p ?o .
+   ... }' examples/user.ttl
+```
+
+If input ends (Ctrl-D) while a quote is still open, the whole pending command is discarded with a warning instead of being misparsed.
+
+Within a line, Ctrl-J inserts a literal newline instead of submitting. This matters when recalling a previous command from history (↑) that already has balanced quoting — pressing Enter would run it immediately, so Ctrl-J lets you keep extending it across more lines first. Alt-Enter does the same in terminals that pass it through, but some intercept it for their own use, so Ctrl-J is the one to rely on.
+
 ## State persists across commands
 
 Load data and a schema in separate lines, then validate without repeating either:
@@ -112,6 +126,55 @@ rudof> query -q "select ?label where { <http://www.wikidata.org/entity/Q80> <htt
 
 See the [RDF backend (`--backend`) reference](./backend.md) for how named endpoints are registered.
 
+## Default prefixes
+
+`prefixes` manages a list of default prefix declarations for the session. When `data` (Turtle), `shacl` (Turtle), `shex` (ShExC) or `query` (SPARQL) is loaded, any alias the source text uses but doesn't declare itself is resolved against these defaults instead of failing to parse. A document's own declarations always win — a default only fills in an alias the document doesn't declare. `node` and `shapemap` need no separate lookup: they resolve prefixed selectors against whatever prefixmap `data`/`shex` already ended up with, so they pick up the same resolution for free.
+
+With no argument, `prefixes` shows the current default prefix declarations:
+
+```
+rudof> prefixes
+No default prefixes are defined.
+```
+
+`prefixes add ALIAS IRI` adds one (overwriting any existing declaration for that alias):
+
+```
+rudof> prefixes add rdf http://www.w3.org/1999/02/22-rdf-syntax-ns#
+Added prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+rudof> prefixes
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+```
+
+`prefixes rm ALIAS` removes one:
+
+```
+rudof> prefixes rm rdf
+Removed prefix rdf
+```
+
+`prefixes rename OLD NEW` renames an alias, keeping its IRI. `prefixes copy OLD NEW` adds a new alias for the same IRI, keeping the original alias too:
+
+```
+rudof> prefixes add rdf http://www.w3.org/1999/02/22-rdf-syntax-ns#
+rudof> prefixes rename rdf rdf1
+Renamed prefix rdf to rdf1
+rudof> prefixes copy rdf1 rdf
+Copied prefix rdf1 to rdf
+```
+
+For example, Turtle data using a `p:` alias it never declares would normally fail to parse; adding `p` as a default prefix first lets it resolve:
+
+```
+rudof> data "p:a p:name \"Alice\" ."
+Error: Data error: Failed to parse RDF data from 'string' [...]: The prefix p: has not been declared
+rudof> prefixes add p http://example.org/
+Added prefix p: <http://example.org/>
+rudof> data "p:a p:name \"Alice\" ."
+@prefix p: <http://example.org/> .
+p:a p:name "Alice" .
+```
+
 ## Clearing session state
 
 `reset` (no argument, or `reset all`) clears every piece of session state and starts fresh:
@@ -154,6 +217,7 @@ rudof> !ls examples
 | `!<command>` | Run `<command>` in the system shell |
 | `endpoint [NAME]` | Show the active endpoint, or activate a registered one |
 | `reset [TARGET...]` | Clear session state, one or more targets, or everything with no argument |
+| `prefixes [add\|rm\|rename\|copy ...]` | Show, or manage, the default prefix declarations |
 
 ## History and completion
 

@@ -1,0 +1,18 @@
+{
+  "total_triples": 40,
+  "total_subjects": 15,
+  "total_predicates": 3,
+  "total_objects": 26,
+  "generation_time": "0ms",
+  "shape_counts": {
+    "http://example.org/User": 15
+  },
+  "conformance_metrics": {
+    "total_generated_triples": 40,
+    "valid_triples": 40,
+    "triple_validity_percentage": 100.0,
+    "original_schema_constraints": 8,
+    "represented_constraints_in_unified": 6,
+    "shape_translation_loss_percentage": 25.0
+  }
+}

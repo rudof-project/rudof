@@ -18,7 +18,7 @@ For example, the shape `Person` has 4 templates about the properties `name`, `bi
 
 `rudof` supports DCTAP files in both CSV format and Excel spreadsheets.
 
-Assuming the previous table is represented in a `person.csv` file as this one:
+Assuming the previous table is represented in a `user.csv` file as this one:
 
 ```csv
 shapeId,propertyId,valueShape, valueDatatype, valueConstraint, mandatory, repeatable
@@ -61,16 +61,12 @@ Usage: rudof dctap [OPTIONS]
 
 Options:
   -s, --source-file <FILE>      DCTap source file. If omitted, shows the currently loaded DCTap
-  -f, --format <DCTap file format>
-          [default: csv] [possible values: csv, xlsx, xlsb, xlsm, xls]
-  -r, --result-format <Ouput results format>
-          [default: internal] [possible values: internal, json]
-  -c, --config-file <Config file name>
-          Config file name
-  -o, --output-file <Output file name, default = terminal>
-      --force-overwrite
-  -h, --help
-          Print help
+  -f, --format <FORMAT>         DCTap file format [default: csv] [possible values: csv, xlsx, xlsb, xlsm, xls]
+  -r, --result-format <FORMAT>  Ouput results format [default: internal] [possible values: internal, json]
+  -c, --config-file <FILE>      Config file name
+  -o, --output-file <FILE>      Output file name, default = terminal
+      --force-overwrite         Force overwrite to output file if it already exists
+  -h, --help                    Print help
 ```
 
 `--source-file` is optional: a bare `rudof dctap` shows the DCTap already loaded in the current session (relevant inside `rudof shell`).
