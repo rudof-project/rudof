@@ -4,3 +4,5 @@ pub mod cli;
 pub mod commands;
 #[cfg(not(target_family = "wasm"))]
 pub mod output;
+#[cfg(not(target_family = "wasm"))]
+pub mod shell;

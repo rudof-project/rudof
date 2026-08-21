@@ -2,13 +2,14 @@ use crate::{
     Result, Rudof,
     errors::{DataError, ShaclError},
     formats::{DataReaderMode, InputSpec, ShaclFormat},
-    utils::get_base_iri,
+    utils::{PrefixDirective, default_prefix_header, get_base_iri},
 };
 use rudof_iri::{IriS, MimeType};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use shacl::error::IRError;
 use shacl::rdf::ShaclParser;
 use sparql_service::RdfData;
+use std::io::Read;
 
 pub fn load_shacl_schema(
     rudof: &mut Rudof,
@@ -55,13 +56,33 @@ fn read_shacl_schema(
             message: format!("Failed to open shacl schema source '{}': {error}", schema.source_name()),
         })?;
 
-    let rdf_graph = OxigraphInMemory::from_reader(
-        &mut schema_reader,
-        &schema.source_name(),
-        &schema_format.try_into()?,
-        Some(base.as_str()),
-        &reader_mode.into(),
-    )
+    // Only Turtle uses `@prefix` declarations that default prefixes can
+    // usefully supplement; see the equivalent check in `load_data`.
+    let rdf_graph = if matches!(schema_format, ShaclFormat::Turtle) {
+        let mut content = String::new();
+        schema_reader
+            .read_to_string(&mut content)
+            .map_err(|error| ShaclError::DataSourceSpec {
+                message: format!("Failed to read shacl schema source '{}': {error}", schema.source_name()),
+            })?;
+        let header = default_prefix_header(rudof, &content, PrefixDirective::Turtle);
+        let mut prefixed_reader = std::io::Cursor::new(format!("{header}{content}").into_bytes());
+        OxigraphInMemory::from_reader(
+            &mut prefixed_reader,
+            &schema.source_name(),
+            &schema_format.try_into()?,
+            Some(base.as_str()),
+            &reader_mode.into(),
+        )
+    } else {
+        OxigraphInMemory::from_reader(
+            &mut schema_reader,
+            &schema.source_name(),
+            &schema_format.try_into()?,
+            Some(base.as_str()),
+            &reader_mode.into(),
+        )
+    }
     .map_err(|error| ShaclError::DataSourceSpec {
         message: format!("Failed to read shacl schema source '{}': {error}", schema.source_name()),
     })?;

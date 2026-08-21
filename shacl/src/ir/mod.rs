@@ -12,6 +12,7 @@ pub mod components;
 pub mod dg;
 pub(crate) mod error;
 mod node_shape;
+mod order_value;
 mod property_shape;
 mod reifier_info;
 mod schema;
@@ -21,6 +22,7 @@ mod test;
 
 pub use component::IRComponent;
 pub use node_shape::IRNodeShape;
+pub use order_value::OrderValue;
 pub use property_shape::IRPropertyShape;
 pub use reifier_info::ReifierInfo;
 pub use schema::IRSchema;

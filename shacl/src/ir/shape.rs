@@ -105,6 +105,20 @@ impl IRShape {
             IRShape::PropertyShape(ps) => ps.message(),
         }
     }
+
+    pub fn name(&self) -> Option<&MessageMap> {
+        match self {
+            IRShape::NodeShape(ns) => ns.name(),
+            IRShape::PropertyShape(ps) => ps.name(),
+        }
+    }
+
+    pub fn description(&self) -> Option<&MessageMap> {
+        match self {
+            IRShape::NodeShape(ns) => ns.description(),
+            IRShape::PropertyShape(ps) => ps.description(),
+        }
+    }
 }
 
 impl IRShape {
@@ -126,57 +140,9 @@ impl IRShape {
 impl Display for IRShape {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            IRShape::NodeShape(_) => writeln!(f, "NodeShape")?,
-            IRShape::PropertyShape(shape) => {
-                writeln!(f, "PropertyShape")?;
-                writeln!(f, " path: {}", shape.path())?;
-                if let Some(reifier_info) = shape.reifier_info() {
-                    writeln!(
-                        f,
-                        " reifier info: reification required: {}, reifier shapes: [{}]",
-                        reifier_info.reification_required(),
-                        reifier_info
-                            .reifier_shape()
-                            .iter()
-                            .map(|s| s.to_string())
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    )?;
-                }
-            },
+            IRShape::NodeShape(ns) => write!(f, "{ns}")?,
+            IRShape::PropertyShape(ps) => write!(f, "{ps}")?,
         }
-        if self.deactivated() {
-            writeln!(f, " Deactivated: {}", self.deactivated())?;
-        }
-        if self.severity() != &Severity::Violation {
-            writeln!(f, " Severity: {}", self.severity())?;
-        }
-        if self.closed() {
-            writeln!(f, " closed: {}", self.closed())?;
-        }
-        let mut components = self.components().iter().peekable();
-        if components.peek().is_some() {
-            writeln!(f, "Components:")?;
-            for component in components {
-                writeln!(f, " - {component}")?;
-            }
-        }
-        let mut targets = self.targets().iter().peekable();
-        if targets.peek().is_some() {
-            writeln!(f, "Targets:")?;
-            for target in targets {
-                writeln!(f, " - {target}")?;
-            }
-        }
-        let mut property_shapes = self.property_shapes().iter().peekable();
-        if property_shapes.peek().is_some() {
-            writeln!(
-                f,
-                " Property Shapes: [{}]",
-                property_shapes.map(|ps| ps.to_string()).collect::<Vec<_>>().join(", ")
-            )?;
-        }
-
         Ok(())
     }
 }

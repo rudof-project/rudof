@@ -4,7 +4,7 @@ use crate::{
     errors::DataError,
     formats::{DataFormat, DataReaderMode, InputSpec},
     types::Data,
-    utils::get_base_iri,
+    utils::{PrefixDirective, default_prefix_header, get_base_iri},
 };
 use pgschema::parser::pg_builder::PgBuilder;
 use prefixmap::PrefixMap;
@@ -189,19 +189,13 @@ fn read_rdf_data<R: Read>(
         rudof.data = Some(rdf_data);
     }
 
-    rudof
-        .data
-        .as_mut()
-        .unwrap()
-        .unwrap_rdf_mut()
-        .merge_from_reader(
-            data_reader,
-            source_name,
-            &(*data_format).try_into()?,
-            Some(base.as_str()),
-            &(*reader_mode).into(),
-        )
-        .map_err(|error| {
+    // Only Turtle uses `@prefix` declarations that default prefixes can
+    // usefully supplement; other formats either have no textual prefix
+    // syntax (N-Triples, N-Quads) or aren't implemented (TriG, N3) or
+    // resolve prefixed names some other way entirely (JSON-LD, RDF/XML).
+    let parse_result = if matches!(data_format, DataFormat::Turtle) {
+        let mut content = String::new();
+        data_reader.read_to_string(&mut content).map_err(|error| {
             Box::new(DataError::FailedParsingRdfData {
                 source_name: source_name.to_string(),
                 format: data_format.to_string(),
@@ -210,6 +204,34 @@ fn read_rdf_data<R: Read>(
                 error: error.to_string(),
             })
         })?;
+        let header = default_prefix_header(rudof, &content, PrefixDirective::Turtle);
+        let mut prefixed_reader = io::Cursor::new(format!("{header}{content}").into_bytes());
+        rudof.data.as_mut().unwrap().unwrap_rdf_mut().merge_from_reader(
+            &mut prefixed_reader,
+            source_name,
+            &(*data_format).try_into()?,
+            Some(base.as_str()),
+            &(*reader_mode).into(),
+        )
+    } else {
+        rudof.data.as_mut().unwrap().unwrap_rdf_mut().merge_from_reader(
+            data_reader,
+            source_name,
+            &(*data_format).try_into()?,
+            Some(base.as_str()),
+            &(*reader_mode).into(),
+        )
+    };
+
+    parse_result.map_err(|error| {
+        Box::new(DataError::FailedParsingRdfData {
+            source_name: source_name.to_string(),
+            format: data_format.to_string(),
+            base: base.to_string(),
+            reader_mode: reader_mode.to_string(),
+            error: error.to_string(),
+        })
+    })?;
 
     Ok(())
 }

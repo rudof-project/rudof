@@ -46,8 +46,13 @@ pub struct QueryArgs {
     )]
     pub reader_mode: DataReaderModeCli,
 
-    #[arg(short = 'q', long = "query", value_name = "INPUT", help = "SPARQL query")]
-    pub query: InputSpec,
+    #[arg(
+        short = 'q',
+        long = "query",
+        value_name = "INPUT",
+        help = "SPARQL query. If omitted, shows the results of the last query run"
+    )]
+    pub query: Option<InputSpec>,
 
     #[arg(
         short = 'r',

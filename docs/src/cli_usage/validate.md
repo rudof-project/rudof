@@ -1,46 +1,73 @@
 # validate: Generic validate command
 
-The `validate` command is a wrapper on top of `shex-validate` and `shacl_validate` which contain the same parameters but adds the parameter: `--mode` to indicate eithre `shex` or `shacl`.
+The `validate` command is a wrapper on top of `shex-validate` and `shacl-validate` (and, for property graphs, `pgschema-validate`). It takes the same parameters as those commands, plus `--mode` to pick which one to run.
 
 ```sh
 ❯ rudof validate --help
 Validate RDF data using ShEx or SHACL
 
-Usage: rudof validate [OPTIONS] --schema <Schema file name> [DATA]...
+Usage: rudof validate [OPTIONS] [DATA]...
 
 Arguments:
   [DATA]...
 
 Options:
-  -M, --mode <Validation mode>
-          [default: shex] [possible values: shex, shacl]
-  -s, --schema <Schema file name>
-
-  -f, --schema-format <Schema format>
-          [default: shexc] [possible values: internal, simple, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
-  -m, --shapemap <ShapeMap file name>
-
-      --shapemap-format <ShapeMap format>
-          [default: compact] [possible values: compact, internal]
+  -M, --mode <MODE>
+          Validation mode (ShEx or SHACL)
+          [default: shex] [possible values: shex, shacl, pgschema]
+  -s, --schema <INPUT>
+          Schema used for validation, FILE, URI or - for stdin. If omitted, reuses the currently loaded schema
+  -f, --schema-format <FORMAT>
+          Schema format
+          [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -m, --shapemap <INPUT>
+          ShapeMap used for validation, FILE, URI or - for stdin
+      --shapemap-format <FORMAT>
+          ShapeMap format
+          [default: compact] [possible values: compact, internal, json, details, csv]
+      --base-data <IRI>
+          Base IRI for data
+      --base-schema <IRI>
+          Base IRI for Schema
+      --sort_by <SORT_MODE>
+          Sort result by (default = node)
+          [default: node] [possible values: node, details]
   -n, --node <NODE>
-
-  -l, --shape-label <shape label (default = START)>
-
-  -t, --data-format <RDF Data format>
-          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
-      --max-steps <max steps to run>
+          Node to validate
+  -l, --shape-label <LABEL>
+          shape label (default = START)
+  -t, --data-format <FORMAT>
+          RDF Data format (default = turtle)
+          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
+      --max-steps <NUMBER>
+          max steps to run during validation
           [default: 100]
-  -S, --shacl-mode <SHACL validation mode>
-          Execution mode [default: default] [possible values: default, sparql]
-      --reader-mode <RDF Reader mode>
-          RDF Reader mode [default: strict] [possible values: lax, strict]
-  -o, --output-file <Output file name, default = terminal>
-
+  -S, --shacl-mode <MODE>
+          SHACL validation mode (default = native)
+          [default: native] [possible values: native, sparql]
+      --reader-mode <MODE>
+          RDF Reader mode
+          [default: strict] [possible values: lax, strict]
+  -r, --result-format <FORMAT>
+          Ouput result format, default = compact
+          [default: compact] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, compact, details, json, csv]
+      --map-state <FILE>
+          MapState file name
+  -c, --config-file <FILE>
+          Config file name
+  -o, --output-file <FILE>
+          Output file name, default = terminal
       --force-overwrite
-
+          Force overwrite to output file if it already exists
+      --backend <BACKEND>
+          RDF data backend selection: memory | qlever | endpoint=<URL_OR_NAME>
+  -e, --endpoint <URL_OR_NAME>
+          Shortcut for `--backend endpoint=<URL_OR_NAME>`
   -h, --help
           Print help
 ```
+
+`--schema` is optional: if you already loaded a schema in the same session (for example inside `rudof shell`), a bare `rudof validate` reuses it. See the [RDF backend (`--backend`) reference](./backend.md) for `--backend`/`--endpoint`.
 
 ## Tip: Changing the shapemap in the input
 

@@ -120,7 +120,7 @@ We can run Rudof MCP using different transport types depending on the environmen
 ### Run Rudof MCP using Stdio transport
 
 ```rust
-use rudof_mcp::{run_mcp, McpConfig};
+use rudof_mcp::server::{run_mcp, McpConfig};
 
 run_mcp(McpConfig::default())?;
 ```
@@ -128,7 +128,7 @@ run_mcp(McpConfig::default())?;
 ### Run Rudof MCP using HTTP transport (localhost only)
 
 ```rust
-use rudof_mcp::{run_mcp, McpConfig, TransportType};
+use rudof_mcp::server::{run_mcp, McpConfig, TransportType};
 
 let config = McpConfig {
     transport: TransportType::StreamableHTTP,
@@ -144,7 +144,7 @@ run_mcp(config)?;
 ### Run Rudof MCP using HTTP transport with custom allowed networks
 
 ```rust
-use rudof_mcp::{run_mcp, McpConfig, TransportType};
+use rudof_mcp::server::{run_mcp, McpConfig, TransportType};
 
 let config = McpConfig {
     transport: TransportType::StreamableHTTP,
@@ -164,7 +164,7 @@ run_mcp(config)?;
 ### Run Rudof MCP asynchronously (inside an existing Tokio runtime)
 
 ```rust
-use rudof_mcp::{run_mcp_async, McpConfig, TransportType};
+use rudof_mcp::server::{run_mcp_async, McpConfig, TransportType};
 
 let config = McpConfig {
     transport: TransportType::StreamableHTTP,

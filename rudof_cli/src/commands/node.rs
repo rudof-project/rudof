@@ -2,7 +2,7 @@ use crate::cli::parser::NodeArgs;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use rudof_lib::formats::IriNormalizationMode;
+use rudof_lib::formats::{BackendSpec, IriNormalizationMode};
 
 /// Implementation of the `node` command.
 ///
@@ -32,20 +32,27 @@ impl Command for NodeCommand {
         let show_node_mode = self.args.show_node_mode.into();
 
         let backend = resolve_backend(&self.args.common);
+        let has_data_source = !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_));
 
-        let mut loading = ctx
-            .rudof
-            .load_data()
-            .with_data_format(&data_format)
-            .with_reader_mode(&reader_mode)
-            .with_backend(backend);
-        if !self.args.data.is_empty() {
-            loading = loading.with_data(&self.args.data);
+        if has_data_source {
+            let mut loading = ctx
+                .rudof
+                .load_data()
+                .with_data_format(&data_format)
+                .with_reader_mode(&reader_mode)
+                .with_backend(backend);
+            if !self.args.data.is_empty() {
+                loading = loading.with_data(&self.args.data);
+            }
+            if let Some(base) = self.args.base.as_deref() {
+                loading = loading.with_base(base);
+            }
+            loading.execute()?;
+        } else if !ctx.rudof.has_data()
+            && let Some(uri) = dereferenceable_uri(&self.args.node)
+        {
+            ctx.rudof.dereference(uri).with_reader_mode(&reader_mode).execute()?;
         }
-        if let Some(base) = self.args.base.as_deref() {
-            loading = loading.with_base(base);
-        }
-        loading.execute()?;
 
         let iri_mode = if self.args.strict_iris {
             IriNormalizationMode::Strict
@@ -68,5 +75,24 @@ impl Command for NodeCommand {
         showing_node_info.execute()?;
 
         Ok(())
+    }
+}
+
+/// Extracts an absolute `http(s)://` IRI from a node selector string, if it
+/// names one directly (optionally wrapped in `<>`), so `node` can fall back
+/// to dereferencing it when no data or endpoint was given.
+///
+/// Prefixed names (`ex:Q80`) and blank nodes (`_:b1`) return `None` — there
+/// is nothing to fetch without data already loaded to resolve the prefix.
+fn dereferenceable_uri(node: &str) -> Option<&str> {
+    let trimmed = node.trim();
+    let inner = trimmed
+        .strip_prefix('<')
+        .and_then(|rest| rest.strip_suffix('>'))
+        .unwrap_or(trimmed);
+    if inner.starts_with("http://") || inner.starts_with("https://") {
+        Some(inner)
+    } else {
+        None
     }
 }

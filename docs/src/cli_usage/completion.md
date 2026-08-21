@@ -21,6 +21,7 @@ The `completion` command supports completion script generation for the following
 - **Fish** - The friendly interactive shell with built-in completion support
 - **PowerShell** - Microsoft PowerShell for Windows, Linux, and macOS
 - **Elvish** - A modern shell with a unique approach to scripting
+- **Nushell** - A modern shell with structured data pipelines
 
 ## Command Syntax
 
@@ -32,12 +33,12 @@ rudof completion <SHELL> [OPTIONS]
 
 - `<SHELL>` - The shell for which to generate the completion script
   - Required argument
-  - Possible values: `bash`, `zsh`, `fish`, `powershell`, `elvish`
+  - Possible values: `bash`, `elvish`, `fish`, `nushell`, `powershell`, `zsh`
   - Case-insensitive
 
 ### Options
 
-- `-o, --output <FILE>` - Write completion script to a file instead of stdout
+- `-o, --output-file <FILE>` - Write completion script to a file instead of stdout
 - `--force-overwrite` - Overwrite the output file if it already exists
 
 ## Basic Usage
@@ -58,6 +59,9 @@ rudof completion fish -o rudof.fish
 
 # Save PowerShell completion to a file
 rudof completion powershell -o rudof-completion.ps1
+
+# Save Nushell completion to a file
+rudof completion nushell -o rudof-completion.nu
 ```
 
 ## Installation Instructions

@@ -136,7 +136,7 @@ impl Default for ShEx2UmlConfig {
 impl TomlConfig for ShEx2UmlConfig {}
 
 fn discover_puml_path(path: Option<PathBuf>) -> PathBuf {
-    path.unwrap_or_else(|| match env::var("RUDOF_PUML") {
+    path.unwrap_or_else(|| match env::var("PLANTUML") {
         Ok(value) => Path::new(value.as_str()).to_path_buf(),
         Err(_) => Path::new("plantuml.jar").to_path_buf(),
     })
@@ -167,5 +167,44 @@ mod tests {
         let s = c.to_toml_string().unwrap();
         let d = ShEx2UmlConfig::from_toml_str(&s).unwrap();
         assert_eq!(c, d);
+    }
+
+    /// The default `plantuml_path` must come from the `PLANTUML` env var:
+    /// that's the variable documented for users (README, `docs/`, MCP setup)
+    /// and referenced by the CLI's own error messages when the jar can't be
+    /// found. It previously read a stale `RUDOF_PUML` var that no docs or
+    /// error message ever mentioned, so setting `PLANTUML` was silently
+    /// ignored.
+    ///
+    /// Both assertions live in one test (rather than two) so they can't race
+    /// on the shared `PLANTUML` process env var if run in parallel with each
+    /// other; no other test in this crate touches that var.
+    #[test]
+    fn plantuml_path_is_read_from_the_plantuml_env_var() {
+        // SAFETY: test-only mutation of the process environment, scoped to
+        // this single test.
+        unsafe {
+            std::env::remove_var("PLANTUML");
+        }
+        assert_eq!(
+            super::discover_puml_path(None),
+            std::path::PathBuf::from("plantuml.jar")
+        );
+
+        // SAFETY: test-only mutation of the process environment, scoped to
+        // this single test.
+        unsafe {
+            std::env::set_var("PLANTUML", "/tmp/my-plantuml.jar");
+        }
+        assert_eq!(
+            super::discover_puml_path(None),
+            std::path::PathBuf::from("/tmp/my-plantuml.jar")
+        );
+
+        // SAFETY: test-only mutation of the process environment, scoped to
+        // this single test.
+        unsafe {
+            std::env::remove_var("PLANTUML");
+        }
     }
 }

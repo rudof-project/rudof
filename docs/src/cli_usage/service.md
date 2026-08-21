@@ -21,26 +21,21 @@ The full command options are:
 ```sh
 Show information about SPARQL service
 
-Usage: rudof service [OPTIONS] --service <SPARQL service name>
+Usage: rudof service [OPTIONS]
 
 Options:
-  -s, --service <SPARQL service name>
-
-  -f, --format <SPARQL service format>
-          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
-  -o, --output-file <Output file name, default = terminal>
-
-  -r, --result-format <Result service format>
-          [default: internal] [possible values: internal]
-      --reader-mode <RDF Reader mode>
-          RDF Reader mode [default: strict] [possible values: lax, strict]
-  -c, --config-file <Config file name>
-          Config file path, if unset it assumes default config
-      --force-overwrite
-
-  -h, --help
-          Print help
+  -s, --service <URL>           SPARQL service URL. If omitted, shows the currently loaded service description
+  -f, --format <FORMAT>         SPARQL service format [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
+  -r, --result-format <FORMAT>  Output result service format [default: json] [possible values: internal, mie, json]
+      --reader-mode <MODE>      RDF Reader mode [default: strict] [possible values: lax, strict]
+      --base <IRI>              Base used to resolve relative IRIs in the service description
+  -c, --config-file <FILE>      Config file name
+  -o, --output-file <FILE>      Output file name, default = terminal
+      --force-overwrite         Force overwrite to output file if it already exists
+  -h, --help                    Print help
 ```
+
+`--service` is optional: a bare `rudof service` shows the service description already loaded in the current session (relevant inside `rudof shell`).
 
 ## Service config file
 
@@ -48,4 +43,4 @@ The parameter `--config-file`  (`-c` in short form) can be used to pass a config
 
 The fields that it can contain are:
 
-- base (IRI): Base IRi to resolve relative IRIs in the service description.
+- base_iri (IRI): Base IRI to resolve relative IRIs in the service description.

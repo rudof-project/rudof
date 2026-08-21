@@ -24,14 +24,21 @@ impl Command for PgschemaCommand {
     }
 
     /// Executes the Property Graph Schema command logic.
+    ///
+    /// With no `--schema`, there is nothing new to load, so this just
+    /// re-serializes whatever PGSchema is already loaded in the session
+    /// (useful in the interactive shell, where state persists across
+    /// commands).
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let pg_schema_format = self.args.schema_format.into();
         let result_pg_schema_format = self.args.result_schema_format.into();
 
-        ctx.rudof
-            .load_pg_schema(&self.args.schema)
-            .with_pg_schema_format(&pg_schema_format)
-            .execute()?;
+        if let Some(schema) = &self.args.schema {
+            ctx.rudof
+                .load_pg_schema(schema)
+                .with_pg_schema_format(&pg_schema_format)
+                .execute()?;
+        }
 
         ctx.rudof
             .serialize_pg_schema(&mut ctx.writer)

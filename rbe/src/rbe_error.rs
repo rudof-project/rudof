@@ -209,7 +209,7 @@ where
                 values.show_qualified(show_key, show_value)
             ),
             RbeError::EmptyCandidatesNoValues { rbe } => format!(
-                "No values to match expression. Mandatory values: [{}]",
+                "No candidates to match. Missing: [{}]",
                 show_mandatory_values(rbe, show_key, show_value)
             ),
             RbeError::RbeTableKeyWithoutComponent { key, available_keys } => format!(

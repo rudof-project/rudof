@@ -8,7 +8,7 @@ use crate::{
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
         },
         data::builders::{
-            ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, ResetDataBuilder,
+            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, ResetDataBuilder,
             ResetServiceDescriptionBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder,
             ShowNodeInfoBuilder,
         },
@@ -20,6 +20,9 @@ use crate::{
             LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
             ResetPgSchemaValidationBuilder, ResetTypemapBuilder, SerializePgSchemaBuilder,
             SerializePgSchemaValidationResultsBuilder,
+        },
+        prefixes::builders::{
+            AddPrefixBuilder, CopyPrefixBuilder, PrefixesBuilder, RemovePrefixBuilder, RenamePrefixBuilder,
         },
         query::builders::{
             LoadQueryBuilder, ResetQueryBuilder, ResetQueryResultsBuilder, RunQueryBuilder, SerializeQueryBuilder,
@@ -46,6 +49,7 @@ use crate::{
 };
 use dctap::DCTap as DCTAP;
 use pgschema::{pgs::PropertyGraphSchema, type_map::TypeMap, validation_result::ValidationResult};
+use prefixmap::PrefixMap;
 use rdf_config::RdfConfigModel;
 use rudof_rdf::rdf_core::query::SparqlQuery;
 use shacl::ir::IRSchema;
@@ -126,6 +130,9 @@ pub struct Rudof {
 
     /// Current map state for ShEx validation used by Map Semantic Actions and materialize option
     pub(crate) map_state: Option<MapState>,
+
+    /// Current list of prefix map declarations. These prefix map declarations will be assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes to facilitate handling prefixes
+    pub(crate) prefixes: Option<PrefixMap>,
 }
 
 impl Rudof {
@@ -292,6 +299,21 @@ impl Rudof {
     /// Returns a `ListEndpointsBuilder` that enumerates known endpoints.
     pub fn list_endpoints<'a>(&'a mut self) -> ListEndpointsBuilder<'a> {
         ListEndpointsBuilder::new(self)
+    }
+
+    /// Returns whether RDF or PG data is currently loaded in `Rudof`'s state.
+    pub fn has_data(&self) -> bool {
+        self.data.is_some()
+    }
+
+    /// Returns a `DereferenceBuilder` to fetch `uri` over HTTP(S) — content-negotiating
+    /// for an RDF serialization and following redirects — and merge the result into
+    /// `Rudof`'s state.
+    ///
+    /// # Parameters
+    /// - `uri`: the absolute IRI to dereference.
+    pub fn dereference<'a>(&'a mut self, uri: &'a str) -> DereferenceBuilder<'a> {
+        DereferenceBuilder::new(self, uri)
     }
 
     // ========================================================================
@@ -507,6 +529,11 @@ impl Rudof {
         ResetQueryResultsBuilder::new(self)
     }
 
+    /// Returns the results of the most recent `run_query()` call, if any.
+    pub fn query_results(&self) -> Option<&QueryResult> {
+        self.query_results.as_ref()
+    }
+
     // ========================================================================
     // ComparisonOperations methods
     // ========================================================================
@@ -681,13 +708,47 @@ impl Rudof {
     /// # Parameters
     /// - `schema`: input specification for the schema (e.g., ShEx file)
     /// - `schema_format`: format of the provided schema
-    /// - `number_entities`: approximate number of target entities to generate
+    /// - `number_entities`: approximate number of target entities to generate. `None` defers to
+    ///   the `entity_count` set by [`GenerateDataBuilder::with_config_file`], or the generator's
+    ///   own default if neither is given.
     pub fn generate_data<'a>(
         &'a self,
         schema: &'a InputSpec,
         schema_format: &'a GenerationSchemaFormat,
-        number_entities: usize,
+        number_entities: Option<usize>,
     ) -> GenerateDataBuilder<'a> {
         GenerateDataBuilder::new(self, schema, schema_format, number_entities)
+    }
+
+    // ========================================================================
+    // PrefixesOperations methods
+    // ========================================================================
+
+    /// Returns a `PrefixesBuilder` that exposes the current default `PrefixMap`.
+    pub fn prefixes<'a>(&'a self) -> PrefixesBuilder<'a> {
+        PrefixesBuilder::new(self)
+    }
+
+    /// Returns an `AddPrefixBuilder` to add `alias` associated with `iri` to
+    /// the default prefixes.
+    pub fn add_prefix<'a>(&'a mut self, alias: &'a str, iri: &'a str) -> AddPrefixBuilder<'a> {
+        AddPrefixBuilder::new(self, alias, iri)
+    }
+
+    /// Returns a `RemovePrefixBuilder` to remove `alias` from the default prefixes.
+    pub fn remove_prefix<'a>(&'a mut self, alias: &'a str) -> RemovePrefixBuilder<'a> {
+        RemovePrefixBuilder::new(self, alias)
+    }
+
+    /// Returns a `RenamePrefixBuilder` to rename `old_alias` to `new_alias`
+    /// in the default prefixes, keeping the same associated IRI.
+    pub fn rename_prefix<'a>(&'a mut self, old_alias: &'a str, new_alias: &'a str) -> RenamePrefixBuilder<'a> {
+        RenamePrefixBuilder::new(self, old_alias, new_alias)
+    }
+
+    /// Returns a `CopyPrefixBuilder` to add `new_alias` to the default
+    /// prefixes, associated with the same IRI as `old_alias`.
+    pub fn copy_prefix<'a>(&'a mut self, old_alias: &'a str, new_alias: &'a str) -> CopyPrefixBuilder<'a> {
+        CopyPrefixBuilder::new(self, old_alias, new_alias)
     }
 }

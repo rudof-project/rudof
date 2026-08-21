@@ -4,6 +4,7 @@ use crate::{
     Result, Rudof,
     errors::QueryError,
     formats::{InputSpec, QueryType},
+    utils::{PrefixDirective, default_prefix_header},
 };
 use rudof_rdf::rdf_core::query::SparqlQuery;
 
@@ -21,12 +22,15 @@ pub fn load_query(rudof: &mut Rudof, query: &InputSpec, _query_type: Option<&Que
             message: format!("Failed to read data source '{}': {error}", query.source_name()),
         })?;
 
-    let query = SparqlQuery::new(&query_string).map_err(|error| QueryError::FailedParsingQuery {
+    let header = default_prefix_header(rudof, &query_string, PrefixDirective::Sparql);
+    let prefixed_query_string = format!("{header}{query_string}");
+
+    let parsed_query = SparqlQuery::new(&prefixed_query_string).map_err(|error| QueryError::FailedParsingQuery {
         source_name: query.source_name().to_string(),
         error: error.to_string(),
     })?;
 
-    rudof.query = Some(query);
+    rudof.query = Some(parsed_query);
 
     Ok(())
 }

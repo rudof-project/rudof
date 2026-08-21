@@ -11,6 +11,7 @@ use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct IRNodeShape {
@@ -23,8 +24,13 @@ pub struct IRNodeShape {
 
     message: Option<MessageMap>,
     severity: Option<Severity>,
-    name: MessageMap,
-    description: MessageMap,
+
+    // Notice that SHACL recommendation specifies that sh:name and sh:description should be applied only for property shapes.
+    // In SHACL 1.2, it recommends to used rdfs:label and rdfs:comment for name and description.
+    // We leave name and description here in case that in the future we want to suppport names and descriptions specifically.
+    name: Option<MessageMap>,
+    description: Option<MessageMap>,
+
     group: Option<Object>,
     // source_iri: S::Iri
 }
@@ -40,8 +46,8 @@ impl IRNodeShape {
             deactivated: false,
             message: None,
             severity: None,
-            name: MessageMap::new(),
-            description: MessageMap::new(),
+            name: None,
+            description: None,
             group: None,
         }
     }
@@ -76,12 +82,12 @@ impl IRNodeShape {
         self
     }
 
-    pub fn with_name(mut self, name: MessageMap) -> Self {
+    pub fn with_name(mut self, name: Option<MessageMap>) -> Self {
         self.name = name;
         self
     }
 
-    pub fn with_description(mut self, description: MessageMap) -> Self {
+    pub fn with_description(mut self, description: Option<MessageMap>) -> Self {
         self.description = description;
         self
     }
@@ -134,6 +140,14 @@ impl IRNodeShape {
     pub fn message(&self) -> Option<&MessageMap> {
         self.message.as_ref()
     }
+
+    pub fn name(&self) -> Option<&MessageMap> {
+        self.name.as_ref()
+    }
+
+    pub fn description(&self) -> Option<&MessageMap> {
+        self.description.as_ref()
+    }
 }
 
 impl IRNodeShape {
@@ -161,8 +175,8 @@ impl IRNodeShape {
             .with_closed_info(closed_info)
             .with_deactivated(shape.is_deactivated())
             .with_severity(shape.severity().cloned())
-            .with_name(shape.name().to_owned())
-            .with_description(shape.description().to_owned())
+            .with_name(shape.name().cloned())
+            .with_description(shape.description().cloned())
             .with_group(shape.group().cloned())
             .with_message(shape.message().cloned());
 
@@ -181,17 +195,21 @@ impl IRNodeShape {
             .add_type(id.clone(), ShaclVocab::sh_node_shape())
             .map_err(|e| IRError::from_rdf_err::<RDF>("add type", e))?;
 
-        self.name.iter_literals().try_for_each(|lit| {
-            graph
-                .add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_name(), lit.into())
-                .map_err(IRError::add_triple::<RDF>)
-        })?;
+        if let Some(name) = &self.name {
+            name.iter_literals().try_for_each(|lit| {
+                graph
+                    .add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_name(), lit.into())
+                    .map_err(IRError::add_triple::<RDF>)
+            })?;
+        }
 
-        self.description.iter_literals().try_for_each(|lit| {
-            graph
-                .add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_description(), lit.into())
-                .map_err(IRError::add_triple::<RDF>)
-        })?;
+        if let Some(description) = &self.description {
+            description.iter_literals().try_for_each(|lit| {
+                graph
+                    .add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_description(), lit.into())
+                    .map_err(IRError::add_triple::<RDF>)
+            })?;
+        }
 
         self.components
             .iter()
@@ -248,5 +266,53 @@ impl IRNodeShape {
                 }
             }
         }
+    }
+}
+
+impl Display for IRNodeShape {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "NodeShape {}", self.id())?;
+        if let Some(message) = self.message() {
+            writeln!(f, " message: {message}")?;
+        }
+        if let Some(name) = self.name() {
+            writeln!(f, " name: {name}")?;
+        }
+        if let Some(description) = self.description() {
+            writeln!(f, " description: {description}")?;
+        }
+
+        if self.deactivated() {
+            writeln!(f, " Deactivated: {}", self.deactivated())?;
+        }
+        if self.severity() != &Severity::Violation {
+            writeln!(f, " Severity: {}", self.severity())?;
+        }
+        if self.closed() {
+            writeln!(f, " closed: {}", self.closed())?;
+        }
+        let mut components = self.components().iter().peekable();
+        if components.peek().is_some() {
+            writeln!(f, "Components:")?;
+            for component in components {
+                writeln!(f, " - {component}")?;
+            }
+        }
+        let mut targets = self.targets().iter().peekable();
+        if targets.peek().is_some() {
+            writeln!(f, "Targets:")?;
+            for target in targets {
+                writeln!(f, " - {target}")?;
+            }
+        }
+        let mut property_shapes = self.property_shapes().iter().peekable();
+        if property_shapes.peek().is_some() {
+            writeln!(
+                f,
+                " Property Shapes: [{}]",
+                property_shapes.map(|ps| ps.to_string()).collect::<Vec<_>>().join(", ")
+            )?;
+        }
+        Ok(())
     }
 }

@@ -16,7 +16,7 @@ pub struct GenerateDataBuilder<'a> {
     output: Option<&'a PathBuf>,
     config_file: Option<&'a PathBuf>,
     result_generation_format: Option<&'a DataFormat>,
-    number_entities: usize,
+    number_entities: Option<usize>,
     seed: Option<u64>,
     parallel: Option<usize>,
 }
@@ -30,7 +30,7 @@ impl<'a> GenerateDataBuilder<'a> {
         rudof: &'a Rudof,
         schema: &'a InputSpec,
         schema_format: &'a GenerationSchemaFormat,
-        number_entities: usize,
+        number_entities: Option<usize>,
     ) -> Self {
         Self {
             rudof,
@@ -66,6 +66,20 @@ impl<'a> GenerateDataBuilder<'a> {
     /// Set an optional output file path to write the generated RDF data.
     pub fn with_output(mut self, output: &'a PathBuf) -> Self {
         self.output = Some(output);
+        self
+    }
+
+    /// Set a `GeneratorConfig` file (TOML or JSON) controlling generation
+    /// details (entity distribution, cardinality strategy, per-field
+    /// generators, ...) beyond what the other builder methods expose.
+    ///
+    /// CLI-style overrides set through this builder (`with_result_generation_format`,
+    /// `with_output`, `with_seed`, `with_parallel`, and a `Some` passed as
+    /// `number_entities` to [`Rudof::generate_data`]) take precedence over the
+    /// same settings in the config file; a `None` `number_entities` leaves the
+    /// config file's `entity_count` (or the generator's own default) in effect.
+    pub fn with_config_file(mut self, config_file: &'a PathBuf) -> Self {
+        self.config_file = Some(config_file);
         self
     }
 

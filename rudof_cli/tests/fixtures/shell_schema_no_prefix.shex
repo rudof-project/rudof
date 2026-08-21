@@ -1,0 +1,4 @@
+p:PersonShape {
+  a [p:Person] ;
+  p:name xsd:string
+}

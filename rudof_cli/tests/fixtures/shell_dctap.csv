@@ -1,0 +1,2 @@
+shapeId,shapeLabel,propertyId,Mandatory,Repeatable,valueDatatype,valueShape,valueConstraint,valueConstraintType
+Person,Person,name,true,false,xsd:string,,,

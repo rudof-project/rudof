@@ -8,6 +8,7 @@ use crate::commands::{
     ShexValidateCommand, ValidateCommand,
 };
 use crate::output::{ColorSupport, get_writer};
+use crate::shell::ShellCommand;
 use anyhow::Result;
 use rudof_lib::{Rudof, RudofConfig};
 use std::io::Write;
@@ -47,6 +48,11 @@ pub struct CommandContext {
 
     /// Color support
     pub color: ColorSupport,
+
+    /// Name of the SPARQL endpoint activated via the shell's `endpoint`
+    /// command, if any. Only ever set by [`crate::shell`]; unused outside
+    /// the interactive shell.
+    pub active_endpoint: Option<String>,
 }
 
 impl CommandContext {
@@ -56,6 +62,7 @@ impl CommandContext {
             rudof,
             debug_level,
             color,
+            active_endpoint: None,
         }
     }
 
@@ -80,6 +87,7 @@ impl CommandContext {
             rudof,
             debug_level: debug,
             color,
+            active_endpoint: None,
         })
     }
 
@@ -121,6 +129,7 @@ impl CommandFactory {
             CliCommand::PgschemaValidate(args) => Ok(Box::new(PgschemaValidateCommand::new(args))),
             CliCommand::Completion(args) => Ok(Box::new(CompletionCommand::new(args))),
             CliCommand::Config(args) => Ok(Box::new(ConfigCommand::new(args))),
+            CliCommand::Shell(args) => Ok(Box::new(ShellCommand::new(args))),
         }
     }
 }
@@ -130,7 +139,7 @@ impl CommandFactory {
 // ============================================================================
 
 /// Helper function to extract [CommonArgs] from any [CliCommand] variant.
-fn extract_common(cmd: &CliCommand) -> CommonArgs {
+pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
     match cmd {
         CliCommand::Mcp(_) => CommonArgs::None,
         CliCommand::Shapemap(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
@@ -240,6 +249,11 @@ fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
         }),
         CliCommand::Config(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Shell(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,

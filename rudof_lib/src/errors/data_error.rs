@@ -125,4 +125,12 @@ pub enum DataError {
     /// Failed to write node info to an output stream.
     #[error("Failed I/O operation while writing node info: {error}")]
     FailedIoOperation { error: String },
+
+    /// Failed to dereference a URI over HTTP (network failure, TLS error, etc).
+    #[error("Failed to dereference '{uri}': {error}")]
+    DereferenceError { uri: String, error: String },
+
+    /// Dereferencing a URI returned a non-success HTTP status.
+    #[error("Dereferencing '{uri}' failed with HTTP status {status}")]
+    DereferenceHttpStatus { uri: String, status: String },
 }

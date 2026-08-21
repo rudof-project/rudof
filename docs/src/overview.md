@@ -1,22 +1,37 @@
 # Overview
 
-`rudof` is a library that implements [Shape Expressions](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) and other technologies in the [RDF](https://www.w3.org/RDF/) ecosystem.
-The library is implemented in [Rust](https://www.rust-lang.org/) and it also provides [Python bindings](https://pyrudof.readthedocs.io/en/stable/).
+`rudof` is a tool to help describe and validate Knowledge Graphs. 
 
-`rudof` can be used as a command line tool or can be embedded as a library using [`cargo`](https://crates.io/).
-It can be used to validate RDF data represented with different syntaxes like Turtle, NTriples, to name a few.
-As well as RDF data available through SPARQL endpoints like Wikidata.
-`rudof` can also be used to convert between different RDF data validation technologies (like ShEx, SHACL, or DCTAP), and to generate UML like visualizations and HTML views.
 
-The main contributions of `rudof` are:
+It supports:
 
-- We publish binaries in Linux, Windows and Apple which can be downloaded [here](https://github.com/weso/shex-rs/releases/).
-- The source code is available in the [Github repository](https://github.com/rudof-project/rudof).
-- A [Paper about `rudof`](assets/pdf/rudof_demo.pdf) was presented at [International Semantic Web Conference](https://iswc2024.semanticweb.org/event/3715c6fc-e2d7-47eb-8c01-5fe4ac589a52/summary) (Baltimore, USA, October 2024) in the Demos and Posters session.
+- [RDF](https://www.w3.org/RDF/) and [RDF 1.2](https://www.w3.org/TR/rdf12-concepts/)
+- [Labeled Property Graph](https://en.wikipedia.org/wiki/Property_graph) data with [YarsPG](https://github.com/lszeremeta/yarspg) syntax.
+- Query languages: [SPARQL](https://www.w3.org/TR/sparql11-query/) and [SPARQL 1.2](https://www.w3.org/TR/sparql12-query/).
+- RDF validation languages: [ShEx](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) 
+- Labeled property graph schemas: [PG-Schema](https://arxiv.org/abs/2211.10962).
+
+The library is implemented in [Rust](https://www.rust-lang.org/) and it also provides [Python bindings](https://pyrudof.readthedocs.io/en/stable/), a [Rust API](https://docs.rs/rudof_lib/) and an interactive [Shell](https://rudof-project.github.io/rudof/cli_usage/shell.html).
+
+`rudof` can be used to validate RDF data represented with different syntaxes like Turtle, NTriples, etc.
+   as well as RDF data available through SPARQL endpoints like Wikidata.
+It can also be used to convert between different RDF data validation technologies (like ShEx, SHACL, or DCTAP), and to generate UML like visualizations and HTML views.
+
+More links about `rudof`:
+
+- [Linux, Windows and macOS binaries](https://github.com/weso/shex-rs/releases/).
+- [Source code in Github repository](https://github.com/rudof-project/rudof).
 - The [List of issues](https://github.com/rudof-project/rudof/issues).
 - The [Discussions](https://github.com/rudof-project/rudof/discussions) page.
 - A set of [How-to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides) is also published.
 - The collection of [Frequently-Asked-Questions](https://github.com/rudof-project/rudof/wiki/FAQ).
+
+## Publications and tutorials
+
+- [rudof-MCP: A Model Context Protocol Server for Semantic Web Operations](https://labra.weso.es/publication/2026_mcp_rudof/) , Samuel Bustamante Larriet, Diego Martín Fernández, Álvaro García Fernández, Daniel Fernández Álvarez, Jose Emilio Labra Gayo, Extended Semantic Web Conference, ESWC26, Posters and Demos - 2026
+- [PG-Schema with Property Constraints validator in Rudof](https://labra.weso.es/publication/2026_rudof_pgschema_pc/), Jose Emilio Labra Gayo, Dominik Tomaszuk, Diego Martín Fernández, Samuel Bustamante Larriet, Álvaro García Fernández, Daniel Fernández Álvarez, Knowledge Capture and Knowledge Representation Conference, KCAP25, Posters and Demos - 2025
+- [Introduction to `rudof for Wikibase users](https://docs.google.com/presentation/d/1K7lDn3Kln3IYku_m0dUxz-_ERfMwzf8_vPQCETXZCGQ). [Wikibase stakeholders Group meeting](https://notepad.rhizome.org/wbsg-2026-07-02). Video recording of the presentation is available [here](https://video.rhizome.org/w/kJXNskK6xusKU1xaqvGfak).
+- A [rudof: A Rust Library for handling RDF data models and Shapes](https://labra.weso.es/publication/2024_rudof_demo/) was presented at [International Semantic Web Conference](https://iswc2024.semanticweb.org/event/3715c6fc-e2d7-47eb-8c01-5fe4ac589a52/summary) (Baltimore, USA, October 2024) in the Demos and Posters session.
 
 ## Modules
 
@@ -28,21 +43,20 @@ graph TD;
  application(application);
  application -->|Rust| rudof_lib ;
  application --> |Python| pyrudof ;
- rudof_iri --> oxigraph;
+ rudof_iri --> oxrdf;
  rudof_iri --> reqwest ;
  dctap --> calamine ;
  dctap --> csv ;
  sparql_service --> oxigraph ;
+ rudof_rdf --> oxigraph ;
 subgraph rudof
     rudof_lib[<a href='https://crates.io/crates/rudof_lib'>rudof_lib</a>];
     rudof_cli[<a href='https://crates.io/crates/rudof_cli'>rudof_cli</a>];
     pyrudof[<a href='https://pypi.org/project/pyrudof/'>pyrudof</a>];
     shex_ast[<a href='https://crates.io/crates/shex_ast'>shex_ast</a>];
-    srdf[<a href='https://crates.io/crates/srdf'>srdf</a>];
+    rudof_rdf[<a href='https://crates.io/crates/rudof_rdf'>rudof_rdf</a>];
     shex_validation[<a href='https://crates.io/crates/shex_validation'>shex_validation</a>];
-    shacl_validation[<a href='https://crates.io/crates/shacl_validation'>shacl_validation</a>];
-    shacl_ir[<a href='https://crates.io/crates/shacl_ir'>shacl_ir</a>];
-    shacl_ast[<a href='https://crates.io/crates/shacl_ast'>shacl_ast</a>];
+    shacl[<a href='https://crates.io/crates/shacl'>shacl</a>];
     rudof_iri[<a href='https://crates.io/crates/rudof_iri'>rudof_iri</a>];
     prefixmap[<a href='https://crates.io/crates/prefixmap'>prefixmap</a>];
     rbe[<a href='https://crates.io/crates/rbe'>rbe</a>];
@@ -53,34 +67,34 @@ subgraph rudof
 
  pyrudof --> rudof_lib ;
  rudof_cli --> rudof_lib ;
- shex_ast --> srdf ;
+ shex_ast --> rudof_rdf ;
  shex_validation-->shex_ast;
- srdf-->rudof_iri;
- shacl_ir --> shacl_ast;
- shacl_ast-->srdf;
- shacl_validation-->shacl_ir;
+ rudof_rdf-->rudof_iri;
+ shacl-->rudof_rdf;
+ shacl-->sparql_service;
  shex_ast-->prefixmap;
- srdf-->prefixmap;
+ rudof_rdf-->prefixmap;
  shex_validation-->rbe;
  dctap-->prefixmap;
  dctap --> rudof_iri;
 
  shapes_comparator-->shex_ast;
- shapes_comparator-->shacl_ast;
- shapes_converter-->shacl_ast;
+ shapes_comparator-->shacl;
+ shapes_converter-->shacl;
  shapes_converter-->shex_ast;
  shapes_converter-->dctap;
  prefixmap --> rudof_iri ;
  shex_validation --> shex_ast
  sparql_service --> rudof_iri ;
  rudof_lib --> shex_validation ;
- rudof_lib --> shacl_validation ;
+ rudof_lib --> shacl ;
  rudof_lib --> shapes_converter ;
  rudof_lib --> sparql_service ;
  rudof_lib --> shapes_comparator ;
 end
 subgraph external dependencies
  oxigraph[<a href='https://crates.io/crates/oxigraph'>oxigraph</a>] ;
+ oxrdf[<a href='https://crates.io/crates/oxrdf'>oxrdf</a>] ;
  calamine[<a href='https://docs.rs/calamine/latest/calamine/'>calamine</a>] ;
  reqwest[<a href='https://docs.rs/reqwest/latest/reqwest/'>reqwest</a>] ;
  csv[<a href='https://docs.rs/csv/latest/csv/'>csv</a>]
@@ -88,16 +102,14 @@ end
 ```
 
 - [ShEx Validation algorithm](https://docs.rs/shex_validation/).
-- [ShEx Compact syntax parser](https://docs.rs/shex_compact), a ShEx Compact syntax parser that follows the [ShEx compact grammar](https://shex.io/shex-semantics/index.html#shexc).
-- [ShEx AST](https://docs.rs/shex_ast), that represents the [ShEx Abstract syntax](https://shex.io/shex-semantics/index.html#shape-expressions-shexj) based on ShExJ (JSON-LD).
-- [SRDF](https://docs.rs/srdf), a Simple RDF Interface in Rust.
+- [ShEx AST](https://docs.rs/shex_ast), that represents the [ShEx Abstract syntax](https://shex.io/shex-semantics/index.html#shape-expressions-shexj) based on ShExJ (JSON-LD), and bundles the ShEx Compact syntax parser that follows the [ShEx compact grammar](https://shex.io/shex-semantics/index.html#shexc).
+- [Rudof RDF](https://docs.rs/rudof_rdf), a RDF Interface in Rust.
 - [PrefixMap](https://docs.rs/prefixmap): Turtle based prefixMap representation
-- [Conversions between different RDF data modelling technologies](https://docs.rs/shapes_convert).
+- [Conversions between different RDF data modelling technologies](https://docs.rs/shapes_converter).
 - [Comparator between shapes](https://docs.rs/shapes_comparator).
-- [SHACL AST](https://docs.rs/shacl_ast), that represents the [SHACL core abstract syntax](https://www.w3.org/TR/shacl).
-- [SHACL Validation algorithm](https://docs.rs/shacl_validation/).
+- [SHACL](https://docs.rs/shacl), that represents the [SHACL core abstract syntax](https://www.w3.org/TR/shacl) and implements the SHACL validation algorithm.
 - [RBE](https://docs.rs/rbe), Regular Bag Expressions.
-- [ShEx testsuite](https://docs.rs/shex_testsuite/), the Code in charge of checking the [ShEx testsuite](https://shexspec.github.io/test-suite/).
+- [ShEx testsuite](https://github.com/rudof-project/rudof/tree/master/shex_testsuite), the code in charge of checking the [ShEx testsuite](https://shexspec.github.io/test-suite/).
 
 ## Related projects
 

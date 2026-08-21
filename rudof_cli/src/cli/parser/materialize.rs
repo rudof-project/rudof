@@ -11,9 +11,9 @@ pub struct MaterializeArgs {
         short = 's',
         long = "schema",
         value_name = "INPUT",
-        help = "ShEx schema, FILE, URI or - for stdin"
+        help = "ShEx schema, FILE, URI or - for stdin. If omitted, reuses the currently loaded schema"
     )]
-    pub schema: InputSpec,
+    pub schema: Option<InputSpec>,
 
     #[arg(
         short = 'f',

@@ -18,12 +18,19 @@ $ rudof shex-validate -s examples/user.shex -m examples/user.sm examples/user.tt
 ├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
 │ :c   │ :User │ OK     │ Shape passed :c@:User                                                            │
 ├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :d   │ :User │ FAIL   │ Datatype error: Datatype expected http://www.w3.org/2001/XMLSchema#string but fo │
-│      │       │        │ und http://www.w3.org/2001/XMLSchema#integer for literal with lexical form "23"^ │
-│      │       │        │ ^<http://www.w3.org/2001/XMLSchema#integer>                                      │
+│ :d   │ :User │ FAIL   │ Datatype error on node :d for property schema:name: found xsd:integer, expected  │
+│      │       │        │ xsd:string, lexical form "23"^^xsd:integer                                       │
 ├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
 │ :e   │ :User │ FAIL   │ Shape :User failed for node :e                                                   │
-│      │       │        │ └── References failed: (:d@:User)                                                │
+│      │       │        │ └── References failed:                                                           │
+│      │       │        │     └── Predicate schema:knows -> :d as :User                                    │
+│      │       │        │         └── Shape :User failed for node :d: no candidates matched the expression │
+│      │       │        │             └── Condition failed for predicate schema:name on node "23"^^<http:/ │
+│      │       │        │ /www.w3.org/2001/XMLSchema#integer>: Datatype error: found <http://www.w3.org/20 │
+│      │       │        │ 01/XMLSchema#integer>, expected <http://www.w3.org/2001/XMLSchema#string>, lexic │
+│      │       │        │ al form "23"^^<http://www.w3.org/2001/XMLSchema#integer>                         │
+├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ :f   │ :User │ FAIL   │ No candidates to match. Missing: [schema:name]                                   │
 ╰──────┴───────┴────────┴──────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -80,12 +87,15 @@ Without any resolver, `:alice` already fails because `:Address` is rejected outr
 ```sh
 $ rudof shex-validate -s examples/person.shex -n "http://example.org/alice" -l "http://example.org/Person" examples/person.ttl
 
-╭────────┬─────────┬────────┬───────────────────────────────────────────────╮
-│ Node   │ Shape   │ Status │ Details                                       │
-├────────┼─────────┼────────┼───────────────────────────────────────────────┤
-│ :alice │ :Person │ FAIL   │ Shape :Person failed for node :alice          │
-│        │         │        │ └── References failed: (:alice_addr@:Address) │
-╰────────┴─────────┴────────┴───────────────────────────────────────────────╯
+╭────────┬─────────┬────────┬──────────────────────────────────────────────────────────────────────────────────╮
+│ Node   │ Shape   │ Status │ Details                                                                          │
+├────────┼─────────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ :alice │ :Person │ FAIL   │ Shape :Person failed for node :alice                                             │
+│        │         │        │ └── References failed:                                                           │
+│        │         │        │     └── Predicate :address -> :alice_addr as :Address                            │
+│        │         │        │         └── External shape :Address rejected for node: :alice_addr and resolver  │
+│        │         │        │ reject-all: EXTERNAL shape rejected: no resolver supplied a definition           │
+╰────────┴─────────┴────────┴──────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Use `--external-resolver` (repeatable) to install resolvers that substitute or judge `EXTERNAL` shapes. Resolvers are applied in the order they appear on the command line (the most recently registered is consulted first, and the default `reject-all` always sits at the tail of the chain).
@@ -120,12 +130,17 @@ $ rudof shex-validate -s examples/person.shex --external-resolver schema:example
 
 $ rudof shex-validate -s examples/person.shex --external-resolver schema:examples/address.shex -n "http://example.org/bob" -l "http://example.org/Person" examples/person.ttl
 
-╭──────┬─────────┬────────┬─────────────────────────────────────────────╮
-│ Node │ Shape   │ Status │ Details                                     │
-├──────┼─────────┼────────┼─────────────────────────────────────────────┤
-│ :bob │ :Person │ FAIL   │ Shape :Person failed for node :bob          │
-│      │         │        │ └── References failed: (:bob_addr@:Address) │
-╰──────┴─────────┴────────┴─────────────────────────────────────────────╯
+╭──────┬─────────┬────────┬──────────────────────────────────────────────────────────────────────────────────╮
+│ Node │ Shape   │ Status │ Details                                                                          │
+├──────┼─────────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ :bob │ :Person │ FAIL   │ Shape :Person failed for node :bob                                               │
+│      │         │        │ └── References failed:                                                           │
+│      │         │        │     └── Predicate :address -> :bob_addr as :Address                              │
+│      │         │        │         └── Shape :Address failed for node :bob_addr: no candidates matched the  │
+│      │         │        │ expression                                                                       │
+│      │         │        │             └── Candidate [:street "Oak Avenue"] rejected: predicate :city requi │
+│      │         │        │ red cardinality {1, 1} but got 0                                                 │
+╰──────┴─────────┴────────┴──────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### Invalid specs
@@ -135,8 +150,7 @@ A malformed spec is reported up-front with a hint listing the recognised kinds:
 ```sh
 $ rudof shex-validate -s examples/person.shex --external-resolver bogus examples/person.ttl
 
-Error: ShEx error: Invalid external-shape resolver spec 'bogus':
-  Unknown external resolver kind 'bogus'. Available kinds: reject-all, schema
+Error: ShEx error: Invalid external-shape resolver spec 'bogus': Unknown external resolver kind 'bogus'. Available kinds: reject-all, schema
 ```
 
 ## IRI normalization modes
@@ -179,9 +193,9 @@ Arguments:
   [DATA]...
 
 Options:
-  -s, --schema <INPUT>            Schema file name, URI or - (for stdin)
-      --compiled-schema <FILE>    Precompiled ShEx SchemaIR cache file. Conflicts with --schema, --schema-format, --base-schema, --external-resolver.
-      --compile-to <FILE>         Compile the ShEx schema and write the precompiled SchemaIR cache to FILE. Conflicts with --compiled-schema.
+  -s, --schema <INPUT>            Schema file name, URI or - (for stdin). If omitted, reuses the currently loaded schema
+      --compiled-schema <FILE>    Precompiled ShEx SchemaIR cache file.
+      --compile-to <FILE>         Compile the ShEx schema and write the precompiled SchemaIR cache to FILE.
   -f, --schema-format <FORMAT>    ShEx Schema format [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
   -m, --shapemap <INPUT>          ShapeMap
       --shapemap-format <FORMAT>  ShapeMap format [possible values: compact, internal, json, details, csv]

@@ -10,9 +10,9 @@ pub struct PgschemaValidateArgs {
         short = 's',
         long = "schema",
         value_name = "INPUT",
-        help = "PGSchema file, URI or - (for stdin)"
+        help = "PGSchema file, URI or - (for stdin). If omitted, reuses the currently loaded PGSchema"
     )]
-    pub schema: InputSpec,
+    pub schema: Option<InputSpec>,
 
     #[clap(value_parser = clap::value_parser!(InputSpec))]
     pub data: Vec<InputSpec>,
@@ -31,9 +31,9 @@ pub struct PgschemaValidateArgs {
         short = 'm',
         long = "typemap",
         value_name = "INPUT",
-        help = "Type map used for validation, FILE, URI or - for stdin"
+        help = "Type map used for validation, FILE, URI or - for stdin. If omitted, reuses the currently loaded type map"
     )]
-    pub typemap: InputSpec,
+    pub typemap: Option<InputSpec>,
 
     #[arg(
         short = 'r',

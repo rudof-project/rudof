@@ -5,6 +5,7 @@ use crate::Reasons;
 use crate::ValidatorConfig;
 use crate::ValidatorErrors;
 use crate::atom;
+use crate::no_match_reason::NoMatchReason;
 use crate::ref_typing::RefTyping;
 use crate::validator_error::*;
 use either::Either;
@@ -738,7 +739,54 @@ impl Engine {
             "Neighs of {node} [{}]",
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
         );*/
-        let triple_exprs = merge_ancestor_exprs(schema.get_triple_exprs(idx).unwrap(), schema);
+        // One bucket per distinct transitive ancestor, each holding only that ancestor's
+        // MAIN triple expression.  The map is keyed by ancestor, so a diamond's shared
+        // ancestor appears exactly once and its constraints are satisfied by a single
+        // allocation of the same triples, never demanded once per inheritance path.
+        // An ancestor's remaining conjuncts (RESTRICTS-style constraints) are not
+        // partition buckets competing for triples: they are validated after a partition
+        // succeeds, against the triples the partition allocated to that ancestor and to
+        // the ancestor's own ancestors (its "split", following jena-shex).
+        let mut triple_exprs: HashMap<Option<ShapeLabelIdx>, Vec<Expr>> = HashMap::new();
+        triple_exprs.insert(None, vec![shape.triple_expr().clone()]);
+        let mut ancestor_constraints: Vec<(ShapeLabelIdx, Vec<ShapeLabelIdx>, Vec<Expr>)> = Vec::new();
+        for a in extends_closure(schema, shape.extends()) {
+            if let Some((ncs, main, rest)) = schema.get_main_shape_constraints(&a) {
+                // The ancestors whose split parts this ancestor's constraints may see:
+                // the transitive extends closure of its main shape.
+                let split_ancestors: Vec<ShapeLabelIdx> = main
+                    .as_ref()
+                    .map(|m| extends_closure(schema, m.extends()))
+                    .unwrap_or_default();
+                if let Some(main_shape) = main {
+                    triple_exprs.insert(Some(a), vec![main_shape.triple_expr().clone()]);
+                }
+                let mut constraint_tes: Vec<Expr> = Vec::new();
+                let mut conjuncts_ok = true;
+                for se in &rest {
+                    conjuncts_ok = conjuncts_ok && collect_constraint_exprs(schema, se, node, &mut constraint_tes);
+                }
+                for nc in &ncs {
+                    let ctx = SemanticActionContext::subject(node);
+                    conjuncts_ok = conjuncts_ok && nc.cond().matches(node, &ctx).is_ok();
+                }
+                if !conjuncts_ok {
+                    return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        extends: a,
+                        errors: ValidatorErrors::new(vec![ValidatorError::TripleExprRefuted {
+                            node: Box::new(node.clone()),
+                            idx: a,
+                        }]),
+                    }]));
+                }
+                if !constraint_tes.is_empty() {
+                    ancestor_constraints.push((a, split_ancestors, constraint_tes));
+                }
+            }
+        }
         /*debug!(
             "Candidate triple exprs of {node}:\n{}",
             triple_exprs
@@ -882,7 +930,9 @@ impl Engine {
                 let mut ok_partition = true;
                 let mut errors_in_loop = Vec::new();
                 let mut reasons_in_loop = Vec::new();
+                let mut allocated: HashMap<Option<ShapeLabelIdx>, Vec<_>> = HashMap::new();
                 for (maybe_label, rbes, neighs_subset) in partition.iter() {
+                    allocated.insert(*maybe_label, neighs_subset.clone());
                     let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                     match result {
                         Either::Right(reasons) => {
@@ -923,6 +973,42 @@ impl Engine {
                             // indicate that the partition failed without going into details about the failure of each triple expr
                             break;
                         },
+                    }
+                }
+                if ok_partition {
+                    // The ancestors' constraint conjuncts must hold over each ancestor's
+                    // split: the triples this partition allocated to the ancestor and to
+                    // the ancestor's own transitive ancestors.
+                    'constraints: for (a, split_ancestors, constraint_tes) in &ancestor_constraints {
+                        let mut constraint_neighs = allocated.get(&Some(*a)).cloned().unwrap_or_default();
+                        for b in split_ancestors {
+                            if let Some(more) = allocated.get(&Some(*b)) {
+                                constraint_neighs.extend(more.iter().cloned());
+                            }
+                        }
+                        for te in constraint_tes {
+                            match check_exprs_neigh(
+                                std::slice::from_ref(te),
+                                &constraint_neighs,
+                                node,
+                                shape,
+                                idx,
+                                typing,
+                            )? {
+                                Either::Right(_) => {},
+                                Either::Left(errs) => {
+                                    errors_in_loop.push(ValidatorError::ShapeExtendsError {
+                                        node: Box::new(node.clone()),
+                                        shape: Box::new(shape.clone()),
+                                        idx: *idx,
+                                        extends: *a,
+                                        errors: ValidatorErrors::new(errs),
+                                    });
+                                    ok_partition = false;
+                                    break 'constraints;
+                                },
+                            }
+                        }
                     }
                 }
                 if ok_partition {
@@ -1099,20 +1185,46 @@ impl Engine {
             }
         }
 
-        // The selection's constraint conjuncts must hold for the node
+        // The selection's constraint conjuncts.  Those expressible as triple expressions
+        // are validated by split-constraint logic once a partition succeeds (below),
+        // against the union of the triples the partition allocated to the buckets in the
+        // constraint's scope — mirroring check_node_shape_extends.  NodeConstraint
+        // conjuncts involve no triples and are checked against the node right away;
+        // anything else (e.g. a NOT conjunct) keeps the whole-neighbourhood check.
         let mut reasons = Vec::new();
+        let mut split_constraints: Vec<(ShapeLabelIdx, &[ShapeLabelIdx], Vec<Expr>)> = Vec::new();
         for c in sigma.constraints() {
-            match self.check_node_constraint_expr(c, node, schema, rdf, typing)? {
-                Either::Left(errors) => {
+            let mut tes = Vec::new();
+            match try_split_constraint(schema, c.expr(), node, &mut tes) {
+                Some(true) => {
+                    if !tes.is_empty() {
+                        split_constraints.push((*c.expr(), c.scope(), tes));
+                    }
+                },
+                Some(false) => {
                     return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
                         node: Box::new(node.clone()),
                         shape: Box::new(shape.clone()),
                         idx: *idx,
-                        extends: *c,
-                        errors: ValidatorErrors::new(errors),
+                        extends: *c.expr(),
+                        errors: ValidatorErrors::new(vec![ValidatorError::TripleExprRefuted {
+                            node: Box::new(node.clone()),
+                            idx: *c.expr(),
+                        }]),
                     }]));
                 },
-                Either::Right(rs) => reasons.extend(rs),
+                None => match self.check_node_constraint_expr(c.expr(), node, schema, rdf, typing)? {
+                    Either::Left(errors) => {
+                        return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
+                            node: Box::new(node.clone()),
+                            shape: Box::new(shape.clone()),
+                            idx: *idx,
+                            extends: *c.expr(),
+                            errors: ValidatorErrors::new(errors),
+                        }]));
+                    },
+                    Either::Right(rs) => reasons.extend(rs),
+                },
             }
         }
 
@@ -1132,7 +1244,9 @@ impl Engine {
             let mut ok_partition = true;
             let mut errors_in_loop = Vec::new();
             let mut reasons_in_loop = Vec::new();
+            let mut allocated: HashMap<Option<ShapeLabelIdx>, Vec<_>> = HashMap::new();
             for (maybe_label, rbes, neighs_subset) in partition.iter() {
+                allocated.insert(*maybe_label, neighs_subset.clone());
                 let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                 match result {
                     Either::Right(rs) => {
@@ -1161,6 +1275,35 @@ impl Engine {
                         ok_partition = false;
                         break;
                     },
+                }
+            }
+            if ok_partition {
+                // Split-constraint validation: each constraint sees the union of the
+                // triples this partition allocated to the buckets in its scope.
+                'constraints: for (cidx, scope, tes) in &split_constraints {
+                    let mut constraint_neighs = Vec::new();
+                    for b in *scope {
+                        if let Some(more) = allocated.get(&Some(*b)) {
+                            constraint_neighs.extend(more.iter().cloned());
+                        }
+                    }
+                    for te in tes {
+                        match check_exprs_neigh(std::slice::from_ref(te), &constraint_neighs, node, shape, idx, typing)?
+                        {
+                            Either::Right(_) => {},
+                            Either::Left(errs) => {
+                                errors_in_loop.push(ValidatorError::ShapeExtendsError {
+                                    node: Box::new(node.clone()),
+                                    shape: Box::new(shape.clone()),
+                                    idx: *idx,
+                                    extends: *cidx,
+                                    errors: ValidatorErrors::new(errs),
+                                });
+                                ok_partition = false;
+                                break 'constraints;
+                            },
+                        }
+                    }
                 }
             }
             if ok_partition {
@@ -1290,7 +1433,16 @@ impl Engine {
                     .triple_expr()
                     .components()
                     .all(|(_, _, cond)| !cond_has_ref(&cond));
-                if !main_preds.is_empty() && no_shape_refs {
+                // Skip this shortcut when the ancestor's predicates overlap with the child
+                // shape's own declared predicates. In that case a single triple can satisfy
+                // both the ancestor's condition (e.g. a datatype constraint) and the child's
+                // own, more specific condition (e.g. a value set), and how many triples go to
+                // each side is exactly the counting problem the partition algorithm in
+                // check_node_shape_extends solves; this exhaustive pre-filter cannot (it can
+                // only keep-or-exclude a triple wholesale, not split a run of them between
+                // the two buckets in the right proportions).
+                let overlaps_child_preds = shape.preds().iter().any(|p| main_preds.contains(p));
+                if !main_preds.is_empty() && no_shape_refs && !overlaps_child_preds {
                     let (all_values, _) = self.neighs(node, main_preds, rdf)?;
                     let all_values_ctx: Vec<_> = all_values
                         .iter()
@@ -1580,71 +1732,95 @@ fn collect_all_exprs_for_shape(
     }
 }
 
-/// When a shape S extends parents P1, P2, … and some Pi is a transitive ancestor of Pj,
-/// the partition would create separate buckets for Pi and Pj.  Because each triple can only
-/// go to one bucket, a triple that must satisfy BOTH Pi's and Pj's constraints would fail
-/// (diamond inheritance).
-///
-/// Fix: merge the triple expressions of every "covered" parent (one that is a transitive
-/// ancestor of another parent in the set) into the bucket of its leaf descendant.  Only
-/// leaf parents (those not subsumed by any other parent in the set) become partition buckets.
-fn merge_ancestor_exprs(
-    triple_exprs: HashMap<Option<ShapeLabelIdx>, Vec<Expr>>,
-    schema: &SchemaIR,
-) -> HashMap<Option<ShapeLabelIdx>, Vec<Expr>> {
-    let all_parents: Vec<ShapeLabelIdx> = triple_exprs.keys().filter_map(|k| *k).collect();
-    if all_parents.len() <= 1 {
-        return triple_exprs;
-    }
-
-    // For each parent, collect its transitive ancestors.
-    let parent_ancestors: Vec<(ShapeLabelIdx, HashSet<ShapeLabelIdx>)> = all_parents
-        .iter()
-        .map(|&pi| {
-            let ancestors: HashSet<ShapeLabelIdx> = schema.parents(&pi).into_iter().collect();
-            (pi, ancestors)
-        })
-        .collect();
-
-    // A parent pj is "covered" if some other parent pi has pj as a transitive ancestor
-    // (i.e. pi extends pj directly or transitively).
-    let mut covered: HashSet<ShapeLabelIdx> = HashSet::new();
-    for (pi, pi_ancestors) in &parent_ancestors {
-        for &pj in &all_parents {
-            if pj != *pi && pi_ancestors.contains(&pj) {
-                covered.insert(pj);
-            }
-        }
-    }
-
-    if covered.is_empty() {
-        return triple_exprs;
-    }
-
-    let mut result: HashMap<Option<ShapeLabelIdx>, Vec<Expr>> = HashMap::new();
-
-    // Keep the None (own shape) entry unchanged.
-    if let Some(exprs) = triple_exprs.get(&None) {
-        result.insert(None, exprs.clone());
-    }
-
-    // For each uncovered (leaf) parent, collect its own exprs plus the exprs of every
-    // covered ancestor that is reachable from it.
-    for (pi, pi_ancestors) in &parent_ancestors {
-        if !covered.contains(pi) {
-            let mut merged = triple_exprs.get(&Some(*pi)).cloned().unwrap_or_default();
-            for &pj in &all_parents {
-                if covered.contains(&pj)
-                    && pi_ancestors.contains(&pj)
-                    && let Some(pj_exprs) = triple_exprs.get(&Some(pj))
-                {
-                    merged.extend(pj_exprs.iter().cloned());
+/// Classify a selection constraint for split-constraint validation.  Returns
+/// `Some(true)` with the constraint's triple expressions pushed onto `out` when the
+/// (dereferenced) expression is expressible as triple expressions over its split scope
+/// — a Shape without extends, a NodeConstraint (checked against the node immediately),
+/// or a conjunction of such.  `Some(false)` reports a NodeConstraint the node fails.
+/// `None` means the constraint is not split-validatable (e.g. a negation or a shape
+/// with its own extends) and must keep the whole-neighbourhood check.
+fn try_split_constraint(schema: &SchemaIR, cidx: &ShapeLabelIdx, node: &Node, out: &mut Vec<Expr>) -> Option<bool> {
+    match schema.find_shape_idx(cidx).map(|info| info.expr()) {
+        Some(ShapeExpr::Shape(s)) if s.extends().is_empty() => {
+            out.push(s.triple_expr().clone());
+            Some(true)
+        },
+        Some(ShapeExpr::NodeConstraint(nc)) => {
+            let ctx = SemanticActionContext::subject(node);
+            Some(nc.cond().matches(node, &ctx).is_ok())
+        },
+        Some(ShapeExpr::Ref { idx }) => try_split_constraint(schema, idx, node, out),
+        Some(ShapeExpr::ShapeAnd { exprs }) => {
+            let mark = out.len();
+            for e in exprs {
+                match try_split_constraint(schema, e, node, out) {
+                    Some(true) => {},
+                    Some(false) => return Some(false),
+                    None => {
+                        out.truncate(mark);
+                        return None;
+                    },
                 }
             }
-            result.insert(Some(*pi), merged);
+            Some(true)
+        },
+        _ => None,
+    }
+}
+
+/// Collect the triple expressions contributed by an ancestor's constraint conjunct:
+/// Shapes contribute their triple expression, references are dereferenced (recursing
+/// into conjunctions), and NodeConstraints are checked against the node immediately —
+/// a failing one makes the whole collection report false.
+fn collect_constraint_exprs(schema: &SchemaIR, se: &ShapeExpr, node: &Node, out: &mut Vec<Expr>) -> bool {
+    match se {
+        ShapeExpr::Shape(s) => {
+            out.push(s.triple_expr().clone());
+            true
+        },
+        ShapeExpr::NodeConstraint(nc) => {
+            let ctx = SemanticActionContext::subject(node);
+            nc.cond().matches(node, &ctx).is_ok()
+        },
+        ShapeExpr::Ref { idx } => match schema.get_main_shape_constraints(idx) {
+            Some((ncs, main, rest)) => {
+                for nc in &ncs {
+                    let ctx = SemanticActionContext::subject(node);
+                    if nc.cond().matches(node, &ctx).is_err() {
+                        return false;
+                    }
+                }
+                if let Some(m) = main {
+                    out.push(m.triple_expr().clone());
+                }
+                rest.iter().all(|r| collect_constraint_exprs(schema, r, node, out))
+            },
+            None => true,
+        },
+        _ => true,
+    }
+}
+
+/// The transitive EXTENDS closure of `roots`, deduplicated (a diamond's shared ancestor
+/// appears once) and traversed through ShapeAnd declarations via their main conjunct —
+/// the schema's inheritance graph records no edges for ShapeAnd declarations, so
+/// SchemaIR::parents stops at them.
+fn extends_closure(schema: &SchemaIR, roots: &[ShapeLabelIdx]) -> Vec<ShapeLabelIdx> {
+    let mut result: Vec<ShapeLabelIdx> = Vec::new();
+    let mut queue: Vec<ShapeLabelIdx> = roots.to_vec();
+    while let Some(a) = queue.pop() {
+        if result.contains(&a) {
+            continue;
+        }
+        result.push(a);
+        if let Some((_ncs, Some(main), _rest)) = schema.get_main_shape_constraints(&a) {
+            for e in main.extends() {
+                if !result.contains(e) {
+                    queue.push(*e);
+                }
+            }
         }
     }
-
     result
 }
 

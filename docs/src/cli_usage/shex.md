@@ -50,7 +50,7 @@ If you try to check that schema with rudof, it informs about the error:
 
 ```sh
 $ rudof shex -s examples/shex/non_stratified.shex
-Error: Negation cycle error on :S
+Error: ShEx error: Failed to compile ShEx schema: Schema contains negative cycles in its dependency graph. Found 1 negative cycle(s).
 ```
 
 ## Obtaining information about a shape
@@ -159,10 +159,11 @@ The command runs ShEx validation:
 
 ```sh
 rudof shex-validate --schema user.shex --node :a --shape-label :User user.ttl
-Result:
-:c-><http://example.org/User>  Shape passed for node http://example.org/c: :User
-:a-><http://example.org/User>  Shape passed for node http://example.org/a: :User
-:b-><http://example.org/User>  Shape passed for node http://example.org/b: :User
+╭──────┬───────┬────────┬───────────────────────╮
+│ Node │ Shape │ Status │ Details               │
+├──────┼───────┼────────┼───────────────────────┤
+│ :a   │ :User │ OK     │ Shape passed :a@:User │
+╰──────┴───────┴────────┴───────────────────────╯
 ```
 
 ## Precompiling the schema to a SchemaIR cache
@@ -187,32 +188,28 @@ The general format of the ShEx subcommand is:
 ❯ rudof shex --help
 Show information about ShEx schemas
 
-Usage: rudof shex [OPTIONS] --schema <Schema file name>
+Usage: rudof shex [OPTIONS]
 
 Options:
-  -s, --schema <Schema file name>
-
-  -f, --format <Schema format>
-          [default: shexc] [possible values: internal, simple, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
-  -r, --result-format <Result schema format>
-          [default: shexj] [possible values: internal, simple, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
-  -t, --show elapsed time
-
-      --statistics
-
-  -o, --output-file <Output file name, default = terminal>
-
-      --reader-mode <RDF Reader mode>
-          RDF Reader mode [default: strict] [possible values: lax, strict]
-      --force-overwrite
-
-      --compile-to <FILE>
-          Compile the ShEx schema and write the precompiled SchemaIR cache to FILE.
-  -c, --config-file <Config file name>
-          Config file path, if unset it assumes default config
-  -h, --help
-          Print help
+  -s, --schema <INPUT>            Schema, FILE, URI or - for stdin. If omitted, shows the currently loaded schema
+  -f, --format <FORMAT>           Schema format (ShExC, ShExJ, Turtle, ...), default = ShExC [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -r, --result-format <FORMAT>    Result schema format [default: shexj] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -l, --shape-label <LABEL>       shape label
+  -t, --show-time <BOOL>          Show processing time [possible values: true, false]
+      --show-schema
+      --no-show-schema
+      --statistics <BOOL>         Show statistics about the schema [possible values: true, false]
+  -b, --base <IRI>                Base IRI
+      --reader-mode <MODE>        RDF Reader mode (strict or lax) [default: strict] [possible values: lax, strict]
+      --show-dependencies <BOOL>  Show dependencies between shapes [possible values: true, false]
+      --compile-to <FILE>         Compile the ShEx schema and write the precompiled SchemaIR cache to FILE.
+  -c, --config-file <FILE>        Config file name
+  -o, --output-file <FILE>        Output file name, default = terminal
+      --force-overwrite           Force overwrite to output file if it already exists
+  -h, --help                      Print help
 ```
+
+`--schema` is optional: a bare `rudof shex` shows the schema already loaded in the current session (relevant inside `rudof shell`).
 
 ## ShEx configuration file
 
@@ -221,10 +218,14 @@ The parameter `--config-file`  (`-c` in short form) can be used to pass a config
 The fields that it can contain are:
 
 - show_extends (Boolean value): If enabled it shows information about extended shapes
-- show_extends (Boolean value): If enabled it shows information about imported schemas
+- show_imports (Boolean value): If enabled it shows information about imported schemas
 - show_shapes (Boolean value): If enabled it shows information about the shapes in the schema
-- shex_format (shexc|shexj|turtle|ntriples,rdfxml|trig|n3|nquads|...): Default ShEx format (it can be overrided with the `--schema-format` option)
-- rdf_config_shex: (TOML record): Configuration in case the format is RDF, following the structure of RDF config files.
+- show_dependencies (Boolean value): If enabled it shows dependencies between shapes
+- show_ir (Boolean value): If enabled it shows the ShEx schema's internal representation
+- check_well_formed (Boolean value): If enabled it checks the schema meets the ShEx well-formedness requirements
+- shex_format (shexc|shexj|turtle|ntriples|rdfxml|trig|n3|nquads|...): Default ShEx format (it can be overridden with the `--format` option)
+- base_iri (IRI): Default base declaration to resolve relative IRIs
+- rdf (TOML record): Configuration used when the schema format is RDF, following the structure of the `[rdf]` section
 
 The following TOML file can be an example:
 

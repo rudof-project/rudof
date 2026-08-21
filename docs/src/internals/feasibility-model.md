@@ -166,9 +166,10 @@ Applied to the fixture (`C1`/`C2` = the foaf/schema Contact branches; `X_ρ` = t
 **Step 2 — selections.** A *selection* σ picks one alternative per parent: 2 × 3 = **6**
 selections. Per σ, bucket atoms are **deduplicated** — `Item` arrives through both parents
 (a diamond) and must appear **once**, or the two Item buckets would compete for the same
-`ex:id`/`ex:rolls` triples and every partition would fail. (rudof's `merge_ancestor_exprs`
-already solves this diamond for linear parents; the selection layer must apply the same
-dedup per σ.)
+`ex:id`/`ex:rolls` triples and every partition would fail. (On the non-selection path the
+same dedup falls out of `get_triple_exprs`, whose bucket map is keyed by distinct
+transitive ancestor — each ancestor contributes its own triple expression exactly once;
+the selection layer must apply the same dedup per σ.)
 
 **Step 3 — per-selection feasibility.** Each σ is the familiar virtual EachOf:
 `Fx(Person-TE) ∧ Fx(bucket₁) ∧ …`. For alice:

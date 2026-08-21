@@ -47,9 +47,13 @@ Then you can run the instruction below.
 
 ```sh
 rudof query -q user.sparql user.ttl
-?person        ?name          ?status
-     :b        "Bob"          :Waiting
-     :a        "Alice"        :Active
+╭───┬─────────┬─────────┬──────────╮
+│   │ ?person │ ?name   │ ?status  │
+├───┼─────────┼─────────┼──────────┤
+│ 1 │ :b      │ "Bob"   │ :Waiting │
+├───┼─────────┼─────────┼──────────┤
+│ 2 │ :a      │ "Alice" │ :Active  │
+╰───┴─────────┴─────────┴──────────╯
 ```
 
 ## Querying over SPARQL endpoints
@@ -76,22 +80,34 @@ You can run the following command to run the SPARQL query:
 
 ```sh
 rudof query -q wikidata.sparql -e wikidata
-?person        ?birth_place   ?label         ?birth_place_name
- wd:Q517764         wd:Q16  "Rob Pike"@en          "Canada"@en
- wd:Q518834         wd:Q16  "André Gingras"@en     "Canada"@en
- wd:Q535692         wd:Q16  "Michael Reed"@en      "Canada"@en
- wd:Q574507         wd:Q16  "Elza Kephart"@en      "Canada"@en
- wd:Q579599         wd:Q16  "Isaiah L. Kenen"@en   "Canada"@en
- wd:Q601125         wd:Q16  "Jack Wetherall"@en    "Canada"@en
- wd:Q679597         wd:Q16  "Moishe Postone"@en    "Canada"@en
- wd:Q2896159        wd:Q16  "Benjamin Lumley"@en   "Canada"@en
- wd:Q2926838        wd:Q16  "Bruno Hébert"@en      "Canada"@en
- wd:Q2938960        wd:Q16  "Carl Marotte"@en      "Canada"@en
+╭────┬──────────────┬───────────────────┬───────────────────────┬─────────────╮
+│    │ ?birth_place │ ?birth_place_name │ ?label                │ ?person     │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 1  │ wd:Q16       │ "Canada"@en       │ "Barry Pederson"@en   │ wd:Q358189  │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 2  │ wd:Q16       │ "Canada"@en       │ "Reuben Epp"@en       │ wd:Q360020  │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 3  │ wd:Q16       │ "Canada"@en       │ "Wendy McElroy"@en    │ wd:Q434376  │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 4  │ wd:Q16       │ "Canada"@en       │ "Terri Tatchell"@en   │ wd:Q435705  │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 5  │ wd:Q16       │ "Canada"@en       │ "John Ince"@en        │ wd:Q5822999 │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 6  │ wd:Q16       │ "Canada"@en       │ "Harry Strachan"@en   │ wd:Q5833843 │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 7  │ wd:Q16       │ "Canada"@en       │ "Howard M. Resh"@en   │ wd:Q5920263 │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 8  │ wd:Q16       │ "Canada"@en       │ "Hulda Crooks"@en     │ wd:Q5935600 │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 9  │ wd:Q16       │ "Canada"@en       │ "Huntly D. Millar"@en │ wd:Q5945697 │
+├────┼──────────────┼───────────────────┼───────────────────────┼─────────────┤
+│ 10 │ wd:Q16       │ "Canada"@en       │ "Graeme Manson"@en    │ wd:Q5975317 │
+╰────┴──────────────┴───────────────────┴───────────────────────┴─────────────╯
 ```
 
 ## Registered endpoints
 
-`rudof` contains a list of registered endpoints like wikidata that can be invoked by their name.
+`rudof` registers `wikidata`, `dbpedia` and `uniprot` by default; `-e <NAME>` looks them up by name instead of a full URL. Run `rudof config` to see the full list, including any endpoints added in your own TOML config. Inside `rudof shell`, `endpoint <NAME>` activates one for the rest of the session, see [shell](./shell.md).
 
 ## Selecting the RDF backend
 

@@ -6,8 +6,13 @@ use rudof_lib::formats::InputSpec;
 /// Arguments for the `service` command
 #[derive(Debug, Clone, Args)]
 pub struct ServiceArgs {
-    #[arg(short = 's', long = "service", value_name = "URL", help = "SPARQL service URL")]
-    pub service: InputSpec,
+    #[arg(
+        short = 's',
+        long = "service",
+        value_name = "URL",
+        help = "SPARQL service URL. If omitted, shows the currently loaded service description"
+    )]
+    pub service: Option<InputSpec>,
 
     #[arg(
         short = 'f',

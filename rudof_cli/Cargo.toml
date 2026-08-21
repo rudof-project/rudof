@@ -24,6 +24,7 @@ clap.workspace = true
 clap_complete_command.workspace = true
 clientele.workspace = true
 dctap.workspace = true
+dirs.workspace = true
 is_ci.workspace = true
 oxrdf.workspace = true
 pgschema.workspace = true
@@ -34,20 +35,26 @@ regex.workspace = true
 rudof_generate.workspace = true
 rudof_lib.workspace = true
 rudof_mcp.workspace = true
+rustyline.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shacl.workspace = true
 shapes_comparator.workspace = true
 shapes_converter.workspace = true
 shex_ast.workspace = true
+shlex.workspace = true
 sparql_service.workspace = true
 supports-color.workspace = true
 tabled.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+toml.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 url.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+tempfile.workspace = true
 
 # RPM package metadata configuration
 [package.metadata.generate-rpm]

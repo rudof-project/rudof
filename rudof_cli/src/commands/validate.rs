@@ -10,7 +10,7 @@ use crate::{
         base::{Command, CommandContext},
     },
 };
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 
 /// Implementation of the `validate` command.
 ///
@@ -30,12 +30,7 @@ impl ValidateCommand {
     fn to_shex_args(&self) -> Result<ShexValidateArgs> {
         Ok(ShexValidateArgs {
             data: self.args.data.clone(),
-            schema: Some(
-                self.args
-                    .schema
-                    .clone()
-                    .ok_or_else(|| anyhow!("schema is required for ShEx validation"))?,
-            ),
+            schema: self.args.schema.clone(),
             compiled_schema: None,
             compile_to: None,
             schema_format: self.args.schema_format,
@@ -77,18 +72,10 @@ impl ValidateCommand {
     /// Convert ValidateArgs to PgschemaValidateArgs
     fn to_pgschema_args(&self) -> Result<PgschemaValidateArgs> {
         Ok(PgschemaValidateArgs {
-            schema: self
-                .args
-                .schema
-                .clone()
-                .ok_or_else(|| anyhow!("schema is required for PgSchema validation"))?,
+            schema: self.args.schema.clone(),
             data: self.args.data.clone(),
             data_format: self.args.data_format,
-            typemap: self
-                .args
-                .shapemap
-                .clone()
-                .ok_or_else(|| anyhow!("shapemap is required for PgSchema validation"))?,
+            typemap: self.args.shapemap.clone(),
             result_validation_format: self.args.result_format.try_into()?,
             common: CommonArgsOutputForceOverWrite {
                 output: self.args.common.output.clone(),

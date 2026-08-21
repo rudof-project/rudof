@@ -10,58 +10,60 @@ A modern, configurable synthetic RDF data generator that creates realistic data 
 - **Flexible field generation**: Composable field generators for different data types
 - **ShEx and SHACL schema support**: Generate data that conforms to both ShEx shape definitions and SHACL constraints
 - **Auto-detection**: Automatically detect schema format based on file extension
-- **Multiple output formats**: Support for Turtle, N-Triples, JSON-LD, and more
+- **Output formats**: Turtle and N-Triples
 - **Cardinality control**: Configure minimum cardinality enforcement with `ignore_min_cardinality` flag to generate sparse or complete datasets
 - **Coherence measurement**: Generate datasets with controllable coherence levels and measure RDF coherence metrics
 
 ## Quick Start
 
-You can use these commands to test the application. Execute them from the root folder (`/home/diego/Documents/rudof/`).
+You can use these commands to test the application. Execute them from the root of the `rudof` repository, via the `rudof generate` subcommand.
 
 ### SHACL Examples
 
 ```bash
 # Generate data from SHACL schema (auto-detected by .ttl extension)
-cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output-file shacl_data.ttl --entities 100
+rudof generate --schema examples/simple_shacl.ttl --output-file shacl_data.ttl --entities 100
 
 # Generate with specific seed for reproducible SHACL data
-cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output-file shacl_reproducible.ttl --entities 50 --seed 12345
+rudof generate --schema examples/simple_shacl.ttl --output-file shacl_reproducible.ttl --entities 50 --seed 12345
 
 # Generate from complex SHACL schema with more entities
-cargo run -p data_generator -- --schema examples/shacl/node_shacl.ttl --output-file complex_shacl_data.ttl --entities 200
+rudof generate --schema examples/shacl/node_shacl.ttl --output-file complex_shacl_data.ttl --entities 200
 
 # Use parallel processing for large SHACL datasets
-cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output-file large_shacl_data.ttl --entities 5000 --parallel 8
+rudof generate --schema examples/simple_shacl.ttl --output-file large_shacl_data.ttl --entities 5000 --parallel 8
 ```
 
 ### ShEx Examples
 
 ```bash
 # Generate data from ShEx schema (auto-detected by .shex extension)
-cargo run -p data_generator -- --schema examples/simple.shex --output-file shex_data.ttl --entities 100
+rudof generate --schema examples/simple.shex --output-file shex_data.ttl --entities 100
 
 # Generate with configuration file and ShEx schema
-cargo run -p data_generator -- --config data_generator/examples/simple_config.toml --schema data_generator/examples/schema.shex
+rudof generate --generator-config rudof_generate/examples/simple_config.toml --schema rudof_generate/examples/schema.shex
 
 # Generate with inline parameters using example ShEx schema
-cargo run -p data_generator -- --schema data_generator/examples/schema.shex --output-file quick_shex_data.ttl --entities 100
+rudof generate --schema rudof_generate/examples/schema.shex --output-file quick_shex_data.ttl --entities 100
 
 # Generate with custom seed for reproducible ShEx results
-cargo run -p data_generator -- --schema data_generator/examples/schema.shex --entities 50 --seed 12345
+rudof generate --schema rudof_generate/examples/schema.shex --entities 50 --seed 12345
 ```
 
 ### Configuration-Driven Examples
 
 ```bash
 # Use automatic parallel configuration for medium datasets (works with both formats)
-cargo run -p data_generator -- --config data_generator/examples/auto_parallel.toml --schema examples/simple_shacl.ttl
+rudof generate --generator-config rudof_generate/examples/auto_parallel.toml --schema examples/simple_shacl.ttl
 
 # Use high-performance parallel configuration for large datasets
-cargo run -p data_generator -- --config data_generator/examples/parallel_config.toml --schema examples/simple.shex
+rudof generate --generator-config rudof_generate/examples/parallel_config.toml --schema examples/simple.shex
 
 # Show help for all options
-cargo run -p data_generator -- --help
+rudof generate --help
 ```
+
+> `--generator-config` is distinct from rudof's own `-c`/`--config-file`. See [generate](../docs/src/cli_usage/generate.md).
 
 ### Sample SHACL Schema (simple_shacl.ttl)
 
@@ -124,22 +126,22 @@ cargo run -p data_generator -- --help
 1. **Create a configuration file** (copy from examples below):
 ```bash
 # Copy the simple ready-to-use config
-cp data_generator/examples/simple_config.toml my_config.toml
+cp rudof_generate/examples/simple_config.toml my_config.toml
 
 # Or copy the comprehensive example
-cp data_generator/examples/config.toml my_config.toml
+cp rudof_generate/examples/config.toml my_config.toml
 ```
 
 2. **Run the generator with your schema**:
 ```bash
 # For SHACL schemas (.ttl, .rdf, .nt files)
-data_generator --config my_config.toml --schema your_schema.ttl
+rudof generate --generator-config my_config.toml --schema your_schema.ttl
 
 # For ShEx schemas (.shex files)
-data_generator --config my_config.toml --schema your_schema.shex
+rudof generate --generator-config my_config.toml --schema your_schema.shex
 
 # Auto-detection works - no need to specify format
-data_generator --config my_config.toml --schema your_schema_file
+rudof generate --generator-config my_config.toml --schema your_schema_file
 ```
 
 
@@ -148,22 +150,22 @@ data_generator --config my_config.toml --schema your_schema_file
 
 ```bash
 # Generate data using configuration file (works with both ShEx and SHACL)
-data_generator --config config.toml --schema schema_file
+rudof generate --generator-config config.toml --schema schema_file
 
 # Generate with inline parameters from SHACL schema
-data_generator --schema schema.ttl --output-file data.ttl --entities 1000
+rudof generate --schema schema.ttl --output-file data.ttl --entities 1000
 
 # Generate with inline parameters from ShEx schema
-data_generator --schema schema.shex --output-file data.ttl --entities 1000
+rudof generate --schema schema.shex --output-file data.ttl --entities 1000
 
 # Generate with custom seed for reproducible results
-data_generator --schema schema_file --entities 500 --seed 12345
+rudof generate --schema schema_file --entities 500 --seed 12345
 
 # Use multiple threads for faster generation
-data_generator --schema schema_file --entities 10000 --parallel 8
+rudof generate --schema schema_file --entities 10000 --parallel 8
 
 # Show help for all options
-data_generator --help
+rudof generate --help
 ```
 
 ## Configuration
@@ -209,14 +211,14 @@ parallel_fields = true     # Generate fields in parallel
 [generation]
 entity_count = 5000
 seed = 98765
-entity_distribution = "Weighted"
 cardinality_strategy = "Random"
 
-# Weighted distribution for different shape types
-[generation.distribution_weights]
-"http://example.org/Person" = 0.5        # 50% persons
-"http://example.org/Organization" = 0.3  # 30% organizations
-"http://example.org/Course" = 0.2        # 20% courses
+# Weighted distribution for different shape types.
+# `entity_distribution` is externally tagged: the variant name is a table key,
+# and `Weighted`'s payload is a map from shape IRI to weight.
+[generation.entity_distribution]
+Weighted = { "http://example.org/Person" = 0.5, "http://example.org/Organization" = 0.3, "http://example.org/Course" = 0.2 }
+# 50% persons, 30% organizations, 20% courses
 
 [field_generators.default]
 locale = "en"
@@ -294,13 +296,10 @@ path = "simple_data.ttl"
 ```toml
 [generation]
 entity_count = 2000
-entity_distribution = "Custom"
 
-# Exact entity counts per shape
-[generation.custom_counts]
-"http://example.org/Person" = 1000
-"http://example.org/Organization" = 200
-"http://example.org/Course" = 800
+# Exact entity counts per shape (same externally-tagged shape as `Weighted` above)
+[generation.entity_distribution]
+Custom = { "http://example.org/Person" = 1000, "http://example.org/Organization" = 200, "http://example.org/Course" = 800 }
 
 [output]
 path = "custom_distribution.ttl"
@@ -310,16 +309,16 @@ path = "custom_distribution.ttl"
 
 ```bash
 # Use TOML configuration with any schema format
-data_generator --config config.toml --schema schema_file
+rudof generate --generator-config config.toml --schema schema_file
 
 # Use JSON configuration with SHACL schema
-data_generator --config config.json --schema schema.ttl
+rudof generate --generator-config config.json --schema schema.ttl
 
 # Use JSON configuration with ShEx schema
-data_generator --config config.json --schema schema.shex
+rudof generate --generator-config config.json --schema schema.shex
 
 # Override config with command line (works with both formats)
-data_generator --config config.toml --schema schema_file --entities 5000 --output-file override.ttl
+rudof generate --generator-config config.toml --schema schema_file --entities 5000 --output-file override.ttl
 ```
 
 ### Parallel Writing Examples
@@ -332,13 +331,13 @@ Set `parallel_file_count = 0` to enable automatic detection:
 
 ```bash
 # Small dataset (50 entities) → automatically uses 1 file
-cargo run --bin data_generator -- -c examples/small_auto.toml -s examples/schema_file
+rudof generate --generator-config examples/small_auto.toml -s examples/schema_file
 
 # Medium dataset (1000 entities) → automatically uses 8 files
-cargo run --bin data_generator -- -c examples/auto_parallel.toml -s examples/schema_file
+rudof generate --generator-config examples/auto_parallel.toml -s examples/schema_file
 
 # Large dataset (5000 entities) → automatically uses 16 files
-cargo run --bin data_generator -- -c examples/large_auto.toml -s examples/schema_file
+rudof generate --generator-config examples/large_auto.toml -s examples/schema_file
 ```
 
 #### Manual Parallel Writing Configuration
@@ -432,10 +431,10 @@ parallel_file_count = 0      # 0 = auto-detect optimal count
 #### Generation Settings
 - `entity_count`: Total number of entities to generate
 - `seed`: Random seed for reproducible results (optional)
-- `entity_distribution`: How to distribute entities across shapes
+- `entity_distribution`: How to distribute entities across shapes. `Equal` is a bare string; `Weighted` and `Custom` carry a payload and are written as a table, see the examples above.
   - `"Equal"`: Equal distribution across all shapes
-  - `"Weighted"`: Use weights to control distribution
-  - `"Custom"`: Specify exact counts per shape
+  - `{ Weighted = { "<shape IRI>" = <weight>, ... } }`: Use weights to control distribution
+  - `{ Custom = { "<shape IRI>" = <count>, ... } }`: Specify exact counts per shape
 - `cardinality_strategy`: How to handle property cardinalities
   - `"Minimum"`: Use minimum cardinality values
   - `"Maximum"`: Use maximum cardinality values
@@ -450,7 +449,7 @@ parallel_file_count = 0      # 0 = auto-detect optimal count
 
 #### Output Settings
 - `path`: Output file path
-- `format`: Output format (`"Turtle"`, `"NTriples"`, `"JSONLD"`, `"RdfXml"`)
+- `format`: Output format — `"Turtle"` or `"NTriples"` only (JSON-LD and RDF/XML are not supported)
 - `compress`: Whether to compress output file
 - `write_stats`: Include generation statistics
 - `parallel_writing`: Enable writing to multiple parallel files for better I/O performance

@@ -6,7 +6,7 @@ The MCP server supports two configurable transport methods:
 - `stdio` (default): The client launches the MCP server as a subprocess. The server reads JSON-RPC messages from its standard input (stdin) and sends messages to its standard output (stdout).
 - `streamable-http`: The server operates as an independent process that can handle multiple client connections. This transport uses HTTP POST and GET requests. Server can optionally make use of Server-Sent Events (SSE) to stream multiple server messages.
 
-By default, the MCP server uses the `stdio` transport. When using `streamable-http` transport, the server binds to `127.0.0.1` (localhost) on port `8000` by default and exposes its functionality under the route name `rudof`.
+By default, the MCP server uses the `stdio` transport. When using `streamable-http` transport, the server binds to `127.0.0.1` (localhost) on port `8000` by default and exposes its functionality under the route `/rudof`.
 
 You can start the MCP server with the following command:
 
@@ -156,12 +156,12 @@ rudof mcp --port 9000
 
 ### Changing the route name (streamable-http)
 
-The route name determines the path under which the MCP server is exposed.
+The route determines the path under which the MCP server is exposed. It must start with a `/`.
 
-By default, it is `rudof`, but you can change it with `--route` (or `-n`):
+By default, it is `/rudof`, but you can change it with `--route` (or `-r`):
 
 ```sh
-rudof mcp --route rdfserver
+rudof mcp --route /rdfserver
 ```
 
 ### Configuring allowed networks (streamable-http)
@@ -184,10 +184,10 @@ rudof mcp --transport streamable-http -n 127.0.0.1 -n 192.168.1.0/24
 
 You can combine all parameters as needed.
 
-For example, to run the MCP server with `streamable-http` transport on port `8080` under the route `rdf`, allowing connections from localhost and a local network:
+For example, to run the MCP server with `streamable-http` transport on port `8080` under the route `/rdf`, allowing connections from localhost and a local network:
 
 ```sh
-rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route rdf --allowed-network 127.0.0.1 --allowed-network 192.168.1.0/24
+rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --allowed-network 127.0.0.1 --allowed-network 192.168.1.0/24
 ```
 
 ## Connecting with Claude Desktop (Example MCP Client)

@@ -20,7 +20,7 @@ The `convert` command requires 7 main arguments; namely:
 - `--result-format` (`-r` for short), where the user defines the output file format (serialization-wise).
 - `--source-file` (`-s` for short), where the user passes the input file path.
 - `--output-file` (`-o` for short), where the user passes the output file path.
-- `--config` (`-c` for short), where the user passes the config file path.
+- `--config-file` (`-c` for short), where the user passes the config file path.
 
 > Note that there's a difference between **mode** and **format**. While the first allows users to select the RDF technology; namely, DCTAP, SHACL or ShEx, the second allows users to define the actual serialization format employed; e.g. ShEx can be serialized using compact syntax (ShExC) or JSON (ShExJ).
 
@@ -79,15 +79,15 @@ It is possible to convert from a DCTap (CSV) to ShEx.
 In the first example, the most simple DCTap to ShEx schema conversion is described.
 
 ```sh
-rudof convert -m dctap -s book.csv -f csv -x shex
+rudof convert -m dctap -s book.csv -f csv -x shex -r shexc
 ```
 
-However, the converter contains a parameter that can be used to add configuration information (`--config`).
+However, the converter contains a parameter that can be used to add configuration information (`--config-file`).
 For example, instead of the basic *prefix map*, we can use custom *prefix map* declarations as follows.
 Refer to the [Configuration files](#configuration-files) section.
 
 ```sh
-rudof convert -s book.csv -m dctap -x shex -f csv -c config.toml
+rudof convert -s book.csv -m dctap -x shex -f csv -c config.toml -r shexc
 ```
 
 ### From DCTAP to UML
@@ -160,7 +160,7 @@ rudof convert -s simple.shex -m shex -x uml -r png -o simple.png
 ### From ShEx to HTML
 
 It is possible to convert from ShEx schema to a set of HTML pages representing the schema.
-The content of the HTML pages can be customized using [Jinja](https://docs.rs/minijinja/latest/minijinja/index.html) templates. The generated pages will be stored in an output folder that must be specified with the `--target` option.
+The content of the HTML pages can be customized using [Jinja](https://docs.rs/minijinja/latest/minijinja/index.html) templates. The generated pages will be stored in an output folder that must be specified with the `--target-folder` option.
 
 ```sh
 rudof convert -s simple.shex -m shex -x html -t output-folder -e templates-folder

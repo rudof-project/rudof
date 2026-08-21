@@ -1,7 +1,7 @@
 use crate::cli::parser::{
     CompareArgs, CompletionArgs, ConfigArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, MaterializeArgs, McpArgs,
     NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs, ShaclArgs, ShaclValidateArgs,
-    ShapemapArgs, ShexArgs, ShexValidateArgs, ValidateArgs,
+    ShapemapArgs, ShellArgs, ShexArgs, ShexValidateArgs, ValidateArgs,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
@@ -48,8 +48,6 @@ pub enum Command {
     /// Show information about a node in an RDF Graph
     Node(NodeArgs),
     /// Show information about SHACL shapes
-    /// The SHACL schema can be passed through the data options or the optional schema options to provide an interface similar
-    /// to Shacl-validate
     Shacl(ShaclArgs),
     // Show information and process DCTAP files
     #[command(name = "dctap")]
@@ -74,6 +72,8 @@ pub enum Command {
     Completion(CompletionArgs),
     /// Dump the effective configuration rudof is using as TOML
     Config(ConfigArgs),
+    /// Start an interactive shell (REPL) session
+    Shell(ShellArgs),
 }
 
 // ============================================================================

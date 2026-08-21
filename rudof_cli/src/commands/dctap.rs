@@ -24,14 +24,18 @@ impl Command for DctapCommand {
     }
 
     /// Executes the DCTap server logic.
+    ///
+    /// With no `--source-file`, there is nothing new to load, so this just
+    /// re-serializes whatever DCTap is already loaded in the session
+    /// (useful in the interactive shell, where state persists across
+    /// commands).
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let format = self.args.format.into();
         let result_format = self.args.result_format.into();
 
-        ctx.rudof
-            .load_dctap(&self.args.file)
-            .with_dctap_format(&format)
-            .execute()?;
+        if let Some(file) = &self.args.file {
+            ctx.rudof.load_dctap(file).with_dctap_format(&format).execute()?;
+        }
 
         ctx.rudof
             .serialize_dctap(&mut ctx.writer)

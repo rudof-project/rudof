@@ -24,21 +24,25 @@ impl Command for ShapemapCommand {
     }
 
     /// Executes the shapemap logic.
+    ///
+    /// With no `--shapemap`, there is nothing new to load, so this just
+    /// re-serializes whatever shapemap is already loaded in the session
+    /// (useful in the interactive shell, where state persists across
+    /// commands).
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let format = self.args.shapemap_format.into();
         let result_format = self.args.result_shapemap_format.into();
 
-        let mut shapemap_loading = ctx
-            .rudof
-            .load_shapemap(&self.args.shapemap)
-            .with_shapemap_format(&format);
-        if let Some(base_data) = self.args.base_data.as_deref() {
-            shapemap_loading = shapemap_loading.with_base_nodes(base_data);
+        if let Some(shapemap) = &self.args.shapemap {
+            let mut shapemap_loading = ctx.rudof.load_shapemap(shapemap).with_shapemap_format(&format);
+            if let Some(base_data) = self.args.base_data.as_deref() {
+                shapemap_loading = shapemap_loading.with_base_nodes(base_data);
+            }
+            if let Some(base_schema) = self.args.base_schema.as_deref() {
+                shapemap_loading = shapemap_loading.with_base_shapes(base_schema);
+            }
+            shapemap_loading.execute()?;
         }
-        if let Some(base_schema) = self.args.base_schema.as_deref() {
-            shapemap_loading = shapemap_loading.with_base_shapes(base_schema);
-        }
-        shapemap_loading.execute()?;
 
         ctx.rudof
             .serialize_shapemap(&mut ctx.writer)

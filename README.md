@@ -8,11 +8,13 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 
-This repo contains an RDF data shapes library implemented in Rust.
-The implementation supports
+This repo contains an RDF and Knowledge Graphs processing tool implemented in Rust.
+
+The implementation supports RDF and property graphs data, as well as 
 [ShEx](http://shex.io/),
 [SHACL](https://www.w3.org/TR/shacl/),
-[DCTap](https://www.dublincore.org/specifications/dctap/)
+[DCTap](https://www.dublincore.org/specifications/dctap/), 
+[PGSchema](https://dl.acm.org/doi/10.1145/3589778),
 and conversions between different RDF data modeling formalisms.
 
 The code can be used as a Rust library
@@ -32,12 +34,14 @@ as well as Python bindings.
 - [How to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides)
 - [Roadmap](https://github.com/rudof-project/rudof/issues/1)
 
+<!-- 
 >[!NOTE]
 >Starting from version 0.2.17, all `rudof` dependencies are version-aligned. Therefore, if you need to use a specific dependency, it must match the same version used by rudof.
 
 >[!WARNING]
 >The use of versions between 0.2.19 and 0.3.0 (inclusive) is discouraged due to some problems with the CI/CD pipeline.
 >Its possible that some of the published versions in that range may not work as expected, or even does not exist. 
+-->
 
 ## Features
 
@@ -49,7 +53,7 @@ as well as Python bindings.
 - ShEx
 - SHACL
 - DCTAP
-- Property graphs and Schemas for Property Graphs (PGSchema)
+- Property graphs and Schemas for Property Graphs ([PGSchema]()https://dl.acm.org/doi/10.1145/3589778)
 
 Future features we are planning to add:
 
@@ -64,9 +68,11 @@ You can download a binary from the [latest release](https://github.com/rudof-pro
 There you will also find the compiled packages
 for the installation on your system using a package manager.
 
-#### Ubuntu
+#### Published Debian packages
 
-Download the binary from <https://github.com/rudof-project/rudof/releases>
+rudof is available as a [Debian package](https://packages.debian.org/source/sid/rudof) for Debian-based distributions (like Ubuntu).
+
+It is also possible to download the binary from <https://github.com/rudof-project/rudof/releases>
 and install the `.deb` package running the following commands after replacing X.X.X by the latest version:
 
 ```sh
@@ -136,7 +142,7 @@ cargo deb
 And run:
 
 ```sh
-sudo dpkg -i target/debian/rudof_0.0.11-1_amd64.deb
+sudo dpkg -i target/debian/rudof_<VERSION>_amd64.deb
 ```
 
 ### Alternative for Linux
@@ -201,32 +207,37 @@ $env.RUST_LOG = 'info,shacl_validation=trace,hyper=off,reqwest=off'
 ## Command line usage
 
 ```sh
-RDF data shapes implementation in Rust
+RDF and Knowledge Graphs processing tool
 
 Usage: rudof [OPTIONS] [COMMAND]
 
 Commands:
-  mcp             Export rudof as an MCP server
-  shapemap        Show information about ShEx ShapeMaps
-  shex            Show information about ShEx schemas
-  validate        Validate RDF data using ShEx or SHACL
-  shex-validate   Validate RDF using ShEx schemas
-  shacl-validate  Validate RDF data using SHACL shapes
-  data            Show information about RDF data
-  node            Show information about a node in an RDF Graph
-  shacl           Show information about SHACL shapes The SHACL schema can be passed through the data options or the optional schema options to provide an interface similar to Shacl-validate
-  dctap           Show information and process DCTAP files
-  convert         Convert between different Data modeling technologies
-  compare         Compare two shapes (which can be in different formats)
-  rdf-config      Show information about SPARQL service
-  service         Show information about SPARQL service
-  query           Run SPARQL queries
-  generate        Generate synthetic RDF data from ShEx or SHACL schemas
-  help            Print this message or the help of the given subcommand(s)
+  mcp                Export rudof as an MCP server
+  shapemap           Show information about ShEx ShapeMaps
+  shex               Show information about ShEx schemas
+  pgschema           Show information about Property Graph Schemas
+  validate           Validate RDF data using ShEx or SHACL
+  shex-validate      Validate RDF using ShEx schemas
+  shacl-validate     Validate RDF data using SHACL shapes
+  data               Show information about RDF data
+  node               Show information about a node in an RDF Graph
+  shacl              Show information about SHACL shapes
+  dctap              Arguments for the `dctap` command
+  convert            Arguments for the `convert` command
+  compare            Compare two shapes (which can be in different formats)
+  rdf-config         Show information about rdf config
+  service            Show information about SPARQL service
+  query              Run SPARQL queries
+  generate           Generate synthetic RDF data from ShEx or SHACL schemas
+  materialize        Materialize an RDF graph from a ShEx schema and Map semantic-action state
+  pgschema-validate  Validate Property Graph data using PGSchema
+  completion         Generates a shell completion script for the specified shell
+  config             Dump the effective configuration rudof is using as TOML
+  help               Print this message or the help of the given subcommand(s)
 
 Options:
-  -d, --debug...
-  -h, --help      Print help (see more with '--help')
+  -d, --debug...  Increase logging verbosity
+  -h, --help      Print help
   -V, --version   Print version
 ```
 

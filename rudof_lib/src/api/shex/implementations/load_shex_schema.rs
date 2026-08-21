@@ -2,7 +2,7 @@ use crate::{
     Result, Rudof,
     errors::{IriError, ShExError},
     formats::{DataReaderMode, InputSpec, ShExFormat},
-    utils::get_base_iri,
+    utils::{PrefixDirective, default_prefix_header, get_base_iri},
 };
 use rudof_iri::{IriS, MimeType};
 use shex_ast::{
@@ -65,11 +65,21 @@ fn init_defaults(
 
 fn load_shex_schema_shexc<R: io::Read>(
     rudof: &mut Rudof,
-    schema_reader: R,
+    mut schema_reader: R,
     source_name: &str,
     base_schema: IriS,
     reader_mode: &DataReaderMode,
 ) -> Result<()> {
+    let mut content = String::new();
+    schema_reader
+        .read_to_string(&mut content)
+        .map_err(|error| ShExError::FailedParsingShExSchema {
+            error: error.to_string(),
+            source_name: source_name.to_string(),
+            format: "ShExC".to_string(),
+        })?;
+    let header = default_prefix_header(rudof, &content, PrefixDirective::Sparql);
+    let prefixed_reader = io::Cursor::new(format!("{header}{content}"));
     #[cfg(target_family = "wasm")]
     let source_iri = {
         IriS::from_str(source_name).map_err(|error| IriError::ParseError {
@@ -96,7 +106,7 @@ fn load_shex_schema_shexc<R: io::Read>(
         })?
     };
 
-    let schema = ShExParser::from_reader(schema_reader, Some(base_schema.clone()), &source_iri).map_err(|error| {
+    let schema = ShExParser::from_reader(prefixed_reader, Some(base_schema.clone()), &source_iri).map_err(|error| {
         ShExError::FailedParsingShExSchema {
             error: error.to_string(),
             source_name: source_name.to_string(),

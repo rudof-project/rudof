@@ -8,6 +8,21 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.3.9 (Unpublished)
+
+### Added
+- Added `rudof shell`, an interactive REPL that keeps loaded data/schema/etc. across commands, with `endpoint` and `reset` built-in commands.
+- Added `--generator-config` to `rudof generate` for fine-grained data generation settings (entity distribution, cardinality, field generators, ...).
+
+### Fixed
+- fix(shapemap fail color): It was printing the default FAIL color in Green instead of Red
+- Fixed default Wikidata/basic prefix maps using `https://` instead of `http://`, which broke resolving `wd:`, `rdf:`, `xsd:`, etc. against real data.
+- Fixed `reset` leaving a stale compiled ShEx validator behind, letting a shapemap load silently succeed against an already-reset schema.
+- Fixed `rudof_generate`'s config file requiring fields that were documented as optional, breaking minimal config files.
+
+### Changed
+- We moved NoMatchReason to its own module
+
 ## 0.3.8
 
 ### Added

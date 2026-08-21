@@ -1,0 +1,35 @@
+<http://example.org/User-4> <http://schema.org/name> "Beta457" ;
+	<http://schema.org/knows> <http://example.org/User-4> , <http://example.org/User-3-0> ;
+	a <http://example.org/User> .
+<http://example.org/User-3-0> <http://schema.org/name> "Beta235" ;
+	a <http://example.org/User> .
+<http://example.org/User-5> <http://schema.org/name> "Delta420" ;
+	a <http://example.org/User> .
+<http://example.org/User-1> <http://schema.org/name> "Delta756" ;
+	a <http://example.org/User> .
+<http://example.org/User-7> <http://schema.org/name> "Delta946" ;
+	a <http://example.org/User> .
+<http://example.org/User-2> <http://schema.org/name> "Alpha989" ;
+	<http://schema.org/knows> <http://example.org/User-2> , <http://example.org/User-1-0> ;
+	a <http://example.org/User> .
+<http://example.org/User-5-0> <http://schema.org/name> "Alpha362" ;
+	a <http://example.org/User> .
+<http://example.org/User-6> <http://schema.org/name> "Beta534" ;
+	<http://schema.org/knows> <http://example.org/User-5-0> , <http://example.org/User-6> ;
+	a <http://example.org/User> .
+<http://example.org/User-3> <http://schema.org/name> "Epsilon711" ;
+	a <http://example.org/User> .
+<http://example.org/User-1-0> <http://schema.org/name> "Gamma304" ;
+	a <http://example.org/User> .
+<http://example.org/User-9-0> <http://schema.org/name> "Beta953" ;
+	a <http://example.org/User> .
+<http://example.org/User-9> <http://schema.org/name> "Gamma799" ;
+	a <http://example.org/User> .
+<http://example.org/User-7-0> <http://schema.org/name> "Alpha344" ;
+	a <http://example.org/User> .
+<http://example.org/User-8> <http://schema.org/name> "Gamma690" ;
+	<http://schema.org/knows> <http://example.org/User-7-0> , <http://example.org/User-8> ;
+	a <http://example.org/User> .
+<http://example.org/User-10> <http://schema.org/name> "Epsilon422" ;
+	<http://schema.org/knows> <http://example.org/User-9-0> , <http://example.org/User-10> ;
+	a <http://example.org/User> .

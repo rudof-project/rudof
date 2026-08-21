@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 use rudof_iri::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::MapAccess, de::Visitor, ser::SerializeMap};
 use std::fmt::Display;
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
@@ -31,6 +32,22 @@ pub struct PrefixMap {
 impl PartialEq for PrefixMap {
     fn eq(&self, other: &Self) -> bool {
         self.map == other.map
+    }
+}
+
+impl Hash for PrefixMap {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // 1. Extraemos las referencias de los elementos
+        let mut inputs: Vec<(&String, &IriS)> = self.map.iter().collect();
+
+        // 2. Las ordenamos por clave para garantizar que el orden de inserción no afecte al hash
+        inputs.sort_by_key(|&(k, _v)| k);
+
+        // 3. Pasamos los elementos ya ordenados al hasher
+        for (clave, valor) in inputs {
+            clave.hash(state);
+            valor.hash(state);
+        }
     }
 }
 
@@ -109,6 +126,11 @@ impl PrefixMap {
     /// Finds an IRI associated with a given alias
     pub fn find(&self, str: &str) -> Option<&IriS> {
         self.map.get(str)
+    }
+
+    /// Removes the association for `alias`, returning its [`IriS`] if it existed
+    pub fn remove_prefix(&mut self, alias: &str) -> Option<IriS> {
+        self.map.shift_remove(alias)
     }
 
     /// Merges another [`PrefixMap`] into this one.
@@ -227,12 +249,12 @@ impl PrefixMap {
     /// - `xsd`
     pub fn basic() -> PrefixMap {
         HashMap::from([
-            ("", "https://example.org/"),
-            ("dc", "https://purl.org/dc/elements/1.1/"),
-            ("rdf", "https://www.w3.org/1999/02/22-rdf-syntax-ns#"),
-            ("rdfs", "https://www.w3.org/2000/01/rdf-schema#"),
-            ("sh", "https://www.w3.org/ns/shacl#"),
-            ("xsd", "https://www.w3.org/2001/XMLSchema#"),
+            ("", "http://example.org/"),
+            ("dc", "http://purl.org/dc/elements/1.1/"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("sh", "http://www.w3.org/ns/shacl#"),
+            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
         ])
         .try_into()
         .unwrap()
@@ -242,38 +264,38 @@ impl PrefixMap {
     /// This source of this list is <https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes>
     pub fn wikidata() -> PrefixMap {
         let pm: PrefixMap = HashMap::from([
-            ("bd", "https://www.bigdata.com/rdf#"),
-            ("cc", "https://creativecommons.org/ns#"),
-            ("dct", "https://purl.org/dc/terms/"),
-            ("geo", "https://www.opengis.net/ont/geosparql#"),
-            ("hint", "https://www.bigdata.com/queryHints#"),
-            ("ontolex", "https://www.w3.org/ns/lemon/ontolex#"),
-            ("owl", "https://www.w3.org/2002/07/owl#"),
-            ("prov", "https://www.w3.org/ns/prov#"),
-            ("rdf", "https://www.w3.org/1999/02/22-rdf-syntax-ns#"),
-            ("rdfs", "https://www.w3.org/2000/01/rdf-schema#"),
-            ("schema", "https://schema.org/"),
-            ("skos", "https://www.w3.org/2004/02/skos/core#"),
-            ("xsd", "https://www.w3.org/2001/XMLSchema#"),
-            ("p", "https://www.wikidata.org/prop/"),
-            ("pq", "https://www.wikidata.org/prop/qualifier/"),
-            ("pqn", "https://www.wikidata.org/prop/qualifier/value-normalized/"),
-            ("pqv", "https://www.wikidata.org/prop/qualifier/value/"),
-            ("pr", "https://www.wikidata.org/prop/reference/"),
-            ("prn", "https://www.wikidata.org/prop/reference/value-normalized/"),
-            ("prv", "https://www.wikidata.org/prop/reference/value/"),
-            ("psv", "https://www.wikidata.org/prop/statement/value/"),
-            ("ps", "https://www.wikidata.org/prop/statement/"),
-            ("psn", "https://www.wikidata.org/prop/statement/value-normalized/"),
-            ("wd", "https://www.wikidata.org/entity/"),
-            ("wdata", "https://www.wikidata.org/wiki/Special:EntityData/"),
-            ("wdno", "https://www.wikidata.org/prop/novalue/"),
-            ("wdref", "https://www.wikidata.org/reference/"),
-            ("wds", "https://www.wikidata.org/entity/statement/"),
-            ("wdt", "https://www.wikidata.org/prop/direct/"),
-            ("wdtn", "https://www.wikidata.org/prop/direct-normalized/"),
-            ("wdv", "https://www.wikidata.org/value/"),
-            ("wikibase", "https://wikiba.se/ontology#"),
+            ("bd", "http://www.bigdata.com/rdf#"),
+            ("cc", "http://creativecommons.org/ns#"),
+            ("dct", "http://purl.org/dc/terms/"),
+            ("geo", "http://www.opengis.net/ont/geosparql#"),
+            ("hint", "http://www.bigdata.com/queryHints#"),
+            ("ontolex", "http://www.w3.org/ns/lemon/ontolex#"),
+            ("owl", "http://www.w3.org/2002/07/owl#"),
+            ("prov", "http://www.w3.org/ns/prov#"),
+            ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+            ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+            ("schema", "http://schema.org/"),
+            ("skos", "http://www.w3.org/2004/02/skos/core#"),
+            ("xsd", "http://www.w3.org/2001/XMLSchema#"),
+            ("p", "http://www.wikidata.org/prop/"),
+            ("pq", "http://www.wikidata.org/prop/qualifier/"),
+            ("pqn", "http://www.wikidata.org/prop/qualifier/value-normalized/"),
+            ("pqv", "http://www.wikidata.org/prop/qualifier/value/"),
+            ("pr", "http://www.wikidata.org/prop/reference/"),
+            ("prn", "http://www.wikidata.org/prop/reference/value-normalized/"),
+            ("prv", "http://www.wikidata.org/prop/reference/value/"),
+            ("psv", "http://www.wikidata.org/prop/statement/value/"),
+            ("ps", "http://www.wikidata.org/prop/statement/"),
+            ("psn", "http://www.wikidata.org/prop/statement/value-normalized/"),
+            ("wd", "http://www.wikidata.org/entity/"),
+            ("wdata", "http://www.wikidata.org/wiki/Special:EntityData/"),
+            ("wdno", "http://www.wikidata.org/prop/novalue/"),
+            ("wdref", "http://www.wikidata.org/reference/"),
+            ("wds", "http://www.wikidata.org/entity/statement/"),
+            ("wdt", "http://www.wikidata.org/prop/direct/"),
+            ("wdtn", "http://www.wikidata.org/prop/direct-normalized/"),
+            ("wdv", "http://www.wikidata.org/value/"),
+            ("wikibase", "http://wikiba.se/ontology#"),
         ])
         .try_into()
         .unwrap();

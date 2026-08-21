@@ -12,6 +12,7 @@ pub mod generation;
 pub mod map_state;
 pub mod materialize;
 pub mod pgschema;
+pub mod prefixes;
 pub mod query;
 pub mod rdf_config;
 pub mod shacl;

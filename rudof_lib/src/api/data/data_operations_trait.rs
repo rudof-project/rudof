@@ -1,8 +1,8 @@
 use crate::{
     Result, Rudof,
     api::data::implementations::{
-        list_endpoints, load_data, load_service_description, reset_data, reset_service_description, serialize_data,
-        serialize_service_description, show_node_info,
+        dereference, list_endpoints, load_data, load_service_description, reset_data, reset_service_description,
+        serialize_data, serialize_service_description, show_node_info,
     },
     formats::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
@@ -128,6 +128,26 @@ pub trait DataOperations {
     /// Returns:
     ///     List of (name, url) tuples for known endpoints.
     fn list_endpoints(&mut self) -> Result<Vec<(String, String)>>;
+
+    /// Dereferences `uri` over HTTP(S) and merges the resulting RDF data.
+    ///
+    /// Sends a GET request content-negotiating for an RDF serialization
+    /// (`text/turtle`, `application/rdf+xml`, `application/ld+json`, ...),
+    /// following redirects, and parses the response body using the format
+    /// indicated by its `Content-Type` header (falling back to Turtle if the
+    /// header is missing or unrecognized).
+    ///
+    /// # Arguments
+    ///
+    /// * `uri` - The absolute IRI to dereference
+    /// * `reader_mode` - The parsing mode (uses default if None)
+    /// * `merge` - Whether to merge with existing data or replace it (defaults to true)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails, the response status is not
+    /// successful, or the body cannot be parsed as RDF.
+    fn dereference(&mut self, uri: &str, reader_mode: Option<&DataReaderMode>, merge: Option<bool>) -> Result<()>;
 }
 
 impl DataOperations for Rudof {
@@ -204,5 +224,9 @@ impl DataOperations for Rudof {
 
     fn list_endpoints(&mut self) -> Result<Vec<(String, String)>> {
         list_endpoints(self)
+    }
+
+    fn dereference(&mut self, uri: &str, reader_mode: Option<&DataReaderMode>, merge: Option<bool>) -> Result<()> {
+        dereference(self, uri, reader_mode, merge)
     }
 }

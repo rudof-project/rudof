@@ -7,17 +7,27 @@ Property graphs can be defined with the syntax provided by [YARSPG](https://gith
 An example PGSchema is the following:
 
 ```gql
-CREATE GRAPH TYPE Course {
-( personType : Person { name : STRING , OPTIONAL age: INT })
-( studentType : Person & Student { name STRING , age INT })
-( courseType : Course ) { name STRING })
-(: personType OPEN ) -[: knows { since DATE } ]->
-(: personType OPEN )
-(: studentType ) -[: enrolled { start DATE ,
-OPTIONAL end DATE } ] - >(: courseType )
-}
+CREATE NODE TYPE ( PersonType : Person {
+    name: STRING,
+    OPTIONAL age: INTEGER
+}) ;
+CREATE NODE TYPE ( StudentType : Person & Student {
+    name: STRING,
+    OPTIONAL age: INTEGER CHECK (> 18)
+}) ;
+CREATE NODE TYPE ( CourseType: Course {
+    name: STRING
+}) ;
+CREATE EDGE TYPE (:PersonType)
+                 -[KnowsType : Knows { since: INTEGER }]->
+                 (:PersonType);
+CREATE EDGE TYPE (:StudentType)
+                 -[EnrolledInType : EnrolledIn { start: INTEGER, end: INTEGER }]->
+                 (:CourseType)
 ```
 
+This schema is available at [examples/property_graphs/demo.pgs](https://github.com/rudof-project/rudof/tree/master/examples/property_graphs/demo.pgs).
+
 ```sh
-rudof pgschema examples/pgs/person.pgs
+rudof pgschema -s examples/property_graphs/demo.pgs
 ```

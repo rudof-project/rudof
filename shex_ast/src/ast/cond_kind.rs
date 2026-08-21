@@ -3,7 +3,7 @@ use crate::{
     ast::NodeKind,
     ir::{semantic_action_context::SemanticActionContext, value_set::ValueSet},
 };
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMap};
 use rbe::{MatchKind, Pending, RbeError};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::{
@@ -36,7 +36,10 @@ pub enum CondKind {
     MaxExclusive(NumericLiteral),
     TotalDigits(usize),
     FractionDigits(usize),
-    ValueSet(ValueSet),
+    ValueSet {
+        vs: ValueSet,
+        prefixmap: PrefixMap,
+    },
     /// The registry is looked up from the `SemanticActionContext` at match time.
     /// The enum carries only the action IRI and its inline code so the whole variant stays serializable.
     SemAct {
@@ -105,11 +108,15 @@ impl MatchKind<Pred, Node, ShapeLabelIdx, SemanticActionContext> for CondKind {
                 Ok(_) => empty(),
                 Err(e) => error(format!("FractionDigits error: {e}")),
             },
-            CondKind::ValueSet(vs) => {
+            CondKind::ValueSet { vs, prefixmap } => {
                 if vs.check_value(v.as_object()) {
                     empty()
                 } else {
-                    error(format!("Value {} not in {vs:?}", v.as_object()))
+                    error(format!(
+                        "Value {} not in {}",
+                        v.as_object(),
+                        vs.show_qualified(prefixmap)
+                    ))
                 }
             },
             CondKind::SemAct { name, code } => match ctx.registry() {

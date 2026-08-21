@@ -85,6 +85,10 @@ pub enum RudofError {
     #[error("Materialize error: {0}")]
     Materialize(#[from] MaterializeError),
 
+    /// Default prefix declarations errors.
+    #[error("Prefixes error: {0}")]
+    Prefixes(#[from] PrefixesError),
+
     /// The requested operation is not yet implemented.
     #[error("Not implemented: {msg}")]
     NotImplemented { msg: String },

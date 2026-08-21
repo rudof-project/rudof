@@ -21,7 +21,8 @@ mod shex;
 mod shex_validate;
 mod validate;
 
-pub use base::{CommandContext, CommandFactory};
+pub(crate) use base::extract_common;
+pub use base::{Command, CommandContext, CommandFactory};
 pub use compare::CompareCommand;
 pub use completion::CompletionCommand;
 pub use config::ConfigCommand;

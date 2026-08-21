@@ -47,6 +47,7 @@ pub trait UmlConverter {
             return Err(UmlConverterError::NoPlantUMLFile {
                 path: plantuml_path.as_ref().display().to_string(),
                 error: e.to_string(),
+                plantuml_env: std::env::var("PLANTUML").unwrap_or_else(|_| "Not set".into()),
             });
         }
 
@@ -71,9 +72,10 @@ pub trait UmlConverter {
         check_java_installed().map_err(|e| UmlConverterError::JavaNotInstalled { error: e.to_string() })?;
 
         // Verify PlantUML jar is valid
-        check_plantuml_jar(plantuml_path.as_ref()).map_err(|e| UmlConverterError::NoPlantUMLFile {
+        check_plantuml_jar(plantuml_path.as_ref()).map_err(|e| UmlConverterError::NoPlantUMLFile2 {
             path: plantuml_path.as_ref().display().to_string(),
             error: e.to_string(),
+            plantuml_env: std::env::var("PLANTUML").unwrap_or_else(|_| "Not set".into()),
         })?;
 
         // Build the PlantUML command

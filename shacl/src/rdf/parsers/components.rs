@@ -51,6 +51,8 @@ pub(crate) fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec
         Box::new(closed()),
         Box::new(has_value()),
         Box::new(in_component()),
+        // Non-validating constraint components
+
         // SPARQL based constraints and SPARQL based constraint components
         Box::new(basic_sparql()),
         // TODO: deactivated is not a shape component...move this code elsewhere?

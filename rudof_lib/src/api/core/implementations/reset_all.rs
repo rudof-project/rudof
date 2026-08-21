@@ -6,9 +6,11 @@ pub fn reset_all(rudof: &mut Rudof) {
     rudof.shacl_validation_results = None;
     rudof.shex_schema = None;
     rudof.shex_schema_ir = None;
+    rudof.shex_validator = None;
     rudof.shex_validation_results = None;
     rudof.pg_schema = None;
     rudof.pg_schema_validation_results = None;
+    rudof.typemap = None;
     rudof.shapemap = None;
     rudof.query = None;
     rudof.query_results = None;

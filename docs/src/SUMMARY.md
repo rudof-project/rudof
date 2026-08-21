@@ -5,35 +5,37 @@
 - [Getting started](./general/getting-started.md)
 - [Configuration](./general/configuration.md)
 
-# `rudof` commands
+# rudof CLI commands
 
-`rudof` supports the following commands:
-
-## Common options
-
+- [completion](./cli_usage/completion.md)
+- [config](./cli_usage/config.md)
+- [shell](./cli_usage/shell.md)
+- [mcp](./cli_usage/mcp.md)
 - [RDF backend (`--backend`)](./cli_usage/backend.md)
 
-## Commands
+## rudof technology commands
 
-- [node](./cli_usage/node.md)
 - [data](./cli_usage/data.md)
 - [query](./cli_usage/sparql.md)
+- [node](./cli_usage/node.md)
 - [shex](./cli_usage/shex.md)
 - [shacl](./cli_usage/shacl.md)
-- [pgschema](./cli_usage/pgschema.md)
 - [shapemap](./cli_usage/shapemap.md)
+- [pgschema](./cli_usage/pgschema.md)
 - [dctap](./cli_usage/dctap.md)
 - [service](./cli_usage/service.md)
+- [rdf-config](./cli_usage/rdf-config.md)
+
+## rudof action commands
+
 - [shex-validate](./cli_usage/shex_validate.md)
 - [shacl-validate](./cli_usage/shacl_validate.md)
+- [pgschema-validate](./cli_usage/pgschema_validate.md)
 - [validate](./cli_usage/validate.md)
 - [convert](./cli_usage/convert.md)
-- [completion](./cli_usage/completion.md)
 - [compare](./cli_usage/compare.md)
-- [rdf-config](./cli_usage/rdf-config.md)
 - [generate](./cli_usage/generate.md)
 - [materialize](./cli_usage/materialize.md)
-- [mcp](./cli_usage/mcp.md)
 
 # How to
 

@@ -10,7 +10,7 @@ For example, we can create IRIs from URLs, Paths or Strings:
 ```rust
 use rudof_iri::IriS;
 
-let iri2 = IriS::from_str_base("https://example.org/name", None).unwrap();
+let iri = IriS::from_str_base("https://example.org/name", None).unwrap();
 println!("IRI: {}", iri.as_str());
 ```
 
@@ -19,7 +19,7 @@ Or extend a base IRI with a suffix:
 ```rust
 use rudof_iri::IriS;
 
-let iri2 = IriS::from_str_base("https://example.org/name", None).unwrap();
+let base = IriS::from_str_base("https://example.org/", None).unwrap();
 let extended = base.extend("course").unwrap();
 println!("Extended iri: {}", extended.as_str());
 ```
@@ -31,17 +31,15 @@ This create depends mostly on the [`oxiri`](https://crates.io/crates/oxiri) and 
 This create is also used by other rudof modules that needs IRIs functionality, such as:
 - [`rudof_rdf`](./rudof_rdf.md)
 - [`prefixmap`](./prefixmap.md)
-- [`sparql_service`](./sparql_service.md)
-- [`dctap`](./dctap.md)
-- [`rudof_generate`](./rudof_generate.md)
+- [`sparql_service`](https://docs.rs/sparql_service)
+- [`dctap`](https://docs.rs/dctap)
+- [`rudof_generate`](https://docs.rs/rudof_generate)
 - [`rudof_lib`](./rudof_lib.md)
 - [`rudof_mcp`](./rudof_mcp.md)
-- [`shacl_ast`](./shacl_ast.md)
-- [`shacl_rdf`](./shacl_rdf.md)
-- [`shacl_validation`](./shacl_validation.md)
-- [`shapes_converter`](./shapes_converter.md)
-- [`shex_ast`](./shex_ast.md)
-- [`shex_validation`](./shex_validation.md)
+- [`shacl`](https://docs.rs/shacl)
+- [`shapes_converter`](https://docs.rs/shapes_converter)
+- [`shex_ast`](https://docs.rs/shex_ast)
+- [`shex_validation`](https://docs.rs/shex_validation)
 
 ## Documentation
 

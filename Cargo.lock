@@ -311,7 +311,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bench-issue730"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "rudof_lib",
@@ -320,7 +320,7 @@ dependencies = [
 
 [[package]]
 name = "bench-shex"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "criterion",
@@ -596,7 +596,7 @@ dependencies = [
  "find-msvc-tools",
  "jobserver",
  "libc",
- "shlex",
+ "shlex 2.0.1",
 ]
 
 [[package]]
@@ -758,6 +758,15 @@ dependencies = [
  "gofer",
  "known-errors",
  "tracing-core",
+]
+
+[[package]]
+name = "clipboard-win"
+version = "5.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bde03770d3df201d4fb868f2c9c59e66a3e4e2bd06692a0fe701e7103c7e84d4"
+dependencies = [
+ "error-code",
 ]
 
 [[package]]
@@ -1130,7 +1139,7 @@ checksum = "be1e0bca6c3637f992fc1cc7cbc52a78c1ef6db076dbf1059c4323d6a2048376"
 
 [[package]]
 name = "dctap"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "calamine",
  "csv",
@@ -1299,7 +1308,7 @@ dependencies = [
 
 [[package]]
 name = "emacs-rudof"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "emacs",
@@ -1337,6 +1346,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "endian-type"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "869b0adbda23651a9c5c0c3d270aac9fcb52e8622a8f2b17e57802d7791962f2"
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1351,6 +1366,12 @@ dependencies = [
  "libc",
  "windows-sys 0.61.2",
 ]
+
+[[package]]
+name = "error-code"
+version = "3.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b5343afd4a8365a643ac588dab4cf234a190c7f6c88c9f6dd6ffe00837661b7"
 
 [[package]]
 name = "error-stack"
@@ -2436,7 +2457,7 @@ dependencies = [
 
 [[package]]
 name = "mie"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "hashlink",
  "rudof_iri",
@@ -2504,10 +2525,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "nibble_vec"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77a5d83df9f36fe23f0c3648c6bbb8b0298bb5f1939c8f2704431371f4b84d43"
+dependencies = [
+ "smallvec",
+]
+
+[[package]]
 name = "nix"
 version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.31.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -2932,7 +2974,7 @@ dependencies = [
 
 [[package]]
 name = "pgschema"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "clap",
@@ -3057,7 +3099,7 @@ dependencies = [
 
 [[package]]
 name = "prefixmap"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "colored",
  "indexmap 2.14.0",
@@ -3270,7 +3312,7 @@ dependencies = [
 
 [[package]]
 name = "pyrudof"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "pyo3",
  "pythonize",
@@ -3391,6 +3433,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
+name = "radix_trie"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b4431027dcd37fc2a73ef740b5f233aa805897935b8bce0195e41bbf9a3289a"
+dependencies = [
+ "endian-type",
+ "nibble_vec",
+]
+
+[[package]]
 name = "rand"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3497,7 +3549,7 @@ dependencies = [
 
 [[package]]
 name = "rbe"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "criterion",
  "either",
@@ -3517,7 +3569,7 @@ dependencies = [
 
 [[package]]
 name = "rbe_testsuite"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "indoc",
@@ -3530,7 +3582,7 @@ dependencies = [
 
 [[package]]
 name = "rdf_config"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "hashlink",
  "indexmap 2.14.0",
@@ -3752,13 +3804,14 @@ dependencies = [
 
 [[package]]
 name = "rudof_cli"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "clap",
  "clap_complete_command",
  "clientele",
  "dctap",
+ "dirs",
  "is_ci",
  "oxrdf",
  "pgschema",
@@ -3769,17 +3822,21 @@ dependencies = [
  "rudof_lib",
  "rudof_mcp",
  "rudof_rdf",
+ "rustyline",
  "serde",
  "serde_json",
  "shacl",
  "shapes_comparator",
  "shapes_converter",
  "shex_ast",
+ "shlex 1.3.0",
  "sparql_service",
  "supports-color",
  "tabled",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "toml",
  "tracing",
  "tracing-subscriber",
  "url",
@@ -3787,7 +3844,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_config"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "dirs",
  "serde",
@@ -3797,7 +3854,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_generate"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3825,7 +3882,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_iri"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "getrandom 0.3.4",
  "indexmap 2.14.0",
@@ -3840,7 +3897,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_lib"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "colored",
  "crossterm",
@@ -3876,7 +3933,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_mcp"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "axum",
@@ -3906,7 +3963,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_rdf"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "bollard",
  "colored",
@@ -3914,7 +3971,7 @@ dependencies = [
  "csv",
  "futures",
  "getrandom 0.3.4",
- "nix",
+ "nix 0.30.1",
  "once_cell",
  "oxigraph",
  "oxilangtag",
@@ -4129,6 +4186,26 @@ name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
+
+[[package]]
+name = "rustyline"
+version = "18.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53f6a737db68eb1a8ccff86b584b2fc13eca6a7bb6f78ebc7c529547e3ab9684"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "clipboard-win",
+ "libc",
+ "log",
+ "memchr",
+ "nix 0.31.3",
+ "radix_trie",
+ "unicode-segmentation",
+ "unicode-width",
+ "utf8parse",
+ "windows-sys 0.61.2",
+]
 
 [[package]]
 name = "ryu"
@@ -4426,7 +4503,7 @@ dependencies = [
 
 [[package]]
 name = "shacl"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -4439,6 +4516,7 @@ dependencies = [
  "rudof_config",
  "rudof_iri",
  "rudof_rdf",
+ "rust_decimal",
  "serde",
  "sparql_service",
  "thiserror 2.0.18",
@@ -4448,7 +4526,7 @@ dependencies = [
 
 [[package]]
 name = "shapes_comparator"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "prefixmap",
  "rudof_config",
@@ -4466,7 +4544,7 @@ dependencies = [
 
 [[package]]
 name = "shapes_converter"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "chrono",
  "dctap",
@@ -4502,7 +4580,7 @@ dependencies = [
 
 [[package]]
 name = "shex_ast"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "colored",
  "const_format",
@@ -4533,7 +4611,7 @@ dependencies = [
 
 [[package]]
 name = "shex_testsuite"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "clap",
@@ -4553,7 +4631,7 @@ dependencies = [
 
 [[package]]
 name = "shex_validation"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "either",
  "indexmap 2.14.0",
@@ -4573,6 +4651,12 @@ dependencies = [
  "tracing-test",
  "url",
 ]
+
+[[package]]
+name = "shlex"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shlex"
@@ -4724,7 +4808,7 @@ dependencies = [
 
 [[package]]
 name = "sparql_service"
-version = "0.3.7"
+version = "0.3.9"
 dependencies = [
  "colored",
  "const_format",
@@ -5450,6 +5534,12 @@ name = "unicode-ident"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6f5d3c3b1bf09027a88a6bc961fc00497d651009560b5463668dc81b0fa87a8"
 
 [[package]]
 name = "unicode-width"

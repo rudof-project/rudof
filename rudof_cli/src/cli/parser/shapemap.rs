@@ -10,9 +10,9 @@ pub struct ShapemapArgs {
         short = 'm',
         long = "shapemap",
         value_name = "INPUT",
-        help = "ShapeMap (FILE, URI or - for stdin)"
+        help = "ShapeMap (FILE, URI or - for stdin). If omitted, shows the currently loaded shapemap"
     )]
-    pub shapemap: InputSpec,
+    pub shapemap: Option<InputSpec>,
 
     #[arg(
         short = 'f',
