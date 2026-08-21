@@ -1,6 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::components::Class;
 use crate::ir::{IRComponent, IRSchema, IRShape};
+#[cfg(feature = "sparql")]
 use crate::types::MessageMap;
 use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
@@ -10,6 +11,7 @@ use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::term::Term;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+#[cfg(feature = "sparql")]
 use std::fmt::Debug;
 
 #[cfg(feature = "sparql")]

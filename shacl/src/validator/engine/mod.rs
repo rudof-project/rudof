@@ -10,12 +10,14 @@ use crate::types::Target;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+#[cfg(feature = "sparql")]
 use std::collections::HashSet;
 
 use crate::error::ValidationError;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
 pub use native::NativeEngine;
+#[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
 #[cfg(feature = "sparql")]
 pub use sparql::SparqlEngine;

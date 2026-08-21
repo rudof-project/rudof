@@ -1,14 +1,20 @@
 use crate::error::ValidationError;
 use crate::ir::components::Disjoint;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{BasicSparqlValidator, NativeValidator, validate_with_focus};
+#[cfg(feature = "sparql")]
+use crate::validator::constraints::BasicSparqlValidator;
+use crate::validator::constraints::{NativeValidator, validate_with_focus};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
+#[cfg(feature = "sparql")]
 use indoc::formatdoc;
+#[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
-use rudof_rdf::rdf_core::term::{Object, Triple};
+#[cfg(feature = "sparql")]
+use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 

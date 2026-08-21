@@ -1,9 +1,14 @@
 use crate::error::ValidationError;
 use crate::validator::ShaclValidationMode;
-use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
+#[cfg(feature = "sparql")]
+use crate::validator::engine::SparqlEngine;
+use crate::validator::engine::{Engine, NativeEngine};
 use crate::validator::processor::ShaclProcessor;
 use crate::validator::store::{Graph, Store};
 use rudof_rdf::rdf_core::RDFFormat;
+#[cfg(not(feature = "sparql"))]
+use rudof_rdf::rdf_impl::OxigraphInMemory;
+#[cfg(feature = "sparql")]
 use sparql_service::RdfData;
 use std::path::Path;
 
@@ -65,6 +70,19 @@ impl ShaclProcessor<RdfData> for GraphValidation {
 
     fn prepare_store(&mut self) -> Result<(), ValidationError> {
         self.store.store_mut().check_store().map_err(ValidationError::from)
+    }
+}
+
+#[cfg(not(feature = "sparql"))]
+impl ShaclProcessor<OxigraphInMemory> for GraphValidation {
+    fn store(&self) -> &OxigraphInMemory {
+        self.store.store()
+    }
+
+    fn runner(mode: &ShaclValidationMode) -> Box<dyn Engine<OxigraphInMemory>> {
+        match mode {
+            ShaclValidationMode::Native => Box::new(NativeEngine::new()),
+        }
     }
 }
 
