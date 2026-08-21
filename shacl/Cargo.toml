@@ -12,15 +12,13 @@ repository.workspace = true
 
 [features]
 default = ["sparql"]
-sparql = ["dep:sparql_service", "sparql_service/sparql", "rudof_rdf/sparql" ]
+sparql = ["dep:sparql_service", "sparql_service/sparql", "rudof_rdf/sparql"]
 
 [dependencies]
 anyhow.workspace = true
 dashmap.workspace = true
 indoc.workspace = true
 itertools.workspace = true
-rudof_config.workspace = true
-rudof_iri = { version = "0.3.8", path = "../rudof_iri", default-features = false }
 petgraph.workspace = true
 prefixmap.workspace = true
 rayon.workspace = true
@@ -35,7 +33,7 @@ toml.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 
 [[example]]
 name = "endpoint_validation"
