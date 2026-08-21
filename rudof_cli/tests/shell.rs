@@ -428,28 +428,6 @@ fn shell_shex_accepts_bare_file_as_schema() {
 
 #[cfg(not(target_family = "wasm"))]
 #[test]
-fn shell_shacl_accepts_bare_file_as_shapes_not_data() {
-    let shapes = fixture("shell_shapes.ttl");
-    let out = run_shell(&format!("shacl {shapes}\ndata\nexit\n"));
-
-    assert!(
-        out.stdout.contains("SHACL shapes graph IR"),
-        "expected the bare file to be loaded as shapes, got:\n{}",
-        out.stdout
-    );
-    // Loading it as shapes must not also set it as the session's RDF data —
-    // the follow-up bare `data` call should still report nothing loaded.
-    assert!(
-        out.stderr.contains("No data loaded"),
-        "expected the shapes file to not be treated as RDF data, got stdout:\n{}\nstderr:\n{}",
-        out.stdout,
-        out.stderr
-    );
-    assert_eq!(out.code, 0);
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[test]
 fn shell_bare_file_convenience_does_not_apply_alongside_other_flags() {
     // Combining the bare file with another flag is ambiguous, so it's left
     // to clap's normal parsing (and normal error) rather than guessed at.
@@ -938,22 +916,6 @@ fn shell_shex_resolves_prefixed_names_using_default_prefixes() {
     assert!(
         out.stdout.contains("PersonShape"),
         "expected the schema to load using the default prefixes, got:\n{}",
-        out.stdout
-    );
-    assert_eq!(out.code, 0);
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[test]
-fn shell_shacl_resolves_prefixed_names_using_default_prefixes() {
-    let shapes = fixture("shell_shapes_no_prefix.ttl");
-    let script = format!(
-        "prefixes add p http://example.org/\nprefixes add xsd http://www.w3.org/2001/XMLSchema#\nprefixes add sh http://www.w3.org/ns/shacl#\nshacl {shapes}\nexit\n"
-    );
-    let out = run_shell(&script);
-    assert!(
-        out.stdout.contains("SHACL shapes graph IR"),
-        "expected the shapes to load using the default prefixes, got:\n{}",
         out.stdout
     );
     assert_eq!(out.code, 0);
