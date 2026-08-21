@@ -67,7 +67,7 @@ pub struct ShaclArgs {
         ignore_case = true,
         value_name = "FORMAT",
         help = "Result shapes format",
-        default_value_t = ShaclFormatCli::Internal
+        default_value_t = ShaclFormatCli::Turtle
     )]
     pub result_shapes_format: ShaclFormatCli,
 

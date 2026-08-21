@@ -207,25 +207,19 @@ impl ResultShapeMap {
         for (node, label, status) in self.iter().sorted_by(cmp) {
             let node_label = show_node(node, self.nodes_prefixmap());
             let shape_label = show_shapelabel(label, self.shapes_prefixmap());
-            let details;
-            let status_label;
-            match status {
+            let (details, status_label) = match status {
                 ValidationStatus::Conformant(conformant_info) => {
-                    details = conformant_info.to_string();
-                    status_label = self.ok_text().color(*self.ok_color());
+                    (conformant_info.to_string(), self.ok_text().color(*self.ok_color()))
                 },
-                ValidationStatus::NonConformant(non_conformant_info) => {
-                    details = non_conformant_info.to_string();
-                    status_label = self.fail_text().color(*self.fail_color());
-                },
-                ValidationStatus::Pending => {
-                    details = "".to_owned();
-                    status_label = "Pending".color(*self.pending_color());
-                },
-                ValidationStatus::Inconsistent(ci, nci) => {
-                    details = format!("Conformant: {ci}, Non-conformant: {nci}");
-                    status_label = "Inconsistent".color(*self.pending_color());
-                },
+                ValidationStatus::NonConformant(non_conformant_info) => (
+                    non_conformant_info.to_string(),
+                    self.fail_text().color(*self.fail_color()),
+                ),
+                ValidationStatus::Pending => ("".to_owned(), "Pending".color(*self.pending_color())),
+                ValidationStatus::Inconsistent(ci, nci) => (
+                    format!("Conformant: {ci}, Non-conformant: {nci}"),
+                    "Inconsistent".color(*self.pending_color()),
+                ),
             };
             if with_details {
                 wtr.write_record([node_label, shape_label, status_label.to_string(), details])?;
@@ -259,25 +253,19 @@ impl ResultShapeMap {
         for (node, label, status) in self.iter().sorted_by(cmp) {
             let node_label = show_node(node, self.nodes_prefixmap());
             let shape_label = show_shapelabel(label, self.shapes_prefixmap());
-            let details;
-            let status_label;
-            match status {
+            let (details, status_label) = match status {
                 ValidationStatus::Conformant(conformant_info) => {
-                    details = conformant_info.to_string();
-                    status_label = self.ok_text().color(*self.ok_color());
+                    (conformant_info.to_string(), self.ok_text().color(*self.ok_color()))
                 },
-                ValidationStatus::NonConformant(non_conformant_info) => {
-                    details = non_conformant_info.to_string();
-                    status_label = self.fail_text().color(*self.fail_color());
-                },
-                ValidationStatus::Pending => {
-                    details = "".to_owned();
-                    status_label = "Pending".color(*self.pending_color());
-                },
-                ValidationStatus::Inconsistent(ci, nci) => {
-                    details = format!("Conformant: {ci}, Non-conformant: {nci}");
-                    status_label = "Inconsistent".color(*self.pending_color());
-                },
+                ValidationStatus::NonConformant(non_conformant_info) => (
+                    non_conformant_info.to_string(),
+                    self.fail_text().color(*self.fail_color()),
+                ),
+                ValidationStatus::Pending => ("".to_owned(), "Pending".color(*self.pending_color())),
+                ValidationStatus::Inconsistent(ci, nci) => (
+                    format!("Conformant: {ci}, Non-conformant: {nci}"),
+                    "Inconsistent".color(*self.pending_color()),
+                ),
             };
             if with_details {
                 builder.push_record([node_label, shape_label, status_label.to_string(), details]);

@@ -32,7 +32,7 @@ pub struct ShexArgs {
         ignore_case = true,
         value_name = "FORMAT",
         help = "Result schema format",
-        default_value_t = ShExFormatCli::ShExJ
+        default_value_t = ShExFormatCli::ShExC
     )]
     pub result_schema_format: ShExFormatCli,
 
