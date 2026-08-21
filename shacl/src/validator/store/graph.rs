@@ -2,6 +2,7 @@ use crate::error::ValidationError;
 use crate::validator::store::Store;
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
+#[cfg(feature = "sparql")]
 use sparql_service::RdfData;
 use std::path::Path;
 
@@ -75,6 +76,13 @@ impl From<RdfData> for Graph {
 #[cfg(feature = "sparql")]
 impl Store<RdfData> for Graph {
     fn store(&self) -> &RdfData {
+        &self.store
+    }
+}
+
+#[cfg(not(feature = "sparql"))]
+impl Store<OxigraphInMemory> for Graph {
+    fn store(&self) -> &OxigraphInMemory {
         &self.store
     }
 }

@@ -1,7 +1,9 @@
 use crate::error::ValidationError;
 use crate::ir::components::Pattern;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{NativeValidator, escape_sparql_string, validate_with};
+#[cfg(feature = "sparql")]
+use crate::validator::constraints::escape_sparql_string;
+use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;

@@ -5,7 +5,9 @@ use crate::validator::constraints::NativeValidator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
-use rudof_rdf::rdf_core::term::{Object, Term, Triple};
+#[cfg(feature = "sparql")]
+use rudof_rdf::rdf_core::term::Term;
+use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 
