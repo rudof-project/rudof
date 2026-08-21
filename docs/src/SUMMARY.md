@@ -5,20 +5,15 @@
 - [Getting started](./general/getting-started.md)
 - [Configuration](./general/configuration.md)
 
-# `rudof` commands
-
-## Common options
-
-- [RDF backend (`--backend`)](./cli_usage/backend.md)
-
-## rudof CLI Commands
+# rudof CLI commands
 
 - [completion](./cli_usage/completion.md)
 - [config](./cli_usage/config.md)
 - [shell](./cli_usage/shell.md)
 - [mcp](./cli_usage/mcp.md)
+- [RDF backend (`--backend`)](./cli_usage/backend.md)
 
-## rudof Commands
+## rudof technology commands
 
 - [data](./cli_usage/data.md)
 - [query](./cli_usage/sparql.md)
@@ -31,7 +26,8 @@
 - [service](./cli_usage/service.md)
 - [rdf-config](./cli_usage/rdf-config.md)
 
-## rudof actions
+## rudof action commands
+
 - [shex-validate](./cli_usage/shex_validate.md)
 - [shacl-validate](./cli_usage/shacl_validate.md)
 - [pgschema-validate](./cli_usage/pgschema_validate.md)

@@ -146,6 +146,13 @@ rudof> prefixes
 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 ```
 
+If you want to add the default (empty) prefix, use:
+
+```
+rudof> prefixes add "" http://example.org/
+Added prefix : <http://example.org/>
+```
+
 `prefixes rm ALIAS` removes one:
 
 ```
