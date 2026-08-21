@@ -1,13 +1,12 @@
-use rudof_lib::{Rudof, RudofConfig};
 use rudof_lib::formats::{
-    InputSpec, DataFormat, DataReaderMode, ResultDataFormat, NodeInspectionMode,
-    ResultServiceFormat, ShExFormat, ShapeMapFormat, ShExValidationSortByMode, ResultShExValidationFormat,
-    ShaclFormat, ShaclValidationSortByMode, ResultShaclValidationFormat,
-    PgSchemaFormat, ResultPgSchemaValidationFormat, ResultQueryFormat, QueryType,
-    DCTapFormat, ResultDCTapFormat, RdfConfigFormat, ResultRdfConfigFormat, GenerationSchemaFormat,
+    DCTapFormat, DataFormat, DataReaderMode, GenerationSchemaFormat, InputSpec, NodeInspectionMode, PgSchemaFormat,
+    QueryType, RdfConfigFormat, ResultDCTapFormat, ResultDataFormat, ResultPgSchemaValidationFormat, ResultQueryFormat,
+    ResultRdfConfigFormat, ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat, ShExFormat,
+    ShExValidationSortByMode, ShaclFormat, ShaclValidationSortByMode, ShapeMapFormat,
 };
-use std::str::FromStr;
+use rudof_lib::{Rudof, RudofConfig};
 use std::path::PathBuf;
+use std::str::FromStr;
 
 fn core() {
     let mut rudof = Rudof::new(RudofConfig::default());
@@ -19,15 +18,19 @@ fn core() {
 
 fn data_rdf() {
     let mut rudof = Rudof::new(RudofConfig::default());
-    let rdf_data_input = vec![InputSpec::from_str(
-        r#"
+    let rdf_data_input = vec![
+        InputSpec::from_str(
+            r#"
             @prefix ex: <http://example.org/> .
             ex:alice a ex:Person ;
                 ex:age 30 .
         "#,
-    ).unwrap()];
+        )
+        .unwrap(),
+    ];
 
-    rudof.load_data()
+    rudof
+        .load_data()
         .with_data(&rdf_data_input)
         .with_data_format(&DataFormat::Turtle)
         .with_reader_mode(&DataReaderMode::Lax)
@@ -35,14 +38,16 @@ fn data_rdf() {
         .execute()
         .unwrap();
 
-    rudof.serialize_data(&mut std::io::stdout())
+    rudof
+        .serialize_data(&mut std::io::stdout())
         .with_result_data_format(&ResultDataFormat::NTriples)
         .execute()
         .unwrap();
 
     let node = "ex:alice";
     let predicates = vec!["ex:age".to_string()];
-    rudof.show_node_info(node, &mut std::io::stdout())
+    rudof
+        .show_node_info(node, &mut std::io::stdout())
         .with_show_node_mode(&NodeInspectionMode::Outgoing)
         .with_predicates(&predicates)
         .with_depth(1)
@@ -55,14 +60,18 @@ fn data_rdf() {
 
 fn data_pg() {
     let mut rudof = Rudof::new(RudofConfig::default());
-    let pg_data_input = vec![InputSpec::from_str(
-        r#"
+    let pg_data_input = vec![
+        InputSpec::from_str(
+            r#"
             (alice {Person} [ name: "Alice", age: 23, aliases: "Ally" ])
             (bob   {Person} [ name: "Robert", aliases: ["Bob", "Bobby"] ])
         "#,
-    ).unwrap()];
+        )
+        .unwrap(),
+    ];
 
-    rudof.load_data()
+    rudof
+        .load_data()
         .with_data(&pg_data_input)
         .with_data_format(&DataFormat::Pg)
         .execute()
@@ -75,10 +84,7 @@ fn data_endpoint() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let endpoint = "http://example.org/sparql";
-    rudof.load_data()
-        .with_endpoint(endpoint)
-        .execute()
-        .unwrap();
+    rudof.load_data().with_endpoint(endpoint).execute().unwrap();
 
     let endpoints = rudof.list_endpoints().execute().unwrap();
     for (name, url) in endpoints {
@@ -98,17 +104,20 @@ fn data_service_description() {
                 sd:supportedLanguage sd:SPARQL11Query ;
                 sd:defaultEntailmentRegime ent:Simple .
         "#,
-    ).unwrap();
+    )
+    .unwrap();
 
     let base = "http://example.org/";
-    rudof.load_service_description(&service_description_input)
+    rudof
+        .load_service_description(&service_description_input)
         .with_data_format(&DataFormat::Turtle)
         .with_reader_mode(&DataReaderMode::Strict)
         .with_base(base)
         .execute()
         .unwrap();
 
-    rudof.serialize_service_description(&mut std::io::stdout())
+    rudof
+        .serialize_service_description(&mut std::io::stdout())
         .with_result_service_format(&ResultServiceFormat::Json)
         .execute()
         .unwrap();
@@ -116,15 +125,19 @@ fn data_service_description() {
 
 fn shex() {
     let mut rudof = Rudof::new(RudofConfig::default());
-    let rdf_data_input = vec![InputSpec::from_str(
-        r#"
+    let rdf_data_input = vec![
+        InputSpec::from_str(
+            r#"
             <http://example.org/alice> <http://example.org/name> "Alice" ;
                 <http://example.org/age> 30 .
         "#,
-    ).unwrap()];
+        )
+        .unwrap(),
+    ];
     let base_nodes = "http://example.org/";
 
-    rudof.load_data()
+    rudof
+        .load_data()
         .with_data(&rdf_data_input)
         .with_base(base_nodes)
         .execute()
@@ -138,22 +151,26 @@ fn shex() {
                 <age> xsd:integer
             }
         "#,
-    ).unwrap();
+    )
+    .unwrap();
     let base_shapes = "http://example.org/";
 
-    rudof.check_shex_schema(&shex_schema_input, &mut std::io::stdout())
+    rudof
+        .check_shex_schema(&shex_schema_input, &mut std::io::stdout())
         .with_shex_schema_format(&ShExFormat::ShExC)
         .with_base(base_shapes)
         .execute()
         .unwrap();
 
-    rudof.load_shex_schema(&shex_schema_input)
+    rudof
+        .load_shex_schema(&shex_schema_input)
         .with_shex_schema_format(&ShExFormat::ShExC)
         .with_base(base_shapes)
         .execute()
         .unwrap();
 
-    rudof.serialize_shex_schema(&mut std::io::stdout())
+    rudof
+        .serialize_shex_schema(&mut std::io::stdout())
         .with_shape("<http://example.org/PersonShape>")
         .with_show_statistics(true)
         .with_show_dependencies(true)
@@ -164,14 +181,16 @@ fn shex() {
 
     let shapemap_input = InputSpec::from_str("<http://example.org/alice>@<PersonShape>").unwrap();
 
-    rudof.load_shapemap(&shapemap_input)
+    rudof
+        .load_shapemap(&shapemap_input)
         .with_shapemap_format(&ShapeMapFormat::Compact)
         .with_base_nodes(base_nodes)
         .with_base_shapes(base_shapes)
         .execute()
         .unwrap();
 
-    rudof.serialize_shapemap(&mut std::io::stdout())
+    rudof
+        .serialize_shapemap(&mut std::io::stdout())
         .with_result_shapemap_format(&ShapeMapFormat::Compact)
         .with_show_colors(false)
         .execute()
@@ -179,7 +198,8 @@ fn shex() {
 
     rudof.validate_shex().execute().unwrap();
 
-    rudof.serialize_shex_validation_results(&mut std::io::stdout())
+    rudof
+        .serialize_shex_validation_results(&mut std::io::stdout())
         .with_shex_validation_sort_order_mode(&ShExValidationSortByMode::Node)
         .with_result_shex_validation_format(&ResultShExValidationFormat::Details)
         .execute()
@@ -192,7 +212,8 @@ fn shex() {
 
 fn shacl() {
     let mut rudof = Rudof::new(RudofConfig::default());
-    let data_with_shapes_input = InputSpec::from_str(r#"
+    let data_with_shapes_input = InputSpec::from_str(
+        r#"
             @prefix ex: <http://example.org/> .
             @prefix sh: <http://www.w3.org/ns/shacl#> .
             @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -215,9 +236,12 @@ fn shacl() {
                 a ex:Person ;
                 ex:name "Bob Jones" ;
                 ex:age 25 .
-        "#).unwrap();
+        "#,
+    )
+    .unwrap();
 
-    rudof.load_data()
+    rudof
+        .load_data()
         .with_data(&[data_with_shapes_input])
         .with_data_format(&DataFormat::Turtle)
         .execute()
@@ -225,14 +249,16 @@ fn shacl() {
 
     rudof.load_shacl_shapes().execute().unwrap();
 
-    rudof.serialize_shacl_shapes(&mut std::io::stdout())
+    rudof
+        .serialize_shacl_shapes(&mut std::io::stdout())
         .with_shacl_result_format(&ShaclFormat::NTriples)
         .execute()
         .unwrap();
 
     rudof.validate_shacl().execute().unwrap();
 
-    rudof.serialize_shacl_validation_results(&mut std::io::stdout())
+    rudof
+        .serialize_shacl_validation_results(&mut std::io::stdout())
         .with_shacl_validation_sort_order_mode(&ShaclValidationSortByMode::Node)
         .with_result_shacl_validation_format(&ResultShaclValidationFormat::Details)
         .execute()
@@ -244,14 +270,18 @@ fn shacl() {
 
 fn pgschema() {
     let mut rudof = Rudof::new(RudofConfig::default());
-    let pg_data_input = vec![InputSpec::from_str(
-        r#"
+    let pg_data_input = vec![
+        InputSpec::from_str(
+            r#"
             (n1 {"Student"}["name": "Alice", "age": 23])
             (n2_wrong {"Student"}["name": "Bob", "age": 12])
         "#,
-    ).unwrap()];
+        )
+        .unwrap(),
+    ];
 
-    rudof.load_data()
+    rudof
+        .load_data()
         .with_data(&pg_data_input)
         .with_data_format(&DataFormat::Pg)
         .execute()
@@ -263,14 +293,18 @@ fn pgschema() {
                 name: STRING ,
                 age: INTEGER CHECK > 18
             })
-        "#).unwrap();
+        "#,
+    )
+    .unwrap();
 
-    rudof.load_pg_schema(&pg_schema_input)
+    rudof
+        .load_pg_schema(&pg_schema_input)
         .with_pg_schema_format(&PgSchemaFormat::PgSchemaC)
         .execute()
         .unwrap();
 
-    rudof.serialize_pg_schema(&mut std::io::stdout())
+    rudof
+        .serialize_pg_schema(&mut std::io::stdout())
         .with_result_pg_schema_format(&PgSchemaFormat::PgSchemaC)
         .execute()
         .unwrap();
@@ -280,13 +314,15 @@ fn pgschema() {
             n1: AdultStudentType,
             n2_wrong: AdultStudentType
         "#,
-    ).unwrap();
+    )
+    .unwrap();
 
     rudof.load_typemap(&typemap_input).execute().unwrap();
 
     rudof.validate_pgschema().execute().unwrap();
 
-    rudof.serialize_pgschema_validation_results(&mut std::io::stdout())
+    rudof
+        .serialize_pgschema_validation_results(&mut std::io::stdout())
         .with_result_pg_schema_validation_format(&ResultPgSchemaValidationFormat::Compact)
         .with_show_colors(false)
         .execute()
@@ -299,7 +335,8 @@ fn pgschema() {
 
 fn query() {
     let mut rudof = Rudof::new(RudofConfig::default());
-    let data_input = InputSpec::from_str(r#"
+    let data_input = InputSpec::from_str(
+        r#"
             @prefix : <http://example.org/> .
             @prefix schema: <http://schema.org/> .
 
@@ -312,9 +349,12 @@ fn query() {
                schema:knows :c       .
 
             :c schema:name  "Carol"  .
-        "#).unwrap();
+        "#,
+    )
+    .unwrap();
 
-    rudof.load_data()
+    rudof
+        .load_data()
         .with_data(&[data_input])
         .with_data_format(&DataFormat::Turtle)
         .execute()
@@ -330,9 +370,11 @@ fn query() {
                       :status ?status .
             }
         "#,
-    ).unwrap();
+    )
+    .unwrap();
 
-    rudof.load_query(&query_input)
+    rudof
+        .load_query(&query_input)
         .with_query_type(&QueryType::Select)
         .execute()
         .unwrap();
@@ -341,7 +383,8 @@ fn query() {
 
     rudof.run_query().execute().unwrap();
 
-    rudof.serialize_query_results(&mut std::io::stdout())
+    rudof
+        .serialize_query_results(&mut std::io::stdout())
         .with_result_query_format(&ResultQueryFormat::Csv)
         .execute()
         .unwrap();
@@ -358,14 +401,17 @@ fn dctap() {
 :Person,schema:name,true,false,xsd:string
 :Person,schema:age,false,false,xsd:integer
 "#,
-    ).unwrap();
+    )
+    .unwrap();
 
-    rudof.load_dctap(&dctap_input)
+    rudof
+        .load_dctap(&dctap_input)
         .with_dctap_format(&DCTapFormat::Csv)
         .execute()
         .unwrap();
 
-    rudof.serialize_dctap(&mut std::io::stdout())
+    rudof
+        .serialize_dctap(&mut std::io::stdout())
         .with_result_dctap_format(&ResultDCTapFormat::Json)
         .execute()
         .unwrap();
@@ -383,14 +429,18 @@ fn rdf_config() {
       - name: "Alice"
   - ex:age?:
       - age_value: 32
-"#).unwrap();
+"#,
+    )
+    .unwrap();
 
-    rudof.load_rdf_config(&config_input)
+    rudof
+        .load_rdf_config(&config_input)
         .with_rdf_config_format(&RdfConfigFormat::Yaml)
         .execute()
         .unwrap();
 
-    rudof.serialize_rdf_config(&mut std::io::stdout())
+    rudof
+        .serialize_rdf_config(&mut std::io::stdout())
         .with_result_rdf_config_format(&ResultRdfConfigFormat::Yaml)
         .execute()
         .unwrap();
@@ -402,7 +452,8 @@ async fn generation() {
     let rudof = Rudof::new(RudofConfig::default());
     let schema_input = InputSpec::Path(PathBuf::from("examples/user.shex"));
 
-    rudof.generate_data(&schema_input, &GenerationSchemaFormat::ShEx, Some(10))
+    rudof
+        .generate_data(&schema_input, &GenerationSchemaFormat::ShEx, Some(10))
         .with_result_generation_format(&DataFormat::Turtle)
         .with_seed(42)
         .with_parallel(4)
@@ -414,7 +465,10 @@ async fn generation() {
 fn prefixes() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    rudof.add_prefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#").execute().unwrap();
+    rudof
+        .add_prefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+        .execute()
+        .unwrap();
     let pm = rudof.prefixes().execute();
     println!("{pm}");
 
