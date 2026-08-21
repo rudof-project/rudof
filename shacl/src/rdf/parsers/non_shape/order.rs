@@ -7,12 +7,8 @@ use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 use rust_decimal::Decimal;
 
 pub(crate) fn order<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = OrderValue> {
-    println!("Parsing sh:order");
     SingleLiteralPropertyParser::new(ShaclVocab::sh_order()).flat_map(|lit: RDF::Literal| match lit.try_into() {
-        Ok(concrete_literal) => {
-            println!("Parsed literal: {}", concrete_literal);
-            parse_order_value(concrete_literal)
-        },
+        Ok(concrete_literal) => parse_order_value(concrete_literal),
         Err(_e) => Err(RDFError::ParseFailError {
             msg: "Failed to convert literal to concrete literal".to_string(),
         }),
@@ -20,12 +16,8 @@ pub(crate) fn order<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = OrderVal
 }
 
 fn parse_order_value(concrete_literal: ConcreteLiteral) -> Result<OrderValue, RDFError> {
-    println!("Parsing order value from concrete literal: {}", concrete_literal);
     match concrete_literal {
-        ConcreteLiteral::NumericLiteral(NumericLiteral::Integer(i)) => {
-            println!("Parsed order value as integer: {}", i);
-            Ok(OrderValue::Integer(i))
-        },
+        ConcreteLiteral::NumericLiteral(NumericLiteral::Integer(i)) => Ok(OrderValue::Integer(i)),
         ConcreteLiteral::NumericLiteral(NumericLiteral::Decimal(d)) => Ok(OrderValue::Decimal(d)),
         ConcreteLiteral::DatatypeLiteral { lexical_form, datatype } => {
             let datatype_iris = datatype.get_iri().map_err(|e| RDFError::ParseFailError {
@@ -55,7 +47,7 @@ fn parse_order_value(concrete_literal: ConcreteLiteral) -> Result<OrderValue, RD
             }
         },
         _ => {
-            println!(
+            tracing::warn!(
                 "Failed to parse order value from concrete literal: {:?}",
                 concrete_literal
             );

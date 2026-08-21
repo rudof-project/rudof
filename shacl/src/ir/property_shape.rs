@@ -184,8 +184,6 @@ impl IRPropertyShape {
 
         let reifier_info = ReifierInfo::get_reifier_info(shape, ast, ir)?;
 
-        println!("Compiling property shape with order: {:?}", shape.order());
-
         let compiled_prop_shape = IRPropertyShape::new(shape.id().clone(), shape.path().to_owned(), closed_info)
             .with_components(compiled_components)
             .with_targets(shape.targets().to_owned())
