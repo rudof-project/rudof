@@ -17,6 +17,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ### Changed
 - The default output of shell is now in ShExC format and in SHACL it is Turtle to accomodate to the popular formats.
+- Allow native SHACL builds without the SPARQL builds. PR #771
 
 ### Removed
 
