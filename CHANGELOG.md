@@ -3,7 +3,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
-- Shell: Tab now lists all matching subcommand names instead of silently cycling through them, and completes the `endpoint` command's argument against registered endpoint names.
+- Shell: Tab now lists all matching subcommand names instead of silently cycling through them, and completes the `endpoint` command's argument against registered endpoint names, `config`'s own subcommand against `get`/`set`, and `config get`/`config set`'s `KEY` argument against every dotted key path in the effective config.
 - Shell: `data`, `shex`, `shacl`, `dctap`, `pgschema` and `service` now print a short stats line (e.g. "N triples loaded") when loading something new, instead of dumping the full content; a bare call still shows what's loaded in full.
 - Shell: `data FILE --merge` merges into the currently loaded RDF/PG data instead of replacing it, which is now the shell's default.
 - Added a `sparql` command to load and show a SPARQL query without running it; `query` now runs a query loaded this way when called bare.

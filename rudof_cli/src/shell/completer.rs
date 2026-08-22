@@ -9,9 +9,10 @@ use std::cell::Cell;
 
 /// `rustyline` helper that completes the first word of a line against the
 /// known set of `rudof` subcommand names, the argument of `endpoint` against
-/// the endpoint names registered in the rudof TOML config, and falls back to
-/// filename completion for everything else (most subcommand arguments are
-/// paths).
+/// the endpoint names registered in the rudof TOML config, the `KEY` argument
+/// of `config get`/`config set` against the dotted config-key paths in that
+/// same config, and falls back to filename completion for everything else
+/// (most subcommand arguments are paths).
 ///
 /// It also drives the shell's interactive highlighting: matching brackets
 /// (handy now that a query/shape can be typed across several lines), the
@@ -20,6 +21,7 @@ pub struct ShellHelper {
     filename_completer: FilenameCompleter,
     commands: Vec<String>,
     endpoints: Vec<String>,
+    config_keys: Vec<String>,
     bracket_highlighter: MatchingBracketHighlighter,
     // Set by the REPL loop while reading a continuation line of a
     // multi-line command, so `highlight` doesn't color that line's first
@@ -28,11 +30,12 @@ pub struct ShellHelper {
 }
 
 impl ShellHelper {
-    pub fn new(commands: Vec<String>, endpoints: Vec<String>) -> Self {
+    pub fn new(commands: Vec<String>, endpoints: Vec<String>, config_keys: Vec<String>) -> Self {
         Self {
             filename_completer: FilenameCompleter::new(),
             commands,
             endpoints,
+            config_keys,
             bracket_highlighter: MatchingBracketHighlighter::new(),
             continuation: Cell::new(false),
         }
@@ -44,6 +47,33 @@ impl ShellHelper {
 
     fn first_word_end(line: &str) -> usize {
         line.find(' ').unwrap_or(line.len())
+    }
+
+    /// If `pos` is positioned at `config`'s own subcommand word (i.e. the
+    /// second word on the line, right after `config `), returns the partial
+    /// subcommand typed so far, so it can be completed against `get`/`set`.
+    fn config_subcommand_word(line: &str, pos: usize) -> Option<&str> {
+        let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
+        let mut words = line[..word_start].split_whitespace();
+        match (words.next(), words.next()) {
+            (Some("config"), None) => Some(&line[word_start..pos]),
+            _ => None,
+        }
+    }
+
+    /// If `pos` is positioned at the `KEY` argument of `config get`/`config
+    /// set` (i.e. exactly the third word on the line, right after `config
+    /// get `/`config set `), returns the partial key typed so far. `None`
+    /// for any other position, including the `VALUE` argument of `config set
+    /// KEY VALUE` — that one isn't a config key and shouldn't be completed
+    /// as one.
+    fn config_key_word(line: &str, pos: usize) -> Option<&str> {
+        let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
+        let mut words = line[..word_start].split_whitespace();
+        match (words.next(), words.next(), words.next()) {
+            (Some("config"), Some("get") | Some("set"), None) => Some(&line[word_start..pos]),
+            _ => None,
+        }
     }
 }
 
@@ -75,6 +105,33 @@ impl Completer for ShellHelper {
                 .map(|name| Pair {
                     display: name.clone(),
                     replacement: name.clone(),
+                })
+                .collect();
+            return Ok((word_start, candidates));
+        }
+
+        if let Some(sub_prefix) = Self::config_subcommand_word(line, pos) {
+            let word_start = pos - sub_prefix.len();
+            let candidates = ["get", "set"]
+                .into_iter()
+                .filter(|name| name.starts_with(sub_prefix))
+                .map(|name| Pair {
+                    display: name.to_string(),
+                    replacement: name.to_string(),
+                })
+                .collect();
+            return Ok((word_start, candidates));
+        }
+
+        if let Some(key_prefix) = Self::config_key_word(line, pos) {
+            let word_start = pos - key_prefix.len();
+            let candidates = self
+                .config_keys
+                .iter()
+                .filter(|key| key.starts_with(key_prefix))
+                .map(|key| Pair {
+                    display: key.clone(),
+                    replacement: key.clone(),
                 })
                 .collect();
             return Ok((word_start, candidates));
@@ -151,6 +208,7 @@ mod tests {
         let helper = ShellHelper::new(
             vec!["endpoint".to_string()],
             vec!["wikidata".to_string(), "dbpedia".to_string()],
+            vec![],
         );
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
@@ -165,11 +223,67 @@ mod tests {
 
     #[test]
     fn other_commands_still_fall_back_to_filename_completion() {
-        let helper = ShellHelper::new(vec!["shex".to_string()], vec!["wikidata".to_string()]);
+        let helper = ShellHelper::new(vec!["shex".to_string()], vec!["wikidata".to_string()], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
         let line = "shex wikidata-not-a-file";
+        let (_, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn completes_config_subcommand_against_get_and_set() {
+        let helper = ShellHelper::new(vec!["config".to_string()], vec![], vec![]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "config ";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "config ".len());
+        let mut replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
+        replacements.sort_unstable();
+        assert_eq!(replacements, vec!["get", "set"]);
+    }
+
+    #[test]
+    fn completes_config_get_key_against_known_config_paths() {
+        let helper = ShellHelper::new(
+            vec!["config".to_string()],
+            vec![],
+            vec![
+                "shex_validator.max_steps".to_string(),
+                "shex_validator.width".to_string(),
+                "shex".to_string(),
+            ],
+        );
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "config get shex_validator.";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "config get ".len());
+        let mut replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
+        replacements.sort_unstable();
+        assert_eq!(replacements, vec!["shex_validator.max_steps", "shex_validator.width"]);
+    }
+
+    #[test]
+    fn does_not_complete_config_set_value_as_a_config_key() {
+        let helper = ShellHelper::new(
+            vec!["config".to_string()],
+            vec![],
+            vec!["shex_validator.max_steps".to_string()],
+        );
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        // The VALUE position (4th word) must fall back to filename
+        // completion, not be treated as a config key.
+        let line = "config set shex_validator.max_steps shex_valid";
         let (_, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
 
         assert!(candidates.is_empty());

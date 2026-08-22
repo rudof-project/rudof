@@ -58,7 +58,10 @@ impl Command for QueryCommand {
 
         match &self.args.query {
             Some(query) => {
-                ctx.rudof.load_sparql_query(query).with_query_type(&query_type).execute()?;
+                ctx.rudof
+                    .load_sparql_query(query)
+                    .with_query_type(&query_type)
+                    .execute()?;
 
                 ctx.rudof
                     .run_query()

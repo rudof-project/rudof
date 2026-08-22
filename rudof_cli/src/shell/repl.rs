@@ -77,6 +77,7 @@ fn read_command(editor: &mut Editor<ShellHelper, DefaultHistory>) -> Result<Stri
 pub fn run(ctx: &mut CommandContext) -> Result<()> {
     let command_names = command_names();
     let endpoint_names = registered_endpoint_names(ctx);
+    let config_keys = config_key_paths(ctx).unwrap_or_default();
     // List rather than Circular: on Tab with several matches (e.g. "sh" ->
     // shex/shacl/shapemap/shell), print all candidates instead of silently
     // filling in the first one and requiring repeated Tabs to cycle through
@@ -92,7 +93,7 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
         .check_cursor_position(true)
         .build();
     let mut editor: Editor<ShellHelper, DefaultHistory> = Editor::with_config(config)?;
-    editor.set_helper(Some(ShellHelper::new(command_names, endpoint_names)));
+    editor.set_helper(Some(ShellHelper::new(command_names, endpoint_names, config_keys)));
 
     // A key to force-insert a newline instead of submitting, e.g. to keep
     // extending a recalled history entry that already parses as "complete"
@@ -281,8 +282,9 @@ impl StatsKind {
         match command {
             CliCommand::Data(args) => has_new_data_source(&args.common, &args.data).then_some(Self::Data),
             CliCommand::Shex(args) => args.schema.is_some().then_some(Self::Shex),
-            CliCommand::Shacl(args) => (has_new_data_source(&args.common, &args.data) || args.shapes.is_some())
-                .then_some(Self::Shacl),
+            CliCommand::Shacl(args) => {
+                (has_new_data_source(&args.common, &args.data) || args.shapes.is_some()).then_some(Self::Shacl)
+            },
             CliCommand::DCTap(args) => args.file.is_some().then_some(Self::DCTap),
             CliCommand::Pgschema(args) => args.schema.is_some().then_some(Self::Pgschema),
             CliCommand::Service(args) => args.service.is_some().then_some(Self::Service),
@@ -543,14 +545,22 @@ fn handle_config(args: &[String], ctx: &mut CommandContext) -> Result<()> {
     }
 }
 
-fn show_config(key: Option<&str>, ctx: &mut CommandContext) -> Result<()> {
+/// Returns the effective configuration (defaults merged with whatever was
+/// loaded) as a parsed [`toml::Value`] tree — the same tree `config get`/
+/// `config set` traverse by dotted path, and what [`config_key_paths`] walks
+/// to build the shell's Tab-completion candidates for `config get`/`set`.
+fn effective_config_root(ctx: &CommandContext) -> Result<toml::Value> {
     let toml_str = ctx.rudof.config().execute().to_toml_string()?;
+    Ok(toml::from_str(&toml_str)?)
+}
+
+fn show_config(key: Option<&str>, ctx: &mut CommandContext) -> Result<()> {
     let Some(key) = key else {
-        writeln!(ctx.writer, "{toml_str}")?;
+        writeln!(ctx.writer, "{}", ctx.rudof.config().execute().to_toml_string()?)?;
         return Ok(());
     };
 
-    let root: toml::Value = toml::from_str(&toml_str)?;
+    let root = effective_config_root(ctx)?;
     match config_lookup(&root, key) {
         Some(value) => {
             writeln!(ctx.writer, "{}", format_config_value(value))?;
@@ -561,8 +571,7 @@ fn show_config(key: Option<&str>, ctx: &mut CommandContext) -> Result<()> {
 }
 
 fn set_config(key: &str, value: &str, ctx: &mut CommandContext) -> Result<()> {
-    let toml_str = ctx.rudof.config().execute().to_toml_string()?;
-    let mut root: toml::Value = toml::from_str(&toml_str)?;
+    let mut root = effective_config_root(ctx)?;
 
     if config_set_path(&mut root, key, parse_config_scalar(value)).is_none() {
         return unknown_config_key(key, ctx);
@@ -615,6 +624,37 @@ fn config_set_path(root: &mut toml::Value, key: &str, new_value: toml::Value) ->
     None
 }
 
+/// Every dotted key path reachable in the effective configuration (both
+/// intermediate table paths like `shex_validator` and leaf paths like
+/// `shex_validator.max_steps`), sorted — used as `config get`/`config set`'s
+/// Tab-completion candidates. Captured once at shell startup, the same way
+/// [`registered_endpoint_names`] is, so it won't pick up a key that only
+/// becomes visible later in the session (e.g. an optional field that's unset
+/// — and so omitted from the TOML tree entirely — until first set via
+/// `config set`).
+fn config_key_paths(ctx: &CommandContext) -> Result<Vec<String>> {
+    let root = effective_config_root(ctx)?;
+    let mut paths = Vec::new();
+    collect_config_key_paths(&root, "", &mut paths);
+    paths.sort_unstable();
+    Ok(paths)
+}
+
+fn collect_config_key_paths(value: &toml::Value, prefix: &str, out: &mut Vec<String>) {
+    let toml::Value::Table(table) = value else {
+        return;
+    };
+    for (key, child) in table {
+        let path = if prefix.is_empty() {
+            key.clone()
+        } else {
+            format!("{prefix}.{key}")
+        };
+        out.push(path.clone());
+        collect_config_key_paths(child, &path, out);
+    }
+}
+
 fn parse_config_scalar(value: &str) -> toml::Value {
     if let Ok(b) = value.parse::<bool>() {
         toml::Value::Boolean(b)
@@ -635,7 +675,15 @@ fn format_config_value(value: &toml::Value) -> String {
 }
 
 fn registered_endpoint_names(ctx: &CommandContext) -> Vec<String> {
-    let mut names: Vec<String> = ctx.rudof.config().execute().rdf_data().endpoints().keys().cloned().collect();
+    let mut names: Vec<String> = ctx
+        .rudof
+        .config()
+        .execute()
+        .rdf_data()
+        .endpoints()
+        .keys()
+        .cloned()
+        .collect();
     names.sort_unstable();
     names
 }
