@@ -484,26 +484,26 @@ let query_input = InputSpec::from_str(
     )
     .unwrap();
 
-// Load query into Rudof's state
-rudof.load_query(&query_input)
+// Load query into Rudof's state (this is what the `sparql` command uses)
+rudof.load_sparql_query(&query_input)
     .with_query_type(&QueryType::Select)
     .execute()
     .unwrap(); 
 
-// Serialize the query to standard output
-rudof.serialize_query(&mut std::io::stdout()).execute().unwrap();
+// Serialize the query to standard output (this is what the `sparql` command uses)
+rudof.serialize_sparql_query(&mut std::io::stdout()).execute().unwrap();
 
-// Run the query
+// Run the query (this is what the `query` command uses)
 rudof.run_query().execute();
 
 // Serialize the query results to standard output
-rudof.serialize_query_result(&mut std::io::stdout())
+rudof.serialize_query_results(&mut std::io::stdout())
     .with_result_query_format(&ResultQueryFormat::Csv)
     .execute()
     .unwrap();
 
-// Reset query state
-rudof.reset_query().execute()
+// Reset query state (just the loaded query)
+rudof.reset_sparql_query().execute()
 // Reset query execution state (query and query results)
 rudof.reset_query_results().execute()
 

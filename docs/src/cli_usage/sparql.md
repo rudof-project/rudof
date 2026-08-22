@@ -1,7 +1,27 @@
 # SPARQL
 
-`rudof` has some basic support for SPARQL queries, which can be interacted with by means of the `query` command.
+`rudof` has some basic support for SPARQL queries, which can be interacted with by means of the `sparql` and `query` commands.
 It is possible not only to perform SPARQL queries on SPARQL endpoints, but also on local files.
+
+## Showing a loaded query
+
+`sparql` is the read-only counterpart to `query` — it loads a SPARQL query and prints it back without running it, the same way `shex`/`shacl` show a loaded schema instead of validating with it.
+
+```sh
+rudof sparql -q user.sparql
+```
+
+```sparql
+prefix : <http://example.org/>
+prefix schema: <http://schema.org/>
+
+select ?person ?name ?status where {
+  ?person schema:name ?name ;
+          :status ?status .
+}
+```
+
+With no `-q`, it re-shows whatever query is currently loaded, instead of erroring — useful in `rudof shell`, where session state persists across commands. `sparql` and `query` load into the same state, so a query loaded by one is visible to the other: `sparql -q FILE` loads and shows it, and a later bare `query` (no `-q`) runs that same loaded query.
 
 ## Querying over local files
 

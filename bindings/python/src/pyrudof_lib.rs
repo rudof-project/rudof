@@ -97,7 +97,7 @@ impl PyRudof {
     ///
     /// Removes the stored query from memory.
     pub fn reset_query(&mut self) {
-        self.inner.reset_query().execute();
+        self.inner.reset_sparql_query().execute();
     }
 
     /// Resets all current state (data, schemas, queries, validation results).
@@ -776,7 +776,7 @@ impl PyRudof {
             })
             .map_err(|e| cnv_err(e.into()))?;
 
-        let mut load_query = self.inner.load_query(&input);
+        let mut load_query = self.inner.load_sparql_query(&input);
         if let Some(query_type) = query_type {
             load_query = load_query.with_query_type(query_type);
         }

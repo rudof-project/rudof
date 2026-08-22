@@ -20,6 +20,7 @@ mod shapemap;
 mod shell;
 mod shex;
 mod shex_validate;
+mod sparql;
 mod validate;
 
 pub use base::*;
@@ -44,4 +45,5 @@ pub use shapemap::*;
 pub use shell::*;
 pub use shex::*;
 pub use shex_validate::*;
+pub use sparql::*;
 pub use validate::*;

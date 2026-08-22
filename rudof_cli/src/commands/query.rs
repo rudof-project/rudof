@@ -58,15 +58,24 @@ impl Command for QueryCommand {
 
         match &self.args.query {
             Some(query) => {
-                ctx.rudof.load_query(query).with_query_type(&query_type).execute()?;
+                ctx.rudof.load_sparql_query(query).with_query_type(&query_type).execute()?;
 
                 ctx.rudof
                     .run_query()
                     .with_result_query_format(&result_query_format)
                     .execute()?;
             },
-            None if ctx.rudof.query_results().is_none() => {
+            None if ctx.rudof.query_results().is_none() && !ctx.rudof.has_sparql_query() => {
                 anyhow::bail!("No query specified. Use --query/-q to provide a SPARQL query to run.");
+            },
+            // A query was loaded without being run yet (e.g. via `sparql
+            // -q FILE`, which only loads and shows) — run it now, since
+            // `sparql` and `query` share the same loaded-query state.
+            None if ctx.rudof.query_results().is_none() => {
+                ctx.rudof
+                    .run_query()
+                    .with_result_query_format(&result_query_format)
+                    .execute()?;
             },
             None => {},
         }

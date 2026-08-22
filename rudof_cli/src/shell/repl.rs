@@ -1,12 +1,15 @@
-use crate::cli::parser::Command as CliCommand;
+use crate::cli::parser::{Command as CliCommand, CommonArgsAll};
+use crate::cli::wrappers::resolve_backend;
 use crate::commands::{CommandContext, CommandFactory, extract_common};
 use crate::shell::completer::ShellHelper;
 use anyhow::{Context, Result, anyhow};
 use clap::{CommandFactory as ClapCommandFactory, Parser};
-use rudof_lib::{RudofConfig, TomlConfig};
+use rudof_lib::formats::{BackendSpec, InputSpec};
+use rudof_lib::{DataStats, RudofConfig, TomlConfig};
 use rustyline::error::ReadlineError;
 use rustyline::history::DefaultHistory;
-use rustyline::{Cmd, Editor, EventHandler, KeyEvent};
+use rustyline::{Cmd, CompletionType, Config, Editor, EventHandler, KeyEvent};
+use std::io;
 use std::io::Write as _;
 use std::process::Command;
 
@@ -73,8 +76,23 @@ fn read_command(editor: &mut Editor<ShellHelper, DefaultHistory>) -> Result<Stri
 
 pub fn run(ctx: &mut CommandContext) -> Result<()> {
     let command_names = command_names();
-    let mut editor: Editor<ShellHelper, DefaultHistory> = Editor::new()?;
-    editor.set_helper(Some(ShellHelper::new(command_names)));
+    let endpoint_names = registered_endpoint_names(ctx);
+    // List rather than Circular: on Tab with several matches (e.g. "sh" ->
+    // shex/shacl/shapemap/shell), print all candidates instead of silently
+    // filling in the first one and requiring repeated Tabs to cycle through
+    // the rest.
+    let config = Config::builder()
+        .completion_type(CompletionType::List)
+        .completion_show_all_if_ambiguous(true)
+        // Belt-and-braces: if a command's output ever ends without a
+        // trailing newline, this makes rustyline check the real cursor
+        // column before drawing the next prompt and insert one itself,
+        // rather than silently drawing over (and later erasing) the tail
+        // of that output.
+        .check_cursor_position(true)
+        .build();
+    let mut editor: Editor<ShellHelper, DefaultHistory> = Editor::with_config(config)?;
+    editor.set_helper(Some(ShellHelper::new(command_names, endpoint_names)));
 
     // A key to force-insert a newline instead of submitting, e.g. to keep
     // extending a recalled history entry that already parses as "complete"
@@ -165,6 +183,11 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
         return handle_config(&tokens[1..], ctx);
     }
 
+    // Shell-only `data ... --merge` flag: not part of `DataArgs` (so the
+    // top-level CLI has no such flag), stripped out before clap ever sees
+    // it. See `should_replace_data` below for what it controls.
+    let merge = tokens[0] == "data" && take_merge_flag(&mut tokens);
+
     apply_bare_resource_convenience(&mut tokens);
 
     let parsed = match ReplLine::try_parse_from(&tokens) {
@@ -180,6 +203,15 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
         return Ok(());
     }
 
+    // Unlike the top-level CLI (one `data` call per process), the shell can
+    // chain several `data` calls in the same session; loading would
+    // otherwise *merge* into whatever RDF/PG data is already loaded, which
+    // is surprising here since nothing about `data FILE` looks additive.
+    // So the shell instead replaces the loaded data by default, unless the
+    // new `--merge` flag says otherwise.
+    let should_replace_data =
+        !merge && matches!(&parsed, CliCommand::Data(args) if has_new_data_source(&args.common, &args.data));
+
     // `ctx.writer` is set up once for the whole shell session (defaulting
     // to the terminal), so a command's own `-o`/`--output-file` would
     // otherwise be ignored and its output would print to the terminal
@@ -189,7 +221,25 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
     let output_path = common.output().cloned().filter(|path| path.to_string_lossy() != "-");
     let force_overwrite = common.force_overwrite();
 
+    // For the "load a resource and dump it" commands, the shell prints a
+    // short stats line by default instead of the full dump — the full dump
+    // is still available via `-o FILE`, handled below.
+    let stats_kind = output_path.is_none().then(|| StatsKind::of(&parsed)).flatten();
+
     let command = CommandFactory::create(parsed)?;
+
+    if should_replace_data {
+        ctx.rudof.reset_data().execute();
+    }
+
+    if let Some(kind) = stats_kind {
+        let previous_writer = std::mem::replace(&mut ctx.writer, Box::new(io::sink()));
+        let result = command.execute(ctx);
+        ctx.writer = previous_writer;
+        result?;
+        writeln!(ctx.writer, "{}", kind.stats_line(ctx))?;
+        return Ok(());
+    }
 
     let Some(path) = output_path else {
         return command.execute(ctx);
@@ -205,6 +255,90 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
 
     writeln!(ctx.writer, "Output saved in {}", path.display())?;
     Ok(())
+}
+
+/// The subset of subcommands that load a resource (RDF/PG data, a schema,
+/// ...) and, by default, dump it in full — in the shell these instead print
+/// a short stats line about what got loaded, since a session tends to chain
+/// several such commands and the full dump mostly just scrolls past.
+#[derive(Clone, Copy)]
+enum StatsKind {
+    Data,
+    Shex,
+    Shacl,
+    DCTap,
+    Pgschema,
+    Service,
+}
+
+impl StatsKind {
+    /// Returns the stats kind for `command`, but only when the line actually
+    /// loads a new resource — a bare call with nothing new to load (e.g.
+    /// `shex` alone) falls through to the command's normal behavior of
+    /// re-showing whatever is already loaded in full, exactly as before this
+    /// feature existed.
+    fn of(command: &CliCommand) -> Option<Self> {
+        match command {
+            CliCommand::Data(args) => has_new_data_source(&args.common, &args.data).then_some(Self::Data),
+            CliCommand::Shex(args) => args.schema.is_some().then_some(Self::Shex),
+            CliCommand::Shacl(args) => (has_new_data_source(&args.common, &args.data) || args.shapes.is_some())
+                .then_some(Self::Shacl),
+            CliCommand::DCTap(args) => args.file.is_some().then_some(Self::DCTap),
+            CliCommand::Pgschema(args) => args.schema.is_some().then_some(Self::Pgschema),
+            CliCommand::Service(args) => args.service.is_some().then_some(Self::Service),
+            _ => None,
+        }
+    }
+
+    fn stats_line(self, ctx: &CommandContext) -> String {
+        match self {
+            Self::Data => match ctx.rudof.data_stats() {
+                Some(DataStats::Rdf { triples }) => format!("{triples} triple(s) loaded"),
+                Some(DataStats::Pg { nodes, edges }) => format!("{nodes} node(s), {edges} edge(s) loaded"),
+                None => "No data loaded".to_string(),
+            },
+            Self::Shex => match ctx.rudof.shex_schema().and_then(|schema| schema.shapes()) {
+                Some(shapes) => format!("{} shape(s) loaded", shapes.len()),
+                None => "No shapes loaded".to_string(),
+            },
+            Self::Shacl => match ctx.rudof.shacl_shapes() {
+                Some(shapes) => format!("{} shape(s) loaded", shapes.iter().count()),
+                None => "No shapes loaded".to_string(),
+            },
+            Self::DCTap => match ctx.rudof.dctap() {
+                Some(dctap) => format!("{} shape(s) loaded", dctap.shapes().count()),
+                None => "No shapes loaded".to_string(),
+            },
+            Self::Pgschema => match ctx.rudof.pg_schema() {
+                Some(schema) => format!(
+                    "{} node type(s), {} edge type(s) loaded",
+                    schema.node_type_count(),
+                    schema.edge_type_count()
+                ),
+                None => "No schema loaded".to_string(),
+            },
+            Self::Service => match ctx.rudof.service_description() {
+                Some(service) => format!(
+                    "{} graph(s), {} feature(s) loaded",
+                    service.available_graphs_count(),
+                    service.feature_count()
+                ),
+                None => "No service description loaded".to_string(),
+            },
+        }
+    }
+}
+
+/// Mirrors the `has_data_source` check each of [`DataCommand`]/[`ShaclCommand`]
+/// makes internally (`rudof_cli/src/commands/data.rs`,
+/// `rudof_cli/src/commands/shacl.rs`) to decide whether it's about to load
+/// new RDF data, so the shell can tell "loading" and "just re-showing what's
+/// already loaded" apart the same way those commands do.
+///
+/// [`DataCommand`]: crate::commands::DataCommand
+/// [`ShaclCommand`]: crate::commands::ShaclCommand
+fn has_new_data_source(common: &CommonArgsAll, data: &[InputSpec]) -> bool {
+    !data.is_empty() || matches!(resolve_backend(common), BackendSpec::Endpoint(_))
 }
 
 /// Shell-only `endpoint [NAME]` command.
@@ -283,6 +417,7 @@ const RESET_TARGETS: &[&str] = &[
     "dctap",
     "service",
     "query",
+    "sparql",
     "typemap",
     "rdf-config",
     "endpoint",
@@ -330,9 +465,10 @@ fn reset_target(target: &str, ctx: &mut CommandContext) {
         "dctap" => ctx.rudof.reset_dctap().execute(),
         "service" => ctx.rudof.reset_service_description().execute(),
         "query" => {
-            ctx.rudof.reset_query().execute();
+            ctx.rudof.reset_sparql_query().execute();
             ctx.rudof.reset_query_results().execute();
         },
+        "sparql" => ctx.rudof.reset_sparql_query().execute(),
         "typemap" => ctx.rudof.reset_typemap().execute(),
         "rdf-config" => ctx.rudof.reset_rdf_config().execute(),
         "endpoint" => ctx.active_endpoint = None,
@@ -498,17 +634,14 @@ fn format_config_value(value: &toml::Value) -> String {
     }
 }
 
-fn registered_endpoints_line(ctx: &CommandContext) -> String {
-    let mut names: Vec<&str> = ctx
-        .rudof
-        .config()
-        .execute()
-        .rdf_data()
-        .endpoints()
-        .keys()
-        .map(String::as_str)
-        .collect();
+fn registered_endpoint_names(ctx: &CommandContext) -> Vec<String> {
+    let mut names: Vec<String> = ctx.rudof.config().execute().rdf_data().endpoints().keys().cloned().collect();
     names.sort_unstable();
+    names
+}
+
+fn registered_endpoints_line(ctx: &CommandContext) -> String {
+    let names = registered_endpoint_names(ctx);
     if names.is_empty() {
         "No endpoints are registered in the config.".to_string()
     } else {
@@ -537,6 +670,7 @@ const BARE_RESOURCE_FLAG: &[(&str, &str)] = &[
     ("generate", "-s"),
     ("rdf-config", "-s"),
     ("node", "-n"),
+    ("sparql", "-q"),
 ];
 
 /// Runs `command_line` in the system shell, e.g. `! ls` or `!code file.shex`.
@@ -578,6 +712,16 @@ fn system_shell(command_line: &str) -> Command {
     let mut command = Command::new("cmd");
     command.arg("/C").arg(command_line);
     command
+}
+
+/// Removes a bare `--merge` token from `tokens`, if present, and reports
+/// whether it was there. Must run before [`apply_bare_resource_convenience`]
+/// so a line like `data FILE --merge` still counts as "exactly one bare
+/// value" once `--merge` is out of the way.
+fn take_merge_flag(tokens: &mut Vec<String>) -> bool {
+    let had_merge = tokens.iter().any(|token| token == "--merge");
+    tokens.retain(|token| token != "--merge");
+    had_merge
 }
 
 fn apply_bare_resource_convenience(tokens: &mut Vec<String>) {
@@ -626,6 +770,10 @@ fn print_help(ctx: &mut CommandContext) -> Result<()> {
     writeln!(
         ctx.writer,
         "                     Show, or manage, the default prefix declarations"
+    )?;
+    writeln!(
+        ctx.writer,
+        "  data FILE --merge  Merge FILE into the currently loaded data instead of replacing it"
     )?;
     Ok(())
 }

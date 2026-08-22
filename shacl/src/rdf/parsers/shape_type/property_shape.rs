@@ -31,10 +31,9 @@ pub(crate) fn property_shape<RDF: FocusRDF + 'static>() -> impl RDFNodeParse<RDF
             })
             .then(|ps| name().optional().flat_map(move |name| Ok(ps.clone().with_name(name))))
             .then(|ps| {
-                order().optional().flat_map(move |order| {
-                    println!("Parsed order: {:?}", order);
-                    Ok(ps.clone().with_order(order))
-                })
+                order()
+                    .optional()
+                    .flat_map(move |order| Ok(ps.clone().with_order(order)))
             })
             .then(|ps| {
                 description()

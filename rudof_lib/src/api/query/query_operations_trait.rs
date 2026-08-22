@@ -1,7 +1,8 @@
 use crate::{
     Result,
     api::query::implementations::{
-        load_query, reset_query, reset_query_results, run_query, serialize_query, serialize_query_results,
+        load_sparql_query, reset_query_results, reset_sparql_query, run_query, serialize_query_results,
+        serialize_sparql_query,
     },
     formats::{InputSpec, QueryType, ResultQueryFormat},
 };
@@ -20,7 +21,7 @@ pub trait QueryOperations {
     /// # Errors
     ///
     /// Returns an error if the query cannot be parsed or loaded.
-    fn load_query(&mut self, query: &InputSpec, query_type: Option<&QueryType>) -> Result<()>;
+    fn load_sparql_query(&mut self, query: &InputSpec, query_type: Option<&QueryType>) -> Result<()>;
 
     /// Serializes the currently loaded query to a writer.
     ///
@@ -31,10 +32,10 @@ pub trait QueryOperations {
     /// # Errors
     ///
     /// Returns an error if no query is loaded or serialization fails.
-    fn serialize_query<W: io::Write>(&self, writer: &mut W) -> Result<()>;
+    fn serialize_sparql_query<W: io::Write>(&self, writer: &mut W) -> Result<()>;
 
     /// Resets the current query.
-    fn reset_query(&mut self);
+    fn reset_sparql_query(&mut self);
 
     /// Executes the currently loaded query.
     ///
@@ -68,16 +69,16 @@ pub trait QueryOperations {
 }
 
 impl QueryOperations for crate::Rudof {
-    fn load_query(&mut self, query: &InputSpec, query_type: Option<&QueryType>) -> Result<()> {
-        load_query(self, query, query_type)
+    fn load_sparql_query(&mut self, query: &InputSpec, query_type: Option<&QueryType>) -> Result<()> {
+        load_sparql_query(self, query, query_type)
     }
 
-    fn serialize_query<W: io::Write>(&self, writer: &mut W) -> Result<()> {
-        serialize_query(self, writer)
+    fn serialize_sparql_query<W: io::Write>(&self, writer: &mut W) -> Result<()> {
+        serialize_sparql_query(self, writer)
     }
 
-    fn reset_query(&mut self) {
-        reset_query(self)
+    fn reset_sparql_query(&mut self) {
+        reset_sparql_query(self)
     }
 
     fn run_query(&mut self, result_query_format: Option<&ResultQueryFormat>) -> Result<()> {

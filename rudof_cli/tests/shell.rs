@@ -166,12 +166,61 @@ fn shell_persists_loaded_data_across_commands() {
     let script = format!("data {data}\ndata\nexit\n");
     let out = run_shell(&script);
 
-    // The second, bare `data` call re-shows the data loaded by the first
-    // call, without reloading it from disk.
-    let occurrences = out.stdout.matches("Alice").count();
+    // The first call prints a stats line for the data it just loaded; the
+    // second, bare call has nothing new to load, so it re-shows the full
+    // loaded data instead (not another stats line).
+    assert_eq!(out.stdout.matches("2 triple(s) loaded").count(), 1);
     assert_eq!(
-        occurrences, 2,
-        "expected the loaded data to be shown twice, got:\n{}",
+        out.stdout.matches("Alice").count(),
+        1,
+        "expected the second, bare 'data' call to re-show the full loaded data, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_data_replaces_by_default_instead_of_merging() {
+    let data1 = fixture("shell_data.ttl");
+    let data2 = fixture("shell_data2.ttl");
+    let script = format!("data {data1}\ndata {data2}\ndata\nexit\n");
+    let out = run_shell(&script);
+
+    // The second `data FILE` call, with no `--merge`, replaces the first
+    // file's data rather than merging into it: its own stats line reports
+    // only its own triple, and the final bare `data` shows only that data.
+    assert!(
+        out.stdout.contains("1 triple(s) loaded"),
+        "expected the second load to report only its own triple, got:\n{}",
+        out.stdout
+    );
+    assert!(
+        out.stdout.contains("bob") && !out.stdout.contains("Alice"),
+        "expected the final bare 'data' to show only the second file's data, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_data_merge_flag_merges_instead_of_replacing() {
+    let data1 = fixture("shell_data.ttl");
+    let data2 = fixture("shell_data2.ttl");
+    let script = format!("data {data1}\ndata {data2} --merge\ndata\nexit\n");
+    let out = run_shell(&script);
+
+    // With `--merge`, the second load's stats line counts both files'
+    // triples, and the final bare `data` shows the union of both.
+    assert!(
+        out.stdout.contains("3 triple(s) loaded"),
+        "expected the merged load to report triples from both files, got:\n{}",
+        out.stdout
+    );
+    assert!(
+        out.stdout.contains("bob") && out.stdout.contains("Alice"),
+        "expected the final bare 'data' to show both files' data, got:\n{}",
         out.stdout
     );
     assert_eq!(out.code, 0);
@@ -192,13 +241,14 @@ fn shell_persists_loaded_dctap_across_commands() {
     let script = format!("dctap -s {dctap}\ndctap\nexit\n");
     let out = run_shell(&script);
 
-    // The second, bare `dctap` call re-shows the DCTap loaded by the first
-    // call, without reloading it from disk. `xsd:string` appears exactly
-    // once per render (unlike `Person`, which appears twice by itself).
-    let occurrences = out.stdout.matches("xsd:string").count();
+    // The first call prints a stats line for the DCTap it just loaded; the
+    // second, bare call has nothing new to load, so it re-shows the full
+    // loaded DCTap instead (not another stats line).
+    assert_eq!(out.stdout.matches("1 shape(s) loaded").count(), 1);
     assert_eq!(
-        occurrences, 2,
-        "expected the loaded DCTap to be shown twice, got:\n{}",
+        out.stdout.matches("xsd:string").count(),
+        1,
+        "expected the second, bare 'dctap' call to re-show the full loaded DCTap, got:\n{}",
         out.stdout
     );
     assert_eq!(out.code, 0);
@@ -219,12 +269,14 @@ fn shell_persists_loaded_service_description_across_commands() {
     let script = format!("service -s {service}\nservice\nexit\n");
     let out = run_shell(&script);
 
-    // The second, bare `service` call re-shows the service description
-    // loaded by the first call, without reloading it from disk.
-    let occurrences = out.stdout.matches("SPARQL11Query").count();
+    // The first call prints a stats line for the service description it just
+    // loaded; the second, bare call has nothing new to load, so it re-shows
+    // the full loaded service description instead (not another stats line).
+    assert_eq!(out.stdout.matches("feature(s) loaded").count(), 1);
     assert_eq!(
-        occurrences, 2,
-        "expected the loaded service description to be shown twice, got:\n{}",
+        out.stdout.matches("SPARQL11Query").count(),
+        1,
+        "expected the second, bare 'service' call to re-show the full loaded service description, got:\n{}",
         out.stdout
     );
     assert_eq!(out.code, 0);
@@ -271,7 +323,7 @@ fn shell_output_flag_dash_still_prints_to_terminal() {
     let script = format!("data {data} -o -\nexit\n");
     let out = run_shell(&script);
 
-    assert!(out.stdout.contains("Alice"));
+    assert!(out.stdout.contains("2 triple(s) loaded"));
     assert!(!out.stdout.contains("Output saved in"));
     assert_eq!(out.code, 0);
 }
@@ -419,7 +471,7 @@ fn shell_shex_accepts_bare_file_as_schema() {
     let out = run_shell(&format!("shex {schema}\nexit\n"));
 
     assert!(
-        out.stdout.contains("PersonShape"),
+        out.stdout.contains("1 shape(s) loaded"),
         "expected the bare file to be loaded as the schema, got:\n{}",
         out.stdout
     );
@@ -607,7 +659,7 @@ fn shell_reset_target_clears_only_that_state() {
     );
     // ...but `data`, never targeted, still shows what was loaded.
     assert!(
-        out.stdout.contains("Alice"),
+        out.stdout.contains("2 triple(s) loaded"),
         "expected 'reset shex' to leave data untouched, got:\n{}",
         out.stdout
     );
@@ -694,7 +746,7 @@ fn shell_reset_endpoint_clears_the_active_endpoint() {
 
     assert!(out.stdout.contains("No endpoint is currently active."));
     // A target unrelated to `endpoint` is untouched by `reset endpoint`.
-    assert!(out.stdout.contains("PersonShape"));
+    assert!(out.stdout.contains("1 shape(s) loaded"));
     assert_eq!(out.code, 0);
 }
 
@@ -884,7 +936,7 @@ fn shell_data_resolves_prefixed_names_using_default_prefixes() {
     let script = format!("prefixes add p http://example.org/\ndata {data}\ndata\nexit\n");
     let out = run_shell(&script);
     assert!(
-        out.stdout.contains("Alice"),
+        out.stdout.contains("2 triple(s) loaded"),
         "expected the data to load using the default prefix, got:\n{}",
         out.stdout
     );
@@ -914,7 +966,7 @@ fn shell_shex_resolves_prefixed_names_using_default_prefixes() {
     );
     let out = run_shell(&script);
     assert!(
-        out.stdout.contains("PersonShape"),
+        out.stdout.contains("1 shape(s) loaded"),
         "expected the schema to load using the default prefixes, got:\n{}",
         out.stdout
     );

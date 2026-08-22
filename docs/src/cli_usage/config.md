@@ -20,6 +20,8 @@ query_url = "https://query.wikidata.org/sparql"
 
 `[rdf.endpoints.*]` lists the SPARQL endpoints registered by name, the ones usable as `--endpoint wikidata` or `--backend endpoint=wikidata`. `wikidata`, `dbpedia` and `uniprot` are registered by default.
 
+This dump only has bare values, no explanations — see the [Config reference](../references/config.md) for what every key means, its type, and its default.
+
 ## Inspecting a specific config file
 
 ```sh

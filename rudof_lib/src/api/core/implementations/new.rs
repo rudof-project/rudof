@@ -13,7 +13,7 @@ pub fn new(config: RudofConfig) -> Rudof {
         pg_schema: None,
         pg_schema_validation_results: None,
         shapemap: None,
-        query: None,
+        sparql_query: None,
         query_results: None,
         dctap: None,
         service_description: None,

@@ -25,7 +25,10 @@ Same syntax as the CLI, minus the `rudof` prefix:
 
 ```
 rudof> data examples/user.ttl
+11 triple(s) loaded
 ```
+
+For `data`, `shex`, `shacl`, `dctap`, `pgschema` and `service` — the commands that load a resource and, by default, dump it in full — the shell instead prints a short stats line like this when the line loads something new. This keeps a session that chains several such commands readable, since the full dump mostly just scrolls past. The full dump is still available: give `-o`/`--output-file` to write it to a file (see [Redirecting one command's output](#redirecting-one-commands-output)), or call the command bare afterwards to show what's currently loaded in full (see below).
 
 ## Multi-line input
 
@@ -47,7 +50,9 @@ Load data and a schema in separate lines, then validate without repeating either
 
 ```
 rudof> data examples/user.ttl
+11 triple(s) loaded
 rudof> shex examples/user.shex
+1 shape(s) loaded
 rudof> shex-validate -n :a -l :User
 ╭──────┬───────┬────────┬───────────────────────╮
 │ Node │ Shape │ Status │ Details               │
@@ -56,15 +61,43 @@ rudof> shex-validate -n :a -l :User
 ╰──────┴───────┴────────┴───────────────────────╯
 ```
 
-A bare command with no arguments shows whatever is currently loaded, instead of erroring:
+A bare command with no arguments shows whatever is currently loaded, in full, instead of erroring:
 
 ```
 rudof> data
+@prefix : <http://example.org/> .
+...
 ```
+
+### Loading `data` again: replace, or merge
+
+Unlike the top-level CLI (one `data` call per process), the shell can chain several `data` calls in the same session. A second `data FILE` **replaces** the RDF/PG data currently loaded, rather than merging into it — this is shell-only behavior, chosen because nothing about `data FILE` looks additive:
+
+```
+rudof> data examples/user.ttl
+11 triple(s) loaded
+rudof> data examples/simple.ttl
+14 triple(s) loaded
+rudof> data
+@prefix ... # only examples/simple.ttl's data
+```
+
+Add `--merge` to merge into the currently loaded data instead:
+
+```
+rudof> data examples/user.ttl
+11 triple(s) loaded
+rudof> data examples/simple.ttl --merge
+25 triple(s) loaded
+rudof> data
+@prefix ... # both files' data
+```
+
+`--merge` only exists in the shell, not in the top-level `rudof data` command.
 
 ## Bare resource shorthand
 
-For `shex`, `shacl`, `shapemap`, `pgschema`, `dctap`, `service`, `materialize`, `generate`, `rdf-config`, a single argument with no other flags is shorthand for that command's `-s` flag. `node` works the same way with `-n`. This only applies inside the shell.
+For `shex`, `shacl`, `shapemap`, `pgschema`, `dctap`, `service`, `materialize`, `generate`, `rdf-config`, a single argument with no other flags is shorthand for that command's `-s` flag. `node` works the same way with `-n`, and `sparql` with `-q`. This only applies inside the shell.
 
 ```
 rudof> shex examples/user.shex
@@ -178,8 +211,7 @@ Error: Data error: Failed to parse RDF data from 'string' [...]: The prefix p: h
 rudof> prefixes add p http://example.org/
 Added prefix p: <http://example.org/>
 rudof> data "p:a p:name \"Alice\" ."
-@prefix p: <http://example.org/> .
-p:a p:name "Alice" .
+1 triple(s) loaded
 ```
 
 ## Clearing session state
@@ -188,17 +220,20 @@ p:a p:name "Alice" .
 
 ```
 rudof> data examples/user.ttl
+11 triple(s) loaded
 rudof> shex examples/user.shex
+1 shape(s) loaded
 rudof> reset
 Reset all session state.
 rudof> data
 Error: Data error: No data loaded: No data loaded
 ```
 
-`reset TARGET` clears only one piece of state, leaving the rest of the session untouched. Targets: `data`, `shex`, `shacl`, `pgschema`, `shapemap`, `dctap`, `service`, `query`, `typemap`, `rdf-config`, `endpoint`. Give more than one to clear several at once:
+`reset TARGET` clears only one piece of state, leaving the rest of the session untouched. Targets: `data`, `shex`, `shacl`, `pgschema`, `shapemap`, `dctap`, `service`, `query`, `sparql`, `typemap`, `rdf-config`, `endpoint`. `sparql` clears just the loaded query text; `query` clears the loaded query *and* its results. Give more than one to clear several at once:
 
 ```
 rudof> shex examples/user.shex
+1 shape(s) loaded
 rudof> reset shex
 Reset: shex.
 rudof> shex
@@ -228,7 +263,7 @@ rudof> !ls examples
 
 ## History and completion
 
-Lines are saved to `~/.rudof_history` between sessions. Tab completes subcommand names, and falls back to filenames after the first word.
+Lines are saved to `~/.rudof_history` between sessions. Tab completes subcommand names; if several match, they're all listed on the first Tab (e.g. `sh` + Tab lists `shex`, `shacl`, `shapemap`, `shell`, ...) instead of silently filling in one. After the first word, Tab completes the `endpoint` command's argument against the endpoint names registered in the [TOML config](../general/configuration.md), and falls back to filenames for every other command.
 
 ## Exiting
 

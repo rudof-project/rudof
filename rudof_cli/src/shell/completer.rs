@@ -8,8 +8,10 @@ use std::borrow::Cow::{self, Borrowed, Owned};
 use std::cell::Cell;
 
 /// `rustyline` helper that completes the first word of a line against the
-/// known set of `rudof` subcommand names, and falls back to filename
-/// completion for the rest of the line (most subcommand arguments are paths).
+/// known set of `rudof` subcommand names, the argument of `endpoint` against
+/// the endpoint names registered in the rudof TOML config, and falls back to
+/// filename completion for everything else (most subcommand arguments are
+/// paths).
 ///
 /// It also drives the shell's interactive highlighting: matching brackets
 /// (handy now that a query/shape can be typed across several lines), the
@@ -17,6 +19,7 @@ use std::cell::Cell;
 pub struct ShellHelper {
     filename_completer: FilenameCompleter,
     commands: Vec<String>,
+    endpoints: Vec<String>,
     bracket_highlighter: MatchingBracketHighlighter,
     // Set by the REPL loop while reading a continuation line of a
     // multi-line command, so `highlight` doesn't color that line's first
@@ -25,10 +28,11 @@ pub struct ShellHelper {
 }
 
 impl ShellHelper {
-    pub fn new(commands: Vec<String>) -> Self {
+    pub fn new(commands: Vec<String>, endpoints: Vec<String>) -> Self {
         Self {
             filename_completer: FilenameCompleter::new(),
             commands,
+            endpoints,
             bracket_highlighter: MatchingBracketHighlighter::new(),
             continuation: Cell::new(false),
         }
@@ -60,6 +64,22 @@ impl Completer for ShellHelper {
                 .collect();
             return Ok((0, candidates));
         }
+
+        if &line[..Self::first_word_end(line)] == "endpoint" {
+            let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
+            let word_prefix = &line[word_start..pos];
+            let candidates = self
+                .endpoints
+                .iter()
+                .filter(|name| name.starts_with(word_prefix))
+                .map(|name| Pair {
+                    display: name.clone(),
+                    replacement: name.clone(),
+                })
+                .collect();
+            return Ok((word_start, candidates));
+        }
+
         self.filename_completer.complete(line, pos, ctx)
     }
 }
@@ -120,3 +140,38 @@ impl Highlighter for ShellHelper {
 impl Validator for ShellHelper {}
 
 impl Helper for ShellHelper {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rustyline::history::DefaultHistory;
+
+    #[test]
+    fn completes_endpoint_argument_against_registered_endpoint_names() {
+        let helper = ShellHelper::new(
+            vec!["endpoint".to_string()],
+            vec!["wikidata".to_string(), "dbpedia".to_string()],
+        );
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "endpoint wi";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "endpoint ".len());
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].replacement, "wikidata");
+    }
+
+    #[test]
+    fn other_commands_still_fall_back_to_filename_completion() {
+        let helper = ShellHelper::new(vec!["shex".to_string()], vec!["wikidata".to_string()]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "shex wikidata-not-a-file";
+        let (_, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert!(candidates.is_empty());
+    }
+}

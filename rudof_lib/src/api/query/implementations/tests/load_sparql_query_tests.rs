@@ -1,13 +1,13 @@
 use crate::{
-    Rudof, RudofConfig, api::query::implementations::load_query::load_query,
-    api::query::implementations::serialize_query::serialize_query, formats::InputSpec,
+    Rudof, RudofConfig, api::query::implementations::load_sparql_query::load_sparql_query,
+    api::query::implementations::serialize_sparql_query::serialize_sparql_query, formats::InputSpec,
 };
 
 /// Helper: serialize current query to string
 fn serialize_to_string(rudof: &Rudof) -> String {
     let mut buffer = Vec::new();
 
-    serialize_query(rudof, &mut buffer).unwrap();
+    serialize_sparql_query(rudof, &mut buffer).unwrap();
 
     String::from_utf8(buffer).unwrap()
 }
@@ -29,7 +29,7 @@ WHERE {
         "#,
     );
 
-    load_query(&mut rudof, &query_input, None).unwrap();
+    load_sparql_query(&mut rudof, &query_input, None).unwrap();
 
     let serialized = serialize_to_string(&rudof);
 
@@ -65,7 +65,7 @@ WHERE {
         "#,
     );
 
-    load_query(&mut rudof, &query_input, None).unwrap();
+    load_sparql_query(&mut rudof, &query_input, None).unwrap();
 
     let serialized = serialize_to_string(&rudof);
 
@@ -97,7 +97,7 @@ WHERE {
         "#,
     );
 
-    load_query(&mut rudof, &query_input, None).unwrap();
+    load_sparql_query(&mut rudof, &query_input, None).unwrap();
 
     let serialized = serialize_to_string(&rudof);
 
@@ -131,7 +131,7 @@ WHERE {
         "#,
     );
 
-    load_query(&mut rudof, &query_input, None).unwrap();
+    load_sparql_query(&mut rudof, &query_input, None).unwrap();
 
     let serialized = serialize_to_string(&rudof);
 
@@ -161,7 +161,7 @@ ASK {
         "#,
     );
 
-    load_query(&mut rudof, &query_input, None).unwrap();
+    load_sparql_query(&mut rudof, &query_input, None).unwrap();
 
     let serialized = serialize_to_string(&rudof);
 

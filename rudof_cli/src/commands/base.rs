@@ -5,7 +5,7 @@ use crate::commands::{
     CompareCommand, CompletionCommand, ConfigCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand,
     MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand, PgschemaValidateCommand, QueryCommand,
     RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand, ShapemapCommand, ShexCommand,
-    ShexValidateCommand, ValidateCommand,
+    ShexValidateCommand, SparqlCommand, ValidateCommand,
 };
 use crate::output::{ColorSupport, get_writer};
 use crate::shell::ShellCommand;
@@ -124,6 +124,7 @@ impl CommandFactory {
             CliCommand::RdfConfig(args) => Ok(Box::new(RdfConfigCommand::new(args))),
             CliCommand::Service(args) => Ok(Box::new(ServiceCommand::new(args))),
             CliCommand::Query(args) => Ok(Box::new(QueryCommand::new(args))),
+            CliCommand::Sparql(args) => Ok(Box::new(SparqlCommand::new(args))),
             CliCommand::Generate(args) => Ok(Box::new(GenerateCommand::new(args))),
             CliCommand::Materialize(args) => Ok(Box::new(MaterializeCommand::new(args))),
             CliCommand::PgschemaValidate(args) => Ok(Box::new(PgschemaValidateCommand::new(args))),
@@ -229,6 +230,11 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+        }),
+        CliCommand::Sparql(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
         }),
         CliCommand::Generate(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),

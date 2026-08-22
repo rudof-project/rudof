@@ -1,6 +1,6 @@
 use crate::{
     Rudof, RudofConfig,
-    api::query::implementations::load_query::load_query,
+    api::query::implementations::load_sparql_query::load_sparql_query,
     api::query::implementations::run_query::run_query,
     api::query::implementations::serialize_query_results::serialize_query_results,
     formats::{InputSpec, ResultQueryFormat},
@@ -64,7 +64,7 @@ select ?person ?name ?status where {
 }"#,
     );
 
-    load_query(&mut rudof, &query_input, None).unwrap();
+    load_sparql_query(&mut rudof, &query_input, None).unwrap();
     run_query(&mut rudof, None).unwrap();
 
     let serialized = serialize_results_to_string(&rudof, Some(ResultQueryFormat::Internal));

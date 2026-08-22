@@ -3,7 +3,15 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- Shell: Tab now lists all matching subcommand names instead of silently cycling through them, and completes the `endpoint` command's argument against registered endpoint names.
+- Shell: `data`, `shex`, `shacl`, `dctap`, `pgschema` and `service` now print a short stats line (e.g. "N triples loaded") when loading something new, instead of dumping the full content; a bare call still shows what's loaded in full.
+- Shell: `data FILE --merge` merges into the currently loaded RDF/PG data instead of replacing it, which is now the shell's default.
+- Added a `sparql` command to load and show a SPARQL query without running it; `query` now runs a query loaded this way when called bare.
+- Added a "Config reference" page to the docs, documenting every `rudof.toml` setting.
+
 ### Fixed
+- Fixed the ShEx pretty-printer omitting a schema's trailing newline, which could make the shell overwrite the last line of a `shex`/`shacl` command's output with the next prompt.
+
 ### Changed
 ### Removed
 

@@ -8,7 +8,7 @@ use crate::{
 };
 use rudof_rdf::rdf_core::query::SparqlQuery;
 
-pub fn load_query(rudof: &mut Rudof, query: &InputSpec, _query_type: Option<&QueryType>) -> Result<()> {
+pub fn load_sparql_query(rudof: &mut Rudof, query: &InputSpec, _query_type: Option<&QueryType>) -> Result<()> {
     let mut query_reader = query
         .open_read(None, "SPARQL query")
         .map_err(|error| QueryError::DataSourceSpec {
@@ -30,7 +30,7 @@ pub fn load_query(rudof: &mut Rudof, query: &InputSpec, _query_type: Option<&Que
         error: error.to_string(),
     })?;
 
-    rudof.query = Some(parsed_query);
+    rudof.sparql_query = Some(parsed_query);
 
     Ok(())
 }

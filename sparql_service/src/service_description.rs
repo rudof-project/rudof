@@ -91,6 +91,16 @@ impl ServiceDescription {
         &self.endpoint
     }
 
+    /// Returns the number of graphs listed as available in this service description.
+    pub fn available_graphs_count(&self) -> usize {
+        self.available_graphs.len()
+    }
+
+    /// Returns the number of SPARQL features this service description reports as supported.
+    pub fn feature_count(&self) -> usize {
+        self.feature.len()
+    }
+
     #[cfg(not(target_family = "wasm"))]
     pub fn from_path<P: AsRef<Path>>(
         path: P,

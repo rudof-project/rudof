@@ -16,7 +16,7 @@
 ## rudof technology commands
 
 - [data](./cli_usage/data.md)
-- [query](./cli_usage/sparql.md)
+- [sparql](./cli_usage/sparql.md)
 - [node](./cli_usage/node.md)
 - [shex](./cli_usage/shex.md)
 - [shacl](./cli_usage/shacl.md)
@@ -32,6 +32,7 @@
 - [shacl-validate](./cli_usage/shacl_validate.md)
 - [pgschema-validate](./cli_usage/pgschema_validate.md)
 - [validate](./cli_usage/validate.md)
+- [query](./cli_usage/sparql.md)
 - [convert](./cli_usage/convert.md)
 - [compare](./cli_usage/compare.md)
 - [generate](./cli_usage/generate.md)
@@ -62,7 +63,8 @@
 - [IRI normalization](./internals/iri-normalization.md)
 - [Feasibility model](./internals/feasibility-model.md)
 
-# More information
+# Reference
 
+- [Config](./references/config.md)
 - [Benchmarks](./references/benchmarks.md)
 - [FAQ](./references/faq.md)

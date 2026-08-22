@@ -29,8 +29,7 @@ use crate::pp_object_value;
 /// schema.add_prefix("ex", &IriS::new_unchecked("http://example.org/"));
 /// schema.add_shape(ShapeExprLabel::iri_unchecked("http://example.org/S"), ShapeExpr::empty_shape(), false);
 ///
-/// let expected = r#"prefix ex: <http://example.org/>
-/// ex:S {  }"#;
+/// let expected = "prefix ex: <http://example.org/>\nex:S {  }\n";
 ///
 /// assert_eq!(ShExFormatter::default().format_schema(&schema), expected);
 /// ```
@@ -246,7 +245,10 @@ where
             for sd in shape_decls {
                 docs.push(printer.pp_shape_decl(sd))
             }
-            printer.doc.intersperse(docs, printer.doc.hardline())
+            printer
+                .doc
+                .intersperse(docs, printer.doc.hardline())
+                .append(printer.doc.hardline())
         }
     }
 

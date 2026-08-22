@@ -1,7 +1,7 @@
 use crate::cli::parser::{
     CompareArgs, CompletionArgs, ConfigArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, MaterializeArgs, McpArgs,
     NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs, ShaclArgs, ShaclValidateArgs,
-    ShapemapArgs, ShellArgs, ShexArgs, ShexValidateArgs, ValidateArgs,
+    ShapemapArgs, ShellArgs, ShexArgs, ShexValidateArgs, SparqlArgs, ValidateArgs,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
@@ -62,6 +62,8 @@ pub enum Command {
     Service(ServiceArgs),
     /// Run SPARQL queries
     Query(QueryArgs),
+    /// Show information about a SPARQL query
+    Sparql(SparqlArgs),
     /// Generate synthetic RDF data from ShEx or SHACL schemas
     Generate(GenerateArgs),
     /// Materialize an RDF graph from a ShEx schema and Map semantic-action state

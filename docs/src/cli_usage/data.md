@@ -75,6 +75,8 @@ rudof data user.ttl simple.ttl -r rdfxml -o output.rdf
 
 > It is possible to serialize the files using a different format, like `ntriples`, `rdfxml`, etc.
 
+This merges multiple files given to the *same* `data` call. Inside `rudof shell`, where separate `data` calls can chain across a session, a second `data FILE` instead *replaces* the currently loaded data by default — add `--merge` to merge instead. See [shell](./shell.md#loading-data-again-replace-or-merge).
+
 ## RDF visualization
 
 It is possible to generate a visual representation of simple RDF graphs by using the `--result-format` option and selecting a visual format like `svg` or `png`.

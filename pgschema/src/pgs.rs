@@ -35,6 +35,16 @@ impl PropertyGraphSchema {
         }
     }
 
+    /// Returns the number of node types defined in this schema.
+    pub fn node_type_count(&self) -> usize {
+        self.node_types.len()
+    }
+
+    /// Returns the number of edge types defined in this schema.
+    pub fn edge_type_count(&self) -> usize {
+        self.edge_types.len()
+    }
+
     pub fn get_node_semantics(&self, type_name: &str) -> Result<&LabelPropertySpec, PgsError> {
         let node_id = self.node_names.get(type_name).ok_or(PgsError::MissingNodeLabel {
             label: type_name.to_string(),

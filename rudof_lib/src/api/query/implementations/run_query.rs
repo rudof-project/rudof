@@ -14,7 +14,7 @@ pub fn run_query(rudof: &mut Rudof, result_query_format: Option<&ResultQueryForm
         return Err(Box::new(DataError::NoRdfDataLoaded).into());
     }
 
-    let query = rudof.query.as_ref().ok_or(QueryError::NoQueryLoaded)?;
+    let query = rudof.sparql_query.as_ref().ok_or(QueryError::NoQueryLoaded)?;
     let query_type = detect_query_type(query);
     let result_query_format = result_query_format.copied().unwrap_or(ResultQueryFormat::Turtle);
 

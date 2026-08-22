@@ -35,6 +35,16 @@ impl PropertyGraph {
         }
     }
 
+    /// Returns the number of nodes in this graph.
+    pub fn node_count(&self) -> usize {
+        self.nodes.len()
+    }
+
+    /// Returns the number of edges in this graph.
+    pub fn edge_count(&self) -> usize {
+        self.edges.len()
+    }
+
     /// Merges another PropertyGraph into self.
     /// Nodes are merged by name. New nodes get new IDs.
     /// Edges are remapped to the new node IDs to avoid conflicts.

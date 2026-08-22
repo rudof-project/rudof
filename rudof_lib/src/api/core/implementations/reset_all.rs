@@ -12,7 +12,7 @@ pub fn reset_all(rudof: &mut Rudof) {
     rudof.pg_schema_validation_results = None;
     rudof.typemap = None;
     rudof.shapemap = None;
-    rudof.query = None;
+    rudof.sparql_query = None;
     rudof.query_results = None;
     rudof.dctap = None;
     rudof.service_description = None;

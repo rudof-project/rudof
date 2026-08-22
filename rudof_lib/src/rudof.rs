@@ -25,8 +25,8 @@ use crate::{
             AddPrefixBuilder, CopyPrefixBuilder, PrefixesBuilder, RemovePrefixBuilder, RenamePrefixBuilder,
         },
         query::builders::{
-            LoadQueryBuilder, ResetQueryBuilder, ResetQueryResultsBuilder, RunQueryBuilder, SerializeQueryBuilder,
-            SerializeQueryResultsBuilder,
+            LoadSparqlQueryBuilder, ResetQueryResultsBuilder, ResetSparqlQueryBuilder, RunQueryBuilder,
+            SerializeQueryResultsBuilder, SerializeSparqlQueryBuilder,
         },
         rdf_config::builders::{LoadRdfConfigBuilder, ResetRdfConfigBuilder, SerializeRdfConfigBuilder},
         shacl::builders::{
@@ -67,6 +67,14 @@ use std::io;
 /// Typedef for `Result` returned by Rudof operations, where errors are boxed into `RudofError`.
 /// Allows easier error handling across library-specific subsystems.
 pub type Result<T> = std::result::Result<T, RudofError>;
+
+/// A short summary of the RDF or PG data loaded into a [`Rudof`], returned by
+/// [`Rudof::data_stats`].
+#[derive(Debug, Clone, Copy)]
+pub enum DataStats {
+    Rdf { triples: usize },
+    Pg { nodes: usize, edges: usize },
+}
 
 /// The central `Rudof` struct acts as the main context and state machine.
 ///
@@ -113,8 +121,8 @@ pub struct Rudof {
     /// Current PGSchema validation results
     pub(crate) pg_schema_validation_results: Option<ValidationResult>,
 
-    /// Current SPARQL Query
-    pub(crate) query: Option<SparqlQuery>,
+    /// Current SPARQL query, loaded by `sparql` (show) or `query -q` (load + run)
+    pub(crate) sparql_query: Option<SparqlQuery>,
 
     /// Current query results
     pub(crate) query_results: Option<QueryResult>,
@@ -306,6 +314,55 @@ impl Rudof {
         self.data.is_some()
     }
 
+    /// Returns a short summary of the RDF or PG data currently loaded, if any.
+    ///
+    /// This exists for callers (e.g. the interactive shell) that just want
+    /// counts rather than the whole loaded value, which isn't part of this
+    /// crate's public API.
+    pub fn data_stats(&self) -> Option<DataStats> {
+        match self.data.as_ref()? {
+            Data::RDFData(rdf) => Some(DataStats::Rdf {
+                triples: rdf.all_triples().map(Iterator::count).unwrap_or(0),
+            }),
+            Data::PGData(pg) => Some(DataStats::Pg {
+                nodes: pg.node_count(),
+                edges: pg.edge_count(),
+            }),
+        }
+    }
+
+    /// Returns whether a SPARQL query is currently loaded, regardless of
+    /// whether it has been run yet (e.g. loaded by `sparql`, which only
+    /// loads and shows, without running).
+    pub fn has_sparql_query(&self) -> bool {
+        self.sparql_query.is_some()
+    }
+
+    /// Returns the currently loaded ShEx schema, if any.
+    pub fn shex_schema(&self) -> Option<&ShExSchema> {
+        self.shex_schema.as_ref()
+    }
+
+    /// Returns the currently loaded SHACL shapes, if any.
+    pub fn shacl_shapes(&self) -> Option<&IRSchema> {
+        self.shacl_shapes.as_ref()
+    }
+
+    /// Returns the currently loaded DCTAP model, if any.
+    pub fn dctap(&self) -> Option<&DCTAP> {
+        self.dctap.as_ref()
+    }
+
+    /// Returns the currently loaded PGSchema, if any.
+    pub fn pg_schema(&self) -> Option<&PropertyGraphSchema> {
+        self.pg_schema.as_ref()
+    }
+
+    /// Returns the currently loaded SPARQL service description, if any.
+    pub fn service_description(&self) -> Option<&ServiceDescription> {
+        self.service_description.as_ref()
+    }
+
     /// Returns a `DereferenceBuilder` to fetch `uri` over HTTP(S) — content-negotiating
     /// for an RDF serialization and following redirects — and merge the result into
     /// `Rudof`'s state.
@@ -483,27 +540,27 @@ impl Rudof {
     // QueryOperations methods
     // ========================================================================
 
-    /// Returns a `LoadQueryBuilder` to load a SPARQL query into state from
-    /// `query` (`InputSpec`).
+    /// Returns a `LoadSparqlQueryBuilder` to load a SPARQL query into state
+    /// from `query` (`InputSpec`).
     ///
     /// # Parameters
     /// - `query`: input specification for the SPARQL query to load.
-    pub fn load_query<'a>(&'a mut self, query: &'a InputSpec) -> LoadQueryBuilder<'a> {
-        LoadQueryBuilder::new(self, query)
+    pub fn load_sparql_query<'a>(&'a mut self, query: &'a InputSpec) -> LoadSparqlQueryBuilder<'a> {
+        LoadSparqlQueryBuilder::new(self, query)
     }
 
-    /// Returns a `SerializeQueryBuilder` that writes the currently-loaded
-    /// query to `writer`.
+    /// Returns a `SerializeSparqlQueryBuilder` that writes the
+    /// currently-loaded query to `writer`.
     ///
     /// # Parameters
     /// - `writer`: output target for the serialized SPARQL query.
-    pub fn serialize_query<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeQueryBuilder<'a, W> {
-        SerializeQueryBuilder::new(self, writer)
+    pub fn serialize_sparql_query<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeSparqlQueryBuilder<'a, W> {
+        SerializeSparqlQueryBuilder::new(self, writer)
     }
 
-    /// Returns a `ResetQueryBuilder` to clear the stored query.
-    pub fn reset_query<'a>(&'a mut self) -> ResetQueryBuilder<'a> {
-        ResetQueryBuilder::new(self)
+    /// Returns a `ResetSparqlQueryBuilder` to clear the stored query.
+    pub fn reset_sparql_query<'a>(&'a mut self) -> ResetSparqlQueryBuilder<'a> {
+        ResetSparqlQueryBuilder::new(self)
     }
 
     /// Returns a `RunQueryBuilder` to execute the currently-loaded SPARQL

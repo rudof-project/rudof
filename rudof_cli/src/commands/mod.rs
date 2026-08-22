@@ -19,6 +19,7 @@ mod shacl_validate;
 mod shapemap;
 mod shex;
 mod shex_validate;
+mod sparql;
 mod validate;
 
 pub(crate) use base::extract_common;
@@ -43,4 +44,5 @@ pub use shacl_validate::ShaclValidateCommand;
 pub use shapemap::ShapemapCommand;
 pub use shex::ShexCommand;
 pub use shex_validate::ShexValidateCommand;
+pub use sparql::SparqlCommand;
 pub use validate::ValidateCommand;

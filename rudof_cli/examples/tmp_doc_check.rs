@@ -374,12 +374,12 @@ fn query() {
     .unwrap();
 
     rudof
-        .load_query(&query_input)
+        .load_sparql_query(&query_input)
         .with_query_type(&QueryType::Select)
         .execute()
         .unwrap();
 
-    rudof.serialize_query(&mut std::io::stdout()).execute().unwrap();
+    rudof.serialize_sparql_query(&mut std::io::stdout()).execute().unwrap();
 
     rudof.run_query().execute().unwrap();
 
@@ -389,7 +389,7 @@ fn query() {
         .execute()
         .unwrap();
 
-    rudof.reset_query().execute();
+    rudof.reset_sparql_query().execute();
     rudof.reset_query_results().execute();
 }
 

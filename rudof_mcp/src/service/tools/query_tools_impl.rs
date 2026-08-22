@@ -207,7 +207,7 @@ pub async fn execute_sparql_query_impl(
 
     let mut rudof = service.rudof.lock().await;
 
-    rudof.load_query(&query_spec).execute().map_err(|e| {
+    rudof.load_sparql_query(&query_spec).execute().map_err(|e| {
         internal_error(
             "Query execution error",
             e.to_string(),

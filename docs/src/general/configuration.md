@@ -3,6 +3,10 @@
 Most commands can be customized either by passing parameters at run-time or through a
 configuration file. Config files use [TOML syntax](https://toml.io/).
 
+For a complete, field-by-field listing of every setting (with types and defaults), see the
+[Config reference](../references/config.md). This page only covers how configuration is
+loaded, merged, and structured.
+
 ## Where configuration comes from
 
 rudof builds its effective configuration by layering several sources. From lowest to
@@ -61,6 +65,9 @@ check_negation = true
 # Other subsystems: [shacl], [tap], [tap2shex], [shex2uml], [shex2html],
 # [shex2sparql], [service], [comparator].
 ```
+
+See the [Config reference](../references/config.md) for every key each of these tables
+accepts.
 
 A per-section `base_iri` (e.g. under `[rdf]`) overrides the top-level `base_iri` for that
 section only; sections that don't set their own inherit the common one. Shared sections
