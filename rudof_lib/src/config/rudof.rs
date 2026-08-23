@@ -451,8 +451,8 @@ mod tests {
 
     #[test]
     fn resolve_propagates_common_base_to_sections() {
-        let cfg = RudofConfig::from_str("base_iri = \"http://common/\"\n").unwrap();
-        let base = Some("http://common/");
+        let cfg = RudofConfig::from_str("base_iri = \"http://default/\"\n").unwrap();
+        let base = Some("http://default/");
         assert_eq!(cfg.rdf_data().base().map(|i| i.as_str()), base);
         assert_eq!(cfg.shex().base().map(|i| i.as_str()), base);
         assert_eq!(cfg.service().base().map(|i| i.as_str()), base);
