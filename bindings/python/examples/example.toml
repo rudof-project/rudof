@@ -2,6 +2,7 @@
 base_iri = "http://base/"
 
 [rdf.endpoints.wikidata]
+name = "Wikidata"
 query_url = "https://query.wikidata.org/sparql"
 
 [rdf.endpoints.wikidata.prefixmap]
@@ -43,6 +44,7 @@ genid = "http://www.wikidata.org/.well-known/genid/"
 es = "https://www.wikidata.org/wiki/Special:EntitySchemaText/"
 
 [rdf.endpoints.dbpedia]
+name = "dbpedia"
 query_url = "http://dbpedia.org/sparql"
 
 [rdf.endpoints.dbpedia.prefixmap]
@@ -55,6 +57,7 @@ geo = "http://www.w3.org/2003/01/geo/wgs84_pos#"
 xsd = "http://www.w3.org/2001/XMLSchema#"
 
 [rdf.endpoints.uniprot]
+name = "uniprot"
 query_url = "https://sparql.uniprot.org/sparql"
 
 [rdf.endpoints.uniprot.prefixmap]
