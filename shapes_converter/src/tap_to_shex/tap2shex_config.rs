@@ -72,7 +72,7 @@ impl Tap2ShExConfig {
 #[allow(dead_code)]
 #[rustfmt::skip]
 impl Tap2ShExConfig {
-    #[inline] fn default_base_iri() -> Option<IriS> { None }
+    #[inline] fn default_base_iri() -> Option<IriS> { Some(IriS::new_unchecked("http://default/")) }
     #[inline] fn default_datatype_base_iri() -> Option<IriS> { None }
     #[inline] fn default_prefixmap() -> PrefixMap { PrefixMap::basic() }
     #[inline] fn default_dctap() -> TapConfig { TapConfig::default() }

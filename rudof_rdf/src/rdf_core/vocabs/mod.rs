@@ -5,7 +5,8 @@
 //! represent standard properties and datatypes used throughout RDF processing.
 
 use rudof_iri::IriS;
-use std::sync::OnceLock;
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
 
 mod owl;
 mod rdf;
@@ -51,8 +52,37 @@ macro_rules! vocab_term {
 pub trait RdfVocabulary {
     const BASE: &'static str;
 
+    /// Returns the base IRI of this vocabulary.
+    ///
+    /// This is a default trait method, so its body is shared source across
+    /// every implementor; a `static` declared directly in it is **not**
+    /// distinct per `Self` (unlike a `static` in a macro-expanded inherent
+    /// method, where each expansion is separate source). Caching keyed only
+    /// by `TypeId`/monomorphization here previously collapsed to a single
+    /// shared cell, so whichever vocabulary's `base_iri()` ran first "won"
+    /// for every other vocabulary in the process. Keying explicitly by
+    /// `Self::BASE` (unique per vocabulary) avoids that.
     fn base_iri() -> &'static IriS {
-        static IRI: OnceLock<IriS> = OnceLock::new();
-        IRI.get_or_init(|| IriS::new_unchecked(Self::BASE))
+        static CACHE: OnceLock<Mutex<HashMap<&'static str, &'static IriS>>> = OnceLock::new();
+        let mut cache = CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap();
+        *cache
+            .entry(Self::BASE)
+            .or_insert_with(|| Box::leak(Box::new(IriS::new_unchecked(Self::BASE))))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regardless of which vocabulary's `base_iri()` runs first in the
+    /// process, every vocabulary must keep returning its own base IRI.
+    #[test]
+    fn base_iri_is_distinct_per_vocabulary() {
+        assert_eq!(RdfVocab::base_iri().as_str(), RdfVocab::BASE);
+        assert_eq!(ShexRVocab::base_iri().as_str(), ShexRVocab::BASE);
+        assert_eq!(XsdVocab::base_iri().as_str(), XsdVocab::BASE);
+        assert_eq!(RdfsVocab::base_iri().as_str(), RdfsVocab::BASE);
+        assert_ne!(RdfVocab::base_iri().as_str(), ShexRVocab::base_iri().as_str());
     }
 }

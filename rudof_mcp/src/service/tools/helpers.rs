@@ -610,7 +610,7 @@ pub const SHACL_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
 ];
 
 /// Supported ShEx schema input formats (loading).
-pub const SHEX_INPUT_FORMATS_SUPPORTED: &str = "shexc, shexj";
+pub const SHEX_INPUT_FORMATS_SUPPORTED: &str = "shexc, shexj, turtle, ntriples, rdfxml, nquads";
 
 /// Supported ShEx schema output formats (serialization).
 pub const SHEX_OUTPUT_FORMATS_SUPPORTED: &str =

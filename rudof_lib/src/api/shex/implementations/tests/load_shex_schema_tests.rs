@@ -157,3 +157,50 @@ fn test_load_shex_schema_negative_cycles() {
         assert!(e.to_string().contains("negative cycle"));
     }
 }
+
+#[test]
+fn test_load_shex_schema_shexr_turtle_roundtrip() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+
+    let schema = InputSpec::str(
+        r#"PREFIX ex: <http://example.org/>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+           ex:PersonShape {
+             ex:name xsd:string ;
+             ex:age xsd:integer ?
+           }"#,
+    );
+
+    load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
+
+    let mut turtle_buffer = Vec::new();
+    serialize_shex_schema(
+        &rudof,
+        None,
+        Some(true),
+        Some(false),
+        Some(false),
+        Some(false),
+        None,
+        Some(&ShExFormat::Turtle),
+        &mut turtle_buffer,
+    )
+    .unwrap();
+    let turtle = String::from_utf8(turtle_buffer).unwrap();
+    assert!(turtle.contains("sx:Schema"));
+
+    let mut rudof_from_rdf = Rudof::new(RudofConfig::default());
+    load_shex_schema(
+        &mut rudof_from_rdf,
+        &InputSpec::str(&turtle),
+        Some(&ShExFormat::Turtle),
+        None,
+        None,
+    )
+    .unwrap();
+
+    let shexc = serialize_to_string(&mut rudof_from_rdf, Some(ShExFormat::ShExC));
+    assert!(shexc.contains("PersonShape"));
+    assert!(shexc.contains("ex:name"));
+    assert!(shexc.contains("xsd:string"));
+}

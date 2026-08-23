@@ -5,6 +5,7 @@ use crate::{
     utils::{PrefixDirective, default_prefix_header, get_base_iri},
 };
 use rudof_iri::{IriS, MimeType};
+use rudof_rdf::rdf_core::RDFFormat;
 use shex_ast::{
     ResolveMethod, Schema as ShExSchema,
     compact::ShExParser,
@@ -12,8 +13,10 @@ use shex_ast::{
         map_action_extension::MapActionExtension, schema_ir::SchemaIR,
         semantic_actions_registry::SemanticActionsRegistry, test_action_extension::TestActionExtension,
     },
+    shexr::shexr_parser::ShExRParser,
 };
 use shex_validation::Validator as ShExValidator;
+use sparql_service::RdfData;
 use std::{env, io};
 // use tracing::trace;
 #[cfg(not(target_family = "wasm"))]
@@ -40,6 +43,21 @@ pub fn load_shex_schema(
         },
         ShExFormat::ShExJ => {
             load_shex_schema_shexj(rudof, schema_reader, &schema.source_name(), base_schema, &reader_mode)?;
+        },
+        ShExFormat::Turtle
+        | ShExFormat::NTriples
+        | ShExFormat::RdfXml
+        | ShExFormat::TriG
+        | ShExFormat::N3
+        | ShExFormat::NQuads => {
+            load_shex_schema_shexr(
+                rudof,
+                schema_reader,
+                &schema.source_name(),
+                schema_format,
+                base_schema,
+                &reader_mode,
+            )?;
         },
         _ => {
             todo!("Implement loading for ShEx format '{}'", schema_format);
@@ -131,6 +149,79 @@ fn load_shex_schema_shexj<R: io::Read>(
         source_name: source_name.to_string(),
         format: "ShExJ".to_string(),
     })?;
+
+    compile_shex_schema(rudof, base_schema, schema, reader_mode)?;
+
+    Ok(())
+}
+
+/// Loads a ShEx schema encoded as RDF (ShExR: Turtle, N-Triples, RDF/XML or
+/// N-Quads; TriG and N3 are rejected below since reading them isn't
+/// implemented at the RDF-parsing layer yet) by parsing the RDF into an
+/// in-memory graph and then decoding the `sx:Schema` instance it contains
+/// via [`ShExRParser`].
+fn load_shex_schema_shexr<R: io::Read>(
+    rudof: &mut Rudof,
+    mut schema_reader: R,
+    source_name: &str,
+    schema_format: ShExFormat,
+    base_schema: IriS,
+    reader_mode: &DataReaderMode,
+) -> Result<()> {
+    if matches!(schema_format, ShExFormat::TriG | ShExFormat::N3) {
+        return Err(ShExError::FailedParsingShExSchema {
+            error: "reading RDF in this format is not yet implemented; use turtle, ntriples, rdfxml or nquads \
+                    instead"
+                .to_string(),
+            source_name: source_name.to_string(),
+            format: schema_format.to_string(),
+        }
+        .into());
+    }
+
+    let rdf_format: RDFFormat = schema_format.try_into()?;
+    let mut rdf_data = RdfData::new();
+
+    let merge_result = if matches!(schema_format, ShExFormat::Turtle) {
+        let mut content = String::new();
+        schema_reader
+            .read_to_string(&mut content)
+            .map_err(|error| ShExError::FailedParsingShExSchema {
+                error: error.to_string(),
+                source_name: source_name.to_string(),
+                format: schema_format.to_string(),
+            })?;
+        let header = default_prefix_header(rudof, &content, PrefixDirective::Turtle);
+        let mut prefixed_reader = io::Cursor::new(format!("{header}{content}").into_bytes());
+        rdf_data.merge_from_reader(
+            &mut prefixed_reader,
+            source_name,
+            &rdf_format,
+            Some(base_schema.as_str()),
+            &reader_mode.into(),
+        )
+    } else {
+        rdf_data.merge_from_reader(
+            &mut schema_reader,
+            source_name,
+            &rdf_format,
+            Some(base_schema.as_str()),
+            &reader_mode.into(),
+        )
+    };
+    merge_result.map_err(|error| ShExError::FailedParsingShExSchema {
+        error: error.to_string(),
+        source_name: source_name.to_string(),
+        format: schema_format.to_string(),
+    })?;
+
+    let schema = ShExRParser::new(rdf_data)
+        .parse()
+        .map_err(|error| ShExError::FailedParsingShExSchema {
+            error: error.to_string(),
+            source_name: source_name.to_string(),
+            format: schema_format.to_string(),
+        })?;
 
     compile_shex_schema(rudof, base_schema, schema, reader_mode)?;
 

@@ -150,6 +150,16 @@ The `sx:` prefix (for the ShExR vocabulary itself) is always added, and the sche
 
 This works the same way in the shell — `shex examples/person.shex` to load the schema, then `shex -r turtle` to show it as RDF.
 
+## Loading a ShEx schema from RDF (ShExR)
+
+The reverse direction also works: `-s`/`--schema` accepts a ShExR-encoded RDF file as input, not just ShExC/ShExJ — pass `-f turtle`, `ntriples`, `rdfxml` or `nquads` (`trig` and `n3` aren't supported as *input* formats yet, only as output):
+
+```sh
+❯ rudof shex -s examples/person.shexr.ttl -f turtle -r shexc
+```
+
+This round-trips with the serialization above — saving the RDF from `rudof shex -s examples/person.shex -r turtle` to a file and loading it back with `-f turtle` reproduces the original schema. This is available everywhere a ShEx schema can be loaded: the CLI, the shell (`shex examples/person.shexr.ttl -f turtle`), the MCP server's `show_shex`/`check_shex` tools, and the Python bindings (`read_shex(path, format=ShExFormat.Turtle)`).
+
 ## ShEx-based validation
 
 It is also possible to use `rudof` to validate ShEx schemas.

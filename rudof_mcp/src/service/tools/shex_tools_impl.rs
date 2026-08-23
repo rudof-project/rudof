@@ -19,7 +19,8 @@ pub struct ShowShexRequest {
     /// ShEx schema to parse. Accepts inline ShExC/ShExJ text, a URL, or a local file path.
     pub schema: String,
 
-    /// Format of the input schema. Currently supported for loading: shexc (default), shexj.
+    /// Format of the input schema. Currently supported for loading: shexc (default), shexj,
+    /// turtle, ntriples, rdfxml, nquads (ShExR — the RDF encoding of a ShEx schema).
     pub schema_format: Option<String>,
 
     /// Base IRI for resolving relative IRIs in the schema. Example: "http://example.org/"
@@ -100,9 +101,20 @@ pub async fn show_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    // Guard: only shexc/shexj are implemented for loading ShEx schemas.
+    // Guard: shexc/shexj plus the ShExR-readable RDF formats (turtle,
+    // ntriples, rdfxml, nquads) are implemented for loading ShEx schemas.
+    // trig/n3 are excluded: reading them isn't implemented at the
+    // RDF-parsing layer yet.
     if let Some(fmt) = &parsed_schema_format
-        && !matches!(fmt, ShExFormat::ShExC | ShExFormat::ShExJ)
+        && !matches!(
+            fmt,
+            ShExFormat::ShExC
+                | ShExFormat::ShExJ
+                | ShExFormat::Turtle
+                | ShExFormat::NTriples
+                | ShExFormat::RdfXml
+                | ShExFormat::NQuads
+        )
     {
         return Ok(unsupported_format_error(
             "ShEx schema input",
@@ -217,7 +229,8 @@ pub struct CheckShexRequest {
     /// ShEx schema to check. Accepts inline ShExC/ShExJ text, a URL, or a local file path.
     pub schema: String,
 
-    /// Format of the input schema. Supported: shexc (default), shexj.
+    /// Format of the input schema. Supported: shexc (default), shexj, turtle, ntriples,
+    /// rdfxml, nquads (ShExR — the RDF encoding of a ShEx schema).
     pub schema_format: Option<String>,
 
     /// Base IRI for resolving relative IRIs in the schema. Example: "http://example.org/"
@@ -272,9 +285,20 @@ pub async fn check_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    // Guard: only shexc/shexj are implemented for loading ShEx schemas.
+    // Guard: shexc/shexj plus the ShExR-readable RDF formats (turtle,
+    // ntriples, rdfxml, nquads) are implemented for loading ShEx schemas.
+    // trig/n3 are excluded: reading them isn't implemented at the
+    // RDF-parsing layer yet.
     if let Some(fmt) = &parsed_schema_format
-        && !matches!(fmt, ShExFormat::ShExC | ShExFormat::ShExJ)
+        && !matches!(
+            fmt,
+            ShExFormat::ShExC
+                | ShExFormat::ShExJ
+                | ShExFormat::Turtle
+                | ShExFormat::NTriples
+                | ShExFormat::RdfXml
+                | ShExFormat::NQuads
+        )
     {
         return Ok(unsupported_format_error(
             "ShEx schema input",
