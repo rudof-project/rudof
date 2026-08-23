@@ -1,11 +1,19 @@
+use crate::rdf_core::EndpointDescription;
+use crate::rdf_core::RDFError;
 use crate::rdf_core::visualizer::RDFVisualizationConfig;
-use std::{collections::HashMap, str::FromStr};
-
-use prefixmap::PrefixMap;
+use include_dir::{Dir, include_dir};
+use std::{collections::HashMap, path::Path};
 
 use rudof_config::TomlConfig;
-use rudof_iri::{IriS, error::IriSError};
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
+
+/// Every `*.toml` file in `rudof_rdf/endpoints/`, embedded at compile time so
+/// a built `rudof` binary doesn't depend on that folder existing on disk.
+/// Every file found here is registered as a default endpoint (see
+/// [`RdfDataConfig::default`]) — to add or adjust a built-in endpoint, add or
+/// edit a file there and open a pull request; no Rust code change needed.
+static ENDPOINTS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/endpoints");
 
 /// Configuration for RDF data readers and visualization settings.
 ///
@@ -53,34 +61,46 @@ impl RdfDataConfig {
         }
     }
 
-    /// Adds a Wikidata SPARQL endpoint to the configuration.
-    pub fn with_wikidata(mut self) -> Self {
-        let wikidata_name = "wikidata";
-        let wikidata_iri = "https://query.wikidata.org/sparql";
-        let wikidata = EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata());
+    /// Loads an [`EndpointDescription`] from a local TOML file and registers
+    /// it under its own `name` field, overwriting any existing endpoint
+    /// already registered under that name (matched case-insensitively — see
+    /// [`RdfDataConfig::find_endpoint`]). Returns the registered name.
+    ///
+    /// The file has the same shape as one `[rdf.endpoints.<name>]` table in
+    /// `rudof.toml`: `name`, `query_url`, an optional `update_url`, and an
+    /// optional `[prefixmap]` table. See `rudof_rdf/endpoints/*.toml` for
+    /// examples — those are the very files this loads to build the default
+    /// endpoints.
+    pub fn load_endpoint_description<P: AsRef<Path>>(&mut self, path: P) -> Result<String, RDFError> {
+        let path = path.as_ref();
+        let toml_str = std::fs::read_to_string(path).map_err(|error| RDFError::ReadingConfigError {
+            path_name: path.display().to_string(),
+            error,
+        })?;
 
-        self.endpoints.insert(wikidata_name.to_string(), wikidata);
-        self
+        self.register_endpoint_description(&path.display().to_string(), &toml_str)
     }
 
-    /// Adds a DBpedia SPARQL endpoint to the configuration.
-    pub fn with_dbpedia(mut self) -> Self {
-        let dbpedia_name = "dbpedia";
-        let dbpedia_iri = "https://dbpedia.org/sparql";
-        let dbpedia = EndpointDescription::new_unchecked(dbpedia_iri).with_prefixmap(PrefixMap::dbpedia());
-
-        self.endpoints.insert(dbpedia_name.to_string(), dbpedia);
-        self
-    }
-
-    /// Adds a Uniprot SPARQL endpoint to the configuration.
-    pub fn with_uniprot(mut self) -> Self {
-        let uniprot_name = "uniprot";
-        let uniprot_iri = "https://sparql.uniprot.org/sparql";
-        let uniprot = EndpointDescription::new_unchecked(uniprot_iri).with_prefixmap(PrefixMap::uniprot());
-
-        self.endpoints.insert(uniprot_name.to_string(), uniprot);
-        self
+    /// Parses `toml_str` as an [`EndpointDescription`] and registers it under
+    /// its own `name` field (returned on success), applying the same
+    /// prefix-display styling (`without_default_colors().with_hyperlink(true)`)
+    /// the built-in endpoints have always had — `PrefixMap`'s TOML
+    /// (de)serialization only round-trips the prefix→IRI pairs themselves,
+    /// not that styling, so every endpoint loaded this way (built-in or
+    /// user-supplied) gets it applied uniformly rather than only the
+    /// built-ins having it.
+    ///
+    /// `source` is only used to name `toml_str`'s origin in a parse error
+    /// message (a file path, or a bundled endpoint's own file name).
+    fn register_endpoint_description(&mut self, source: &str, toml_str: &str) -> Result<String, RDFError> {
+        let mut endpoint: EndpointDescription = toml::from_str(toml_str).map_err(|error| RDFError::TomlError {
+            path_name: source.to_string(),
+            error,
+        })?;
+        endpoint.prefixmap = endpoint.prefixmap.without_default_colors().with_hyperlink(true);
+        let name = endpoint.name().to_string();
+        self.endpoints.insert(name.clone(), endpoint);
+        Ok(name)
     }
 
     pub fn with_base(mut self, iri: Option<IriS>) -> Self {
@@ -117,6 +137,15 @@ impl RdfDataConfig {
 
     pub fn endpoints(&self) -> &HashMap<String, EndpointDescription> {
         &self.endpoints
+    }
+
+    /// Looks up a registered endpoint by name, case-insensitively — `wikidata`,
+    /// `Wikidata` and `WikiData` all match an endpoint registered as `"Wikidata"`.
+    pub fn find_endpoint(&self, name: &str) -> Option<&EndpointDescription> {
+        self.endpoints
+            .iter()
+            .find(|(key, _)| key.eq_ignore_ascii_case(name))
+            .map(|(_, endpoint)| endpoint)
     }
 
     pub fn automatic_base(&self) -> bool {
@@ -158,125 +187,85 @@ impl RdfDataConfig {
 
 impl Default for RdfDataConfig {
     fn default() -> Self {
-        Self::new().with_wikidata().with_dbpedia().with_uniprot()
+        let mut config = Self::new();
+        for file in ENDPOINTS_DIR.files() {
+            let path = file.path().display().to_string();
+            let toml_str = file
+                .contents_utf8()
+                .unwrap_or_else(|| panic!("bundled endpoint file '{path}' is not valid UTF-8"));
+            // These are compile-time-embedded, maintainer-controlled files —
+            // a parse failure here is a build/CI-time bug (a bad edit to
+            // `rudof_rdf/endpoints/*.toml`), not something an end user can
+            // trigger at runtime, so panicking with a clear message beats
+            // threading a `Result` through `Default`.
+            config
+                .register_endpoint_description(&path, toml_str)
+                .unwrap_or_else(|err| panic!("bundled endpoint file '{path}' failed to parse: {err}"));
+        }
+        config
     }
 }
 
 impl TomlConfig for RdfDataConfig {}
 
-/// Description of a SPARQL endpoint for querying RDF data.
-///
-/// This struct contains the necessary information to connect to and query a SPARQL endpoint,
-/// including URLs for queries and updates, and optional prefix mappings.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct EndpointDescription {
-    /// The URL of the SPARQL query endpoint.
-    #[serde(rename = "query_url")]
-    pub(crate) query_url: IriS,
-    /// Optional URL for SPARQL update operations.
-    #[serde(
-        rename = "update_url",
-        default = "EndpointDescription::default_update_url",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub(crate) update_url: Option<IriS>,
-    /// Optional prefix map for abbreviating IRIs in queries.
-    #[serde(
-        rename = "prefixmap",
-        default = "EndpointDescription::default_prefixmap",
-        skip_serializing_if = "PrefixMap::is_empty"
-    )]
-    pub(crate) prefixmap: PrefixMap,
-}
-
-/// Serde stuff
-#[allow(dead_code)]
-#[rustfmt::skip]
-impl EndpointDescription {
-    #[inline]
-    fn default_update_url() -> Option<IriS> { None }
-    #[inline]
-    fn default_prefixmap() -> PrefixMap { PrefixMap::default() }
-}
-
-impl EndpointDescription {
-    /// Creates a new `EndpointDescription` from a URL string without validation.
-    ///
-    /// # Arguments
-    /// * `str` - The URL string for the SPARQL query endpoint.
-    pub fn new_unchecked(str: &str) -> Self {
-        EndpointDescription {
-            query_url: IriS::new_unchecked(str),
-            update_url: Self::default_update_url(),
-            prefixmap: Self::default_prefixmap(),
-        }
-    }
-
-    /// Sets the prefix map for this endpoint.
-    ///
-    /// # Arguments
-    /// * `prefixmap` - The `PrefixMap` to associate with this endpoint.
-    ///
-    /// # Returns
-    /// The modified `EndpointDescription` with the new prefix map.
-    pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
-        self.prefixmap = prefixmap;
-        self
-    }
-
-    pub fn with_update_query(mut self, iri: Option<IriS>) -> Self {
-        self.update_url = iri;
-        self
-    }
-}
-
-impl EndpointDescription {
-    /// Returns the query URL for this endpoint.
-    ///
-    /// # Returns
-    /// A reference to the `IriS` representing the SPARQL query endpoint URL.
-    pub fn query_url(&self) -> &IriS {
-        &self.query_url
-    }
-
-    /// Returns the prefix map for this endpoint, or a default empty map if none is set.
-    ///
-    /// # Returns
-    /// The `PrefixMap` containing IRI prefixes for query abbreviation.
-    pub fn prefixmap(&self) -> &PrefixMap {
-        &self.prefixmap
-    }
-
-    pub fn update_url(&self) -> Option<&IriS> {
-        self.update_url.as_ref()
-    }
-}
-
-impl FromStr for EndpointDescription {
-    type Err = IriSError;
-
-    /// Parses an `EndpointDescription` from a URL string.
-    ///
-    /// This validates that the provided string is a valid IRI before creating the endpoint description.
-    ///
-    /// # Arguments
-    /// * `query_url` - The URL string to parse as the SPARQL query endpoint.
-    ///
-    /// # Returns
-    /// A `Result` containing the parsed `EndpointDescription` or an `IriSError` if parsing fails.
-    fn from_str(query_url: &str) -> Result<Self, Self::Err> {
-        let iri = IriS::from_str(query_url)?;
-        Ok(EndpointDescription {
-            query_url: iri,
-            update_url: Self::default_update_url(),
-            prefixmap: Self::default_prefixmap(),
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::RdfDataConfig;
+    use std::io::Write as _;
+
+    #[test]
+    fn default_bundles_the_three_builtin_endpoints() {
+        let endpoints = RdfDataConfig::default();
+        // Case-insensitive lookup: the registered key is the capitalized
+        // `name` field ("Wikidata"), but `find_endpoint` matches regardless.
+        let wikidata = endpoints
+            .find_endpoint("wikidata")
+            .expect("wikidata should be registered");
+        assert_eq!(wikidata.name(), "Wikidata");
+        assert_eq!(wikidata.query_url().as_str(), "https://query.wikidata.org/sparql");
+        assert!(!wikidata.prefixmap().is_empty());
+        assert!(endpoints.find_endpoint("DBPEDIA").is_some());
+        assert!(endpoints.find_endpoint("UniProt").is_some());
+    }
+
+    #[test]
+    fn load_endpoint_description_registers_under_its_name_field() {
+        let mut file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
+        writeln!(file, r#"name = "Example""#).unwrap();
+        writeln!(file, r#"query_url = "https://example.org/sparql""#).unwrap();
+        writeln!(file, "[prefixmap]").unwrap();
+        writeln!(file, r#"ex = "http://example.org/""#).unwrap();
+
+        let mut config = RdfDataConfig::new();
+        let name = config.load_endpoint_description(file.path()).unwrap();
+
+        assert_eq!(name, "Example");
+        // Case-insensitive: found regardless of the casing used to look it up.
+        let endpoint = config.find_endpoint("example").unwrap();
+        assert_eq!(endpoint.name(), "Example");
+        assert_eq!(endpoint.query_url().as_str(), "https://example.org/sparql");
+        assert_eq!(
+            endpoint.prefixmap().map.get("ex").map(|iri| iri.as_str().to_string()),
+            Some("http://example.org/".to_string())
+        );
+    }
+
+    #[test]
+    fn load_endpoint_description_reports_a_missing_file() {
+        let mut config = RdfDataConfig::new();
+        let err = config.load_endpoint_description("/no/such/endpoint.toml").unwrap_err();
+        assert!(err.to_string().contains("endpoint.toml"));
+    }
+
+    #[test]
+    fn load_endpoint_description_reports_malformed_toml() {
+        let mut file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
+        writeln!(file, "not valid toml [[[").unwrap();
+
+        let mut config = RdfDataConfig::new();
+        let err = config.load_endpoint_description(file.path()).unwrap_err();
+        assert!(err.to_string().to_lowercase().contains("toml") || err.to_string().contains("expected"));
+    }
 
     #[test]
     fn partial_toml_fills_remaining_defaults() {
@@ -297,6 +286,7 @@ mod tests {
         let s = r#"
             base_iri = "http://ex/"
             [endpoints.demo]
+            name = "Demo"
             query_url = "https://example.org/sparql"
         "#;
         let c: RdfDataConfig = toml::from_str(s).unwrap();

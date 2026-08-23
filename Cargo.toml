@@ -261,6 +261,7 @@ clientele = { version = "0.3.8", default-features = false, features = [
     "subcommands",
     "std",
 ] }
+include_dir = "0.7"
 crossterm = "0.27"
 colored = "3"
 const_format = "0.2"

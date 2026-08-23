@@ -38,6 +38,11 @@ class ShExFormat(IntEnum):
     ShExC = 0
     ShExJ = 1
     Turtle = 2
+    NTriples = 3
+    RdfXml = 4
+    TriG = 5
+    N3 = 6
+    NQuads = 7
 
 class ResultShexValidationFormat(IntEnum):
     """Output format for ShEx validation results."""

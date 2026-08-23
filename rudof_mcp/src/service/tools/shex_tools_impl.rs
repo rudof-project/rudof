@@ -112,12 +112,11 @@ pub async fn show_shex_impl(
         .into_call_tool_result());
     }
 
-    // Guard: only shexc/shexj/json/jsonld/internal are implemented for serializing ShEx schemas.
+    // Guard: `Simple` is read-only (no writer implemented for it); everything
+    // else (shexc/shexj/json/jsonld/internal plus the RDF formats — turtle,
+    // ntriples, rdfxml, trig, n3, nquads) is implemented for serializing.
     if let Some(fmt) = &parsed_result_format
-        && !matches!(
-            fmt,
-            ShExFormat::ShExC | ShExFormat::ShExJ | ShExFormat::Json | ShExFormat::JsonLd | ShExFormat::Internal
-        )
+        && matches!(fmt, ShExFormat::Simple)
     {
         return Ok(unsupported_format_error(
             "ShEx schema output",

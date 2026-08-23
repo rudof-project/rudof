@@ -4,6 +4,7 @@ use crate::commands::{CommandContext, CommandFactory, extract_common};
 use crate::shell::completer::ShellHelper;
 use anyhow::{Context, Result, anyhow};
 use clap::{CommandFactory as ClapCommandFactory, Parser};
+use prefixmap::PrefixMap;
 use rudof_lib::formats::{BackendSpec, InputSpec};
 use rudof_lib::{DataStats, RudofConfig, TomlConfig};
 use rustyline::error::ReadlineError;
@@ -19,12 +20,47 @@ pub(super) const PROMPT: &str = "rudof> ";
 // `PROMPT`.
 pub(super) const CONTINUATION_PROMPT: &str = "   ... ";
 
-const BANNER: &str = r"                 _        ___
+const BANNER: &str = concat!(
+    "                 ",
+    "\x1b[34m_\x1b[0m",
+    "        ",
+    "\x1b[34m___\x1b[0m\n",
+    "                ",
+    "\x1b[34m| |\x1b[0m",
+    "      ",
+    "\x1b[34m/ __)\x1b[0m\n",
+    "  ",
+    "\x1b[34m____\x1b[0m",
+    " ",
+    "\x1b[90m_   _\x1b[0m",
+    "  ",
+    "\x1b[34m_ | | \x1b[0m",
+    "\x1b[90m___ \x1b[0m",
+    "\x1b[34m| |__\x1b[0m\n",
+    " ",
+    "\x1b[34m/ ___)\x1b[0m",
+    "\x1b[90m | | |\x1b[0m",
+    "\x1b[34m/ || |\x1b[0m",
+    "\x1b[90m/ _ \\\x1b[0m",
+    "\x1b[34m|  __)\x1b[0m\n",
+    "\x1b[34m| |\x1b[0m   ",
+    "\x1b[90m| |_| \x1b[0m",
+    "\x1b[34m( (_| |\x1b[0m",
+    "\x1b[90m |_| \x1b[0m",
+    "\x1b[34m| |\x1b[0m\n",
+    "\x1b[34m|_|    \x1b[0m",
+    "\x1b[90m\\____|\x1b[0m",
+    "\x1b[34m\\____|\x1b[0m",
+    "\x1b[90m\\___/\x1b[0m",
+    "\x1b[34m|_|\x1b[0m",
+);
+
+/*const BANNER: &str = r"                 _        ___
                 | |      / __)
   ____ _   _  _ | | ___ | |__
  / ___) | | |/ || |/ _ \|  __)
 | |   | |_| ( (_| | |_| | |
-|_|    \____|\____|\___/|_|";
+|_|    \____|\____|\___/|_|";*/
 
 // Re-parses a single REPL line into the same `CliCommand` enum used by the
 // top-level `rudof` binary, without requiring a leading `rudof` token.
@@ -129,8 +165,13 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
                     "exit" | "quit" => break,
                     "help" | "?" => print_help(ctx)?,
                     _ => {
-                        if let Err(err) = dispatch(line, ctx) {
-                            writeln!(std::io::stderr(), "Error: {err:#}")?;
+                        if let Err(err) = dispatch_catching_panics(line, ctx) {
+                            writeln!(
+                                std::io::stderr(),
+                                "{} {}",
+                                crate::output::error_prefix(),
+                                crate::output::format_error(&err)
+                            )?;
                         }
                     },
                 }
@@ -152,6 +193,54 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Runs [`dispatch`], additionally catching a panic raised deep inside a
+/// command (a bug — an unexpected `unwrap()`/`expect()`/`todo!()`/index
+/// out of bounds/etc., as opposed to a normal, expected `Result::Err`) so
+/// that one broken command can't take down the whole interactive session.
+/// It's reported the same way as any other command failure, and the shell
+/// keeps running.
+///
+/// `AssertUnwindSafe` is required because `&mut CommandContext` isn't
+/// `UnwindSafe` — a panic mid-mutation could in principle leave `ctx` in an
+/// inconsistent state. That's an accepted tradeoff for an interactive
+/// shell (same choice most REPLs make): surviving on a best-effort basis
+/// after an internal bug is better than losing the whole session (loaded
+/// data, schema, history, ...) over it. `ctx`'s state is deliberately left
+/// as-is rather than auto-reset — most panics (like this file's original
+/// motivating case, a `todo!()` reached only during *output* formatting)
+/// happen after any state mutation for that command already completed, so
+/// there's usually nothing to clean up, and guessing wrong would be worse
+/// than leaving it alone.
+fn dispatch_catching_panics(line: &str, ctx: &mut CommandContext) -> Result<()> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| dispatch(line, ctx))) {
+        Ok(result) => result,
+        Err(payload) => Err(anyhow!("command panicked: {}", panic_message(&payload))),
+    }
+}
+
+/// Extracts a human-readable message from a caught panic's payload, which
+/// is almost always a `&str` (`panic!("literal")`) or `String`
+/// (`panic!("{}", ...)`, `.unwrap()`, `.expect(...)`, `todo!()`), falling
+/// back to a generic message for the rare payload of some other type.
+///
+/// Takes `&Box<dyn Any + Send>` rather than the seemingly-equivalent, more
+/// idiomatic `&(dyn Any + Send)` deliberately: with the latter, the
+/// `downcast_ref` calls below silently never match (a `&(dyn Any + Send)`
+/// parameter's elided lifetime bound differs from `&Box<dyn Any + Send +
+/// 'static>`'s, which breaks the coercion at the call site in a way that
+/// doesn't error, it just makes every downcast fail) — always falling
+/// through to the generic message below instead of the real one. Covered
+/// by the tests in this module; don't "simplify" the parameter type.
+fn panic_message(payload: &Box<dyn std::any::Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        (*s).to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "no further information available".to_string()
+    }
 }
 
 /// Parses `line` as a subcommand invocation and dispatches it through the
@@ -190,6 +279,7 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
     let merge = tokens[0] == "data" && take_merge_flag(&mut tokens);
 
     apply_bare_resource_convenience(&mut tokens);
+    expand_prefixed_resource_tokens(&mut tokens, ctx);
 
     let parsed = match ReplLine::try_parse_from(&tokens) {
         Ok(repl_line) => repl_line.command,
@@ -343,7 +433,7 @@ fn has_new_data_source(common: &CommonArgsAll, data: &[InputSpec]) -> bool {
     !data.is_empty() || matches!(resolve_backend(common), BackendSpec::Endpoint(_))
 }
 
-/// Shell-only `endpoint [NAME]` command.
+/// Shell-only `endpoint [NAME|FILE.toml]` command.
 ///
 /// With no argument, reports the endpoint activated (if any) by an earlier
 /// `endpoint NAME` call in this session, or points the user at the command
@@ -351,16 +441,38 @@ fn has_new_data_source(common: &CommonArgsAll, data: &[InputSpec]) -> bool {
 /// registered in the rudof TOML config for the rest of the session (reusing
 /// the same mechanism as `data --endpoint NAME`), so later commands that
 /// query RDF data (e.g. `query`, `node`) can rely on it without repeating
-/// `--endpoint` themselves.
+/// `--endpoint` themselves. With a `FILE.toml` argument instead, registers a
+/// new endpoint description loaded from that local file (under a name
+/// derived from the file's stem) and activates it the same way.
 fn handle_endpoint(args: &[String], ctx: &mut CommandContext) -> Result<()> {
     match args {
         [] => show_active_endpoint(ctx),
+        [arg] if arg.to_lowercase().ends_with(".toml") => register_endpoint_from_file(arg, ctx),
         [name] => activate_endpoint(name, ctx),
         _ => {
-            writeln!(ctx.writer, "Usage: endpoint [NAME]")?;
+            writeln!(ctx.writer, "Usage: endpoint [NAME|FILE.toml]")?;
             Ok(())
         },
     }
+}
+
+/// Loads an endpoint description from `path` (a local TOML file, see
+/// `rudof_rdf/endpoints/*.toml` for examples of the expected shape),
+/// registers it under its own `name` field, and activates it — like
+/// `activate_endpoint`, but for a brand-new endpoint rather than one already
+/// known to the loaded config. Session-only: not written back to
+/// `rudof.toml`; use `rudof config -o rudof.toml` to make it permanent.
+fn register_endpoint_from_file(path: &str, ctx: &mut CommandContext) -> Result<()> {
+    let mut rdf_data = ctx.rudof.config().execute().rdf_data().clone();
+    let name = rdf_data
+        .load_endpoint_description(path)
+        .map_err(|err| anyhow!("Failed to load endpoint description from '{path}': {err}"))?;
+
+    let config = ctx.rudof.config().execute().clone().with_rdf_data(rdf_data);
+    ctx.rudof.update_config(config).execute();
+
+    writeln!(ctx.writer, "Registered endpoint '{name}' from {path}")?;
+    activate_endpoint(&name, ctx)
 }
 
 fn show_active_endpoint(ctx: &mut CommandContext) -> Result<()> {
@@ -379,18 +491,30 @@ fn show_active_endpoint(ctx: &mut CommandContext) -> Result<()> {
 }
 
 fn activate_endpoint(name: &str, ctx: &mut CommandContext) -> Result<()> {
-    if endpoint_url(ctx, name).is_none() {
+    // `name` is matched case-insensitively (`wikidata`/`Wikidata`/`WikiData`
+    // all resolve the same endpoint), but the canonical, capitalized name is
+    // what gets stored/displayed/passed onward from here.
+    let Some(canonical_name) = canonical_endpoint_name(ctx, name) else {
         writeln!(ctx.writer, "Unknown endpoint '{name}'.")?;
         writeln!(ctx.writer, "{}", registered_endpoints_line(ctx))?;
         return Ok(());
-    }
+    };
 
-    ctx.rudof.load_data().with_endpoint(name).execute()?;
-    ctx.active_endpoint = Some(name.to_string());
+    ctx.rudof.load_data().with_endpoint(&canonical_name).execute()?;
+    ctx.active_endpoint = Some(canonical_name.clone());
 
-    let url = endpoint_url(ctx, name).unwrap_or_default();
-    writeln!(ctx.writer, "Active endpoint: {name} ({url})")?;
+    let url = endpoint_url(ctx, &canonical_name).unwrap_or_default();
+    writeln!(ctx.writer, "Active endpoint: {canonical_name} ({url})")?;
     Ok(())
+}
+
+fn canonical_endpoint_name(ctx: &CommandContext, name: &str) -> Option<String> {
+    ctx.rudof
+        .config()
+        .execute()
+        .rdf_data()
+        .find_endpoint(name)
+        .map(|e| e.name().to_string())
 }
 
 fn endpoint_url(ctx: &CommandContext, name: &str) -> Option<String> {
@@ -398,8 +522,7 @@ fn endpoint_url(ctx: &CommandContext, name: &str) -> Option<String> {
         .config()
         .execute()
         .rdf_data()
-        .endpoints()
-        .get(name)
+        .find_endpoint(name)
         .map(|e| e.query_url().to_string())
 }
 
@@ -784,6 +907,75 @@ fn apply_bare_resource_convenience(tokens: &mut Vec<String>) {
     }
 }
 
+/// Flags whose value names a remote resource to fetch — a schema, shapemap
+/// or query, always by URL/path — as opposed to `-n` (a node identifier,
+/// deliberately excluded: that's an RDF term reference resolved by the
+/// loaded document's own prefixes, not a resource to fetch).
+const RESOURCE_VALUE_FLAGS: &[&str] = &["-s", "-q", "-m"];
+
+/// Expands a prefixed name (e.g. `es:E10`) in the value of any
+/// [`RESOURCE_VALUE_FLAGS`] flag into the full IRI it stands for, using the
+/// session's default prefixes and, if one is active, the active endpoint's
+/// own prefixes — so e.g. `shex es:E10` can load
+/// `https://www.wikidata.org/wiki/Special:EntitySchemaText/E10` once `es` is
+/// registered (as it is by the bundled Wikidata endpoint) without typing the
+/// full URL. Runs after [`apply_bare_resource_convenience`], so a bare value
+/// like `shex es:E10` (already turned into `shex -s es:E10` by then) is
+/// covered the same as an explicit `-s`. Shell-only: the top-level CLI has
+/// no such expansion.
+fn expand_prefixed_resource_tokens(tokens: &mut [String], ctx: &CommandContext) {
+    let mut i = 0;
+    while i < tokens.len() {
+        if RESOURCE_VALUE_FLAGS.contains(&tokens[i].as_str())
+            && let Some(expanded) = tokens
+                .get(i + 1)
+                .and_then(|value| resolve_prefixed_resource(value, ctx))
+        {
+            tokens[i + 1] = expanded;
+        }
+        i += 1;
+    }
+}
+
+/// If `token` is a prefixed name (`alias:local`, e.g. `es:E10`) whose
+/// `alias` is a known prefix — checked against the session's default
+/// prefixes first, then the active endpoint's prefixes — returns the
+/// expanded IRI as a string. `None` for anything else (an existing URL, a
+/// file path, an unregistered alias, ...), leaving `token` to be parsed
+/// as a normal `InputSpec`.
+fn resolve_prefixed_resource(token: &str, ctx: &CommandContext) -> Option<String> {
+    if token == "-" || token.contains("://") {
+        return None;
+    }
+    let (alias, local) = token.split_once(':')?;
+    if alias.is_empty() || local.is_empty() {
+        return None;
+    }
+
+    let default_prefixes = ctx.rudof.prefixes().execute();
+    let pm = if default_prefixes.find(alias).is_some() {
+        default_prefixes
+    } else {
+        active_endpoint_prefixmap(ctx).filter(|pm| pm.find(alias).is_some())?
+    };
+
+    pm.resolve_prefix_local(alias.to_string(), local.to_string())
+        .ok()
+        .map(|iri| iri.to_string())
+}
+
+/// The `PrefixMap` bundled with the currently active endpoint (`endpoint
+/// NAME`/`endpoint FILE.toml`), if any endpoint is active.
+fn active_endpoint_prefixmap(ctx: &CommandContext) -> Option<PrefixMap> {
+    let name = ctx.active_endpoint.as_deref()?;
+    ctx.rudof
+        .config()
+        .execute()
+        .rdf_data()
+        .find_endpoint(name)
+        .map(|endpoint| endpoint.prefixmap().clone())
+}
+
 fn print_help(ctx: &mut CommandContext) -> Result<()> {
     let help = ReplLine::command().render_long_help();
     writeln!(ctx.writer, "{help}")?;
@@ -842,4 +1034,28 @@ fn command_names() -> Vec<String> {
 
 fn history_file() -> Option<std::path::PathBuf> {
     dirs::home_dir().map(|home| home.join(".rudof_history"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::panic_message;
+    use std::panic::AssertUnwindSafe;
+
+    #[test]
+    fn extracts_message_from_a_str_panic_payload() {
+        let payload = std::panic::catch_unwind(AssertUnwindSafe(|| panic!("boom"))).unwrap_err();
+        assert_eq!(panic_message(&payload), "boom");
+    }
+
+    #[test]
+    fn extracts_message_from_a_string_panic_payload() {
+        let payload = std::panic::catch_unwind(AssertUnwindSafe(|| panic!("boom {}", 42))).unwrap_err();
+        assert_eq!(panic_message(&payload), "boom 42");
+    }
+
+    #[test]
+    fn falls_back_to_a_generic_message_for_other_payload_types() {
+        let payload = std::panic::catch_unwind(AssertUnwindSafe(|| std::panic::panic_any(404))).unwrap_err();
+        assert_eq!(panic_message(&payload), "no further information available");
+    }
 }

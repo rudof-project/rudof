@@ -83,7 +83,12 @@ ShEx Formats
 
    * ``ShExFormat.ShExC`` - ShEx Compact Syntax (human-readable, .shex)
    * ``ShExFormat.ShExJ`` - ShEx JSON format (.json)
-   * ``ShExFormat.Turtle`` - ShEx in RDF/Turtle (.ttl)
+   * ``ShExFormat.Turtle`` - ShEx schema as RDF, in Turtle
+   * ``ShExFormat.NTriples`` - ShEx schema as RDF, in N-Triples
+   * ``ShExFormat.RdfXml`` - ShEx schema as RDF, in RDF/XML
+   * ``ShExFormat.TriG`` - ShEx schema as RDF, in TriG
+   * ``ShExFormat.N3`` - ShEx schema as RDF, in Notation3
+   * ``ShExFormat.NQuads`` - ShEx schema as RDF, in N-Quads
 
 .. autoclass:: ResultShexValidationFormat
    :members:

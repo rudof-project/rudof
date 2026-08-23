@@ -1,0 +1,6 @@
+name = "ShellEndpoint"
+query_url = "https://example.org/sparql"
+
+[prefixmap]
+ex = "http://example.org/"
+local = "http://localhost:1/"

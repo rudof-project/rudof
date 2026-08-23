@@ -75,7 +75,7 @@ the output will be:
 {
   "@context": "http://www.w3.org/ns/shex.jsonld",
   "type": "Schema",
-  "start": ":User",
+  "start": "http://example.org/User",
   "shapes": [
     {
       "type": "ShapeDecl",
@@ -126,6 +126,29 @@ the output will be:
   }
 }
 ```
+
+A ShEx schema can also be serialized as RDF, using the [ShExR](http://shex.io/shex-semantics/#shexr) vocabulary — pass `-r turtle`, `ntriples`, `rdfxml`, `trig`, `n3` or `nquads`:
+
+```sh
+❯ rudof shex -s examples/person.shex -r turtle
+```
+
+```turtle
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sx: <http://www.w3.org/ns/shex#> .
+@prefix : <http://example.org/> .
+:Address a sx:ShapeDecl ;
+	sx:shapeExpr _:2 .
+:Person a sx:ShapeDecl ;
+	sx:shapeExpr _:4 .
+_:1 a sx:Schema ;
+	sx:shapes _:b .
+...
+```
+
+The `sx:` prefix (for the ShExR vocabulary itself) is always added, and the schema's own prefixes — here `:` and `xsd:`, from `examples/person.shex`'s own `PREFIX` declarations — are carried over too.
+
+This works the same way in the shell — `shex examples/person.shex` to load the schema, then `shex -r turtle` to show it as RDF.
 
 ## ShEx-based validation
 

@@ -42,7 +42,7 @@ rudof node -n :a --endpoint https://my.sparql.server/sparql
 
 `--endpoint` and `--backend` are mutually exclusive, passing both is rejected at the command line.
 
-Inside `rudof shell`, `endpoint <NAME>` activates a registered endpoint once for the rest of the session instead of repeating `-e` on every line, see [shell](./shell.md).
+Inside `rudof shell`, `endpoint <NAME>` activates a registered endpoint once for the rest of the session instead of repeating `-e` on every line (matched case-insensitively, so `wikidata`/`Wikidata`/`WikiData` are all the same endpoint), and `endpoint FILE.toml` registers a brand-new one from a local file — see [shell](./shell.md#registering-a-new-endpoint-from-a-file). `Wikidata`, `DBpedia` and `UniProt` are registered by default, defined in [`rudof_rdf/endpoints/`](https://github.com/rudof-project/rudof/tree/master/rudof_rdf/endpoints) — every file in that folder is registered automatically — see the [Config reference](../references/config.md#rdfendpointsname) for the `[rdf.endpoints.<name>]` shape used to register more of your own in `rudof.toml`.
 
 ## The `qlever` backend
 

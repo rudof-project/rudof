@@ -55,30 +55,46 @@ Source: [`rudof_rdf/src/rdf_core/rdf_data_config.rs`](https://github.com/rudof-p
 |---|---|---|---|
 | `base_iri` | IRI string | unset | Base IRI to resolve relative IRIs in RDF data. If unset (and `auto_base` is off), relative IRIs are an error. |
 | `local_base` | boolean | `true` | Automatically use the local file/URI being read as the base IRI. |
-| `endpoints` | table of tables | `wikidata`, `dbpedia`, `uniprot` pre-registered | Named SPARQL endpoints — see [`[rdf.endpoints.<name>]`](#rdfendpointsname) below. |
+| `endpoints` | table of tables | `Wikidata`, `DBpedia`, `UniProt` pre-registered | Named SPARQL endpoints — see [`[rdf.endpoints.<name>]`](#rdfendpointsname) below. |
 | `visualization` | table | see [`[rdf.visualization]`](#rdfvisualization) | Styling for RDF graph visualizations (`svg`/`png`/`plantuml` output). |
 | `qlever` | table, optional | unset | QLever Docker backend settings — see [`[rdf.qlever]`](#rdfqlever) below. Only compiled in with the `qlever` cargo feature, and not available on wasm. |
 
 ### `[rdf.endpoints.<name>]`
 
-Each key under `endpoints` names one registered endpoint (used by `-e NAME`/`--endpoint NAME`
-and the shell's `endpoint NAME` command). `rudof` pre-registers three by default —
-`wikidata`, `dbpedia`, `uniprot` — which you can override or add to.
+Each key under `endpoints` names one registered endpoint. The registered name is actually
+the endpoint's own `name` field — the `<name>` in the table header is just where it lives in
+the TOML tree, and should match `name` for a given endpoint to make sense, though nothing
+enforces that. `-e NAME`/`--endpoint NAME` and the shell's `endpoint NAME` command match
+`NAME` against `name` **case-insensitively** — `wikidata`, `Wikidata` and `WikiData` all
+resolve the same endpoint. `rudof` pre-registers three by default — `Wikidata`, `DBpedia`,
+`UniProt` — which you can override or add to.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
+| `name` | string | *(required)* | The endpoint's display name — also what it's matched against (case-insensitively) by `-e`/`--endpoint`/the shell's `endpoint` command. |
 | `query_url` | IRI string | *(required)* | URL of the SPARQL query endpoint. |
 | `update_url` | IRI string, optional | unset | URL for SPARQL update operations, if the endpoint supports them. |
 | `prefixmap` | table (`alias = "iri"`) | empty | Prefixes to abbreviate IRIs in this endpoint's query results. |
 
 ```toml
-[rdf.endpoints.wikidata]
+[rdf.endpoints.Wikidata]
+name = "Wikidata"
 query_url = "https://query.wikidata.org/sparql"
 
-[rdf.endpoints.wikidata.prefixmap]
+[rdf.endpoints.Wikidata.prefixmap]
 wd = "http://www.wikidata.org/entity/"
 wdt = "http://www.wikidata.org/prop/direct/"
 ```
+
+The default endpoints are themselves defined this same way, as standalone files — `name`,
+`query_url`, and `[prefixmap]`, without the `[rdf.endpoints.<name>]` wrapper — under
+[`rudof_rdf/endpoints/`](https://github.com/rudof-project/rudof/tree/master/rudof_rdf/endpoints),
+embedded into `rudof` at compile time. **Every** `*.toml` file in that folder is registered
+automatically, so adding a new default endpoint (or changing an existing one) is just adding
+or editing a file there and opening a pull request — no Rust code change needed. The same
+file shape can also be loaded at runtime: `RdfDataConfig::load_endpoint_description(path)`
+registers an endpoint from such a file under its own `name` field, which is what the shell's
+`endpoint FILE.toml` command (see [shell](../cli_usage/shell.md#registering-a-new-endpoint-from-a-file)) uses.
 
 ### `[rdf.visualization]`
 
@@ -341,10 +357,11 @@ auto_base = false
 [rdf]
 base_iri = "http://example.org/"
 
-[rdf.endpoints.wikidata]
+[rdf.endpoints.Wikidata]
+name = "Wikidata"
 query_url = "https://query.wikidata.org/sparql"
 
-[rdf.endpoints.wikidata.prefixmap]
+[rdf.endpoints.Wikidata.prefixmap]
 wd = "http://www.wikidata.org/entity/"
 wdt = "http://www.wikidata.org/prop/direct/"
 

@@ -1,10 +1,14 @@
 use crate::{Result, Rudof, errors::ShExError, formats::ShExFormat, types::ShExStatistics};
+use rudof_rdf::rdf_core::vocabs::{RdfVocabulary, ShexRVocab};
+use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
+use rudof_rdf::rdf_impl::OxigraphInMemory;
 use shex_ast::ShExFormatter;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ShapeMapParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ShapeSelector;
+use shex_ast::shexr::shexr_builder::ShExRBuilder;
 use std::{io, time::Instant};
 
 pub fn serialize_shex_schema<W: io::Write>(
@@ -182,8 +186,41 @@ fn serialize_schema(
             writeln!(writer, "{}", shex_schema_ir)
                 .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
         },
-        _ => {
-            todo!("Implement serialization for ShEx format '{}'", shex_format);
+        ShExFormat::Turtle
+        | ShExFormat::NTriples
+        | ShExFormat::RdfXml
+        | ShExFormat::TriG
+        | ShExFormat::N3
+        | ShExFormat::NQuads => {
+            let rdf_format: RDFFormat = shex_format.try_into()?;
+            let mut rdf_writer = OxigraphInMemory::new();
+            // Carry the schema's own prefixes over into the generated RDF
+            // (so e.g. `xsd:` stays `xsd:` instead of expanding to a full
+            // IRI everywhere), then add `sx:` for the ShExR vocabulary
+            // itself, last so it always wins over a same-named prefix the
+            // schema might already declare.
+            if let Some(prefixmap) = shex_schema.prefixmap() {
+                rdf_writer.merge_prefixes(prefixmap);
+            }
+            rdf_writer.add_prefix("sx", ShexRVocab::base_iri());
+            ShExRBuilder::schema_to_rdf(shex_schema, &mut rdf_writer).map_err(|e| {
+                ShExError::FailedSerializingShExSchema {
+                    format: shex_format.to_string(),
+                    error: e.to_string(),
+                }
+            })?;
+            rdf_writer
+                .serialize(&rdf_format, writer)
+                .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
+        },
+        ShExFormat::Simple => {
+            return Err(ShExError::FailedSerializingShExSchema {
+                format: shex_format.to_string(),
+                error: "this format can be used to read a ShEx schema, but not to write one out; \
+                        use shexc, shexj, json, jsonld, internal, turtle, ntriples, rdfxml, trig, n3 or nquads instead"
+                    .to_string(),
+            }
+            .into());
         },
     }
 

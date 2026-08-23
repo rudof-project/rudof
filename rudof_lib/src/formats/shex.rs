@@ -1,5 +1,6 @@
 use crate::errors::{RudofError, ShExError};
 use rudof_iri::MimeType;
+use rudof_rdf::rdf_core::RDFFormat;
 use shex_ast::ShExFormat as ShExAstShExFormat;
 use std::{
     fmt::{Display, Formatter},
@@ -51,6 +52,25 @@ impl Display for ShExFormat {
             ShExFormat::NQuads => write!(dest, "nquads"),
             ShExFormat::Json => write!(dest, "json"),
             ShExFormat::JsonLd => write!(dest, "jsonld"),
+        }
+    }
+}
+
+impl TryFrom<ShExFormat> for RDFFormat {
+    type Error = ShExError;
+
+    fn try_from(format: ShExFormat) -> Result<Self, Self::Error> {
+        match format {
+            ShExFormat::Turtle => Ok(RDFFormat::Turtle),
+            ShExFormat::NTriples => Ok(RDFFormat::NTriples),
+            ShExFormat::RdfXml => Ok(RDFFormat::Rdfxml),
+            ShExFormat::TriG => Ok(RDFFormat::TriG),
+            ShExFormat::N3 => Ok(RDFFormat::N3),
+            ShExFormat::NQuads => Ok(RDFFormat::NQuads),
+            other => Err(ShExError::FailedSerializingShExSchema {
+                format: other.to_string(),
+                error: "not an RDF serialization format".to_string(),
+            }),
         }
     }
 }

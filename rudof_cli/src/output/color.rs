@@ -46,13 +46,36 @@ pub fn detect_color_support_cached() -> ColorSupport {
     }
 }
 
+/// Detects color support for Stderr using a thread-safe cache.
+///
+/// Error messages are written to stderr, which can have different TTY/color
+/// status than stdout (e.g. `rudof cmd >file.txt` redirects stdout but
+/// leaves stderr attached to a terminal, or vice versa), so it needs its
+/// own detection rather than reusing [detect_color_support_cached].
+pub fn detect_color_support_cached_stderr() -> ColorSupport {
+    match on_cached(Stream::Stderr) {
+        None => ColorSupport::NoColor,
+        Some(level) => from_level(level),
+    }
+}
+
+/// Returns the `"Error:"` label used at the start of error messages, in red
+/// when stderr supports color and plain otherwise (respects `NO_COLOR`, TTY
+/// detection, etc. via [detect_color_support_cached_stderr]).
+pub fn error_prefix() -> &'static str {
+    if detect_color_support_cached_stderr().enabled() {
+        "\x1b[31mError:\x1b[0m"
+    } else {
+        "Error:"
+    }
+}
+
 // ============================================================================
 // Internal Detection Logic
 // ============================================================================
 
 /// Represents a standard output stream.
 #[derive(Clone, Copy, Debug)]
-#[allow(dead_code)]
 enum Stream {
     Stdout = 0,
     Stderr = 1,

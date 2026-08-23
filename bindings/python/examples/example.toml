@@ -39,6 +39,9 @@ wdv = "http://www.wikidata.org/value/"
 wikibase = "http://wikiba.se/ontology#"
 genid = "http://www.wikidata.org/.well-known/genid/"
 
+# This prefix is used for the Entity Schema namespace 
+es = "https://www.wikidata.org/wiki/Special:EntitySchemaText/"
+
 [rdf.endpoints.dbpedia]
 query_url = "http://dbpedia.org/sparql"
 

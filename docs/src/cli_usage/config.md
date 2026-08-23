@@ -13,12 +13,13 @@ auto_base = false
 [rdf]
 local_base = true
 
-[rdf.endpoints.wikidata]
+[rdf.endpoints.Wikidata]
+name = "Wikidata"
 query_url = "https://query.wikidata.org/sparql"
 # ...
 ```
 
-`[rdf.endpoints.*]` lists the SPARQL endpoints registered by name, the ones usable as `--endpoint wikidata` or `--backend endpoint=wikidata`. `wikidata`, `dbpedia` and `uniprot` are registered by default.
+`[rdf.endpoints.*]` lists the SPARQL endpoints registered by name, the ones usable as `--endpoint wikidata` or `--backend endpoint=wikidata` (matched case-insensitively, so `wikidata`/`Wikidata`/`WikiData` are all the same endpoint). `Wikidata`, `DBpedia` and `UniProt` are registered by default.
 
 This dump only has bare values, no explanations — see the [Config reference](../references/config.md) for what every key means, its type, and its default.
 

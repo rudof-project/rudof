@@ -1330,6 +1330,11 @@ pub enum PyShExFormat {
     ShExC,
     ShExJ,
     Turtle,
+    NTriples,
+    RdfXml,
+    TriG,
+    N3,
+    NQuads,
 }
 
 /// SHACL shapes graph serialization formats.
@@ -1706,6 +1711,11 @@ fn cnv_shex_format(format: Option<&PyShExFormat>) -> Option<&ShExFormat> {
         PyShExFormat::ShExC => Some(&ShExFormat::ShExC),
         PyShExFormat::ShExJ => Some(&ShExFormat::ShExJ),
         PyShExFormat::Turtle => Some(&ShExFormat::Turtle),
+        PyShExFormat::NTriples => Some(&ShExFormat::NTriples),
+        PyShExFormat::RdfXml => Some(&ShExFormat::RdfXml),
+        PyShExFormat::TriG => Some(&ShExFormat::TriG),
+        PyShExFormat::N3 => Some(&ShExFormat::N3),
+        PyShExFormat::NQuads => Some(&ShExFormat::NQuads),
     }
 }
 

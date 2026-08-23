@@ -98,10 +98,15 @@ impl Completer for ShellHelper {
         if &line[..Self::first_word_end(line)] == "endpoint" {
             let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
             let word_prefix = &line[word_start..pos];
+            // Endpoint names are matched case-insensitively (`wikidata`,
+            // `Wikidata`, `WikiData` all resolve the same endpoint), so
+            // completion should suggest a match regardless of the case typed
+            // so far too.
+            let word_prefix_lower = word_prefix.to_ascii_lowercase();
             let candidates = self
                 .endpoints
                 .iter()
-                .filter(|name| name.starts_with(word_prefix))
+                .filter(|name| name.to_ascii_lowercase().starts_with(&word_prefix_lower))
                 .map(|name| Pair {
                     display: name.clone(),
                     replacement: name.clone(),
@@ -219,6 +224,20 @@ mod tests {
         assert_eq!(start, "endpoint ".len());
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates[0].replacement, "wikidata");
+    }
+
+    #[test]
+    fn completes_endpoint_argument_case_insensitively() {
+        let helper = ShellHelper::new(vec!["endpoint".to_string()], vec!["Wikidata".to_string()], vec![]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        // Lowercase typed prefix still matches the capitalized registered name.
+        let line = "endpoint wiki";
+        let (_, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].replacement, "Wikidata");
     }
 
     #[test]

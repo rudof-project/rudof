@@ -1,0 +1,13 @@
+# DBpedia SPARQL endpoint
+name = "DBpedia"
+
+query_url = "https://dbpedia.org/sparql"
+
+[prefixmap]
+dbc = "http://dbpedia.org/class/"
+dbo = "http://dbpedia.org/ontology/"
+dbp = "http://dbpedia.org/property/"
+dbr = "http://dbpedia.org/resource/"
+foaf = "http://xmlns.com/foaf/0.1/"
+geo = "http://www.w3.org/2003/01/geo/wgs84_pos#"
+xsd = "http://www.w3.org/2001/XMLSchema#"

@@ -613,7 +613,8 @@ pub const SHACL_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
 pub const SHEX_INPUT_FORMATS_SUPPORTED: &str = "shexc, shexj";
 
 /// Supported ShEx schema output formats (serialization).
-pub const SHEX_OUTPUT_FORMATS_SUPPORTED: &str = "shexc, shexj, json, jsonld, internal";
+pub const SHEX_OUTPUT_FORMATS_SUPPORTED: &str =
+    "shexc, shexj, json, jsonld, internal, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported ShEx validation result formats as a constant.
 pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv";

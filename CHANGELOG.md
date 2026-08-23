@@ -8,12 +8,23 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - Shell: `data FILE --merge` merges into the currently loaded RDF/PG data instead of replacing it, which is now the shell's default.
 - Added a `sparql` command to load and show a SPARQL query without running it; `query` now runs a query loaded this way when called bare.
 - Added a "Config reference" page to the docs, documenting every `rudof.toml` setting.
+- Added `RdfDataConfig::load_endpoint_description` to register a SPARQL endpoint (under its own `name` field) from a local TOML file, and `endpoint FILE.toml` in the shell to register and activate one this way.
+- Shell: a resource argument (`shex -s`, `shacl -s`, `sparql -q`, `shapemap -m`, ...) can be a prefixed name (`es:E10`) instead of a full URL, expanded against the session's default prefixes or the active endpoint's own prefixes before loading — e.g. `endpoint wikidata` then `shex es:E10` loads `https://www.wikidata.org/wiki/Special:EntitySchemaText/E10`.
+- ShEx schemas can now be serialized as RDF (Turtle, N-Triples, RDF/XML, TriG, N3, N-Quads), using the ShExR vocabulary — e.g. `rudof shex -s schema.shex -r turtle`, or in the shell, `shex schema.shex` then `shex -r turtle`. Available everywhere a ShEx result format can be chosen: the CLI, the shell, the MCP server's `shex` tool, and the Python bindings (`ShExFormat.Turtle`/`NTriples`/`RdfXml`/`TriG`/`N3`/`NQuads`). The generated RDF always declares `sx:` for the ShExR vocabulary, plus whatever prefixes the source ShExC schema itself declared.
+- Added the reverse direction too: `shex_ast::shexr::shexr_parser::ShExRParser` now reads a ShExR RDF graph back into a full ShEx `Schema`, covering the same range of constructs as the serializer above.
 
 ### Fixed
 - Fixed the ShEx pretty-printer omitting a schema's trailing newline, which could make the shell overwrite the last line of a `shex`/`shacl` command's output with the next prompt.
+- Shell: a panic raised deep inside any command (a bug, as opposed to a normal error) is now caught, reported like any other error, and the session keeps running instead of the whole shell crashing.
+- Fixed error messages (in the shell and the top-level CLI) being printed with their text duplicated — several error types embed their full wrapped-cause text into their own message, which used to be repeated a second time by the generic "print every link in the cause chain" formatting; each genuinely new piece of information is now printed once, on its own line.
+- The leading "Error:" label on error messages (in the shell and the top-level CLI) is now printed in red when the target stream supports color, following the same `NO_COLOR`/TTY detection already used elsewhere.
 
 ### Changed
+- The default `Wikidata`/`DBpedia`/`UniProt` endpoints are now defined as TOML files under `rudof_rdf/endpoints/`, embedded at compile time, instead of hardcoded in Rust — every `*.toml` file added there is registered automatically, so adding or editing a default endpoint no longer requires a code change.
+- `EndpointDescription` gained a required `name` field, which is now the registered key (rather than a config-file table key or file stem); endpoint name matching (`-e`/`--endpoint`, the shell's `endpoint` command and its completion) is case-insensitive, so `wikidata`, `Wikidata` and `WikiData` all resolve the same endpoint.
+
 ### Removed
+- Removed `RdfDataConfig::with_wikidata`/`with_dbpedia`/`with_uniprot` (superseded by the TOML-file-backed defaults above); use `load_endpoint_description`/`with_endpoints` instead.
 
 ## 0.3.10
 ### Added

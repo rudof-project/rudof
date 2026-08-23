@@ -1,0 +1,13 @@
+# UniProt SPARQL endpoint
+name = "UniProt"
+
+query_url = "https://sparql.uniprot.org/sparql"
+
+[prefixmap]
+formats = "http://www.w3.org/ns/formats/"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+sd = "http://www.w3.org/ns/sparql-service-description#"
+taxon = "http://purl.uniprot.org/taxonomy/"
+up = "http://purl.uniprot.org/core/"
+void = "https://sparql.uniprot.org/.well-known/void#"

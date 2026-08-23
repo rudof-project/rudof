@@ -296,6 +296,7 @@ impl PrefixMap {
             ("wdtn", "http://www.wikidata.org/prop/direct-normalized/"),
             ("wdv", "http://www.wikidata.org/value/"),
             ("wikibase", "http://wikiba.se/ontology#"),
+            ("es", "https://www.wikidata.org/wiki/Special:EntitySchemaText/"),
         ])
         .try_into()
         .unwrap();

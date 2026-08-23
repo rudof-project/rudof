@@ -19,6 +19,19 @@ struct ShellOutput {
     code: i32,
 }
 
+/// The last line of `shell::repl::BANNER`, byte-for-byte — that banner is
+/// built from ANSI-colored fragments (unconditionally, not gated on TTY/
+/// `NO_COLOR` detection), so the plain ASCII-art substring a colorless
+/// banner would have never appears in the shell's actual output.
+#[cfg(not(target_family = "wasm"))]
+const BANNER_LAST_LINE: &str = concat!(
+    "\x1b[34m|_|    \x1b[0m",
+    "\x1b[90m\\____|\x1b[0m",
+    "\x1b[34m\\____|\x1b[0m",
+    "\x1b[90m\\___/\x1b[0m",
+    "\x1b[34m|_|\x1b[0m",
+);
+
 /// Runs `rudof shell`, feeding it `input` on stdin, and returns its
 /// captured stdout/stderr and exit code.
 ///
@@ -68,7 +81,7 @@ fn fixture(name: &str) -> String {
 fn shell_prints_banner_and_exits_cleanly_on_exit() {
     let out = run_shell("exit\n");
     // The ASCII art banner is printed on startup, before the tip line.
-    assert!(out.stdout.contains(r"|_|    \____|\____|\___/|_|"));
+    assert!(out.stdout.contains(BANNER_LAST_LINE));
     assert!(
         out.stdout
             .contains("Type 'help' for available commands, 'exit' to quit.")
@@ -88,7 +101,7 @@ fn shell_quit_is_an_alias_for_exit() {
 fn shell_ends_cleanly_on_eof_without_exit() {
     // Closing stdin without ever typing `exit` should still terminate the loop.
     let out = run_shell("");
-    assert!(out.stdout.contains(r"|_|    \____|\____|\___/|_|"));
+    assert!(out.stdout.contains(BANNER_LAST_LINE));
     assert_eq!(out.code, 0);
 }
 
@@ -480,6 +493,108 @@ fn shell_shex_accepts_bare_file_as_schema() {
 
 #[cfg(not(target_family = "wasm"))]
 #[test]
+fn shell_shex_unsupported_result_format_reports_an_error_instead_of_crashing() {
+    // Regression test: `shex -r <format>` used to hit an unconditional
+    // `todo!()` for any RDF format (turtle, rdfxml, ...) and panic, killing
+    // the whole session. Those formats are implemented now (see
+    // `shell_shex_r_turtle_serializes_the_schema_as_rdf` below); `simple` is
+    // the one ShEx format left with no writer, so it's what now exercises
+    // this "a normal error is reported, and the session survives it" path.
+    let schema = fixture("shell_schema.shex");
+    let out = run_shell(&format!("shex -s {schema}\nshex -r simple\nshex\nexit\n"));
+
+    assert!(
+        out.stderr.contains("Failed to serialize ShEx schema to simple"),
+        "expected a clean error for the unsupported serialization format, got stdout:\n{}\nstderr:\n{}",
+        out.stdout,
+        out.stderr
+    );
+    // Regression test: the error message used to be printed twice (the
+    // outer `RudofError`'s `Display` already embeds the full inner error
+    // text, and anyhow's `{:#}` used to additionally walk the `source()`
+    // chain and repeat it).
+    assert_eq!(
+        out.stderr.matches("Failed to serialize ShEx schema to simple").count(),
+        1,
+        "expected the error message to appear exactly once, got stderr:\n{}",
+        out.stderr
+    );
+    // The final bare `shex` still ran and showed the schema, proving the
+    // session survived the previous command's error.
+    assert!(
+        out.stdout.contains("PersonShape"),
+        "expected the session to keep working after the error, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_shex_r_turtle_serializes_the_schema_as_rdf() {
+    // `shex FILE` loads a schema, and a later bare `shex -r turtle` shows it
+    // serialized as RDF (using the ShExR vocabulary) instead of erroring —
+    // the scenario `shell_shex_unsupported_result_format_reports_an_error_instead_of_crashing`
+    // used to cover before RDF output formats were implemented.
+    let schema = fixture("shell_schema.shex");
+    let out = run_shell(&format!("shex -s {schema}\nshex -r turtle\nexit\n"));
+
+    assert!(out.stderr.is_empty(), "expected no error, got stderr:\n{}", out.stderr);
+    assert!(
+        out.stdout.contains("@prefix sx: <http://www.w3.org/ns/shex#> ."),
+        "expected the ShExR vocabulary's own prefix to be declared, got:\n{}",
+        out.stdout
+    );
+    assert!(
+        out.stdout.contains("sx:Schema"),
+        "expected ShExR RDF output, got:\n{}",
+        out.stdout
+    );
+    assert!(
+        out.stdout.contains("sx:ShapeDecl"),
+        "expected ShExR RDF output, got:\n{}",
+        out.stdout
+    );
+    // The schema's own prefixes (`PREFIX : <http://example.org/>` in
+    // shell_schema.shex) are carried over into the generated RDF too.
+    assert!(
+        out.stdout.contains("@prefix : <http://example.org/> ."),
+        "expected the schema's own prefix to be declared, got:\n{}",
+        out.stdout
+    );
+    assert!(
+        out.stdout.contains(":PersonShape"),
+        "expected the schema's prefix to be used in the output, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_data_parse_error_is_not_duplicated() {
+    // Regression test: a `Data` parse error used to be printed twice, the
+    // same way the `shex -r turtle` case above was.
+    let not_turtle = fixture("shell_schema.shex"); // ShExC, not valid Turtle
+    let out = run_shell(&format!("data {not_turtle}\nexit\n"));
+
+    assert!(
+        out.stderr.contains("Failed to parse RDF data from"),
+        "expected a parse error, got stdout:\n{}\nstderr:\n{}",
+        out.stdout,
+        out.stderr
+    );
+    assert_eq!(
+        out.stderr.matches("Failed to parse RDF data from").count(),
+        1,
+        "expected the error message to appear exactly once, got stderr:\n{}",
+        out.stderr
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
 fn shell_bare_file_convenience_does_not_apply_alongside_other_flags() {
     // Combining the bare file with another flag is ambiguous, so it's left
     // to clap's normal parsing (and normal error) rather than guessed at.
@@ -588,21 +703,41 @@ fn shell_endpoint_with_no_active_endpoint_points_at_the_command() {
     let out = run_shell("endpoint\nexit\n");
     assert!(out.stdout.contains("No endpoint is currently active."));
     assert!(out.stdout.contains("Use 'endpoint NAME' to activate one."));
-    // The default config registers these endpoints out of the box.
+    // The default config registers these endpoints out of the box, shown
+    // capitalized (the registered key is now each endpoint's own `name`).
     assert!(out.stdout.contains("Registered endpoints:"));
-    assert!(out.stdout.contains("wikidata"));
+    assert!(out.stdout.contains("Wikidata"));
     assert_eq!(out.code, 0);
 }
 
 #[cfg(not(target_family = "wasm"))]
 #[test]
 fn shell_endpoint_activates_a_registered_endpoint_and_reports_it_back() {
+    // Lower-case input still resolves the endpoint (matched
+    // case-insensitively); the report uses its canonical, capitalized name.
     let out = run_shell("endpoint wikidata\nexit\n");
     assert!(
         out.stdout
-            .contains("Active endpoint: wikidata (https://query.wikidata.org/sparql)")
+            .contains("Active endpoint: Wikidata (https://query.wikidata.org/sparql)")
     );
     assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_endpoint_activation_is_case_insensitive() {
+    // "wikidata", "Wikidata" and "WikiData" all resolve the endpoint
+    // registered as "Wikidata", regardless of casing typed.
+    for spelling in ["wikidata", "Wikidata", "WikiData", "WIKIDATA"] {
+        let out = run_shell(&format!("endpoint {spelling}\nexit\n"));
+        assert!(
+            out.stdout
+                .contains("Active endpoint: Wikidata (https://query.wikidata.org/sparql)"),
+            "expected '{spelling}' to resolve the Wikidata endpoint, got:\n{}",
+            out.stdout
+        );
+        assert_eq!(out.code, 0);
+    }
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -611,7 +746,7 @@ fn shell_endpoint_bare_reports_the_previously_activated_endpoint() {
     let out = run_shell("endpoint wikidata\nendpoint\nexit\n");
     let occurrences = out
         .stdout
-        .matches("Active endpoint: wikidata (https://query.wikidata.org/sparql)")
+        .matches("Active endpoint: Wikidata (https://query.wikidata.org/sparql)")
         .count();
     assert_eq!(
         occurrences, 2,
@@ -634,7 +769,48 @@ fn shell_endpoint_rejects_unknown_name() {
 #[test]
 fn shell_endpoint_rejects_too_many_arguments() {
     let out = run_shell("endpoint wikidata dbpedia\nexit\n");
-    assert!(out.stdout.contains("Usage: endpoint [NAME]"));
+    assert!(out.stdout.contains("Usage: endpoint [NAME|FILE.toml]"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_endpoint_registers_and_activates_a_new_endpoint_from_a_toml_file() {
+    let path = fixture("shell_endpoint.toml");
+    let script = format!("endpoint {path}\nexit\n");
+    let out = run_shell(&script);
+
+    assert!(
+        out.stdout
+            .contains(&format!("Registered endpoint 'ShellEndpoint' from {path}"))
+    );
+    assert!(
+        out.stdout
+            .contains("Active endpoint: ShellEndpoint (https://example.org/sparql)")
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_endpoint_registered_from_file_persists_for_the_rest_of_the_session() {
+    let path = fixture("shell_endpoint.toml");
+    let script = format!("endpoint {path}\nconfig get rdf.endpoints.ShellEndpoint.query_url\nexit\n");
+    let out = run_shell(&script);
+
+    assert!(
+        out.stdout.contains("https://example.org/sparql"),
+        "expected the newly-registered endpoint to be visible via 'config get', got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_endpoint_reports_a_missing_toml_file() {
+    let out = run_shell("endpoint /no/such/endpoint.toml\nexit\n");
+    assert!(out.stderr.contains("Failed to load endpoint description"));
     assert_eq!(out.code, 0);
 }
 
@@ -968,6 +1144,76 @@ fn shell_shex_resolves_prefixed_names_using_default_prefixes() {
     assert!(
         out.stdout.contains("1 shape(s) loaded"),
         "expected the schema to load using the default prefixes, got:\n{}",
+        out.stdout
+    );
+    assert_eq!(out.code, 0);
+}
+
+// ============================================================================
+// A resource argument (`shex -s`/bare, `shacl -s`, `sparql -q`, `shapemap
+// -m`, ...) that looks like `alias:local` is expanded into a full URL using
+// a known prefix — the session's default prefixes, or the active endpoint's
+// own prefixes — before being treated as a file/URL to load. These tests
+// point the expanded URL at a closed local port so resolution can be
+// verified (via the resulting error message naming the *expanded* URL)
+// without depending on network access or a real remote resource.
+// ============================================================================
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_shex_resolves_a_prefixed_resource_argument_using_default_prefixes() {
+    // Bare-shorthand (`shex ex:foo.shex`, no explicit `-s`) is covered too,
+    // since prefix expansion runs after that shorthand is already expanded.
+    let script = "prefixes add ex http://localhost:1/\nshex ex:foo.shex\nexit\n";
+    let out = run_shell(script);
+
+    assert!(
+        out.stderr.contains("http://localhost:1/foo.shex"),
+        "expected 'ex:foo.shex' to be expanded to the full URL before being loaded, got stdout:\n{}\nstderr:\n{}",
+        out.stdout,
+        out.stderr
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_shex_resolves_a_prefixed_resource_argument_using_the_active_endpoint_prefixes() {
+    let path = fixture("shell_endpoint.toml");
+    let script = format!("endpoint {path}\nshex -s local:foo.shex\nexit\n");
+    let out = run_shell(&script);
+
+    assert!(
+        out.stderr.contains("http://localhost:1/foo.shex"),
+        "expected 'local:foo.shex' to be expanded using the active endpoint's own prefixes, got stdout:\n{}\nstderr:\n{}",
+        out.stdout,
+        out.stderr
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_shex_leaves_an_unregistered_prefixed_name_unresolved() {
+    // No default prefix and no active endpoint define "nosuchalias", so this
+    // is left alone and fails exactly like any other nonexistent file path.
+    let out = run_shell("shex nosuchalias:E10\nexit\n");
+    assert!(out.stdout.contains("does not exist") || out.stdout.contains("nosuchalias:E10"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_node_identifier_is_not_expanded_as_a_resource() {
+    // `node`'s bare identifier is an RDF term reference, not a resource URL
+    // — it must NOT go through prefixed-resource expansion (unlike `-s`).
+    let data = fixture("shell_data.ttl");
+    let script = format!("data {data}\nprefixes add \"\" http://example.org/\nnode :alice\nexit\n");
+    let out = run_shell(&script);
+
+    assert!(
+        out.stdout.contains(":alice"),
+        "expected the node identifier to remain ':alice', not be expanded into a URL, got:\n{}",
         out.stdout
     );
     assert_eq!(out.code, 0);

@@ -142,6 +142,13 @@ where
         .map_err(|_e| RDFError::ExpectedConcreteLiteralError {
             term: format!("{term}"),
         })?;
+    // A literal freshly converted from the backend is a generic
+    // `DatatypeLiteral { lexical_form, datatype }` until checked against its
+    // declared datatype — only `into_checked_literal` upgrades e.g. an
+    // `xsd:integer`-typed literal into `ConcreteLiteral::NumericLiteral`.
+    let slit = slit.into_checked_literal().map_err(|e| RDFError::DefaultError {
+        msg: format!("Error checking literal datatype for {term}: {e}"),
+    })?;
     match slit {
         ConcreteLiteral::NumericLiteral(n) => Ok(n),
         _ => Err(RDFError::ExpectedNumberError {

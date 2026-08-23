@@ -1,5 +1,6 @@
 mod async_rdf;
 mod build_rdf;
+mod endpoint_description;
 mod errors;
 mod focus_rdf;
 mod matcher;
@@ -17,11 +18,12 @@ pub mod vocabs;
 
 pub use async_rdf::AsyncRDF;
 pub use build_rdf::BuildRDF;
+pub use endpoint_description::EndpointDescription;
 pub use errors::RDFError;
 pub use focus_rdf::FocusRDF;
 pub use matcher::{Any, Matcher};
 pub use neighs_rdf::{Neigh, NeighsIterator, NeighsRDF};
 pub use rdf::Rdf;
-pub use rdf_data_config::{EndpointDescription, RdfDataConfig};
+pub use rdf_data_config::RdfDataConfig;
 pub use rdf_format::RDFFormat;
 pub use shacl_path::SHACLPath;

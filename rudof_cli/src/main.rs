@@ -12,11 +12,33 @@ use tracing_subscriber::{filter::EnvFilter, fmt, layer::SubscriberExt, util::Sub
 fn main() {}
 
 #[cfg(not(target_family = "wasm"))]
-fn main() -> anyhow::Result<()> {
-    use clap::Parser;
-
+fn main() -> std::process::ExitCode {
     // Initialize logging, environment variables, and global settings
     setup();
+
+    match run() {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(err) => {
+            // Not `{err:?}` (anyhow's default `Termination` formatting for a
+            // bare `fn main() -> anyhow::Result<()>`, which this replaces):
+            // several of this crate's error types already embed their full
+            // wrapped-cause text into their own `Display`, which anyhow's
+            // "walk `source()` and print every link" default then repeats a
+            // second time. `format_error` prints each genuinely new piece
+            // of information once, on its own line.
+            eprintln!(
+                "{} {}",
+                rudof_cli::output::error_prefix(),
+                rudof_cli::output::format_error(&err)
+            );
+            std::process::ExitCode::FAILURE
+        },
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn run() -> anyhow::Result<()> {
+    use clap::Parser;
 
     // Use args_os to safely handle non-UTF8 paths/arguments from the system
     let args = clientele::args_os()?;

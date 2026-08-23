@@ -30,6 +30,8 @@ rudof> data examples/user.ttl
 
 For `data`, `shex`, `shacl`, `dctap`, `pgschema` and `service` — the commands that load a resource and, by default, dump it in full — the shell instead prints a short stats line like this when the line loads something new. This keeps a session that chains several such commands readable, since the full dump mostly just scrolls past. The full dump is still available: give `-o`/`--output-file` to write it to a file (see [Redirecting one command's output](#redirecting-one-commands-output)), or call the command bare afterwards to show what's currently loaded in full (see below).
 
+A command that hits an internal bug reports it as an ordinary error (`Error: ...`) rather than crashing the session — the shell keeps running afterwards, with whatever was already loaded still intact.
+
 ## Multi-line input
 
 If a line ends with an open quote, the shell doesn't submit it — it keeps reading further lines, shown with a `   ... ` continuation prompt, until the quote closes. This lets a multi-line value (e.g. a SPARQL query passed inline to `-q`) be typed directly at the prompt instead of requiring a separate file:
@@ -136,14 +138,14 @@ Output saved in out.ttl
 rudof> endpoint
 No endpoint is currently active.
 Use 'endpoint NAME' to activate one.
-Registered endpoints: dbpedia, uniprot, wikidata
+Registered endpoints: DBpedia, UniProt, Wikidata
 ```
 
-`endpoint NAME` activates one of the endpoints registered in the [TOML config](../general/configuration.md) for the rest of the session:
+`endpoint NAME` activates one of the endpoints registered in the [TOML config](../general/configuration.md) for the rest of the session. `NAME` is matched case-insensitively, so `wikidata`, `Wikidata` and `WikiData` all activate the same endpoint — but it's always reported back using its canonical, registered name:
 
 ```
 rudof> endpoint wikidata
-Active endpoint: wikidata (https://query.wikidata.org/sparql)
+Active endpoint: Wikidata (https://query.wikidata.org/sparql)
 ```
 
 Commands that query RDF data reuse it without needing `--endpoint`/`-e`:
@@ -158,6 +160,20 @@ rudof> query -q "select ?label where { <http://www.wikidata.org/entity/Q80> <htt
 ```
 
 See the [RDF backend (`--backend`) reference](./backend.md) for how named endpoints are registered.
+
+### Registering a new endpoint from a file
+
+`endpoint FILE.toml` registers a new endpoint from a local TOML file and activates it, instead of activating one already known by name. The file has the same shape as one `[rdf.endpoints.<name>]` table (see the [Config reference](../references/config.md#rdfendpointsname)) — `name`, `query_url`, an optional `update_url`, and an optional `[prefixmap]` — and is registered under its own `name` field:
+
+```
+rudof> endpoint my-endpoint.toml
+Registered endpoint 'My Endpoint' from my-endpoint.toml
+Active endpoint: My Endpoint (https://example.org/sparql)
+```
+
+This is session-only, like `config set` — it doesn't get written back to `rudof.toml`. Use `rudof config -o rudof.toml` to save the effective config (now including this endpoint) if you want it to persist.
+
+The endpoints registered by default (`Wikidata`, `DBpedia`, `UniProt`) are themselves just files of this same shape, bundled into `rudof` at compile time from [`rudof_rdf/endpoints/`](https://github.com/rudof-project/rudof/tree/master/rudof_rdf/endpoints) — **every** `*.toml` file in that folder is registered automatically, so adding a new one to the defaults (or changing an existing one) is just adding or editing a file there and opening a pull request; no Rust code change needed.
 
 ## Default prefixes
 
@@ -214,6 +230,28 @@ rudof> data "p:a p:name \"Alice\" ."
 1 triple(s) loaded
 ```
 
+### Resolving a resource argument from a prefix
+
+A resource argument — `shex`/`shacl`/`dctap`/`pgschema`/`service`/`rdf-config`/`generate`/`materialize`'s `-s` (or its [bare shorthand](#bare-resource-shorthand)), `sparql`'s `-q`, `shapemap`'s `-m` — can be a prefixed name (`alias:local`) instead of a full path or URL. It's expanded against a known prefix before being loaded, the same way `es` is already bundled with the default Wikidata endpoint (pointing at `https://www.wikidata.org/wiki/Special:EntitySchemaText/`):
+
+```
+rudof> endpoint wikidata
+Active endpoint: Wikidata (https://query.wikidata.org/sparql)
+rudof> shex es:E10
+3 shape(s) loaded
+```
+
+That fetched `https://www.wikidata.org/wiki/Special:EntitySchemaText/E10` — `es:E10` was expanded using the active endpoint's own prefixes. The session's [default prefixes](#default-prefixes) are checked first; the active endpoint's prefixes (if any endpoint is active) are checked next:
+
+```
+rudof> prefixes add ents https://www.wikidata.org/wiki/Special:EntitySchemaText/
+Added prefix ents: <https://www.wikidata.org/wiki/Special:EntitySchemaText/>
+rudof> shex ents:E10
+3 shape(s) loaded
+```
+
+A value that's already a URL, an existing file path, `-`, or whose alias isn't registered anywhere is left alone and handled exactly as before. `node`'s identifier argument is deliberately **not** covered by this — it's an RDF term reference resolved by the loaded document's own prefixes, not a resource to fetch.
+
 ## Clearing session state
 
 `reset` (no argument, or `reset all`) clears every piece of session state and starts fresh:
@@ -263,7 +301,7 @@ rudof> !ls examples
 
 ## History and completion
 
-Lines are saved to `~/.rudof_history` between sessions. Tab completes subcommand names; if several match, they're all listed on the first Tab (e.g. `sh` + Tab lists `shex`, `shacl`, `shapemap`, `shell`, ...) instead of silently filling in one. After the first word, Tab completes the `endpoint` command's argument against the endpoint names registered in the [TOML config](../general/configuration.md), and the `KEY` argument of `config get`/`config set` against every dotted key path in the effective config (see the [Config reference](../references/config.md)) — e.g. `config get shex_validator.` + Tab lists `shex_validator.check_negation`, `shex_validator.width`, `shex_validator.shapemap`, and so on. Every other argument falls back to filenames.
+Lines are saved to `~/.rudof_history` between sessions. Tab completes subcommand names; if several match, they're all listed on the first Tab (e.g. `sh` + Tab lists `shex`, `shacl`, `shapemap`, `shell`, ...) instead of silently filling in one. After the first word, Tab completes the `endpoint` command's argument against the endpoint names registered in the [TOML config](../general/configuration.md) — case-insensitively, so `wiki` + Tab matches `Wikidata` — and the `KEY` argument of `config get`/`config set` against every dotted key path in the effective config (see the [Config reference](../references/config.md)) — e.g. `config get shex_validator.` + Tab lists `shex_validator.check_negation`, `shex_validator.width`, `shex_validator.shapemap`, and so on. Every other argument falls back to filenames.
 
 ## Exiting
 
