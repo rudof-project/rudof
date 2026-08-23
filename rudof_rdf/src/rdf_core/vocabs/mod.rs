@@ -65,7 +65,7 @@ pub trait RdfVocabulary {
     fn base_iri() -> &'static IriS {
         static CACHE: OnceLock<Mutex<HashMap<&'static str, &'static IriS>>> = OnceLock::new();
         let mut cache = CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap();
-        *cache
+        cache
             .entry(Self::BASE)
             .or_insert_with(|| Box::leak(Box::new(IriS::new_unchecked(Self::BASE))))
     }
