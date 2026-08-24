@@ -135,7 +135,7 @@ impl ShEx2Html {
             })?;
 
         /* Generate landing page */
-        template.render_to_write(self.current_html.to_landing_html_schema(&self.config), out)?;
+        template.render_captured_to(self.current_html.to_landing_html_schema(&self.config), out)?;
 
         /* Generate a page for each shape */
         let shape_template = environment.get_template(self.config.shape_template_name.as_str())?;
@@ -412,7 +412,7 @@ fn generate_shape_page(
                 name: file_name,
                 error: e,
             })?;
-        let _state = template.render_to_write(shape, out_shape)?;
+        let _state = template.render_captured_to(shape, out_shape)?;
         Ok(())
     } else {
         // It doesn't generate local page because name doesn't have a local ref
