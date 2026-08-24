@@ -145,12 +145,11 @@ impl IriS {
             other: other.to_string(),
         })?;
 
-        base.resolve(&other_ref)
-            .map_err(|e| IriSError::IriResolveError {
-                error: e.to_string(),
-                base: Box::new(IriS::new_unchecked(base.as_str())),
-                other: other.to_string(),
-            })
+        base.resolve(&other_ref).map_err(|e| IriSError::IriResolveError {
+            error: e.to_string(),
+            base: Box::new(IriS::new_unchecked(base.as_str())),
+            other: other.to_string(),
+        })
     }
 
     /// Create a `NamedNode` from an IRI
