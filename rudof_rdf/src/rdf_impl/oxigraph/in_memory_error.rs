@@ -1,4 +1,5 @@
 use oxiri::IriParseError;
+use oxrdf::IriParseError as OxrdfIriParseError;
 use oxttl::TurtleParseError;
 use prefixmap::PrefixMapError;
 use rudof_iri::error::IriSError;
@@ -141,6 +142,17 @@ pub enum OxigraphInMemoryError {
     IriParseError {
         #[from]
         err: IriParseError,
+    },
+
+    /// Error parsing an IRI (raised by the oxrdf/oxttl dependency chain,
+    /// which currently pulls in an older `oxiri` version than the rest of the workspace).
+    ///
+    /// # Fields
+    /// - `err`: The underlying IRI parsing error
+    #[error(transparent)]
+    OxrdfIriParseError {
+        #[from]
+        err: OxrdfIriParseError,
     },
 
     /// Error related to IRI string operations.

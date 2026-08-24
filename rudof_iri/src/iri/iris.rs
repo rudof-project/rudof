@@ -1,5 +1,5 @@
 use crate::error::IriSError;
-use oxiri::Iri;
+use oxiri::{Iri, IriRef};
 use oxrdf::{NamedNode, NamedOrBlankNode, Term};
 use serde::{Serialize, Serializer};
 use std::fmt;
@@ -139,11 +139,18 @@ impl IriS {
             error: e.to_string(),
         })?;
 
-        base.resolve(other).map_err(|e| IriSError::IriResolveError {
+        let other_ref = IriRef::parse(other).map_err(|e| IriSError::IriResolveError {
             error: e.to_string(),
             base: Box::new(IriS::new_unchecked(base.as_str())),
             other: other.to_string(),
-        })
+        })?;
+
+        base.resolve(&other_ref)
+            .map_err(|e| IriSError::IriResolveError {
+                error: e.to_string(),
+                base: Box::new(IriS::new_unchecked(base.as_str())),
+                other: other.to_string(),
+            })
     }
 
     /// Create a `NamedNode` from an IRI
