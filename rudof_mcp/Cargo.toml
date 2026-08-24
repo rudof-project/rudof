@@ -26,7 +26,7 @@ rudof_rdf.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 tower = "0.5"
-tower-http = { version = "0.5", features = ["trace", "cors"] }
+tower-http = { version = "0.5.2", features = ["trace", "cors"] }
 tracing.workspace = true
 uuid.workspace = true
 chrono.workspace = true

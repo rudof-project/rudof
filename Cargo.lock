@@ -1641,9 +1641,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi 6.0.0",
  "rand_core 0.10.1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -2495,12 +2497,11 @@ checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
 name = "minijinja"
-version = "2.12.0"
+version = "2.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9f264d75233323f4b7d2f03aefe8a990690cdebfbfe26ea86bcbaec5e9ac990"
+checksum = "86886cf6dbf4e614b19c9a1eec9775f021869d7eadde0fc73921a81b90c9b4c9"
 dependencies = [
  "memo-map",
- "self_cell",
  "serde",
 ]
 
@@ -2748,7 +2749,7 @@ dependencies = [
  "getrandom 0.3.4",
  "libc",
  "oxhttp",
- "oxiri",
+ "oxiri 0.2.11",
  "oxrdf",
  "oxrdfio",
  "oxsdatatypes",
@@ -2777,13 +2778,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54b4ed3a7192fa19f5f48f99871f2755047fabefd7f222f12a1df1773796a102"
 
 [[package]]
+name = "oxiri"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b6bd0ef560f078e41ce2ebf370cce217e7fb2c3695ffa87541151c9de94e83a"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "oxjsonld"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6e1380a504a8571763f13b8bcad629ff90d0300d47d8a519f3c6c599625840e"
 dependencies = [
  "json-event-parser",
- "oxiri",
+ "oxiri 0.2.11",
  "oxrdf",
  "ryu-js",
  "thiserror 2.0.18",
@@ -2797,7 +2807,7 @@ checksum = "0afd5c28e4a399c57ee2bc3accd40c7b671fdc7b6537499f14e95b265af7d7e0"
 dependencies = [
  "hex",
  "oxilangtag",
- "oxiri",
+ "oxiri 0.2.11",
  "oxsdatatypes",
  "rand 0.9.4",
  "sha2",
@@ -2824,7 +2834,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd5516ae083d09bc57ec65ed5ee97701481725de6ffaa83d968ab42a96157ba1"
 dependencies = [
  "oxilangtag",
- "oxiri",
+ "oxiri 0.2.11",
  "oxrdf",
  "quick-xml 0.37.5",
  "thiserror 2.0.18",
@@ -2847,7 +2857,7 @@ checksum = "f03fd471bd54c23d76631c0a2677aa4bb308d905f6e491ee35dcb0732b7c5c6c"
 dependencies = [
  "memchr",
  "oxilangtag",
- "oxiri",
+ "oxiri 0.2.11",
  "oxrdf",
  "thiserror 2.0.18",
 ]
@@ -3904,8 +3914,9 @@ name = "rudof_iri"
 version = "0.3.10"
 dependencies = [
  "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "indexmap 2.14.0",
- "oxiri",
+ "oxiri 0.3.1",
  "oxrdf",
  "proptest",
  "reqwest",
@@ -3995,7 +4006,7 @@ dependencies = [
  "once_cell",
  "oxigraph",
  "oxilangtag",
- "oxiri",
+ "oxiri 0.3.1",
  "oxjsonld",
  "oxrdf",
  "oxrdfio",
@@ -4338,12 +4349,6 @@ dependencies = [
  "core-foundation-sys",
  "libc",
 ]
-
-[[package]]
-name = "self_cell"
-version = "1.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b12e76d157a900eb52e81bc6e9f3069344290341720e9178cde2407113ac8d89"
 
 [[package]]
 name = "semver"
@@ -4787,7 +4792,7 @@ dependencies = [
  "hex",
  "json-event-parser",
  "md-5",
- "oxiri",
+ "oxiri 0.2.11",
  "oxrdf",
  "oxsdatatypes",
  "rand 0.9.4",
@@ -4808,7 +4813,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46715eb957d1fe960cbbc0b713da8f78e2cb19df315b48fb09c9467a1c84f656"
 dependencies = [
  "oxilangtag",
- "oxiri",
+ "oxiri 0.2.11",
  "oxrdf",
  "peg",
  "rand 0.9.4",
