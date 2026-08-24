@@ -211,6 +211,7 @@ impl TomlConfig for RdfDataConfig {}
 #[cfg(test)]
 mod tests {
     use super::RdfDataConfig;
+    #[cfg(not(target_family = "wasm"))]
     use std::io::Write as _;
 
     #[test]
@@ -229,6 +230,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_family = "wasm"))]
     fn load_endpoint_description_registers_under_its_name_field() {
         let mut file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
         writeln!(file, r#"name = "Example""#).unwrap();
@@ -258,6 +260,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_family = "wasm"))]
     fn load_endpoint_description_reports_malformed_toml() {
         let mut file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
         writeln!(file, "not valid toml [[[").unwrap();
