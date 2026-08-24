@@ -788,7 +788,10 @@ impl NeighsRDF for OxigraphEndpoint {
             if let Some(object_data) = cache.get(object) {
                 for pred in preds {
                     if let Some(subjects) = object_data.get(pred) {
-                        results.entry(pred.clone()).or_default().extend(subjects.iter().cloned());
+                        results
+                            .entry(pred.clone())
+                            .or_default()
+                            .extend(subjects.iter().cloned());
                     } else {
                         uncached.push(pred);
                     }
@@ -957,11 +960,7 @@ async fn sparql_get_with_retry(client: &reqwest::Client, url: &Url) -> Result<St
     debug!(url = %url, "SPARQL request");
     for retry in 0..=MAX_RETRIES {
         trace!(url = %url, retry, "SPARQL GET attempt");
-        let response = client
-            .get(url.as_str())
-            .timeout(SPARQL_REQUEST_TIMEOUT)
-            .send()
-            .await?;
+        let response = client.get(url.as_str()).timeout(SPARQL_REQUEST_TIMEOUT).send().await?;
         let status = response.status();
         trace!(url = %url, status = %status, "SPARQL response");
 
