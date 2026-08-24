@@ -295,6 +295,17 @@ impl Engine {
             return Ok(cached.clone());
         }
 
+        self.new_step();
+        if let Some(max_steps) = self.max_steps()
+            && self.steps() > max_steps
+        {
+            return Err(ValidatorError::MaxStepsExceeded {
+                node: Box::new(node.clone()),
+                idx: *label,
+                max_steps,
+            });
+        }
+
         let saved_hyp_touched = self.hyp_touched;
         self.hyp_touched = false;
 

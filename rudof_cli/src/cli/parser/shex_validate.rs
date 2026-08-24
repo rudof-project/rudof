@@ -130,6 +130,14 @@ pub struct ShexValidateArgs {
     pub map_state: Option<PathBuf>,
 
     #[arg(
+        long = "max-steps",
+        value_name = "NUMBER",
+        help = "max steps to run during validation",
+        default_value_t = 100
+    )]
+    pub max_steps: usize,
+
+    #[arg(
         long = "strict-iris",
         help = "Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode)."
     )]

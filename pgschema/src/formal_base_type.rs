@@ -72,7 +72,7 @@ impl FormalBaseType {
             );
             let expected_labels = format!(
                 "[{}]",
-                labels
+                self.labels
                     .iter()
                     .map(|lblset| lblset.to_string())
                     .collect::<Vec<_>>()

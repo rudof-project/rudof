@@ -50,6 +50,17 @@ impl Command for ShexValidateCommand {
             ctx.rudof.add_external_resolver(spec)?;
         }
 
+        // Cap validation work at `--max-steps` (default 100). Without this, a
+        // shape validated against a live/remote RDF source (e.g. a SPARQL
+        // endpoint) can, in pathological cases, chase an unbounded number of
+        // dependencies instead of failing fast.
+        {
+            let mut cfg = ctx.rudof.config().execute().clone();
+            let vc = cfg.shex_validator().clone().with_max_steps(Some(self.args.max_steps));
+            cfg = cfg.with_shex_validator(vc);
+            ctx.rudof.update_config(cfg).execute();
+        }
+
         let backend = resolve_backend(&self.args.common);
         let has_data_source = !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_));
 

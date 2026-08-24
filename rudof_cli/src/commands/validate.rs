@@ -45,6 +45,7 @@ impl ValidateCommand {
             reader_mode: self.args.reader_mode,
             result_format: self.args.result_format.into(),
             map_state: self.args.map_state.clone(),
+            max_steps: self.args.max_steps,
             strict_iris: false,
             external_resolvers: Vec::new(),
             list_external_resolvers: false,

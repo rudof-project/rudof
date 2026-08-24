@@ -1,1 +1,3 @@
-n1: PersonType
+n1: PersonType,
+n4: OrganizationType,
+r3: EmployerType

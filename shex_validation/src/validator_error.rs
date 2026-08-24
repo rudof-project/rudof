@@ -246,6 +246,15 @@ pub enum ValidatorError {
 
     #[error("EXTERNAL shape {idx} for node {node} could not be resolved by any registered resolver")]
     ExternalShapeUnresolved { node: Box<Node>, idx: ShapeLabelIdx },
+
+    #[error(
+        "Validation aborted: exceeded the configured limit of {max_steps} step(s) while proving {node}@{idx}. This usually means the shape (or the data it is validated against, e.g. a highly-connected node on a remote SPARQL endpoint) requires far more work than expected; increase the limit if this is legitimate."
+    )]
+    MaxStepsExceeded {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        max_steps: usize,
+    },
 }
 
 fn add_errors_to_tree(
@@ -431,6 +440,12 @@ impl ValidatorError {
                 show_label(idx, schema, width),
                 show_node(node),
             ),
+            ValidatorError::MaxStepsExceeded { node, idx, max_steps } => format!(
+                "Validation aborted: exceeded the configured limit of {} step(s) while proving {}@{}",
+                max_steps,
+                show_node(node),
+                show_idx(idx)
+            ),
         };
         Ok(s)
     }
@@ -552,6 +567,7 @@ impl ValidatorError {
             | ValidatorError::ShapeExprNotFound { .. }
             | ValidatorError::ExternalShapeRejected { .. }
             | ValidatorError::ExternalShapeUnresolved { .. }
+            | ValidatorError::MaxStepsExceeded { .. }
             | ValidatorError::StartActFailed { .. } => Ok(()),
         }
     }

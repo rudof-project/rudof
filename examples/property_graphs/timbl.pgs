@@ -2,4 +2,12 @@ CREATE NODE TYPE ( PersonType : Person {
     (name: STRING ),
     OPTIONAL birthDate: INTEGER,
     OPTIONAL aliases: STRING *
+}) ;
+CREATE EDGE TYPE (:PersonType)
+                 -[EmployerType : employer { start: INTEGER, end: INTEGER }]->
+                 (:OrganizationType) ;
+CREATE NODE TYPE ( OrganizationType : Organization {
+    (name: STRING ),
+    OPTIONAL founded: INTEGER,
+    OPTIONAL headquarters: STRING *
 })

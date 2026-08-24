@@ -64,6 +64,14 @@ pub struct OxigraphEndpoint {
     /// (common in recursive ShEx schemas like E10/human) cost one SPARQL
     /// request instead of one per validation pass.
     triple_cache: Arc<std::sync::RwLock<HashMap<OxSubject, HashMap<OxNamedNode, HashSet<OxTerm>>>>>,
+
+    /// Per-object predicate cache for inverse (incoming) arcs: object → (predicate → subjects).
+    ///
+    /// Mirrors `triple_cache` but for the reverse direction, so `incoming_arcs_from_list`
+    /// can issue a `FILTER(?p IN (...))`-scoped query instead of falling back to the
+    /// trait default, which fetches *every* triple pointing at the object with no
+    /// predicate restriction — unbounded for heavily-linked nodes on a live endpoint.
+    incoming_triple_cache: Arc<std::sync::RwLock<HashMap<OxTerm, HashMap<OxNamedNode, HashSet<OxSubject>>>>>,
 }
 
 impl PartialEq for OxigraphEndpoint {
@@ -137,6 +145,7 @@ impl OxigraphEndpoint {
             construct_clients: Arc::new(RwLock::new(HashMap::new())),
             last_request_at: Arc::new(tokio::sync::Mutex::new(initial)),
             triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
+            incoming_triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
         })
     }
 
@@ -427,6 +436,7 @@ impl FromStr for OxigraphEndpoint {
                 construct_clients: Arc::new(RwLock::new(HashMap::new())),
                 last_request_at: Arc::new(tokio::sync::Mutex::new(initial)),
                 triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
+                incoming_triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
             })
         } else {
             // Try to match predefined endpoint names
@@ -750,6 +760,93 @@ impl NeighsRDF for OxigraphEndpoint {
         // Closed-shape validation against live endpoints is not supported.
         Ok((results, Vec::new()))
     }
+
+    /// Fetches incoming (inverse) arcs for the requested predicates only.
+    ///
+    /// Overrides the `NeighsRDF` default, which fetches *every* triple pointing at
+    /// `object` (`SELECT ?s ?p WHERE { ?s ?p <object> }`, no predicate filter, no
+    /// `LIMIT`) and filters client-side. For a heavily-linked node on a live SPARQL
+    /// endpoint (e.g. a well-known Wikidata entity), that default can pull in a huge
+    /// or effectively unbounded result set even when the shape only constrains a
+    /// couple of inverse predicates. Mirrors `outgoing_arcs_from_list`: scope the
+    /// query to the requested predicates via `FILTER(?p IN (...))` and cache results
+    /// per object so repeated references cost one SPARQL request.
+    fn incoming_arcs_from_list(
+        &self,
+        object: &Self::Term,
+        preds: &[Self::IRI],
+    ) -> Result<HashMap<Self::IRI, HashSet<Self::Subject>>> {
+        if preds.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        // --- Cache read pass ---
+        let mut results: HashMap<OxNamedNode, HashSet<OxSubject>> = HashMap::new();
+        let mut uncached: Vec<&OxNamedNode> = Vec::new();
+        {
+            let cache = self.incoming_triple_cache.read().unwrap();
+            if let Some(object_data) = cache.get(object) {
+                for pred in preds {
+                    if let Some(subjects) = object_data.get(pred) {
+                        results.entry(pred.clone()).or_default().extend(subjects.iter().cloned());
+                    } else {
+                        uncached.push(pred);
+                    }
+                }
+            } else {
+                uncached.extend(preds.iter());
+            }
+        }
+
+        if uncached.is_empty() {
+            trace!(object = %object, "incoming_arcs_from_list: all {} preds from cache", preds.len());
+            return Ok(results);
+        }
+
+        // --- SPARQL fetch for uncached predicates ---
+        let filter_in = uncached.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", ");
+        let query = format!(
+            "SELECT ?s ?p WHERE {{ ?s ?p {} FILTER(?p IN ({})) }}",
+            object, filter_in
+        );
+
+        trace!(
+            object = %object,
+            cached = preds.len() - uncached.len(),
+            fetching = uncached.len(),
+            %query,
+            "incoming_arcs_from_list FILTER query"
+        );
+
+        let solutions = self.query_select(&query)?;
+
+        // --- Cache write pass ---
+        let mut cache = self.incoming_triple_cache.write().unwrap();
+        let object_entry = cache.entry(object.clone()).or_default();
+        for pred in &uncached {
+            object_entry.entry((*pred).clone()).or_default();
+        }
+        for solution in solutions.into_iter() {
+            let Some(p_term) = solution.find_solution("p") else {
+                continue;
+            };
+            let p: OxNamedNode = match p_term.clone().try_into() {
+                Ok(n) => n,
+                Err(_) => continue,
+            };
+            let Some(s_term) = solution.find_solution("s") else {
+                continue;
+            };
+            let s: OxSubject = match s_term.clone().try_into() {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            object_entry.entry(p.clone()).or_default().insert(s.clone());
+            results.entry(p).or_default().insert(s);
+        }
+
+        Ok(results)
+    }
 }
 
 // Shared tokio runtime used by the blocking SPARQL methods.
@@ -823,37 +920,66 @@ fn sparql_client() -> Result<reqwest::Client> {
     Ok(client)
 }
 
-/// Sends an HTTP GET request to a SPARQL endpoint, retrying on 429 (Too Many Requests).
+/// Per-request timeout applied to every SPARQL HTTP request. Without this, a stalled
+/// connection or a slow response from a remote endpoint (e.g. a heavily-linked node
+/// pulling in a huge result set) blocks the calling thread indefinitely, since neither
+/// `reqwest`'s client nor the blocking `SPARQL_RUNTIME` bridge impose a deadline on
+/// their own. Set via `RequestBuilder::timeout` (rather than on the `Client`/builder)
+/// because it works uniformly on both native and WASM targets.
+const SPARQL_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// Returns whether `status` is worth retrying: 429 (Too Many Requests) or one of the
+/// transient upstream-gateway errors (502/503/504) that public SPARQL endpoints like
+/// Wikidata's — fronted by a load balancer in front of a backend that can be briefly
+/// overloaded — routinely return for an otherwise well-formed query.
+fn is_retryable_status(status: reqwest::StatusCode) -> bool {
+    matches!(
+        status,
+        reqwest::StatusCode::TOO_MANY_REQUESTS
+            | reqwest::StatusCode::BAD_GATEWAY
+            | reqwest::StatusCode::SERVICE_UNAVAILABLE
+            | reqwest::StatusCode::GATEWAY_TIMEOUT
+    )
+}
+
+/// Sends an HTTP GET request to a SPARQL endpoint, retrying on 429 (Too Many Requests)
+/// and on transient upstream-gateway errors (502/503/504).
 ///
-/// Wikidata and other public endpoints enforce rate limits. When a 429 is received this
-/// function waits for the duration indicated by the `Retry-After` header (falling back to
-/// exponential backoff starting at 1 s) and retries up to `MAX_RETRIES` times before
-/// propagating the error.
+/// Wikidata and other public endpoints enforce rate limits and are occasionally
+/// overloaded. When a retryable status is received this function waits for the
+/// duration indicated by the `Retry-After` header (falling back to exponential backoff
+/// starting at 1 s) and retries up to `MAX_RETRIES` times before propagating the error.
 async fn sparql_get_with_retry(client: &reqwest::Client, url: &Url) -> Result<String> {
     // The proactive rate limiter in `enforce_rate_limit` already prevents most 429s.
-    // These retries handle the rare cases where bursts still slip through.
+    // These retries handle the rare cases where bursts still slip through, plus
+    // one-off 502/503/504 blips from the endpoint's own backend.
     const MAX_RETRIES: u32 = 3;
     debug!(url = %url, "SPARQL request");
     for retry in 0..=MAX_RETRIES {
         trace!(url = %url, retry, "SPARQL GET attempt");
-        let response = client.get(url.as_str()).send().await?;
+        let response = client
+            .get(url.as_str())
+            .timeout(SPARQL_REQUEST_TIMEOUT)
+            .send()
+            .await?;
         let status = response.status();
         trace!(url = %url, status = %status, "SPARQL response");
 
-        if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        if is_retryable_status(status) {
             if retry == MAX_RETRIES {
-                warn!(url = %url, "SPARQL 429: max retries reached, giving up");
+                warn!(url = %url, %status, "SPARQL request failed: max retries reached, giving up");
                 return Err(response.error_for_status().unwrap_err().into());
             }
-            // Honour Retry-After if present; cap at 5 s to avoid hanging indefinitely.
+            // Honour Retry-After if present; otherwise fall back to exponential
+            // backoff (1 s, 2 s, 4 s, ...), capped at 5 s to avoid hanging indefinitely.
             let delay_secs = response
                 .headers()
                 .get("Retry-After")
                 .and_then(|v| v.to_str().ok())
                 .and_then(|s| s.parse::<u64>().ok())
-                .unwrap_or(1)
+                .unwrap_or_else(|| 1u64 << retry)
                 .min(5);
-            warn!(url = %url, delay_secs, retry, "SPARQL 429: retrying after delay");
+            warn!(url = %url, %status, delay_secs, retry, "SPARQL request failed: retrying after delay");
             tokio::time::sleep(tokio::time::Duration::from_secs(delay_secs)).await;
             continue;
         }
