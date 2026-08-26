@@ -8,6 +8,7 @@ use crate::{
         DataFormat, InputSpec, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
     },
 };
+use rudof_rdf::rdf_impl::EndpointStrategy;
 
 /// Helper: serialize validation results to string
 fn serialize_validation_to_string(
@@ -78,6 +79,7 @@ fn test_validate_shacl_conforming_data() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -147,6 +149,7 @@ fn test_validate_shacl_non_conforming_data() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -217,6 +220,7 @@ fn test_validate_shacl_without_schema() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -268,6 +272,7 @@ fn test_validate_shacl_datatype_violations() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -331,6 +336,7 @@ fn test_validate_shacl_min_max_violations() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -394,6 +400,7 @@ fn test_validate_shacl_pattern_violations() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -464,6 +471,7 @@ fn test_validate_shacl_node_shape_violations() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -520,6 +528,7 @@ fn test_serialize_validation_results_compact() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -577,6 +586,7 @@ fn test_serialize_validation_results_details() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -635,6 +645,7 @@ fn test_serialize_validation_results_turtle() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -705,6 +716,7 @@ fn test_validate_shacl_with_validation_mode() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -778,6 +790,7 @@ fn test_validate_multiple_violations() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 

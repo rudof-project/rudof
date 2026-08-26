@@ -296,14 +296,29 @@ impl Engine {
         }
 
         self.new_step();
-        if let Some(max_steps) = self.max_steps()
-            && self.steps() > max_steps
-        {
-            return Err(ValidatorError::MaxStepsExceeded {
+        if rudof_rdf::cancellation::is_cancelled() {
+            return Err(ValidatorError::Cancelled {
                 node: Box::new(node.clone()),
                 idx: *label,
-                max_steps,
             });
+        }
+        if let Some(max_steps) = self.max_steps() {
+            // Validating a heavily-connected node (e.g. a real-world entity on
+            // a live SPARQL endpoint) can take many steps with nothing printed
+            // in the meantime. Surface periodic progress at `debug` level —
+            // quiet by default, opt in with `RUST_LOG=debug` or (inside the
+            // shell, without restarting) `config set logging.level debug`.
+            const PROGRESS_EVERY: usize = 20;
+            if self.steps().is_multiple_of(PROGRESS_EVERY) {
+                debug!(steps = self.steps(), max_steps, "ShEx validation in progress...");
+            }
+            if self.steps() > max_steps {
+                return Err(ValidatorError::MaxStepsExceeded {
+                    node: Box::new(node.clone()),
+                    idx: *label,
+                    max_steps,
+                });
+            }
         }
 
         let saved_hyp_touched = self.hyp_touched;

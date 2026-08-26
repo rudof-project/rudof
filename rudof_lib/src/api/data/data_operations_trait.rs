@@ -9,6 +9,7 @@ use crate::{
         ResultServiceFormat,
     },
 };
+use rudof_rdf::rdf_impl::EndpointStrategy;
 use std::io;
 
 /// Operations for managing RDF data.
@@ -22,10 +23,13 @@ pub trait DataOperations {
     /// * `base` - Optional base IRI for resolving relative IRIs (uses default if None)
     /// * `endpoint` - Optional SPARQL endpoint URL to load data from. If stablished it overrides data (uses None by default)
     /// * `reader_mode` - The parsing mode (uses default if None)
+    /// * `endpoint_strategy` - How `endpoint` (if given) answers lookups: SPARQL queries
+    ///   or HTTP dereferencing. Ignored when `endpoint` is `None`.
     ///
     /// # Errors
     ///
     /// Returns an error if the data cannot be parsed or loaded.
+    #[allow(clippy::too_many_arguments)]
     fn load_data(
         &mut self,
         data: Option<&[InputSpec]>,
@@ -35,6 +39,7 @@ pub trait DataOperations {
         reader_mode: Option<&DataReaderMode>,
         merge: Option<bool>,
         prefixes: Option<&[InputSpec]>,
+        endpoint_strategy: EndpointStrategy,
     ) -> Result<()>;
 
     /// Serializes the current RDF data to a writer.
@@ -160,8 +165,19 @@ impl DataOperations for Rudof {
         reader_mode: Option<&DataReaderMode>,
         merge: Option<bool>,
         prefixes: Option<&[InputSpec]>,
+        endpoint_strategy: EndpointStrategy,
     ) -> Result<()> {
-        load_data(self, data, data_format, base, endpoint, reader_mode, merge, prefixes)
+        load_data(
+            self,
+            data,
+            data_format,
+            base,
+            endpoint,
+            reader_mode,
+            merge,
+            prefixes,
+            endpoint_strategy,
+        )
     }
 
     fn serialize_data<W: io::Write>(

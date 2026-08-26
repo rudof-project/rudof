@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use crate::cli::parser::CommonArgsAll;
 use crate::cli::wrappers::{
-    DataFormatCli, DataReaderModeCli, ResultShExValidationFormatCli, ShExFormatCli, ShExValidationSortByModeCli,
-    ShapeMapFormatCli,
+    DataFormatCli, DataReaderModeCli, EndpointStrategyCli, ResultShExValidationFormatCli, ShExFormatCli,
+    ShExValidationSortByModeCli, ShapeMapFormatCli,
 };
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -133,9 +133,22 @@ pub struct ShexValidateArgs {
         long = "max-steps",
         value_name = "NUMBER",
         help = "max steps to run during validation",
-        default_value_t = 100
+        default_value_t = 1000
     )]
     pub max_steps: usize,
+
+    #[arg(
+        long = "strategy",
+        value_name = "STRATEGY",
+        ignore_case = true,
+        help = "How -e/--endpoint answers lookups: sparql (default) or dereference. \
+                'dereference' fetches each entity IRI directly over HTTP instead of \
+                querying the SPARQL service — useful for Wikibase endpoints like \
+                Wikidata or MaRDI, where every entity is itself dereferenceable. \
+                No effect without -e/--endpoint.",
+        default_value_t = EndpointStrategyCli::Sparql
+    )]
+    pub strategy: EndpointStrategyCli,
 
     #[arg(
         long = "strict-iris",

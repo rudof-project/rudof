@@ -6,7 +6,7 @@ mod backend;
 mod backend_error;
 
 #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
-pub use oxigraph::{OxigraphEndpoint, OxigraphEndpointError, SparqlVars};
+pub use oxigraph::{EndpointStrategy, OxigraphEndpoint, OxigraphEndpointError, SparqlVars};
 pub use oxigraph::{OxigraphInMemory, OxigraphInMemoryError, ReaderMode};
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 pub use qlever::{

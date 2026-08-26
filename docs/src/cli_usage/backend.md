@@ -44,6 +44,21 @@ rudof node -n :a --endpoint https://my.sparql.server/sparql
 
 Inside `rudof shell`, `endpoint <NAME>` activates a registered endpoint once for the rest of the session instead of repeating `-e` on every line (matched case-insensitively, so `wikidata`/`Wikidata`/`WikiData` are all the same endpoint), and `endpoint FILE.toml` registers a brand-new one from a local file — see [shell](./shell.md#registering-a-new-endpoint-from-a-file). `Wikidata`, `DBpedia` and `UniProt` are registered by default, defined in [`rudof_rdf/endpoints/`](https://github.com/rudof-project/rudof/tree/master/rudof_rdf/endpoints) — every file in that folder is registered automatically — see the [Config reference](../references/config.md#rdfendpointsname) for the `[rdf.endpoints.<name>]` shape used to register more of your own in `rudof.toml`.
 
+### Alternative endpoint access: `--strategy` (Wikibase instances)
+
+`rudof shex-validate` accepts an additional `--strategy sparql|dereference` flag (default `sparql`) alongside `--endpoint`/`-e`. `dereference` answers every lookup by fetching the node's own IRI directly over HTTP — `GET`, `Accept: text/turtle`, following redirects — instead of issuing a SPARQL query. This works because Wikibase instances (Wikidata, [MaRDI](https://portal.mardi4nfdi.de/), …) publish every entity as Linked Data: `http://www.wikidata.org/entity/Q80` is itself dereferenceable, and the response for a single entity already includes its full statement/qualifier/reference structure — the same data a handful of SPARQL round-trips would otherwise take separate requests to assemble.
+
+```sh
+rudof shex-validate -s es:E371 -n wd:Q80 -e wikidata                        # SPARQL (default)
+rudof shex-validate -s es:E371 -n wd:Q80 -e wikidata --strategy dereference # HTTP dereferencing
+```
+
+Trade-offs to keep in mind:
+
+- **Faster and gentler on the SPARQL query service** for validation-shaped access patterns (each node dereferenced costs one request, typically served from the wiki's own cache rather than the separately-throttled SPARQL backend), but only sees a referenced entity's *label*, not its own properties, until that entity is itself dereferenced — so validating a well-connected node can still mean fetching many entities, just via plain HTTP instead of SPARQL.
+- **No inverse (`^predicate`) support beyond what's already been fetched.** Dereferencing a node only ever returns its *outgoing* triples; there is no index to ask "what points at this node". Inverse-shape and closed-shape (`EXTRA`) constraints only see links from entities already dereferenced earlier in the same run, so results can be incomplete for those specifically — `sparql` remains the accurate choice for schemas that rely on them.
+- **No raw SPARQL under this strategy** — a SPARQL-based node selector, or the `query`/`sparql`/`node` commands' own SPARQL paths, error clearly rather than silently falling back to the endpoint's query service.
+
 ## The `qlever` backend
 
 The `qlever` backend routes data loading through a locally-launched QLever Docker container. QLever builds a compact on-disk index once and then answers SPARQL queries against it, so memory usage on subsequent runs is bounded by QLever's server cache rather than the dataset size. It is well-suited for large, read-heavy workloads.

@@ -1196,9 +1196,16 @@ fn shell_shex_resolves_a_prefixed_resource_argument_using_the_active_endpoint_pr
 #[test]
 fn shell_shex_leaves_an_unregistered_prefixed_name_unresolved() {
     // No default prefix and no active endpoint define "nosuchalias", so this
-    // is left alone and fails exactly like any other nonexistent file path.
+    // is left alone: not a known prefix to expand, and (being a CURIE-like
+    // token with no path separator) never treated as a candidate file path
+    // either. It falls through to `InputSpec::Str`, i.e. literal schema
+    // content, and fails as a ShEx syntax error instead.
     let out = run_shell("shex nosuchalias:E10\nexit\n");
-    assert!(out.stdout.contains("does not exist") || out.stdout.contains("nosuchalias:E10"));
+    assert!(
+        out.stderr.contains("nosuchalias:E10"),
+        "expected the literal token to surface in the parse error, got:\n{}",
+        out.stderr
+    );
     assert_eq!(out.code, 0);
 }
 

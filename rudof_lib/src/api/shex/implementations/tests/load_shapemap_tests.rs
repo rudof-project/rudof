@@ -6,6 +6,7 @@ use crate::{
     api::shex::implementations::serialize_shapemap::serialize_shapemap,
     formats::{DataFormat, InputSpec, ShExFormat, ShapeMapFormat},
 };
+use rudof_rdf::rdf_impl::EndpointStrategy;
 //use std::str::FromStr;
 
 /// Helper: serialize current ShapeMap to string
@@ -37,6 +38,7 @@ fn test_load_shapemap_compact_success() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -88,6 +90,7 @@ fn test_load_shapemap_replace() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -163,6 +166,7 @@ fn test_load_shapemap_no_schema_error() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -193,6 +197,7 @@ fn test_load_shapemap_invalid_syntax() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -234,6 +239,7 @@ fn test_load_shapemap_with_base_nodes() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -287,6 +293,7 @@ fn test_serialize_shapemap_json() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 

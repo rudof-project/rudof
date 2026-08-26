@@ -65,13 +65,29 @@ impl ShellHelper {
     /// set` (i.e. exactly the third word on the line, right after `config
     /// get `/`config set `), returns the partial key typed so far. `None`
     /// for any other position, including the `VALUE` argument of `config set
-    /// KEY VALUE` — that one isn't a config key and shouldn't be completed
-    /// as one.
+    /// KEY VALUE` — see [`Self::config_set_value_word`] for that one.
     fn config_key_word(line: &str, pos: usize) -> Option<&str> {
         let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
         let mut words = line[..word_start].split_whitespace();
         match (words.next(), words.next(), words.next()) {
             (Some("config"), Some("get") | Some("set"), None) => Some(&line[word_start..pos]),
+            _ => None,
+        }
+    }
+
+    /// If `pos` is positioned at the `VALUE` argument of `config set KEY
+    /// VALUE` (i.e. exactly the fourth word on the line), returns `(KEY, the
+    /// partial value typed so far)`. `None` for any other position.
+    ///
+    /// Unlike `KEY`, `VALUE` isn't itself a config key to complete against
+    /// the config tree — but a handful of known keys have a small, fixed set
+    /// of sensible values (right now, just `logging.level`'s level names)
+    /// worth suggesting, looked up by the caller from `KEY`.
+    fn config_set_value_word(line: &str, pos: usize) -> Option<(&str, &str)> {
+        let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
+        let mut words = line[..word_start].split_whitespace();
+        match (words.next(), words.next(), words.next(), words.next()) {
+            (Some("config"), Some("set"), Some(key), None) => Some((key, &line[word_start..pos])),
             _ => None,
         }
     }
@@ -137,6 +153,21 @@ impl Completer for ShellHelper {
                 .map(|key| Pair {
                     display: key.clone(),
                     replacement: key.clone(),
+                })
+                .collect();
+            return Ok((word_start, candidates));
+        }
+
+        if let Some((key, value_prefix)) = Self::config_set_value_word(line, pos)
+            && key == "logging.level"
+        {
+            let word_start = pos - value_prefix.len();
+            let candidates = crate::logging::LEVEL_NAMES
+                .iter()
+                .filter(|level| level.starts_with(value_prefix))
+                .map(|level| Pair {
+                    display: level.to_string(),
+                    replacement: level.to_string(),
                 })
                 .collect();
             return Ok((word_start, candidates));
@@ -303,6 +334,53 @@ mod tests {
         // The VALUE position (4th word) must fall back to filename
         // completion, not be treated as a config key.
         let line = "config set shex_validator.max_steps shex_valid";
+        let (_, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn completes_logging_level_key_even_though_it_starts_unset() {
+        // `logging.level` is a plain (non-`Option`) string precisely so it's
+        // always present in the config tree — and so always completable —
+        // even before it's ever been set. Regression test for that.
+        let helper = ShellHelper::new(vec!["config".to_string()], vec![], vec!["logging.level".to_string()]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "config set logging.";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "config set ".len());
+        let replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
+        assert_eq!(replacements, vec!["logging.level"]);
+    }
+
+    #[test]
+    fn completes_logging_level_value_against_known_level_names() {
+        let helper = ShellHelper::new(vec!["config".to_string()], vec![], vec!["logging.level".to_string()]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "config set logging.level d";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "config set logging.level ".len());
+        let replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
+        assert_eq!(replacements, vec!["debug"]);
+    }
+
+    #[test]
+    fn does_not_offer_level_names_for_other_config_keys() {
+        let helper = ShellHelper::new(
+            vec!["config".to_string()],
+            vec![],
+            vec!["shex_validator.max_steps".to_string()],
+        );
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "config set shex_validator.max_steps d";
         let (_, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
 
         assert!(candidates.is_empty());

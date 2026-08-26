@@ -7,6 +7,7 @@ use crate::{
     api::pgschema::implementations::validate_pgschema::validate_pgschema,
     formats::{DataFormat, InputSpec, ResultPgSchemaValidationFormat},
 };
+use rudof_rdf::rdf_impl::EndpointStrategy;
 
 /// Helper: serialize validation results to string
 fn serialize_validation_to_string(
@@ -43,6 +44,7 @@ fn test_validate_and_serialize_pgschema() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 

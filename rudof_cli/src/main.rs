@@ -4,9 +4,7 @@ use rudof_cli::{
     commands::{CommandContext, CommandFactory},
 };
 #[cfg(not(target_family = "wasm"))]
-use std::{env, io};
-#[cfg(not(target_family = "wasm"))]
-use tracing_subscriber::{filter::EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use std::env;
 
 #[cfg(target_family = "wasm")]
 fn main() {}
@@ -62,23 +60,7 @@ fn setup() {
         env::set_var("RUSTEMO_NOTRACE", "1");
     }
 
-    let env_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
-
-    let fmt_layer = fmt::layer()
-        .with_file(true)
-        .with_target(false)
-        .with_line_number(true)
-        .with_writer(io::stderr)
-        .without_time();
-
-    tracing_subscriber::registry()
-        .with(env_filter.clone())
-        .with(fmt_layer)
-        .init();
-
-    tracing::trace!("rudof running with tracing filter {}", env_filter);
+    rudof_cli::logging::init();
 }
 
 #[cfg(not(target_family = "wasm"))]

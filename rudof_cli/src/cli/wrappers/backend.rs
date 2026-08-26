@@ -1,9 +1,12 @@
 use std::fmt::{Display, Formatter, Result};
 use std::str::FromStr;
 
+use clap::ValueEnum;
 use rudof_lib::formats::BackendSpec;
+use rudof_rdf::rdf_impl::EndpointStrategy;
 
 use crate::cli::parser::CommonArgsAll;
+use crate::cli_wrapper;
 
 /// Choice of RDF data backend.
 ///
@@ -120,6 +123,16 @@ impl FromStr for BackendKindCli {
         }
     }
 }
+
+// How an `--endpoint`/`--backend endpoint=…` backend answers lookups.
+//
+// Parsed from the `--strategy` CLI flag. `sparql` (the default) queries the
+// endpoint's SPARQL query service; `dereference` instead fetches each entity
+// IRI directly over HTTP (`Accept: text/turtle`, following redirects) — the
+// approach Wikibase instances like Wikidata and MaRDI support natively,
+// since every entity is itself a dereferenceable Linked Data resource. See
+// `rudof_rdf::rdf_impl::EndpointStrategy` for the trade-offs.
+cli_wrapper!(EndpointStrategyCli, EndpointStrategy, { Sparql, Dereference });
 
 #[cfg(test)]
 mod tests {

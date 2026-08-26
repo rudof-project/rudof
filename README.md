@@ -192,17 +192,28 @@ It is possible to change the debug level information with:
 export RUST_LOG=info
 ```
 
-where `value` can be `info`, `debug` or `trace` to show more information. It is also possible to have more control about the logs using more complex filters. For example, to show `trace` for the elements in crate `shacl_validation`, and supress any logs for crates `hyper` and `reqwest` (which can be quite verbose with traces), you can use:
+where `value` can be `error`, `warn`, `info`, `debug` or `trace` to show more information. A
+bare level like this is automatically scoped to rudof's own crates, with dependencies (HTTP/TLS
+libraries, the shell's line editor, etc.) capped at `warn` — so `RUST_LOG=debug` won't flood
+your terminal with unrelated internals. Write a filter containing `=` or `,` yourself if you
+want more control (e.g. to also see a specific dependency's own logs), and it's used exactly
+as written:
 
 ```
-export RUST_LOG=info,shacl_validation=trace,hyper=off,reqwest=off
+export RUST_LOG=info,shacl_validation=trace,hyper=trace
 ```
 
 In case you use nu_shell, you can use:
 
 ```
-$env.RUST_LOG = 'info,shacl_validation=trace,hyper=off,reqwest=off'
+$env.RUST_LOG = 'info,shacl_validation=trace,hyper=trace'
 ```
+
+This can also be set persistently in `rudof.toml` (`[logging] level = "debug"`, see the
+[Config reference](https://rudof-project.github.io/rudof/references/config.html#logging--diagnostic-output)),
+and, inside the interactive shell, changed live for the rest of the session with
+`config set logging.level debug` — unlike `$RUST_LOG`, which can only be read once, at
+process start.
 
 ## Command line usage
 

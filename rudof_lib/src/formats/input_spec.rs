@@ -220,6 +220,15 @@ impl FromStr for InputSpec {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO - This probably needs some improvements
         let filepath_regex = Regex::new(r"^[.~/a-zA-Z0-9]?[/\\a-zA-Z0-9._:-]*$").unwrap();
+        // A CURIE-like token (`alias:local`, e.g. `es:E10`) matches the loose
+        // filepath regex above (it allows ':') but is never a legitimate
+        // filesystem path — unlike a Windows drive-letter path, its "local"
+        // part contains no path separator. Let it fall through to `Str`
+        // instead of demanding it exist as a file, so callers that know
+        // about prefixes (e.g. the CLI's `--schema`/`--shapemap`, which can
+        // expand it against an endpoint's prefix map) get a chance to
+        // resolve it before it's treated as a literal string.
+        let curie_like_regex = Regex::new(r"^[A-Za-z][A-Za-z0-9._-]*:[^/\\]+$").unwrap();
 
         if s.is_empty() {
             return Err(InputSpecError::InvalidInput {
@@ -237,6 +246,7 @@ impl FromStr for InputSpec {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
             },
+            _ if curie_like_regex.is_match(s) && !Path::new(s).exists() => Ok(InputSpec::Str(s.to_string())),
             _ if filepath_regex.is_match(s) => {
                 let path = Path::new(s);
                 if !path.exists() {

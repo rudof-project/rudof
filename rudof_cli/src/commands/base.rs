@@ -76,6 +76,17 @@ impl CommandContext {
         // Load config
         let config = RudofConfig::discover(common.config().map(|p| p.as_path()))?;
 
+        // A persisted `logging.level` (e.g. from `~/.config/rudof/config.toml`
+        // or a discovered `rudof.toml`) sets the startup tracing filter, same
+        // as `$RUST_LOG` — but `$RUST_LOG`, when the user has explicitly set
+        // it, wins, matching every other tool that honours it.
+        if std::env::var_os("RUST_LOG").is_none()
+            && let Some(level) = config.logging().level()
+        {
+            crate::logging::set_level(level)
+                .map_err(|err| anyhow::anyhow!("invalid 'logging.level' value '{level}' in config: {err}"))?;
+        }
+
         // Initialize Rudof with the loaded configuration
         let rudof = Rudof::new(config);
 

@@ -46,6 +46,7 @@ impl ValidateCommand {
             result_format: self.args.result_format.into(),
             map_state: self.args.map_state.clone(),
             max_steps: self.args.max_steps,
+            strategy: crate::cli::wrappers::EndpointStrategyCli::Sparql,
             strict_iris: false,
             external_resolvers: Vec::new(),
             list_external_resolvers: false,

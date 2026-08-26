@@ -60,12 +60,25 @@ pub enum OxigraphEndpointError {
     #[error("Unknown name for endpoint: {name}")]
     UnknownEndpointName { name: String },
 
+    /// Error parsing an [`crate::rdf_impl::EndpointStrategy`] from a string.
+    ///
+    /// # Fields
+    /// - `name`: The unrecognized strategy name
+    #[error("Unknown endpoint strategy '{name}': expected 'sparql' or 'dereference'")]
+    UnknownEndpointStrategy { name: String },
+
     /// Error parsing the response body from the endpoint.
     ///
     /// # Fields
     /// - `body`: The body content that failed to parse
     #[error("Error parsing body: {body}")]
     ParsingBody { body: String },
+
+    /// A SPARQL request was aborted because cancellation was requested
+    /// (e.g. Ctrl-C in the interactive shell) while it was in flight or
+    /// waiting to retry.
+    #[error("SPARQL request cancelled")]
+    Cancelled,
 
     /// Error when a SPARQL solution contains a non-IRI value where an IRI was expected.
     ///
@@ -113,6 +126,38 @@ pub enum OxigraphEndpointError {
         #[from]
         err: IriSError,
     },
+
+    /// Dereferencing an entity IRI (`EndpointStrategy::Dereference`) returned
+    /// a non-success HTTP status.
+    ///
+    /// # Fields
+    /// - `uri`: The IRI that was dereferenced
+    /// - `status`: The HTTP status returned
+    #[error("Dereferencing {uri} returned HTTP status {status}")]
+    DereferenceHttpStatus { uri: String, status: String },
+
+    /// The response body from dereferencing an entity IRI couldn't be parsed
+    /// as Turtle.
+    ///
+    /// # Fields
+    /// - `uri`: The IRI that was dereferenced
+    /// - `error`: Detailed description of the parsing failure
+    #[error("Failed to parse Turtle from dereferencing {uri}: {error}")]
+    DereferenceParseError { uri: String, error: String },
+
+    /// A `QueryRDF` operation (a raw SPARQL query, or a SPARQL-based node
+    /// selector) was attempted against an endpoint using
+    /// `EndpointStrategy::Dereference`, which has no SPARQL query service to
+    /// send it to — only entity IRIs can be looked up, by dereferencing them.
+    ///
+    /// # Fields
+    /// - `operation`: Which `QueryRDF` operation was attempted (e.g. "SELECT")
+    #[error(
+        "{operation} is not supported by the 'dereference' endpoint strategy: it only answers \
+         lookups by dereferencing entity IRIs, not by running arbitrary SPARQL queries. \
+         Use --strategy sparql (the default) for this operation."
+    )]
+    UnsupportedForDereferenceStrategy { operation: &'static str },
 }
 
 /// Converts a reqwest error into an HTTPRequestError.

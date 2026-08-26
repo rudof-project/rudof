@@ -209,6 +209,7 @@ Options:
   -r, --result-format <FORMAT>    Ouput result format [default: details] [possible values: details, turtle, ntriples, rdfxml, trig, n3, nquads, compact, json, csv]
       --map-state <FILE>          MapState file name
       --strict-iris               Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode).
+      --strategy <STRATEGY>       How -e/--endpoint answers lookups [default: sparql] [possible values: sparql, dereference]
       --external-resolver <SPEC>  External-shape resolver spec. Repeatable. Syntax: <kind>[:<arg>]. Built-in kinds: 'reject-all', 'schema:<path>'. Use --list-external-resolvers to enumerate.
       --list-external-resolvers   Print the available external-shape resolver kinds and exit
   -c, --config-file <FILE>        Config file name
@@ -226,4 +227,4 @@ rudof shex-validate -s schema.shex -m shapemap.sm --backend qlever data.ttl
 rudof shex-validate -s schema.shex -m shapemap.sm --endpoint https://my.sparql.server/sparql
 ```
 
-See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.
+See the [RDF backend (`--backend`) reference](./backend.md) for full documentation. For a Wikibase endpoint (Wikidata, MaRDI, …) `--strategy dereference` is an alternative to SPARQL that fetches each node's own IRI directly over HTTP instead — see the "Alternative endpoint access" section on that page.

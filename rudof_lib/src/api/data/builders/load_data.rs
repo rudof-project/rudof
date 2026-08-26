@@ -3,6 +3,7 @@ use crate::{
     api::data::DataOperations,
     formats::{BackendSpec, DataFormat, DataReaderMode, InputSpec},
 };
+use rudof_rdf::rdf_impl::EndpointStrategy;
 
 /// Builder for `load_data` operation.
 ///
@@ -19,6 +20,9 @@ pub struct LoadDataBuilder<'a> {
     prefixes: Option<&'a [InputSpec]>,
     /// Which backend should hold the loaded data. Defaults to in-process memory.
     backend: BackendSpec,
+    /// How a `BackendSpec::Endpoint` should answer lookups. Ignored for every
+    /// other backend. Defaults to `EndpointStrategy::Sparql`.
+    endpoint_strategy: EndpointStrategy,
 }
 
 impl<'a> LoadDataBuilder<'a> {
@@ -36,12 +40,21 @@ impl<'a> LoadDataBuilder<'a> {
             merge: None,
             prefixes: None,
             backend: BackendSpec::default(),
+            endpoint_strategy: EndpointStrategy::default(),
         }
     }
 
     /// Selects the RDF backend that will store the loaded data.
     pub fn with_backend(mut self, backend: BackendSpec) -> Self {
         self.backend = backend;
+        self
+    }
+
+    /// Selects how a `BackendSpec::Endpoint` backend answers lookups —
+    /// SPARQL queries (the default) or HTTP dereferencing. No effect unless
+    /// the backend is (or becomes, via [`Self::with_endpoint`]) an endpoint.
+    pub fn with_endpoint_strategy(mut self, strategy: EndpointStrategy) -> Self {
+        self.endpoint_strategy = strategy;
         self
     }
 
@@ -101,6 +114,7 @@ impl<'a> LoadDataBuilder<'a> {
                 self.reader_mode,
                 self.merge,
                 self.prefixes,
+                self.endpoint_strategy,
             ),
             BackendSpec::Endpoint(url) => <Rudof as DataOperations>::load_data(
                 self.rudof,
@@ -111,6 +125,7 @@ impl<'a> LoadDataBuilder<'a> {
                 self.reader_mode,
                 self.merge,
                 self.prefixes,
+                self.endpoint_strategy,
             ),
             BackendSpec::Qlever => self.execute_qlever(),
         }

@@ -99,7 +99,7 @@ pub struct ValidateArgs {
         long = "max-steps",
         value_name = "NUMBER",
         help = "max steps to run during validation",
-        default_value_t = 100
+        default_value_t = 1000
     )]
     pub max_steps: usize,
 

@@ -151,6 +151,20 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
     writeln!(ctx.writer, "Type 'help' for available commands, 'exit' to quit.")?;
     ctx.writer.flush()?;
 
+    // Ctrl-C during a running command (as opposed to at the prompt, which
+    // `rustyline` already handles below via `ReadlineError::Interrupted`)
+    // would otherwise take the whole shell down with it — see
+    // `crate::signals` for why and how this fixes it. Installed once, for
+    // the life of the session; if it fails (very unlikely — the only
+    // failure mode is the OS rejecting the `sigaction` call), the shell
+    // still works, just without Ctrl-C cancellation.
+    if let Err(err) = crate::signals::install_shell_ctrl_c_handler() {
+        writeln!(
+            std::io::stderr(),
+            "Warning: could not install Ctrl-C handler ({err}); Ctrl-C during a running command will exit the shell"
+        )?;
+    }
+
     loop {
         match read_command(&mut editor) {
             Ok(line) => {
@@ -165,6 +179,10 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
                     "exit" | "quit" => break,
                     "help" | "?" => print_help(ctx)?,
                     _ => {
+                        // Clear any cancellation left over from a previous
+                        // command (or a stray Ctrl-C at the idle prompt —
+                        // see `crate::signals`) so this one starts fresh.
+                        rudof_rdf::cancellation::reset();
                         if let Err(err) = dispatch_catching_panics(line, ctx) {
                             writeln!(
                                 std::io::stderr(),
@@ -715,6 +733,16 @@ fn set_config(key: &str, value: &str, ctx: &mut CommandContext) -> Result<()> {
     };
     let confirmed = confirmed.clone();
 
+    // `logging.level` doesn't just live in `RudofConfig` — it drives the
+    // actual `tracing` filter, which `$RUST_LOG` can't be changed at
+    // runtime to do (see `crate::logging`). Apply it live, and reject the
+    // value up front if it's not a valid filter, before it's committed.
+    if key == "logging.level"
+        && let Some(level) = confirmed.as_str()
+    {
+        crate::logging::set_level(level).map_err(|err| anyhow!("invalid value for '{key}': {err}"))?;
+    }
+
     ctx.rudof.update_config(updated_config).execute();
     writeln!(ctx.writer, "{key} = {}", format_config_value(&confirmed))?;
     Ok(())
@@ -944,24 +972,9 @@ fn expand_prefixed_resource_tokens(tokens: &mut [String], ctx: &CommandContext) 
 /// file path, an unregistered alias, ...), leaving `token` to be parsed
 /// as a normal `InputSpec`.
 fn resolve_prefixed_resource(token: &str, ctx: &CommandContext) -> Option<String> {
-    if token == "-" || token.contains("://") {
-        return None;
-    }
-    let (alias, local) = token.split_once(':')?;
-    if alias.is_empty() || local.is_empty() {
-        return None;
-    }
-
     let default_prefixes = ctx.rudof.prefixes().execute();
-    let pm = if default_prefixes.find(alias).is_some() {
-        default_prefixes
-    } else {
-        active_endpoint_prefixmap(ctx).filter(|pm| pm.find(alias).is_some())?
-    };
-
-    pm.resolve_prefix_local(alias.to_string(), local.to_string())
-        .ok()
-        .map(|iri| iri.to_string())
+    let endpoint_prefixes = active_endpoint_prefixmap(ctx);
+    crate::cli::prefix_expand::resolve_prefixed_resource(token, &default_prefixes, endpoint_prefixes.as_ref())
 }
 
 /// The `PrefixMap` bundled with the currently active endpoint (`endpoint

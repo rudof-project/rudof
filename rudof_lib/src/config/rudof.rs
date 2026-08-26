@@ -1,4 +1,4 @@
-use crate::config::CommonConfig;
+use crate::config::{CommonConfig, LoggingConfig};
 use dctap::TapConfig;
 use rudof_config::{ConfigError, TomlConfig, find_config_files_from, merge_tables, read_toml_table, user_config_file};
 use rudof_rdf::rdf_core::RdfDataConfig;
@@ -26,6 +26,9 @@ pub struct RudofConfig {
 
     #[serde(flatten)]
     pub(crate) common: CommonConfig,
+
+    #[serde(rename = "logging")]
+    pub(crate) logging: LoggingConfig,
 
     // ---
     #[serde(rename = "rdf")]
@@ -61,6 +64,7 @@ impl RudofConfig {
         let mut cfg = Self {
             version: Self::default_version(),
             common: Self::default_common_config(),
+            logging: Self::default_logging_config(),
             service: Self::default_service_config(),
             rdf_data: Self::default_rdf_data_config(),
             shex: Self::default_shex_config(),
@@ -146,6 +150,11 @@ impl RudofConfig {
         self
     }
 
+    pub fn with_logging(mut self, cfg: LoggingConfig) -> Self {
+        self.logging = cfg;
+        self
+    }
+
     pub fn with_rdf_data(mut self, cfg: RdfDataConfig) -> Self {
         self.rdf_data = cfg;
         self
@@ -215,6 +224,10 @@ impl RudofConfig {
 
     pub fn common(&self) -> &CommonConfig {
         &self.common
+    }
+
+    pub fn logging(&self) -> &LoggingConfig {
+        &self.logging
     }
 
     pub fn service(&self) -> &ServiceConfig {
@@ -309,6 +322,7 @@ impl RudofConfig {
 impl RudofConfig {
     #[inline] fn default_version() -> Option<Version> { Some(Self::current_version()) }
     #[inline] fn default_common_config() -> CommonConfig { CommonConfig::default() }
+    #[inline] fn default_logging_config() -> LoggingConfig { LoggingConfig::default() }
     #[inline] fn default_service_config() -> ServiceConfig { ServiceConfig::default() }
     #[inline] fn default_rdf_data_config() -> RdfDataConfig { RdfDataConfig::default() }
     #[inline] fn default_shex_config() -> ShExConfig { ShExConfig::default() }

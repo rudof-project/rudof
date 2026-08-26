@@ -3,6 +3,10 @@ pub mod cli;
 #[cfg(not(target_family = "wasm"))]
 pub mod commands;
 #[cfg(not(target_family = "wasm"))]
+pub mod logging;
+#[cfg(not(target_family = "wasm"))]
 pub mod output;
 #[cfg(not(target_family = "wasm"))]
 pub mod shell;
+#[cfg(not(target_family = "wasm"))]
+pub mod signals;

@@ -255,6 +255,9 @@ pub enum ValidatorError {
         idx: ShapeLabelIdx,
         max_steps: usize,
     },
+
+    #[error("Validation cancelled while proving {node}@{idx}")]
+    Cancelled { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
 fn add_errors_to_tree(
@@ -446,6 +449,11 @@ impl ValidatorError {
                 show_node(node),
                 show_idx(idx)
             ),
+            ValidatorError::Cancelled { node, idx } => format!(
+                "Validation cancelled while proving {}@{}",
+                show_node(node),
+                show_idx(idx)
+            ),
         };
         Ok(s)
     }
@@ -568,6 +576,7 @@ impl ValidatorError {
             | ValidatorError::ExternalShapeRejected { .. }
             | ValidatorError::ExternalShapeUnresolved { .. }
             | ValidatorError::MaxStepsExceeded { .. }
+            | ValidatorError::Cancelled { .. }
             | ValidatorError::StartActFailed { .. } => Ok(()),
         }
     }

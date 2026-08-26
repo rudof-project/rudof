@@ -10,6 +10,7 @@ use crate::{
     },
 };
 use regex::Regex;
+use rudof_rdf::rdf_impl::EndpointStrategy;
 //use std::str::FromStr;
 
 /// Helper: serialize validation results to string
@@ -46,6 +47,7 @@ fn test_validate_shex_success() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -126,6 +128,7 @@ fn test_validate_shex_no_schema_error() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -154,6 +157,7 @@ fn test_validate_shex_no_shapemap_error() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -191,6 +195,7 @@ fn test_validate_shex_validation_failure() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -245,6 +250,7 @@ fn test_serialize_validation_results_compact() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -299,6 +305,7 @@ fn test_serialize_validation_results_json() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -351,6 +358,7 @@ fn test_serialize_validation_results_csv() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -403,6 +411,7 @@ fn test_serialize_validation_results_details() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -471,6 +480,7 @@ fn test_validate_shex_multiple_nodes() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -530,6 +540,7 @@ fn test_validate_shex_iri_pattern_with_base_schema() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -582,6 +593,7 @@ fn test_validate_shex_bnode_focus_in_shapemap() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 

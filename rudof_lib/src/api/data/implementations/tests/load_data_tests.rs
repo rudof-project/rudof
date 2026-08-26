@@ -6,6 +6,7 @@ use crate::{
     api::data::implementations::serialize_data::serialize_data,
     formats::{DataFormat, DataReaderMode, InputSpec, ResultDataFormat},
 };
+use rudof_rdf::rdf_impl::EndpointStrategy;
 
 /// Helper: serialize current data to string
 fn serialize_to_string(rudof: &mut Rudof, format: Option<ResultDataFormat>) -> String {
@@ -31,6 +32,7 @@ fn test_load_data_rdf_success() {
         Some(&DataReaderMode::Strict),
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -60,6 +62,7 @@ fn test_serialize_data_rdf_jsonld() {
         Some(&DataReaderMode::Strict),
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -86,6 +89,7 @@ fn test_serialize_data_rdf_json_alias() {
         Some(&DataReaderMode::Strict),
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -114,6 +118,7 @@ fn test_load_data_rdf_merge() {
         None,
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -126,6 +131,7 @@ fn test_load_data_rdf_merge() {
         None,
         Some(true),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -157,6 +163,7 @@ fn test_load_data_rdf_replace() {
         None,
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -169,6 +176,7 @@ fn test_load_data_rdf_replace() {
         None,
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -198,6 +206,7 @@ fn test_load_data_invalid_rdf() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     );
 
     assert!(result.is_err());
@@ -223,6 +232,7 @@ fn test_load_data_pg_success() {
         None,
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -257,6 +267,7 @@ fn test_load_data_pg_merge() {
         None,
         Some(true),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -269,6 +280,7 @@ fn test_load_data_pg_merge() {
         None,
         Some(true),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -300,6 +312,7 @@ fn test_load_data_pg_replace() {
         None,
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -312,6 +325,7 @@ fn test_load_data_pg_replace() {
         None,
         Some(false),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -341,6 +355,7 @@ fn test_load_data_pg_invalid_syntax() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     );
 
     assert!(result.is_err());
@@ -359,6 +374,7 @@ fn test_load_data_endpoint_success() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -379,6 +395,7 @@ fn test_load_data_endpoint_uses_configured_prefixmap_for_known_endpoint() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -410,6 +427,7 @@ fn test_load_data_conflicting_sources() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     );
 
     assert!(result.is_err());
@@ -419,7 +437,17 @@ fn test_load_data_conflicting_sources() {
 fn test_load_data_no_source() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let result = load_data(&mut rudof, None, None, None, None, None, None, None);
+    let result = load_data(
+        &mut rudof,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        EndpointStrategy::default(),
+    );
 
     assert!(result.is_err());
 }

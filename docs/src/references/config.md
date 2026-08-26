@@ -47,6 +47,44 @@ After loading, `RudofConfig` resolves cross-section values (`RudofConfig::resolv
 > There is no `[pgschema]` table — PGSchema loading is controlled entirely through CLI
 > flags / the `rudof_lib` API, not through `rudof.toml`.
 
+## `[logging]` — diagnostic output
+
+Source: [`rudof_lib/src/config/logging.rs`](https://github.com/rudof-project/rudof/blob/master/rudof_lib/src/config/logging.rs)
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `level` | string | `""` (unset) | Filter for rudof's own diagnostic output (progress, retries, warnings — not command results, which always go to stdout/`--output`). Unset defers to the `RUST_LOG` environment variable, and to `"info"` if that's unset too. |
+
+`level` accepts either a bare level name — `"error"`, `"warn"`, `"info"`, `"debug"`, or
+`"trace"` — or a full [`tracing_subscriber::EnvFilter`](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html)
+directive string such as `"rudof_rdf=debug,info"`.
+
+A **bare level** is automatically scoped to rudof's own crates, with everything else — HTTP
+and TLS libraries, the shell's line editor, etc. — capped at `warn`. This is what keeps
+`debug`/`trace` readable: without it, turning up verbosity to see what rudof itself is doing
+also dumps per-keystroke tracing from the line editor and every dependency's own internals.
+Write a filter containing `=` or `,` yourself (e.g. `"debug,reqwest=trace"`) to opt back into
+a dependency's logs — a filter like that is passed to `EnvFilter` unscoped, exactly as
+written.
+
+```toml
+[logging]
+level = "debug"
+```
+
+Inside the [shell](../cli_usage/shell.md), this can also be changed for the rest of the
+session without restarting:
+
+```
+rudof> config set logging.level debug
+logging.level = debug
+```
+
+`RUST_LOG`, when set, takes precedence over a persisted `logging.level` at startup (both go
+through the same bare-level scoping above) — but `$RUST_LOG` can only be read once, at
+process start, so it's `config set logging.level` alone that can change the filter live once
+the shell is already running.
+
 ## `[rdf]` — RDF data
 
 Source: [`rudof_rdf/src/rdf_core/rdf_data_config.rs`](https://github.com/rudof-project/rudof/blob/master/rudof_rdf/src/rdf_core/rdf_data_config.rs)
@@ -353,6 +391,9 @@ Combining several sections above into one file (based on
 ```toml
 base_iri = "http://example.org/"
 auto_base = false
+
+[logging]
+level = "info"
 
 [rdf]
 base_iri = "http://example.org/"

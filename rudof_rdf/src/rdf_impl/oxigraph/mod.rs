@@ -12,7 +12,7 @@ mod in_memory_error;
 mod oxrdf_impl;
 
 #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
-pub use endpoint::{OxigraphEndpoint, SparqlVars};
+pub use endpoint::{EndpointStrategy, OxigraphEndpoint, SparqlVars};
 #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
 pub use endpoint_error::OxigraphEndpointError;
 pub use in_memory::{OxigraphInMemory, ReaderMode};

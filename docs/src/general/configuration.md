@@ -62,6 +62,10 @@ show_imports = true
 max_steps = 100
 check_negation = true
 
+# Diagnostic output (progress, retries, warnings) — see "Logging" below.
+[logging]
+level = "info"
+
 # Other subsystems: [shacl], [tap], [tap2shex], [shex2uml], [shex2html],
 # [shex2sparql], [service], [comparator].
 ```
@@ -75,6 +79,23 @@ such as `[rdf]`, `[shex]` and `[tap]` are automatically injected into the subsys
 build on them (validation, conversion, SHACL), so you configure them **once**.
 
 > You can generate a starting template with `rudof config -o rudof.toml` and then edit it to your needs.
+
+## Logging
+
+`[logging].level` controls the verbosity of rudof's own diagnostic output (progress,
+retries, warnings — distinct from command results, which go to stdout/`--output`). It's a
+[`tracing_subscriber::EnvFilter`](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html)
+string, most commonly just a bare level: `"error"`, `"warn"`, `"info"`, `"debug"`, or
+`"trace"`. A bare level only turns up rudof's *own* crates — dependencies (HTTP/TLS
+libraries, the shell's line editor, ...) stay capped at `warn`, so `debug`/`trace` doesn't
+flood the terminal with unrelated internals. Write a filter containing `=` or `,` yourself
+(e.g. `"debug,reqwest=trace"`) to opt into a dependency's own logs too.
+
+Unset, it defers to the `$RUST_LOG` environment variable (and to `"info"` if that's unset as
+well) — but inside the [shell](../cli_usage/shell.md), `config set logging.level <LEVEL>`
+changes it live, for the rest of the session, which `$RUST_LOG` cannot do once the process
+has started. See the [Config reference](../references/config.md#logging--diagnostic-output)
+for the full details.
 
 ## Loading configs programmatically
 

@@ -11,11 +11,12 @@ use prefixmap::PrefixMap;
 use regex::Regex;
 use rudof_iri::{IriS, MimeType};
 use rudof_rdf::rdf_core::BuildRDF;
-use rudof_rdf::rdf_impl::OxigraphEndpoint;
+use rudof_rdf::rdf_impl::{EndpointStrategy, OxigraphEndpoint};
 use sparql_service::RdfData;
 use std::io::Read;
 use std::{io, str::FromStr};
 
+#[allow(clippy::too_many_arguments)]
 pub fn load_data(
     rudof: &mut Rudof,
     data: Option<&[InputSpec]>,
@@ -25,6 +26,7 @@ pub fn load_data(
     reader_mode: Option<&DataReaderMode>,
     merge: Option<bool>,
     prefixes: Option<&[InputSpec]>,
+    endpoint_strategy: EndpointStrategy,
 ) -> Result<()> {
     let (data_format, reader_mode, base, merge) = init_defaults(rudof, data_format, reader_mode, base, merge)?;
     match (data, endpoint) {
@@ -36,7 +38,7 @@ pub fn load_data(
             DataFormat::Pg => load_data_from_specs_pg(rudof, data, merge),
             _ => load_data_from_specs_rdf(rudof, data, data_format, base, reader_mode, merge, prefixes),
         },
-        (None, Some(endpoint)) => load_data_from_endpoint(rudof, endpoint),
+        (None, Some(endpoint)) => load_data_from_endpoint(rudof, endpoint, endpoint_strategy),
         (None, None) => Err(Box::new(DataError::DataSourceSpec {
             message: "No data source specified. Please provide either data or an endpoint.".to_string(),
         })
@@ -264,13 +266,13 @@ fn read_pg_data<R: io::Read>(rudof: &mut Rudof, data_reader: &mut R, source_name
     Ok(())
 }
 
-fn load_data_from_endpoint(rudof: &mut Rudof, endpoint_str: &str) -> Result<()> {
+fn load_data_from_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint_strategy: EndpointStrategy) -> Result<()> {
     let rdf_data = init_rdf_data_with_config(rudof)?;
     rudof.data = Some(rdf_data);
 
-    let enpoint = get_endpoint_name(rudof, endpoint_str)?;
+    let endpoint = get_endpoint_name(rudof, endpoint_str)?.with_strategy(endpoint_strategy);
 
-    use_endpoint(rudof, endpoint_str, enpoint);
+    use_endpoint(rudof, endpoint_str, endpoint);
 
     Ok(())
 }

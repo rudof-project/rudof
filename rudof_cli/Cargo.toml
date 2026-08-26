@@ -43,6 +43,7 @@ shapes_comparator.workspace = true
 shapes_converter.workspace = true
 shex_ast.workspace = true
 shlex.workspace = true
+signal-hook = { workspace = true, features = ["iterator"] }
 sparql_service.workspace = true
 supports-color.workspace = true
 tabled.workspace = true

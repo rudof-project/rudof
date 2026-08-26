@@ -1,11 +1,13 @@
 use crate::cli::parser::ShexValidateArgs;
+use crate::cli::prefix_expand::resolve_prefixed_resource;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Context, Result};
 use rudof_lib::Rudof;
-use rudof_lib::formats::{BackendSpec, IriNormalizationMode};
+use rudof_lib::formats::{BackendSpec, InputSpec, IriNormalizationMode};
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::str::FromStr;
 
 /// Implementation of the `shex-validate` command.
 ///
@@ -70,7 +72,8 @@ impl Command for ShexValidateCommand {
                 .load_data()
                 .with_data_format(&data_format)
                 .with_reader_mode(&reader_mode)
-                .with_backend(backend);
+                .with_backend(backend.clone())
+                .with_endpoint_strategy(self.args.strategy.into());
             if !self.args.data.is_empty() {
                 loading = loading.with_data(&self.args.data);
             }
@@ -86,9 +89,10 @@ impl Command for ShexValidateCommand {
                 .with_reader_mode(&reader_mode)
                 .execute()?;
         } else if let Some(schema) = self.args.schema.as_ref() {
+            let schema = expand_prefixed_input(schema, ctx, &backend)?;
             let mut shex_schema_loading = ctx
                 .rudof
-                .load_shex_schema(schema)
+                .load_shex_schema(&schema)
                 .with_reader_mode(&reader_mode)
                 .with_shex_schema_format(&schema_format);
             if let Some(base) = self.args.base_schema.as_deref() {
@@ -109,7 +113,8 @@ impl Command for ShexValidateCommand {
         // a clear "no schema loaded" error if there isn't one).
 
         if let Some(shapemap) = &self.args.shapemap {
-            let mut shapemap_loading = ctx.rudof.load_shapemap(shapemap);
+            let shapemap = expand_prefixed_input(shapemap, ctx, &backend)?;
+            let mut shapemap_loading = ctx.rudof.load_shapemap(&shapemap);
 
             if let Some(base_nodes) = self.args.base_data.as_deref() {
                 shapemap_loading = shapemap_loading.with_base_nodes(base_nodes);
@@ -160,6 +165,35 @@ impl Command for ShexValidateCommand {
         }
 
         Ok(())
+    }
+}
+
+/// Expands `spec` if it's a CURIE-like literal (e.g. `es:E371`, produced by
+/// `InputSpec::FromStr` when the token isn't a real file) into the IRI its
+/// prefix stands for, checked against the session's default prefixes and,
+/// if `-e`/`--endpoint` named a config-registered endpoint, that endpoint's
+/// own prefixes — mirroring the expansion the interactive shell already
+/// does for `-s`/`-m`/`-q` (see `crate::shell::repl::resolve_prefixed_resource`).
+/// Any other `InputSpec` variant (an existing path, a URL, `-`) passes through
+/// unchanged.
+fn expand_prefixed_input(spec: &InputSpec, ctx: &CommandContext, backend: &BackendSpec) -> Result<InputSpec> {
+    let InputSpec::Str(raw) = spec else {
+        return Ok(spec.clone());
+    };
+
+    let default_prefixes = ctx.rudof.prefixes().execute();
+    let endpoint_prefixes = backend.endpoint().and_then(|name| {
+        ctx.rudof
+            .config()
+            .execute()
+            .rdf_data()
+            .find_endpoint(name)
+            .map(|endpoint| endpoint.prefixmap().clone())
+    });
+
+    match resolve_prefixed_resource(raw, &default_prefixes, endpoint_prefixes.as_ref()) {
+        Some(expanded) => InputSpec::from_str(&expanded).map_err(Into::into),
+        None => Ok(spec.clone()),
     }
 }
 

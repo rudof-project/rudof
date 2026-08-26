@@ -5,6 +5,7 @@ use crate::{
     api::shacl::implementations::serialize_shacl_schema::serialize_shacl_schema,
     formats::{DataFormat, InputSpec, ShaclFormat},
 };
+use rudof_rdf::rdf_impl::EndpointStrategy;
 
 /// Helper: serialize current SHACL schema to string
 fn serialize_to_string(rudof: &Rudof, format: Option<ShaclFormat>) -> String {
@@ -59,6 +60,7 @@ fn test_extract_shacl_shapes_from_loaded_data() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -120,6 +122,7 @@ fn test_extract_shacl_shapes_mixed_data() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -162,6 +165,7 @@ fn test_extract_shacl_shapes_from_data_no_shapes() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -252,6 +256,7 @@ fn test_extract_and_serialize_complex_shapes() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -299,6 +304,7 @@ fn test_extract_shapes_then_load_separate_schema() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -377,6 +383,7 @@ fn test_extract_shacl_shapes_with_lists() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -439,6 +446,7 @@ fn test_extract_shapes_multiple_data_sources() {
         None,
         Some(true),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -486,6 +494,7 @@ fn test_extract_shapes_with_merge() {
         None,
         None,
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
@@ -515,6 +524,7 @@ fn test_extract_shapes_with_merge() {
         None,
         Some(true),
         None,
+        EndpointStrategy::default(),
     )
     .unwrap();
 
