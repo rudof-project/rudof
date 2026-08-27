@@ -23,6 +23,7 @@ anyhow.workspace = true
 clap.workspace = true
 clap_complete_command.workspace = true
 clientele.workspace = true
+ctrlc.workspace = true
 dctap.workspace = true
 dirs.workspace = true
 is_ci.workspace = true
@@ -43,7 +44,6 @@ shapes_comparator.workspace = true
 shapes_converter.workspace = true
 shex_ast.workspace = true
 shlex.workspace = true
-signal-hook = { workspace = true, features = ["iterator"] }
 sparql_service.workspace = true
 supports-color.workspace = true
 tabled.workspace = true
