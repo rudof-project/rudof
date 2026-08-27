@@ -1,7 +1,7 @@
 # CHANGE LOG
 This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.com/).
 
-## [Unreleased]
+## 0.3.13
 ### Added
 - `shex-validate --strategy dereference`: for Wikibase endpoints (Wikidata, MaRDI), answer lookups by dereferencing each entity's IRI over HTTP instead of SPARQL.
 - `[logging]` config section (`logging.level`), settable at runtime via the shell's `config set`, to change the tracing filter without restarting.

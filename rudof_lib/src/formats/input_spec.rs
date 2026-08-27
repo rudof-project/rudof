@@ -219,7 +219,11 @@ impl FromStr for InputSpec {
     /// - Everything else becomes a raw string (Str)
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO - This probably needs some improvements
-        let filepath_regex = Regex::new(r"^[.~/a-zA-Z0-9]?[/\\a-zA-Z0-9._:-]*$").unwrap();
+        // `~` must also be allowed beyond the first character: Windows 8.3
+        // short names (e.g. `C:\Users\RUNNER~1\AppData\Local\Temp\...`, as
+        // used by GitHub Actions' Windows runners for temp directories) put
+        // it in the middle of a path component, not just at the start.
+        let filepath_regex = Regex::new(r"^[.~/a-zA-Z0-9]?[/\\a-zA-Z0-9._:~-]*$").unwrap();
         // A CURIE-like token (`alias:local`, e.g. `es:E10`) matches the loose
         // filepath regex above (it allows ':') but is never a legitimate
         // filesystem path — unlike a Windows drive-letter path, its "local"
@@ -264,6 +268,29 @@ impl FromStr for InputSpec {
             },
             _ => Ok(InputSpec::Str(s.to_string())),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn path_with_tilde_component_is_recognized_as_path() {
+        // Regression test: Windows 8.3 short names (e.g. the temp dirs
+        // GitHub Actions' Windows runners use) put a `~` in the middle of a
+        // path component, like `RUNNER~1`. That must still resolve to
+        // `InputSpec::Path`, not fall through to `InputSpec::Str`.
+        let dir = std::env::temp_dir().join("input_spec_test_RUNNER~1");
+        fs::create_dir_all(&dir).unwrap();
+        let file_path = dir.join("cache.bin");
+        fs::write(&file_path, b"content").unwrap();
+
+        let s = file_path.to_str().unwrap();
+        let spec = InputSpec::from_str(s).unwrap();
+        assert!(matches!(spec, InputSpec::Path(_)), "expected Path, got {spec:?}");
+
+        fs::remove_dir_all(&dir).unwrap();
     }
 }
 
