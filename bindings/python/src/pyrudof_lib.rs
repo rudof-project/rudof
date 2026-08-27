@@ -11,10 +11,11 @@ use rudof_lib::{
     errors::{InputSpecError, RudofError},
     formats::{
         ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DCTapFormat, DataFormat, DataReaderMode,
-        InputSpec, NodeInspectionMode, QueryType, ResultConversionFormat, ResultConversionMode, ResultDCTapFormat,
-        ResultDataFormat, ResultQueryFormat, ResultServiceFormat, ResultShExValidationFormat,
-        ResultShaclValidationFormat, ShExFormat, ShExValidationSortByMode, ShaclFormat, ShaclValidationMode,
-        ShaclValidationSortByMode, ShapeMapFormat,
+        InputSpec, NodeInspectionMode, PgSchemaFormat, QueryType, RdfConfigFormat, ResultConversionFormat,
+        ResultConversionMode, ResultDCTapFormat, ResultDataFormat, ResultPgSchemaValidationFormat, ResultQueryFormat,
+        ResultRdfConfigFormat, ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat,
+        ShExFormat, ShExValidationSortByMode, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
+        ShapeMapFormat,
     },
 };
 use std::{io::BufWriter, path::Path, str::FromStr};
@@ -72,18 +73,40 @@ impl PyRudof {
         self.inner.reset_data().execute();
     }
 
-    /// Clears the current ShEx schema.
+    /// Resets ShEx validation.
     ///
-    /// Unloads the ShEx schema from memory. Does not affect RDF data or other state.
+    /// Unloads the ShEx schema, ShapeMap, compiled validator, and validation
+    /// results. Does not affect RDF data or other state. Use
+    /// :meth:`reset_shex_schema` instead to unload only the schema, keeping
+    /// any loaded ShapeMap and validation results.
     pub fn reset_shex(&mut self) {
         self.inner.reset_shex().execute();
     }
 
-    /// Clears the current SHACL shapes graph.
+    /// Clears the current ShEx schema only.
     ///
-    /// Unloads the SHACL schema from memory. Does not affect RDF data or other state.
+    /// Unlike :meth:`reset_shex`, this leaves any loaded ShapeMap and ShEx
+    /// validation results untouched.
+    pub fn reset_shex_schema(&mut self) {
+        self.inner.reset_shex_schema().execute();
+    }
+
+    /// Clears the current SHACL shapes graph only.
+    ///
+    /// Unloads the SHACL shapes from memory, leaving any existing SHACL
+    /// validation results untouched. Use :meth:`reset_shacl_validation`
+    /// instead to also clear validation results.
     pub fn reset_shacl(&mut self) {
         self.inner.reset_shacl_shapes().execute();
+    }
+
+    /// Resets SHACL validation.
+    ///
+    /// Clears SHACL validation results and unloads the currently loaded
+    /// SHACL shapes graph. Use :meth:`reset_shacl` instead to unload only
+    /// the shapes graph, keeping any validation results.
+    pub fn reset_shacl_validation(&mut self) {
+        self.inner.reset_shacl().execute();
     }
 
     /// Clears the current ShapeMap.
@@ -274,6 +297,87 @@ impl PyRudof {
         Ok(output)
     }
 
+    /// Checks whether a ShEx schema is well-formed, without loading it into the session.
+    ///
+    /// Parses the schema, compiles it to IR, and checks for negative
+    /// dependency cycles, without affecting any currently loaded schema.
+    ///
+    /// Args:
+    ///     input (str): String, file path or URL to the ShEx schema.
+    ///     format (ShExFormat, optional): Schema format. Defaults to ``ShExFormat.ShExC``.
+    ///     base (str, optional): Base IRI for resolving relative IRIs. Defaults to ``None``.
+    ///
+    /// Returns:
+    ///     tuple[bool, str]: Whether the schema is well-formed, and a human-readable
+    ///     message describing the result (or the error found).
+    ///
+    /// Raises:
+    ///     RudofError: If the input cannot be read.
+    #[pyo3(signature = (input, format=None, base=None))]
+    pub fn check_shex(
+        &self,
+        input: &str,
+        format: Option<&PyShExFormat>,
+        base: Option<&str>,
+    ) -> PyResult<(bool, String)> {
+        let format = cnv_shex_format(format);
+
+        let input = InputSpec::from_str(input)
+            .map_err(|e| InputSpecError::InvalidInput {
+                error: { e.to_string() },
+            })
+            .map_err(|e| cnv_err(e.into()))?;
+
+        let mut writer = BufWriter::new(Vec::new());
+
+        let mut check_shex_schema = self.inner.check_shex_schema(&input, &mut writer);
+        if let Some(format) = format {
+            check_shex_schema = check_shex_schema.with_shex_schema_format(format);
+        }
+        if let Some(base) = base {
+            check_shex_schema = check_shex_schema.with_base(base);
+        }
+        let is_valid = check_shex_schema.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let message = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok((is_valid, message))
+    }
+
+    /// Fetches RDF data over HTTP(S) and merges it into the current data.
+    ///
+    /// Content-negotiates for an RDF serialization and follows redirects.
+    ///
+    /// Args:
+    ///     uri (str): The HTTP(S) URI to dereference.
+    ///     reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
+    ///     merge (bool, optional): If ``True`` (default), merge with existing data; if
+    ///         ``False``, replace current data.
+    ///
+    /// Raises:
+    ///     RudofError: If the URI cannot be fetched or the response is not valid RDF.
+    #[pyo3(signature = (uri, reader_mode=None, merge=None))]
+    pub fn dereference(&mut self, uri: &str, reader_mode: Option<&PyReaderMode>, merge: Option<bool>) -> PyResult<()> {
+        let reader_mode = cnv_reader_mode(reader_mode);
+
+        let mut dereference = self.inner.dereference(uri);
+        if let Some(reader_mode) = reader_mode {
+            dereference = dereference.with_reader_mode(reader_mode);
+        }
+        if let Some(merge) = merge {
+            dereference = dereference.with_merge(merge);
+        }
+        dereference.execute().map_err(cnv_err)?;
+
+        Ok(())
+    }
+
     /// Loads a ShEx schema from a file path or URL.
     ///
     /// Args:
@@ -409,6 +513,55 @@ impl PyRudof {
             .map_err(cnv_err)?;
 
         Ok(output)
+    }
+
+    /// Writes the currently loaded ShEx schema's compiled IR to a cache file.
+    ///
+    /// The cache can later be loaded quickly with :meth:`read_shex_precompiled`,
+    /// skipping parsing, imports, and AST-to-IR compilation.
+    ///
+    /// Args:
+    ///     path (str): Path of the cache file to write.
+    ///
+    /// Raises:
+    ///     RudofError: If no ShEx schema is loaded or the file cannot be written.
+    pub fn compile_shex_to_file(&self, path: &str) -> PyResult<()> {
+        let file = std::fs::File::create(path)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let mut writer = BufWriter::new(file);
+        self.inner
+            .compile_shex_schema_to_file(&mut writer)
+            .execute()
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Loads a precompiled ShEx schema cache produced by :meth:`compile_shex_to_file`.
+    ///
+    /// Args:
+    ///     path (str): Path to the cache file.
+    ///     reader_mode (ReaderMode, optional): Error handling mode. Defaults to ``ReaderMode.Lax``.
+    ///
+    /// Raises:
+    ///     RudofError: If the cache file cannot be read or is invalid.
+    #[pyo3(signature = (path, reader_mode=None))]
+    pub fn read_shex_precompiled(&mut self, path: &str, reader_mode: Option<&PyReaderMode>) -> PyResult<()> {
+        let reader_mode = cnv_reader_mode(reader_mode);
+
+        let input = InputSpec::from_str(path)
+            .map_err(|e| InputSpecError::InvalidInput {
+                error: { e.to_string() },
+            })
+            .map_err(|e| cnv_err(e.into()))?;
+
+        let mut load_precompiled = self.inner.load_shex_schema_precompiled(&input);
+        if let Some(reader_mode) = reader_mode {
+            load_precompiled = load_precompiled.with_reader_mode(reader_mode);
+        }
+        load_precompiled.execute().map_err(cnv_err)?;
+
+        Ok(())
     }
 
     /// Loads a SHACL shapes graph from a file path or URL.
@@ -758,6 +911,291 @@ impl PyRudof {
         Ok(output)
     }
 
+    /// Loads a Property Graph schema from a string, file path or URL.
+    ///
+    /// Args:
+    ///     input (str): String, file path or URL to the Property Graph schema.
+    ///     format (PgSchemaFormat, optional): Schema format. Defaults to ``PgSchemaFormat.PgSchemaC``.
+    ///
+    /// Raises:
+    ///     RudofError: If the Property Graph schema cannot be parsed or loaded.
+    #[pyo3(signature = (input, format=None))]
+    pub fn read_pgschema(&mut self, input: &str, format: Option<&PyPgSchemaFormat>) -> PyResult<()> {
+        let format = cnv_pgschema_format(format);
+
+        let input = InputSpec::from_str(input)
+            .map_err(|e| InputSpecError::InvalidInput {
+                error: { e.to_string() },
+            })
+            .map_err(|e| cnv_err(e.into()))?;
+
+        let mut load_pgschema = self.inner.load_pg_schema(&input);
+        if let Some(format) = format {
+            load_pgschema = load_pgschema.with_pg_schema_format(format);
+        }
+        load_pgschema.execute().map_err(cnv_err)?;
+
+        Ok(())
+    }
+
+    /// Serializes the current Property Graph schema to a string.
+    ///
+    /// Args:
+    ///     format (PgSchemaFormat, optional): Output format. Defaults to ``PgSchemaFormat.PgSchemaC``.
+    ///
+    /// Returns:
+    ///     str: Serialized Property Graph schema.
+    ///
+    /// Raises:
+    ///     RudofError: If no Property Graph schema is loaded or serialization fails.
+    #[pyo3(signature = (format=None))]
+    pub fn serialize_pgschema(&self, format: Option<&PyPgSchemaFormat>) -> PyResult<String> {
+        let mut writer = BufWriter::new(Vec::new());
+        let format = cnv_pgschema_format(format);
+
+        let mut serialize_pgschema = self.inner.serialize_pg_schema(&mut writer);
+        if let Some(format) = format {
+            serialize_pgschema = serialize_pgschema.with_result_pg_schema_format(format);
+        }
+        serialize_pgschema.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
+    }
+
+    /// Clears the current Property Graph schema.
+    pub fn reset_pgschema(&mut self) {
+        self.inner.reset_pg_schema().execute();
+    }
+
+    /// Loads a typemap (node → PG schema type bindings) from a string, file path or URL.
+    ///
+    /// Required before calling :meth:`validate_pgschema`.
+    ///
+    /// Args:
+    ///     input (str): String, file path or URL to the typemap.
+    ///
+    /// Raises:
+    ///     RudofError: If the typemap cannot be parsed or loaded.
+    pub fn read_typemap(&mut self, input: &str) -> PyResult<()> {
+        let input = InputSpec::from_str(input)
+            .map_err(|e| InputSpecError::InvalidInput {
+                error: { e.to_string() },
+            })
+            .map_err(|e| cnv_err(e.into()))?;
+
+        self.inner.load_typemap(&input).execute().map_err(cnv_err)?;
+
+        Ok(())
+    }
+
+    /// Clears the current typemap.
+    pub fn reset_typemap(&mut self) {
+        self.inner.reset_typemap().execute();
+    }
+
+    /// Validates the current Property Graph data against the loaded PG schema and typemap.
+    ///
+    /// Raises:
+    ///     RudofError: If no data, PG schema, or typemap is loaded.
+    pub fn validate_pgschema(&mut self) -> PyResult<()> {
+        self.inner.validate_pgschema().execute().map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Serializes the results of the last Property Graph schema validation to a string.
+    ///
+    /// Args:
+    ///     format (ResultPgSchemaValidationFormat, optional): Output format. Defaults to
+    ///         ``ResultPgSchemaValidationFormat.Compact``.
+    ///
+    /// Returns:
+    ///     str: Serialized validation results.
+    ///
+    /// Raises:
+    ///     RudofError: If no validation results are available or serialization fails.
+    #[pyo3(signature = (format=None))]
+    pub fn serialize_pgschema_validation_results(
+        &self,
+        format: Option<&PyResultPgSchemaValidationFormat>,
+    ) -> PyResult<String> {
+        let mut writer = BufWriter::new(Vec::new());
+        let format = cnv_result_pgschema_validation_format(format);
+
+        let mut serialize_results = self.inner.serialize_pgschema_validation_results(&mut writer);
+        if let Some(format) = format {
+            serialize_results = serialize_results.with_result_pg_schema_validation_format(format);
+        }
+        serialize_results.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
+    }
+
+    /// Resets Property Graph schema validation.
+    ///
+    /// Clears validation results and unloads the currently loaded Property
+    /// Graph schema and ShapeMap (the typemap is left untouched). Use
+    /// :meth:`reset_pgschema` instead to unload only the schema, keeping any
+    /// validation results.
+    pub fn reset_pgschema_validation(&mut self) {
+        self.inner.reset_pg_schema_validation().execute();
+    }
+
+    /// Returns the current default prefix map.
+    ///
+    /// These are the prefix declarations assumed and prepended by default to
+    /// RDF data, SPARQL queries, ShEx schemas and SHACL shapes.
+    ///
+    /// Returns:
+    ///     list[tuple[str, str]]: List of (alias, iri) tuples.
+    pub fn prefixes(&self) -> Vec<(String, String)> {
+        self.inner
+            .prefixes()
+            .execute()
+            .iter()
+            .map(|(alias, iri)| (alias.clone(), iri.to_string()))
+            .collect()
+    }
+
+    /// Adds `alias` associated with `iri` to the default prefixes.
+    ///
+    /// Overwrites any existing association for `alias`.
+    ///
+    /// Args:
+    ///     alias (str): Prefix alias to add (e.g. ``"ex"``).
+    ///     iri (str): IRI the alias expands to.
+    ///
+    /// Raises:
+    ///     RudofError: If the IRI is malformed.
+    pub fn add_prefix(&mut self, alias: &str, iri: &str) -> PyResult<()> {
+        self.inner.add_prefix(alias, iri).execute().map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Removes `alias` from the default prefixes.
+    ///
+    /// Args:
+    ///     alias (str): Prefix alias to remove.
+    ///
+    /// Raises:
+    ///     RudofError: If `alias` is not present in the default prefixes.
+    pub fn remove_prefix(&mut self, alias: &str) -> PyResult<()> {
+        self.inner.remove_prefix(alias).execute().map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Renames `old_alias` to `new_alias`, keeping the same associated IRI.
+    ///
+    /// Args:
+    ///     old_alias (str): Existing prefix alias.
+    ///     new_alias (str): New name for the alias.
+    ///
+    /// Raises:
+    ///     RudofError: If `old_alias` is not present in the default prefixes.
+    pub fn rename_prefix(&mut self, old_alias: &str, new_alias: &str) -> PyResult<()> {
+        self.inner
+            .rename_prefix(old_alias, new_alias)
+            .execute()
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Adds `new_alias` associated with the same IRI as `old_alias`.
+    ///
+    /// Args:
+    ///     old_alias (str): Existing prefix alias to copy.
+    ///     new_alias (str): New alias to create.
+    ///
+    /// Raises:
+    ///     RudofError: If `old_alias` is not present in the default prefixes.
+    pub fn copy_prefix(&mut self, old_alias: &str, new_alias: &str) -> PyResult<()> {
+        self.inner
+            .copy_prefix(old_alias, new_alias)
+            .execute()
+            .map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Loads an RDF-config specification from a string, file path or URL.
+    ///
+    /// Args:
+    ///     input (str): String, file path or URL to the RDF-config YAML specification.
+    ///     format (RdfConfigFormat, optional): Input format. Defaults to ``RdfConfigFormat.Yaml``.
+    ///
+    /// Raises:
+    ///     RudofError: If the RDF-config specification cannot be parsed or loaded.
+    #[pyo3(signature = (input, format=None))]
+    pub fn read_rdf_config(&mut self, input: &str, format: Option<&PyRdfConfigFormat>) -> PyResult<()> {
+        let format = cnv_rdf_config_format(format);
+
+        let input = InputSpec::from_str(input)
+            .map_err(|e| InputSpecError::InvalidInput {
+                error: { e.to_string() },
+            })
+            .map_err(|e| cnv_err(e.into()))?;
+
+        let mut load_rdf_config = self.inner.load_rdf_config(&input);
+        if let Some(format) = format {
+            load_rdf_config = load_rdf_config.with_rdf_config_format(format);
+        }
+        load_rdf_config.execute().map_err(cnv_err)?;
+
+        Ok(())
+    }
+
+    /// Serializes the current RDF-config model to a string.
+    ///
+    /// Args:
+    ///     format (ResultRdfConfigFormat, optional): Output format. Defaults to
+    ///         ``ResultRdfConfigFormat.Internal``.
+    ///
+    /// Returns:
+    ///     str: Serialized RDF-config model.
+    ///
+    /// Raises:
+    ///     RudofError: If no RDF-config model is loaded or serialization fails.
+    #[pyo3(signature = (format=None))]
+    pub fn serialize_rdf_config(&self, format: Option<&PyResultRdfConfigFormat>) -> PyResult<String> {
+        let mut writer = BufWriter::new(Vec::new());
+        let format = cnv_result_rdf_config_format(format);
+
+        let mut serialize_rdf_config = self.inner.serialize_rdf_config(&mut writer);
+        if let Some(format) = format {
+            serialize_rdf_config = serialize_rdf_config.with_result_rdf_config_format(format);
+        }
+        serialize_rdf_config.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
+    }
+
+    /// Clears the current RDF-config model.
+    pub fn reset_rdf_config(&mut self) {
+        self.inner.reset_rdf_config().execute();
+    }
+
     /// Loads a SPARQL query from a string, file path or URL.
     ///
     /// Args:
@@ -1077,9 +1515,16 @@ impl PyRudof {
         Ok(self.inner.version().execute().to_string())
     }
 
-    /// Clears the current ShEx validation results
+    /// Resets validation state across all domains.
+    ///
+    /// Equivalent to calling :meth:`reset_shex`, :meth:`reset_shacl_validation`
+    /// and :meth:`reset_pgschema_validation` together: clears ShEx, SHACL and
+    /// Property Graph schema validation results, along with their associated
+    /// loaded schemas and ShapeMaps.
     pub fn reset_validation_results(&mut self) {
         self.inner.reset_shex().execute();
+        self.inner.reset_shacl().execute();
+        self.inner.reset_pg_schema_validation().execute();
     }
 
     /// Loads a MapState from a JSON file.
@@ -1210,6 +1655,8 @@ pub enum PyRDFFormat {
     N3,
     NQuads,
     JsonLd,
+    /// Property Graph format - represents data as nodes and edges (non-RDF)
+    Pg,
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -1257,6 +1704,39 @@ pub enum PyDCTapFormat {
 pub enum PyResultDCTapFormat {
     Internal,
     Json,
+}
+
+/// Property Graph schema formats.
+#[pyclass(eq, eq_int, name = "PgSchemaFormat")]
+#[derive(PartialEq)]
+pub enum PyPgSchemaFormat {
+    /// PgSchemaC - Compact Property Graph schema syntax (default)
+    PgSchemaC,
+}
+
+/// Output formats for Property Graph schema validation results.
+#[pyclass(eq, eq_int, name = "ResultPgSchemaValidationFormat")]
+#[derive(PartialEq)]
+pub enum PyResultPgSchemaValidationFormat {
+    Compact,
+    Details,
+    Json,
+    Csv,
+}
+
+/// RDF-config input formats.
+#[pyclass(eq, eq_int, name = "RdfConfigFormat")]
+#[derive(PartialEq)]
+pub enum PyRdfConfigFormat {
+    Yaml,
+}
+
+/// RDF-config output formats.
+#[pyclass(eq, eq_int, name = "ResultRdfConfigFormat")]
+#[derive(PartialEq)]
+pub enum PyResultRdfConfigFormat {
+    Internal,
+    Yaml,
 }
 
 /// Conversion input modes.
@@ -1514,6 +1994,44 @@ fn cnv_result_dctap_format(format: Option<&PyResultDCTapFormat>) -> Option<&Resu
     }
 }
 
+fn cnv_pgschema_format(format: Option<&PyPgSchemaFormat>) -> Option<&PgSchemaFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyPgSchemaFormat::PgSchemaC => Some(&PgSchemaFormat::PgSchemaC),
+    }
+}
+
+fn cnv_result_pgschema_validation_format(
+    format: Option<&PyResultPgSchemaValidationFormat>,
+) -> Option<&ResultPgSchemaValidationFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyResultPgSchemaValidationFormat::Compact => Some(&ResultPgSchemaValidationFormat::Compact),
+        PyResultPgSchemaValidationFormat::Details => Some(&ResultPgSchemaValidationFormat::Details),
+        PyResultPgSchemaValidationFormat::Json => Some(&ResultPgSchemaValidationFormat::Json),
+        PyResultPgSchemaValidationFormat::Csv => Some(&ResultPgSchemaValidationFormat::Csv),
+    }
+}
+
+fn cnv_rdf_config_format(format: Option<&PyRdfConfigFormat>) -> Option<&RdfConfigFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyRdfConfigFormat::Yaml => Some(&RdfConfigFormat::Yaml),
+    }
+}
+
+fn cnv_result_rdf_config_format(format: Option<&PyResultRdfConfigFormat>) -> Option<&ResultRdfConfigFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyResultRdfConfigFormat::Internal => Some(&ResultRdfConfigFormat::Internal),
+        PyResultRdfConfigFormat::Yaml => Some(&ResultRdfConfigFormat::Yaml),
+    }
+}
+
 fn cnv_conversion_mode(mode: &PyConversionMode) -> &ConversionMode {
     match mode {
         PyConversionMode::Shacl => &ConversionMode::Shacl,
@@ -1660,6 +2178,7 @@ fn cnv_rdf_format(format: Option<&PyRDFFormat>) -> Option<&DataFormat> {
         PyRDFFormat::N3 => Some(&DataFormat::N3),
         PyRDFFormat::NQuads => Some(&DataFormat::NQuads),
         PyRDFFormat::JsonLd => Some(&DataFormat::JsonLd),
+        PyRDFFormat::Pg => Some(&DataFormat::Pg),
     }
 }
 

@@ -267,7 +267,7 @@ rudof> data
 Error: Data error: No data loaded: No data loaded
 ```
 
-`reset TARGET` clears only one piece of state, leaving the rest of the session untouched. Targets: `data`, `shex`, `shacl`, `pgschema`, `shapemap`, `dctap`, `service`, `query`, `sparql`, `typemap`, `rdf-config`, `endpoint`. `sparql` clears just the loaded query text; `query` clears the loaded query *and* its results. Give more than one to clear several at once:
+`reset TARGET` clears only one piece of state, leaving the rest of the session untouched. Targets: `data`, `shex`, `shex-validation`, `shacl`, `shacl-validation`, `pgschema`, `pgschema-validation`, `shapemap`, `dctap`, `service`, `query`, `sparql`, `typemap`, `rdf-config`, `endpoint`. `sparql` clears just the loaded query text; `query` clears the loaded query *and* its results. Give more than one to clear several at once:
 
 ```
 rudof> shex examples/user.shex
@@ -279,6 +279,8 @@ Error: ShEx error: No ShEx schema loaded: No ShEx schema loaded
 ```
 
 Data loaded earlier in the same session is untouched by `reset shex`. Give more than one target to clear several at once, e.g. `reset data shex`.
+
+The narrow `shex`/`shacl`/`pgschema` targets unload only the schema, leaving any loaded ShapeMap/typemap and validation results alone. The `*-validation` targets are broader: they clear validation results *and* unload the associated schema and ShapeMap/typemap together, so a following `shex-validate`/`shacl-validate`/`pgschema-validate` starts from a clean slate.
 
 ## Running system shell commands
 
@@ -298,6 +300,7 @@ rudof> !ls examples
 | `endpoint [NAME]` | Show the active endpoint, or activate a registered one |
 | `reset [TARGET...]` | Clear session state, one or more targets, or everything with no argument |
 | `prefixes [add\|rm\|rename\|copy ...]` | Show, or manage, the default prefix declarations |
+| `resolvers [clear]` | List built-in external-shape resolver kinds, or reset the session's resolver chain |
 
 ## History and completion
 

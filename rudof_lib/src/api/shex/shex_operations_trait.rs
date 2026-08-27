@@ -170,7 +170,10 @@ pub trait ShExOperations {
         writer: &mut W,
     ) -> Result<()>;
 
-    /// Resets the shex validation.
+    /// Resets ShEx validation: clears the loaded schema, ShapeMap, compiled
+    /// validator, and validation results. This is broader than
+    /// [`reset_shex_schema`](ShExOperations::reset_shex_schema), which only
+    /// clears the schema.
     fn reset_shex(&mut self);
 
     /// Writes the currently loaded ShEx `SchemaIR` to a writer as a precompiled cache.

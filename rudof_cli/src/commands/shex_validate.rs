@@ -197,7 +197,7 @@ fn expand_prefixed_input(spec: &InputSpec, ctx: &CommandContext, backend: &Backe
     }
 }
 
-fn print_external_resolvers<W: Write>(writer: &mut W) -> Result<()> {
+pub(crate) fn print_external_resolvers<W: Write>(writer: &mut W) -> Result<()> {
     writeln!(writer, "Available external-shape resolvers:")?;
     writeln!(writer)?;
     for info in Rudof::list_external_resolvers() {

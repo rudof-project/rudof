@@ -78,7 +78,11 @@ pub trait PgSchemaOperations {
         writer: &mut W,
     ) -> Result<()>;
 
-    /// Resets the Property Graph schema validation.
+    /// Resets Property Graph schema validation: clears validation results
+    /// and unloads the currently loaded Property Graph schema and ShapeMap
+    /// (the typemap is left untouched). This is broader than
+    /// [`reset_pgschema`](PgSchemaOperations::reset_pgschema), which only
+    /// clears the schema.
     fn reset_pgschema_validation(&mut self);
 }
 

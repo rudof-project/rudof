@@ -85,7 +85,10 @@ pub trait ShaclOperations {
         writer: &mut W,
     ) -> Result<()>;
 
-    /// Resets the SHACL validation.
+    /// Resets SHACL validation: clears validation results and unloads the
+    /// currently loaded SHACL shapes graph. This is broader than
+    /// [`reset_shacl_schema`](ShaclOperations::reset_shacl_schema), which
+    /// only clears the shapes graph.
     fn reset_shacl_validation(&mut self);
 }
 

@@ -21,8 +21,9 @@ pub mod pyrudof {
     #[pymodule_export]
     pub use super::{
         PyCardinalityStrategy, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDataGenerator, PyDataQuality,
-        PyEntityDistribution, PyGeneratorConfig, PyOutputFormat, PyQueryResultFormat, PyQueryType, PyRDFFormat,
-        PyReaderMode, PyResultConversionFormat, PyResultConversionMode, PyResultDCTapFormat, PyResultDataFormat,
+        PyEntityDistribution, PyGeneratorConfig, PyOutputFormat, PyPgSchemaFormat, PyQueryResultFormat, PyQueryType,
+        PyRDFFormat, PyRdfConfigFormat, PyReaderMode, PyResultConversionFormat, PyResultConversionMode,
+        PyResultDCTapFormat, PyResultDataFormat, PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat,
         PyResultShaclValidationFormat, PyResultShexValidationFormat, PyRudof, PyRudofConfig, PyRudofError,
         PySchemaFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFormat, PyShaclValidationMode,
         PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource, PyShexValidationSortMode,

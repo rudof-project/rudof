@@ -819,6 +819,30 @@ fn shell_endpoint_reports_a_missing_toml_file() {
 // everything (bare `reset`/`reset all`) or one or more named pieces.
 // ============================================================================
 
+// ============================================================================
+// `shex-check` — checks a ShEx schema's well-formedness without touching
+// session state (no schema/data/ShapeMap loaded, unaffected by `reset`).
+// ============================================================================
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shex_check_reports_a_well_formed_schema_as_valid() {
+    let out = run_shell("shex-check -s \"PREFIX : <http://example.org/> :S { :p . }\"\nexit\n");
+    assert!(out.stdout.contains("Schema is valid"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shex_check_reports_a_negative_cycle_without_loading_the_schema() {
+    let out =
+        run_shell("shex-check -s \"PREFIX : <http://example.org/> :S { :p @:T } :T { :q NOT @:S }\"\nshex\nexit\n");
+    assert!(out.stdout.contains("negative cycles"));
+    // `shex-check` never touches the session's loaded schema.
+    assert!(out.stderr.contains("No ShEx schema loaded"));
+    assert_eq!(out.code, 0);
+}
+
 #[cfg(not(target_family = "wasm"))]
 #[test]
 fn shell_reset_target_clears_only_that_state() {
@@ -861,6 +885,71 @@ fn shell_reset_shex_also_drops_the_compiled_validator() {
         out.stdout,
         out.stderr
     );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_reset_shex_validation_also_clears_the_shapemap() {
+    // Unlike the narrow `reset shex` (schema only), `reset shex-validation`
+    // clears the schema, the ShapeMap, and any validation results together.
+    let data = fixture("shell_data.ttl");
+    let schema = fixture("shell_schema.shex");
+    let shapemap = fixture("shell_shapemap.sm");
+    let out = run_shell(&format!(
+        "data {data}\nshex {schema}\nshapemap -m {shapemap}\nreset shex-validation\nshex\nshapemap\ndata\nexit\n"
+    ));
+
+    assert!(
+        out.stderr.contains("No ShEx schema loaded"),
+        "expected the schema to be gone after 'reset shex-validation', got stderr:\n{}",
+        out.stderr
+    );
+    assert!(
+        out.stderr.contains("No shapemap loaded"),
+        "expected the ShapeMap to be gone after 'reset shex-validation', got stderr:\n{}",
+        out.stderr
+    );
+    // ...but `data`, never targeted, still shows what was loaded.
+    assert!(out.stdout.contains("2 triple(s) loaded"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_reset_shacl_target_clears_only_the_shapes() {
+    let shapes = fixture("shell_shapes.ttl");
+    let data = fixture("shell_data.ttl");
+    let out = run_shell(&format!(
+        "data {data}\nshacl {shapes}\nreset shacl\nshacl\ndata\nexit\n"
+    ));
+
+    assert!(
+        out.stderr.contains("No SHACL shapes loaded"),
+        "expected the shapes to be gone after 'reset shacl', got stdout:\n{}\nstderr:\n{}",
+        out.stdout,
+        out.stderr
+    );
+    assert!(out.stdout.contains("2 triple(s) loaded"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_reset_shacl_validation_also_clears_the_shapes() {
+    let shapes = fixture("shell_shapes.ttl");
+    let data = fixture("shell_data.ttl");
+    let out = run_shell(&format!(
+        "data {data}\nshacl {shapes}\nreset shacl-validation\nshacl\ndata\nexit\n"
+    ));
+
+    assert!(
+        out.stderr.contains("No SHACL shapes loaded"),
+        "expected the shapes to be gone after 'reset shacl-validation', got stdout:\n{}\nstderr:\n{}",
+        out.stdout,
+        out.stderr
+    );
+    assert!(out.stdout.contains("2 triple(s) loaded"));
     assert_eq!(out.code, 0);
 }
 
@@ -923,6 +1012,28 @@ fn shell_reset_endpoint_clears_the_active_endpoint() {
     assert!(out.stdout.contains("No endpoint is currently active."));
     // A target unrelated to `endpoint` is untouched by `reset endpoint`.
     assert!(out.stdout.contains("1 shape(s) loaded"));
+    assert_eq!(out.code, 0);
+}
+
+// ============================================================================
+// `resolvers [clear]` — shell-only command to list the built-in external
+// ShEx-shape resolver kinds, or clear the session's resolver chain back to
+// its default (`reject-all` only).
+// ============================================================================
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn resolvers_bare_lists_the_built_in_kinds() {
+    let out = run_shell("resolvers\nexit\n");
+    assert!(out.stdout.contains("reject-all"));
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn resolvers_clear_resets_the_chain_and_reports_success() {
+    let out = run_shell("resolvers clear\nexit\n");
+    assert!(out.stdout.contains("Cleared external-shape resolvers"));
     assert_eq!(out.code, 0);
 }
 

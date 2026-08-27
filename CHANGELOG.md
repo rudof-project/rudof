@@ -3,6 +3,25 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- `shex-validate --strategy dereference`: for Wikibase endpoints (Wikidata, MaRDI), answer lookups by dereferencing each entity's IRI over HTTP instead of SPARQL.
+- `[logging]` config section (`logging.level`), settable at runtime via the shell's `config set`, to change the tracing filter without restarting.
+- Ctrl-C in the shell now cancels only the running command; a second Ctrl-C still force-exits. Session state and the shell itself survive.
+- Python bindings now cover PG Schema, prefix management, and RDF-config, plus `check_shex`, precompiled ShEx schema caching, and `dereference`; CLI/shell gained a matching `shex-check` command, a `resolvers` shell command, and finer-grained `reset` targets (`shex-validation`/`shacl-validation`/`pgschema-validation`).
+
+### Fixed
+- Python bindings' `reset_validation_results()` no longer silently wipes the loaded ShEx schema; it and the new `reset_shacl_validation`/`reset_pgschema_validation` now clearly document and correctly scope what they clear.
+- SPARQL requests now send a policy-compliant User-Agent, avoiding Wikidata's restrictive anonymous-scraping throttling tier; `Retry-After` on a 429 is honored in full instead of capped, and the client backs off proactively after one.
+- SPARQL retries now also cover connection timeouts/resets, not just HTTP error statuses.
+- `-s`/`-m` CLI arguments accept prefixed names (e.g. `es:E371`) like the shell already did, instead of erroring "file does not exist".
+
+### Changed
+- `outgoing_arcs_from_list`/`incoming_arcs_from_list` now issue a UNION of fully-bound triple patterns instead of `FILTER(?p IN (...))`, which SPARQL engines optimize far better.
+- Default `--max-steps` raised from 100 to 1000.
+- Progress logging for long-running SPARQL/dereference operations moved from `info!` to `debug!`, scoped to rudof's own crates by default.
+
+### Removed
+
+## 0.3.11
 - Shell: Tab now lists all matching subcommand names instead of silently cycling through them, and completes the `endpoint` command's argument against registered endpoint names, `config`'s own subcommand against `get`/`set`, and `config get`/`config set`'s `KEY` argument against every dotted key path in the effective config.
 - Shell: `data`, `shex`, `shacl`, `dctap`, `pgschema` and `service` now print a short stats line (e.g. "N triples loaded") when loading something new, instead of dumping the full content; a bare call still shows what's loaded in full.
 - Shell: `data FILE --merge` merges into the currently loaded RDF/PG data instead of replacing it, which is now the shell's default.

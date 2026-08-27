@@ -147,6 +147,14 @@ Other Formats
    * ``DCTapFormat.Csv`` - Comma-separated values (.csv)
    * ``DCTapFormat.Xlsx`` - Excel spreadsheet (.xlsx)
 
+.. autoclass:: PgSchemaFormat
+   :members:
+   :undoc-members:
+
+   Property Graph schema formats:
+
+   * ``PgSchemaFormat.PgSchemaC`` - Compact Property Graph schema syntax (default)
+
 .. autoclass:: QueryResultFormat
    :members:
    :undoc-members:
@@ -182,6 +190,26 @@ Other Formats
    * ``ServiceDescriptionFormat.Json`` - JSON format
    * ``ServiceDescriptionFormat.Mie`` - MIE specification format
 
+
+RDF-config Formats
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: RdfConfigFormat
+   :members:
+   :undoc-members:
+
+   RDF-config input formats:
+
+   * ``RdfConfigFormat.Yaml`` - YAML-based RDF-config specification (default)
+
+.. autoclass:: ResultRdfConfigFormat
+   :members:
+   :undoc-members:
+
+   RDF-config output formats:
+
+   * ``ResultRdfConfigFormat.Internal`` - Internal representation (default)
+   * ``ResultRdfConfigFormat.Yaml`` - YAML
 
 Reader Configuration
 --------------------
@@ -222,16 +250,30 @@ SHACL Validation
 ShEx Validation
 ~~~~~~~~~~~~~~~
 
-.. autoclass:: SortModeResultMap
+.. autoclass:: ShexValidationSortMode
    :members:
    :undoc-members:
 
    Sort modes for validation result table display:
 
-   * ``SortModeResultMap.Node`` - Sort by focus node
-   * ``SortModeResultMap.Shape`` - Sort by shape label
-   * ``SortModeResultMap.Status`` - Sort by validation status
-   * ``SortModeResultMap.Details`` - Sort by detailed information
+   * ``ShexValidationSortMode.Node`` - Sort by focus node
+   * ``ShexValidationSortMode.Shape`` - Sort by shape label
+   * ``ShexValidationSortMode.Status`` - Sort by validation status
+   * ``ShexValidationSortMode.Details`` - Sort by detailed information
+
+PG Schema Validation
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: ResultPgSchemaValidationFormat
+   :members:
+   :undoc-members:
+
+   Output formats for Property Graph schema validation results:
+
+   * ``ResultPgSchemaValidationFormat.Compact`` - Compact output (default)
+   * ``ResultPgSchemaValidationFormat.Details`` - Human-readable details
+   * ``ResultPgSchemaValidationFormat.Json`` - JSON
+   * ``ResultPgSchemaValidationFormat.Csv`` - CSV
 
 
 Materialize

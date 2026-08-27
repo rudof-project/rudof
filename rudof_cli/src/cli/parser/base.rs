@@ -1,7 +1,7 @@
 use crate::cli::parser::{
     CompareArgs, CompletionArgs, ConfigArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, MaterializeArgs, McpArgs,
     NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs, ShaclArgs, ShaclValidateArgs,
-    ShapemapArgs, ShellArgs, ShexArgs, ShexValidateArgs, SparqlArgs, ValidateArgs,
+    ShapemapArgs, ShellArgs, ShexArgs, ShexCheckArgs, ShexValidateArgs, SparqlArgs, ValidateArgs,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
@@ -39,6 +39,8 @@ pub enum Command {
     Pgschema(PgschemaArgs),
     /// Validate RDF data using ShEx or SHACL
     Validate(ValidateArgs),
+    /// Check whether a ShEx schema is well-formed
+    ShexCheck(ShexCheckArgs),
     /// Validate RDF using ShEx schemas
     ShexValidate(ShexValidateArgs),
     /// Validate RDF data using SHACL shapes

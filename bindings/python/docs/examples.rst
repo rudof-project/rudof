@@ -81,6 +81,29 @@ List known SPARQL endpoints
     endpoints = rudof.list_endpoints()
 
 
+Dereference a URI
+^^^^^^^^^^^^^^^^^
+
+Fetch RDF data over HTTP(S) and merge it into the current graph
+
+**Source**: `rdf_data/dereference.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_data/dereference.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    """Fetch RDF data over HTTP(S) and merge it into the current graph.
+    
+    Network-dependent: skipped by default in the test suite (see examples.toml).
+    """
+    from pyrudof import ReaderMode, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    rudof.dereference("https://www.w3.org/People/Berners-Lee/card", ReaderMode.Lax)
+    print(rudof.serialize_data())
+
+
 SPARQL Queries
 --------------
 
@@ -383,14 +406,96 @@ Compare two ShEx schemas and print comparison output size
         ReaderMode.Lax,
     )
 
+
+Check ShEx Schema
+^^^^^^^^^^^^^^^^^
+
+Check well-formedness of a valid and an invalid ShEx schema
+
+**Source**: `shex/shex_check.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shex/shex_check.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    valid_schema = """
+    PREFIX ex: <http://example.org/>
+    ex:PersonShape {
+        ex:name .
+    }
+    """
+    is_valid, message = rudof.check_shex(valid_schema)
+    print(is_valid)
+    print(message)
+    
+    invalid_schema = """
+    PREFIX ex: <http://example.org/>
+    ex:Shape1 {
+        ex:prop1 @ex:Shape2
+    }
+    ex:Shape2 {
+        ex:prop2 NOT @ex:Shape1
+    }
+    """
+    is_valid2, message2 = rudof.check_shex(invalid_schema)
+    print(is_valid2)
+    print(message2)
+
+
+Precompiled ShEx Schema Cache
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Compile a loaded ShEx schema to a cache file, then validate using the precompiled cache
+
+**Source**: `shex/shex_precompiled.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shex/shex_precompiled.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+    
+    from pyrudof import RDFFormat, ResultShexValidationFormat, ShapeMapFormat, ShExFormat, Rudof, RudofConfig
+    
+    data = """
+    PREFIX : <http://example.org/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    
+    :alice :name "Alice" ; :age 30 .
+    """
+    
+    shapemap = ":alice@:Person"
+    
+    # Compile the schema to a cache file once...
+    rudof = Rudof(RudofConfig())
+    rudof.read_shex("person.shex", ShExFormat.ShExC)
+    
+    with TemporaryDirectory() as tmpdir:
+        cache_path = Path(tmpdir) / "person.shexcache"
+        rudof.compile_shex_to_file(str(cache_path))
+    
+        # ...then reuse it to skip parsing and AST-to-IR compilation on future runs.
+        rudof2 = Rudof(RudofConfig())
+        rudof2.read_shex_precompiled(str(cache_path))
+        rudof2.read_data(data, RDFFormat.Turtle)
+        rudof2.read_shapemap(shapemap, ShapeMapFormat.Compact)
+        rudof2.validate_shex()
+        print(rudof2.serialize_shex_validation_results(ResultShexValidationFormat.Compact))
+
+**Referenced Files:**
+
+- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.shex>`_
+
+
 Materialize
 -----------
 
 Examples for materializing RDF graphs from ShEx schemas with Map semantic actions.
-
-The ``materialize`` operation produces an RDF graph by combining a ShEx schema
-(which describes the graph structure via Map semantic actions) with a MapState
-(a JSON file that maps each Map-extension IRI key to its concrete RDF node value).
 
 
 Materialize Inline
@@ -398,20 +503,26 @@ Materialize Inline
 
 Materialize an RDF graph from an inline ShEx schema and a MapState built in Python
 
-**Source**: `materialize/materialize_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/materialize_inline.py>`_
+**Source**: `materialize/materialize_inline.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/materialize/materialize_inline.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
+    """Materialize an RDF graph from an inline ShEx schema and inline MapState.
+    
+    The MapState is a dict that maps Map-extension IRI keys to RDF node values.
+    IRI nodes are represented as ``{"Iri": "<iri-string>"}``.
+    """
     import json
     import os
     import tempfile
-
+    
     from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
-
+    
     rudof = Rudof(RudofConfig())
-
+    
+    # ShEx schema (ShExJ) with Map semantic actions on each triple constraint
     schema = json.dumps({
         "@context": "http://www.w3.org/ns/shex.jsonld",
         "type": "Schema",
@@ -432,17 +543,19 @@ Materialize an RDF graph from an inline ShEx schema and a MapState built in Pyth
             }
         }]
     })
-
+    
+    # MapState: maps each Map-extension IRI to its concrete RDF node value
     map_state = {
         "http://example.org/name": {"Iri": "http://example.org/Alice"}
     }
-
+    
     rudof.read_shex(schema, ShExFormat.ShExJ)
-
+    
+    # read_map_state requires a file path, so write to a temporary file
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
         json.dump(map_state, tmp)
         map_state_path = tmp.name
-
+    
     try:
         rudof.read_map_state(map_state_path)
         result = rudof.materialize(ResultDataFormat.NTriples)
@@ -456,19 +569,24 @@ Materialize from Files
 
 Load a ShExJ schema and a MapState file, then materialize with an explicit root subject IRI
 
-**Source**: `materialize/materialize_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/materialize_file.py>`_
+**Source**: `materialize/materialize_file.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/materialize/materialize_file.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
+    """Materialize an RDF graph from ShEx schema and MapState files.
+    
+    Demonstrates loading a ShExJ schema and a pre-built MapState JSON file, then
+    materializing the RDF graph with an explicit root subject IRI.
+    """
     from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
-
+    
     rudof = Rudof(RudofConfig())
-
+    
     rudof.read_shex("person_map.shexj", ShExFormat.ShExJ)
     rudof.read_map_state("person_map_state.json")
-
+    
     result = rudof.materialize(
         format=ResultDataFormat.Turtle,
         node="http://example.org/Alice",
@@ -477,8 +595,9 @@ Load a ShExJ schema and a MapState file, then materialize with an explicit root 
 
 **Referenced Files:**
 
-- **Schema**: `materialize/person_map.shexj <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/person_map.shexj>`_
-- **MapState**: `materialize/person_map_state.json <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/person_map_state.json>`_
+- **Schema**: `person_map.shexj <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person_map.shexj>`_
+- **Map_state**: `person_map_state.json <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person_map_state.json>`_
+
 
 SHACL Validation
 ----------------
@@ -641,6 +760,152 @@ Read DCTAP from inline CSV and from file
         csv_path = Path(tmpdir) / "profile.csv"
         csv_path.write_text(csv_text, encoding="utf-8")
         rudof.read_dctap(str(csv_path), DCTapFormat.Csv)
+
+
+PG Schema Validation
+--------------------
+
+Examples for reading Property Graph schemas, loading typemaps, and validating PG data.
+
+
+Read PG Schema
+^^^^^^^^^^^^^^
+
+Read an inline Property Graph schema and serialize it back
+
+**Source**: `pgschema/pgschema_read.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/pgschema/pgschema_read.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import PgSchemaFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    schema = """
+    CREATE NODE TYPE ( AdultStudentType: Student {
+        name: STRING ,
+        age: INTEGER CHECK > 18
+    })
+    """
+    
+    rudof.read_pgschema(schema, PgSchemaFormat.PgSchemaC)
+    print(rudof.serialize_pgschema())
+
+
+Validate PG Data
+^^^^^^^^^^^^^^^^
+
+Load PG data, a PG schema and a typemap, then validate and serialize the results
+
+**Source**: `pgschema/pgschema_validate.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/pgschema/pgschema_validate.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import PgSchemaFormat, RDFFormat, ResultPgSchemaValidationFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    pg_data = """
+    (n1 {"Student"}["name": "Alice", "age": 23])
+    (n2_wrong {"Student"}["name": "Bob", "age": 12])
+    """
+    
+    schema = """
+    CREATE NODE TYPE ( AdultStudentType: Student {
+        name: STRING ,
+        age: INTEGER CHECK > 18
+    })
+    """
+    
+    typemap = """
+    n1: AdultStudentType,
+    n2_wrong: AdultStudentType
+    """
+    
+    rudof.read_data(pg_data, RDFFormat.Pg)
+    rudof.read_pgschema(schema, PgSchemaFormat.PgSchemaC)
+    rudof.read_typemap(typemap)
+    rudof.validate_pgschema()
+    
+    results = rudof.serialize_pgschema_validation_results(ResultPgSchemaValidationFormat.Compact)
+    print(results)
+    
+    rudof.reset_pgschema_validation()
+    rudof.reset_typemap()
+    rudof.reset_pgschema()
+
+
+Prefix Management
+-----------------
+
+Examples for managing the default prefix map (add, rename, copy, remove).
+
+
+Manage Prefixes
+^^^^^^^^^^^^^^^
+
+Add, rename, copy and remove entries in the default prefix map
+
+**Source**: `prefixes/prefixes_manage.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/prefixes/prefixes_manage.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    rudof.add_prefix("ex", "http://example.org/")
+    rudof.add_prefix("foaf", "http://xmlns.com/foaf/0.1/")
+    
+    print(sorted(rudof.prefixes()))
+    
+    rudof.rename_prefix("foaf", "f")
+    rudof.copy_prefix("ex", "example")
+    rudof.remove_prefix("f")
+    
+    print(sorted(rudof.prefixes()))
+
+
+RDF-config
+----------
+
+Examples for reading and serializing RDF-config YAML specifications.
+
+
+Read RDF-config
+^^^^^^^^^^^^^^^
+
+Read an inline RDF-config YAML specification and serialize it back
+
+**Source**: `rdf_config/rdf_config_read.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_config/rdf_config_read.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RdfConfigFormat, ResultRdfConfigFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    config = """
+    - Person ex:person1 ex:person2:
+      - a: ex:Person
+      - rdfs:label:
+        - name: "Alice"
+      - ex:age?:
+        - age_value: 32
+    """
+    
+    rudof.read_rdf_config(config, RdfConfigFormat.Yaml)
+    print(rudof.serialize_rdf_config(ResultRdfConfigFormat.Internal))
+    
+    rudof.reset_rdf_config()
 
 
 Service Description
@@ -919,11 +1184,15 @@ Create RudofConfig from a TOML file and initialize Rudof
 
     from pyrudof import Rudof, RudofConfig
     
-    config = RudofConfig.from_path("../../../rudof_lib/src/default_config.toml")
+    config = RudofConfig.from_path("example.toml")
     rudof = Rudof(config)
     
     print("RUDOF_CONFIG_FROM_PATH_OK")
     print(type(rudof).__name__)
+
+**Referenced Files:**
+
+- **Config**: `example.toml <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/example.toml>`_
 
 
 Rudof Update Config
@@ -940,10 +1209,14 @@ Update the configuration of an existing Rudof instance
     from pyrudof import Rudof, RudofConfig
     
     initial = RudofConfig()
-    updated = RudofConfig.from_path("../../../rudof_lib/src/default_config.toml")
+    updated = RudofConfig.from_path("example.toml")
     
     rudof = Rudof(initial)
     rudof.update_config(updated)
+
+**Referenced Files:**
+
+- **Config**: `example.toml <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/example.toml>`_
 
 
 Rudof Reset Methods
@@ -968,11 +1241,16 @@ Call all reset methods exposed by Rudof
     rudof.read_query("person.sparql")
     
     rudof.reset_data()
+    rudof.reset_shex_schema()
     rudof.reset_shex()
     rudof.reset_shacl()
+    rudof.reset_shacl_validation()
     rudof.reset_shapemap()
     rudof.reset_query()
     rudof.reset_validation_results()
+    rudof.reset_pgschema()
+    rudof.reset_typemap()
+    rudof.reset_pgschema_validation()
     rudof.reset_all()
 
 **Referenced Files:**
@@ -1015,6 +1293,80 @@ Print the installed pyrudof module file path
     import pyrudof
     
     print(pyrudof.__file__)
+
+
+Reset Semantics
+^^^^^^^^^^^^^^^
+
+Distinguish the narrow schema-only resets from the broader resets that also clear validation state
+
+**Source**: `utility/reset_semantics.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/utility/reset_semantics.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    """Demonstrates the distinction between the narrow "clear the schema only"
+    resets and the broader "reset validation" resets, which also unload the
+    schema/shapes graph along with the validation results and ShapeMap.
+    """
+    from pyrudof import RDFFormat, ShaclFormat, ShaclValidationMode, ShExFormat, ShapeMapFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    # --- ShEx: reset_shex_schema() clears only the schema ---
+    rudof.read_shex("person.shex", ShExFormat.ShExC)
+    rudof.read_data(
+        'PREFIX : <http://example.org/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n:alice :name "Alice" ; :age 30 .',
+        RDFFormat.Turtle,
+    )
+    rudof.read_shapemap(":alice@:Person", ShapeMapFormat.Compact)
+    rudof.validate_shex()
+    
+    # reset_shex() is the broad reset: schema, ShapeMap, validator and results all go
+    rudof.reset_shex()
+    try:
+        rudof.serialize_current_shex()
+        print("BUG: ShEx schema survived reset_shex()")
+    except ValueError:
+        print("reset_shex() cleared the schema as documented")
+    
+    # --- SHACL: reset_shacl() clears only the shapes graph, leaving results alone ---
+    shapes = """
+    PREFIX : <http://example.org/>
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    
+    :PersonShape a sh:NodeShape ;
+      sh:targetClass :Person .
+    """
+    rudof.reset_all()
+    rudof.read_shacl(shapes, ShaclFormat.Turtle)
+    rudof.read_data("PREFIX : <http://example.org/>\n:alice a :Person .", RDFFormat.Turtle)
+    rudof.validate_shacl(ShaclValidationMode.Native)
+    
+    rudof.reset_shacl()
+    try:
+        rudof.serialize_shacl()
+        print("BUG: SHACL shapes survived reset_shacl()")
+    except ValueError:
+        print("reset_shacl() cleared the shapes as documented")
+    
+    # reset_shacl_validation() is the broad reset: shapes and validation results both go
+    rudof.reset_all()
+    rudof.read_shacl(shapes, ShaclFormat.Turtle)
+    rudof.read_data("PREFIX : <http://example.org/>\n:alice a :Person .", RDFFormat.Turtle)
+    rudof.validate_shacl(ShaclValidationMode.Native)
+    
+    rudof.reset_shacl_validation()
+    try:
+        rudof.serialize_shacl()
+        print("BUG: SHACL shapes survived reset_shacl_validation()")
+    except ValueError:
+        print("reset_shacl_validation() cleared the shapes as documented")
+
+**Referenced Files:**
+
+- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.shex>`_
 
 
 Error Handling

@@ -28,6 +28,7 @@
 
 ## rudof action commands
 
+- [shex-check](./cli_usage/shex_check.md)
 - [shex-validate](./cli_usage/shex_validate.md)
 - [shacl-validate](./cli_usage/shacl_validate.md)
 - [pgschema-validate](./cli_usage/pgschema_validate.md)

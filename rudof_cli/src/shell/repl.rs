@@ -287,6 +287,10 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
         return handle_prefixes(&tokens[1..], ctx);
     }
 
+    if tokens[0] == "resolvers" {
+        return handle_resolvers(&tokens[1..], ctx);
+    }
+
     if tokens[0] == "config" && tokens.get(1).is_some_and(|sub| sub == "get" || sub == "set") {
         return handle_config(&tokens[1..], ctx);
     }
@@ -554,8 +558,11 @@ fn endpoint_url(ctx: &CommandContext, name: &str) -> Option<String> {
 const RESET_TARGETS: &[&str] = &[
     "data",
     "shex",
+    "shex-validation",
     "shacl",
+    "shacl-validation",
     "pgschema",
+    "pgschema-validation",
     "shapemap",
     "dctap",
     "service",
@@ -602,8 +609,11 @@ fn reset_target(target: &str, ctx: &mut CommandContext) {
     match target {
         "data" => ctx.rudof.reset_data().execute(),
         "shex" => ctx.rudof.reset_shex_schema().execute(),
+        "shex-validation" => ctx.rudof.reset_shex().execute(),
         "shacl" => ctx.rudof.reset_shacl_shapes().execute(),
+        "shacl-validation" => ctx.rudof.reset_shacl().execute(),
         "pgschema" => ctx.rudof.reset_pg_schema().execute(),
+        "pgschema-validation" => ctx.rudof.reset_pg_schema_validation().execute(),
         "shapemap" => ctx.rudof.reset_shapemap().execute(),
         "dctap" => ctx.rudof.reset_dctap().execute(),
         "service" => ctx.rudof.reset_service_description().execute(),
@@ -653,6 +663,32 @@ fn handle_prefixes(args: &[String], ctx: &mut CommandContext) -> Result<()> {
                 ctx.writer,
                 "Usage: prefixes [add ALIAS IRI | rm ALIAS | rename OLD NEW | copy OLD NEW]"
             )?;
+            Ok(())
+        },
+    }
+}
+
+/// Shell-only `resolvers [clear]` command.
+///
+/// With no argument, lists the built-in external-shape resolver kinds
+/// accepted by `shex-validate --external-resolver`. `resolvers clear`
+/// resets the session's resolver chain back to its default (`reject-all`
+/// only) -- the only way to undo an `--external-resolver` added earlier in
+/// the same shell session, since that state otherwise persists across
+/// commands.
+fn handle_resolvers(args: &[String], ctx: &mut CommandContext) -> Result<()> {
+    match args {
+        [] => crate::commands::print_external_resolvers(&mut ctx.writer),
+        [clear] if clear == "clear" => {
+            ctx.rudof.clear_external_resolvers();
+            writeln!(
+                ctx.writer,
+                "Cleared external-shape resolvers (back to 'reject-all' only)."
+            )?;
+            Ok(())
+        },
+        _ => {
+            writeln!(ctx.writer, "Usage: resolvers [clear]")?;
             Ok(())
         },
     }
@@ -1022,6 +1058,10 @@ fn print_help(ctx: &mut CommandContext) -> Result<()> {
     )?;
     writeln!(
         ctx.writer,
+        "  resolvers [clear]  List built-in external-shape resolver kinds, or reset the session's resolver chain"
+    )?;
+    writeln!(
+        ctx.writer,
         "                     Show, or manage, the default prefix declarations"
     )?;
     writeln!(
@@ -1042,6 +1082,7 @@ fn command_names() -> Vec<String> {
     names.push("endpoint".to_string());
     names.push("reset".to_string());
     names.push("prefixes".to_string());
+    names.push("resolvers".to_string());
     names
 }
 

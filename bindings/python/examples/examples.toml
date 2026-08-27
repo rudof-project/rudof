@@ -24,6 +24,22 @@ description = """Examples for SHACL loading, validation, extraction from data, a
 title = "DCTAP"
 description = """Examples for reading DCTAP profiles from inline content or files."""
 
+[categories.pgschema]
+title = "PG Schema Validation"
+description = """Examples for reading Property Graph schemas, loading typemaps, and validating PG data."""
+
+[categories.materialize]
+title = "Materialize"
+description = """Examples for materializing RDF graphs from ShEx schemas with Map semantic actions."""
+
+[categories.prefixes]
+title = "Prefix Management"
+description = """Examples for managing the default prefix map (add, rename, copy, remove)."""
+
+[categories.rdf_config]
+title = "RDF-config"
+description = """Examples for reading and serializing RDF-config YAML specifications."""
+
 [categories.endpoint]
 title = "Service Description"
 description = """Examples for service description parsing and serialization."""
@@ -37,7 +53,7 @@ title = "Utility & Introspection"
 description = """Examples for config loading, resets, versioning, and module introspection."""
 
 [category_order]
-order = ["rdf", "sparql", "shex", "shacl", "dctap", "endpoint", "generate", "utility"]
+order = ["rdf", "sparql", "shex", "materialize", "shacl", "dctap", "pgschema", "prefixes", "rdf_config", "endpoint", "generate", "utility"]
 
 [[example]]
 key = "shex_validate_inline"
@@ -83,6 +99,42 @@ description = "Compare two ShEx schemas and print comparison output size"
 category = "shex"
 files = {}
 expected_output = []
+
+[[example]]
+key = "materialize_inline"
+source_file = "materialize/materialize_inline.py"
+title = "Materialize Inline"
+description = "Materialize an RDF graph from an inline ShEx schema and a MapState built in Python"
+category = "materialize"
+files = {}
+expected_output = []
+
+[[example]]
+key = "materialize_file"
+source_file = "materialize/materialize_file.py"
+title = "Materialize from Files"
+description = "Load a ShExJ schema and a MapState file, then materialize with an explicit root subject IRI"
+category = "materialize"
+files = { schema = "person_map.shexj", "map_state" = "person_map_state.json" }
+expected_output = []
+
+[[example]]
+key = "shex_check"
+source_file = "shex/shex_check.py"
+title = "Check ShEx Schema"
+description = "Check well-formedness of a valid and an invalid ShEx schema"
+category = "shex"
+files = {}
+expected_output = ["True", "False", "negative cycles"]
+
+[[example]]
+key = "shex_precompiled"
+source_file = "shex/shex_precompiled.py"
+title = "Precompiled ShEx Schema Cache"
+description = "Compile a loaded ShEx schema to a cache file, then validate using the precompiled cache"
+category = "shex"
+files = { schema = "person.shex" }
+expected_output = ["alice"]
 
 [[example]]
 key = "shacl_validate_inline"
@@ -148,6 +200,16 @@ files = {}
 expected_output = []
 
 [[example]]
+key = "dereference"
+source_file = "rdf_data/dereference.py"
+title = "Dereference a URI"
+description = "Fetch RDF data over HTTP(S) and merge it into the current graph"
+category = "rdf"
+files = {}
+expected_output = []
+skip_test = true
+
+[[example]]
 key = "dctap_read"
 source_file = "dctap/dctap_read.py"
 title = "Read DCTAP"
@@ -155,6 +217,42 @@ description = "Read DCTAP from inline CSV and from file"
 category = "dctap"
 files = {}
 expected_output = []
+
+[[example]]
+key = "pgschema_read"
+source_file = "pgschema/pgschema_read.py"
+title = "Read PG Schema"
+description = "Read an inline Property Graph schema and serialize it back"
+category = "pgschema"
+files = {}
+expected_output = ["Student"]
+
+[[example]]
+key = "pgschema_validate"
+source_file = "pgschema/pgschema_validate.py"
+title = "Validate PG Data"
+description = "Load PG data, a PG schema and a typemap, then validate and serialize the results"
+category = "pgschema"
+files = {}
+expected_output = ["n2_wrong"]
+
+[[example]]
+key = "prefixes_manage"
+source_file = "prefixes/prefixes_manage.py"
+title = "Manage Prefixes"
+description = "Add, rename, copy and remove entries in the default prefix map"
+category = "prefixes"
+files = {}
+expected_output = ["foaf", "example"]
+
+[[example]]
+key = "rdf_config_read"
+source_file = "rdf_config/rdf_config_read.py"
+title = "Read RDF-config"
+description = "Read an inline RDF-config YAML specification and serialize it back"
+category = "rdf_config"
+files = {}
+expected_output = ["Person"]
 
 [[example]]
 key = "sparql_select_inline"
@@ -299,6 +397,19 @@ description = "Print the installed pyrudof module file path"
 category = "utility"
 files = {}
 expected_output = []
+
+[[example]]
+key = "reset_semantics"
+source_file = "utility/reset_semantics.py"
+title = "Reset Semantics"
+description = "Distinguish the narrow schema-only resets from the broader resets that also clear validation state"
+category = "utility"
+files = { schema = "person.shex" }
+expected_output = [
+    "reset_shex() cleared the schema as documented",
+    "reset_shacl() cleared the shapes as documented",
+    "reset_shacl_validation() cleared the shapes as documented",
+]
 
 [[example]]
 key = "error_handling"
