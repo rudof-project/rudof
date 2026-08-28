@@ -13,6 +13,7 @@ mod service;
 mod shacl;
 mod shapemap;
 mod shex;
+mod url_spec;
 mod validation;
 
 pub use backend::*;
@@ -30,4 +31,5 @@ pub use service::*;
 pub use shacl::*;
 pub use shapemap::*;
 pub use shex::*;
+pub use url_spec::*;
 pub use validation::*;

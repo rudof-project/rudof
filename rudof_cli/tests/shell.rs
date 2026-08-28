@@ -69,10 +69,7 @@ fn run_shell(input: &str) -> ShellOutput {
 
 impl ShellOutput {
     fn transcript(&self) -> String {
-        format!(
-            "--- stdout ---\n{}\n--- stderr ---\n{}",
-            self.stdout, self.stderr
-        )
+        format!("--- stdout ---\n{}\n--- stderr ---\n{}", self.stdout, self.stderr)
     }
 }
 
@@ -470,7 +467,8 @@ fn shell_pgschema_validate_reuses_schema_typemap_and_data_across_calls() {
     // data loaded by the first call, so the same report appears twice.
     let occurrences = out.stdout.matches("PersonType").count();
     assert_eq!(
-        occurrences, 2,
+        occurrences,
+        2,
         "expected the validation report to appear twice, got:\n{}",
         out.transcript()
     );
@@ -758,7 +756,8 @@ fn shell_endpoint_bare_reports_the_previously_activated_endpoint() {
         .matches("Active endpoint: Wikidata (https://query.wikidata.org/sparql)")
         .count();
     assert_eq!(
-        occurrences, 2,
+        occurrences,
+        2,
         "expected the activation and the bare follow-up to both report it, got:\n{}",
         out.transcript()
     );
@@ -1096,7 +1095,8 @@ fn shell_config_set_changes_a_value_for_the_rest_of_the_session() {
     assert!(out.stdout.contains("auto_base = true"));
     let occurrences = out.stdout.matches("true").count();
     assert_eq!(
-        occurrences, 2,
+        occurrences,
+        2,
         "expected both the confirmation and the follow-up get to report true, got:\n{}",
         out.transcript()
     );

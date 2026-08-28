@@ -1,11 +1,12 @@
 #[allow(unused_imports)]
 use crate::errors::InputSpecError;
+use crate::formats::UrlSpec;
 #[cfg(target_family = "wasm")]
 use crate::wasm_stubs::{Client, ClientBuilder, Response};
 use either::Either;
 use regex::Regex;
 #[cfg(not(target_family = "wasm"))]
-use reqwest::blocking::{Client, ClientBuilder, Response};
+use reqwest::blocking::{Client, Response};
 use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
 use rudof_iri::IriS;
 use std::io::Cursor;
@@ -32,15 +33,6 @@ pub enum InputSpec {
     Str(String),
     /// Input from a URL (HTTP/HTTPS)
     Url(UrlSpec),
-}
-
-/// Specification for URL-based inputs with HTTP client configuration.
-#[derive(Debug, Clone)]
-pub struct UrlSpec {
-    /// The URL to fetch data from
-    url: Url,
-    /// HTTP client for making requests
-    client: Client,
 }
 
 /// Reader type that can handle input from multiple sources.
@@ -122,9 +114,9 @@ impl InputSpec {
                 }),
             },
             InputSpec::Url(url_spec) => {
-                let url = url_spec.url.clone();
+                let url = url_spec.url().clone();
                 let resp = match accept {
-                    None => url_spec.client.get(url_spec.url.as_str()),
+                    None => url_spec.client().get(url_spec.url().as_str()),
                     Some(accept_str) => {
                         let mut headers = reqwest::header::HeaderMap::new();
                         let accept_value =
@@ -141,7 +133,7 @@ impl InputSpec {
                             .default_headers(headers)
                             .build()
                             .map_err(|e| InputSpecError::ClientBuilderError { error: format!("{e}") })?;
-                        client.get(url_spec.url.as_str())
+                        client.get(url_spec.url().as_str())
                     },
                 }
                 .send()
@@ -190,7 +182,7 @@ impl InputSpec {
                 operation: "File path operations".to_string(),
             }),
             InputSpec::Stdin => Ok("stdin://".to_string()),
-            InputSpec::Url(url_spec) => Ok(url_spec.url.to_string()),
+            InputSpec::Url(url_spec) => Ok(url_spec.url().to_string()),
             InputSpec::Str(_) => Ok("string://".to_string()),
         }
     }
@@ -269,9 +261,7 @@ impl FromStr for InputSpec {
             _ if Path::new(s).is_file() || Path::new(s).is_dir() => {
                 let path = Path::new(s);
                 if path.is_dir() {
-                    return Err(InputSpecError::PathIsDir {
-                        str: s.to_string(),
-                    });
+                    return Err(InputSpecError::PathIsDir { str: s.to_string() });
                 }
                 Ok(InputSpec::Path(PathBuf::from(s)))
             },
@@ -300,34 +290,5 @@ mod tests {
         assert!(matches!(spec, InputSpec::Path(_)), "expected Path, got {spec:?}");
 
         fs::remove_dir_all(&dir).unwrap();
-    }
-}
-
-// ============================================================================
-// UrlSpec
-// ============================================================================
-
-impl UrlSpec {
-    /// Parses a string into a UrlSpec with an HTTP client.
-    pub fn parse(str: &str) -> Result<UrlSpec, InputSpecError> {
-        let url = Url::parse(str).map_err(|e| InputSpecError::UrlParseError {
-            str: str.to_string(),
-            error: format!("{e}"),
-        })?;
-        let client = ClientBuilder::new()
-            .build()
-            .map_err(|e| InputSpecError::ClientBuilderError { error: format!("{e}") })?;
-        Ok(UrlSpec { url, client })
-    }
-
-    /// Returns the URL as a string slice.
-    pub fn as_str(&self) -> &str {
-        self.url.as_str()
-    }
-}
-
-impl Display for UrlSpec {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.url)
     }
 }
