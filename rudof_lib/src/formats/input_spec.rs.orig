@@ -266,15 +266,6 @@ impl FromStr for InputSpec {
                 })?;
                 Ok(InputSpec::Path(pb))
             },
-            _ if Path::new(s).is_file() || Path::new(s).is_dir() => {
-                let path = Path::new(s);
-                if path.is_dir() {
-                    return Err(InputSpecError::PathIsDir {
-                        str: s.to_string(),
-                    });
-                }
-                Ok(InputSpec::Path(PathBuf::from(s)))
-            },
             _ => Ok(InputSpec::Str(s.to_string())),
         }
     }

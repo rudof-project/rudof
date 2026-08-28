@@ -67,6 +67,15 @@ fn run_shell(input: &str) -> ShellOutput {
     }
 }
 
+impl ShellOutput {
+    fn transcript(&self) -> String {
+        format!(
+            "--- stdout ---\n{}\n--- stderr ---\n{}",
+            self.stdout, self.stderr
+        )
+    }
+}
+
 #[cfg(not(target_family = "wasm"))]
 fn fixture(name: &str) -> String {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -138,7 +147,7 @@ fn shell_treats_unterminated_quote_as_multiline_continuation() {
     assert!(
         out.stdout.contains("Alice"),
         "expected query results, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -206,12 +215,12 @@ fn shell_data_replaces_by_default_instead_of_merging() {
     assert!(
         out.stdout.contains("1 triple(s) loaded"),
         "expected the second load to report only its own triple, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert!(
         out.stdout.contains("bob") && !out.stdout.contains("Alice"),
         "expected the final bare 'data' to show only the second file's data, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -229,12 +238,12 @@ fn shell_data_merge_flag_merges_instead_of_replacing() {
     assert!(
         out.stdout.contains("3 triple(s) loaded"),
         "expected the merged load to report triples from both files, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert!(
         out.stdout.contains("bob") && out.stdout.contains("Alice"),
         "expected the final bare 'data' to show both files' data, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -262,7 +271,7 @@ fn shell_persists_loaded_dctap_across_commands() {
         out.stdout.matches("xsd:string").count(),
         1,
         "expected the second, bare 'dctap' call to re-show the full loaded DCTap, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -290,7 +299,7 @@ fn shell_persists_loaded_service_description_across_commands() {
         out.stdout.matches("SPARQL11Query").count(),
         1,
         "expected the second, bare 'service' call to re-show the full loaded service description, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -316,12 +325,12 @@ fn shell_output_flag_redirects_to_file_instead_of_printing() {
     assert!(
         !out.stdout.contains("Alice"),
         "did not expect the data to be printed to stdout, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert!(
         out.stdout.contains(&format!("Output saved in {}", out_file.display())),
         "expected a confirmation message naming the output file, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -373,7 +382,7 @@ fn shell_shex_validate_reuses_data_schema_and_shapemap_loaded_separately() {
     assert!(
         out.stdout.contains("Shape passed"),
         "expected a validation report reusing the separately-loaded data/schema/shapemap, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -398,7 +407,7 @@ fn shell_shacl_validate_reuses_data_and_shapes_loaded_separately() {
     assert!(
         out.stdout.contains("No Errors found") || out.stdout.contains("Errors"),
         "expected a SHACL validation report reusing the separately-loaded data/shapes, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -463,7 +472,7 @@ fn shell_pgschema_validate_reuses_schema_typemap_and_data_across_calls() {
     assert_eq!(
         occurrences, 2,
         "expected the validation report to appear twice, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -486,7 +495,7 @@ fn shell_shex_accepts_bare_file_as_schema() {
     assert!(
         out.stdout.contains("1 shape(s) loaded"),
         "expected the bare file to be loaded as the schema, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -517,14 +526,14 @@ fn shell_shex_unsupported_result_format_reports_an_error_instead_of_crashing() {
         out.stderr.matches("Failed to serialize ShEx schema to simple").count(),
         1,
         "expected the error message to appear exactly once, got stderr:\n{}",
-        out.stderr
+        out.transcript()
     );
     // The final bare `shex` still ran and showed the schema, proving the
     // session survived the previous command's error.
     assert!(
         out.stdout.contains("PersonShape"),
         "expected the session to keep working after the error, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -543,29 +552,29 @@ fn shell_shex_r_turtle_serializes_the_schema_as_rdf() {
     assert!(
         out.stdout.contains("@prefix sx: <http://www.w3.org/ns/shex#> ."),
         "expected the ShExR vocabulary's own prefix to be declared, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert!(
         out.stdout.contains("sx:Schema"),
         "expected ShExR RDF output, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert!(
         out.stdout.contains("sx:ShapeDecl"),
         "expected ShExR RDF output, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     // The schema's own prefixes (`PREFIX : <http://example.org/>` in
     // shell_schema.shex) are carried over into the generated RDF too.
     assert!(
         out.stdout.contains("@prefix : <http://example.org/> ."),
         "expected the schema's own prefix to be declared, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert!(
         out.stdout.contains(":PersonShape"),
         "expected the schema's prefix to be used in the output, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -588,7 +597,7 @@ fn shell_data_parse_error_is_not_duplicated() {
         out.stderr.matches("Failed to parse RDF data from").count(),
         1,
         "expected the error message to appear exactly once, got stderr:\n{}",
-        out.stderr
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -604,7 +613,7 @@ fn shell_bare_file_convenience_does_not_apply_alongside_other_flags() {
     assert!(
         out.stdout.contains("unrecognized") || out.stdout.contains("unexpected argument"),
         "expected a clap parse error, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -621,7 +630,7 @@ fn shell_bang_with_space_runs_external_command() {
     assert!(
         out.stdout.contains("hello-from-outside"),
         "expected the external command's output in stdout, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -634,7 +643,7 @@ fn shell_bang_without_space_runs_external_command() {
     assert!(
         out.stdout.contains("hello-from-outside"),
         "expected the external command's output in stdout, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -647,7 +656,7 @@ fn shell_bang_uses_a_real_shell_so_pipes_work() {
     assert!(
         out.stdout.contains("HELLO"),
         "expected shell-interpreted output (pipe), got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -659,7 +668,7 @@ fn shell_bang_alone_reports_no_command_given() {
     assert!(
         out.stdout.contains("No command given after '!'"),
         "expected a hint about the missing command, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -672,7 +681,7 @@ fn shell_bang_failing_command_does_not_end_the_session() {
     assert!(
         out.stdout.contains("Shell-only commands:"),
         "expected the session to keep going after a failing external command, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -734,7 +743,7 @@ fn shell_endpoint_activation_is_case_insensitive() {
             out.stdout
                 .contains("Active endpoint: Wikidata (https://query.wikidata.org/sparql)"),
             "expected '{spelling}' to resolve the Wikidata endpoint, got:\n{}",
-            out.stdout
+            out.transcript()
         );
         assert_eq!(out.code, 0);
     }
@@ -751,7 +760,7 @@ fn shell_endpoint_bare_reports_the_previously_activated_endpoint() {
     assert_eq!(
         occurrences, 2,
         "expected the activation and the bare follow-up to both report it, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -801,7 +810,7 @@ fn shell_endpoint_registered_from_file_persists_for_the_rest_of_the_session() {
     assert!(
         out.stdout.contains("https://example.org/sparql"),
         "expected the newly-registered endpoint to be visible via 'config get', got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -861,7 +870,7 @@ fn shell_reset_target_clears_only_that_state() {
     assert!(
         out.stdout.contains("2 triple(s) loaded"),
         "expected 'reset shex' to leave data untouched, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1049,7 +1058,7 @@ fn shell_node_bare_identifier_convenience_does_not_apply_alongside_other_flags()
     assert!(
         out.stdout.contains("does not exist"),
         "expected a clap parse error when combined with another flag, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1089,7 +1098,7 @@ fn shell_config_set_changes_a_value_for_the_rest_of_the_session() {
     assert_eq!(
         occurrences, 2,
         "expected both the confirmation and the follow-up get to report true, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1211,7 +1220,7 @@ fn shell_data_without_a_default_prefix_reports_a_parse_error() {
     assert!(
         out.stderr.contains("has not been declared") || out.stderr.contains("not declared"),
         "expected an undeclared-prefix parse error, got:\n{}",
-        out.stderr
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1225,7 +1234,7 @@ fn shell_data_resolves_prefixed_names_using_default_prefixes() {
     assert!(
         out.stdout.contains("2 triple(s) loaded"),
         "expected the data to load using the default prefix, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1239,7 +1248,7 @@ fn shell_node_resolves_a_default_prefixed_selector() {
     assert!(
         out.stdout.contains("p:alice"),
         "expected `node` to resolve the default-prefixed selector, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1255,7 +1264,7 @@ fn shell_shex_resolves_prefixed_names_using_default_prefixes() {
     assert!(
         out.stdout.contains("1 shape(s) loaded"),
         "expected the schema to load using the default prefixes, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1315,7 +1324,7 @@ fn shell_shex_leaves_an_unregistered_prefixed_name_unresolved() {
     assert!(
         out.stderr.contains("nosuchalias:E10"),
         "expected the literal token to surface in the parse error, got:\n{}",
-        out.stderr
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1332,7 +1341,7 @@ fn shell_node_identifier_is_not_expanded_as_a_resource() {
     assert!(
         out.stdout.contains(":alice"),
         "expected the node identifier to remain ':alice', not be expanded into a URL, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1347,7 +1356,7 @@ fn shell_query_resolves_prefixed_names_using_default_prefixes() {
     assert!(
         out.stdout.contains("Alice"),
         "expected the query to resolve using the default prefix, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
@@ -1365,7 +1374,7 @@ fn shell_shapemap_resolves_prefixed_names_using_default_prefixes() {
     assert!(
         out.stdout.contains("PersonShape"),
         "expected the shapemap to resolve using the default prefixes, got:\n{}",
-        out.stdout
+        out.transcript()
     );
     assert_eq!(out.code, 0);
 }
