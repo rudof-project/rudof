@@ -20,6 +20,7 @@ pub(super) const PROMPT: &str = "rudof> ";
 // `PROMPT`.
 pub(super) const CONTINUATION_PROMPT: &str = "   ... ";
 
+// The banner has been created manually with ascii colors so the r, d and f have blue color
 const BANNER: &str = concat!(
     "                 ",
     "\x1b[34m_\x1b[0m",
@@ -1041,8 +1042,7 @@ fn print_help(ctx: &mut CommandContext) -> Result<()> {
     )?;
     writeln!(
         ctx.writer,
-        "  reset [TARGET...]  Clear session state ({}), or everything with no argument",
-        RESET_TARGETS.join(", ")
+        "  reset [TARGET...]  Clear session state (data, shex, shacl,...), or everything with no argument (data, shex, shacl, ...), or everything with no argument or 'all'",
     )?;
     writeln!(
         ctx.writer,
@@ -1058,11 +1058,11 @@ fn print_help(ctx: &mut CommandContext) -> Result<()> {
     )?;
     writeln!(
         ctx.writer,
-        "  resolvers [clear]  List built-in external-shape resolver kinds, or reset the session's resolver chain"
+        "                     Show, or manage, the default prefix declarations"
     )?;
     writeln!(
         ctx.writer,
-        "                     Show, or manage, the default prefix declarations"
+        "  resolvers [clear]  List built-in external-shape resolver kinds, or reset the session's resolver chain"
     )?;
     writeln!(
         ctx.writer,
