@@ -67,6 +67,7 @@ fn run_shell(input: &str) -> ShellOutput {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl ShellOutput {
     fn transcript(&self) -> String {
         format!("--- stdout ---\n{}\n--- stderr ---\n{}", self.stdout, self.stderr)
