@@ -173,7 +173,17 @@ fn query_db_flag_without_cypher_dialect_reports_a_clear_error() {
     let dir = tempfile::tempdir().expect("tempdir");
     std::fs::write(dir.path().join("data.ttl"), DATA_TTL).unwrap();
 
-    let out = rudof_in(dir.path(), &["query", "--db", "db.lbug", "-q", "SELECT * WHERE { ?s ?p ?o }", "data.ttl"]);
+    let out = rudof_in(
+        dir.path(),
+        &[
+            "query",
+            "--db",
+            "db.lbug",
+            "-q",
+            "SELECT * WHERE { ?s ?p ?o }",
+            "data.ttl",
+        ],
+    );
     assert_ne!(out.code, 0);
     assert!(out.stderr.contains("--dialect cypher"));
 }

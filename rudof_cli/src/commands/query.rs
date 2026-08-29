@@ -116,7 +116,9 @@ impl Command for QueryCommand {
 /// connection details file written by `rudof connect`.
 fn execute_cypher(args: &QueryArgs, ctx: &mut CommandContext) -> Result<()> {
     let Some(query_spec) = &args.query else {
-        anyhow::bail!("No query specified. Use --query/-q to provide a Cypher query: a file, a URL, or the query text itself.");
+        anyhow::bail!(
+            "No query specified. Use --query/-q to provide a Cypher query: a file, a URL, or the query text itself."
+        );
     };
 
     let mut reader = query_spec
