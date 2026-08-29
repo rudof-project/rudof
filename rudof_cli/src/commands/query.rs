@@ -1,11 +1,11 @@
 use crate::cli::parser::QueryArgs;
-use crate::cli::wrappers::resolve_backend;
+use crate::cli::wrappers::{QueryDialectCli, resolve_backend};
 use crate::commands::base::{Command, CommandContext};
 use crate::commands::connect::ConnectionDetails;
 use anyhow::{Context, Result};
 use lbug::{Connection, Database, SystemConfig};
 use rudof_lib::formats::BackendSpec;
-use std::io::Write;
+use std::io::{Read, Write};
 
 /// Implementation of the `query` command.
 ///
@@ -38,8 +38,14 @@ impl Command for QueryCommand {
         // Cypher mode: query a LadybugDB database instead of the RDF/SPARQL
         // pipeline (supports other query languages per the `query` verb, see
         // discussion #747).
-        if let Some(cypher) = &self.args.cypher {
-            return execute_cypher(cypher, &self.args, ctx);
+        if matches!(self.args.dialect, QueryDialectCli::Cypher) {
+            return execute_cypher(&self.args, ctx);
+        }
+
+        if self.args.db.is_some() || self.args.connection.is_some() {
+            anyhow::bail!(
+                "--db/--connection select a LadybugDB database, which only applies to Cypher queries; add --dialect cypher"
+            );
         }
 
         let data_format = self.args.data_format.into();
@@ -108,7 +114,20 @@ impl Command for QueryCommand {
 
 /// Run a Cypher query against a LadybugDB database given by `--db` or by the
 /// connection details file written by `rudof connect`.
-fn execute_cypher(cypher: &str, args: &QueryArgs, ctx: &mut CommandContext) -> Result<()> {
+fn execute_cypher(args: &QueryArgs, ctx: &mut CommandContext) -> Result<()> {
+    let Some(query_spec) = &args.query else {
+        anyhow::bail!("No query specified. Use --query/-q to provide a Cypher query: a file, a URL, or the query text itself.");
+    };
+
+    let mut reader = query_spec
+        .open_read(None, "Cypher query")
+        .with_context(|| format!("Failed to open Cypher query from '{}'", query_spec.source_name()))?;
+    let mut cypher = String::new();
+    reader
+        .read_to_string(&mut cypher)
+        .with_context(|| format!("Failed to read Cypher query from '{}'", query_spec.source_name()))?;
+    let cypher = cypher.trim();
+
     let details = ConnectionDetails::resolve(args.db.as_deref(), args.connection.as_deref())?;
     let config = SystemConfig::default().read_only(details.read_only || args.read_only);
 

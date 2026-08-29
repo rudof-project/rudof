@@ -1380,13 +1380,14 @@ fn shell_shapemap_resolves_prefixed_names_using_default_prefixes() {
     assert_eq!(out.code, 0);
 }
 
-// `connect`/`ddl`/`load`/`query --cypher` (see tests/db.rs for their
+// `connect`/`ddl`/`load`/`query --dialect cypher` (see tests/db.rs for their
 // CLI-level coverage) are ordinary subcommands like any other, dispatched
 // through the same `CliCommand` enum as the rest of the shell — so they need
 // no shell-specific wiring. These tests just confirm that dispatch path
 // covers them too, including the connection-details file (rather than
-// session state) bridging `connect` to `load`/`query --cypher` across shell
-// lines the same way it bridges separate `rudof` process invocations.
+// session state) bridging `connect` to `load`/`query --dialect cypher`
+// across shell lines the same way it bridges separate `rudof` process
+// invocations.
 
 #[cfg(not(target_family = "wasm"))]
 #[test]
@@ -1414,7 +1415,7 @@ fn shell_connect_load_and_query_cypher_round_trip_through_connection_file() {
     let script = format!(
         "connect {} --connection {}\n\
          load {data} --connection {} --skip-validation\n\
-         query --cypher \"MATCH (n) RETURN n\" --connection {}\n\
+         query --dialect cypher -q \"MATCH (n) RETURN n\" --connection {}\n\
          exit\n",
         db_path.display(),
         connection_file.display(),

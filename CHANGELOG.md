@@ -3,11 +3,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## Unreleased
 ### Added
-- `connect <db>` command: opens (or creates) a LadybugDB database and stores the connection details in a TOML file (default `.rudof-connection.toml`) so stateless commands can reuse them (discussions #747, #748).
+- `connect <db>` command: opens (or creates) a database and stores the connection details in a TOML file (default `.rudof-connection.toml`) so stateless commands can reuse them (discussions #747, #748). `--engine <ENGINE>` selects the database engine (default and, for now, only supported value: `lbug`/LadybugDB) and is persisted in that file, so more engines can be added later without another CLI-shape change.
 - `ddl` command: derives a property graph schema from RDF data and emits DDL for the `cypher` or `gql` dialect (`--dialect cypher|gql`), without touching a database.
 - `load` command: validates RDF data against SHACL shapes and copies it into a LadybugDB property graph database (node/rel tables derived from the data; `--skip-validation` copies without validating). Replaces the earlier `lbug load-shacl`.
-- `query --cypher "..."` mode to run Cypher queries against a LadybugDB database selected via `--db <PATH>` or a connection details file.
-- `connect`/`ddl`/`load`/`query --cypher` are now documented and covered by tests as `rudof shell` subcommands too (see [shell docs](docs/src/cli_usage/shell.md#working-with-a-ladybugdb-database)); no code changes were needed since the shell already dispatches through the same command enum as the top-level CLI.
+- `query --dialect cypher` mode to run a Cypher query (given via `-q`/`--query`, same flag as SPARQL — file, URL, `-`, or inline text) against a LadybugDB database selected via `--db <PATH>` or a connection details file. `--dialect` defaults to `sparql`.
+- `connect`/`ddl`/`load`/`query --dialect cypher` are now documented and covered by tests as `rudof shell` subcommands too (see [shell docs](docs/src/cli_usage/shell.md#working-with-a-ladybugdb-database)); no code changes were needed since the shell already dispatches through the same command enum as the top-level CLI.
 
 ## 0.3.13
 ### Added

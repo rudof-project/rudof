@@ -56,4 +56,4 @@ Because the node/rel tables act as the schema of the database, subsequent mutati
 
 ## Querying the loaded data
 
-Use [`rudof query --cypher`](./connect.md#querying-with-cypher) to run Cypher queries against the loaded database.
+Use [`rudof query --dialect cypher`](./connect.md#querying-with-cypher) to run Cypher queries against the loaded database.

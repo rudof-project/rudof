@@ -1,5 +1,5 @@
 //! End-to-end tests for the LadybugDB-backed commands:
-//! `connect`, `ddl`, `load` and `query --cypher`.
+//! `connect`, `ddl`, `load` and `query --dialect cypher`.
 //!
 //! These spawn the actual `rudof` binary the same way a user would, since
 //! database creation, connection details persistence, and query execution
@@ -104,7 +104,7 @@ fn connect_persists_connection_details() {
 
     let contents = std::fs::read_to_string(dir.path().join(".rudof-connection.toml"))
         .expect("connection details file should exist");
-    assert!(contents.contains("engine = \"ladybug\""));
+    assert!(contents.contains("engine = \"lbug\""));
     assert!(contents.contains("read_only = false"));
     assert!(contents.contains("testdb.lbug"));
 }
@@ -137,10 +137,45 @@ fn load_validates_then_queries_roundtrip() {
     assert!(load.stdout.contains("Inserted 2 node(s)"));
 
     // Query through the persisted connection details (no --db needed).
-    let query = rudof_in(dir.path(), &["query", "--cypher", "MATCH (n:User) RETURN n.name"]);
+    let query = rudof_in(
+        dir.path(),
+        &["query", "--dialect", "cypher", "-q", "MATCH (n:User) RETURN n.name"],
+    );
     assert_eq!(query.code, 0, "query failed: {}\n{}", query.stdout, query.stderr);
     assert!(query.stdout.contains("Alice"));
     assert!(query.stdout.contains("Bob"));
+}
+
+#[test]
+fn query_cypher_dialect_reads_query_from_a_file() {
+    // `-q`/`--query` is a shared `InputSpec` argument (file, URL, `-`, or
+    // literal text) for both dialects, unlike the old `--cypher <STRING>`
+    // flag it replaced, which only ever accepted inline text.
+    let dir = tempfile::tempdir().expect("tempdir");
+    std::fs::write(dir.path().join("data.ttl"), DATA_TTL).unwrap();
+    std::fs::write(dir.path().join("query.cypher"), "MATCH (n:User) RETURN n.name\n").unwrap();
+
+    rudof_in(dir.path(), &["connect", "db.lbug"]);
+    let load = rudof_in(dir.path(), &["load", "data.ttl", "--skip-validation"]);
+    assert_eq!(load.code, 0, "load failed: {}\n{}", load.stdout, load.stderr);
+
+    let query = rudof_in(dir.path(), &["query", "--dialect", "cypher", "-q", "query.cypher"]);
+    assert_eq!(query.code, 0, "query failed: {}\n{}", query.stdout, query.stderr);
+    assert!(query.stdout.contains("Alice"));
+    assert!(query.stdout.contains("Bob"));
+}
+
+#[test]
+fn query_db_flag_without_cypher_dialect_reports_a_clear_error() {
+    // `--db`/`--connection` only make sense for `--dialect cypher`; without
+    // it they're silently meaningless for SPARQL, so this must be a clear
+    // error instead.
+    let dir = tempfile::tempdir().expect("tempdir");
+    std::fs::write(dir.path().join("data.ttl"), DATA_TTL).unwrap();
+
+    let out = rudof_in(dir.path(), &["query", "--db", "db.lbug", "-q", "SELECT * WHERE { ?s ?p ?o }", "data.ttl"]);
+    assert_ne!(out.code, 0);
+    assert!(out.stderr.contains("--dialect cypher"));
 }
 
 #[test]

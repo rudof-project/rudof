@@ -8,12 +8,14 @@ use std::path::{Path, PathBuf};
 pub const DEFAULT_CONNECTION_FILE: &str = ".rudof-connection.toml";
 
 /// Connection details persisted by `rudof connect` and consumed by the
-/// stateless `load` and `query --cypher` commands (see discussions #747 and
-/// #748: the CLI stays stateless — commands remain deterministic — while the
-/// connection itself is reused through this file).
+/// stateless `load` and `query --dialect cypher` commands (see discussions
+/// #747 and #748: the CLI stays stateless — commands remain deterministic —
+/// while the connection itself is reused through this file).
 #[derive(Debug, Clone)]
 pub struct ConnectionDetails {
-    /// Database engine. Only `ladybug` is currently supported.
+    /// Database engine. Only `lbug` (LadybugDB) is currently supported; see
+    /// [`crate::cli::wrappers::DbEngineCli`] for the CLI-facing enum this
+    /// mirrors.
     pub engine: String,
     /// Path to the database directory.
     pub path: PathBuf,
@@ -37,7 +39,7 @@ impl ConnectionDetails {
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow!("Connection details file is missing 'engine'"))?
             .to_string();
-        if engine != "ladybug" {
+        if engine != "lbug" {
             return Err(anyhow!("Unsupported database engine '{engine}' in connection details"));
         }
         let path = PathBuf::from(
@@ -84,7 +86,7 @@ impl ConnectionDetails {
     pub fn resolve(db: Option<&Path>, connection_file: Option<&Path>) -> Result<Self> {
         if let Some(db_path) = db {
             return Ok(Self {
-                engine: "ladybug".to_string(),
+                engine: "lbug".to_string(),
                 path: db_path.to_path_buf(),
                 read_only: false,
             });
@@ -155,7 +157,7 @@ impl Command for ConnectCommand {
             let path = db_path.expect("path is required without --in-memory");
             let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
             let details = ConnectionDetails {
-                engine: "ladybug".to_string(),
+                engine: args.engine.to_string(),
                 path: canonical,
                 read_only: args.read_only,
             };
@@ -166,7 +168,7 @@ impl Command for ConnectCommand {
             details.write_to_file(&file)?;
             writeln!(
                 ctx.writer,
-                "  Connection details stored in '{}' (used by `load` and `query --cypher`)",
+                "  Connection details stored in '{}' (used by `load` and `query --dialect cypher`)",
                 file.display()
             )?;
         }

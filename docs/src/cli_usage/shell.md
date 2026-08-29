@@ -132,7 +132,7 @@ Output saved in out.ttl
 
 ## Working with a LadybugDB database
 
-[`connect`](./connect.md), [`ddl`](./ddl.md), [`load`](./load.md) and [`query --cypher`](./connect.md#querying-with-cypher) work in the shell exactly as they do on the command line — no special-casing, since they're ordinary subcommands like `data` or `shex`. `ddl` is fully stateless (it just prints DDL derived from data given on the line), so it needs nothing from `connect` first:
+[`connect`](./connect.md), [`ddl`](./ddl.md), [`load`](./load.md) and [`query --dialect cypher`](./connect.md#querying-with-cypher) work in the shell exactly as they do on the command line — no special-casing, since they're ordinary subcommands like `data` or `shex`. `ddl` is fully stateless (it just prints DDL derived from data given on the line), so it needs nothing from `connect` first:
 
 ```
 rudof> ddl examples/user.ttl --dialect cypher
@@ -140,21 +140,23 @@ CREATE NODE TABLE User (id STRING, knows STRING, name STRING, PRIMARY KEY(id));
 CREATE REL TABLE knows (FROM User TO User);
 ```
 
-`connect`, `load` and `query --cypher`, on the other hand, are deliberately stateless too (see [discussion #748](https://github.com/rudof-project/rudof/discussions/748)) — they don't share anything through the shell session's in-memory state (`ctx.rudof`) the way `data`/`shex`/`shacl` do. Instead `connect` persists the database path to a connection-details file (`.rudof-connection.toml` by default), which `load` and `query --cypher` then read. That file is exactly what carries the connection from one shell line to the next, the same way it carries it across separate `rudof` invocations on the command line:
+`connect`, `load` and `query --dialect cypher`, on the other hand, are deliberately stateless too (see [discussion #748](https://github.com/rudof-project/rudof/discussions/748)) — they don't share anything through the shell session's in-memory state (`ctx.rudof`) the way `data`/`shex`/`shacl` do. Instead `connect` persists the database path to a connection-details file (`.rudof-connection.toml` by default), which `load` and `query --dialect cypher` then read. That file is exactly what carries the connection from one shell line to the next, the same way it carries it across separate `rudof` invocations on the command line:
 
 ```
 rudof> connect examples/db.lbug
 LadybugDB database opened successfully
   Path: examples/db.lbug
-  Connection details stored in '.rudof-connection.toml' (used by `load` and `query --cypher`)
+  Connection details stored in '.rudof-connection.toml' (used by `load` and `query --dialect cypher`)
 rudof> load examples/user.ttl --shapes examples/user.shacl
 Loaded 13 triples from RDF data
 ...
   ✓ Load complete!
-rudof> query --cypher "MATCH (n:User) RETURN n.name"
+rudof> query --dialect cypher -q "MATCH (n:User) RETURN n.name"
 Query result (4 tuples, 1 columns):
 ...
 ```
+
+`-q`/`--query` takes the query itself, the same flag SPARQL uses — a file, a URL, `-` for stdin, or (as above) the query text inline; `--dialect` just says how to interpret it. `--db`/`--connection`/`--read-only` are rejected with an error unless `--dialect cypher` is given, since they're meaningless for a SPARQL query.
 
 Because the connection lives in that file rather than the session, `reset`/`reset all` has no effect on it — clear it by deleting the file, or point elsewhere with `--connection <FILE>`/`--db <PATH>` on a given line.
 
