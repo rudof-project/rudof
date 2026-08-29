@@ -16,8 +16,10 @@ prefix schema: <http://schema.org/>
    schema:name  "Carol"  .
 
 :d a :Person ;
-   schema:name  23      .  # Should fail
+   :status      :Active ;
+   schema:name  "Dave"      . 
    
 :e a :Person ;
-   schema:name  "Emily" ;  # Should fail
+   schema:name  "Emily" ;  
+   :status      :Active ;
    schema:knows :d      .

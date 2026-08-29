@@ -6,6 +6,8 @@
 rudof connect <path-to-db>
 ```
 
+Also works inside [`rudof shell`](./shell.md#working-with-a-ladybugdb-database), the same as any other subcommand.
+
 Example:
 
 ```sh

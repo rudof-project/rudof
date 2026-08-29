@@ -6,6 +6,8 @@
 rudof ddl <data...> --dialect <cypher|gql>
 ```
 
+Also works inside [`rudof shell`](./shell.md#working-with-a-ladybugdb-database), the same as any other subcommand.
+
 The schema is discovered from the data:
 
 - Every class used in an `rdf:type` triple becomes a **node table** (one column per predicate, plus an `id` primary key column holding the subject IRI).

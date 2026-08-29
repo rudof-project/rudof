@@ -7,6 +7,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - `ddl` command: derives a property graph schema from RDF data and emits DDL for the `cypher` or `gql` dialect (`--dialect cypher|gql`), without touching a database.
 - `load` command: validates RDF data against SHACL shapes and copies it into a LadybugDB property graph database (node/rel tables derived from the data; `--skip-validation` copies without validating). Replaces the earlier `lbug load-shacl`.
 - `query --cypher "..."` mode to run Cypher queries against a LadybugDB database selected via `--db <PATH>` or a connection details file.
+- `connect`/`ddl`/`load`/`query --cypher` are now documented and covered by tests as `rudof shell` subcommands too (see [shell docs](docs/src/cli_usage/shell.md#working-with-a-ladybugdb-database)); no code changes were needed since the shell already dispatches through the same command enum as the top-level CLI.
 
 ## 0.3.13
 ### Added

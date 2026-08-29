@@ -1379,3 +1379,69 @@ fn shell_shapemap_resolves_prefixed_names_using_default_prefixes() {
     );
     assert_eq!(out.code, 0);
 }
+
+// `connect`/`ddl`/`load`/`query --cypher` (see tests/db.rs for their
+// CLI-level coverage) are ordinary subcommands like any other, dispatched
+// through the same `CliCommand` enum as the rest of the shell — so they need
+// no shell-specific wiring. These tests just confirm that dispatch path
+// covers them too, including the connection-details file (rather than
+// session state) bridging `connect` to `load`/`query --cypher` across shell
+// lines the same way it bridges separate `rudof` process invocations.
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_ddl_derives_schema_from_data() {
+    let data = fixture("shell_data.ttl");
+    let script = format!("ddl {data} --dialect cypher\nexit\n");
+    let out = run_shell(&script);
+    assert!(
+        out.stdout
+            .contains("CREATE NODE TABLE Person (id STRING, name STRING, PRIMARY KEY(id));"),
+        "expected ddl to derive a node table from the fixture, got:\n{}",
+        out.transcript()
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_connect_load_and_query_cypher_round_trip_through_connection_file() {
+    let dir = tempfile::tempdir().expect("failed to create temp dir for db test");
+    let db_path = dir.path().join("mydb");
+    let connection_file = dir.path().join(".rudof-connection.toml");
+    let data = fixture("shell_data.ttl");
+
+    let script = format!(
+        "connect {} --connection {}\n\
+         load {data} --connection {} --skip-validation\n\
+         query --cypher \"MATCH (n) RETURN n\" --connection {}\n\
+         exit\n",
+        db_path.display(),
+        connection_file.display(),
+        connection_file.display(),
+        connection_file.display(),
+    );
+    let out = run_shell(&script);
+
+    assert!(
+        out.stdout.contains("LadybugDB database opened successfully"),
+        "expected connect to succeed, got:\n{}",
+        out.transcript()
+    );
+    assert!(
+        connection_file.exists(),
+        "expected connect to persist connection details to a file, got:\n{}",
+        out.transcript()
+    );
+    assert!(
+        out.stdout.contains("Inserted 1 node(s)"),
+        "expected load, reading the connection file connect just wrote, to insert the fixture's node, got:\n{}",
+        out.transcript()
+    );
+    assert!(
+        out.stdout.contains("\"name\", String(\"Alice\"))"),
+        "expected the cypher query, reading the same connection file, to return the loaded node, got:\n{}",
+        out.transcript()
+    );
+    assert_eq!(out.code, 0);
+}

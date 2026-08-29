@@ -6,6 +6,8 @@
 rudof load <data...> [--shapes <shapes...>]
 ```
 
+Also works inside [`rudof shell`](./shell.md#working-with-a-ladybugdb-database), the same as any other subcommand.
+
 The database can be selected in two ways (in this order of precedence):
 
 1. `--db <PATH>`: open the LadybugDB database at the given path.

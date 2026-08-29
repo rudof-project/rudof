@@ -40,3 +40,5 @@ bindings/python/docs/_build/
 result
 
 .codegraph/
+
+ .rudof-connection.toml
