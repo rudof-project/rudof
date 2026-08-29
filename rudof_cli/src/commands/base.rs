@@ -2,10 +2,10 @@ use crate::cli::parser::{
     Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsNoBackend, CommonArgsOutputForceOverWrite,
 };
 use crate::commands::{
-    CompareCommand, CompletionCommand, ConfigCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand,
-    MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand, PgschemaValidateCommand, QueryCommand,
-    RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand, ShapemapCommand, ShexCheckCommand,
-    ShexCommand, ShexValidateCommand, SparqlCommand, ValidateCommand,
+    CompareCommand, CompletionCommand, ConfigCommand, ConnectCommand, ConvertCommand, DataCommand, DctapCommand,
+    DdlCommand, GenerateCommand, LoadCommand, MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand,
+    PgschemaValidateCommand, QueryCommand, RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand,
+    ShapemapCommand, ShexCheckCommand, ShexCommand, ShexValidateCommand, SparqlCommand, ValidateCommand,
 };
 use crate::output::{ColorSupport, get_writer};
 use crate::shell::ShellCommand;
@@ -143,6 +143,9 @@ impl CommandFactory {
             CliCommand::Completion(args) => Ok(Box::new(CompletionCommand::new(args))),
             CliCommand::Config(args) => Ok(Box::new(ConfigCommand::new(args))),
             CliCommand::Shell(args) => Ok(Box::new(ShellCommand::new(args))),
+            CliCommand::Connect(args) => Ok(Box::new(ConnectCommand::new(args))),
+            CliCommand::Ddl(args) => Ok(Box::new(DdlCommand::new(args))),
+            CliCommand::Load(args) => Ok(Box::new(LoadCommand::new(args))),
         }
     }
 }
@@ -281,5 +284,11 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
+        CliCommand::Connect(_) => CommonArgs::None,
+        CliCommand::Ddl(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Load(_) => CommonArgs::None,
     }
 }

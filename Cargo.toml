@@ -281,6 +281,7 @@ indoc = "2"
 ipnetwork = "0.21"
 is_ci = "1.0"
 itertools = "0.14"
+lbug = "0.19"
 josekit = "0.10.3"
 lazy-regex = "3.4"
 mie = { version = "0.3.14", path = "./mie" }
