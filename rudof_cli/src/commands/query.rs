@@ -2,10 +2,9 @@ use crate::cli::parser::QueryArgs;
 use crate::cli::wrappers::{QueryDialectCli, resolve_backend};
 use crate::commands::base::{Command, CommandContext};
 use crate::commands::connect::ConnectionDetails;
-use anyhow::{Context, Result};
-use lbug::{Connection, Database, SystemConfig};
+use anyhow::{Context, Result, anyhow};
 use rudof_lib::formats::BackendSpec;
-use std::io::{Read, Write};
+use std::io::Write;
 
 /// Implementation of the `query` command.
 ///
@@ -115,47 +114,35 @@ impl Command for QueryCommand {
 /// Run a Cypher query against a LadybugDB database given by `--db` or by the
 /// connection details file written by `rudof connect`.
 fn execute_cypher(args: &QueryArgs, ctx: &mut CommandContext) -> Result<()> {
-    let Some(query_spec) = &args.query else {
-        anyhow::bail!(
-            "No query specified. Use --query/-q to provide a Cypher query: a file, a URL, or the query text itself."
-        );
-    };
-
-    let mut reader = query_spec
-        .open_read(None, "Cypher query")
-        .with_context(|| format!("Failed to open Cypher query from '{}'", query_spec.source_name()))?;
-    let mut cypher = String::new();
-    reader
-        .read_to_string(&mut cypher)
-        .with_context(|| format!("Failed to read Cypher query from '{}'", query_spec.source_name()))?;
-    let cypher = cypher.trim();
-
     let details = ConnectionDetails::resolve(args.db.as_deref(), args.connection.as_deref())?;
-    let config = SystemConfig::default().read_only(details.read_only || args.read_only);
+    let read_only = details.read_only || args.read_only;
 
-    let db = Database::new(&details.path, config)
-        .with_context(|| format!("Failed to open LadybugDB database at '{}'", details.path.display()))?;
-    let conn = Connection::new(&db).context("Failed to connect to LadybugDB")?;
+    let query_spec = args.query.as_ref().ok_or_else(|| {
+        anyhow!("No query specified. Use --query/-q to provide a Cypher query: a file, a URL, or the query text itself.")
+    })?;
 
-    let result = conn.query(cypher).context("Cypher query failed")?;
+    let result = ctx
+        .rudof
+        .query_cypher(query_spec)
+        .with_db(&details.path, read_only)
+        .execute()
+        .context("Cypher query failed")?;
 
     writeln!(
         ctx.writer,
         "Query result ({} tuples, {} columns):",
-        result.get_num_tuples(),
-        result.get_num_columns()
+        result.rows.len(),
+        result.columns.len()
     )?;
-    writeln!(ctx.writer, "Columns: {:?}", result.get_column_names())?;
+    writeln!(ctx.writer, "Columns: {:?}", result.columns)?;
     writeln!(
         ctx.writer,
         "Compiling time: {:.2}ms, Execution time: {:.2}ms",
-        result.get_compiling_time(),
-        result.get_execution_time()
+        result.compiling_time_ms, result.execution_time_ms
     )?;
 
-    // Iterate over the result
-    for row in result {
-        writeln!(ctx.writer, "  {:?}", row)?;
+    for row in &result.rows {
+        writeln!(ctx.writer, "  {}", serde_json::to_string(row)?)?;
     }
 
     Ok(())

@@ -1440,7 +1440,7 @@ fn shell_connect_load_and_query_cypher_round_trip_through_connection_file() {
         out.transcript()
     );
     assert!(
-        out.stdout.contains("\"name\", String(\"Alice\"))"),
+        out.stdout.contains(r#""name":"Alice""#),
         "expected the cypher query, reading the same connection file, to return the loaded node, got:\n{}",
         out.transcript()
     );

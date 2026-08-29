@@ -1,7 +1,6 @@
 use crate::cli::parser::ConnectArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Context, Result, anyhow};
-use lbug::{Connection, Database, SystemConfig};
 use std::path::{Path, PathBuf};
 
 /// File where `rudof connect` stores connection details by default.
@@ -11,11 +10,14 @@ pub const DEFAULT_CONNECTION_FILE: &str = ".rudof-connection.toml";
 /// stateless `load` and `query --dialect cypher` commands (see discussions
 /// #747 and #748: the CLI stays stateless — commands remain deterministic —
 /// while the connection itself is reused through this file).
+///
+/// This is a thin TOML-serializable wrapper: the actual "open/validate a
+/// database" logic lives in `rudof_lib` (`Rudof::connect_pg_db` et al.),
+/// which this converts to/from at the boundary via [`Self::to_pg_db_connection`].
 #[derive(Debug, Clone)]
 pub struct ConnectionDetails {
     /// Database engine. Only `lbug` (LadybugDB) is currently supported; see
-    /// [`crate::cli::wrappers::DbEngineCli`] for the CLI-facing enum this
-    /// mirrors.
+    /// `rudof_lib::formats::DbEngine`.
     pub engine: String,
     /// Path to the database directory.
     pub path: PathBuf,
@@ -119,33 +121,29 @@ impl Command for ConnectCommand {
 
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let args = &self.args;
-        let db_path = args.path.as_deref();
+        let engine: rudof_lib::formats::DbEngine =
+            args.engine.to_string().parse().context("Unsupported database engine")?;
 
-        let db = if args.in_memory {
-            Database::in_memory(SystemConfig::default())
-        } else {
-            Database::new(
-                db_path.expect("path is required without --in-memory"),
-                SystemConfig::default().read_only(args.read_only),
-            )
-        }
-        .context("Failed to create/open LadybugDB database")?;
-
-        let _conn = Connection::new(&db).context("Failed to connect to LadybugDB")?;
-        std::mem::drop(_conn);
+        let info = ctx
+            .rudof
+            .connect_pg_db(args.path.as_deref())
+            .with_in_memory(args.in_memory)
+            .with_read_only(args.read_only)
+            .with_engine(&engine)
+            .execute()?;
 
         writeln!(ctx.writer, "LadybugDB database opened successfully")?;
         if args.in_memory {
             writeln!(ctx.writer, "  Mode: in-memory")?;
         } else {
-            let path = db_path.expect("path is required without --in-memory");
+            let path = args.path.as_deref().expect("path is required without --in-memory");
             writeln!(ctx.writer, "  Path: {}", path.display())?;
             if args.read_only {
                 writeln!(ctx.writer, "  Read-only: true")?;
             }
         }
-        writeln!(ctx.writer, "  Builder storage version: {}", lbug::get_storage_version())?;
-        writeln!(ctx.writer, "  Library source: {}", lbug::get_library_source())?;
+        writeln!(ctx.writer, "  Builder storage version: {}", info.storage_version)?;
+        writeln!(ctx.writer, "  Library source: {}", info.library_source)?;
 
         if args.in_memory {
             writeln!(
@@ -154,12 +152,14 @@ impl Command for ConnectCommand {
                  do not outlive this process"
             )?;
         } else {
-            let path = db_path.expect("path is required without --in-memory");
-            let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+            let conn = ctx
+                .rudof
+                .pg_db_connection()
+                .expect("connect_pg_db stores connection info for non-in-memory connections");
             let details = ConnectionDetails {
-                engine: args.engine.to_string(),
-                path: canonical,
-                read_only: args.read_only,
+                engine: conn.engine.to_string(),
+                path: conn.path.clone(),
+                read_only: conn.read_only,
             };
             let file = args
                 .connection
@@ -173,7 +173,6 @@ impl Command for ConnectCommand {
             )?;
         }
 
-        let _ = db;
         Ok(())
     }
 }

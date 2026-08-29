@@ -12,7 +12,6 @@ mod load;
 mod materialize;
 mod mcp;
 mod node;
-mod pg_mapping;
 mod pgschema;
 mod pgschema_validate;
 mod query;

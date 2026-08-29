@@ -28,6 +28,10 @@ description = """Examples for reading DCTAP profiles from inline content or file
 title = "PG Schema Validation"
 description = """Examples for reading Property Graph schemas, loading typemaps, and validating PG data."""
 
+[categories.pg_db]
+title = "Property Graph Database (LadybugDB)"
+description = """Examples for deriving DDL from RDF data, and connecting to, loading, and querying a LadybugDB property graph database."""
+
 [categories.materialize]
 title = "Materialize"
 description = """Examples for materializing RDF graphs from ShEx schemas with Map semantic actions."""
@@ -53,7 +57,7 @@ title = "Utility & Introspection"
 description = """Examples for config loading, resets, versioning, and module introspection."""
 
 [category_order]
-order = ["rdf", "sparql", "shex", "materialize", "shacl", "dctap", "pgschema", "prefixes", "rdf_config", "endpoint", "generate", "utility"]
+order = ["rdf", "sparql", "shex", "materialize", "shacl", "dctap", "pgschema", "pg_db", "prefixes", "rdf_config", "endpoint", "generate", "utility"]
 
 [[example]]
 key = "shex_validate_inline"
@@ -235,6 +239,24 @@ description = "Load PG data, a PG schema and a typemap, then validate and serial
 category = "pgschema"
 files = {}
 expected_output = ["n2_wrong"]
+
+[[example]]
+key = "pg_db_ddl"
+source_file = "pg_db/pg_db_ddl.py"
+title = "Derive Property Graph DDL"
+description = "Derive a property graph schema from RDF data and emit it as Cypher DDL, without opening a database"
+category = "pg_db"
+files = {}
+expected_output = ["CREATE NODE TABLE Person", "CREATE REL TABLE knows"]
+
+[[example]]
+key = "pg_db_load_and_query"
+source_file = "pg_db/pg_db_load_and_query.py"
+title = "Connect, Load and Query a LadybugDB Database"
+description = "Connect to a LadybugDB database, load RDF data into it, and run a Cypher query against it"
+category = "pg_db"
+files = {}
+expected_output = ["Alice", "Bob"]
 
 [[example]]
 key = "prefixes_manage"

@@ -5,17 +5,18 @@
 //! SPARQL queries, and related semantic web technologies.
 
 use crate::PyRudofConfig;
-use pyo3::{PyErr, PyResult, Python, exceptions::PyValueError, pyclass, pymethods};
+use pyo3::{Py, PyAny, PyErr, PyResult, Python, exceptions::PyValueError, pyclass, pymethods};
+use pythonize::pythonize;
 use rudof_lib::{
     Rudof,
     errors::{InputSpecError, RudofError},
     formats::{
         ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DCTapFormat, DataFormat, DataReaderMode,
-        InputSpec, NodeInspectionMode, PgSchemaFormat, QueryType, RdfConfigFormat, ResultConversionFormat,
-        ResultConversionMode, ResultDCTapFormat, ResultDataFormat, ResultPgSchemaValidationFormat, ResultQueryFormat,
-        ResultRdfConfigFormat, ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat,
-        ShExFormat, ShExValidationSortByMode, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
-        ShapeMapFormat,
+        DbEngine, DdlDialect, InputSpec, NodeInspectionMode, PgSchemaFormat, QueryType, RdfConfigFormat,
+        ResultConversionFormat, ResultConversionMode, ResultDCTapFormat, ResultDataFormat,
+        ResultPgSchemaValidationFormat, ResultQueryFormat, ResultRdfConfigFormat, ResultServiceFormat,
+        ResultShExValidationFormat, ResultShaclValidationFormat, ShExFormat, ShExValidationSortByMode, ShaclFormat,
+        ShaclValidationMode, ShaclValidationSortByMode, ShapeMapFormat,
     },
 };
 use std::{io::BufWriter, path::Path, str::FromStr};
@@ -1056,6 +1057,207 @@ impl PyRudof {
         self.inner.reset_pg_schema_validation().execute();
     }
 
+    // ========================================================================
+    // Property Graph Database (LadybugDB)
+    // ========================================================================
+
+    /// Opens (creating if necessary) a property graph database and stores
+    /// the connection so :meth:`load_pg_db`/:meth:`query_cypher` can reuse
+    /// it without repeating the path.
+    ///
+    /// Args:
+    ///     path (str, optional): Path to the database directory. Required unless ``in_memory=True``.
+    ///     in_memory (bool, optional): Create a transient in-memory database (its connection
+    ///         cannot be reused since it does not outlive the process). Defaults to ``False``.
+    ///     read_only (bool, optional): Open the database in read-only mode. Defaults to ``False``.
+    ///     engine (DbEngine, optional): Database engine. Defaults to ``DbEngine.Lbug``, the only
+    ///         one supported today.
+    ///
+    /// Raises:
+    ///     RudofError: If the database cannot be opened.
+    #[pyo3(signature = (path=None, in_memory=false, read_only=false, engine=None))]
+    pub fn connect_pg_db(
+        &mut self,
+        path: Option<&str>,
+        in_memory: bool,
+        read_only: bool,
+        engine: Option<&PyDbEngine>,
+    ) -> PyResult<()> {
+        let engine = cnv_db_engine(engine);
+        let path = path.map(Path::new);
+
+        let mut connect = self
+            .inner
+            .connect_pg_db(path)
+            .with_in_memory(in_memory)
+            .with_read_only(read_only);
+        if let Some(engine) = engine {
+            connect = connect.with_engine(engine);
+        }
+        connect.execute().map_err(cnv_err)?;
+
+        Ok(())
+    }
+
+    /// Derives a property graph schema from RDF data and emits it as DDL.
+    ///
+    /// Never touches loaded RDF data or the database connection -- this is a
+    /// pure function of `data`, useful to inspect the schema before loading
+    /// anything.
+    ///
+    /// Args:
+    ///     data (str): String, file path or URL to the RDF data.
+    ///     dialect (DdlDialect, optional): Target DDL dialect. Defaults to ``DdlDialect.Cypher``.
+    ///     graph_type_name (str, optional): Graph type name used by the ``gql`` dialect.
+    ///         Defaults to ``"rudof_graph"``.
+    ///     format (RDFFormat, optional): RDF data format. Defaults to ``RDFFormat.Turtle``.
+    ///     base (str, optional): Base IRI for the data.
+    ///
+    /// Returns:
+    ///     str: The generated DDL.
+    ///
+    /// Raises:
+    ///     RudofError: If the data cannot be read or parsed.
+    #[pyo3(signature = (data, dialect=None, graph_type_name=None, format=None, base=None))]
+    pub fn pg_db_ddl(
+        &self,
+        data: &str,
+        dialect: Option<&PyDdlDialect>,
+        graph_type_name: Option<&str>,
+        format: Option<&PyRDFFormat>,
+        base: Option<&str>,
+    ) -> PyResult<String> {
+        let dialect = cnv_ddl_dialect(dialect);
+        let format = cnv_rdf_format(format);
+        let data = vec![
+            InputSpec::from_str(data)
+                .map_err(|e| InputSpecError::InvalidInput { error: e.to_string() })
+                .map_err(|e| cnv_err(e.into()))?,
+        ];
+
+        let mut ddl_builder = self.inner.pg_db_ddl(&data);
+        if let Some(dialect) = dialect {
+            ddl_builder = ddl_builder.with_dialect(dialect);
+        }
+        if let Some(name) = graph_type_name {
+            ddl_builder = ddl_builder.with_graph_type_name(name);
+        }
+        if let Some(format) = format {
+            ddl_builder = ddl_builder.with_data_format(format);
+        }
+        if let Some(base) = base {
+            ddl_builder = ddl_builder.with_base_data(base);
+        }
+
+        ddl_builder.execute().map_err(cnv_err)
+    }
+
+    /// Loads RDF data, validates it against SHACL shapes (unless
+    /// `skip_validation`), derives a property graph schema, and copies the
+    /// data into the connected database.
+    ///
+    /// Args:
+    ///     data (str): String, file path or URL to the RDF data.
+    ///     shapes (str, optional): String, file path or URL to SHACL shapes. If not
+    ///         given, shapes embedded in the data itself are used.
+    ///     skip_validation (bool, optional): Skip SHACL validation and just copy the data
+    ///         (the database DDL enforces conformance). Defaults to ``False``.
+    ///     db (str, optional): Path overriding the database connected via :meth:`connect_pg_db`.
+    ///     format (RDFFormat, optional): RDF data format. Defaults to ``RDFFormat.Turtle``.
+    ///     base (str, optional): Base IRI for the data.
+    ///
+    /// Returns:
+    ///     str: Progress text describing what was loaded, validated, and inserted.
+    ///
+    /// Raises:
+    ///     RudofError: If no database is connected, SHACL validation fails, or loading
+    ///         otherwise fails.
+    #[pyo3(signature = (data, shapes=None, skip_validation=false, db=None, format=None, base=None))]
+    pub fn load_pg_db(
+        &mut self,
+        data: &str,
+        shapes: Option<&str>,
+        skip_validation: bool,
+        db: Option<&str>,
+        format: Option<&PyRDFFormat>,
+        base: Option<&str>,
+    ) -> PyResult<String> {
+        let format = cnv_rdf_format(format);
+        let data = vec![
+            InputSpec::from_str(data)
+                .map_err(|e| InputSpecError::InvalidInput { error: e.to_string() })
+                .map_err(|e| cnv_err(e.into()))?,
+        ];
+        let shapes = shapes
+            .map(InputSpec::from_str)
+            .transpose()
+            .map_err(|e| InputSpecError::InvalidInput { error: e.to_string() })
+            .map_err(|e| cnv_err(e.into()))?;
+
+        let mut writer = BufWriter::new(Vec::new());
+        let mut loading = self
+            .inner
+            .load_pg_db(&data, &mut writer)
+            .with_skip_validation(skip_validation);
+        if let Some(db) = db {
+            loading = loading.with_db(Path::new(db), false);
+        }
+        if let Some(shapes) = &shapes {
+            loading = loading.with_shapes(shapes);
+        }
+        if let Some(format) = format {
+            loading = loading.with_data_format(format);
+        }
+        if let Some(base) = base {
+            loading = loading.with_base_data(base);
+        }
+        loading.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
+    }
+
+    /// Runs a Cypher query against the connected database.
+    ///
+    /// Args:
+    ///     query (str): String, file path or URL for the Cypher query.
+    ///     db (str, optional): Path overriding the database connected via :meth:`connect_pg_db`.
+    ///     read_only (bool, optional): Open the database in read-only mode. Defaults to ``False``.
+    ///
+    /// Returns:
+    ///     dict: ``{"columns": [...], "rows": [...], "compiling_time_ms": float, "execution_time_ms": float}``.
+    ///
+    /// Raises:
+    ///     RudofError: If no database is connected or the query fails.
+    #[pyo3(signature = (query, db=None, read_only=false))]
+    pub fn query_cypher(
+        &mut self,
+        py: Python<'_>,
+        query: &str,
+        db: Option<&str>,
+        read_only: bool,
+    ) -> PyResult<Py<PyAny>> {
+        let query = InputSpec::from_str(query)
+            .map_err(|e| InputSpecError::InvalidInput { error: e.to_string() })
+            .map_err(|e| cnv_err(e.into()))?;
+
+        let mut querying = self.inner.query_cypher(&query);
+        if let Some(db) = db {
+            querying = querying.with_db(Path::new(db), read_only);
+        }
+        let result = querying.execute().map_err(cnv_err)?;
+
+        let obj = pythonize(py, &result).map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(obj.unbind())
+    }
+
     /// Returns the current default prefix map.
     ///
     /// These are the prefix declarations assumed and prepended by default to
@@ -1724,6 +1926,23 @@ pub enum PyResultPgSchemaValidationFormat {
     Csv,
 }
 
+/// Database engine used by `connect_pg_db`. Only `Lbug` (LadybugDB) exists
+/// today; kept as an enum so other engines can be added later without an API
+/// break.
+#[pyclass(eq, eq_int, name = "DbEngine")]
+#[derive(PartialEq)]
+pub enum PyDbEngine {
+    Lbug,
+}
+
+/// Target dialect for property graph DDL generated by `pg_db_ddl`.
+#[pyclass(eq, eq_int, name = "DdlDialect")]
+#[derive(PartialEq)]
+pub enum PyDdlDialect {
+    Cypher,
+    Gql,
+}
+
 /// RDF-config input formats.
 #[pyclass(eq, eq_int, name = "RdfConfigFormat")]
 #[derive(PartialEq)]
@@ -1999,6 +2218,23 @@ fn cnv_pgschema_format(format: Option<&PyPgSchemaFormat>) -> Option<&PgSchemaFor
 
     match format.unwrap() {
         PyPgSchemaFormat::PgSchemaC => Some(&PgSchemaFormat::PgSchemaC),
+    }
+}
+
+fn cnv_db_engine(engine: Option<&PyDbEngine>) -> Option<&DbEngine> {
+    engine?;
+
+    match engine.unwrap() {
+        PyDbEngine::Lbug => Some(&DbEngine::Lbug),
+    }
+}
+
+fn cnv_ddl_dialect(dialect: Option<&PyDdlDialect>) -> Option<&DdlDialect> {
+    dialect?;
+
+    match dialect.unwrap() {
+        PyDdlDialect::Cypher => Some(&DdlDialect::Cypher),
+        PyDdlDialect::Gql => Some(&DdlDialect::Gql),
     }
 }
 

@@ -10,6 +10,7 @@ pub fn reset_all(rudof: &mut Rudof) {
     rudof.shex_validation_results = None;
     rudof.pg_schema = None;
     rudof.pg_schema_validation_results = None;
+    rudof.pg_db_connection = None;
     rudof.typemap = None;
     rudof.shapemap = None;
     rudof.sparql_query = None;

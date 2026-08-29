@@ -17,7 +17,22 @@ serde.workspace = true
 toml.workspace = true
 walkdir.workspace = true
 anyhow.workspace = true
-zip.workspace = true
+# `default-features = false` drops `zip`'s `zstd` feature only: its compiled
+# zstd symbols clash at link time with the ones bundled in `lbug` (now a
+# transitive dependency via rudof_lib, a dev-dependency here). The corpus
+# archive this crate reads doesn't use zstd compression, so every other
+# default codec (deflate/bzip2/lzma/xz/aes) stays enabled. Declared directly
+# rather than via `zip.workspace = true`: Cargo won't let a member override
+# `default-features` on an inherited workspace dependency.
+zip = { version = "2", default-features = false, features = [
+    "aes-crypto",
+    "bzip2",
+    "deflate64",
+    "deflate",
+    "lzma",
+    "time",
+    "xz",
+] }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 criterion.workspace = true
