@@ -58,11 +58,17 @@ jobs:
         with:
           working-directory: bindings/python
           target: ${{ matrix.target }}
-          manylinux: auto
+          # `auto` picks manylinux2014 (CentOS 7), whose default toolchain
+          # predates GCC 13. `lbug` (LadybugDB) ships prebuilt headers built
+          # against GCC 13 and using C++23's <format>, which manylinux2014's
+          # compiler can't parse ("fatal error: format: No such file or
+          # directory"). manylinux_2_28 (AlmaLinux 8) is needed so
+          # gcc-toolset-13 is installable below.
+          manylinux: "2_28"
           args: --release --out dist --interpreter ${{ matrix.python-version }}
           sccache: 'true'
           before-script-linux: |
-            # If we're running on rhel centos, install needed packages.
+            # If we're running on rhel/almalinux (manylinux containers), install needed packages.
             if command -v yum &> /dev/null; then
                 yum update -y && yum install -y perl-core openssl openssl-devel pkgconfig libatomic
 
@@ -70,6 +76,17 @@ jobs:
                 # in order to build openssl with -latomic flag.
                 if [[ ! -d "/usr/lib64" ]]; then
                     ln -s /usr/lib/libatomic.so.1 /usr/lib/libatomic.so
+                fi
+
+                # lbug (LadybugDB) needs a C++23 <format>-capable compiler
+                # (GCC 13+) to build its cxx FFI bridge; manylinux_2_28's
+                # default GCC is older, so pull in gcc-toolset-13 for this
+                # build only. Best-effort: if the package isn't available,
+                # fall through to the container's default compiler.
+                if yum install -y gcc-toolset-13 2>/dev/null; then
+                    source /opt/rh/gcc-toolset-13/enable
+                    export CC=gcc
+                    export CXX=g++
                 fi
             else
                 # If we're running on debian-based system.
@@ -98,6 +115,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      # `lbug` (LadybugDB) unconditionally links against OpenSSL
+      # (`cargo:rustc-link-lib=dylib=ssl`/`crypto`) on every platform. The
+      # Windows runner ships OpenSSL but the linker doesn't know where to
+      # find it unless these point at it -- mirrors the equivalent step in
+      # artifacts.yml's windows job (already needed there for the same
+      # reason, since rudof_cli has depended on lbug since before this).
+      - name: Point Cargo at the pre-installed OpenSSL
+        run: |
+          Get-Command openssl
+          openssl version
+          dir "C:\Program Files\OpenSSL\lib"
+          echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV
+          echo "OPENSSL_DIR=C:/Program Files/OpenSSL/" >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -117,6 +148,14 @@ jobs:
 
   macos:
     runs-on: ${{ matrix.vm }}
+    # `lbug` (LadybugDB)'s cxx FFI bridge uses C++20's <format>, which Apple's
+    # libc++ only makes available starting deployment target 13.3 (Ventura) --
+    # below that, `<format>`'s contents are availability-gated out entirely.
+    # maturin/rustc otherwise default x86_64 to 10.7/10.12 and arm64 to 11.0,
+    # both too old. An explicit MACOSX_DEPLOYMENT_TARGET here overrides that
+    # default (confirmed: maturin only computes one when none is set).
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "13.3"
     strategy:
       fail-fast: false
       matrix:
