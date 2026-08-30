@@ -155,6 +155,12 @@ jobs:
           echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV
           echo "OPENSSL_DIR=C:/Program Files/OpenSSL/" >> $env:GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
+
+          # The above fixes linking; pyrudof.pyd still needs the actual
+          # libssl-3-x64.dll/libcrypto-3-x64.dll at import time. The image's
+          # own provisioning script already adds this to the machine PATH,
+          # but make it explicit rather than relying on that persisting.
+          echo "C:\Program Files\OpenSSL\bin" >> $env:GITHUB_PATH
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -169,6 +175,20 @@ jobs:
           path: bindings/python/dist
       - name: Install Built Wheel
         run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
+      # Diagnostic: if importing pyrudof still fails with "DLL load failed",
+      # Python's error doesn't name the missing dependency. List what the
+      # built .pyd actually needs so the next failure is actionable.
+      - name: List pyrudof.pyd's DLL dependencies
+        run: |
+          $sitePkg = python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+          $pyd = Get-ChildItem "$sitePkg\pyrudof" -Filter *.pyd | Select-Object -First 1
+          Write-Host "Inspecting $($pyd.FullName)"
+          $dumpbin = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($dumpbin) {
+              & $dumpbin.FullName /dependents $pyd.FullName
+          } else {
+              Write-Host "dumpbin not found"
+          }
       - name: Test Built Wheel
         run: cd bindings/python/tests && python3 -m unittest discover -vvv
 
