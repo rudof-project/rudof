@@ -62,9 +62,17 @@ jobs:
           # predates GCC 13. `lbug` (LadybugDB) ships prebuilt headers built
           # against GCC 13 and using C++23's <format>, which manylinux2014's
           # compiler can't parse ("fatal error: format: No such file or
-          # directory"). manylinux_2_28 (AlmaLinux 8) is needed so
-          # gcc-toolset-13 is installable below.
-          manylinux: "2_28"
+          # directory"). manylinux_2_28 (AlmaLinux 8) would make
+          # gcc-toolset-13 installable, but its default OpenSSL is 1.1.1,
+          # which lacks `SSL_get1_peer_certificate` (added in OpenSSL 3.0)
+          # that lbug's prebuilt library calls -- the resulting wheel links
+          # fine (Linux allows unresolved symbols in a .so at link time) but
+          # fails at import with "undefined symbol: SSL_get1_peer_certificate"
+          # once loaded against a real 1.1.1 on the test runner. manylinux_2_34
+          # (AlmaLinux 9) defaults to OpenSSL 3.x, matching what the
+          # ubuntu-latest/ubuntu-24.04-arm runners used below have, so the
+          # wheel's dynamic OpenSSL dependency resolves consistently.
+          manylinux: "2_34"
           args: --release --out dist --interpreter ${{ matrix.python-version }}
           sccache: 'true'
           before-script-linux: |
@@ -79,10 +87,10 @@ jobs:
                 fi
 
                 # lbug (LadybugDB) needs a C++23 <format>-capable compiler
-                # (GCC 13+) to build its cxx FFI bridge; manylinux_2_28's
-                # default GCC is older, so pull in gcc-toolset-13 for this
-                # build only. Best-effort: if the package isn't available,
-                # fall through to the container's default compiler.
+                # (GCC 13+) to build its cxx FFI bridge; manylinux_2_34's
+                # default GCC (11) is older, so pull in gcc-toolset-13 for
+                # this build only. Best-effort: if the package isn't
+                # available, fall through to the container's default compiler.
                 if yum install -y gcc-toolset-13 2>/dev/null; then
                     source /opt/rh/gcc-toolset-13/enable
                     export CC=gcc
