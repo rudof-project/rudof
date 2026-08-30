@@ -124,16 +124,34 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # `lbug` (LadybugDB) unconditionally links against OpenSSL
-      # (`cargo:rustc-link-lib=dylib=ssl`/`crypto`) on every platform. The
-      # Windows runner ships OpenSSL but the linker doesn't know where to
-      # find it unless these point at it -- mirrors the equivalent step in
-      # artifacts.yml's windows job (already needed there for the same
-      # reason, since rudof_cli has depended on lbug since before this).
+      # (`cargo:rustc-link-lib=dylib=ssl`/`crypto`) on every platform, via a
+      # raw `cargo:rustc-link-lib` directive rather than the `openssl-sys`
+      # build system -- so OPENSSL_LIB_DIR/OPENSSL_DIR below (which only
+      # openssl-sys-based crates read) don't help it. On the MSVC target
+      # that raw directive makes the linker look for a file literally named
+      # `ssl.lib`/`crypto.lib`, but the pre-installed Windows OpenSSL ships
+      # them as `libssl.lib`/`libcrypto.lib` (upstream OpenSSL naming) --
+      # hence "LINK : fatal error LNK1181: cannot open input file 'ssl.lib'".
+      # Copy them to the names the linker expects and put that directory on
+      # LIB. Mirrors the equivalent step in artifacts.yml's windows job
+      # (already needed there for the same reason, since rudof_cli has
+      # depended on lbug since before this).
       - name: Point Cargo at the pre-installed OpenSSL
         run: |
+          $opensslLibDir = "C:\Program Files\OpenSSL\lib"
           Get-Command openssl
           openssl version
-          dir "C:\Program Files\OpenSSL\lib"
+          Get-ChildItem $opensslLibDir -Recurse -Filter *.lib
+
+          $shimDir = "$env:RUNNER_TEMP\openssl-lib-shim"
+          New-Item -ItemType Directory -Force -Path $shimDir | Out-Null
+          foreach ($name in "ssl", "crypto") {
+              $match = Get-ChildItem $opensslLibDir -Recurse -Filter "*$name.lib" | Select-Object -First 1
+              if (-not $match) { throw "No $name.lib (or lib$name.lib) found under $opensslLibDir" }
+              Copy-Item $match.FullName "$shimDir\$name.lib" -Force
+          }
+
+          echo "LIB=$shimDir;$env:LIB" >> $env:GITHUB_ENV
           echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV
           echo "OPENSSL_DIR=C:/Program Files/OpenSSL/" >> $env:GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
