@@ -118,7 +118,9 @@ fn execute_cypher(args: &QueryArgs, ctx: &mut CommandContext) -> Result<()> {
     let read_only = details.read_only || args.read_only;
 
     let query_spec = args.query.as_ref().ok_or_else(|| {
-        anyhow!("No query specified. Use --query/-q to provide a Cypher query: a file, a URL, or the query text itself.")
+        anyhow!(
+            "No query specified. Use --query/-q to provide a Cypher query: a file, a URL, or the query text itself."
+        )
     })?;
 
     let result = ctx

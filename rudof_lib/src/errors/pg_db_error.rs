@@ -27,9 +27,7 @@ pub enum PgDbError {
 
     /// No database connection available: neither an explicit path/connection
     /// file override nor a prior `connect` call in this session.
-    #[error(
-        "No database specified. Call `connect_pg_db` first, or pass an explicit database path."
-    )]
+    #[error("No database specified. Call `connect_pg_db` first, or pass an explicit database path.")]
     NoConnection,
 
     /// The database connection in use is read-only but a write was attempted.

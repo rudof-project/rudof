@@ -86,7 +86,15 @@ impl PgDbOperations for Rudof {
         base_data: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
     ) -> Result<String> {
-        pg_db_ddl(self, data, dialect, graph_type_name, data_format, base_data, reader_mode)
+        pg_db_ddl(
+            self,
+            data,
+            dialect,
+            graph_type_name,
+            data_format,
+            base_data,
+            reader_mode,
+        )
     }
 
     fn load_pg_db<W: io::Write>(

@@ -8,7 +8,9 @@
 //! CLI's `connect`/`load`/`query` commands already did before this module
 //! existed.
 
-use super::schema::{PgSchemaModel, RDF_TYPE, esc, node_columns, object_str, sanitize_prop_name, subject_str, term_value};
+use super::schema::{
+    PgSchemaModel, RDF_TYPE, esc, node_columns, object_str, sanitize_prop_name, subject_str, term_value,
+};
 use crate::{CypherQueryResult, PgDbConnection, errors::PgDbError};
 use lbug::{Connection, Database, NodeVal, RelVal, SystemConfig, Value as LbugValue};
 use oxrdf::{Term as OxTerm, Triple as OxTriple};
@@ -86,9 +88,7 @@ pub(crate) fn run_cypher_query(conn_info: &PgDbConnection, cypher: &str) -> Resu
     let compiling_time_ms = result.get_compiling_time();
     let execution_time_ms = result.get_execution_time();
 
-    let rows = result
-        .map(|row| row.into_iter().map(value_to_json).collect())
-        .collect();
+    let rows = result.map(|row| row.into_iter().map(value_to_json).collect()).collect();
 
     Ok(CypherQueryResult {
         columns,
@@ -314,7 +314,9 @@ fn value_to_json(value: LbugValue) -> serde_json::Value {
         LbugValue::Float(x) => serde_json::Number::from_f64(f64::from(x)).map_or(J::Null, J::Number),
         LbugValue::String(s) => J::String(s),
         LbugValue::Json(j) => j,
-        LbugValue::List(_, items) | LbugValue::Array(_, items) => J::Array(items.into_iter().map(value_to_json).collect()),
+        LbugValue::List(_, items) | LbugValue::Array(_, items) => {
+            J::Array(items.into_iter().map(value_to_json).collect())
+        },
         LbugValue::Node(node) => node_to_json(&node),
         LbugValue::Rel(rel) => rel_to_json(&rel),
         other => J::String(other.to_string()),
@@ -323,7 +325,10 @@ fn value_to_json(value: LbugValue) -> serde_json::Value {
 
 fn node_to_json(node: &NodeVal) -> serde_json::Value {
     let mut map = serde_json::Map::new();
-    map.insert("id".to_string(), serde_json::Value::String(node.get_node_id().to_string()));
+    map.insert(
+        "id".to_string(),
+        serde_json::Value::String(node.get_node_id().to_string()),
+    );
     map.insert(
         "label".to_string(),
         serde_json::Value::String(node.get_label_name().clone()),
@@ -334,8 +339,14 @@ fn node_to_json(node: &NodeVal) -> serde_json::Value {
 
 fn rel_to_json(rel: &RelVal) -> serde_json::Value {
     let mut map = serde_json::Map::new();
-    map.insert("src".to_string(), serde_json::Value::String(rel.get_src_node().to_string()));
-    map.insert("dst".to_string(), serde_json::Value::String(rel.get_dst_node().to_string()));
+    map.insert(
+        "src".to_string(),
+        serde_json::Value::String(rel.get_src_node().to_string()),
+    );
+    map.insert(
+        "dst".to_string(),
+        serde_json::Value::String(rel.get_dst_node().to_string()),
+    );
     map.insert(
         "label".to_string(),
         serde_json::Value::String(rel.get_label_name().clone()),

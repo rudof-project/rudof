@@ -1,8 +1,4 @@
-use crate::{
-    PgDbConnection, PgDbInfo, Result, Rudof,
-    errors::PgDbError,
-    formats::DbEngine,
-};
+use crate::{PgDbConnection, PgDbInfo, Result, Rudof, errors::PgDbError, formats::DbEngine};
 use std::path::Path;
 
 /// Opens (creating if necessary) a property graph database and, unless

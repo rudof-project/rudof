@@ -832,7 +832,11 @@ impl Rudof {
     /// # Parameters
     /// - `data`: RDF data to load.
     /// - `writer`: destination for progress output.
-    pub fn load_pg_db<'a, W: io::Write>(&'a mut self, data: &'a [InputSpec], writer: &'a mut W) -> LoadPgDbBuilder<'a, W> {
+    pub fn load_pg_db<'a, W: io::Write>(
+        &'a mut self,
+        data: &'a [InputSpec],
+        writer: &'a mut W,
+    ) -> LoadPgDbBuilder<'a, W> {
         LoadPgDbBuilder::new(self, data, writer)
     }
 
