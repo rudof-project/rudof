@@ -16,6 +16,9 @@ use crate::{
         generation::builders::GenerateDataBuilder,
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
+        pg_db::builders::{
+            ConnectPgDbBuilder, LoadPgDbBuilder, PgDbDdlBuilder, QueryCypherBuilder, ResetPgDbConnectionBuilder,
+        },
         pgschema::builders::{
             LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
             ResetPgSchemaValidationBuilder, ResetTypemapBuilder, SerializePgSchemaBuilder,
@@ -42,8 +45,8 @@ use crate::{
     },
     errors::{RudofError, ShExError},
     formats::{
-        ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, GenerationSchemaFormat, InputSpec,
-        ResultConversionFormat, ResultConversionMode,
+        BackendSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, GenerationSchemaFormat,
+        InputSpec, ResultConversionFormat, ResultConversionMode,
     },
     types::{Data, QueryResult},
 };
@@ -52,6 +55,7 @@ use pgschema::{pgs::PropertyGraphSchema, type_map::TypeMap, validation_result::V
 use prefixmap::PrefixMap;
 use rdf_config::RdfConfigModel;
 use rudof_rdf::rdf_core::query::SparqlQuery;
+use serde::Serialize;
 use shacl::ir::IRSchema;
 use shacl::validator::report::ValidationReport;
 use shex_ast::ir::external_resolver::{
@@ -63,6 +67,7 @@ use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
 use shex_validation::Validator as ShExValidator;
 use sparql_service::ServiceDescription;
 use std::io;
+use std::path::{Path, PathBuf};
 
 /// Typedef for `Result` returned by Rudof operations, where errors are boxed into `RudofError`.
 /// Allows easier error handling across library-specific subsystems.
@@ -74,6 +79,43 @@ pub type Result<T> = std::result::Result<T, RudofError>;
 pub enum DataStats {
     Rdf { triples: usize },
     Pg { nodes: usize, edges: usize },
+}
+
+/// Connection info for a property graph database, set by
+/// [`Rudof::connect_pg_db`] and consumed by [`Rudof::load_pg_db`]/
+/// [`Rudof::query_cypher`] when no explicit override is given.
+///
+/// Holds only the information needed to open a connection, not a live
+/// handle: `lbug::Connection<'a>` borrows its `Database`, so each operation
+/// opens (and drops) its own short-lived connection rather than keeping one
+/// open across calls -- matching how the CLI's `connect`/`load`/`query`
+/// commands already behaved before this state existed.
+#[derive(Debug, Clone)]
+pub struct PgDbConnection {
+    pub engine: BackendSpec,
+    pub path: PathBuf,
+    pub read_only: bool,
+}
+
+/// Information about a database reported by [`Rudof::connect_pg_db`].
+#[derive(Debug, Clone)]
+pub struct PgDbInfo {
+    pub storage_version: u64,
+    pub library_source: String,
+}
+
+/// The result of a Cypher query run by [`Rudof::query_cypher`].
+///
+/// Row values are serialized to JSON rather than exposed as `lbug`'s own
+/// value type, so this is independently useful (and, via `serde`, directly
+/// convertible to a native Python object) without leaking a `lbug`-specific
+/// type across the public API.
+#[derive(Debug, Clone, Serialize)]
+pub struct CypherQueryResult {
+    pub columns: Vec<String>,
+    pub rows: Vec<Vec<serde_json::Value>>,
+    pub compiling_time_ms: f64,
+    pub execution_time_ms: f64,
 }
 
 /// The central `Rudof` struct acts as the main context and state machine.
@@ -120,6 +162,9 @@ pub struct Rudof {
 
     /// Current PGSchema validation results
     pub(crate) pg_schema_validation_results: Option<ValidationResult>,
+
+    /// Connection info for a property graph database, set by `connect_pg_db`
+    pub(crate) pg_db_connection: Option<PgDbConnection>,
 
     /// Current SPARQL query, loaded by `sparql` (show) or `query -q` (load + run)
     pub(crate) sparql_query: Option<SparqlQuery>,
@@ -754,6 +799,66 @@ impl Rudof {
     /// validation results.
     pub fn reset_pg_schema_validation<'a>(&'a mut self) -> ResetPgSchemaValidationBuilder<'a> {
         ResetPgSchemaValidationBuilder::new(self)
+    }
+
+    // ========================================================================
+    // PgDbOperations methods
+    // ========================================================================
+
+    /// Returns a `ConnectPgDbBuilder` to open (creating if necessary) a
+    /// property graph database and store its connection info for later
+    /// `load_pg_db`/`query_cypher` calls.
+    ///
+    /// # Parameters
+    /// - `path`: path to the database directory (not needed with `.with_in_memory(true)`).
+    pub fn connect_pg_db<'a>(&'a mut self, path: Option<&'a Path>) -> ConnectPgDbBuilder<'a> {
+        ConnectPgDbBuilder::new(self, path)
+    }
+
+    /// Returns a `PgDbDdlBuilder` to derive a property graph schema from
+    /// `data` and emit it as DDL. Never touches loaded RDF data or the
+    /// database connection.
+    ///
+    /// # Parameters
+    /// - `data`: RDF data to derive the schema from.
+    pub fn pg_db_ddl<'a>(&'a self, data: &'a [InputSpec]) -> PgDbDdlBuilder<'a> {
+        PgDbDdlBuilder::new(self, data)
+    }
+
+    /// Returns a `LoadPgDbBuilder` to load `data`, validate it with SHACL,
+    /// derive a property graph schema, and copy it into the connected
+    /// database.
+    ///
+    /// # Parameters
+    /// - `data`: RDF data to load.
+    /// - `writer`: destination for progress output.
+    pub fn load_pg_db<'a, W: io::Write>(
+        &'a mut self,
+        data: &'a [InputSpec],
+        writer: &'a mut W,
+    ) -> LoadPgDbBuilder<'a, W> {
+        LoadPgDbBuilder::new(self, data, writer)
+    }
+
+    /// Returns a `QueryCypherBuilder` to run a Cypher query against the
+    /// connected database.
+    ///
+    /// # Parameters
+    /// - `query`: a file, a URL, `-` for stdin, or the Cypher query text itself.
+    pub fn query_cypher<'a>(&'a mut self, query: &'a InputSpec) -> QueryCypherBuilder<'a> {
+        QueryCypherBuilder::new(self, query)
+    }
+
+    /// Returns a `ResetPgDbConnectionBuilder` to clear the stored property
+    /// graph database connection info.
+    pub fn reset_pg_db_connection<'a>(&'a mut self) -> ResetPgDbConnectionBuilder<'a> {
+        ResetPgDbConnectionBuilder::new(self)
+    }
+
+    /// Returns the property graph database connection info stored by the
+    /// most recent `connect_pg_db` call, if any.
+    pub fn pg_db_connection(&self) -> Option<&PgDbConnection> {
+        self.pg_db_connection.as_ref()
     }
 
     // ========================================================================

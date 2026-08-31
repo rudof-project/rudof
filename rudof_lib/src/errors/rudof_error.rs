@@ -28,6 +28,10 @@ pub enum RudofError {
     #[error("Property Graph schema error: {0}")]
     PgSchema(#[from] PgSchemaError),
 
+    /// Property Graph database errors.
+    #[error("Property Graph database error: {0}")]
+    PgDb(#[from] PgDbError),
+
     /// Validation errors.
     #[error("Validation error: {0}")]
     Validation(#[from] ValidationError),

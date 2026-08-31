@@ -1,0 +1,3 @@
+engine = "ladybug"
+path = "/home/labra/src/rust/rudof/target/db"
+read_only = false

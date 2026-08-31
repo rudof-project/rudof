@@ -1,0 +1,25 @@
+prefix : <http://example.org/>
+prefix schema: <http://schema.org/>
+
+:a a :Person ;
+   schema:name  "Alice" ;
+   :status      :Active ;
+   schema:knows :a, :b  .
+
+:b a :Person ;
+   schema:name  "Bob"    ;
+   :status      :Waiting ;
+   schema:knows :c       .
+
+:c a :Person ;
+   :status      :Inactive ;
+   schema:name  "Carol"  .
+
+:d a :Person ;
+   :status      :Active ;
+   schema:name  "Dave"      . 
+   
+:e a :Person ;
+   schema:name  "Emily" ;  
+   :status      :Active ;
+   schema:knows :d      .

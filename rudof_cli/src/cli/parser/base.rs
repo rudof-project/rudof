@@ -161,18 +161,21 @@ pub struct CommonArgsAll {
     )]
     pub force_overwrite: bool,
 
-    /// Choose which RDF data backend to load the input into.
+    /// Choose which backend to load the input into.
     ///
     /// - `memory` (default): parse into an in-process oxrdf::Graph.
     /// - `qlever`: launch a local QLever Docker container and index the input on disk.
     ///   Requires the binary to be built with the `qlever` feature.
+    /// - `lbug`: the connected LadybugDB property graph database (see `rudof connect`).
+    ///   Accepted here but not yet functional: rudof can derive a property graph from
+    ///   RDF (`load`/`ddl`) but cannot yet read one back out as RDF triples.
     /// - `endpoint=<URL_OR_NAME>`: query an external SPARQL endpoint by URL or by
     ///   the name of an endpoint registered in the TOML config. See also the
     ///   `--endpoint` / `-e` shortcut.
     #[arg(
         long = "backend",
         value_name = "BACKEND",
-        help = "RDF data backend selection: memory | qlever | endpoint=<URL_OR_NAME>",
+        help = "Backend selection: memory | qlever | lbug | endpoint=<URL_OR_NAME>",
         value_parser = clap::builder::ValueParser::new(|s: &str| {
             use std::str::FromStr;
             crate::cli::wrappers::BackendKindCli::from_str(s)

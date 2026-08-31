@@ -32,7 +32,8 @@ impl Command for NodeCommand {
         let show_node_mode = self.args.show_node_mode.into();
 
         let backend = resolve_backend(&self.args.common);
-        let has_data_source = !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_));
+        let has_data_source =
+            !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_) | BackendSpec::Lbug);
 
         if has_data_source {
             let mut loading = ctx

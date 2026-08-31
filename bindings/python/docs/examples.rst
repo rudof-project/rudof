@@ -839,6 +839,82 @@ Load PG data, a PG schema and a typemap, then validate and serialize the results
     rudof.reset_pgschema()
 
 
+Property Graph Database (LadybugDB)
+-----------------------------------
+
+Examples for deriving DDL from RDF data, and connecting to, loading, and querying a LadybugDB property graph database.
+
+
+Derive Property Graph DDL
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Derive a property graph schema from RDF data and emit it as Cypher DDL, without opening a database
+
+**Source**: `pg_db/pg_db_ddl.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/pg_db/pg_db_ddl.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import DdlDialect, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    data = """
+    @prefix : <http://example.org/> .
+    :alice a :Person ;
+        :name "Alice" ;
+        :knows :bob .
+    :bob a :Person ;
+        :name "Bob" .
+    """
+    
+    # Stateless: derives a property graph schema from the data and emits DDL,
+    # without opening or touching any database.
+    print(rudof.pg_db_ddl(data, DdlDialect.Cypher))
+
+
+Connect, Load and Query a LadybugDB Database
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Connect to a LadybugDB database, load RDF data into it, and run a Cypher query against it
+
+**Source**: `pg_db/pg_db_load_and_query.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/pg_db/pg_db_load_and_query.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    import os
+    import tempfile
+    
+    from pyrudof import Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    data = """
+    @prefix : <http://example.org/> .
+    :alice a :Person ;
+        :name "Alice" ;
+        :knows :bob .
+    :bob a :Person ;
+        :name "Bob" .
+    """
+    
+    # A fresh, throwaway LadybugDB database for this example run.
+    db_path = os.path.join(tempfile.mkdtemp(), "example.lbug")
+    rudof.connect_pg_db(db_path)
+    
+    # Skips SHACL validation for brevity; see the `load` CLI docs for the
+    # validated flow. `load_pg_db` returns progress text describing what was
+    # derived/inserted.
+    print(rudof.load_pg_db(data, skip_validation=True))
+    
+    # `query_cypher` reuses the database connected above; no path needed here.
+    result = rudof.query_cypher("MATCH (n:Person) RETURN n.name ORDER BY n.name")
+    print(result)
+
+
 Prefix Management
 -----------------
 

@@ -1,9 +1,8 @@
 use crate::cli::parser::QueryArgs;
-use crate::cli::wrappers::resolve_backend;
+use crate::cli::wrappers::{QueryDialectCli, resolve_backend};
 use crate::commands::base::{Command, CommandContext};
 use crate::commands::connect::ConnectionDetails;
-use anyhow::{Context, Result};
-use lbug::{Connection, Database, SystemConfig};
+use anyhow::{Context, Result, anyhow};
 use rudof_lib::formats::BackendSpec;
 use std::io::Write;
 
@@ -38,8 +37,14 @@ impl Command for QueryCommand {
         // Cypher mode: query a LadybugDB database instead of the RDF/SPARQL
         // pipeline (supports other query languages per the `query` verb, see
         // discussion #747).
-        if let Some(cypher) = &self.args.cypher {
-            return execute_cypher(cypher, &self.args, ctx);
+        if matches!(self.args.dialect, QueryDialectCli::Cypher) {
+            return execute_cypher(&self.args, ctx);
+        }
+
+        if self.args.db.is_some() || self.args.connection.is_some() {
+            anyhow::bail!(
+                "--db/--connection select a LadybugDB database, which only applies to Cypher queries; add --dialect cypher"
+            );
         }
 
         let data_format = self.args.data_format.into();
@@ -48,7 +53,8 @@ impl Command for QueryCommand {
         let result_query_format = self.args.result_query_format.into();
 
         let backend = resolve_backend(&self.args.common);
-        let has_data_source = !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_));
+        let has_data_source =
+            !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_) | BackendSpec::Lbug);
 
         if has_data_source {
             let mut loading = ctx
@@ -108,33 +114,38 @@ impl Command for QueryCommand {
 
 /// Run a Cypher query against a LadybugDB database given by `--db` or by the
 /// connection details file written by `rudof connect`.
-fn execute_cypher(cypher: &str, args: &QueryArgs, ctx: &mut CommandContext) -> Result<()> {
+fn execute_cypher(args: &QueryArgs, ctx: &mut CommandContext) -> Result<()> {
     let details = ConnectionDetails::resolve(args.db.as_deref(), args.connection.as_deref())?;
-    let config = SystemConfig::default().read_only(details.read_only || args.read_only);
+    let read_only = details.read_only || args.read_only;
 
-    let db = Database::new(&details.path, config)
-        .with_context(|| format!("Failed to open LadybugDB database at '{}'", details.path.display()))?;
-    let conn = Connection::new(&db).context("Failed to connect to LadybugDB")?;
+    let query_spec = args.query.as_ref().ok_or_else(|| {
+        anyhow!(
+            "No query specified. Use --query/-q to provide a Cypher query: a file, a URL, or the query text itself."
+        )
+    })?;
 
-    let result = conn.query(cypher).context("Cypher query failed")?;
+    let result = ctx
+        .rudof
+        .query_cypher(query_spec)
+        .with_db(&details.path, read_only)
+        .execute()
+        .context("Cypher query failed")?;
 
     writeln!(
         ctx.writer,
         "Query result ({} tuples, {} columns):",
-        result.get_num_tuples(),
-        result.get_num_columns()
+        result.rows.len(),
+        result.columns.len()
     )?;
-    writeln!(ctx.writer, "Columns: {:?}", result.get_column_names())?;
+    writeln!(ctx.writer, "Columns: {:?}", result.columns)?;
     writeln!(
         ctx.writer,
         "Compiling time: {:.2}ms, Execution time: {:.2}ms",
-        result.get_compiling_time(),
-        result.get_execution_time()
+        result.compiling_time_ms, result.execution_time_ms
     )?;
 
-    // Iterate over the result
-    for row in result {
-        writeln!(ctx.writer, "  {:?}", row)?;
+    for row in &result.rows {
+        writeln!(ctx.writer, "  {}", serde_json::to_string(row)?)?;
     }
 
     Ok(())

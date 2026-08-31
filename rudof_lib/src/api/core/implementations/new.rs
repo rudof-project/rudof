@@ -12,6 +12,7 @@ pub fn new(config: RudofConfig) -> Rudof {
         shex_validation_results: None,
         pg_schema: None,
         pg_schema_validation_results: None,
+        pg_db_connection: None,
         shapemap: None,
         sparql_query: None,
         query_results: None,

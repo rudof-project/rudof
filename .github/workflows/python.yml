@@ -58,11 +58,25 @@ jobs:
         with:
           working-directory: bindings/python
           target: ${{ matrix.target }}
-          manylinux: auto
+          # `auto` picks manylinux2014 (CentOS 7), whose default toolchain
+          # predates GCC 13. `lbug` (LadybugDB) ships prebuilt headers built
+          # against GCC 13 and using C++23's <format>, which manylinux2014's
+          # compiler can't parse ("fatal error: format: No such file or
+          # directory"). manylinux_2_28 (AlmaLinux 8) would make
+          # gcc-toolset-13 installable, but its default OpenSSL is 1.1.1,
+          # which lacks `SSL_get1_peer_certificate` (added in OpenSSL 3.0)
+          # that lbug's prebuilt library calls -- the resulting wheel links
+          # fine (Linux allows unresolved symbols in a .so at link time) but
+          # fails at import with "undefined symbol: SSL_get1_peer_certificate"
+          # once loaded against a real 1.1.1 on the test runner. manylinux_2_34
+          # (AlmaLinux 9) defaults to OpenSSL 3.x, matching what the
+          # ubuntu-latest/ubuntu-24.04-arm runners used below have, so the
+          # wheel's dynamic OpenSSL dependency resolves consistently.
+          manylinux: "2_34"
           args: --release --out dist --interpreter ${{ matrix.python-version }}
           sccache: 'true'
           before-script-linux: |
-            # If we're running on rhel centos, install needed packages.
+            # If we're running on rhel/almalinux (manylinux containers), install needed packages.
             if command -v yum &> /dev/null; then
                 yum update -y && yum install -y perl-core openssl openssl-devel pkgconfig libatomic
 
@@ -70,6 +84,17 @@ jobs:
                 # in order to build openssl with -latomic flag.
                 if [[ ! -d "/usr/lib64" ]]; then
                     ln -s /usr/lib/libatomic.so.1 /usr/lib/libatomic.so
+                fi
+
+                # lbug (LadybugDB) needs a C++23 <format>-capable compiler
+                # (GCC 13+) to build its cxx FFI bridge; manylinux_2_34's
+                # default GCC (11) is older, so pull in gcc-toolset-13 for
+                # this build only. Best-effort: if the package isn't
+                # available, fall through to the container's default compiler.
+                if yum install -y gcc-toolset-13 2>/dev/null; then
+                    source /opt/rh/gcc-toolset-13/enable
+                    export CC=gcc
+                    export CXX=g++
                 fi
             else
                 # If we're running on debian-based system.
@@ -98,6 +123,48 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      # `lbug` (LadybugDB) unconditionally links against OpenSSL
+      # (`cargo:rustc-link-lib=dylib=ssl`/`crypto`) on every platform, via a
+      # raw `cargo:rustc-link-lib` directive rather than the `openssl-sys`
+      # build system -- so OPENSSL_LIB_DIR/OPENSSL_DIR below (which only
+      # openssl-sys-based crates read) don't help it. On the MSVC target
+      # that raw directive makes the linker look for a file literally named
+      # `ssl.lib`/`crypto.lib`, but the pre-installed Windows OpenSSL ships
+      # them as `libssl.lib`/`libcrypto.lib` (upstream OpenSSL naming) --
+      # hence "LINK : fatal error LNK1181: cannot open input file 'ssl.lib'".
+      # Copy them to the names the linker expects and put that directory on
+      # LIB. Mirrors the equivalent step in artifacts.yml's windows job
+      # (already needed there for the same reason, since rudof_cli has
+      # depended on lbug since before this).
+      - name: Point Cargo at the pre-installed OpenSSL
+        run: |
+          $opensslLibDir = "C:\Program Files\OpenSSL\lib"
+          Get-Command openssl
+          openssl version
+          Get-ChildItem $opensslLibDir -Recurse -Filter *.lib
+
+          $shimDir = "$env:RUNNER_TEMP\openssl-lib-shim"
+          New-Item -ItemType Directory -Force -Path $shimDir | Out-Null
+          foreach ($name in "ssl", "crypto") {
+              $match = Get-ChildItem $opensslLibDir -Recurse -Filter "*$name.lib" | Select-Object -First 1
+              if (-not $match) { throw "No $name.lib (or lib$name.lib) found under $opensslLibDir" }
+              Copy-Item $match.FullName "$shimDir\$name.lib" -Force
+          }
+
+          echo "LIB=$shimDir;$env:LIB" >> $env:GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV
+          echo "OPENSSL_DIR=C:/Program Files/OpenSSL/" >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
+
+          # The above fixes linking; pyrudof.pyd still needs the actual
+          # libssl-3-x64.dll/libcrypto-3-x64.dll at import time. This PATH
+          # entry doesn't help Python find them itself -- since Python 3.8,
+          # extension-module DLL loading no longer searches PATH at all
+          # (only system dirs, the .pyd's own directory, and dirs added via
+          # os.add_dll_directory()). It's here so delvewheel (below), which
+          # runs as an ordinary process and does still use PATH, can find
+          # them to vendor into the wheel.
+          echo "C:\Program Files\OpenSSL\bin" >> $env:GITHUB_PATH
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -105,6 +172,20 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter ${{ matrix.python-version }}
           sccache: 'true'
+      # pyrudof.pyd dynamically depends on libssl-3-x64.dll/libcrypto-3-x64.dll,
+      # which aren't present on an arbitrary end user's machine any more than
+      # on this runner. delvewheel is the Windows analogue of auditwheel: it
+      # copies the required DLLs into the wheel (under pyrudof.libs\) and
+      # patches the extension module to load them from there regardless of
+      # PATH, so both this CI's test step and real installs work without
+      # requiring OpenSSL to be separately installed.
+      - name: Repair wheel with delvewheel (vendor OpenSSL DLLs)
+        run: |
+          python3 -m pip install delvewheel
+          $wheel = Get-ChildItem bindings/python/dist/*.whl | Select-Object -First 1
+          python3 -m delvewheel repair --add-path "C:\Program Files\OpenSSL\bin" -w bindings/python/dist-repaired $wheel.FullName
+          Remove-Item $wheel.FullName
+          Move-Item bindings/python/dist-repaired\*.whl bindings/python/dist\
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -112,11 +193,33 @@ jobs:
           path: bindings/python/dist
       - name: Install Built Wheel
         run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
+      # Diagnostic: if importing pyrudof still fails with "DLL load failed",
+      # Python's error doesn't name the missing dependency. List what the
+      # built .pyd actually needs so the next failure is actionable.
+      - name: List pyrudof.pyd's DLL dependencies
+        run: |
+          $sitePkg = python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+          $pyd = Get-ChildItem "$sitePkg\pyrudof" -Filter *.pyd | Select-Object -First 1
+          Write-Host "Inspecting $($pyd.FullName)"
+          $dumpbin = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($dumpbin) {
+              & $dumpbin.FullName /dependents $pyd.FullName
+          } else {
+              Write-Host "dumpbin not found"
+          }
       - name: Test Built Wheel
         run: cd bindings/python/tests && python3 -m unittest discover -vvv
 
   macos:
     runs-on: ${{ matrix.vm }}
+    # `lbug` (LadybugDB)'s cxx FFI bridge uses C++20's <format>, which Apple's
+    # libc++ only makes available starting deployment target 13.3 (Ventura) --
+    # below that, `<format>`'s contents are availability-gated out entirely.
+    # maturin/rustc otherwise default x86_64 to 10.7/10.12 and arm64 to 11.0,
+    # both too old. An explicit MACOSX_DEPLOYMENT_TARGET here overrides that
+    # default (confirmed: maturin only computes one when none is set).
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "13.3"
     strategy:
       fail-fast: false
       matrix:

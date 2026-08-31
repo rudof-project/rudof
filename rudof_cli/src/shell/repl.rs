@@ -453,7 +453,7 @@ impl StatsKind {
 /// [`DataCommand`]: crate::commands::DataCommand
 /// [`ShaclCommand`]: crate::commands::ShaclCommand
 fn has_new_data_source(common: &CommonArgsAll, data: &[InputSpec]) -> bool {
-    !data.is_empty() || matches!(resolve_backend(common), BackendSpec::Endpoint(_))
+    !data.is_empty() || matches!(resolve_backend(common), BackendSpec::Endpoint(_) | BackendSpec::Lbug)
 }
 
 /// Shell-only `endpoint [NAME|FILE.toml]` command.

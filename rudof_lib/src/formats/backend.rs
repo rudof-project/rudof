@@ -15,6 +15,15 @@ pub enum BackendSpec {
     /// Launch a local QLever Docker container and index the input on disk.
     /// Requires the `qlever` feature on the workspace.
     Qlever,
+    /// LadybugDB (see <https://github.com/LadybugDB/ladybug>), a local
+    /// embedded property graph database. Only [`crate::Rudof::connect_pg_db`]
+    /// and its related `ddl`/`load_pg_db`/`query_cypher` operations can
+    /// actually connect to it today; selecting it for an RDF-loading
+    /// operation (via [`LoadDataBuilder`](crate::api::data::builders::LoadDataBuilder))
+    /// currently fails, since rudof can derive a property graph from RDF
+    /// (`load`/`ddl`) but cannot yet read one back out as RDF triples — see
+    /// <https://github.com/rudof-project/rudof/discussions/747>.
+    Lbug,
 }
 
 impl Display for BackendSpec {
@@ -23,6 +32,7 @@ impl Display for BackendSpec {
             BackendSpec::Memory => write!(f, "memory"),
             BackendSpec::Endpoint(s) => write!(f, "endpoint={s}"),
             BackendSpec::Qlever => write!(f, "qlever"),
+            BackendSpec::Lbug => write!(f, "lbug"),
         }
     }
 }
@@ -31,6 +41,11 @@ impl BackendSpec {
     /// `true` when the QLever backend was requested.
     pub fn is_qlever(&self) -> bool {
         matches!(self, BackendSpec::Qlever)
+    }
+
+    /// `true` when the LadybugDB backend was requested.
+    pub fn is_lbug(&self) -> bool {
+        matches!(self, BackendSpec::Lbug)
     }
 
     /// `Some(url_or_name)` when an endpoint was requested.

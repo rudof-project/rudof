@@ -32,6 +32,7 @@ colored.workspace = true
 crossterm.workspace = true
 dctap.workspace = true
 either.workspace = true
+lbug.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 rudof_iri.workspace = true
 prefixmap.workspace = true

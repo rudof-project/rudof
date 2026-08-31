@@ -11,6 +11,7 @@ pub mod dctap;
 pub mod generation;
 pub mod map_state;
 pub mod materialize;
+pub mod pg_db;
 pub mod pgschema;
 pub mod prefixes;
 pub mod query;

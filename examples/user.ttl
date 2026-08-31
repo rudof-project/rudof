@@ -1,17 +1,23 @@
 prefix : <http://example.org/>
 prefix schema: <http://schema.org/>
 
-:a schema:name  "Alice" ;
+:a a :Person ;
+   schema:name  "Alice" ;
    :status      :Active ;
    schema:knows :a, :b  .
 
-:b schema:name  "Bob"    ;
+:b a :Person ;
+   schema:name  "Bob"    ;
    :status      :Waiting ;
    schema:knows :c       .
 
-:c schema:name  "Carol"  .
+:c a :Person ;
+   :status      :Inactive ;
+   schema:name  "Carol"  .
 
-:d schema:name  23      .  # Should fail
-
-:e schema:name  "Emily" ;  # Should fail
+:d a :Person ;
+   schema:name  23      .  # Should fail
+   
+:e a :Person ;
+   schema:name  "Emily" ;  # Should fail
    schema:knows :d      .
