@@ -157,9 +157,13 @@ jobs:
           echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
 
           # The above fixes linking; pyrudof.pyd still needs the actual
-          # libssl-3-x64.dll/libcrypto-3-x64.dll at import time. The image's
-          # own provisioning script already adds this to the machine PATH,
-          # but make it explicit rather than relying on that persisting.
+          # libssl-3-x64.dll/libcrypto-3-x64.dll at import time. This PATH
+          # entry doesn't help Python find them itself -- since Python 3.8,
+          # extension-module DLL loading no longer searches PATH at all
+          # (only system dirs, the .pyd's own directory, and dirs added via
+          # os.add_dll_directory()). It's here so delvewheel (below), which
+          # runs as an ordinary process and does still use PATH, can find
+          # them to vendor into the wheel.
           echo "C:\Program Files\OpenSSL\bin" >> $env:GITHUB_PATH
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -168,6 +172,20 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter ${{ matrix.python-version }}
           sccache: 'true'
+      # pyrudof.pyd dynamically depends on libssl-3-x64.dll/libcrypto-3-x64.dll,
+      # which aren't present on an arbitrary end user's machine any more than
+      # on this runner. delvewheel is the Windows analogue of auditwheel: it
+      # copies the required DLLs into the wheel (under pyrudof.libs\) and
+      # patches the extension module to load them from there regardless of
+      # PATH, so both this CI's test step and real installs work without
+      # requiring OpenSSL to be separately installed.
+      - name: Repair wheel with delvewheel (vendor OpenSSL DLLs)
+        run: |
+          python3 -m pip install delvewheel
+          $wheel = Get-ChildItem bindings/python/dist/*.whl | Select-Object -First 1
+          python3 -m delvewheel repair --add-path "C:\Program Files\OpenSSL\bin" -w bindings/python/dist-repaired $wheel.FullName
+          Remove-Item $wheel.FullName
+          Move-Item bindings/python/dist-repaired\*.whl bindings/python/dist\
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
