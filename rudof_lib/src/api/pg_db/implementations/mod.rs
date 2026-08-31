@@ -12,7 +12,7 @@ pub(crate) use pg_db_ddl::pg_db_ddl;
 pub(crate) use query_cypher::query_cypher;
 pub(crate) use reset_pg_db_connection::reset_pg_db_connection;
 
-use crate::{PgDbConnection, Result, Rudof, errors::PgDbError, formats::DbEngine};
+use crate::{PgDbConnection, Result, Rudof, errors::PgDbError, formats::BackendSpec};
 use std::path::Path;
 
 /// Resolves the connection to operate on for `load_pg_db`/`query_cypher`: an
@@ -22,7 +22,7 @@ fn resolve_connection(rudof: &Rudof, db_path: Option<&Path>, db_read_only: bool)
     if let Some(path) = db_path {
         let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
         return Ok(PgDbConnection {
-            engine: DbEngine::default(),
+            engine: BackendSpec::Lbug,
             path: canonical,
             read_only: db_read_only,
         });

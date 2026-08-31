@@ -1,4 +1,4 @@
-use crate::cli::wrappers::DbEngineCli;
+use crate::cli::wrappers::BackendKindCli;
 use clap::Args;
 use std::path::PathBuf;
 
@@ -14,18 +14,25 @@ pub struct ConnectArgs {
     #[arg(required_unless_present = "in_memory")]
     pub path: Option<PathBuf>,
 
-    /// Database engine to connect to. Only `lbug` (LadybugDB) exists today;
-    /// more may be added in the future without another CLI break, since the
-    /// choice is persisted in the connection details file.
+    /// Backend to connect to. Uses the same `--backend` flag/type as
+    /// `data`/`query`/`shacl-validate`/etc. (`memory | qlever | lbug |
+    /// endpoint=<URL_OR_NAME>`), so a future backend needs no new flag here
+    /// -- only `lbug` (LadybugDB) can actually be connected to today; any
+    /// other value is rejected with a clear error.
     #[arg(
-        long = "engine",
-        value_name = "ENGINE",
+        long = "backend",
+        value_name = "BACKEND",
         ignore_case = true,
-        help = "Database engine: lbug (LadybugDB) -- more may be added in the future",
-        default_value_t = DbEngineCli::Lbug,
-        value_enum
+        help = "Backend to connect to (memory | qlever | lbug | endpoint=<URL_OR_NAME>). \
+                Only lbug can actually be connected to today; other values are rejected \
+                with a clear error.",
+        value_parser = clap::builder::ValueParser::new(|s: &str| {
+            use std::str::FromStr;
+            BackendKindCli::from_str(s)
+        }),
+        default_value_t = BackendKindCli::Lbug,
     )]
-    pub engine: DbEngineCli,
+    pub backend: BackendKindCli,
 
     /// Create the database in memory (transient: connection details cannot be persisted)
     #[arg(long, short = 'm')]

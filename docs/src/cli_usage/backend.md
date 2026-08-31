@@ -1,6 +1,6 @@
 # The `--backend` flag
 
-The `--backend` flag controls where RDF data is loaded and how it is queried. It is available on all commands that consume RDF data: `data`, `node`, `query`, `shacl`, `shacl-validate`, `shex-validate` and `validate`.
+The `--backend` flag controls where data is loaded and how it is queried. It is available on all commands that consume RDF data: `data`, `node`, `query`, `shacl`, `shacl-validate`, `shex-validate` and `validate` — and, in the form of a database engine choice, on [`rudof connect`](./connect.md).
 
 ## Accepted values
 
@@ -8,7 +8,10 @@ The `--backend` flag controls where RDF data is loaded and how it is queried. It
 |---|---|
 | `memory` | Default. Parses the input(s) into an in-process `OxigraphInMemory` graph backed by `oxrdf::Graph`. |
 | `qlever` | Launches a local QLever Docker container, builds an on-disk index from the input(s), and serves SPARQL via the container's HTTP endpoint. |
+| `lbug` | Refers to the connected [LadybugDB](https://github.com/LadybugDB/ladybug) property graph database (see [`connect`](./connect.md)). Accepted here, but not yet functional — see [below](#the-lbug-backend-not-yet-implemented-for-rdf-loading). |
 | `endpoint=<URL_OR_NAME>` | Queries a remote SPARQL endpoint by URL, or by the name of an endpoint registered in the TOML config. |
+
+This is the same `--backend` flag and type used by [`rudof connect`](./connect.md) to pick a database engine — one flag, one type, shared across the whole CLI.
 
 ## The `memory` backend (default)
 
@@ -58,6 +61,17 @@ Trade-offs to keep in mind:
 - **Faster and gentler on the SPARQL query service** for validation-shaped access patterns (each node dereferenced costs one request, typically served from the wiki's own cache rather than the separately-throttled SPARQL backend), but only sees a referenced entity's *label*, not its own properties, until that entity is itself dereferenced — so validating a well-connected node can still mean fetching many entities, just via plain HTTP instead of SPARQL.
 - **No inverse (`^predicate`) support beyond what's already been fetched.** Dereferencing a node only ever returns its *outgoing* triples; there is no index to ask "what points at this node". Inverse-shape and closed-shape (`EXTRA`) constraints only see links from entities already dereferenced earlier in the same run, so results can be incomplete for those specifically — `sparql` remains the accurate choice for schemas that rely on them.
 - **No raw SPARQL under this strategy** — a SPARQL-based node selector, or the `query`/`sparql`/`node` commands' own SPARQL paths, error clearly rather than silently falling back to the endpoint's query service.
+
+## The `lbug` backend (not yet implemented for RDF loading)
+
+`rudof` can already derive a property graph from RDF and copy data *into* a LadybugDB database (`rudof connect`/[`load`](./load.md)/[`ddl`](./ddl.md)), but it cannot yet read a property graph back *out* as RDF triples. So while `--backend lbug` is accepted on every RDF-loading command for consistency with the rest of the CLI, using it there fails with a clear error rather than doing nothing silently:
+
+```sh
+$ rudof data --backend lbug
+Error: Data error: Data source specification error: the 'lbug' backend cannot supply RDF data yet: ...
+```
+
+Closing this gap — reading a LadybugDB graph back out as RDF so it can be validated with SHACL like any other backend — is planned future work. Until then, work with LadybugDB directly through [`rudof connect`](./connect.md), [`load`](./load.md), and `query --dialect cypher` (see the [full workflow example](./connect.md#full-workflow)).
 
 ## The `qlever` backend
 

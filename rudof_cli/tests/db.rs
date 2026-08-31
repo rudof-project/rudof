@@ -104,7 +104,7 @@ fn connect_persists_connection_details() {
 
     let contents = std::fs::read_to_string(dir.path().join(".rudof-connection.toml"))
         .expect("connection details file should exist");
-    assert!(contents.contains("engine = \"lbug\""));
+    assert!(contents.contains("backend = \"lbug\""));
     assert!(contents.contains("read_only = false"));
     assert!(contents.contains("testdb.lbug"));
 }
@@ -203,6 +203,57 @@ fn load_aborts_on_shacl_violation() {
     let load = rudof_in(dir.path(), &["load", "bad.ttl", "--shapes", "shapes.ttl"]);
     assert_ne!(load.code, 0, "load must fail on non-conforming data");
     assert!(load.stdout.contains("SHACL validation FAILED"));
+}
+
+#[test]
+fn full_workflow_connect_ddl_load_query_cypher() {
+    // Regression coverage for the original PR #779 story end-to-end, now
+    // routed through the unified `--backend` flag (see discussion #747):
+    // connect to LadybugDB, preview the DDL derived from RDF data, validate
+    // + load that data against SHACL shapes, then query it with Cypher.
+    let dir = tempfile::tempdir().expect("tempdir");
+    std::fs::write(dir.path().join("data.ttl"), DATA_TTL).unwrap();
+    std::fs::write(dir.path().join("shapes.ttl"), SHAPES_TTL).unwrap();
+
+    // 1. Connect, explicitly selecting the backend via the (now shared)
+    //    --backend flag rather than the old --engine flag.
+    let connect = rudof_in(dir.path(), &["connect", "db.lbug", "--backend", "lbug"]);
+    assert_eq!(connect.code, 0, "connect failed: {}\n{}", connect.stdout, connect.stderr);
+    let connection_contents = std::fs::read_to_string(dir.path().join(".rudof-connection.toml"))
+        .expect("connection details file should exist");
+    assert!(connection_contents.contains("backend = \"lbug\""));
+
+    // 2. Derive and preview the DDL from the RDF data, stateless -- no
+    //    database is touched yet.
+    let ddl = rudof_in(dir.path(), &["ddl", "data.ttl", "--dialect", "cypher"]);
+    assert_eq!(ddl.code, 0, "ddl failed: {}\n{}", ddl.stdout, ddl.stderr);
+    assert!(
+        ddl.stdout
+            .contains("CREATE NODE TABLE User (id STRING, knows STRING, name STRING, PRIMARY KEY(id));")
+    );
+
+    // 3. Validate the same data against SHACL shapes and load it into the
+    //    connected database (uses the connection details from step 1).
+    let load = rudof_in(dir.path(), &["load", "data.ttl", "--shapes", "shapes.ttl"]);
+    assert_eq!(load.code, 0, "load failed: {}\n{}", load.stdout, load.stderr);
+    assert!(load.stdout.contains("SHACL validation PASSED"));
+    assert!(load.stdout.contains("Inserted 2 node(s)"));
+
+    // 4. Run a Cypher query against the loaded data through the same
+    //    persisted connection.
+    let query = rudof_in(
+        dir.path(),
+        &[
+            "query",
+            "--dialect",
+            "cypher",
+            "-q",
+            "MATCH (n:User) RETURN n.name ORDER BY n.name",
+        ],
+    );
+    assert_eq!(query.code, 0, "query failed: {}\n{}", query.stdout, query.stderr);
+    assert!(query.stdout.contains("Alice"));
+    assert!(query.stdout.contains("Bob"));
 }
 
 #[test]

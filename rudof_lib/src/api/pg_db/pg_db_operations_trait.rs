@@ -1,7 +1,7 @@
 use crate::{
     CypherQueryResult, PgDbInfo, Result, Rudof,
     api::pg_db::implementations::{connect_pg_db, load_pg_db, pg_db_ddl, query_cypher, reset_pg_db_connection},
-    formats::{DataFormat, DataReaderMode, DbEngine, DdlDialect, InputSpec, ShaclFormat},
+    formats::{BackendSpec, DataFormat, DataReaderMode, DdlDialect, InputSpec, ShaclFormat},
 };
 use std::io;
 use std::path::Path;
@@ -18,7 +18,7 @@ pub trait PgDbOperations {
         path: Option<&Path>,
         in_memory: bool,
         read_only: bool,
-        engine: Option<&DbEngine>,
+        engine: Option<&BackendSpec>,
     ) -> Result<PgDbInfo>;
 
     /// Derives a property graph schema from `data` and emits it as DDL for
@@ -72,7 +72,7 @@ impl PgDbOperations for Rudof {
         path: Option<&Path>,
         in_memory: bool,
         read_only: bool,
-        engine: Option<&DbEngine>,
+        engine: Option<&BackendSpec>,
     ) -> Result<PgDbInfo> {
         connect_pg_db(self, path, in_memory, read_only, engine)
     }

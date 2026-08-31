@@ -16,9 +16,9 @@ pub const DEFAULT_CONNECTION_FILE: &str = ".rudof-connection.toml";
 /// which this converts to/from at the boundary via [`Self::to_pg_db_connection`].
 #[derive(Debug, Clone)]
 pub struct ConnectionDetails {
-    /// Database engine. Only `lbug` (LadybugDB) is currently supported; see
-    /// `rudof_lib::formats::DbEngine`.
-    pub engine: String,
+    /// Backend. Only `lbug` (LadybugDB) is currently connectable; see
+    /// `rudof_lib::formats::BackendSpec`.
+    pub backend: String,
     /// Path to the database directory.
     pub path: PathBuf,
     /// Whether the database was opened in read-only mode.
@@ -28,7 +28,7 @@ pub struct ConnectionDetails {
 impl ConnectionDetails {
     pub fn to_toml_string(&self) -> Result<String> {
         let mut map = toml::map::Map::new();
-        map.insert("engine".to_string(), toml::Value::String(self.engine.clone()));
+        map.insert("backend".to_string(), toml::Value::String(self.backend.clone()));
         map.insert("path".to_string(), toml::Value::String(self.path.display().to_string()));
         map.insert("read_only".to_string(), toml::Value::Boolean(self.read_only));
         toml::to_string_pretty(&toml::Value::Table(map)).context("Failed to serialize connection details")
@@ -36,13 +36,13 @@ impl ConnectionDetails {
 
     pub fn from_toml_str(s: &str) -> Result<Self> {
         let value: toml::Value = toml::from_str(s).context("Failed to parse connection details file")?;
-        let engine = value
-            .get("engine")
+        let backend = value
+            .get("backend")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow!("Connection details file is missing 'engine'"))?
+            .ok_or_else(|| anyhow!("Connection details file is missing 'backend'"))?
             .to_string();
-        if engine != "lbug" {
-            return Err(anyhow!("Unsupported database engine '{engine}' in connection details"));
+        if backend != "lbug" {
+            return Err(anyhow!("Unsupported backend '{backend}' in connection details"));
         }
         let path = PathBuf::from(
             value
@@ -52,7 +52,7 @@ impl ConnectionDetails {
         );
         let read_only = value.get("read_only").and_then(|v| v.as_bool()).unwrap_or(false);
         Ok(Self {
-            engine,
+            backend,
             path,
             read_only,
         })
@@ -88,7 +88,7 @@ impl ConnectionDetails {
     pub fn resolve(db: Option<&Path>, connection_file: Option<&Path>) -> Result<Self> {
         if let Some(db_path) = db {
             return Ok(Self {
-                engine: "lbug".to_string(),
+                backend: "lbug".to_string(),
                 path: db_path.to_path_buf(),
                 read_only: false,
             });
@@ -121,15 +121,14 @@ impl Command for ConnectCommand {
 
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let args = &self.args;
-        let engine: rudof_lib::formats::DbEngine =
-            args.engine.to_string().parse().context("Unsupported database engine")?;
+        let backend: rudof_lib::formats::BackendSpec = args.backend.clone().into();
 
         let info = ctx
             .rudof
             .connect_pg_db(args.path.as_deref())
             .with_in_memory(args.in_memory)
             .with_read_only(args.read_only)
-            .with_engine(&engine)
+            .with_engine(&backend)
             .execute()?;
 
         writeln!(ctx.writer, "LadybugDB database opened successfully")?;
@@ -157,7 +156,7 @@ impl Command for ConnectCommand {
                 .pg_db_connection()
                 .expect("connect_pg_db stores connection info for non-in-memory connections");
             let details = ConnectionDetails {
-                engine: conn.engine.to_string(),
+                backend: conn.engine.to_string(),
                 path: conn.path.clone(),
                 read_only: conn.read_only,
             };

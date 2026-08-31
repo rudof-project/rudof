@@ -45,7 +45,7 @@ use crate::{
     },
     errors::{RudofError, ShExError},
     formats::{
-        ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DbEngine, GenerationSchemaFormat,
+        BackendSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, GenerationSchemaFormat,
         InputSpec, ResultConversionFormat, ResultConversionMode,
     },
     types::{Data, QueryResult},
@@ -92,7 +92,7 @@ pub enum DataStats {
 /// commands already behaved before this state existed.
 #[derive(Debug, Clone)]
 pub struct PgDbConnection {
-    pub engine: DbEngine,
+    pub engine: BackendSpec,
     pub path: PathBuf,
     pub read_only: bool,
 }

@@ -8,11 +8,14 @@ use rudof_rdf::rdf_impl::EndpointStrategy;
 use crate::cli::parser::CommonArgsAll;
 use crate::cli_wrapper;
 
-/// Choice of RDF data backend.
+/// Choice of backend.
 ///
 /// Parsed from the `--backend` CLI flag. Accepted forms:
 /// - `memory` — in-process `OxigraphInMemory` (default).
 /// - `qlever` — local QLever Docker container. Requires the `qlever` feature.
+/// - `lbug` — the connected LadybugDB property graph database (see `rudof
+///   connect`). Valid on RDF-loading commands too, but not yet functional
+///   there: rudof cannot yet read RDF back out of a property graph.
 /// - `endpoint=<URL_OR_NAME>` — remote SPARQL endpoint. The value is either a
 ///   full URL or the name of an endpoint registered in the rudof TOML config.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -20,11 +23,12 @@ pub enum BackendKindCli {
     #[default]
     Memory,
     Qlever,
+    Lbug,
     Endpoint(String),
 }
 
 /// Helpers used by every CLI subcommand that loads RDF data, so the
-/// `--backend memory|qlever|endpoint=…` flag means the same thing everywhere.
+/// `--backend memory|qlever|lbug|endpoint=…` flag means the same thing everywhere.
 impl BackendKindCli {
     /// `true` when the user picked the QLever backend.
     pub fn is_qlever(&self) -> bool {
@@ -61,6 +65,7 @@ impl From<BackendKindCli> for BackendSpec {
         match b {
             BackendKindCli::Memory => BackendSpec::Memory,
             BackendKindCli::Qlever => BackendSpec::Qlever,
+            BackendKindCli::Lbug => BackendSpec::Lbug,
             BackendKindCli::Endpoint(s) => BackendSpec::Endpoint(s),
         }
     }
@@ -71,6 +76,7 @@ impl Display for BackendKindCli {
         match self {
             BackendKindCli::Memory => write!(f, "memory"),
             BackendKindCli::Qlever => write!(f, "qlever"),
+            BackendKindCli::Lbug => write!(f, "lbug"),
             BackendKindCli::Endpoint(url) => write!(f, "endpoint={url}"),
         }
     }
@@ -98,6 +104,7 @@ impl FromStr for BackendKindCli {
         match lowered.as_str() {
             "memory" => Ok(BackendKindCli::Memory),
             "qlever" => Ok(BackendKindCli::Qlever),
+            "lbug" => Ok(BackendKindCli::Lbug),
             "endpoint" => Err(ParseBackendError(
                 "missing endpoint URL or name; use --backend endpoint=<URL_OR_NAME>".to_string(),
             )),
@@ -151,6 +158,12 @@ mod tests {
     }
 
     #[test]
+    fn parses_lbug() {
+        assert_eq!("lbug".parse::<BackendKindCli>().unwrap(), BackendKindCli::Lbug);
+        assert_eq!("LBUG".parse::<BackendKindCli>().unwrap(), BackendKindCli::Lbug);
+    }
+
+    #[test]
     fn parses_endpoint_url() {
         let parsed: BackendKindCli = "endpoint=https://query.wikidata.org/sparql".parse().unwrap();
         assert_eq!(
@@ -188,6 +201,7 @@ mod tests {
         let cases = [
             BackendKindCli::Memory,
             BackendKindCli::Qlever,
+            BackendKindCli::Lbug,
             BackendKindCli::Endpoint("https://x/sparql".to_string()),
         ];
         for c in cases {

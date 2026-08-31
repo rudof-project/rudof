@@ -53,7 +53,8 @@ impl Command for QueryCommand {
         let result_query_format = self.args.result_query_format.into();
 
         let backend = resolve_backend(&self.args.common);
-        let has_data_source = !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_));
+        let has_data_source =
+            !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_) | BackendSpec::Lbug);
 
         if has_data_source {
             let mut loading = ctx

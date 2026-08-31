@@ -11,8 +11,8 @@ use rudof_lib::{
     Rudof,
     errors::{InputSpecError, RudofError},
     formats::{
-        ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DCTapFormat, DataFormat, DataReaderMode,
-        DbEngine, DdlDialect, InputSpec, NodeInspectionMode, PgSchemaFormat, QueryType, RdfConfigFormat,
+        BackendSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DCTapFormat, DataFormat,
+        DataReaderMode, DdlDialect, InputSpec, NodeInspectionMode, PgSchemaFormat, QueryType, RdfConfigFormat,
         ResultConversionFormat, ResultConversionMode, ResultDCTapFormat, ResultDataFormat,
         ResultPgSchemaValidationFormat, ResultQueryFormat, ResultRdfConfigFormat, ResultServiceFormat,
         ResultShExValidationFormat, ResultShaclValidationFormat, ShExFormat, ShExValidationSortByMode, ShaclFormat,
@@ -2221,11 +2221,11 @@ fn cnv_pgschema_format(format: Option<&PyPgSchemaFormat>) -> Option<&PgSchemaFor
     }
 }
 
-fn cnv_db_engine(engine: Option<&PyDbEngine>) -> Option<&DbEngine> {
+fn cnv_db_engine(engine: Option<&PyDbEngine>) -> Option<&BackendSpec> {
     engine?;
 
     match engine.unwrap() {
-        PyDbEngine::Lbug => Some(&DbEngine::Lbug),
+        PyDbEngine::Lbug => Some(&BackendSpec::Lbug),
     }
 }
 

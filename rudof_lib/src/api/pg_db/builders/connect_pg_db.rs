@@ -1,4 +1,4 @@
-use crate::{PgDbInfo, Result, Rudof, api::pg_db::PgDbOperations, formats::DbEngine};
+use crate::{PgDbInfo, Result, Rudof, api::pg_db::PgDbOperations, formats::BackendSpec};
 use std::path::Path;
 
 /// Builder for the `connect_pg_db` operation.
@@ -7,7 +7,7 @@ pub struct ConnectPgDbBuilder<'a> {
     path: Option<&'a Path>,
     in_memory: bool,
     read_only: bool,
-    engine: Option<&'a DbEngine>,
+    engine: Option<&'a BackendSpec>,
 }
 
 impl<'a> ConnectPgDbBuilder<'a> {
@@ -38,9 +38,9 @@ impl<'a> ConnectPgDbBuilder<'a> {
         self
     }
 
-    /// Set the database engine (default: `DbEngine::Lbug`, the only one
-    /// supported today).
-    pub fn with_engine(mut self, engine: &'a DbEngine) -> Self {
+    /// Set the backend to connect to (default: `BackendSpec::Lbug`, the only
+    /// one that can actually be connected to today).
+    pub fn with_engine(mut self, engine: &'a BackendSpec) -> Self {
         self.engine = Some(engine);
         self
     }

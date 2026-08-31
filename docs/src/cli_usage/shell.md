@@ -136,23 +136,23 @@ Output saved in out.ttl
 
 ```
 rudof> ddl examples/user.ttl --dialect cypher
-CREATE NODE TABLE User (id STRING, knows STRING, name STRING, PRIMARY KEY(id));
-CREATE REL TABLE knows (FROM User TO User);
+CREATE NODE TABLE Person (id STRING, knows STRING, name STRING, status STRING, PRIMARY KEY(id));
+CREATE REL TABLE knows (FROM Person TO Person);
 ```
 
-`connect`, `load` and `query --dialect cypher`, on the other hand, are deliberately stateless too (see [discussion #748](https://github.com/rudof-project/rudof/discussions/748)) — they don't share anything through the shell session's in-memory state (`ctx.rudof`) the way `data`/`shex`/`shacl` do. Instead `connect` persists the database path to a connection-details file (`.rudof-connection.toml` by default), which `load` and `query --dialect cypher` then read. That file is exactly what carries the connection from one shell line to the next, the same way it carries it across separate `rudof` invocations on the command line:
+`connect`, `load` and `query --dialect cypher`, on the other hand, are deliberately stateless too — they don't share anything through the shell session's in-memory state (`ctx.rudof`) the way `data`/`shex`/`shacl` do. Instead `connect` persists the database path to a connection-details file (`.rudof-connection.toml` by default), which `load` and `query --dialect cypher` then read. That file is exactly what carries the connection from one shell line to the next, the same way it carries it across separate `rudof` invocations on the command line:
 
 ```
 rudof> connect examples/db.lbug
 LadybugDB database opened successfully
   Path: examples/db.lbug
   Connection details stored in '.rudof-connection.toml' (used by `load` and `query --dialect cypher`)
-rudof> load examples/user.ttl --shapes examples/user.shacl
-Loaded 13 triples from RDF data
+rudof> load examples/user_no_errors.ttl --shapes examples/user_shapes.ttl
+Loaded 19 triples from RDF data
 ...
   ✓ Load complete!
-rudof> query --dialect cypher -q "MATCH (n:User) RETURN n.name"
-Query result (4 tuples, 1 columns):
+rudof> query --dialect cypher -q "MATCH (n:Person) RETURN n.name"
+Query result (5 tuples, 1 columns):
 ...
 ```
 

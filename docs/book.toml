@@ -1,10 +1,8 @@
 [book]
 authors = ["Jose Emilio Labra Gayo", "Ángel Iglesias Préstamo"]
 language = "en"
-multilingual = false
 src = "src"
 title = "rudof"
-site-url = "/docs/"
 
 [output.html.print]
 enable = false
@@ -15,6 +13,7 @@ enable = false
 command = "mdbook-mermaid"
 
 [output.html]
+site-url = "/docs/"
 no-section-label = true
 preferred-dark-theme = "dark"
 git-repository-url = "https://github.com/rudof-project/rudof"

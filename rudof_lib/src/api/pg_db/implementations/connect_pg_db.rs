@@ -1,4 +1,4 @@
-use crate::{PgDbConnection, PgDbInfo, Result, Rudof, errors::PgDbError, formats::DbEngine};
+use crate::{PgDbConnection, PgDbInfo, Result, Rudof, errors::PgDbError, formats::BackendSpec};
 use std::path::Path;
 
 /// Opens (creating if necessary) a property graph database and, unless
@@ -12,9 +12,15 @@ pub fn connect_pg_db(
     path: Option<&Path>,
     in_memory: bool,
     read_only: bool,
-    engine: Option<&DbEngine>,
+    engine: Option<&BackendSpec>,
 ) -> Result<PgDbInfo> {
-    let engine = engine.copied().unwrap_or_default();
+    let engine = engine.cloned().unwrap_or(BackendSpec::Lbug);
+    if engine != BackendSpec::Lbug {
+        return Err(PgDbError::UnsupportedEngine {
+            engine: engine.to_string(),
+        }
+        .into());
+    }
 
     if in_memory {
         super::db::verify_in_memory(read_only)?;

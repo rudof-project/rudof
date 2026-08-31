@@ -1,6 +1,6 @@
 # Load data
 
-`rudof load` copies RDF data into a LadybugDB property graph database. It is the RDF/SHACL entry point of the flow described in [discussion #747](https://github.com/rudof-project/rudof/discussions/747): validate the data with SHACL, derive a property graph schema, and let the database DDL constrain subsequent mutations.
+`rudof load` copies RDF data into a LadybugDB property graph database: it validates the data with SHACL, derives a property graph schema, and lets the database DDL constrain subsequent mutations. It is the load step of the [full `connect`/`ddl`/`load`/`query` workflow](./connect.md#full-workflow).
 
 ```sh
 rudof load <data...> [--shapes <shapes...>]
@@ -17,14 +17,14 @@ Example:
 
 ```sh
 $ rudof connect examples/db.lbug
-$ rudof load examples/user.ttl --shapes examples/user.shacl
-Loaded 13 triples from RDF data
+$ rudof load examples/user_no_errors.ttl --shapes examples/user_shapes.ttl
+Loaded 19 triples from RDF data
 Loaded SHACL shapes (4 shapes)
 SHACL validation PASSED ✓
-Creating schema (2 node table(s), 2 relationship table(s)) and loading data...
-  Created node table: User
-  ...
-  Inserted 4 node(s)
+Creating schema (1 node table(s), 1 relationship table(s)) and loading data...
+  Created node table: Person
+  Created relationship table: knows (Person → Person)
+  Inserted 5 node(s)
   Inserted 4 relationship(s)
   ✓ Load complete!
 ```

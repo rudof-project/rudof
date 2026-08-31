@@ -128,6 +128,15 @@ impl<'a> LoadDataBuilder<'a> {
                 self.endpoint_strategy,
             ),
             BackendSpec::Qlever => self.execute_qlever(),
+            BackendSpec::Lbug => Err(Box::new(crate::errors::DataError::DataSourceSpec {
+                message: "the 'lbug' backend cannot supply RDF data yet: rudof has no PG\u{2192}RDF \
+                          materialization (only RDF\u{2192}PG, via `rudof load`/`ddl`, exists today). \
+                          Use `rudof connect`/`load`/`query --dialect cypher` to work with LadybugDB \
+                          directly, or pick --backend memory|qlever|endpoint=... for RDF sources. \
+                          See https://github.com/rudof-project/rudof/discussions/747"
+                    .to_string(),
+            })
+            .into()),
         }
     }
 
