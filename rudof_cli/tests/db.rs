@@ -218,7 +218,11 @@ fn full_workflow_connect_ddl_load_query_cypher() {
     // 1. Connect, explicitly selecting the backend via the (now shared)
     //    --backend flag rather than the old --engine flag.
     let connect = rudof_in(dir.path(), &["connect", "db.lbug", "--backend", "lbug"]);
-    assert_eq!(connect.code, 0, "connect failed: {}\n{}", connect.stdout, connect.stderr);
+    assert_eq!(
+        connect.code, 0,
+        "connect failed: {}\n{}",
+        connect.stdout, connect.stderr
+    );
     let connection_contents = std::fs::read_to_string(dir.path().join(".rudof-connection.toml"))
         .expect("connection details file should exist");
     assert!(connection_contents.contains("backend = \"lbug\""));
