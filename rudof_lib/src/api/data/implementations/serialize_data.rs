@@ -1,8 +1,6 @@
 use crate::{Result, Rudof, errors::DataError, formats::ResultDataFormat};
-use rudof_rdf::rdf_core::visualizer::{
-    VisualRDFGraph,
-    uml_converter::{UmlConverter, UmlGenerationMode},
-};
+use rudof_rdf::rdf_core::visualizer::VisualRDFGraph;
+use rudof_viz::DiagramScope;
 use std::io;
 
 pub fn serialize_data<W: io::Write>(
@@ -78,7 +76,7 @@ fn serialize_rdf_data<W: io::Write>(
                 .as_image(
                     writer,
                     result_data_format.try_into()?,
-                    &UmlGenerationMode::all(),
+                    &DiagramScope::all(),
                     rudof.config.shex2uml().plantuml_path(),
                 )
                 .map_err(|e| {
@@ -88,14 +86,12 @@ fn serialize_rdf_data<W: io::Write>(
                     })
                 })?;
         } else {
-            converter
-                .as_plantuml(writer, &UmlGenerationMode::AllNodes)
-                .map_err(|e| {
-                    Box::new(DataError::FailedSerializingData {
-                        format: result_data_format.to_string(),
-                        error: e.to_string(),
-                    })
-                })?
+            converter.as_plantuml(writer, &DiagramScope::All).map_err(|e| {
+                Box::new(DataError::FailedSerializingData {
+                    format: result_data_format.to_string(),
+                    error: e.to_string(),
+                })
+            })?
         }
     }
 

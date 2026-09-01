@@ -1,10 +1,8 @@
 use crate::errors::DataError;
 use rudof_generate::config::OutputFormat;
 use rudof_iri::MimeType;
-use rudof_rdf::{
-    rdf_core::{RDFFormat, visualizer::uml_converter::ImageFormat},
-    rdf_impl::ReaderMode,
-};
+use rudof_rdf::{rdf_core::RDFFormat, rdf_impl::ReaderMode};
+use rudof_viz::ImageFormat;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -343,8 +341,8 @@ impl TryFrom<ResultDataFormat> for ImageFormat {
 
     fn try_from(value: ResultDataFormat) -> Result<Self, Self::Error> {
         match value {
-            ResultDataFormat::Svg => Ok(ImageFormat::SVG),
-            ResultDataFormat::Png => Ok(ImageFormat::PNG),
+            ResultDataFormat::Svg => Ok(ImageFormat::Svg),
+            ResultDataFormat::Png => Ok(ImageFormat::Png),
             _ => Err(Box::new(DataError::NonImageVisualizationFormat {
                 format: value.to_string(),
             })),

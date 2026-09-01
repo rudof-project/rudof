@@ -4,7 +4,7 @@ use minijinja::{Environment, path_loader};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
 #[cfg(not(target_family = "wasm"))]
-use rudof_rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
+use rudof_viz::{DiagramScope, ImageFormat};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
@@ -81,8 +81,8 @@ impl ShEx2Html {
         #[cfg(not(target_family = "wasm"))]
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            ImageFormat::SVG,
-            &UmlGenerationMode::all(),
+            ImageFormat::Svg,
+            &DiagramScope::all(),
             self.config.shex2uml.plantuml_path(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
@@ -101,8 +101,8 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            ImageFormat::SVG,
-            &UmlGenerationMode::neighs(name),
+            ImageFormat::Svg,
+            &DiagramScope::neighs(name),
             self.config.shex2uml.plantuml_path(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
@@ -465,8 +465,8 @@ fn create_svg_shape<P: AsRef<Path>>(
     let mut str_writer = BufWriter::new(Vec::new());
     converter.as_image(
         str_writer.by_ref(),
-        ImageFormat::SVG,
-        &UmlGenerationMode::neighs(name),
+        ImageFormat::Svg,
+        &DiagramScope::neighs(name),
         plantuml_path.as_ref(),
     )?;
     let str = String::from_utf8(str_writer.into_inner()?)?;

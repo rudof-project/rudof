@@ -43,11 +43,12 @@ impl VisualRDFEdge {
         }
     }
 
-    /// Converts the edge to a PlantUML link format.
+    /// The connector label used when drawing this edge: a hyperlinked label pointing at the
+    /// predicate IRI (or at `rdf:reifies` for reification edges).
     ///
     /// # Returns
-    /// * `String` - The PlantUML link representation
-    pub fn as_plantuml_link(&self) -> String {
+    /// * `String` - The label to show on the connector
+    pub fn to_label(&self) -> String {
         match self {
             VisualRDFEdge::Iri { label, url } => format!("[[{url} {label}]]"),
             VisualRDFEdge::Reifies => format!("[[{} {}]]", RdfVocab::RDF_REIFIES, "reifies"),

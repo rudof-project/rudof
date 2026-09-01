@@ -1,14 +1,13 @@
 use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
+use rudof_viz::{Direction, LineType};
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use std::{
     env,
     path::{Path, PathBuf},
 };
-
-use crate::shex_to_uml::{Direction, LineType};
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

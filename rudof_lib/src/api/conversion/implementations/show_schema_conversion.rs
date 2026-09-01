@@ -11,7 +11,7 @@ use crate::{
         ShExFormat,
     },
 };
-use rudof_rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
+use rudof_viz::{DiagramScope, ImageFormat};
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
 use shex_ast::ShapeMapParser;
 use std::{
@@ -252,9 +252,9 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
     plantuml_path: P,
 ) -> Result<()> {
     let mode = if let Some(str) = maybe_shape {
-        UmlGenerationMode::neighs(str)
+        DiagramScope::neighs(str)
     } else {
-        UmlGenerationMode::all()
+        DiagramScope::all()
     };
     match result_format {
         ResultConversionFormat::PlantUML | ResultConversionFormat::Default => {
@@ -271,7 +271,7 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
         },
         ResultConversionFormat::Svg => {
             uml_converter
-                .as_image(writer, ImageFormat::SVG, &mode, plantuml_path)
+                .as_image(writer, ImageFormat::Svg, &mode, plantuml_path)
                 .map_err(|error| ConversionError::FailedConversion {
                     input_mode: "shex".to_string(),
                     output_mode: "uml".to_string(),
@@ -283,7 +283,7 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
         },
         ResultConversionFormat::Png => {
             uml_converter
-                .as_image(writer, ImageFormat::PNG, &mode, plantuml_path)
+                .as_image(writer, ImageFormat::Png, &mode, plantuml_path)
                 .map_err(|error| ConversionError::FailedConversion {
                     input_mode: "shex".to_string(),
                     output_mode: "uml".to_string(),

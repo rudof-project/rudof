@@ -5,7 +5,7 @@ use std::{
 
 use prefixmap::IriRef;
 use prefixmap::error::PrefixMapError;
-use rudof_rdf::rdf_core::visualizer::uml_converter::errors::UmlConverterError;
+use rudof_viz::RenderError;
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use thiserror::Error;
 
@@ -19,9 +19,9 @@ pub enum ShEx2HtmlError {
     ShapeNotFound { iri: IriRef, schema: Box<Schema> },
 
     #[error(transparent)]
-    UmlConverterError {
+    RenderError {
         #[from]
-        err: UmlConverterError,
+        err: RenderError,
     },
 
     #[error("No local referece for shape name: {name:?}")]

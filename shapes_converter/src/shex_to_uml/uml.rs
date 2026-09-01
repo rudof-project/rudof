@@ -7,8 +7,8 @@ use super::UmlEntry;
 use super::UmlError;
 use super::UmlLink;
 use super::ValueConstraint;
-use serde::Deserialize;
-use serde::Serialize;
+use rudof_viz::backends::plantuml::PlantUmlBackend;
+use rudof_viz::{BoxId, ClassSkin, Color, Connector, ConnectorKind, Diagram, DiagramBox, DiagramRenderer, Shape};
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -22,23 +22,6 @@ pub enum UmlLabelType {
     Or,
     Not,
     And,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum LineType {
-    Orthogonal,
-    Polyline,
-    #[default]
-    Default,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum Direction {
-    LeftToRight,
-    #[default]
-    TopToBottom,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -223,19 +206,40 @@ impl Uml {
             .flat_map(|(n1, vs)| vs.iter().map(move |n2| (n1, n2)))
     }
 
-    pub fn as_plantuml_all<W: Write>(&self, config: &ShEx2UmlConfig, writer: &mut W) -> Result<(), UmlError> {
-        writeln!(writer, "@startuml")?;
-        self.preamble(writer, config)?;
+    /// Builds the technology-agnostic [`Diagram`] for this UML model: one [`Shape::Class`] box
+    /// per component (attributes as compartments), one connector per link (cardinality shown as
+    /// the target decoration), and one generalization connector per `EXTENDS` relationship.
+    pub fn to_diagram(&self, config: &ShEx2UmlConfig) -> Diagram {
+        let mut diagram = Diagram::new()
+            .with_hide_empty_members(true)
+            .with_hide_circles(true)
+            .with_direction(*config.direction())
+            .with_line_type(*config.line_type())
+            .with_shadowing(config.shadowing())
+            .with_class_skin(ClassSkin {
+                border_color: Color::Black,
+                arrow_color: Color::Black,
+            });
+
         for (node_id, component) in self.components.iter() {
-            component2plantuml(node_id, component, config, writer)?;
+            diagram.add_box(component_to_diagram_box(node_id, component, config));
         }
         for link in self.links.iter() {
-            link2plantuml(link, config, writer)?;
+            diagram.add_connector(link_to_connector(link, config));
         }
         for (n1, n2) in self.extends() {
-            writeln!(writer, "{n1} -|> {n2}")?;
+            diagram.add_connector(Connector::new(
+                to_box_id(*n1),
+                to_box_id(*n2),
+                ConnectorKind::Generalization,
+            ));
         }
-        writeln!(writer, "@enduml")?;
+        diagram
+    }
+
+    pub fn as_plantuml_all<W: Write>(&self, config: &ShEx2UmlConfig, writer: &mut W) -> Result<(), UmlError> {
+        let diagram = self.to_diagram(config);
+        PlantUmlBackend::default().render(&diagram, writer)?;
         Ok(())
     }
 
@@ -245,134 +249,59 @@ impl Uml {
         writer: &mut W,
         target_node: &NodeId,
     ) -> Result<(), UmlError> {
-        writeln!(writer, "@startuml")?;
-        self.preamble(writer, config)?;
-
-        // Keep track of serialized components to avoid serializing them twice
-        let mut serialized_components = HashSet::new();
-
-        // For all components in schema, check if they are neighbours with target_node
-        for (node_id, component) in self.components.iter() {
-            if node_id == target_node
-                || is_in_extends(&self.extends, node_id, target_node)
-                || is_in_extends(&self.extends, target_node, node_id)
-                || is_in_map(&self.outgoing, target_node, node_id)
-                || is_in_map(&self.incoming, target_node, node_id) && !serialized_components.contains(node_id)
-            {
-                serialized_components.insert(node_id);
-                component2plantuml(node_id, component, config, writer)?;
-            }
-        }
-        for link in self.links.iter() {
-            if link.source == *target_node || link.target == *target_node {
-                link2plantuml(link, config, writer)?;
-            }
-        }
-        for (n1, n2) in self.extends() {
-            if n1 == target_node || n2 == target_node {
-                writeln!(writer, "{n1} -|> {n2}")?;
-            }
-        }
-        writeln!(writer, "@enduml")?;
-        Ok(())
-    }
-
-    fn preamble(&self, writer: &mut impl Write, config: &ShEx2UmlConfig) -> Result<(), UmlError> {
-        writeln!(writer, "hide empty members")?;
-
-        match config.direction {
-            Direction::LeftToRight => {
-                writeln!(writer, "left to right direction")?;
-            },
-            Direction::TopToBottom => {
-                writeln!(writer, "top to bottom direction")?;
-            },
-        }
-
-        match config.line_type {
-            LineType::Orthogonal => {
-                writeln!(writer, "skinparam linetype ortho")?;
-            },
-            LineType::Polyline => {
-                writeln!(writer, "skinparam linetype polyline")?;
-            },
-            LineType::Default => {},
-        }
-
-        // Hide the class attribute icon
-        writeln!(writer, "hide circles")?;
-
-        writeln!(writer, "skinparam shadowing {}", config.shadowing)?;
-
-        // The following parameters should be taken from the ocnfig file...
-        writeln!(writer, "skinparam class {{")?;
-        writeln!(writer, " BorderColor Black")?;
-        writeln!(writer, " ArrowColor Black")?;
-        writeln!(writer, "}}")?;
+        let diagram = self.to_diagram(config).scoped_by_id(to_box_id(*target_node));
+        PlantUmlBackend::default().render(&diagram, writer)?;
         Ok(())
     }
 }
 
-fn component2plantuml<W: Write>(
-    node_id: &NodeId,
-    component: &UmlComponent,
-    config: &ShEx2UmlConfig,
-    writer: &mut W,
-) -> Result<(), UmlError> {
+fn to_box_id(node_id: NodeId) -> BoxId {
+    BoxId::new(node_id.as_usize())
+}
+
+fn component_to_diagram_box(node_id: &NodeId, component: &UmlComponent, config: &ShEx2UmlConfig) -> DiagramBox {
+    let id = to_box_id(*node_id);
     match component {
         UmlComponent::UmlClass(class) => {
             let name = if config.replace_iri_by_label() {
-                if let Some(label) = class.label() {
-                    label
-                } else {
-                    class.name()
-                }
+                class.label().unwrap_or_else(|| class.name())
             } else {
                 class.name()
             };
-            let href = if let Some(href) = class.href() {
-                format!("[[{href} {name}]]")
-            } else {
-                "".to_string()
-            };
-            writeln!(writer, "class \"{name}\" as {node_id} <<(S,#FF7700)>> {href} {{ ")?;
-            for entry in class.entries() {
-                entry2plantuml(entry, config, writer)?;
+            let mut b = DiagramBox::new(id, Shape::Class, name).with_stereotype("(S,#FF7700)");
+            if let Some(href) = class.href() {
+                b = b.with_href(href);
             }
-            writeln!(writer, "}}")?;
+            let compartments = class
+                .entries()
+                .map(|entry| entry_to_compartment_line(entry, config))
+                .collect();
+            b.with_compartments(compartments)
         },
-        UmlComponent::Or { exprs: _ } => {
-            writeln!(writer, "class \"OR\" as {node_id} {{}}")?;
-        },
-        UmlComponent::Not { expr: _ } => {
-            writeln!(writer, "class \"NOT\" as {node_id} {{}}")?;
-        },
-        UmlComponent::And { exprs: _ } => {
-            writeln!(writer, "class \"AND\" as {node_id} {{}}")?;
-        },
+        UmlComponent::Or { exprs: _ } => DiagramBox::new(id, Shape::Class, "OR"),
+        UmlComponent::Not { expr: _ } => DiagramBox::new(id, Shape::Class, "NOT"),
+        UmlComponent::And { exprs: _ } => DiagramBox::new(id, Shape::Class, "AND"),
     }
-    Ok(())
 }
 
-fn link2plantuml<W: Write>(link: &UmlLink, config: &ShEx2UmlConfig, writer: &mut W) -> Result<(), UmlError> {
-    let source = format!("{}", link.source);
-    let card = card2plantuml(&link.card);
-    let target = format!("{}", link.target);
-    let name = name2plantuml(&link.name, config);
-    writeln!(writer, "{source} --> \"{card}\" {target} : {name}")?;
-    Ok(())
+fn link_to_connector(link: &UmlLink, config: &ShEx2UmlConfig) -> Connector {
+    Connector::new(
+        to_box_id(link.source),
+        to_box_id(link.target),
+        ConnectorKind::Association,
+    )
+    .with_target_decoration(card_to_string(&link.card))
+    .with_label(name_to_string(&link.name, config))
 }
 
-fn entry2plantuml<W: Write>(entry: &UmlEntry, config: &ShEx2UmlConfig, writer: &mut W) -> Result<(), UmlError> {
-    let property = name2plantuml(&entry.name, config);
-    let value_constraint = value_constraint2plantuml(&entry.value_constraint, config);
-    let card = card2plantuml(&entry.card);
-    writeln!(writer, "{property} : {value_constraint} {card}")?;
-    writeln!(writer, "--")?;
-    Ok(())
+fn entry_to_compartment_line(entry: &UmlEntry, config: &ShEx2UmlConfig) -> String {
+    let property = name_to_string(&entry.name, config);
+    let value_constraint = value_constraint_to_string(&entry.value_constraint, config);
+    let card = card_to_string(&entry.card);
+    format!("{property} : {value_constraint} {card}")
 }
 
-fn name2plantuml(name: &Name, config: &ShEx2UmlConfig) -> String {
+fn name_to_string(name: &Name, config: &ShEx2UmlConfig) -> String {
     let str = if config.replace_iri_by_label() {
         if let Some(label) = name.label() {
             label
@@ -389,21 +318,21 @@ fn name2plantuml(name: &Name, config: &ShEx2UmlConfig) -> String {
     }
 }
 
-fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> String {
+fn value_constraint_to_string(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> String {
     match vc {
         ValueConstraint::Any => ".".to_string(),
-        ValueConstraint::Datatype(dt) => name2plantuml(dt, config),
-        ValueConstraint::Ref(r) => format!("@{}", name2plantuml(r, config)),
+        ValueConstraint::Datatype(dt) => name_to_string(dt, config),
+        ValueConstraint::Ref(r) => format!("@{}", name_to_string(r, config)),
         ValueConstraint::None => "".to_string(),
         ValueConstraint::ValueSet(values) => {
             let mut str = String::new();
             str.push_str("[ ");
             for name in values {
-                let name_puml = name2plantuml(name, config);
+                let name_str = name_to_string(name, config);
                 if !str.is_empty() {
                     str.push(' ');
                 }
-                str.push_str(name_puml.as_str());
+                str.push_str(name_str.as_str());
             }
             str.push_str(" ]");
             str.to_string()
@@ -411,17 +340,17 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
         ValueConstraint::Facet(names) => {
             let mut str = String::new();
             for name in names {
-                let name_puml = name2plantuml(name, config);
+                let name_str = name_to_string(name, config);
                 if !str.is_empty() {
                     str.push(' ');
                 }
-                str.push_str(name_puml.as_str());
+                str.push_str(name_str.as_str());
             }
             str.to_string()
         },
-        ValueConstraint::Kind(name) => name2plantuml(name, config),
+        ValueConstraint::Kind(name) => name_to_string(name, config),
         ValueConstraint::And { values } => values.iter().fold(String::new(), |mut acc, vc| {
-            let vc_str = value_constraint2plantuml(vc, config);
+            let vc_str = value_constraint_to_string(vc, config);
             if !acc.is_empty() {
                 acc.push_str(" AND ");
             }
@@ -429,7 +358,7 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
             acc
         }),
         ValueConstraint::Or { values } => values.iter().fold(String::new(), |mut acc, vc| {
-            let vc_str = value_constraint2plantuml(vc, config);
+            let vc_str = value_constraint_to_string(vc, config);
             if !acc.is_empty() {
                 acc.push_str(" OR ");
             }
@@ -437,13 +366,13 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
             acc
         }),
         ValueConstraint::Not { value } => {
-            let vc_str = value_constraint2plantuml(value, config);
+            let vc_str = value_constraint_to_string(value, config);
             format!("NOT {vc_str}")
         },
     }
 }
 
-fn card2plantuml(card: &UmlCardinality) -> String {
+fn card_to_string(card: &UmlCardinality) -> String {
     match card {
         UmlCardinality::OneOne => " ".to_string(),
         UmlCardinality::Star => "*".to_string(),
@@ -451,14 +380,6 @@ fn card2plantuml(card: &UmlCardinality) -> String {
         UmlCardinality::Optional => "?".to_string(),
         UmlCardinality::Range(m, n) => format!("{m}-{n}"),
         UmlCardinality::Fixed(m) => format!("{{{m}}}"),
-    }
-}
-
-fn is_in_extends(extends: &HashMap<NodeId, HashSet<NodeId>>, node: &NodeId, target: &NodeId) -> bool {
-    if let Some(es) = extends.get(node) {
-        es.contains(target)
-    } else {
-        false
     }
 }
 
@@ -478,14 +399,109 @@ where
     }
 }
 
-fn is_in_map<A, B>(map: &HashMap<A, HashSet<B>>, source: &A, target: &B) -> bool
-where
-    A: Eq + Hash,
-    B: Eq + Hash,
-{
-    if let Some(es) = map.get(source) {
-        es.contains(target)
-    } else {
-        false
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn person_uml() -> (Uml, NodeId) {
+        let mut uml = Uml::new();
+        let mut person = super::super::UmlClass::new(Name::new(":Person", Some("http://example.org/Person")));
+        person.add_entry(UmlEntry::new(
+            Name::new(":name", Some("http://example.org/name")),
+            ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
+            UmlCardinality::OneOne,
+        ));
+        let (person_node, _found) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
+        uml.add_component(person_node, UmlComponent::class(person)).unwrap();
+        (uml, person_node)
+    }
+
+    #[test]
+    fn to_diagram_builds_one_class_box_with_a_compartment() {
+        let (uml, _person_node) = person_uml();
+        let diagram = uml.to_diagram(&ShEx2UmlConfig::default());
+
+        assert_eq!(diagram.boxes().count(), 1);
+        let b = diagram.boxes().next().unwrap();
+        assert_eq!(b.shape(), Shape::Class);
+        assert_eq!(b.title(), ":Person");
+        assert_eq!(b.stereotype(), Some("(S,#FF7700)"));
+        assert_eq!(b.compartments().len(), 1);
+        assert!(b.compartments()[0].contains(":name"));
+        assert!(b.compartments()[0].contains("xsd:string"));
+        assert!(diagram.hide_empty_members());
+        assert!(diagram.hide_circles());
+        assert_eq!(diagram.shadowing(), Some(true));
+    }
+
+    #[test]
+    fn to_diagram_builds_a_generalization_connector_for_extends() {
+        let mut uml = Uml::new();
+        let (child, _) = uml.get_node_adding_label(&UmlLabel::Class(":Employee".to_string()));
+        let (parent, _) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
+        uml.add_component(
+            child,
+            UmlComponent::class(super::super::UmlClass::new(Name::new(":Employee", None))),
+        )
+        .unwrap();
+        uml.add_component(
+            parent,
+            UmlComponent::class(super::super::UmlClass::new(Name::new(":Person", None))),
+        )
+        .unwrap();
+        uml.add_extends(&child, &parent);
+
+        let diagram = uml.to_diagram(&ShEx2UmlConfig::default());
+        let connector = diagram.connectors().next().unwrap();
+        assert_eq!(connector.kind(), ConnectorKind::Generalization);
+        assert_eq!(connector.source(), to_box_id(child));
+        assert_eq!(connector.target(), to_box_id(parent));
+    }
+
+    #[test]
+    fn as_plantuml_all_renders_valid_plantuml_for_a_class() {
+        let (uml, _person_node) = person_uml();
+        let mut out = Vec::new();
+        uml.as_plantuml_all(&ShEx2UmlConfig::default(), &mut out).unwrap();
+        let text = String::from_utf8(out).unwrap();
+
+        assert!(text.starts_with("@startuml"));
+        assert!(text.trim_end().ends_with("@enduml"));
+        assert!(text.contains(":Person"));
+        assert!(text.contains("(S,#FF7700)"));
+        assert!(text.contains("hide empty members"));
+    }
+
+    #[test]
+    fn as_plantuml_neighs_scopes_to_the_target_and_its_links() {
+        let mut uml = Uml::new();
+        let (person, _) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
+        let (company, _) = uml.get_node_adding_label(&UmlLabel::Class(":Company".to_string()));
+        let (unrelated, _) = uml.get_node_adding_label(&UmlLabel::Class(":Unrelated".to_string()));
+        uml.add_component(
+            person,
+            UmlComponent::class(super::super::UmlClass::new(Name::new(":Person", None))),
+        )
+        .unwrap();
+        uml.add_component(
+            company,
+            UmlComponent::class(super::super::UmlClass::new(Name::new(":Company", None))),
+        )
+        .unwrap();
+        uml.add_component(
+            unrelated,
+            UmlComponent::class(super::super::UmlClass::new(Name::new(":Unrelated", None))),
+        )
+        .unwrap();
+        uml.make_link(person, company, Name::new(":worksFor", None), UmlCardinality::Star);
+
+        let mut out = Vec::new();
+        uml.as_plantuml_neighs(&ShEx2UmlConfig::default(), &mut out, &person)
+            .unwrap();
+        let text = String::from_utf8(out).unwrap();
+
+        assert!(text.contains(":Person"));
+        assert!(text.contains(":Company"));
+        assert!(!text.contains(":Unrelated"));
     }
 }

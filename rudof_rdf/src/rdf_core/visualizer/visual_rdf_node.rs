@@ -2,8 +2,9 @@ use crate::rdf_core::vocabs::RdfVocab;
 use crate::rdf_core::{
     NeighsRDF, RDFError, Rdf,
     term::{Iri, IriOrBlankNode, Object},
-    visualizer::{NodeId, VisualRDFGraph, errors::RdfVisualizerError},
+    visualizer::{NodeId, VisualRDFGraph},
 };
+use rudof_viz::{BoxId, DiagramBox, Shape};
 use std::fmt::Display;
 
 /// Represents a visual node in an RDF graph for visualization purposes.
@@ -111,50 +112,51 @@ impl VisualRDFNode {
         VisualRDFNode::AssertedTriple(Box::new(s), Box::new(p), Box::new(o))
     }
 
-    /// Converts the node to a PlantUML string representation.
-    /// The `node_id` is used for unique identification in the diagram.
-    /// `show_if_predicate` controls whether predicate nodes are displayed.
-    /// Returns a string suitable for PlantUML rendering or an error.
+    /// Converts this node to a [`DiagramBox`] for the technology-agnostic diagram model.
+    ///
+    /// `show_if_predicate` controls whether predicate/reifies nodes are included: they are only
+    /// drawn when they participate in an RDF-star triple term. Returns `None` when the node
+    /// should not be drawn at all.
     ///
     /// # Arguments
     /// * `node_id` - The unique ID for the node
-    /// * `show_if_predicate` - Whether to show predicate nodes
-    /// * `_graph` - The visual graph (unused)
-    ///
-    /// # Returns
-    /// * `Result<String, RdfVisualizerError>` - The PlantUML string or an error
-    pub fn as_plantuml(
-        &self,
-        node_id: NodeId,
-        show_if_predicate: bool,
-        _graph: &VisualRDFGraph,
-    ) -> Result<String, RdfVisualizerError> {
+    /// * `show_if_predicate` - Whether to include predicate/reifies nodes
+    pub fn to_diagram_box(&self, node_id: NodeId, show_if_predicate: bool) -> Option<DiagramBox> {
+        let id = BoxId::new(node_id.as_usize());
         match self {
-            VisualRDFNode::Iri { label, url } => Ok(format!("rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}")),
-            VisualRDFNode::BlankNode { label: _ } => Ok(format!("rectangle \" \" <<bnode>> as {node_id}")),
-            VisualRDFNode::Literal { value } => Ok(format!("rectangle \"{value}\" <<literal>> as {node_id}")),
+            VisualRDFNode::Iri { label, url } => Some(
+                DiagramBox::new(id, Shape::Rectangle, label.clone())
+                    .with_href(url.clone())
+                    .with_stereotype("uri"),
+            ),
+            VisualRDFNode::BlankNode { label: _ } => {
+                Some(DiagramBox::new(id, Shape::Rectangle, " ").with_stereotype("bnode"))
+            },
+            VisualRDFNode::Literal { value } => {
+                Some(DiagramBox::new(id, Shape::Rectangle, value.clone()).with_stereotype("literal"))
+            },
             VisualRDFNode::NonAssertedTriple(_subj, _pred, _obj) => {
-                let mut str = String::new();
-                str.push_str(format!("cloud \" \" <<non_asserted>> as {node_id}\n").as_str());
-                Ok(str)
+                Some(DiagramBox::new(id, Shape::Cloud, " ").with_stereotype("non_asserted"))
             },
             VisualRDFNode::AssertedTriple(_subj, _pred, _obj) => {
-                let mut str = String::new();
-                str.push_str(format!("rectangle \" \" <<asserted>> as {node_id}\n").as_str());
-                Ok(str)
+                Some(DiagramBox::new(id, Shape::Rectangle, " ").with_stereotype("asserted"))
             },
             VisualRDFNode::Predicate { label, url } => {
                 if show_if_predicate {
-                    Ok(format!("rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}"))
+                    Some(
+                        DiagramBox::new(id, Shape::Rectangle, label.clone())
+                            .with_href(url.clone())
+                            .with_stereotype("uri"),
+                    )
                 } else {
-                    Ok(String::new())
+                    None
                 }
             },
             VisualRDFNode::Reifies => {
                 if show_if_predicate {
-                    Ok(format!("rectangle \"reifies\" <<reifies>> as {node_id}"))
+                    Some(DiagramBox::new(id, Shape::Rectangle, "reifies").with_stereotype("reifies"))
                 } else {
-                    Ok("".to_string())
+                    None
                 }
             },
         }

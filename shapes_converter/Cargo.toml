@@ -19,6 +19,7 @@ mie.workspace = true
 minijinja = { version = "2.24", features = ["loader"] }
 prefixmap.workspace = true
 rdf_config.workspace = true
+rudof_viz.workspace = true
 serde.workspace = true
 shacl.workspace = true
 shex_ast.workspace = true
