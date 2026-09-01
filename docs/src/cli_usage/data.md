@@ -81,9 +81,9 @@ This merges multiple files given to the *same* `data` call. Inside `rudof shell`
 
 It is possible to generate a visual representation of simple RDF graphs by using the `--result-format` option and selecting a visual format like `svg` or `png`.
 
-The visualization is leveraged on PlantUML so it is necessary to have the PlantUML binary downloaded and available through the `PLANTUML` variable.
+By default this is rendered with PlantUML, so it is necessary to have the PlantUML binary downloaded and available through the `PLANTUML` variable — see [convert: Prerequisites](./convert.md#prerequisites) for how to set it up, and for the `--viz-engine graphviz` alternative (which needs Graphviz's `dot` on `PATH` instead, no environment variable required).
 
-Another alternative is to use the `plantuml`  result format to generate an intermediate file and pass that file to some PlantUML processor.
+Another alternative is to use the `plantuml` result format to generate an intermediate file and pass that file to some PlantUML processor.
 
 As an example, the following command generates a `plantuml` file:
 
@@ -91,10 +91,16 @@ As an example, the following command generates a `plantuml` file:
 rudof data examples/simple.ttl -r plantuml -o file.plantuml
 ```
 
-If you have PLANT_UML available you can use directly:
+If you have PlantUML available you can use directly:
 
 ```sh
 rudof data examples/simple.ttl -r svg -o file.svg
+```
+
+To render with Graphviz instead, pass `--viz-engine graphviz`:
+
+```sh
+rudof data examples/simple.ttl -r svg --viz-engine graphviz -o file.svg
 ```
 
 ## Selecting the RDF backend

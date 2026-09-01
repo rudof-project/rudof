@@ -289,9 +289,27 @@ Source: [`shapes_converter/src/shex_to_uml/shex2uml_config.rs`](https://github.c
 | `plantuml_path` | path | `$PLANTUML` env var, else `"plantuml.jar"` | Path to the PlantUML jar used to render diagrams. |
 | `annotation_label` | list of IRIs | `[rdfs:label]` | IRIs used as annotation labels in the diagram. |
 | `replace_iri` | boolean | `false` | Replace IRIs with their labels (from `annotation_label`) in the diagram. |
-| `shadowing` | boolean | `true` | Use shadowing for shapes in the diagram. |
+| `shadowing` | boolean | `true` | Use shadowing for shapes in the diagram. Only honored by the PlantUML engine — Graphviz has no equivalent effect and ignores it. |
 | `line_type` | `"orthogonal"` \| `"polyline"` \| `"default"` | `"default"` | Connector line style. |
 | `direction` | `"left_to_right"` \| `"top_to_bottom"` | `"top_to_bottom"` | Diagram layout direction. |
+| `class_skin` | table | see [`[shex2uml.class_skin]`](#shex2umlclass_skin) | Border/background/arrow colors for class boxes. Read by both visualization engines (see `--viz-engine` in [convert](../cli_usage/convert.md#choosing-a-visualization-engine)), so `svg`/`png` output looks the same regardless of which one generated it. |
+
+### `[shex2uml.class_skin]`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `border_color` | color name | `black` | Class box outline color. |
+| `background_color` | color name | `light_blue` | Class box fill color. |
+| `arrow_color` | color name | `black` | Default color for association/generalization arrows. |
+
+Same color names as [`[rdf.visualization]`](#rdfvisualization) above.
+
+```toml
+[shex2uml.class_skin]
+border_color = "black"
+background_color = "light_blue"
+arrow_color = "black"
+```
 
 ## `[shex2html]` — ShEx → HTML conversion
 

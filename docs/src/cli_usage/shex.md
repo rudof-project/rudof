@@ -160,6 +160,34 @@ The reverse direction also works: `-s`/`--schema` accepts a ShExR-encoded RDF fi
 
 This round-trips with the serialization above — saving the RDF from `rudof shex -s examples/person.shex -r turtle` to a file and loading it back with `-f turtle` reproduces the original schema. This is available everywhere a ShEx schema can be loaded: the CLI, the shell (`shex examples/person.shexr.ttl -f turtle`), the MCP server's `show_shex`/`check_shex` tools, and the Python bindings (`read_shex(path, format=ShExFormat.Turtle)`).
 
+## ShEx visualization (UML diagrams)
+
+`rudof shex -r svg` (or `-r png`, `-r plantuml`) renders the schema as a UML class diagram — the same diagram `rudof convert -m shex -x uml -r svg` produces (see [convert: From ShEx to UML](./convert.md#from-shex-to-uml)), but more direct when the schema is already loaded and you don't need `convert`'s other input formats.
+
+```sh
+rudof shex -s examples/user.shex -r svg -o user.svg
+```
+
+`-r plantuml` writes the intermediate PlantUML source instead of rendering an image — useful to inspect or tweak by hand, or to feed to your own PlantUML setup:
+
+```sh
+rudof shex -s examples/user.shex -r plantuml -o user.plantuml
+```
+
+`-l`/`--shape-label` scopes the diagram to one shape and its immediate neighbours, same as it does for text output:
+
+```sh
+rudof shex -s examples/user.shex -r svg -l :User -o user.svg
+```
+
+This uses PlantUML by default; pass `--viz-engine graphviz` to render with Graphviz instead. See [convert: Prerequisites](./convert.md#prerequisites) for what each engine needs installed, and [convert: Choosing a visualization engine](./convert.md#choosing-a-visualization-engine):
+
+```sh
+rudof shex -s examples/user.shex -r svg --viz-engine graphviz -o user.svg
+```
+
+This also works inside the [shell](./shell.md) — `shex examples/user.shex` to load the schema, then `shex -r svg --viz-engine graphviz -o user.svg`.
+
 ## ShEx-based validation
 
 It is also possible to use `rudof` to validate ShEx schemas.
@@ -225,8 +253,9 @@ Usage: rudof shex [OPTIONS]
 
 Options:
   -s, --schema <INPUT>            Schema, FILE, URI or - for stdin. If omitted, shows the currently loaded schema
-  -f, --format <FORMAT>           Schema format (ShExC, ShExJ, Turtle, ...), default = ShExC [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
-  -r, --result-format <FORMAT>    Result schema format [default: shexj] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -f, --format <FORMAT>           Schema format (ShExC, ShExJ, Turtle, ...), default = ShExC [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads, plantuml, svg, png]
+  -r, --result-format <FORMAT>    Result schema format [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads, plantuml, svg, png]
+      --viz-engine <ENGINE>       Visualization engine for image (SVG/PNG) result formats [default: plantuml] [possible values: plantuml, graphviz]
   -l, --shape-label <LABEL>       shape label
   -t, --show-time <BOOL>          Show processing time [possible values: true, false]
       --show-schema

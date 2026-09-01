@@ -26,15 +26,53 @@ The `convert` command requires 7 main arguments; namely:
 
 ## Prerequisites
 
-In case you want to generate the UML diagrams, [PlantUML](https://plantuml.com/) needs to be installed, as the generation of SVG or PNG images is based on it.
-So you must download the [command line JAR file](https://plantuml.com/download).
-Once downloaded, set the environment variable `PLANTUML` to point to that file.
+Generating `svg` or `png` visualizations — UML diagrams from `convert`/`shex`, or RDF graphs from `data` — needs an external drawing tool. `rudof` supports two, selectable with `--viz-engine`:
+
+| Engine | `--viz-engine` value | Default? | What it needs |
+|---|---|---|---|
+| [PlantUML](https://plantuml.com/) | `plantuml` | Yes | Java, plus the PlantUML jar |
+| [Graphviz](https://graphviz.org/) | `graphviz` | No | The `dot` command on `PATH` |
+
+### PlantUML (default)
+
+Download the [command line JAR file](https://plantuml.com/download) and set the `PLANTUML` environment variable to point to it:
+
+```sh
+export PLANTUML=/path/to/plantuml.jar
+```
 
 PlantUML also requires [Java](https://www.oracle.com/java/technologies) 8 or higher to be installed. You can check if you Java is already installed by running the following command.
 
 ```sh
 java --version
 ```
+
+### Graphviz
+
+Install Graphviz through your system's package manager so that the `dot` command ends up on `PATH` — unlike PlantUML, no environment variable is needed:
+
+```sh
+# Debian/Ubuntu
+sudo apt-get install graphviz
+# macOS (Homebrew)
+brew install graphviz
+```
+
+You can check it's installed with:
+
+```sh
+dot -V
+```
+
+### Choosing a visualization engine
+
+Pass `--viz-engine graphviz` to use Graphviz instead of the PlantUML default, on any command that supports `svg`/`png` output — `data`, `shex`, and `convert`:
+
+```sh
+rudof convert -s simple.shex -m shex -x uml -r svg --viz-engine graphviz -o simple.svg
+```
+
+Both engines are driven by the same style settings, so `svg`/`png` output looks the same regardless of which one generated it — see [`[shex2uml].class_skin`](../references/config.md#shex2umlclass_skin) in the config reference to customize UML class-diagram colors.
 
 For sucessfully following the examples provided, download the files from the Github repository.
 
@@ -108,6 +146,8 @@ To generate `png` visualizations it can be done as follows:
 rudof convert -s book.csv -m dctap -x uml -f csv -r png -o simple.png
 ```
 
+Add `--viz-engine graphviz` to render with Graphviz instead of the PlantUML default — see [Choosing a visualization engine](#choosing-a-visualization-engine).
+
 ### From DCTAP to HTML
 
 TBD
@@ -156,6 +196,8 @@ To generate `png` visualizations it can be done as follows:
 ```sh
 rudof convert -s simple.shex -m shex -x uml -r png -o simple.png
 ```
+
+Add `--viz-engine graphviz` to render with Graphviz instead of the PlantUML default — see [Choosing a visualization engine](#choosing-a-visualization-engine). `rudof shex -r svg`/`-r png` (see [shex: ShEx visualization](./shex.md#shex-visualization-uml-diagrams)) is a more direct route to the same diagram when the schema is already loaded and you don't need `convert`'s DCTAP/SHACL input support.
 
 ### From ShEx to HTML
 
