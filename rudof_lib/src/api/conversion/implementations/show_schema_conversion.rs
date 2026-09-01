@@ -11,7 +11,7 @@ use crate::{
         ShExFormat,
     },
 };
-use rudof_viz::{DiagramScope, ImageFormat};
+use rudof_viz::{DiagramScope, ImageFormat, VizEngine};
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
 use shex_ast::ShapeMapParser;
 use std::{
@@ -33,8 +33,10 @@ pub fn show_schema_conversion<W: io::Write>(
     show_time: Option<bool>,
     templates_folder: Option<&Path>,
     output_folder: Option<&Path>,
+    viz_engine: Option<&VizEngine>,
     writer: &mut W,
 ) -> Result<()> {
+    let viz_engine = viz_engine.copied().unwrap_or_default();
     match (input_mode, output_mode) {
         (ConversionMode::ShEx, ResultConversionMode::ShEx) => show_schema_conversion_shex_to_shex(
             rudof,
@@ -65,6 +67,7 @@ pub fn show_schema_conversion<W: io::Write>(
             input_format,
             output_format,
             shape,
+            viz_engine,
             writer,
         ),
         (ConversionMode::ShEx, ResultConversionMode::Html) => match output_folder {
@@ -112,7 +115,7 @@ pub fn show_schema_conversion<W: io::Write>(
             writer,
         ),
         (ConversionMode::Dctap, ResultConversionMode::Uml) => {
-            show_schema_conversion_dctap_to_uml(rudof, schema, input_format, output_format, shape, writer)
+            show_schema_conversion_dctap_to_uml(rudof, schema, input_format, output_format, shape, viz_engine, writer)
         },
         (ConversionMode::Dctap, ResultConversionMode::Html) => match output_folder {
             Some(of) => {
@@ -155,6 +158,7 @@ fn show_schema_conversion_shex_to_shex<W: io::Write>(
         show_time,
         None,
         Some(&(*output_format).try_into()?),
+        None,
         writer,
     )?;
 
@@ -218,6 +222,7 @@ fn show_schema_conversion_shex_to_uml<W: io::Write>(
     input_format: &ConversionFormat,
     output_format: &ResultConversionFormat,
     shape: Option<&str>,
+    viz_engine: VizEngine,
     writer: &mut W,
 ) -> Result<()> {
     load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
@@ -239,16 +244,19 @@ fn show_schema_conversion_shex_to_uml<W: io::Write>(
         writer,
         input_format,
         output_format,
+        viz_engine,
         rudof.config.shex2uml().plantuml_path(),
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
     uml_converter: ShEx2Uml,
     maybe_shape: Option<&str>,
     writer: &mut W,
     input_format: &ConversionFormat,
     result_format: &ResultConversionFormat,
+    viz_engine: VizEngine,
     plantuml_path: P,
 ) -> Result<()> {
     let mode = if let Some(str) = maybe_shape {
@@ -271,7 +279,7 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
         },
         ResultConversionFormat::Svg => {
             uml_converter
-                .as_image(writer, ImageFormat::Svg, &mode, plantuml_path)
+                .as_image(writer, ImageFormat::Svg, &mode, viz_engine, plantuml_path)
                 .map_err(|error| ConversionError::FailedConversion {
                     input_mode: "shex".to_string(),
                     output_mode: "uml".to_string(),
@@ -283,7 +291,7 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
         },
         ResultConversionFormat::Png => {
             uml_converter
-                .as_image(writer, ImageFormat::Png, &mode, plantuml_path)
+                .as_image(writer, ImageFormat::Png, &mode, viz_engine, plantuml_path)
                 .map_err(|error| ConversionError::FailedConversion {
                     input_mode: "shex".to_string(),
                     output_mode: "uml".to_string(),
@@ -426,6 +434,7 @@ fn show_schema_conversion_shacl_to_shex<W: io::Write>(
         show_time,
         None,
         Some(&(*output_format).try_into()?),
+        None,
         writer,
     )?;
 
@@ -469,6 +478,7 @@ fn show_schema_conversion_dctap_to_shex<W: io::Write>(
         show_time,
         Some(false),
         Some(&(*output_format).try_into()?),
+        None,
         writer,
     )?;
 
@@ -481,6 +491,7 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
     input_format: &ConversionFormat,
     output_format: &ResultConversionFormat,
     shape: Option<&str>,
+    viz_engine: VizEngine,
     writer: &mut W,
 ) -> Result<()> {
     load_dctap(rudof, schema, Some(&(*input_format).try_into()?))?;
@@ -514,6 +525,7 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
         writer,
         input_format,
         output_format,
+        viz_engine,
         rudof.config.shex2uml().plantuml_path(),
     )
 }

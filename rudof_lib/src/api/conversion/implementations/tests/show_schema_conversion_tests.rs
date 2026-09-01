@@ -31,6 +31,7 @@ fn serialize_conversion_to_string(
         None,
         None,
         None,
+        None,
         &mut buffer,
     )
     .unwrap();
@@ -250,6 +251,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         &ConversionFormat::ShExC,
         &ResultConversionFormat::ShExC,
         Some(":Person"),
+        None,
         None,
         None,
         None,

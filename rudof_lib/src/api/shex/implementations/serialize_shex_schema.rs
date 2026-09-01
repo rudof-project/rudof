@@ -2,6 +2,8 @@ use crate::{Result, Rudof, errors::ShExError, formats::ShExFormat, types::ShExSt
 use rudof_rdf::rdf_core::vocabs::{RdfVocabulary, ShexRVocab};
 use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
+use rudof_viz::{DiagramScope, ImageFormat, VizEngine};
+use shapes_converter::ShEx2Uml;
 use shex_ast::ShExFormatter;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ShapeMapParser;
@@ -20,6 +22,7 @@ pub fn serialize_shex_schema<W: io::Write>(
     show_time: Option<bool>,
     show_colors: Option<bool>,
     shex_format: Option<&ShExFormat>,
+    viz_engine: Option<&VizEngine>,
     writer: &mut W,
 ) -> Result<()> {
     let timer = Instant::now();
@@ -34,13 +37,14 @@ pub fn serialize_shex_schema<W: io::Write>(
             show_colors,
             shex_format,
         );
+    let viz_engine = viz_engine.copied().unwrap_or_default();
 
     if !shape_label.is_empty() {
         serialize_shape(rudof, &shape_label, writer)?;
     }
 
     if show_schema {
-        serialize_schema(rudof, shex_format, show_colors, writer)?;
+        serialize_schema(rudof, shex_format, show_colors, &shape_label, viz_engine, writer)?;
     }
 
     if rudof.config.shex().show_ir() {
@@ -155,6 +159,8 @@ fn serialize_schema(
     rudof: &Rudof,
     shex_format: ShExFormat,
     show_colors: bool,
+    shape_label: &str,
+    viz_engine: VizEngine,
     writer: &mut impl io::Write,
 ) -> Result<()> {
     let formatter = match show_colors {
@@ -221,6 +227,50 @@ fn serialize_schema(
                     .to_string(),
             }
             .into());
+        },
+        ShExFormat::PlantUML | ShExFormat::Svg | ShExFormat::Png => {
+            let mut converter = ShEx2Uml::new(rudof.config.shex2uml());
+            converter
+                .convert(shex_schema)
+                .map_err(|e| ShExError::FailedSerializingShExSchema {
+                    format: shex_format.to_string(),
+                    error: e.to_string(),
+                })?;
+            let scope = if shape_label.is_empty() {
+                DiagramScope::all()
+            } else {
+                DiagramScope::neighs(shape_label)
+            };
+            match shex_format {
+                ShExFormat::PlantUML => {
+                    converter
+                        .as_plantuml(writer, &scope)
+                        .map_err(|e| ShExError::FailedSerializingShExSchema {
+                            format: shex_format.to_string(),
+                            error: e.to_string(),
+                        })?;
+                },
+                ShExFormat::Svg | ShExFormat::Png => {
+                    let image_format = if matches!(shex_format, ShExFormat::Svg) {
+                        ImageFormat::Svg
+                    } else {
+                        ImageFormat::Png
+                    };
+                    converter
+                        .as_image(
+                            writer,
+                            image_format,
+                            &scope,
+                            viz_engine,
+                            rudof.config.shex2uml().plantuml_path(),
+                        )
+                        .map_err(|e| ShExError::FailedSerializingShExSchema {
+                            format: shex_format.to_string(),
+                            error: e.to_string(),
+                        })?;
+                },
+                _ => unreachable!(),
+            }
         },
     }
 

@@ -4,7 +4,7 @@ use std::io::Write;
 use either::Either;
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
-use rudof_viz::{BoxId, DiagramScope, RenderError, backends::plantuml::PlantUmlBackend};
+use rudof_viz::{BoxId, DiagramScope, RenderError, VizEngine};
 use shex_ast::{
     Annotation, NodeKind, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, ShapeExprWrapper, TripleExpr,
     ValueSetValue, XsFacet,
@@ -49,17 +49,18 @@ impl ShEx2Uml {
         Ok(())
     }
 
-    /// Renders this UML diagram to an image via `java -jar plantuml.jar`.
+    /// Renders this UML diagram to an image using the given [`VizEngine`].
+    ///
+    /// `plantuml_path` is only consulted when `engine` is `VizEngine::PlantUml`.
     #[cfg(not(target_family = "wasm"))]
     pub fn as_image<W: Write, P: AsRef<std::path::Path>>(
         &self,
         writer: &mut W,
         image_format: rudof_viz::ImageFormat,
         mode: &DiagramScope,
+        engine: VizEngine,
         plantuml_path: P,
     ) -> Result<(), ShEx2UmlError> {
-        use rudof_viz::ExternalToolRenderer;
-
         let diagram = self.current_uml.to_diagram(&self.config);
         let diagram = match mode {
             DiagramScope::All => diagram,
@@ -71,7 +72,7 @@ impl ShEx2Uml {
                 }
             },
         };
-        PlantUmlBackend::new(plantuml_path.as_ref()).render_image(&diagram, image_format, writer)?;
+        rudof_viz::render_image_with_engine(&diagram, image_format, engine, plantuml_path.as_ref(), writer)?;
         Ok(())
     }
 

@@ -2,12 +2,27 @@ use crate::model::BoxId;
 use crate::style::{ArrowStyle, Color, StyleSheet};
 use serde::{Deserialize, Serialize};
 
-/// Global default border/arrow colors for [`Shape::Class`] boxes, applied regardless of
-/// stereotype (unlike [`crate::style::StyleSheet`], which styles boxes by matching stereotype).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Global default border/background/arrow colors for [`Shape::Class`] boxes, applied regardless
+/// of stereotype (unlike [`crate::style::StyleSheet`], which styles boxes by matching stereotype).
+///
+/// Defaults to a neutral black-on-white look; a domain crate (e.g. `shapes_converter`'s
+/// `ShEx2UmlConfig`) is expected to pick its own opinionated defaults on top of this.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct ClassSkin {
     pub border_color: Color,
+    pub background_color: Color,
     pub arrow_color: Color,
+}
+
+impl Default for ClassSkin {
+    fn default() -> Self {
+        ClassSkin {
+            border_color: Color::Black,
+            background_color: Color::White,
+            arrow_color: Color::Black,
+        }
+    }
 }
 
 /// The outline shape a box is drawn with.
@@ -472,6 +487,7 @@ mod tests {
             .with_shadowing(true)
             .with_class_skin(ClassSkin {
                 border_color: Color::Black,
+                background_color: Color::LightBlue,
                 arrow_color: Color::Black,
             });
         assert_eq!(d.direction(), Some(Direction::TopToBottom));
@@ -483,6 +499,7 @@ mod tests {
             d.class_skin(),
             Some(ClassSkin {
                 border_color: Color::Black,
+                background_color: Color::LightBlue,
                 arrow_color: Color::Black
             })
         );

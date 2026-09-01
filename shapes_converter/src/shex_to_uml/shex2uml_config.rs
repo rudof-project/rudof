@@ -1,7 +1,7 @@
 use rudof_config::TomlConfig;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
-use rudof_viz::{Direction, LineType};
+use rudof_viz::{ClassSkin, Color, Direction, LineType};
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use std::{
@@ -35,6 +35,11 @@ pub struct ShEx2UmlConfig {
     #[serde(rename = "direction")]
     pub(crate) direction: Direction,
 
+    /// The border/background/arrow colors for class boxes, shared by every visualization engine
+    /// (PlantUML, GraphViz, ...) so they render class diagrams with a similar look.
+    #[serde(rename = "class_skin")]
+    pub(crate) class_skin: ClassSkin,
+
     /// Configuration for ShEx. If `None`, the default configuration is used.
     #[serde(rename = "shex", skip_serializing)]
     pub(crate) shex: ShExConfig,
@@ -49,6 +54,7 @@ impl ShEx2UmlConfig {
             shadowing: Self::default_shadowing(),
             line_type: Self::default_line_type(),
             direction: Self::default_direction(),
+            class_skin: Self::default_class_skin(),
             shex: Self::default_shex(),
         }
     }
@@ -83,6 +89,11 @@ impl ShEx2UmlConfig {
         self
     }
 
+    pub fn with_class_skin(mut self, class_skin: ClassSkin) -> Self {
+        self.class_skin = class_skin;
+        self
+    }
+
     pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
         self.shex = cfg;
         self
@@ -108,6 +119,9 @@ impl ShEx2UmlConfig {
     pub fn direction(&self) -> &Direction {
         &self.direction
     }
+    pub fn class_skin(&self) -> &ClassSkin {
+        &self.class_skin
+    }
     pub fn shex(&self) -> &ShExConfig {
         &self.shex
     }
@@ -123,6 +137,9 @@ impl ShEx2UmlConfig {
     #[inline] fn default_shadowing() -> bool { true }
     #[inline] fn default_line_type() -> LineType { LineType::default() }
     #[inline] fn default_direction() -> Direction { Direction::default() }
+    #[inline] fn default_class_skin() -> ClassSkin {
+        ClassSkin { border_color: Color::Black, background_color: Color::LightBlue, arrow_color: Color::Black }
+    }
     #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }
 }
 
@@ -151,6 +168,26 @@ mod tests {
         let c = ShEx2UmlConfig::default();
         assert_eq!(c.replace_iri_by_label(), ShEx2UmlConfig::default_replace_iri_by_label());
         assert_eq!(c.shadowing(), ShEx2UmlConfig::default_shadowing());
+        assert_eq!(c.class_skin(), &ShEx2UmlConfig::default_class_skin());
+    }
+
+    #[test]
+    fn default_class_skin_is_not_flat_black_and_white() {
+        // Both PlantUML and GraphViz read this same value, so it's what keeps their default
+        // output visually similar instead of one being shaded and the other flat white.
+        let skin = ShEx2UmlConfig::default_class_skin();
+        assert_ne!(skin.background_color, rudof_viz::Color::White);
+    }
+
+    #[test]
+    fn class_skin_is_customizable() {
+        let custom = rudof_viz::ClassSkin {
+            border_color: rudof_viz::Color::Red,
+            background_color: rudof_viz::Color::Yellow,
+            arrow_color: rudof_viz::Color::Red,
+        };
+        let c = ShEx2UmlConfig::default().with_class_skin(custom);
+        assert_eq!(c.class_skin(), &custom);
     }
 
     #[test]
@@ -163,6 +200,18 @@ mod tests {
     #[test]
     fn toml_round_trip() {
         let c = ShEx2UmlConfig::default().with_replace_iri_by_label(true);
+        let s = c.to_toml_string().unwrap();
+        let d = ShEx2UmlConfig::from_toml_str(&s).unwrap();
+        assert_eq!(c, d);
+    }
+
+    #[test]
+    fn class_skin_toml_round_trip() {
+        let c = ShEx2UmlConfig::default().with_class_skin(rudof_viz::ClassSkin {
+            border_color: rudof_viz::Color::Red,
+            background_color: rudof_viz::Color::Yellow,
+            arrow_color: rudof_viz::Color::Red,
+        });
         let s = c.to_toml_string().unwrap();
         let d = ShEx2UmlConfig::from_toml_str(&s).unwrap();
         assert_eq!(c, d);

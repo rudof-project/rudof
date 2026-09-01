@@ -1,5 +1,5 @@
 use crate::cli::parser::CommonArgsAll;
-use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, ResultDataFormatCli};
+use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, ResultDataFormatCli, VizEngineCli};
 use clap::Args;
 use rudof_lib::formats::InputSpec;
 
@@ -51,6 +51,15 @@ pub struct DataArgs {
         default_value_t = ResultDataFormatCli::Turtle
     )]
     pub result_format: ResultDataFormatCli,
+
+    #[arg(
+        long = "viz-engine",
+        ignore_case = true,
+        value_name = "ENGINE",
+        help = "Visualization engine for image (SVG/PNG) result formats",
+        default_value_t = VizEngineCli::PlantUml
+    )]
+    pub viz_engine: VizEngineCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

@@ -8,7 +8,7 @@ use super::UmlError;
 use super::UmlLink;
 use super::ValueConstraint;
 use rudof_viz::backends::plantuml::PlantUmlBackend;
-use rudof_viz::{BoxId, ClassSkin, Color, Connector, ConnectorKind, Diagram, DiagramBox, DiagramRenderer, Shape};
+use rudof_viz::{BoxId, Connector, ConnectorKind, Diagram, DiagramBox, DiagramRenderer, Shape};
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -216,10 +216,7 @@ impl Uml {
             .with_direction(*config.direction())
             .with_line_type(*config.line_type())
             .with_shadowing(config.shadowing())
-            .with_class_skin(ClassSkin {
-                border_color: Color::Black,
-                arrow_color: Color::Black,
-            });
+            .with_class_skin(*config.class_skin());
 
         for (node_id, component) in self.components.iter() {
             diagram.add_box(component_to_diagram_box(node_id, component, config));

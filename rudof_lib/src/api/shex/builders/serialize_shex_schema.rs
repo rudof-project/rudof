@@ -1,4 +1,5 @@
 use crate::{Result, Rudof, api::shex::ShExOperations, formats::ShExFormat};
+use rudof_viz::VizEngine;
 use std::io;
 
 /// Builder for `serialize_shex_schema` operation.
@@ -15,6 +16,7 @@ pub struct SerializeShexSchemaBuilder<'a, W: io::Write> {
     show_time: Option<bool>,
     show_colors: Option<bool>,
     shex_format: Option<&'a ShExFormat>,
+    viz_engine: Option<&'a VizEngine>,
 }
 
 impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
@@ -33,6 +35,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
             show_time: None,
             show_colors: None,
             shex_format: None,
+            viz_engine: None,
         }
     }
 
@@ -96,6 +99,16 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
         self
     }
 
+    /// Sets the visualization engine used when the result format is an image (SVG/PNG).
+    ///
+    /// # Arguments
+    ///
+    /// * `viz_engine` - The engine to render images with (defaults to `VizEngine::PlantUml`)
+    pub fn with_viz_engine(mut self, viz_engine: &'a VizEngine) -> Self {
+        self.viz_engine = Some(viz_engine);
+        self
+    }
+
     /// Executes the schema serialization operation with the configured parameters.
     pub fn execute(self) -> Result<()> {
         <Rudof as ShExOperations>::serialize_shex_schema(
@@ -107,6 +120,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
             self.show_time,
             self.show_colors,
             self.shex_format,
+            self.viz_engine,
             self.writer,
         )
     }

@@ -35,6 +35,7 @@ impl Command for DataCommand {
         let data_format = self.args.data_format.into();
         let reader_mode = self.args.reader_mode.into();
         let result_format = self.args.result_format.into();
+        let viz_engine = self.args.viz_engine.into();
 
         let backend = resolve_backend(&self.args.common);
         let has_data_source =
@@ -62,6 +63,7 @@ impl Command for DataCommand {
         ctx.rudof
             .serialize_data(&mut ctx.writer)
             .with_result_data_format(&result_format)
+            .with_viz_engine(&viz_engine)
             .execute()?;
 
         Ok(())

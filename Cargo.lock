@@ -4002,6 +4002,7 @@ dependencies = [
  "rudof_lib",
  "rudof_mcp",
  "rudof_rdf",
+ "rudof_viz",
  "rustyline",
  "serde",
  "serde_json",

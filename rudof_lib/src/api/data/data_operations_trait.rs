@@ -10,6 +10,7 @@ use crate::{
     },
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
+use rudof_viz::VizEngine;
 use std::io;
 
 /// Operations for managing RDF data.
@@ -47,6 +48,8 @@ pub trait DataOperations {
     /// # Arguments
     ///
     /// * `result_data_format` - Optional output format (uses default if None)
+    /// * `viz_engine` - Optional visualization engine to use for image formats (SVG/PNG); uses
+    ///   `VizEngine::PlantUml` if None. Ignored for non-image formats.
     /// * `writer` - The destination to write the serialized data to
     ///
     /// # Errors
@@ -55,6 +58,7 @@ pub trait DataOperations {
     fn serialize_data<W: io::Write>(
         &mut self,
         result_data_format: Option<&ResultDataFormat>,
+        viz_engine: Option<&VizEngine>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -183,9 +187,10 @@ impl DataOperations for Rudof {
     fn serialize_data<W: io::Write>(
         &mut self,
         result_data_format: Option<&ResultDataFormat>,
+        viz_engine: Option<&VizEngine>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_data(self, result_data_format, writer)
+        serialize_data(self, result_data_format, viz_engine, writer)
     }
 
     fn reset_data(&mut self) {

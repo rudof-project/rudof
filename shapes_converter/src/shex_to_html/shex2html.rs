@@ -4,7 +4,7 @@ use minijinja::{Environment, path_loader};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
 #[cfg(not(target_family = "wasm"))]
-use rudof_viz::{DiagramScope, ImageFormat};
+use rudof_viz::{DiagramScope, ImageFormat, VizEngine};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
@@ -83,6 +83,7 @@ impl ShEx2Html {
             str_writer.by_ref(),
             ImageFormat::Svg,
             &DiagramScope::all(),
+            VizEngine::PlantUml,
             self.config.shex2uml.plantuml_path(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
@@ -103,6 +104,7 @@ impl ShEx2Html {
             str_writer.by_ref(),
             ImageFormat::Svg,
             &DiagramScope::neighs(name),
+            VizEngine::PlantUml,
             self.config.shex2uml.plantuml_path(),
         )?;
         let str = String::from_utf8(str_writer.into_inner()?)?;
@@ -467,6 +469,7 @@ fn create_svg_shape<P: AsRef<Path>>(
         str_writer.by_ref(),
         ImageFormat::Svg,
         &DiagramScope::neighs(name),
+        VizEngine::PlantUml,
         plantuml_path.as_ref(),
     )?;
     let str = String::from_utf8(str_writer.into_inner()?)?;

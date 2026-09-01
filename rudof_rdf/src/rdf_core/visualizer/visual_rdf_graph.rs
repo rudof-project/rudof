@@ -328,22 +328,21 @@ impl VisualRDFGraph {
         Ok(())
     }
 
-    /// Renders this graph to an image via `java -jar plantuml.jar`.
+    /// Renders this graph to an image using the given [`rudof_viz::VizEngine`].
     ///
     /// `mode` is currently ignored (RDF diagrams are always rendered in full), matching prior
-    /// behavior.
+    /// behavior. `plantuml_path` is only consulted when `engine` is `VizEngine::PlantUml`.
     #[cfg(not(target_family = "wasm"))]
     pub fn as_image<W: Write, P: AsRef<std::path::Path>>(
         &self,
         writer: &mut W,
         image_format: rudof_viz::ImageFormat,
         _mode: &DiagramScope,
+        engine: rudof_viz::VizEngine,
         plantuml_path: P,
     ) -> Result<(), RdfVisualizerError> {
-        use rudof_viz::ExternalToolRenderer;
-
         let diagram = self.to_diagram()?;
-        PlantUmlBackend::new(plantuml_path.as_ref()).render_image(&diagram, image_format, writer)?;
+        rudof_viz::render_image_with_engine(&diagram, image_format, engine, plantuml_path.as_ref(), writer)?;
         Ok(())
     }
 
@@ -472,5 +471,31 @@ mod tests {
         assert!(text.contains("<<uri>>"));
         assert!(text.contains("<<literal>>"));
         assert!(text.contains("hide stereotype"));
+    }
+
+    const REIFIED_GRAPH: &str = r#"
+        prefix : <http://example.org/>
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        :belief1 rdf:reifies <<( :alice :knows :bob )>> ;
+            :since 2020 .
+    "#;
+
+    /// A predicate is only ever visualized as its own box when it appears inside a triple term
+    /// (e.g. RDF-star reification, as above) — regular predicates stay hidden. This is the case
+    /// that surfaced a bug where the predicate box's `href` was built from `IRI::to_string()`
+    /// (which, for the oxrdf-backed IRI type, serializes with angle brackets like a Turtle term:
+    /// `<http://example.org/knows>`) instead of `IRI::as_str()` (the bare IRI), producing a
+    /// broken hyperlink in the rendered diagram.
+    #[test]
+    fn reified_predicate_box_href_has_no_angle_brackets() {
+        let rdf = OxigraphInMemory::from_str(REIFIED_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let graph = VisualRDFGraph::from_rdf(&rdf, RDFVisualizationConfig::default()).unwrap();
+        let diagram = graph.to_diagram().unwrap();
+
+        let predicate_box = diagram
+            .boxes()
+            .find(|b| b.href() == Some("http://example.org/knows"))
+            .expect("the reified :knows predicate should be visualized with a plain, unbracketed href");
+        assert!(!predicate_box.title().contains('<'));
     }
 }

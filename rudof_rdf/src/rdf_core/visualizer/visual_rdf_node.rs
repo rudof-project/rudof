@@ -45,7 +45,7 @@ impl VisualRDFNode {
             VisualRDFNode::Reifies
         } else {
             let iri_label = rdf.qualify_iri(predicate);
-            let iri_str = predicate.to_string();
+            let iri_str = predicate.as_str().to_string();
             VisualRDFNode::Predicate {
                 label: iri_label,
                 url: iri_str,

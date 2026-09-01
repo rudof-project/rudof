@@ -79,11 +79,13 @@ fn write_preamble<W: Write>(writer: &mut W, diagram: &Diagram) -> Result<(), Ren
     }
     if let Some(ClassSkin {
         border_color,
+        background_color,
         arrow_color,
     }) = diagram.class_skin()
     {
         writeln!(writer, "skinparam class {{")?;
         writeln!(writer, " BorderColor {}", border_color.name())?;
+        writeln!(writer, " BackgroundColor {}", background_color.name())?;
         writeln!(writer, " ArrowColor {}", arrow_color.name())?;
         writeln!(writer, "}}")?;
     }
@@ -353,6 +355,7 @@ mod tests {
             .with_shadowing(true)
             .with_class_skin(ClassSkin {
                 border_color: Color::Black,
+                background_color: Color::LightBlue,
                 arrow_color: Color::Black,
             });
         diagram.add_box(
@@ -373,6 +376,7 @@ mod tests {
         assert!(text.contains("hide circles"));
         assert!(text.contains("skinparam shadowing true"));
         assert!(text.contains("BorderColor Black"));
+        assert!(text.contains("BackgroundColor LightBlue"));
         assert!(text.contains(":name xsd:string"));
         assert!(text.contains("--"));
         assert!(text.contains("0 --> \"*\" 1 : :worksFor"));
