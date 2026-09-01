@@ -394,6 +394,15 @@ mod tests {
     #[cfg(not(target_family = "wasm"))]
     #[test]
     fn render_image_produces_a_valid_svg_via_the_real_dot_binary() {
+        // `dot` isn't guaranteed to be installed everywhere this test suite runs (e.g. it isn't
+        // on the plain `ubuntu-latest` GitHub Actions runner this crate's CI uses, mirroring
+        // how the PlantUML backend has no equivalent "real java -jar" test either) — skip rather
+        // than fail when it's simply not present, but still fail loudly on any other error.
+        if Command::new("dot").arg("-V").output().is_err() {
+            eprintln!("skipping: `dot` is not installed in this environment");
+            return;
+        }
+
         let mut diagram = Diagram::new();
         diagram.add_box(DiagramBox::new(BoxId::new(0), Shape::Rectangle, "A"));
         diagram.add_box(DiagramBox::new(BoxId::new(1), Shape::Rectangle, "B"));
@@ -405,14 +414,11 @@ mod tests {
 
         let backend = GraphVizBackend::default();
         let mut out = Vec::new();
-        let result = backend.render_image(&diagram, ImageFormat::Svg, &mut out);
+        backend
+            .render_image(&diagram, ImageFormat::Svg, &mut out)
+            .expect("dot is installed (checked above), so rendering should succeed");
 
-        match result {
-            Ok(()) => {
-                let svg = String::from_utf8(out).unwrap();
-                assert!(svg.contains("<svg"), "expected SVG output, got: {svg}");
-            },
-            Err(e) => panic!("dot should be installed in this environment: {e}"),
-        }
+        let svg = String::from_utf8(out).unwrap();
+        assert!(svg.contains("<svg"), "expected SVG output, got: {svg}");
     }
 }

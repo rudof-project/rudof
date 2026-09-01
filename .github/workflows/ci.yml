@@ -97,6 +97,8 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
       - name: Run cargo test
         run: cargo test --workspace --features qlever
 
