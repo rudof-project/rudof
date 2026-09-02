@@ -2,8 +2,10 @@
 use crate::{
     IriOrStr,
     ast::{
-        Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema, SemAct, Shape,
-        ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet, value_set_value::ValueSetValue,
+        Annotation, BNode, LangOrWildcard, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema,
+        SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, TripleExprLabel, XsFacet,
+        iri_exclusion::IriExclusion, iri_ref_or_wildcard::IriRefOrWildcard, language_exclusion::LanguageExclusion,
+        literal_exclusion::LiteralExclusion, string_or_wildcard::StringOrWildcard, value_set_value::ValueSetValue,
     },
 };
 use colored::*;
@@ -253,7 +255,13 @@ where
     }
 
     fn pp_shape_decl(&self, sd: &ShapeDecl) -> DocBuilder<'a, Arena<'a, A>, A> {
-        self.pp_label(&sd.id)
+        let abstract_ = if sd.is_abstract {
+            self.keyword("ABSTRACT ")
+        } else {
+            self.doc.nil()
+        };
+        abstract_
+            .append(self.pp_label(&sd.id))
             .append(self.space())
             .append(self.pp_shape_expr(&sd.shape_expr))
     }
@@ -270,38 +278,69 @@ where
         }
     }
 
+    /// Renders a `shapeExpression` (`shapeOr`), the entry point for any
+    /// position where a full shape expression is expected.
     fn pp_shape_expr(&self, se: &ShapeExpr) -> DocBuilder<'a, Arena<'a, A>, A> {
         match se {
-            ShapeExpr::Ref(ref_) => self.doc.text("@").append(self.pp_label(ref_)),
-            ShapeExpr::Shape(s) => self.pp_shape(s),
-            ShapeExpr::NodeConstraint(nc) => self.pp_node_constraint(nc),
-            ShapeExpr::External => self.pp_external(),
-            ShapeExpr::ShapeAnd { shape_exprs } => {
-                trace!("Displaying ShapeExpr::ShapeAnd");
-                let mut docs = Vec::new();
-                for sew in shape_exprs {
-                    docs.push(self.pp_shape_expr(&sew.se))
-                }
-                self.doc
-                    .intersperse(docs, self.keyword(" AND "))
-                    .group()
-                    .nest(self.indent)
-            },
             ShapeExpr::ShapeOr { shape_exprs } => {
                 let mut docs = Vec::new();
                 for sew in shape_exprs {
-                    docs.push(self.pp_shape_expr(&sew.se))
+                    docs.push(self.pp_shape_expr_and(&sew.se))
                 }
                 self.doc
                     .intersperse(docs, self.keyword(" OR "))
                     .group()
                     .nest(self.indent)
             },
+            _ => self.pp_shape_expr_and(se),
+        }
+    }
+
+    /// Renders a `shapeAnd`: a `shapeNot` (`self.pp_shape_expr_not`), or several joined by `AND`.
+    fn pp_shape_expr_and(&self, se: &ShapeExpr) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match se {
+            ShapeExpr::ShapeAnd { shape_exprs } => {
+                trace!("Displaying ShapeExpr::ShapeAnd");
+                let mut docs = Vec::new();
+                for sew in shape_exprs {
+                    docs.push(self.pp_shape_expr_not(&sew.se))
+                }
+                self.doc
+                    .intersperse(docs, self.keyword(" AND "))
+                    .group()
+                    .nest(self.indent)
+            },
+            _ => self.pp_shape_expr_not(se),
+        }
+    }
+
+    /// Renders a `shapeNot`: an optional `NOT` followed by a `shapeAtom` (`self.pp_shape_expr_atom`).
+    fn pp_shape_expr_not(&self, se: &ShapeExpr) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match se {
             ShapeExpr::ShapeNot { shape_expr } => self
                 .doc
                 .nil()
                 .append(self.keyword("NOT "))
-                .append(self.pp_shape_expr(&shape_expr.se)),
+                .append(self.pp_shape_expr_atom(&shape_expr.se)),
+            _ => self.pp_shape_expr_atom(se),
+        }
+    }
+
+    /// Renders a `shapeAtom`. A `ShapeAnd`/`ShapeOr`/`ShapeNot` can only
+    /// appear here wrapped in parentheses, since a bare `shapeAtom` never
+    /// admits those directly (that is what makes e.g. `NOT (NOT IRI)` require
+    /// its inner parentheses).
+    fn pp_shape_expr_atom(&self, se: &ShapeExpr) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match se {
+            ShapeExpr::Ref(ref_) => self.doc.text("@").append(self.pp_label(ref_)),
+            ShapeExpr::Shape(s) => self.pp_shape(s),
+            ShapeExpr::NodeConstraint(nc) => self.pp_node_constraint(nc),
+            ShapeExpr::External => self.pp_external(),
+            ShapeExpr::ShapeAnd { .. } | ShapeExpr::ShapeOr { .. } | ShapeExpr::ShapeNot { .. } => self
+                .doc
+                .text("(")
+                .append(self.pp_shape_expr(se))
+                .append(self.doc.text(")")),
         }
     }
 
@@ -318,6 +357,7 @@ where
         let extra = self.opt_pp1(&s.extra, self.pp_extra());
         let extends = self.opt_pp1(&s.extends, self.pp_extends());
         let annotations = self.opt_pp1(&s.annotations, self.pp_annotations());
+        let sem_acts = self.opt_pp1(&s.sem_acts, self.pp_actions());
         closed
             .append(extra)
             .append(extends)
@@ -328,6 +368,7 @@ where
             .append(self.doc.line())
             .append(self.doc.text("}"))
             .append(annotations)
+            .append(sem_acts)
             .group()
     }
 
@@ -337,13 +378,16 @@ where
         move |vs, printer| {
             let mut docs = Vec::new();
             for v in vs {
-                docs.push(printer.pp_reference(v))
+                docs.push(
+                    printer
+                        .keyword("EXTENDS")
+                        .append(printer.space())
+                        .append(printer.pp_reference(v)),
+                )
             }
             printer
                 .doc
                 .nil()
-                .append(printer.keyword("EXTENDS"))
-                .append(printer.space())
                 .append(printer.doc.intersperse(docs, printer.doc.space()))
                 .append(printer.space())
         }
@@ -368,19 +412,60 @@ where
     fn pp_triple_expr(
         &self,
     ) -> impl Fn(&TripleExpr, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> + '_ {
-        move |te, printer| match te {
+        move |te, printer| printer.pp_te_top(te)
+    }
+
+    /// Renders a triple expression at a position where it is the whole
+    /// `tripleExpression` (the shape body itself). Only wraps it in
+    /// parentheses when that is the only way to express it (i.e. it carries
+    /// an `id`, which in ShExC can only be attached to a `unaryTripleExpr`).
+    fn pp_te_top(&self, te: &TripleExpr) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match te {
+            TripleExpr::EachOf {
+                id,
+                min,
+                max,
+                sem_acts,
+                annotations,
+                ..
+            }
+            | TripleExpr::OneOf {
+                id,
+                min,
+                max,
+                sem_acts,
+                annotations,
+                ..
+            } if id.is_some()
+                || sem_acts.is_some()
+                || annotations.is_some()
+                || !matches!((min, max), (None, None) | (Some(1), Some(1))) =>
+            {
+                self.pp_te_unary(te)
+            },
+            _ => self.pp_te_body(te),
+        }
+    }
+
+    /// Renders the natural (unwrapped) textual form of a triple expression.
+    fn pp_te_body(&self, te: &TripleExpr) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match te {
             TripleExpr::EachOf { expressions, .. } => {
                 let mut docs = Vec::new();
                 for e in expressions {
-                    let pp_te = printer.pp_triple_expr()(&e.te, printer);
-                    docs.push(pp_te)
+                    docs.push(self.pp_te_unary(&e.te))
                 }
-                printer
-                    .doc
-                    .intersperse(docs, printer.doc.text(";").append(printer.doc.line()))
+                self.doc.intersperse(docs, self.doc.text(";").append(self.doc.line()))
             },
-            TripleExpr::OneOf { .. } => todo!(),
+            TripleExpr::OneOf { expressions, .. } => {
+                let mut docs = Vec::new();
+                for e in expressions {
+                    docs.push(self.pp_te_unary(&e.te))
+                }
+                self.doc.intersperse(docs, self.doc.text(" |").append(self.doc.line()))
+            },
             TripleExpr::TripleConstraint {
+                id,
                 negated,
                 inverse,
                 predicate,
@@ -389,25 +474,75 @@ where
                 max,
                 sem_acts,
                 annotations,
-                ..
             } => {
                 let doc_expr = match value_expr {
-                    Some(se) => printer.pp_shape_expr(se),
-                    None => printer.doc.text("."),
+                    Some(se) => self.pp_shape_expr(se),
+                    None => self.doc.text("."),
                 };
-                printer
-                    .doc
-                    .nil()
+                self.opt_pp1(id, self.pp_te_id_prefix())
                     .append(self.pp_negated(negated))
                     .append(self.pp_inverse(inverse))
                     .append(self.pp_iri_ref(predicate))
                     .append(self.doc.space())
                     .append(doc_expr)
                     .append(self.pp_cardinality(min, max))
-                    .append(self.opt_pp1(sem_acts, self.pp_actions()))
                     .append(self.opt_pp1(annotations, self.pp_annotations()))
+                    .append(self.opt_pp1(sem_acts, self.pp_actions()))
             },
-            TripleExpr::Ref(_) => todo!(),
+            TripleExpr::Ref(label) => self.doc.text("&").append(self.pp_triple_expr_label(label)),
+        }
+    }
+
+    /// Renders a triple expression at a position where it must be a
+    /// `unaryTripleExpr` (an element of an `EachOf`/`OneOf` list). Compound
+    /// expressions (`EachOf`/`OneOf`) are only valid there wrapped in
+    /// parentheses (`bracketedTripleExpr`), which is also the only place
+    /// their cardinality, semantic actions and annotations can be attached.
+    fn pp_te_unary(&self, te: &TripleExpr) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match te {
+            TripleExpr::TripleConstraint { .. } | TripleExpr::Ref(_) => self.pp_te_body(te),
+            TripleExpr::EachOf {
+                id,
+                min,
+                max,
+                sem_acts,
+                annotations,
+                ..
+            }
+            | TripleExpr::OneOf {
+                id,
+                min,
+                max,
+                sem_acts,
+                annotations,
+                ..
+            } => self
+                .opt_pp1(id, self.pp_te_id_prefix())
+                .append(self.doc.text("("))
+                .append(self.pp_te_body(te))
+                .append(self.doc.text(")"))
+                .append(self.pp_cardinality(min, max))
+                .append(self.opt_pp1(annotations, self.pp_annotations()))
+                .append(self.opt_pp1(sem_acts, self.pp_actions())),
+        }
+    }
+
+    fn pp_te_id_prefix(
+        &self,
+    ) -> impl Fn(&TripleExprLabel, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        move |label, printer| {
+            printer
+                .doc
+                .text("$")
+                .append(printer.pp_triple_expr_label(label))
+                .append(printer.space())
+        }
+    }
+
+    fn pp_triple_expr_label(&self, label: &TripleExprLabel) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match label {
+            TripleExprLabel::IriRef { value } => self.pp_iri_ref(value),
+            TripleExprLabel::BNode { value } => self.pp_bnode(value),
         }
     }
 
@@ -434,16 +569,14 @@ where
             (Some(0), Some(-1)) => self.doc.space().append(self.doc.text("*")),
             (Some(1), Some(-1)) => self.doc.space().append(self.doc.text("+")),
             (Some(1), None) => self.doc.space().append(self.doc.text("+")),
-            (Some(m), Some(n)) => self.doc.space().append(
-                self.enclose_space(
-                    "{",
-                    self.doc
-                        .text(m.to_string())
-                        .append(self.doc.text(","))
-                        .append(self.doc.text(n.to_string())),
-                    "}",
-                ),
-            ),
+            (Some(m), Some(n)) => self
+                .doc
+                .space()
+                .append(self.doc.text("{"))
+                .append(self.doc.text(m.to_string()))
+                .append(self.doc.text(","))
+                .append(self.doc.text(n.to_string()))
+                .append(self.doc.text("}")),
             (Some(m), None) => self
                 .doc
                 .space()
@@ -495,30 +628,38 @@ where
     fn pp_literal(&self, literal: &ConcreteLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
             ConcreteLiteral::StringLiteral { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
-            ConcreteLiteral::DatatypeLiteral {
-                lexical_form: _,
-                datatype: _,
-            } => todo!(),
-            ConcreteLiteral::WrongDatatypeLiteral {
-                lexical_form: _,
-                datatype: _,
-                error: _,
-            } => todo!(),
+            ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }
+            | ConcreteLiteral::WrongDatatypeLiteral {
+                lexical_form, datatype, ..
+            } => self
+                .pp_string(lexical_form)
+                .append(self.doc.text("^^"))
+                .append(self.pp_iri_ref(datatype)),
             ConcreteLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
-            ConcreteLiteral::BooleanLiteral(_) => todo!(),
-            ConcreteLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
+            ConcreteLiteral::BooleanLiteral(b) => self.doc.text(if *b { "true" } else { "false" }),
+            ConcreteLiteral::DatetimeLiteral(dt) => self
+                .pp_string(&dt.to_string())
+                .append(self.doc.text("^^"))
+                .append(self.doc.text("<http://www.w3.org/2001/XMLSchema#dateTime>")),
         }
     }
 
     fn pp_string_literal(&self, lexical_form: &str, lang: &Option<Lang>) -> DocBuilder<'a, Arena<'a, A>, A> {
         match lang {
-            Some(_) => todo!(),
+            Some(lang) => self.pp_string(lexical_form).append(self.doc.text(format!("@{lang}"))),
             None => self.pp_string(lexical_form),
         }
     }
 
     fn pp_string(&self, str: &str) -> DocBuilder<'a, Arena<'a, A>, A> {
-        let s = format!("\"{str}\"");
+        // '"', '\', '\n' and '\r' can't appear bare inside a STRING_LITERAL2
+        // and must be written using their ECHAR escape sequence.
+        let escaped = str
+            .replace('\\', "\\\\")
+            .replace('"', "\\\"")
+            .replace('\n', "\\n")
+            .replace('\r', "\\r");
+        let s = format!("\"{escaped}\"");
         if let Some(color) = self.string_color {
             self.doc.text(s.as_str().color(color).to_string())
         } else {
@@ -581,27 +722,27 @@ where
     fn pp_numericfacet(&self, nf: &NumericFacet) -> DocBuilder<'a, Arena<'a, A>, A> {
         match nf {
             NumericFacet::FractionDigits(fd) => self
-                .keyword("FractionDigits")
+                .keyword("FRACTIONDIGITS")
                 .append(self.space())
                 .append(self.pp_usize(fd)),
             NumericFacet::TotalDigits(td) => self
-                .keyword("TotalDigits")
+                .keyword("TOTALDIGITS")
                 .append(self.space())
                 .append(self.pp_usize(td)),
             NumericFacet::MinInclusive(m) => self
-                .keyword("MinInclusive")
+                .keyword("MININCLUSIVE")
                 .append(self.space())
                 .append(self.pp_numeric_literal(m)),
             NumericFacet::MaxInclusive(m) => self
-                .keyword("MaxInclusive")
+                .keyword("MAXINCLUSIVE")
                 .append(self.space())
                 .append(self.pp_numeric_literal(m)),
             NumericFacet::MinExclusive(m) => self
-                .keyword("MinExclusive")
+                .keyword("MINEXCLUSIVE")
                 .append(self.space())
                 .append(self.pp_numeric_literal(m)),
             NumericFacet::MaxExclusive(m) => self
-                .keyword("MaxExclusive")
+                .keyword("MAXEXCLUSIVE")
                 .append(self.space())
                 .append(self.pp_numeric_literal(m)),
         }
@@ -609,9 +750,9 @@ where
 
     fn pp_stringfacet(&self, sf: &StringFacet) -> DocBuilder<'a, Arena<'a, A>, A> {
         match sf {
-            StringFacet::Length(l) => self.keyword("Length").append(self.space()).append(self.pp_usize(l)),
-            StringFacet::MinLength(l) => self.keyword("MinLength").append(self.space()).append(self.pp_usize(l)),
-            StringFacet::MaxLength(l) => self.keyword("MaxLength").append(self.space()).append(self.pp_usize(l)),
+            StringFacet::Length(l) => self.keyword("LENGTH").append(self.space()).append(self.pp_usize(l)),
+            StringFacet::MinLength(l) => self.keyword("MINLENGTH").append(self.space()).append(self.pp_usize(l)),
+            StringFacet::MaxLength(l) => self.keyword("MAXLENGTH").append(self.space()).append(self.pp_usize(l)),
             StringFacet::Pattern(pat) => self.pp_pattern(pat),
         }
     }
@@ -621,7 +762,11 @@ where
             Some(flags) => flags.clone(),
             None => "".to_string(),
         };
-        let str = format!("/{}/{}", pattern.str, flags);
+        // '/' terminates the ShExC regexp literal, so any literal '/' in the
+        // pattern (already unescaped by the parser, since it has no other
+        // meaning in the regex itself) must be re-escaped when printed back.
+        let escaped = pattern.str.replace('/', "\\/");
+        let str = format!("/{escaped}/{flags}");
         self.doc.text(str)
     }
 
@@ -635,14 +780,86 @@ where
 
     fn pp_value_set_value(&self, v: &ValueSetValue) -> DocBuilder<'a, Arena<'a, A>, A> {
         match v {
-            ValueSetValue::LanguageStem { .. } => todo!(),
-            ValueSetValue::LanguageStemRange { .. } => todo!(),
             ValueSetValue::ObjectValue(ov) => pp_object_value(ov, self.doc, &self.prefixmap),
-            ValueSetValue::IriStem { .. } => todo!(),
-            ValueSetValue::IriStemRange { .. } => todo!(),
-            ValueSetValue::LiteralStem { .. } => todo!(),
-            ValueSetValue::LiteralStemRange { .. } => todo!(),
-            ValueSetValue::Language { .. } => todo!(),
+
+            ValueSetValue::IriStem { stem } => self.pp_iri_ref(stem).append(self.doc.text("~")),
+            ValueSetValue::IriStemRange { stem, exclusions } => match stem {
+                IriRefOrWildcard::IriRef(iri) => self
+                    .pp_iri_ref(iri)
+                    .append(self.doc.text("~"))
+                    .append(self.pp_iri_exclusions(exclusions)),
+                IriRefOrWildcard::Wildcard => self.doc.text(".").append(self.pp_iri_exclusions(exclusions)),
+            },
+
+            ValueSetValue::LiteralStem { stem } => self.pp_string(stem).append(self.doc.text("~")),
+            ValueSetValue::LiteralStemRange { stem, exclusions } => match stem {
+                StringOrWildcard::String(s) => self
+                    .pp_string(s)
+                    .append(self.doc.text("~"))
+                    .append(self.pp_literal_exclusions(exclusions)),
+                StringOrWildcard::Wildcard => self.doc.text(".").append(self.pp_literal_exclusions(exclusions)),
+            },
+
+            ValueSetValue::Language { language_tag } => self.doc.text(format!("@{language_tag}")),
+            ValueSetValue::LanguageStem { stem } => self.pp_lang_stem(stem),
+            ValueSetValue::LanguageStemRange { stem, exclusions } => {
+                self.pp_lang_stem(stem).append(self.pp_language_exclusions(exclusions))
+            },
+        }
+    }
+
+    fn pp_lang_stem(&self, stem: &LangOrWildcard) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match stem {
+            LangOrWildcard::Lang(lang) => self.doc.text(format!("@{lang}~")),
+            LangOrWildcard::Wildcard => self.doc.text("@~"),
+        }
+    }
+
+    fn pp_iri_exclusions(&self, exclusions: &Option<Vec<IriExclusion>>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match exclusions {
+            None => self.doc.nil(),
+            Some(excs) => {
+                let mut docs = Vec::new();
+                for e in excs {
+                    docs.push(self.doc.text("-").append(match e {
+                        IriExclusion::Iri(iri) => self.pp_iri_ref(iri),
+                        IriExclusion::IriStem(iri) => self.pp_iri_ref(iri).append(self.doc.text("~")),
+                    }))
+                }
+                self.doc.space().append(self.doc.intersperse(docs, self.doc.space()))
+            },
+        }
+    }
+
+    fn pp_literal_exclusions(&self, exclusions: &Option<Vec<LiteralExclusion>>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match exclusions {
+            None => self.doc.nil(),
+            Some(excs) => {
+                let mut docs = Vec::new();
+                for e in excs {
+                    docs.push(self.doc.text("-").append(match e {
+                        LiteralExclusion::Literal(s) => self.pp_string(s),
+                        LiteralExclusion::LiteralStem(s) => self.pp_string(s).append(self.doc.text("~")),
+                    }))
+                }
+                self.doc.space().append(self.doc.intersperse(docs, self.doc.space()))
+            },
+        }
+    }
+
+    fn pp_language_exclusions(&self, exclusions: &Option<Vec<LanguageExclusion>>) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match exclusions {
+            None => self.doc.nil(),
+            Some(excs) => {
+                let mut docs = Vec::new();
+                for e in excs {
+                    docs.push(self.doc.text("-").append(match e {
+                        LanguageExclusion::Language(lang) => self.doc.text(format!("@{lang}")),
+                        LanguageExclusion::LanguageStem(lang) => self.doc.text(format!("@{lang}~")),
+                    }))
+                }
+                self.doc.space().append(self.doc.intersperse(docs, self.doc.space()))
+            },
         }
     }
 
@@ -756,7 +973,7 @@ where
     fn pp_iri_or_str(&self, iri_or_str: &IriOrStr) -> DocBuilder<'a, Arena<'a, A>, A> {
         match iri_or_str {
             IriOrStr::IriRef(iri) => self.pp_iri_ref(iri),
-            IriOrStr::String(str) => self.pp_string(str.as_str()),
+            IriOrStr::String(str) => self.doc.text(format!("<{str}>")),
         }
     }
 
@@ -796,11 +1013,16 @@ where
             .append(self.pp_iri_ref(&a.name()))
             .append(match a.code() {
                 None => self.doc.text("%"),
-                Some(str) => self
-                    .doc
-                    .text("{")
-                    .append(self.doc.text(str))
-                    .append(self.doc.text("%}")),
+                Some(str) => {
+                    // '%' and '\' can't appear bare in a codeDecl's CODE body
+                    // (a bare '%' would be ambiguous with the closing "%}"),
+                    // so they must be re-escaped when printed back.
+                    let escaped = str.replace('\\', "\\\\").replace('%', "\\%");
+                    self.doc
+                        .text("{")
+                        .append(self.doc.text(escaped))
+                        .append(self.doc.text("%}"))
+                },
             })
     }
 

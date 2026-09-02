@@ -6,8 +6,12 @@ use std::collections::HashMap;
 use std::path::Path;
 #[cfg(not(target_family = "wasm"))]
 use {
-    rudof_iri::IriS, shex_ast::ast::Schema as SchemaJson, shex_ast::compact::ShExParser, std::path::PathBuf,
-    tracing::debug, url::Url,
+    rudof_iri::IriS,
+    shex_ast::ast::Schema as SchemaJson,
+    shex_ast::compact::{ShExFormatter, ShExParser},
+    std::path::PathBuf,
+    tracing::debug,
+    url::Url,
 };
 
 #[derive(Deserialize, Debug)]
@@ -139,6 +143,14 @@ impl ManifestSchemas {
         }
         Ok(())
     }
+
+    #[cfg(not(target_family = "wasm"))]
+    pub fn run_pretty_print_roundtrip_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
+        match self.map.get(name) {
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
+            Some(entry) => entry.run_pretty_print_roundtrip(base),
+        }
+    }
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -224,6 +236,43 @@ impl SchemasEntry {
                 schema_serialized: schema_serialized.clone(),
                 schema_parsed_after_serialization: Box::new(schema_parsed_after_serialization),
                 schema_serialized_after,
+            }))
+        }
+    }
+
+    /// Loads the ShExJ (JSON) schema for this entry, pretty prints it with the
+    /// ShEx compact printer, re-parses the pretty printed ShExC text, and checks
+    /// that the resulting schema is equivalent to the original one.
+    pub fn run_pretty_print_roundtrip(&self, base: &Path) -> Result<(), Box<ManifestError>> {
+        let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
+            Box::new(ManifestError::SchemaJsonError {
+                error: Box::new(e),
+                entry_name: self.name.to_string(),
+            })
+        })?;
+        debug!("Pretty print roundtrip: passed schema parsing from JSON");
+
+        let pretty_printed = ShExFormatter::default().without_colors().format_schema(&schema_parsed);
+        debug!("Pretty print roundtrip: pretty printed schema:\n{pretty_printed}");
+
+        let source_iri = schema_parsed.source_iri();
+        let reparsed = ShExParser::parse(&pretty_printed, None, &source_iri).map_err(|e| {
+            Box::new(ManifestError::PrettyPrintParsingError {
+                error: Box::new(e),
+                entry_name: self.name.to_string(),
+                pretty_printed: pretty_printed.clone(),
+            })
+        })?;
+        debug!("Pretty print roundtrip: passed re-parsing pretty printed schema");
+
+        if schema_parsed == reparsed {
+            Ok(())
+        } else {
+            Err(Box::new(ManifestError::PrettyPrintRoundtripDifferent {
+                entry_name: self.name.to_string(),
+                schema_parsed: Box::new(schema_parsed),
+                pretty_printed,
+                reparsed: Box::new(reparsed),
             }))
         }
     }
