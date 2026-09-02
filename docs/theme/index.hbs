@@ -28,7 +28,6 @@
         {{/if}}
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="{{ path_to_root }}FontAwesome/css/font-awesome.css">
         {{#if copy_fonts}}
         <link rel="stylesheet" href="{{ path_to_root }}fonts/fonts.css">
         {{/if}}
@@ -47,6 +46,9 @@
         {{#if mathjax_support}}
         <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
         {{/if}}
+
+        <!-- Start loading toc.js asap -->
+        <script src="{{ resource "toc.js" }}"></script>
     </head>
     <body class="sidebar-visible no-js">
     <div id="body-container">
@@ -106,9 +108,7 @@
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div class="sidebar-scrollbox">
-                {{#toc}}{{/toc}}
-            </div>
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <div style="display: none;" id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
             </div>
@@ -143,10 +143,10 @@
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
-                            <i class="fa fa-bars"></i>
+                            {{fa "solid" "bars"}}
                         </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
-                            <i class="fa fa-paint-brush"></i>
+                            {{fa "solid" "paintbrush"}}
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
@@ -154,7 +154,7 @@
                         </ul>
                         {{#if search_enabled}}
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
-                            <i class="fa fa-search"></i>
+                            {{fa "solid" "magnifying-glass"}}
                         </button>
                         {{/if}}
                     </div>
@@ -171,7 +171,7 @@
                         </a>
                         {{#if git_repository_url}}
                         <a href="{{git_repository_url}}" title="Git repository" aria-label="Git repository">
-                            <i id="git-repository-button" class="fa {{git_repository_icon}}"></i>
+                            {{fa git_repository_icon_class git_repository_icon "git-repository-button"}}
                         </a>
                         {{/if}}
                     </div>
