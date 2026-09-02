@@ -33,6 +33,7 @@ pgschema.workspace = true
 prefixmap.workspace = true
 rudof_iri.workspace = true
 rudof_rdf.workspace = true
+rudof_viz.workspace = true
 rdf_config.workspace = true
 regex.workspace = true
 rudof_generate.workspace = true

@@ -1,4 +1,5 @@
-use crate::rdf_core::visualizer::{VisualRDFNode, uml_converter::errors::UmlConverterError};
+use crate::rdf_core::visualizer::VisualRDFNode;
+use rudof_viz::RenderError;
 use std::io;
 use thiserror::Error;
 
@@ -29,16 +30,16 @@ pub enum RdfVisualizerError {
     #[error("VisualRDFNode not found: {node} in Visual graph")]
     NodeNotFound { node: VisualRDFNode },
 
-    /// Error wrapping UML converter operation failures.
+    /// Error wrapping diagram rendering failures.
     ///
-    /// This variant encapsulates errors that originate from the UML conversion
-    /// process, such as PlantUML execution failures or diagram generation issues.
+    /// This variant encapsulates errors that originate from rudof_viz's rendering process,
+    /// such as PlantUML execution failures or diagram generation issues.
     ///
     /// # Fields
-    /// - `err`: The underlying `UmlConverterError` that was encountered
+    /// - `err`: The underlying `RenderError` that was encountered
     #[error(transparent)]
-    UmlConverterError {
+    RenderError {
         #[from]
-        err: UmlConverterError,
+        err: RenderError,
     },
 }

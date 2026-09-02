@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::cli::parser::CommonArgsNoBackend;
-use crate::cli::wrappers::{DataReaderModeCli, ShExFormatCli};
+use crate::cli::wrappers::{DataReaderModeCli, ShExFormatCli, VizEngineCli};
 use clap::Args;
 use rudof_lib::formats::InputSpec;
 
@@ -35,6 +35,15 @@ pub struct ShexArgs {
         default_value_t = ShExFormatCli::ShExC
     )]
     pub result_schema_format: ShExFormatCli,
+
+    #[arg(
+        long = "viz-engine",
+        ignore_case = true,
+        value_name = "ENGINE",
+        help = "Visualization engine for image (SVG/PNG) result formats",
+        default_value_t = VizEngineCli::PlantUml
+    )]
+    pub viz_engine: VizEngineCli,
 
     #[arg(short = 'l', long = "shape-label", value_name = "LABEL", help = "shape label")]
     pub shape: Option<String>,

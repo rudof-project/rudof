@@ -1,21 +1,21 @@
 use crate::{Result, Rudof, errors::DataError, formats::ResultDataFormat};
-use rudof_rdf::rdf_core::visualizer::{
-    VisualRDFGraph,
-    uml_converter::{UmlConverter, UmlGenerationMode},
-};
+use rudof_rdf::rdf_core::visualizer::VisualRDFGraph;
+use rudof_viz::{DiagramScope, VizEngine};
 use std::io;
 
 pub fn serialize_data<W: io::Write>(
     rudof: &mut Rudof,
     result_data_format: Option<&ResultDataFormat>,
+    viz_engine: Option<&VizEngine>,
     writer: &mut W,
 ) -> Result<()> {
     let result_data_format = result_data_format.copied().unwrap_or_default();
+    let viz_engine = viz_engine.copied().unwrap_or_default();
 
     let data = rudof.data.as_ref().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if data.is_rdf() {
-        serialize_rdf_data(rudof, result_data_format, writer)
+        serialize_rdf_data(rudof, result_data_format, viz_engine, writer)
     } else {
         serialize_pg_data(rudof, result_data_format, writer)
     }
@@ -47,6 +47,7 @@ fn serialize_pg_data<W: io::Write>(
 fn serialize_rdf_data<W: io::Write>(
     rudof: &mut Rudof,
     result_data_format: ResultDataFormat,
+    viz_engine: VizEngine,
     writer: &mut W,
 ) -> Result<()> {
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoRdfDataLoaded))?;
@@ -78,7 +79,8 @@ fn serialize_rdf_data<W: io::Write>(
                 .as_image(
                     writer,
                     result_data_format.try_into()?,
-                    &UmlGenerationMode::all(),
+                    &DiagramScope::all(),
+                    viz_engine,
                     rudof.config.shex2uml().plantuml_path(),
                 )
                 .map_err(|e| {
@@ -88,14 +90,12 @@ fn serialize_rdf_data<W: io::Write>(
                     })
                 })?;
         } else {
-            converter
-                .as_plantuml(writer, &UmlGenerationMode::AllNodes)
-                .map_err(|e| {
-                    Box::new(DataError::FailedSerializingData {
-                        format: result_data_format.to_string(),
-                        error: e.to_string(),
-                    })
-                })?
+            converter.as_plantuml(writer, &DiagramScope::All).map_err(|e| {
+                Box::new(DataError::FailedSerializingData {
+                    format: result_data_format.to_string(),
+                    error: e.to_string(),
+                })
+            })?
         }
     }
 

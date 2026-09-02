@@ -4,7 +4,7 @@ use std::io::Write;
 use either::Either;
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
-use rudof_rdf::rdf_core::visualizer::uml_converter::{UmlConverter, UmlGenerationMode, errors::UmlConverterError};
+use rudof_viz::{BoxId, DiagramScope, RenderError, VizEngine};
 use shex_ast::{
     Annotation, NodeKind, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, ShapeExprWrapper, TripleExpr,
     ValueSetValue, XsFacet,
@@ -34,26 +34,46 @@ impl ShEx2Uml {
         }
     }
 
-    pub fn as_plantuml<W: Write>(&self, writer: &mut W, mode: &UmlGenerationMode) -> Result<(), UmlConverterError> {
+    pub fn as_plantuml<W: Write>(&self, writer: &mut W, mode: &DiagramScope) -> Result<(), ShEx2UmlError> {
         match mode {
-            UmlGenerationMode::AllNodes => {
-                self.current_uml
-                    .as_plantuml_all(&self.config, writer)
-                    .map_err(|e| UmlConverterError::UmlError { error: e.to_string() })?;
-                Ok(())
-            },
-            UmlGenerationMode::Neighs(str) => {
+            DiagramScope::All => self.current_uml.as_plantuml_all(&self.config, writer)?,
+            DiagramScope::Neighs(str) => {
                 let label = UmlLabel::Class(str.clone());
                 if let Some(node_id) = self.current_uml.get_node(&label) {
-                    self.current_uml
-                        .as_plantuml_neighs(&self.config, writer, &node_id)
-                        .map_err(|e| UmlConverterError::UmlError { error: e.to_string() })?;
-                    Ok(())
+                    self.current_uml.as_plantuml_neighs(&self.config, writer, &node_id)?
                 } else {
-                    Err(UmlConverterError::NotFoundLabel { name: str.clone() })
+                    return Err(RenderError::BoxNotFound { title: str.clone() }.into());
                 }
             },
         }
+        Ok(())
+    }
+
+    /// Renders this UML diagram to an image using the given [`VizEngine`].
+    ///
+    /// `plantuml_path` is only consulted when `engine` is `VizEngine::PlantUml`.
+    #[cfg(not(target_family = "wasm"))]
+    pub fn as_image<W: Write, P: AsRef<std::path::Path>>(
+        &self,
+        writer: &mut W,
+        image_format: rudof_viz::ImageFormat,
+        mode: &DiagramScope,
+        engine: VizEngine,
+        plantuml_path: P,
+    ) -> Result<(), ShEx2UmlError> {
+        let diagram = self.current_uml.to_diagram(&self.config);
+        let diagram = match mode {
+            DiagramScope::All => diagram,
+            DiagramScope::Neighs(str) => {
+                let label = UmlLabel::Class(str.clone());
+                match self.current_uml.get_node(&label) {
+                    Some(node_id) => diagram.scoped_by_id(BoxId::new(node_id.as_usize())),
+                    None => return Err(RenderError::BoxNotFound { title: str.clone() }.into()),
+                }
+            },
+        };
+        rudof_viz::render_image_with_engine(&diagram, image_format, engine, plantuml_path.as_ref(), writer)?;
+        Ok(())
     }
 
     pub fn convert(&mut self, shex: &Schema) -> Result<(), ShEx2UmlError> {
@@ -595,12 +615,6 @@ fn cnv_values(
         Ok(Some(ValueConstraint::ValueSet(value_set_constraint)))
     } else {
         Ok(None)
-    }
-}
-
-impl UmlConverter for ShEx2Uml {
-    fn as_plantuml<W: Write>(&self, writer: &mut W, mode: &UmlGenerationMode) -> Result<(), UmlConverterError> {
-        self.as_plantuml(writer, mode)
     }
 }
 

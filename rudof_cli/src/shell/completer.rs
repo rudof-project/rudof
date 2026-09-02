@@ -1,4 +1,4 @@
-use crate::shell::repl::{CONTINUATION_PROMPT, PROMPT};
+use crate::shell::repl::{CONTINUATION_PROMPT, PROMPT, cli_command};
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::highlight::{CmdKind, Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::Hinter;
@@ -91,6 +91,49 @@ impl ShellHelper {
             _ => None,
         }
     }
+
+    /// The subcommand name — the line's first word — if the line has one.
+    fn first_word(line: &str) -> Option<&str> {
+        let end = Self::first_word_end(line);
+        (end > 0).then(|| &line[..end])
+    }
+
+    /// If `pos` is at a word starting with `-` (the user is typing a flag name), returns
+    /// `(word_start, the partial flag typed so far)`.
+    fn flag_name_word(line: &str, pos: usize) -> Option<(usize, &str)> {
+        let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
+        let word = &line[word_start..pos];
+        word.starts_with('-').then_some((word_start, word))
+    }
+
+    /// If `pos` is at a bare word (not starting with `-`) immediately preceded by a flag token
+    /// (e.g. `shex --viz-engine gr`), returns `(the flag token, word_start, the partial value
+    /// typed so far)`. `None` when the preceding token isn't a flag — e.g. the subcommand name
+    /// itself, or a plain positional argument.
+    fn flag_value_word(line: &str, pos: usize) -> Option<(&str, usize, &str)> {
+        let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
+        let value_prefix = &line[word_start..pos];
+        if value_prefix.starts_with('-') || word_start == 0 {
+            return None;
+        }
+        let before = line[..word_start].trim_end();
+        let prev_word_start = before.rfind(' ').map_or(0, |i| i + 1);
+        let prev_word = &before[prev_word_start..];
+        prev_word
+            .starts_with('-')
+            .then_some((prev_word, word_start, value_prefix))
+    }
+
+    /// Whether `token` (`--long-name` or `-x`) refers to `arg`.
+    fn arg_matches_token(arg: &clap::Arg, token: &str) -> bool {
+        if let Some(long) = token.strip_prefix("--") {
+            arg.get_long() == Some(long)
+        } else if let Some(short) = token.strip_prefix('-') {
+            short.len() == 1 && arg.get_short() == short.chars().next()
+        } else {
+            false
+        }
+    }
 }
 
 impl Completer for ShellHelper {
@@ -171,6 +214,43 @@ impl Completer for ShellHelper {
                 })
                 .collect();
             return Ok((word_start, candidates));
+        }
+
+        if let Some((word_start, flag_prefix)) = Self::flag_name_word(line, pos)
+            && let Some(command_word) = Self::first_word(line)
+            && let Some(sub) = cli_command().find_subcommand(command_word)
+        {
+            let candidates = sub
+                .get_arguments()
+                .filter_map(|a| a.get_long())
+                .map(|long| format!("--{long}"))
+                .filter(|name| name.starts_with(flag_prefix))
+                .map(|name| Pair {
+                    display: name.clone(),
+                    replacement: name,
+                })
+                .collect();
+            return Ok((word_start, candidates));
+        }
+
+        if let Some((flag, word_start, value_prefix)) = Self::flag_value_word(line, pos)
+            && let Some(command_word) = Self::first_word(line)
+            && let Some(sub) = cli_command().find_subcommand(command_word)
+            && let Some(arg) = sub.get_arguments().find(|a| Self::arg_matches_token(a, flag))
+        {
+            let possible = arg.get_possible_values();
+            if !possible.is_empty() {
+                let candidates = possible
+                    .iter()
+                    .map(|v| v.get_name().to_string())
+                    .filter(|name| name.starts_with(value_prefix))
+                    .map(|name| Pair {
+                        display: name.clone(),
+                        replacement: name,
+                    })
+                    .collect();
+                return Ok((word_start, candidates));
+            }
         }
 
         self.filename_completer.complete(line, pos, ctx)
@@ -381,6 +461,62 @@ mod tests {
         let ctx = Context::new(&history);
 
         let line = "config set shex_validator.max_steps d";
+        let (_, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn completes_a_flag_name_for_a_known_subcommand() {
+        let helper = ShellHelper::new(vec!["shex".to_string()], vec![], vec![]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "shex --viz";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "shex ".len());
+        let replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
+        assert_eq!(replacements, vec!["--viz-engine"]);
+    }
+
+    #[test]
+    fn completes_a_long_flags_value_when_it_is_a_value_enum() {
+        let helper = ShellHelper::new(vec!["shex".to_string()], vec![], vec![]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "shex --viz-engine gr";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "shex --viz-engine ".len());
+        let replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
+        assert_eq!(replacements, vec!["graphviz"]);
+    }
+
+    #[test]
+    fn completes_a_short_flags_value_when_it_is_a_value_enum() {
+        let helper = ShellHelper::new(vec!["shex".to_string()], vec![], vec![]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "shex -r sv";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "shex -r ".len());
+        let replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
+        assert_eq!(replacements, vec!["svg"]);
+    }
+
+    #[test]
+    fn does_not_intercept_flag_value_completion_for_non_enum_flags() {
+        // `-o`/`--output-file` takes a file path, not a fixed set of values, so this must fall
+        // through to plain filename completion instead of being (wrongly) treated as empty.
+        let helper = ShellHelper::new(vec!["shex".to_string()], vec![], vec![]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "shex -o not-a-real-file-prefix-zzz";
         let (_, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
 
         assert!(candidates.is_empty());

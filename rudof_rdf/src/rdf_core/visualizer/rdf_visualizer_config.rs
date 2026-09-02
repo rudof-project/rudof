@@ -1,113 +1,5 @@
-use crate::rdf_core::visualizer::style::{ArrowStyle, Style, ThicknessStyle, UmlColor};
+use rudof_viz::{ArrowStyle, BoxStyle as NodeStyle, Color, LineStyle, Shape as UmlShape, StyleRule, StyleSheet};
 use serde::{Deserialize, Serialize};
-
-/// Enum representing the available UML node shapes for visualization.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
-#[serde(rename = "snake_case")]
-pub enum UmlShape {
-    /// Cloud shape.
-    Cloud,
-    /// Rectangle shape.
-    #[default]
-    Rectangle,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub struct NodeStyle {
-    #[serde(
-        rename = "line_color",
-        default = "NodeStyle::default_line_color",
-        skip_serializing_if = "NodeStyle::is_default_line_color"
-    )]
-    pub(crate) line_color: UmlColor,
-    #[serde(
-        rename = "line_thickness",
-        default = "NodeStyle::default_line_thickness",
-        skip_serializing_if = "NodeStyle::is_default_line_thickness"
-    )]
-    pub(crate) line_thickness: u32,
-    #[serde(
-        rename = "background_color",
-        default = "NodeStyle::default_background_color",
-        skip_serializing_if = "NodeStyle::is_default_background_color"
-    )]
-    pub(crate) background_color: UmlColor,
-    #[serde(
-        rename = "round_corner",
-        default = "NodeStyle::default_round_corner",
-        skip_serializing_if = "NodeStyle::is_default_round_corner"
-    )]
-    pub(crate) round_corner: u32,
-}
-
-impl NodeStyle {
-    pub fn new() -> Self {
-        Self {
-            round_corner: Self::default_round_corner(),
-            line_color: Self::default_line_color(),
-            line_thickness: Self::default_line_thickness(),
-            background_color: Self::default_background_color(),
-        }
-    }
-
-    pub fn with_line_color(mut self, color: UmlColor) -> Self {
-        self.line_color = color;
-        self
-    }
-
-    pub fn with_line_thickness(mut self, v: u32) -> Self {
-        self.line_thickness = v;
-        self
-    }
-
-    pub fn with_background_color(mut self, color: UmlColor) -> Self {
-        self.background_color = color;
-        self
-    }
-
-    pub fn with_round_corner(mut self, v: u32) -> Self {
-        self.round_corner = v;
-        self
-    }
-}
-
-impl NodeStyle {
-    pub fn line_color(&self) -> &UmlColor {
-        &self.line_color
-    }
-
-    pub fn line_thickness(&self) -> u32 {
-        self.line_thickness
-    }
-
-    pub fn background_color(&self) -> &UmlColor {
-        &self.background_color
-    }
-
-    pub fn round_corner(&self) -> u32 {
-        self.round_corner
-    }
-}
-
-/// Serde stuff
-#[allow(dead_code)]
-#[rustfmt::skip]
-impl NodeStyle {
-    #[inline] fn default_line_color() -> UmlColor { UmlColor::Black }
-    #[inline] fn default_line_thickness() -> u32 { 10 }
-    #[inline] fn default_background_color() -> UmlColor { UmlColor::White }
-    #[inline] fn default_round_corner() -> u32 { 0 }
-    #[inline] fn is_default_line_color(value: &UmlColor) -> bool { value == &Self::default_line_color() }
-    #[inline] fn is_default_line_thickness(value: &u32) -> bool { value == &Self::default_line_thickness() }
-    #[inline] fn is_default_background_color(value: &UmlColor) -> bool { value == &Self::default_background_color() }
-    #[inline] fn is_default_round_corner(value: &u32) -> bool { value == &Self::default_round_corner() }
-}
-
-impl Default for NodeStyle {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 /// Configuration object controlling the visual appearance of RDF graphs.
 ///
@@ -214,52 +106,46 @@ pub struct RDFVisualizationConfig {
 #[rustfmt::skip]
 impl RDFVisualizationConfig {
     #[inline] fn default_uri_style() -> NodeStyle {
-        NodeStyle {
-            line_color: UmlColor::Blue,
-            line_thickness: 1,
-            background_color: UmlColor::White,
-            round_corner: 25,
-        }
+        NodeStyle::new()
+            .with_line_color(Color::Blue)
+            .with_line_thickness(1)
+            .with_background_color(Color::White)
+            .with_round_corner(25)
     }
     #[inline] fn default_bnode_style() -> NodeStyle {
-        NodeStyle {
-            line_color: UmlColor::Blue,
-            line_thickness: 1,
-            background_color: UmlColor::Gray,
-            round_corner: 25,
-        }
+        NodeStyle::new()
+            .with_line_color(Color::Blue)
+            .with_line_thickness(1)
+            .with_background_color(Color::Gray)
+            .with_round_corner(25)
     }
     #[inline] fn default_literal_style() -> NodeStyle {
-        NodeStyle {
-            line_color: UmlColor::Black,
-            line_thickness: 1,
-            background_color: UmlColor::Cyan,
-            round_corner: 0,
-        }
+        NodeStyle::new()
+            .with_line_color(Color::Black)
+            .with_line_thickness(1)
+            .with_background_color(Color::Cyan)
+            .with_round_corner(0)
     }
     #[inline] fn default_reifier_style() -> NodeStyle {
-        NodeStyle {
-            line_color: UmlColor::Black,
-            line_thickness: 1,
-            background_color: UmlColor::Yellow,
-            round_corner: 0,
-        }
+        NodeStyle::new()
+            .with_line_color(Color::Black)
+            .with_line_thickness(1)
+            .with_background_color(Color::Yellow)
+            .with_round_corner(0)
     }
     #[inline] fn default_asserted_style() -> NodeStyle {
-        NodeStyle {
-            line_color: UmlColor::Black,
-            line_thickness: 2,
-            background_color: UmlColor::White,
-            round_corner: 0,
-        }
+        NodeStyle::new()
+            .with_line_color(Color::Black)
+            .with_line_thickness(2)
+            .with_background_color(Color::White)
+            .with_round_corner(0)
     }
     #[inline] fn default_non_asserted_style() -> NodeStyle {
-        NodeStyle {
-            line_color: UmlColor::Blue,
-            line_thickness: 2,
-            background_color: UmlColor::White,
-            round_corner: 0,
-        }
+        NodeStyle::new()
+            .with_line_color(Color::Blue)
+            .with_line_thickness(2)
+            .with_background_color(Color::White)
+            .with_round_corner(0)
     }
 
     #[inline] fn default_subject_label() -> String { "subject".to_string() }
@@ -271,25 +157,22 @@ impl RDFVisualizationConfig {
     #[inline] fn default_asserted_triple_shape() -> UmlShape { UmlShape::Rectangle }
 
     #[inline] fn default_subject_arrow_style() -> ArrowStyle {
-        ArrowStyle {
-            line_color: UmlColor::Blue,
-            text_color: UmlColor::Blue,
-            line_thickness: ThicknessStyle::Dashed,
-        }
+        ArrowStyle::new()
+            .with_line_color(Color::Blue)
+            .with_text_color(Color::Blue)
+            .with_line_thickness(LineStyle::Dashed)
     }
     #[inline] fn default_predicate_arrow_style() -> ArrowStyle {
-        ArrowStyle {
-            line_color: UmlColor::Red,
-            text_color: UmlColor::Red,
-            line_thickness: ThicknessStyle::Dashed,
-        }
+        ArrowStyle::new()
+            .with_line_color(Color::Red)
+            .with_text_color(Color::Red)
+            .with_line_thickness(LineStyle::Dashed)
     }
     #[inline] fn default_object_arrow_style() -> ArrowStyle {
-        ArrowStyle {
-            line_color: UmlColor::Green,
-            text_color: UmlColor::Green,
-            line_thickness: ThicknessStyle::Dashed,
-        }
+        ArrowStyle::new()
+            .with_line_color(Color::Green)
+            .with_text_color(Color::Green)
+            .with_line_thickness(LineStyle::Dashed)
     }
 
     #[inline] fn default_subject_text() -> String { "subj".to_string() }
@@ -525,12 +408,27 @@ impl RDFVisualizationConfig {
     pub fn object_text(&self) -> &String {
         &self.object_text
     }
+
+    /// Builds the [`StyleSheet`] rudof_viz needs to render this configuration's node styles as
+    /// named PlantUML stereotypes (see [`crate::rdf_core::visualizer::VisualRDFNode`]'s stereotypes).
+    pub fn style_sheet(&self) -> StyleSheet {
+        let mut sheet = StyleSheet::new();
+        sheet.add_rule(node_style_rule("reifier", &self.reifier_style));
+        sheet.add_rule(node_style_rule("literal", &self.literal_style));
+        sheet.add_rule(node_style_rule("uri", &self.uri_style));
+        sheet.add_rule(node_style_rule("bnode", &self.bnode_style));
+        sheet.add_rule(node_style_rule("asserted", &self.asserted_style));
+        sheet.add_rule(node_style_rule("non_asserted", &self.non_asserted_style));
+        sheet
+    }
 }
 
-impl From<RDFVisualizationConfig> for Style {
-    fn from(value: RDFVisualizationConfig) -> Self {
-        Style::from_config(&value)
-    }
+fn node_style_rule(name: &str, style: &NodeStyle) -> StyleRule {
+    StyleRule::new(name)
+        .with_background_color(style.background_color())
+        .with_line_color(style.line_color())
+        .with_line_thickness(style.line_thickness())
+        .with_round_corner(style.round_corner())
 }
 
 impl Default for RDFVisualizationConfig {

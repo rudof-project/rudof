@@ -1086,6 +1086,13 @@ fn command_names() -> Vec<String> {
     names
 }
 
+/// The clap `Command` metadata for the shell's subcommands (same tree [`command_names`] lists
+/// names from), exposed so [`crate::shell::completer::ShellHelper`] can complete flag names and,
+/// for `ValueEnum`-backed flags, their possible values.
+pub(crate) fn cli_command() -> clap::Command {
+    ReplLine::command()
+}
+
 fn history_file() -> Option<std::path::PathBuf> {
     dirs::home_dir().map(|home| home.join(".rudof_history"))
 }

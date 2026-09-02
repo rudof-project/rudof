@@ -5,6 +5,7 @@ use crate::{
         ConversionFormat, ConversionMode, DataReaderMode, InputSpec, ResultConversionFormat, ResultConversionMode,
     },
 };
+use rudof_viz::VizEngine;
 use std::io;
 
 /// Builder for `show_schema_conversion` operation.
@@ -25,6 +26,7 @@ pub struct ShowSchemaConversionBuilder<'a, W: io::Write> {
     show_time: Option<bool>,
     templates_folder: Option<&'a std::path::Path>,
     output_folder: Option<&'a std::path::Path>,
+    viz_engine: Option<&'a VizEngine>,
 }
 
 impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
@@ -55,6 +57,7 @@ impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
             show_time: None,
             templates_folder: None,
             output_folder: None,
+            viz_engine: None,
         }
     }
 
@@ -118,6 +121,17 @@ impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
         self
     }
 
+    /// Sets the visualization engine used when the result format is an image (SVG/PNG) in UML
+    /// output.
+    ///
+    /// # Arguments
+    ///
+    /// * `viz_engine` - The engine to render images with (defaults to `VizEngine::PlantUml`)
+    pub fn with_viz_engine(mut self, viz_engine: &'a VizEngine) -> Self {
+        self.viz_engine = Some(viz_engine);
+        self
+    }
+
     /// Executes the schema conversion operation with the configured parameters.
     pub fn execute(self) -> Result<()> {
         <Rudof as ConversionOperations>::show_schema_conversion(
@@ -133,6 +147,7 @@ impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
             self.show_time,
             self.templates_folder,
             self.output_folder,
+            self.viz_engine,
             self.writer,
         )
     }

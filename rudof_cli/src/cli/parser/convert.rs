@@ -1,6 +1,7 @@
 use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{
     ConversionFormatCli, ConversionModeCli, DataReaderModeCli, ResultConversionFormatCli, ResultConversionModeCli,
+    VizEngineCli,
 };
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -53,6 +54,15 @@ pub struct ConvertArgs {
         default_value_t = ResultConversionFormatCli::Default
     )]
     pub result_format: ResultConversionFormatCli,
+
+    #[arg(
+        long = "viz-engine",
+        ignore_case = true,
+        value_name = "ENGINE",
+        help = "Visualization engine for image (SVG/PNG) result formats",
+        default_value_t = VizEngineCli::PlantUml
+    )]
+    pub viz_engine: VizEngineCli,
 
     #[arg(short = 't', long = "target-folder", value_name = "FOLDER", help = "Target folder")]
     pub target_folder: Option<PathBuf>,

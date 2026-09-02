@@ -35,6 +35,12 @@ pub enum ShExFormat {
     N3,
     /// N-Quads - N-Triples with named graphs support
     NQuads,
+    /// PlantUML - text-based UML diagram format for visualization
+    PlantUML,
+    /// SVG - Scalable Vector Graphics image format for visual output
+    Svg,
+    /// PNG - Portable Network Graphics image format for visual output
+    Png,
 }
 
 impl Display for ShExFormat {
@@ -52,6 +58,9 @@ impl Display for ShExFormat {
             ShExFormat::NQuads => write!(dest, "nquads"),
             ShExFormat::Json => write!(dest, "json"),
             ShExFormat::JsonLd => write!(dest, "jsonld"),
+            ShExFormat::PlantUML => write!(dest, "plantuml"),
+            ShExFormat::Svg => write!(dest, "svg"),
+            ShExFormat::Png => write!(dest, "png"),
         }
     }
 }
@@ -114,6 +123,9 @@ impl FromStr for ShExFormat {
             "trig" => Ok(ShExFormat::TriG),
             "n3" => Ok(ShExFormat::N3),
             "nquads" => Ok(ShExFormat::NQuads),
+            "plantuml" => Ok(ShExFormat::PlantUML),
+            "svg" => Ok(ShExFormat::Svg),
+            "png" => Ok(ShExFormat::Png),
             other => Err(ShExError::UnsupportedShExFormat {
                 format: other.to_string(),
             }),
@@ -136,6 +148,9 @@ impl MimeType for ShExFormat {
             ShExFormat::NQuads => "application/n-quads",
             ShExFormat::Json => "application/json",
             ShExFormat::JsonLd => "application/ld+json",
+            ShExFormat::PlantUML => "text/plain",
+            ShExFormat::Svg => "image/svg+xml",
+            ShExFormat::Png => "image/png",
         }
     }
 }

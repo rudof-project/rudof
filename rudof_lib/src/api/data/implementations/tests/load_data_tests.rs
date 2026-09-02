@@ -12,7 +12,7 @@ use rudof_rdf::rdf_impl::EndpointStrategy;
 fn serialize_to_string(rudof: &mut Rudof, format: Option<ResultDataFormat>) -> String {
     let mut buffer = Vec::new();
 
-    serialize_data(rudof, format.as_ref(), &mut buffer).unwrap();
+    serialize_data(rudof, format.as_ref(), None, &mut buffer).unwrap();
 
     String::from_utf8(buffer).unwrap()
 }

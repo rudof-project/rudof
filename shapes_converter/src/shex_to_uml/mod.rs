@@ -17,6 +17,7 @@ mod value_constraint;
 
 pub use name::*;
 pub use node_id::*;
+pub use rudof_viz::{Direction, LineType};
 pub use shex2uml_config::*;
 pub use shex2uml_error::*;
 pub use uml::*;

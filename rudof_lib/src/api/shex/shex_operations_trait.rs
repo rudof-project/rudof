@@ -10,6 +10,7 @@ use crate::{
         ShExValidationSortByMode, ShapeMapFormat,
     },
 };
+use rudof_viz::VizEngine;
 use std::io;
 
 /// Operations for ShEx (Shape Expressions) schema validation.
@@ -77,6 +78,7 @@ pub trait ShExOperations {
         show_time: Option<bool>,
         show_colors: Option<bool>,
         shex_format: Option<&ShExFormat>,
+        viz_engine: Option<&VizEngine>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -241,6 +243,7 @@ impl ShExOperations for crate::Rudof {
         show_time: Option<bool>,
         show_colors: Option<bool>,
         shex_format: Option<&ShExFormat>,
+        viz_engine: Option<&VizEngine>,
         writer: &mut W,
     ) -> Result<()> {
         serialize_shex_schema(
@@ -252,6 +255,7 @@ impl ShExOperations for crate::Rudof {
             show_time,
             show_colors,
             shex_format,
+            viz_engine,
             writer,
         )
     }

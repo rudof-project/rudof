@@ -19,6 +19,7 @@ fn serialize_to_string(rudof: &mut Rudof, format: Option<ShExFormat>) -> String 
         Some(true),
         None,
         format.as_ref(),
+        None,
         &mut buffer,
     )
     .unwrap();
@@ -183,6 +184,7 @@ fn test_load_shex_schema_shexr_turtle_roundtrip() {
         Some(false),
         None,
         Some(&ShExFormat::Turtle),
+        None,
         &mut turtle_buffer,
     )
     .unwrap();

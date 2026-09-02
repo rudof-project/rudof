@@ -8,7 +8,7 @@ pub enum ShExError {
 
     /// The ShEx format specified is not supported by Rudof.
     #[error(
-        "Unsupported ShEx format: '{format}'. Valid formats are: 'internal', 'simple', 'shexc', 'shexj', 'json', 'jsonld', 'turtle', 'ntriples', 'rdfxml', 'trig', 'n3', 'nquads'"
+        "Unsupported ShEx format: '{format}'. Valid formats are: 'internal', 'simple', 'shexc', 'shexj', 'json', 'jsonld', 'turtle', 'ntriples', 'rdfxml', 'trig', 'n3', 'nquads', 'plantuml', 'svg', 'png'"
     )]
     UnsupportedShExFormat { format: String },
 

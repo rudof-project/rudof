@@ -334,7 +334,18 @@ rudof> !ls examples
 
 ## History and completion
 
-Lines are saved to `~/.rudof_history` between sessions. Tab completes subcommand names; if several match, they're all listed on the first Tab (e.g. `sh` + Tab lists `shex`, `shacl`, `shapemap`, `shell`, ...) instead of silently filling in one. After the first word, Tab completes the `endpoint` command's argument against the endpoint names registered in the [TOML config](../general/configuration.md) — case-insensitively, so `wiki` + Tab matches `Wikidata` — and the `KEY` argument of `config get`/`config set` against every dotted key path in the effective config (see the [Config reference](../references/config.md)) — e.g. `config get shex_validator.` + Tab lists `shex_validator.check_negation`, `shex_validator.width`, `shex_validator.shapemap`, and so on. Every other argument falls back to filenames — except `config set logging.level`'s `VALUE`, which completes against the known level names (`error`, `warn`, `info`, `debug`, `trace`).
+Lines are saved to `~/.rudof_history` between sessions. Tab completes subcommand names; if several match, they're all listed on the first Tab (e.g. `sh` + Tab lists `shex`, `shacl`, `shapemap`, `shell`, ...) instead of silently filling in one. After the first word, Tab completes the `endpoint` command's argument against the endpoint names registered in the [TOML config](../general/configuration.md) — case-insensitively, so `wiki` + Tab matches `Wikidata` — and the `KEY` argument of `config get`/`config set` against every dotted key path in the effective config (see the [Config reference](../references/config.md)) — e.g. `config get shex_validator.` + Tab lists `shex_validator.check_negation`, `shex_validator.width`, `shex_validator.shapemap`, and so on.
+
+For any other subcommand, Tab also completes flag names — `shex --viz` + Tab fills in `--viz-engine` — and, for a flag that only accepts a fixed set of values, the value itself, both in long and short form:
+
+```
+rudof> shex --viz-engine <TAB>
+graphviz  plantuml
+rudof> data -r sv<TAB>
+rudof> data -r svg
+```
+
+This covers every subcommand's flags automatically (it's driven by the same flag metadata `--help` is), not just the ones with dedicated completion described above. A flag that takes a free-form value instead — a file path, a string — falls back to filename completion, same as any other argument (e.g. `config set logging.level`'s `VALUE` is the one exception with its own fixed list: `error`, `warn`, `info`, `debug`, `trace`).
 
 ## Exiting
 

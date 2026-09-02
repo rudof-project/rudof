@@ -1,20 +1,19 @@
 use crate::rdf_core::{
     NeighsRDF, RDFError,
     term::Triple,
-    visualizer::{
-        RDFVisualizationConfig, VisualRDFEdge, VisualRDFNode,
-        errors::RdfVisualizerError,
-        uml_converter::{UmlConverter, UmlGenerationMode, errors::UmlConverterError},
-        utils::UsageCount,
-    },
+    visualizer::{RDFVisualizationConfig, VisualRDFEdge, VisualRDFNode, errors::RdfVisualizerError, utils::UsageCount},
 };
 
-use crate::rdf_core::visualizer::style::Style;
+use rudof_viz::{
+    BoxId, Connector, ConnectorKind, Diagram, DiagramRenderer, DiagramScope, backends::plantuml::PlantUmlBackend,
+};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::io::Write;
 
-/// A visual representation of an RDF graph that can be converted to PlantUML diagrams.
+/// A visual representation of an RDF graph that can be converted to a technology-agnostic
+/// [`Diagram`] (and, from there, rendered by any `rudof_viz` backend; PlantUML is used directly
+/// by [`VisualRDFGraph::as_plantuml`]/[`VisualRDFGraph::as_image`] for convenience).
 ///
 /// This struct maintains mappings between RDF terms and visual nodes, tracks usage
 /// counts for different roles (subject, predicate, object), and manages the edges
@@ -257,44 +256,93 @@ impl VisualRDFGraph {
         }
     }
 
-    /// Converts the visual graph to PlantUML format and writes it to the given writer.
-    ///
-    /// # Arguments
-    /// * `writer` - The writer to output the PlantUML code to
-    /// * `_mode` - The generation mode (currently unused)
-    ///
-    /// # Returns
-    /// * `Result<(), RdfVisualizerError>` - Ok if successful, Err with details on failure
-    pub fn as_plantuml<W: Write>(&self, writer: &mut W, _mode: &UmlGenerationMode) -> Result<(), RdfVisualizerError> {
-        let style: Style = self.config.clone().into();
-        writeln!(writer, "@startuml\n")?;
-        writeln!(writer, "{}", style.as_uml())?;
+    /// Builds the technology-agnostic [`Diagram`] for this graph: one box per visualized node
+    /// (see [`Self::show_node`]), one connector per RDF edge, and one connector per
+    /// subject/predicate/object role for every triple term.
+    pub fn to_diagram(&self) -> Result<Diagram, RdfVisualizerError> {
+        let mut diagram = Diagram::new().with_style_sheet(self.config.style_sheet());
 
-        // Add nodes
         for (node, node_id) in &self.nodes_map {
-            let show_node = self.show_node(node);
-            let node_uml = node.as_plantuml(*node_id, show_node, self)?;
-            writeln!(writer, "{node_uml}\n")?;
-        }
-        // Add edges
-        for (source, edge, target) in &self.edges {
-            writeln!(writer, "{source} --> {target} : {}\n", edge.as_plantuml_link())?;
+            if let Some(b) = node.to_diagram_box(*node_id, self.show_node(node)) {
+                diagram.add_box(b);
+            }
         }
 
-        // Add edges from triples
+        for (source, edge, target) in &self.edges {
+            diagram.add_connector(
+                Connector::new(to_box_id(*source), to_box_id(*target), ConnectorKind::Association)
+                    .with_label(edge.to_label()),
+            );
+        }
+
         for (node, node_id) in &self.nodes_map {
             match node {
-                VisualRDFNode::NonAssertedTriple(subj, pred, obj) => {
-                    triple_term_as_plantuml(writer, self, node_id, subj, pred, obj)?;
-                },
-                VisualRDFNode::AssertedTriple(subj, pred, obj) => {
-                    triple_term_as_plantuml(writer, self, node_id, subj, pred, obj)?;
+                VisualRDFNode::NonAssertedTriple(subj, pred, obj) | VisualRDFNode::AssertedTriple(subj, pred, obj) => {
+                    self.add_triple_term_connectors(&mut diagram, node_id, subj, pred, obj)?;
                 },
                 _ => {},
             }
         }
 
-        writeln!(writer, "@enduml\n")?;
+        Ok(diagram)
+    }
+
+    /// Adds the three fan-out connectors (subject/predicate/object) from a triple-term box to
+    /// its constituent nodes.
+    fn add_triple_term_connectors(
+        &self,
+        diagram: &mut Diagram,
+        triple_id: &NodeId,
+        subj: &VisualRDFNode,
+        pred: &VisualRDFNode,
+        obj: &VisualRDFNode,
+    ) -> Result<(), RdfVisualizerError> {
+        let subj_id = self.get_node_id(subj)?;
+        let pred_id = self.get_node_id(pred)?;
+        let obj_id = self.get_node_id(obj)?;
+        diagram.add_connector(
+            Connector::new(to_box_id(*triple_id), to_box_id(subj_id), ConnectorKind::Association)
+                .with_label(self.config.subject_text().clone())
+                .with_style(self.config.subject_arrow_style().clone()),
+        );
+        diagram.add_connector(
+            Connector::new(to_box_id(*triple_id), to_box_id(pred_id), ConnectorKind::Association)
+                .with_label(self.config.predicate_text().clone())
+                .with_style(self.config.predicate_arrow_style().clone()),
+        );
+        diagram.add_connector(
+            Connector::new(to_box_id(*triple_id), to_box_id(obj_id), ConnectorKind::Association)
+                .with_label(self.config.object_text().clone())
+                .with_style(self.config.object_arrow_style().clone()),
+        );
+        Ok(())
+    }
+
+    /// Renders this graph as PlantUML text.
+    ///
+    /// `mode` is currently ignored (RDF diagrams are always rendered in full), matching prior
+    /// behavior.
+    pub fn as_plantuml<W: Write>(&self, writer: &mut W, _mode: &DiagramScope) -> Result<(), RdfVisualizerError> {
+        let diagram = self.to_diagram()?;
+        PlantUmlBackend::default().render(&diagram, writer)?;
+        Ok(())
+    }
+
+    /// Renders this graph to an image using the given [`rudof_viz::VizEngine`].
+    ///
+    /// `mode` is currently ignored (RDF diagrams are always rendered in full), matching prior
+    /// behavior. `plantuml_path` is only consulted when `engine` is `VizEngine::PlantUml`.
+    #[cfg(not(target_family = "wasm"))]
+    pub fn as_image<W: Write, P: AsRef<std::path::Path>>(
+        &self,
+        writer: &mut W,
+        image_format: rudof_viz::ImageFormat,
+        _mode: &DiagramScope,
+        engine: rudof_viz::VizEngine,
+        plantuml_path: P,
+    ) -> Result<(), RdfVisualizerError> {
+        let diagram = self.to_diagram()?;
+        rudof_viz::render_image_with_engine(&diagram, image_format, engine, plantuml_path.as_ref(), writer)?;
         Ok(())
     }
 
@@ -319,11 +367,20 @@ impl VisualRDFGraph {
     }
 }
 
+fn to_box_id(node_id: NodeId) -> BoxId {
+    BoxId::new(node_id.as_usize())
+}
+
 /// Unique identifier for nodes in the visual graph.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct NodeId {
-    /// The unique numeric identifier
     id: usize,
+}
+
+impl NodeId {
+    pub fn as_usize(&self) -> usize {
+        self.id
+    }
 }
 
 impl Display for NodeId {
@@ -372,59 +429,73 @@ impl Display for VisualRDFGraph {
     }
 }
 
-impl UmlConverter for VisualRDFGraph {
-    /// Converts the visual graph to PlantUML format.
-    ///
-    /// This implementation delegates to the struct's own `as_plantuml` method.
-    fn as_plantuml<W: Write>(&self, writer: &mut W, mode: &UmlGenerationMode) -> Result<(), UmlConverterError> {
-        self.as_plantuml(writer, mode)
-            .map_err(|e| UmlConverterError::UmlError { error: e.to_string() })
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rdf_core::RDFFormat;
+    use crate::rdf_impl::{OxigraphInMemory, ReaderMode};
 
-/// Generates PlantUML representation for triple terms (RDF-star triples).
-///
-/// This function creates the visual connections between a triple node and its
-/// constituent subject, predicate, and object nodes.
-///
-/// # Arguments
-/// * `writer` - The writer to output PlantUML code to
-/// * `graph` - The visual graph containing the nodes
-/// * `triple_id` - ID of the triple node
-/// * `subj` - The subject node
-/// * `pred` - The predicate node
-/// * `obj` - The object node
-///
-/// # Returns
-/// * `Result<(), RdfVisualizerError>` - Ok if successful, Err with details on failure
-fn triple_term_as_plantuml<W: Write>(
-    writer: &mut W,
-    graph: &VisualRDFGraph,
-    triple_id: &NodeId,
-    subj: &VisualRDFNode,
-    pred: &VisualRDFNode,
-    obj: &VisualRDFNode,
-) -> Result<(), RdfVisualizerError> {
-    let subj_id = graph.get_node_id(subj)?;
-    let pred_id = graph.get_node_id(pred)?;
-    let obj_id = graph.get_node_id(obj)?;
-    writeln!(
-        writer,
-        "{triple_id}-->{subj_id} {} : {} \n",
-        graph.config.subject_arrow_style().as_plantuml(),
-        graph.config.subject_text()
-    )?;
-    writeln!(
-        writer,
-        "{triple_id}-->{pred_id} {} : {}\n",
-        graph.config.predicate_arrow_style().as_plantuml(),
-        graph.config.predicate_text()
-    )?;
-    writeln!(
-        writer,
-        "{triple_id}-->{obj_id} {} : {}\n",
-        graph.config.object_arrow_style().as_plantuml(),
-        graph.config.object_text()
-    )?;
-    Ok(())
+    const GRAPH: &str = r#"
+        prefix : <http://example.org/>
+        prefix foaf: <http://xmlns.com/foaf/0.1/>
+        :alice foaf:knows :bob .
+        :alice foaf:name "Alice" .
+    "#;
+
+    fn sample_graph() -> VisualRDFGraph {
+        let rdf = OxigraphInMemory::from_str(GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        VisualRDFGraph::from_rdf(&rdf, RDFVisualizationConfig::default()).unwrap()
+    }
+
+    #[test]
+    fn to_diagram_has_a_box_per_visualized_node_and_a_connector_per_edge() {
+        let graph = sample_graph();
+        let diagram = graph.to_diagram().unwrap();
+
+        // :alice, :bob, foaf:knows-object-position-only? no, predicates are hidden unless in a triple term.
+        // Visible boxes: :alice (uri), :bob (uri), "Alice" (literal) = 3.
+        assert_eq!(diagram.boxes().count(), 3);
+        assert_eq!(diagram.connectors().count(), 2);
+        assert!(!diagram.style_sheet().is_empty());
+    }
+
+    #[test]
+    fn as_plantuml_renders_valid_plantuml_with_uri_and_literal_stereotypes() {
+        let graph = sample_graph();
+        let mut out = Vec::new();
+        graph.as_plantuml(&mut out, &DiagramScope::all()).unwrap();
+        let text = String::from_utf8(out).unwrap();
+
+        assert!(text.starts_with("@startuml"));
+        assert!(text.trim_end().ends_with("@enduml"));
+        assert!(text.contains("<<uri>>"));
+        assert!(text.contains("<<literal>>"));
+        assert!(text.contains("hide stereotype"));
+    }
+
+    const REIFIED_GRAPH: &str = r#"
+        prefix : <http://example.org/>
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        :belief1 rdf:reifies <<( :alice :knows :bob )>> ;
+            :since 2020 .
+    "#;
+
+    /// A predicate is only ever visualized as its own box when it appears inside a triple term
+    /// (e.g. RDF-star reification, as above) — regular predicates stay hidden. This is the case
+    /// that surfaced a bug where the predicate box's `href` was built from `IRI::to_string()`
+    /// (which, for the oxrdf-backed IRI type, serializes with angle brackets like a Turtle term:
+    /// `<http://example.org/knows>`) instead of `IRI::as_str()` (the bare IRI), producing a
+    /// broken hyperlink in the rendered diagram.
+    #[test]
+    fn reified_predicate_box_href_has_no_angle_brackets() {
+        let rdf = OxigraphInMemory::from_str(REIFIED_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let graph = VisualRDFGraph::from_rdf(&rdf, RDFVisualizationConfig::default()).unwrap();
+        let diagram = graph.to_diagram().unwrap();
+
+        let predicate_box = diagram
+            .boxes()
+            .find(|b| b.href() == Some("http://example.org/knows"))
+            .expect("the reified :knows predicate should be visualized with a plain, unbracketed href");
+        assert!(!predicate_box.title().contains('<'));
+    }
 }

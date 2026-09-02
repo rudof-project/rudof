@@ -311,7 +311,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bench-issue730"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "rudof_lib",
@@ -320,7 +320,7 @@ dependencies = [
 
 [[package]]
 name = "bench-shex"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "criterion",
@@ -1239,7 +1239,7 @@ checksum = "be1e0bca6c3637f992fc1cc7cbc52a78c1ef6db076dbf1059c4323d6a2048376"
 
 [[package]]
 name = "dctap"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "calamine",
  "csv",
@@ -1420,7 +1420,7 @@ dependencies = [
 
 [[package]]
 name = "emacs-rudof"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "emacs",
@@ -2611,7 +2611,7 @@ dependencies = [
 
 [[package]]
 name = "mie"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "hashlink",
  "rudof_iri",
@@ -3151,7 +3151,7 @@ dependencies = [
 
 [[package]]
 name = "pgschema"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "clap",
@@ -3276,7 +3276,7 @@ dependencies = [
 
 [[package]]
 name = "prefixmap"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "colored",
  "indexmap 2.14.0",
@@ -3489,7 +3489,7 @@ dependencies = [
 
 [[package]]
 name = "pyrudof"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "pyo3",
  "pythonize",
@@ -3726,7 +3726,7 @@ dependencies = [
 
 [[package]]
 name = "rbe"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "criterion",
  "either",
@@ -3746,7 +3746,7 @@ dependencies = [
 
 [[package]]
 name = "rbe_testsuite"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "indoc",
@@ -3759,7 +3759,7 @@ dependencies = [
 
 [[package]]
 name = "rdf_config"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "hashlink",
  "indexmap 2.14.0",
@@ -3981,7 +3981,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_cli"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "clap",
@@ -4002,6 +4002,7 @@ dependencies = [
  "rudof_lib",
  "rudof_mcp",
  "rudof_rdf",
+ "rudof_viz",
  "rustyline",
  "serde",
  "serde_json",
@@ -4024,7 +4025,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_config"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "dirs",
  "serde",
@@ -4034,7 +4035,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_generate"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4062,7 +4063,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_iri"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "getrandom 0.3.4",
  "getrandom 0.4.3",
@@ -4078,7 +4079,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_lib"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "colored",
  "crossterm",
@@ -4095,6 +4096,7 @@ dependencies = [
  "rudof_generate",
  "rudof_iri",
  "rudof_rdf",
+ "rudof_viz",
  "semver 1.0.28",
  "serde",
  "serde_json",
@@ -4115,7 +4117,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_mcp"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "axum",
@@ -4145,7 +4147,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_rdf"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "bollard",
  "colored",
@@ -4172,6 +4174,7 @@ dependencies = [
  "reqwest",
  "rudof_config",
  "rudof_iri",
+ "rudof_viz",
  "rust_decimal",
  "serde",
  "serde_json",
@@ -4186,6 +4189,15 @@ dependencies = [
  "toml",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "rudof_viz"
+version = "0.3.16"
+dependencies = [
+ "serde",
+ "tempfile",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -4686,7 +4698,7 @@ dependencies = [
 
 [[package]]
 name = "shacl"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -4709,7 +4721,7 @@ dependencies = [
 
 [[package]]
 name = "shapes_comparator"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "prefixmap",
  "rudof_config",
@@ -4727,7 +4739,7 @@ dependencies = [
 
 [[package]]
 name = "shapes_converter"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "chrono",
  "dctap",
@@ -4739,6 +4751,7 @@ dependencies = [
  "rudof_config",
  "rudof_iri",
  "rudof_rdf",
+ "rudof_viz",
  "serde",
  "shacl",
  "shex_ast",
@@ -4763,7 +4776,7 @@ dependencies = [
 
 [[package]]
 name = "shex_ast"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "colored",
  "const_format",
@@ -4794,7 +4807,7 @@ dependencies = [
 
 [[package]]
 name = "shex_testsuite"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "anyhow",
  "clap",
@@ -4814,7 +4827,7 @@ dependencies = [
 
 [[package]]
 name = "shex_validation"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "either",
  "indexmap 2.14.0",
@@ -4991,7 +5004,7 @@ dependencies = [
 
 [[package]]
 name = "sparql_service"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "colored",
  "const_format",

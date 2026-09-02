@@ -9,6 +9,10 @@ impl NodeId {
     pub fn new(n: usize) -> NodeId {
         NodeId { n }
     }
+
+    pub fn as_usize(&self) -> usize {
+        self.n
+    }
 }
 
 impl Display for NodeId {

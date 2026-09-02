@@ -5,6 +5,7 @@ use crate::{
         ConversionFormat, ConversionMode, DataReaderMode, InputSpec, ResultConversionFormat, ResultConversionMode,
     },
 };
+use rudof_viz::VizEngine;
 use std::io;
 
 /// Conversion operations
@@ -24,6 +25,8 @@ pub trait ConversionOperations {
     /// * `show_time` - Whether to include timing information in the conversion output (false by default)
     /// * `templates_folder` - Optional path to a folder containing templates for conversion (if applicable)
     /// * `output_folder` - Optional path to a folder where output files should be written
+    /// * `viz_engine` - Optional visualization engine to use for image formats (SVG/PNG) in UML
+    ///   output; uses `VizEngine::PlantUml` if None. Ignored for non-image formats.
     /// * `writer` - The destination to write the converted schema to
     ///
     /// # Errors
@@ -43,6 +46,7 @@ pub trait ConversionOperations {
         show_time: Option<bool>,
         templates_folder: Option<&std::path::Path>,
         output_folder: Option<&std::path::Path>,
+        viz_engine: Option<&VizEngine>,
         writer: &mut W,
     ) -> Result<()>;
 }
@@ -61,6 +65,7 @@ impl ConversionOperations for crate::Rudof {
         show_time: Option<bool>,
         templates_folder: Option<&std::path::Path>,
         output_folder: Option<&std::path::Path>,
+        viz_engine: Option<&VizEngine>,
         writer: &mut W,
     ) -> Result<()> {
         show_schema_conversion(
@@ -76,6 +81,7 @@ impl ConversionOperations for crate::Rudof {
             show_time,
             templates_folder,
             output_folder,
+            viz_engine,
             writer,
         )
     }

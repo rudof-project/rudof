@@ -35,6 +35,7 @@ impl Command for ShexCommand {
         let schema_format = self.args.schema_format.into();
         let reader_mode = self.args.reader_mode.into();
         let result_schema_format = self.args.result_schema_format.into();
+        let viz_engine = self.args.viz_engine.into();
 
         if let Some(schema) = &self.args.schema {
             let mut shex_schema_loading = ctx
@@ -52,7 +53,8 @@ impl Command for ShexCommand {
             .rudof
             .serialize_shex_schema(&mut ctx.writer)
             .with_show_schema(self.args.show_schema)
-            .with_result_shex_format(&result_schema_format);
+            .with_result_shex_format(&result_schema_format)
+            .with_viz_engine(&viz_engine);
 
         if let Some(shape_label) = self.args.shape.as_deref() {
             shex_serialization = shex_serialization.with_shape(shape_label);

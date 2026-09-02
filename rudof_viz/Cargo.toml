@@ -1,0 +1,17 @@
+[package]
+name = "rudof_viz"
+version.workspace = true
+authors.workspace = true
+description = "Technology-agnostic visualization primitives (styles, diagram model, renderer traits) for rudof"
+documentation = "https://docs.rs/rudof_viz"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tempfile.workspace = true

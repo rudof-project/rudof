@@ -14,6 +14,7 @@ mod shacl;
 mod shapemap;
 mod shex;
 mod validation;
+mod viz_engine;
 
 pub use backend::*;
 pub use comparison::*;
@@ -31,6 +32,7 @@ pub use shacl::*;
 pub use shapemap::*;
 pub use shex::*;
 pub use validation::*;
+pub use viz_engine::*;
 
 /// CLI wrapper macro for rudof_lib types.
 ///

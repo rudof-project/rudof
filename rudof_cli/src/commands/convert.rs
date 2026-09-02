@@ -30,6 +30,7 @@ impl Command for ConvertCommand {
         let format = self.args.format.into();
         let result_format = self.args.result_format.into();
         let reader_mode = self.args.reader_mode.into();
+        let viz_engine = self.args.viz_engine.into();
 
         let mut conversion = ctx
             .rudof
@@ -41,7 +42,8 @@ impl Command for ConvertCommand {
                 &result_format,
                 &mut ctx.writer,
             )
-            .with_reader_mode(&reader_mode);
+            .with_reader_mode(&reader_mode)
+            .with_viz_engine(&viz_engine);
 
         if let Some(base) = self.args.base.as_deref() {
             conversion = conversion.with_base(base);

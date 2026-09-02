@@ -1,4 +1,5 @@
 use crate::{Result, Rudof, api::data::DataOperations, formats::ResultDataFormat};
+use rudof_viz::VizEngine;
 use std::io;
 
 /// Builder for `serialize_data` operation.
@@ -9,6 +10,7 @@ pub struct SerializeDataBuilder<'a, W: io::Write> {
     rudof: &'a mut Rudof,
     writer: &'a mut W,
     result_data_format: Option<&'a ResultDataFormat>,
+    viz_engine: Option<&'a VizEngine>,
 }
 
 impl<'a, W: io::Write> SerializeDataBuilder<'a, W> {
@@ -21,6 +23,7 @@ impl<'a, W: io::Write> SerializeDataBuilder<'a, W> {
             rudof,
             writer,
             result_data_format: None,
+            viz_engine: None,
         }
     }
 
@@ -34,8 +37,18 @@ impl<'a, W: io::Write> SerializeDataBuilder<'a, W> {
         self
     }
 
+    /// Sets the visualization engine used when the result format is an image (SVG/PNG).
+    ///
+    /// # Arguments
+    ///
+    /// * `viz_engine` - The engine to render images with (defaults to `VizEngine::PlantUml`)
+    pub fn with_viz_engine(mut self, viz_engine: &'a VizEngine) -> Self {
+        self.viz_engine = Some(viz_engine);
+        self
+    }
+
     /// Executes the data serialization operation with the configured parameters.
     pub fn execute(self) -> Result<()> {
-        <Rudof as DataOperations>::serialize_data(self.rudof, self.result_data_format, self.writer)
+        <Rudof as DataOperations>::serialize_data(self.rudof, self.result_data_format, self.viz_engine, self.writer)
     }
 }

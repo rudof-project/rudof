@@ -18,6 +18,9 @@ cli_wrapper!(
         RdfXml,
         TriG,
         N3,
-        NQuads
+        NQuads,
+        PlantUML,
+        Svg,
+        Png
     }
 );

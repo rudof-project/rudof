@@ -15,6 +15,7 @@ subgraph rudof
     rudof_cli[<a href='https://crates.io/crates/rudof_cli'>rudof_cli</a>];
     shex_ast[<a href='https://crates.io/crates/shex_ast'>shex_ast</a>];
     rudof_rdf[<a href='https://crates.io/crates/rudof_rdf'>rudof_rdf</a>];
+    rudof_viz[<a href='https://crates.io/crates/rudof_viz'>rudof_viz</a>];
     shex_validation[<a href='https://crates.io/crates/shex_validation'>shex_validation</a>];
     shacl[<a href='https://crates.io/crates/shacl'>shacl</a>];
     shapes_comparator[<a href='https://crates.io/crates/shapes_comparator'>shapes_comparator</a>];
@@ -30,6 +31,8 @@ subgraph rudof
  shex_ast --> rbe;
  shex_validation-->shex_ast;
  rudof_rdf-->rudof_iri;
+ rudof_rdf-->rudof_viz;
+ shapes_converter-->rudof_viz;
  shacl-->rudof_rdf;
  shacl-->sparql_service;
  shex_validation-->prefixmap;

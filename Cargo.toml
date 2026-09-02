@@ -12,6 +12,7 @@ members = [
     "rdf_config",
     "rudof_config",
     "rudof_rdf",
+    "rudof_viz",
     "rudof_cli",
     "rudof_lib",
     "rudof_mcp",
@@ -333,6 +334,7 @@ rudof_cli = { version = "0.3.16", path = "./rudof_cli" }
 rudof_config = { version = "0.3.16", path = "./rudof_config" }
 rudof_iri = { version = "0.3.16", path = "./rudof_iri" }
 rudof_rdf = { version = "0.3.16", path = "./rudof_rdf", default-features = false }
+rudof_viz = { version = "0.3.16", path = "./rudof_viz" }
 rudof_generate = { version = "0.3.16", path = "./rudof_generate" }
 rudof_lib = { version = "0.3.16", path = "./rudof_lib" }
 rudof_mcp = { version = "0.3.16", path = "./rudof_mcp" }
