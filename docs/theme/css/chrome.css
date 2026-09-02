@@ -93,6 +93,13 @@ a > .hljs {
   margin: 0;
 }
 
+.fa-svg svg {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  margin-bottom: -0.1em;
+}
+
 .right-buttons {
   display: flex;
   align-items: center;

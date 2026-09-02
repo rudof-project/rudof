@@ -15,9 +15,11 @@ command = "mdbook-mermaid"
 [output.html]
 site-url = "/docs/"
 no-section-label = true
+hash-files = false
+sidebar-header-nav = false
 preferred-dark-theme = "dark"
 git-repository-url = "https://github.com/rudof-project/rudof"
-git-repository-icon = "fa-github"
+git-repository-icon = "fab-github"
 additional-css = ["theme/pagetoc.css", "theme/highlight.css"]
 additional-js = [
     "turtle.js",
