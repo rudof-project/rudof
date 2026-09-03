@@ -13,14 +13,48 @@ pub(crate) fn pp_object_value<'a, A>(
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     match v {
         ObjectValue::IriRef(i) => pp_iri_ref(i, doc, prefixmap),
-        ObjectValue::Literal(ConcreteLiteral::BooleanLiteral(_value)) => {
-            todo!()
-        },
         ObjectValue::Literal(ConcreteLiteral::NumericLiteral(num)) => pp_numeric_literal(num, doc),
-        ObjectValue::Literal(ConcreteLiteral::DatatypeLiteral { .. }) => todo!(),
-        ObjectValue::Literal(ConcreteLiteral::WrongDatatypeLiteral { .. }) => todo!(),
-        ObjectValue::Literal(ConcreteLiteral::DatetimeLiteral { .. }) => todo!(),
-        ObjectValue::Literal(ConcreteLiteral::StringLiteral { .. }) => todo!(),
+        ObjectValue::Literal(ConcreteLiteral::BooleanLiteral(b)) => doc.text(if *b { "true" } else { "false" }),
+        ObjectValue::Literal(ConcreteLiteral::StringLiteral { lexical_form, lang }) => {
+            let str = pp_quoted_string(lexical_form);
+            match lang {
+                Some(lang) => doc.text(format!("{str}@{lang}")),
+                None => doc.text(str),
+            }
+        },
+        ObjectValue::Literal(
+            ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }
+            | ConcreteLiteral::WrongDatatypeLiteral {
+                lexical_form, datatype, ..
+            },
+        ) => doc.text(format!(
+            "{}^^{}",
+            pp_quoted_string(lexical_form),
+            pp_iri_ref_str(datatype, prefixmap)
+        )),
+        ObjectValue::Literal(ConcreteLiteral::DatetimeLiteral(dt)) => doc.text(format!(
+            "{}^^<http://www.w3.org/2001/XMLSchema#dateTime>",
+            pp_quoted_string(&dt.to_string())
+        )),
+    }
+}
+
+/// Quotes and escapes a string as a ShExC `STRING_LITERAL2` (`"..."`).
+/// `"`, `\`, and literal newlines/carriage-returns can't appear bare inside
+/// one and must be written using their ECHAR escape sequence.
+fn pp_quoted_string(lexical_form: &str) -> String {
+    let escaped = lexical_form
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r");
+    format!("\"{escaped}\"")
+}
+
+fn pp_iri_ref_str(value: &IriRef, prefixmap: &PrefixMap) -> String {
+    match value {
+        IriRef::Iri(iri) => prefixmap.qualify(iri),
+        IriRef::Prefixed { prefix, local } => format!("{prefix}:{local}"),
     }
 }
 

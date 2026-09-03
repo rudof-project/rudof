@@ -151,4 +151,23 @@ pub enum ManifestError {
         #[source]
         error: ExternalResolverError,
     },
+
+    #[error(
+        "Error parsing pretty printed schema for entry {entry_name}. Error: {error:?}\nPretty printed schema:\n{pretty_printed}"
+    )]
+    PrettyPrintParsingError {
+        error: Box<ParseError>,
+        entry_name: String,
+        pretty_printed: String,
+    },
+
+    #[error(
+        "Pretty print roundtrip mismatch for entry {entry_name}: schema re-parsed from the pretty printed output is different from the original schema parsed from ShExJ.\nOriginal schema:\n{schema_parsed:?}\nPretty printed schema:\n{pretty_printed}\nRe-parsed schema:\n{reparsed:?}"
+    )]
+    PrettyPrintRoundtripDifferent {
+        entry_name: String,
+        schema_parsed: Box<Schema>,
+        pretty_printed: String,
+        reparsed: Box<Schema>,
+    },
 }
