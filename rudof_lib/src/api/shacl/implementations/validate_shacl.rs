@@ -9,6 +9,8 @@ use shacl::validator::processor::{GraphValidation, ShaclProcessor};
 use shacl::validator::store::Graph;
 
 pub fn validate_shacl(rudof: &mut Rudof, mode: Option<&ShaclValidationMode>) -> Result<()> {
+    let shacl_config = rudof.config().execute().shacl().clone();
+
     let (data, shacl_schema_ir) = validate_loaded_data_schema_and_shapes(rudof)?;
 
     let mode = mode.copied().unwrap_or_default();
@@ -16,7 +18,7 @@ pub fn validate_shacl(rudof: &mut Rudof, mode: Option<&ShaclValidationMode>) -> 
     let graph: Graph = data.unwrap_rdf_mut().clone().into();
     let mut validator: GraphValidation = graph.into();
 
-    let result = ShaclProcessor::validate(&mut validator, shacl_schema_ir, &mode.into())
+    let result = ShaclProcessor::validate(&mut validator, shacl_schema_ir, &mode.into(), &shacl_config)
         .map_err(|e| ShaclError::FailedShaclValidation { error: e.to_string() })?;
 
     rudof.shacl_validation_results = Some(result);

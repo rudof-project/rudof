@@ -7,6 +7,10 @@ use crate::validator::constraints::{NativeValidator, validate_with_focus};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
+#[cfg(feature = "sparql")]
+use crate::validator::report::Evidence;
+use crate::validator::report::ValidationOutcome;
+#[cfg(feature = "sparql")]
 use crate::validator::report::ValidationResult;
 #[cfg(feature = "sparql")]
 use indoc::formatdoc;
@@ -29,7 +33,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Disjoint {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let check_fn = |f: &S::Term, vn: &S::Term| {
             let subject = S::term_as_subject(f).unwrap();
             let iri: S::IRI = self.iri().clone().into();
@@ -73,9 +77,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Disj
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let component_obj = Object::iri(component.into());
-        let mut results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
 
         for (fnode, nodes) in value_nodes.iter() {
             let fnode_obj = S::term_as_object(fnode)?;
@@ -86,18 +90,24 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Disj
                 ", fnode, self.iri(), vn};
 
                 let ask = store.query_ask(&query).map_err(ValidationError::ask_query_error::<S>)?;
+                let value = S::term_as_object(vn).ok();
 
                 if ask {
-                    let value = S::term_as_object(vn).ok();
                     let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
-                    results.push(vr);
+                    outcome.push_violation(vr);
+                } else {
+                    let ev = Evidence::new(fnode_obj.clone(), component_obj.clone())
+                        .with_source(Some(shape.id().clone()))
+                        .with_path(maybe_path.cloned())
+                        .with_value(value);
+                    outcome.push_evidence(ev);
                 }
             }
         }
 
-        Ok(results)
+        Ok(outcome)
     }
 }

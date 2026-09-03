@@ -68,6 +68,9 @@ impl ValidateCommand {
             mode: self.args.shacl_validation_mode,
             result_format: self.args.result_format.into(),
             sort_by: self.args.sort_by.into(),
+            no_errors: self.args.no_errors,
+            with_evidences: self.args.with_evidences,
+            recursion_semantics: self.args.recursion_semantics,
             common: self.args.common.clone(),
         })
     }

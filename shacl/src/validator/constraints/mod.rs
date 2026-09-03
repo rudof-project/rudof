@@ -15,7 +15,8 @@ use crate::validator::iteration::IterationStrategy;
 #[cfg(feature = "sparql")]
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
+use either::Either;
 #[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::Object;
@@ -35,7 +36,7 @@ pub trait Validator<RDF: NeighsRDF + Debug> {
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError>;
+    ) -> Result<ValidationOutcome, ValidationError>;
 }
 // TODO - Move to crate::validator
 pub trait NativeValidator<RDF: NeighsRDF> {
@@ -49,7 +50,7 @@ pub trait NativeValidator<RDF: NeighsRDF> {
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError>;
+    ) -> Result<ValidationOutcome, ValidationError>;
 }
 // TODO - Move to crate::validator
 #[cfg(feature = "sparql")]
@@ -64,7 +65,7 @@ pub trait BasicSparqlValidator<RDF: QueryRDF + NeighsRDF + Debug> {
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError>;
+    ) -> Result<ValidationOutcome, ValidationError>;
 }
 
 macro_rules! impl_validators_via_validate {
@@ -83,7 +84,7 @@ macro_rules! impl_validators_via_validate {
                 source_shape: Option<&crate::ir::IRShape>,
                 maybe_path: Option<&rudof_rdf::rdf_core::SHACLPath>,
                 shapes_graph: &crate::ir::IRSchema,
-            ) -> Result<Vec<crate::validator::report::ValidationResult>, crate::validator::error::ValidationError> {
+            ) -> Result<crate::validator::report::ValidationOutcome, crate::validator::error::ValidationError> {
                 self.validate(
                     component,
                     shape,
@@ -112,7 +113,7 @@ macro_rules! impl_validators_via_validate {
                 source_shape: Option<&crate::ir::IRShape>,
                 maybe_path: Option<&rudof_rdf::rdf_core::SHACLPath>,
                 shapes_graph: &crate::ir::IRSchema,
-            ) -> Result<Vec<crate::validator::report::ValidationResult>, crate::validator::error::ValidationError> {
+            ) -> Result<crate::validator::report::ValidationOutcome, crate::validator::error::ValidationError> {
                 self.validate(
                     component,
                     shape,
@@ -253,34 +254,46 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
     evaluator: impl Fn(&I::Item) -> Result<bool, ValidationError>,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ValidationError> {
-    let results = strategy
+) -> Result<ValidationOutcome, ValidationError> {
+    let outcome = strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
             let focus = S::term_as_object(focus_node).ok()?;
-            let component = Object::iri(component.into());
+            let component_obj = Object::iri(component.into());
             let shape_id = shape.id();
             let source = Some(shape_id);
             let value = strategy.to_object(item);
-            let mut msg = MessageMap::from(msg);
-            if let Some(m) = shape.message() {
-                msg = msg.merge(m.to_owned(), true);
-            }
-            if let Ok(condition) = evaluator(item)
-                && condition
-            {
-                return Some(
-                    ValidationResult::new(focus, component, shape.severity().clone())
+
+            let condition = evaluator(item).ok()?;
+            if condition {
+                let mut msg = MessageMap::from(msg);
+                if let Some(m) = shape.message() {
+                    msg = msg.merge(m.to_owned(), true);
+                }
+                Some(Either::Left(
+                    ValidationResult::new(focus, component_obj, shape.severity().clone())
                         .with_source(source.cloned())
                         .with_message(msg)
                         .with_path(maybe_path.cloned())
                         .with_value(value),
-                );
+                ))
+            } else {
+                Some(Either::Right(
+                    Evidence::new(focus, component_obj)
+                        .with_source(source.cloned())
+                        .with_path(maybe_path.cloned())
+                        .with_value(value),
+                ))
             }
-            None
         })
-        .collect();
-    Ok(results)
+        .fold(ValidationOutcome::new(), |mut acc, item| {
+            match item {
+                Either::Left(violation) => acc.push_violation(violation),
+                Either::Right(evidence) => acc.push_evidence(evidence),
+            }
+            acc
+        });
+    Ok(outcome)
 }
 
 // TODO - Extract common logic with above fn?
@@ -292,30 +305,41 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
     evaluator: impl Fn(&S::Term, &I::Item) -> Result<bool, ValidationError>,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ValidationError> {
-    let results = strategy
+) -> Result<ValidationOutcome, ValidationError> {
+    let outcome = strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
             let focus = S::term_as_object(focus_node).ok()?;
-            let component = Object::iri(component.into());
+            let component_obj = Object::iri(component.into());
             let shape_id = shape.id();
             let source = Some(shape_id);
             let value = strategy.to_object(item);
             match evaluator(focus_node, item) {
-                Ok(true) => Some(
-                    ValidationResult::new(focus, component, shape.severity().clone())
+                Ok(true) => Some(Either::Left(
+                    ValidationResult::new(focus, component_obj, shape.severity().clone())
                         .with_source(source.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_value(value),
-                ),
-                Ok(false) => None,
+                )),
+                Ok(false) => Some(Either::Right(
+                    Evidence::new(focus, component_obj)
+                        .with_source(source.cloned())
+                        .with_path(maybe_path.cloned())
+                        .with_value(value),
+                )),
                 Err(_) => None,
             }
         })
-        .collect();
+        .fold(ValidationOutcome::new(), |mut acc, item| {
+            match item {
+                Either::Left(violation) => acc.push_violation(violation),
+                Either::Right(evidence) => acc.push_evidence(evidence),
+            }
+            acc
+        });
 
-    Ok(results)
+    Ok(outcome)
 }
 
 /// Validate with a boolean evaluator. If the evaluator returns true, it means there is a violation
@@ -327,7 +351,7 @@ fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     evaluator: impl Fn(&I::Item) -> bool,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ValidationError> {
+) -> Result<ValidationOutcome, ValidationError> {
     apply(
         component,
         shape,
@@ -348,7 +372,7 @@ fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
     evaluator: impl Fn(&S::Term, &I::Item) -> bool,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ValidationError> {
+) -> Result<ValidationOutcome, ValidationError> {
     apply_with_focus(
         component,
         shape,
@@ -374,7 +398,7 @@ fn validate_ask_with_opt<S: QueryRDF>(
     eval_query: impl Fn(&S::Term) -> Option<String>,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ValidationError> {
+) -> Result<ValidationOutcome, ValidationError> {
     apply(
         component,
         shape,

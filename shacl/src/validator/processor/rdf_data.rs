@@ -1,4 +1,5 @@
 use crate::error::ValidationError;
+use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
@@ -21,10 +22,10 @@ impl ShaclProcessor<RdfData> for DataValidation {
         &self.data
     }
 
-    fn runner(mode: &ShaclValidationMode) -> Box<dyn Engine<RdfData>> {
+    fn runner(mode: &ShaclValidationMode, config: &ShaclConfig) -> Box<dyn Engine<RdfData>> {
         match mode {
-            ShaclValidationMode::Native => Box::new(NativeEngine::new()),
-            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
+            ShaclValidationMode::Native => Box::new(NativeEngine::new(config.recursion_semantics())),
+            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new(config.recursion_semantics())),
         }
     }
 

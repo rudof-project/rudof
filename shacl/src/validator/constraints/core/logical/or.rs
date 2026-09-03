@@ -6,7 +6,7 @@ use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::FocusNodes;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
@@ -22,8 +22,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
-        let mut validation_results = Vec::new();
+    ) -> Result<ValidationOutcome, ValidationError> {
+        let mut outcome = ValidationOutcome::new();
         let component = Object::iri(component.into());
 
         for (fnode, nodes) in value_nodes.iter() {
@@ -34,24 +34,30 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                 for idx in self.shapes().iter() {
                     let or_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results = or_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    if inner_results?.is_empty() {
+                    if inner_results?.conforms() {
                         conforms = true;
                         break;
                     }
                 }
-                if !conforms {
-                    let node_obj = S::term_as_object(node).ok();
+                let node_obj = S::term_as_object(node).ok();
+                if conforms {
+                    let ev = Evidence::new(fnode_obj.clone(), component.clone())
+                        .with_path(maybe_path.cloned())
+                        .with_value(node_obj)
+                        .with_source(Some(shape.id().clone()));
+                    outcome.push_evidence(ev);
+                } else {
                     let msg = "OR not satisfied".to_string();
                     let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj)
                         .with_source(Some(shape.id().clone()));
-                    validation_results.push(vr);
+                    outcome.push_violation(vr);
                 }
             }
         }
 
-        Ok(validation_results)
+        Ok(outcome)
     }
 }

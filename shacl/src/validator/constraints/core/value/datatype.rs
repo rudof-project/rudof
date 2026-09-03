@@ -5,7 +5,7 @@ use crate::validator::constraints::{Validator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::ValidationOutcome;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Literal};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
@@ -21,7 +21,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Datatype {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         validate_with(
             component,
             shape,

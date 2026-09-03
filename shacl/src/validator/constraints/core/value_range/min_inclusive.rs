@@ -5,7 +5,7 @@ use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::ValidationOutcome;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 
@@ -29,7 +29,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinInclusive {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         validate_with(
             component,
             shape,
@@ -57,10 +57,10 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MinI
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let threshold = match object_as_sparql(&Object::literal(self.min_inclusive().clone())) {
             Some(s) => s,
-            None => return Ok(Vec::new()),
+            None => return Ok(ValidationOutcome::new()),
         };
 
         let query_fn = |vn: &S::Term| -> Option<String> {

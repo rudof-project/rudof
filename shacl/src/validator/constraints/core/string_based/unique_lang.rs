@@ -5,7 +5,7 @@ use crate::types::MessageMap;
 use crate::validator::constraints::Validator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::Literal;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
@@ -23,13 +23,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         // If unique_lang is not activated, just return without any check
         if !self.unique_lang() {
             return Ok(Default::default());
         }
 
-        let mut validation_results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
         let component = Object::iri(component.into());
 
         // Collect langs
@@ -44,9 +44,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                 }
             }
 
+            let mut had_duplicate = false;
             for (k, v) in langs_map {
                 if v.len() > 1 {
                     // If there are multiple nodes with the same language, report a violation
+                    had_duplicate = true;
                     let msg = format!(
                         "Unique lang failed for lang {k} with values: {}",
                         v.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", ")
@@ -55,11 +57,18 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                         .with_path(maybe_path.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_source(Some(shape.id().clone()));
-                    validation_results.push(vr);
+                    outcome.push_violation(vr);
                 }
+            }
+
+            if !had_duplicate {
+                let ev = Evidence::new(fnode_obj, component.clone())
+                    .with_path(maybe_path.cloned())
+                    .with_source(Some(shape.id().clone()));
+                outcome.push_evidence(ev);
             }
         }
 
-        Ok(validation_results)
+        Ok(outcome)
     }
 }

@@ -806,3 +806,88 @@ fn test_validate_multiple_violations() {
         result
     );
 }
+
+/// Loads a fixed schema/data pair (one conforming node, one violating node)
+/// under the given `ShaclConfig`, returning the resulting report.
+fn validate_with_shacl_config(config: shacl::validator::ShaclConfig) -> shacl::validator::report::ValidationReport {
+    let mut rudof = Rudof::new(RudofConfig::default().with_shacl(config));
+
+    let schema = InputSpec::str(
+        r#"
+        @prefix ex: <http://example.org/> .
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+        ex:PersonShape
+            a sh:NodeShape ;
+            sh:targetClass ex:Person ;
+            sh:property [
+                sh:path ex:name ;
+                sh:datatype xsd:string ;
+                sh:minCount 1 ;
+            ] .
+        "#,
+    );
+    load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
+
+    let data = InputSpec::str(
+        r#"
+        @prefix ex: <http://example.org/> .
+
+        ex:Alice a ex:Person ; ex:name "Alice" .
+        ex:Bob a ex:Person .
+        "#,
+    );
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        None,
+        None,
+        None,
+        None,
+        None,
+        EndpointStrategy::default(),
+    )
+    .unwrap();
+
+    validate_shacl(&mut rudof, None).unwrap();
+    rudof.shacl_validation_results.unwrap()
+}
+
+#[test]
+fn errors_only_mode_is_the_default_behavior() {
+    let report = validate_with_shacl_config(shacl::validator::ShaclConfig::default());
+    assert!(!report.conforms());
+    assert_eq!(report.results().len(), 1);
+    assert!(report.evidences().is_empty());
+}
+
+#[test]
+fn boolean_only_mode_keeps_neither_errors_nor_evidences() {
+    let config = shacl::validator::ShaclConfig::default().with_store_errors(false);
+    let report = validate_with_shacl_config(config);
+    assert!(!report.conforms());
+    assert!(report.results().is_empty());
+    assert!(report.evidences().is_empty());
+}
+
+#[test]
+fn evidences_only_mode_keeps_evidences_but_not_errors() {
+    let config = shacl::validator::ShaclConfig::default()
+        .with_store_errors(false)
+        .with_store_evidences(true);
+    let report = validate_with_shacl_config(config);
+    assert!(!report.conforms());
+    assert!(report.results().is_empty());
+    assert!(!report.evidences().is_empty());
+}
+
+#[test]
+fn errors_and_evidences_mode_keeps_both() {
+    let config = shacl::validator::ShaclConfig::default().with_store_evidences(true);
+    let report = validate_with_shacl_config(config);
+    assert!(!report.conforms());
+    assert_eq!(report.results().len(), 1);
+    assert!(!report.evidences().is_empty());
+}

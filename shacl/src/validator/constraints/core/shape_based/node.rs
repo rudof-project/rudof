@@ -5,7 +5,7 @@ use crate::types::MessageMap;
 use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
@@ -21,8 +21,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
-        let mut validation_results = Vec::new();
+    ) -> Result<ValidationOutcome, ValidationError> {
+        let mut outcome = ValidationOutcome::new();
         let shape_idx = self.shape();
         let node_shape = shapes_graph.get_shape_from_idx_e(shape_idx)?;
         let component_obj = Object::iri(component.into());
@@ -35,13 +35,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
 
                 let had_violations = if engine.has_validated(&node_object, *shape_idx) {
                     engine
-                        .get_cached_results(&node_object, *shape_idx)
-                        .map(|r| !r.is_empty())
+                        .get_cached_outcome(&node_object, *shape_idx)
+                        .map(|r| !r.conforms())
                         .unwrap_or(false)
                 } else {
                     let inner_results =
                         node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    !inner_results?.is_empty()
+                    !inner_results?.conforms()
                 };
 
                 if had_violations {
@@ -54,11 +54,17 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                         .with_message(MessageMap::from(msg))
                         .with_value(Some(node_object.clone()))
                         .with_source(Some(shape.id().clone()));
-                    validation_results.push(vr);
+                    outcome.push_violation(vr);
+                } else {
+                    let ev = Evidence::new(fnode_obj.clone(), component_obj.clone())
+                        .with_path(maybe_path.cloned())
+                        .with_value(Some(node_object.clone()))
+                        .with_source(Some(shape.id().clone()));
+                    outcome.push_evidence(ev);
                 }
             }
         }
 
-        Ok(validation_results)
+        Ok(outcome)
     }
 }

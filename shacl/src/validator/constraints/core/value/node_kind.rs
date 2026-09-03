@@ -6,7 +6,7 @@ use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::ValidationOutcome;
 use rudof_rdf::rdf_core::term::Term;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
@@ -30,7 +30,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let nk_fn = |vn: &S::Term| {
             match (vn.is_blank_node(), vn.is_iri(), vn.is_literal()) {
                 (true, false, false) => matches!(
@@ -77,7 +77,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Node
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let allowed_iri = matches!(
             self.node_kind(),
             NodeKind::Iri | NodeKind::BNodeOrIri | NodeKind::IriOrLit

@@ -7,7 +7,7 @@ use crate::validator::constraints::BasicSparqlValidator;
 use crate::validator::constraints::NativeValidator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 #[cfg(feature = "sparql")]
 use indoc::formatdoc;
 #[cfg(feature = "sparql")]
@@ -27,8 +27,8 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
-        let mut validation_results = Vec::new();
+    ) -> Result<ValidationOutcome, ValidationError> {
+        let mut outcome = ValidationOutcome::new();
         let component = Object::Iri(component.into());
 
         for (fnode, nodes) in value_nodes.iter() {
@@ -53,8 +53,8 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
                                 _ => None,
                             };
 
+                            let node_obj = S::term_as_object(value).ok();
                             if let Some(msg) = msg {
-                                let node_obj = S::term_as_object(value).ok();
                                 let vr = ValidationResult::new(
                                     fnode_obj.clone(),
                                     component.clone(),
@@ -64,7 +64,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
                                 .with_path(maybe_path.cloned())
                                 .with_source(Some(shape.id().clone()))
                                 .with_value(node_obj);
-                                validation_results.push(vr);
+                                outcome.push_violation(vr);
+                            } else {
+                                let ev = Evidence::new(fnode_obj.clone(), component.clone())
+                                    .with_path(maybe_path.cloned())
+                                    .with_source(Some(shape.id().clone()))
+                                    .with_value(node_obj);
+                                outcome.push_evidence(ev);
                             }
                         }
                     }
@@ -78,12 +84,12 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
                         .with_path(maybe_path.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_source(Some(shape.id().clone()));
-                    validation_results.push(vr);
+                    outcome.push_violation(vr);
                 },
             }
         }
 
-        Ok(validation_results)
+        Ok(outcome)
     }
 }
 
@@ -99,9 +105,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Less
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let component_obj = Object::iri(component.into());
-        let mut results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
 
         for (fnode, nodes) in value_nodes.iter() {
             let fnode_obj = S::term_as_object(fnode)?;
@@ -123,7 +129,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Less
                     .map_err(ValidationError::select_query_error::<S>)?;
 
                 let value = S::term_as_object(vn).ok();
+                let mut any_violation = false;
                 for _ in solutions.iter() {
+                    any_violation = true;
                     let msg = format!(
                         "LessThan constraint violated for property {}: value is not strictly less than every comparator",
                         self.iri()
@@ -133,11 +141,18 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Less
                         .with_path(maybe_path.cloned())
                         .with_value(value.clone())
                         .with_message(MessageMap::from(msg));
-                    results.push(vr);
+                    outcome.push_violation(vr);
+                }
+                if !any_violation {
+                    let ev = Evidence::new(fnode_obj.clone(), component_obj.clone())
+                        .with_source(Some(shape.id().clone()))
+                        .with_path(maybe_path.cloned())
+                        .with_value(value);
+                    outcome.push_evidence(ev);
                 }
             }
         }
 
-        Ok(results)
+        Ok(outcome)
     }
 }

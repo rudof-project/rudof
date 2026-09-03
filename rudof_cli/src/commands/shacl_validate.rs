@@ -34,6 +34,25 @@ impl Command for ShaclValidateCommand {
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
 
+        // Only override the config's store_errors/store_evidences/recursion_semantics
+        // flags when the corresponding CLI flag is explicitly passed, so the
+        // defaults (errors kept, evidence not, cautious/LFP) survive otherwise.
+        if self.args.no_errors || self.args.with_evidences || self.args.recursion_semantics.is_some() {
+            let mut cfg = ctx.rudof.config().execute().clone();
+            let mut sc = cfg.shacl().clone();
+            if self.args.no_errors {
+                sc = sc.with_store_errors(false);
+            }
+            if self.args.with_evidences {
+                sc = sc.with_store_evidences(true);
+            }
+            if let Some(semantics) = self.args.recursion_semantics {
+                sc = sc.with_recursion_semantics(semantics.into());
+            }
+            cfg = cfg.with_shacl(sc);
+            ctx.rudof.update_config(cfg).execute();
+        }
+
         let backend = resolve_backend(&self.args.common);
         let has_data_source =
             !self.args.data.is_empty() || matches!(backend, BackendSpec::Endpoint(_) | BackendSpec::Lbug);

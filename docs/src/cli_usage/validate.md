@@ -19,7 +19,7 @@ Options:
           Schema used for validation, FILE, URI or - for stdin. If omitted, reuses the currently loaded schema
   -f, --schema-format <FORMAT>
           Schema format
-          [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
+          [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads, plantuml, svg, png]
   -m, --shapemap <INPUT>
           ShapeMap used for validation, FILE, URI or - for stdin
       --shapemap-format <FORMAT>
@@ -41,7 +41,7 @@ Options:
           [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
       --max-steps <NUMBER>
           max steps to run during validation
-          [default: 100]
+          [default: 1000]
   -S, --shacl-mode <MODE>
           SHACL validation mode (default = native)
           [default: native] [possible values: native, sparql]
@@ -53,6 +53,15 @@ Options:
           [default: compact] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, compact, details, json, csv]
       --map-state <FILE>
           MapState file name
+      --show-intermediate-results
+          Print each (node, shape) result as soon as it's computed, instead of only the final report
+      --no-errors
+          SHACL only: don't retain violations in the validation report (default: violations are kept)
+      --with-evidences
+          SHACL only: also retain evidence for why (node, shape) pairs conform (default: not kept)
+      --recursion-semantics <MODE>
+          SHACL only: how to resolve a recursive (cyclic) shape reference
+          [possible values: cautious, brave]
   -c, --config-file <FILE>
           Config file name
   -o, --output-file <FILE>
@@ -67,7 +76,7 @@ Options:
           Print help
 ```
 
-`--schema` is optional: if you already loaded a schema in the same session (for example inside `rudof shell`), a bare `rudof validate` reuses it. See the [RDF backend (`--backend`) reference](./backend.md) for `--backend`/`--endpoint`.
+`--schema` is optional: if you already loaded a schema in the same session (for example inside `rudof shell`), a bare `rudof validate` reuses it. See the [RDF backend (`--backend`) reference](./backend.md) for `--backend`/`--endpoint`, and [recursive shapes](./shacl_validate.md#recursive-shapes) for `--recursion-semantics`.
 
 ## Tip: Changing the shapemap in the input
 

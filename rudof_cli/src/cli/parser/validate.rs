@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use crate::cli::parser::CommonArgsAll;
 use crate::cli::wrappers::{
-    DataFormatCli, DataReaderModeCli, ResultValidationFormatCli, ShExFormatCli, ShaclValidationModeCli,
-    ShapeMapFormatCli, ValidationModeCli, ValidationSortByModeCli,
+    DataFormatCli, DataReaderModeCli, RecursionSemanticsCli, ResultValidationFormatCli, ShExFormatCli,
+    ShaclValidationModeCli, ShapeMapFormatCli, ValidationModeCli, ValidationSortByModeCli,
 };
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -140,6 +140,29 @@ pub struct ValidateArgs {
         help = "Print each (node, shape) result as soon as it's computed, instead of only the final report"
     )]
     pub show_intermediate_results: bool,
+
+    #[arg(
+        long = "no-errors",
+        help = "SHACL only: don't retain violations in the validation report (default: violations are kept)"
+    )]
+    pub no_errors: bool,
+
+    #[arg(
+        long = "with-evidences",
+        help = "SHACL only: also retain evidence for why (node, shape) pairs conform (default: not kept)"
+    )]
+    pub with_evidences: bool,
+
+    #[arg(
+        long = "recursion-semantics",
+        value_name = "MODE",
+        ignore_case = true,
+        value_enum,
+        help = "SHACL only: how to resolve a recursive (cyclic) shape reference: `cautious` \
+                (default) assumes it does NOT conform unless proven otherwise; `brave` assumes \
+                it DOES conform as long as that's self-consistent"
+    )]
+    pub recursion_semantics: Option<RecursionSemanticsCli>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

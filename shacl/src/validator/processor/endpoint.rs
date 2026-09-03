@@ -1,4 +1,5 @@
 use crate::error::ValidationError;
+use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
@@ -25,10 +26,10 @@ impl ShaclProcessor<OxigraphEndpoint> for EndpointValidation {
         self.store.store()
     }
 
-    fn runner(mode: &ShaclValidationMode) -> Box<dyn Engine<OxigraphEndpoint>> {
+    fn runner(mode: &ShaclValidationMode, config: &ShaclConfig) -> Box<dyn Engine<OxigraphEndpoint>> {
         match mode {
-            ShaclValidationMode::Native => Box::new(NativeEngine::new()),
-            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
+            ShaclValidationMode::Native => Box::new(NativeEngine::new(config.recursion_semantics())),
+            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new(config.recursion_semantics())),
         }
     }
 }

@@ -5,7 +5,7 @@ use crate::types::MessageMap;
 use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
@@ -21,8 +21,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
-        let mut validation_results = Vec::new();
+    ) -> Result<ValidationOutcome, ValidationError> {
+        let mut outcome = ValidationOutcome::new();
         let component = Object::iri(component.into());
 
         for (fnode, nodes) in value_nodes.iter() {
@@ -35,13 +35,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                     let inner_results =
                         internal_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     if let Ok(results) = inner_results
-                        && results.is_empty()
+                        && results.conforms()
                     {
                         conforming_shapes += 1;
                     }
                 }
+                let node_obj = S::term_as_object(node).ok();
                 if conforming_shapes != 1 {
-                    let node_obj = S::term_as_object(node).ok();
                     let msg = format!(
                         "Shape {}: Xone constraint not satisfied for node {node}. Number of conforming shapes: {conforming_shapes}",
                         shape.id()
@@ -51,11 +51,17 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj)
                         .with_source(Some(shape.id().clone()));
-                    validation_results.push(vr);
+                    outcome.push_violation(vr);
+                } else {
+                    let ev = Evidence::new(fnode_obj.clone(), component.clone())
+                        .with_path(maybe_path.cloned())
+                        .with_value(node_obj)
+                        .with_source(Some(shape.id().clone()));
+                    outcome.push_evidence(ev);
                 }
             }
         }
 
-        Ok(validation_results)
+        Ok(outcome)
     }
 }

@@ -5,7 +5,7 @@ use crate::types::MessageMap;
 use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
@@ -23,10 +23,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         // TODO - It works but it returns duplicated validation results
         // I tried to use a HashSet but it still doesn't remove duplicates...
         let mut validation_results = HashSet::new();
+        let mut evidences = Vec::new();
 
         for (fnode, nodes) in value_nodes.iter() {
             let mut valid_counter = 0;
@@ -37,7 +38,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                 let qv_shape = shapes_graph.get_shape_from_idx_e(self.shape())?;
                 let inner_results = qv_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let mut is_valid = match inner_results {
-                    Ok(results) => results.is_empty(),
+                    Ok(results) => results.conforms(),
                     Err(_) => false,
                 };
 
@@ -47,7 +48,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                         let sibling_shape = shapes_graph.get_shape_from_idx_e(sibling)?;
                         let sibling_results =
                             sibling_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                        let sibling_is_valid = sibling_results.is_ok() && sibling_results.unwrap().is_empty();
+                        let sibling_is_valid = sibling_results.is_ok_and(|r| r.conforms());
                         if sibling_is_valid {
                             is_valid = false;
                             break;
@@ -60,37 +61,53 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                 }
             }
 
-            if let Some(min_count) = self.qualified_min_count()
-                && valid_counter < min_count
-            {
+            if let Some(min_count) = self.qualified_min_count() {
                 let component = Object::iri(ShaclVocab::sh_qualified_min_count_constraint_component());
-                let msg = format!(
-                    "QualifiedValueShape: only {valid_counter} nodes conform to shape {}, which is less than minCount: {min_count}. Focus node: {fnode}",
-                    shape.id()
-                );
-                let vr = ValidationResult::new(fnode_obj.clone(), component, shape.severity().clone())
-                    .with_message(MessageMap::from(msg))
-                    .with_path(maybe_path.cloned())
-                    .with_source(Some(shape.id().clone()));
-                validation_results.insert(vr);
+                if valid_counter < min_count {
+                    let msg = format!(
+                        "QualifiedValueShape: only {valid_counter} nodes conform to shape {}, which is less than minCount: {min_count}. Focus node: {fnode}",
+                        shape.id()
+                    );
+                    let vr = ValidationResult::new(fnode_obj.clone(), component, shape.severity().clone())
+                        .with_message(MessageMap::from(msg))
+                        .with_path(maybe_path.cloned())
+                        .with_source(Some(shape.id().clone()));
+                    validation_results.insert(vr);
+                } else {
+                    evidences.push(
+                        Evidence::new(fnode_obj.clone(), component)
+                            .with_path(maybe_path.cloned())
+                            .with_source(Some(shape.id().clone())),
+                    );
+                }
             }
 
-            if let Some(max_count) = self.qualified_max_count()
-                && valid_counter > max_count
-            {
+            if let Some(max_count) = self.qualified_max_count() {
                 let component = Object::iri(ShaclVocab::sh_qualified_max_count_constraint_component());
-                let msg = format!(
-                    "QualifiedValueShape: {valid_counter} nodes conform to shape {}, which is grater than maxCount: {max_count}. Focus node: {fnode}",
-                    shape.id()
-                );
-                let vr = ValidationResult::new(fnode_obj, component, shape.severity().clone())
-                    .with_path(maybe_path.cloned())
-                    .with_message(MessageMap::from(msg))
-                    .with_source(Some(shape.id().clone()));
-                validation_results.insert(vr);
+                if valid_counter > max_count {
+                    let msg = format!(
+                        "QualifiedValueShape: {valid_counter} nodes conform to shape {}, which is grater than maxCount: {max_count}. Focus node: {fnode}",
+                        shape.id()
+                    );
+                    let vr = ValidationResult::new(fnode_obj.clone(), component, shape.severity().clone())
+                        .with_path(maybe_path.cloned())
+                        .with_message(MessageMap::from(msg))
+                        .with_source(Some(shape.id().clone()));
+                    validation_results.insert(vr);
+                } else {
+                    evidences.push(
+                        Evidence::new(fnode_obj, component)
+                            .with_path(maybe_path.cloned())
+                            .with_source(Some(shape.id().clone())),
+                    );
+                }
             }
         }
 
-        Ok(validation_results.into_iter().collect())
+        let mut outcome = ValidationOutcome::from_violations(validation_results.into_iter().collect());
+        for ev in evidences {
+            outcome.push_evidence(ev);
+        }
+        Ok(outcome)
     }
 }

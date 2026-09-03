@@ -6,7 +6,7 @@ use crate::validator::constraints::BasicSparqlValidator;
 use crate::validator::constraints::NativeValidator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 #[cfg(feature = "sparql")]
 use indoc::formatdoc;
 #[cfg(feature = "sparql")]
@@ -27,9 +27,9 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let component_obj = Object::iri(component.into());
-        let mut results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
 
         for (fnode, nodes) in value_nodes.iter() {
             let subject = match S::term_as_subject(fnode) {
@@ -48,31 +48,39 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
             let nodes_set = nodes.iter().collect::<HashSet<_>>();
 
             let fnode_obj = S::term_as_object(fnode)?;
+            let mut any_violation = false;
 
             for pv in &prop_values {
                 if !nodes_set.contains(pv) {
+                    any_violation = true;
                     let value = S::term_as_object(pv).ok();
                     let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
-                    results.push(vr);
+                    outcome.push_violation(vr);
                 }
             }
 
             for vn in nodes.iter() {
                 if !prop_values.contains(vn) {
+                    any_violation = true;
                     let value = S::term_as_object(vn).ok();
                     let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
-                    results.push(vr);
+                    outcome.push_violation(vr);
                 }
+            }
+
+            if !any_violation {
+                let ev = Evidence::new(fnode_obj, component_obj.clone()).with_path(maybe_path.cloned());
+                outcome.push_evidence(ev);
             }
         }
 
-        Ok(results)
+        Ok(outcome)
     }
 }
 
@@ -88,9 +96,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Equa
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let component_obj = Object::iri(component.into());
-        let mut results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
 
         for (fnode, nodes) in value_nodes.iter() {
             let query = formatdoc! {"
@@ -108,30 +116,38 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Equa
 
             let nodes_set = nodes.iter().collect::<HashSet<_>>();
             let fnode_obj = S::term_as_object(fnode)?;
+            let mut any_violation = false;
 
             for pv in &prop_values {
                 if !nodes_set.contains(pv) {
+                    any_violation = true;
                     let value = S::term_as_object(pv).ok();
                     let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
-                    results.push(vr);
+                    outcome.push_violation(vr);
                 }
             }
 
             for vn in nodes.iter() {
                 if !prop_values.contains(vn) {
+                    any_violation = true;
                     let value = S::term_as_object(vn).ok();
                     let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
-                    results.push(vr);
+                    outcome.push_violation(vr);
                 }
+            }
+
+            if !any_violation {
+                let ev = Evidence::new(fnode_obj, component_obj.clone()).with_path(maybe_path.cloned());
+                outcome.push_evidence(ev);
             }
         }
 
-        Ok(results)
+        Ok(outcome)
     }
 }
