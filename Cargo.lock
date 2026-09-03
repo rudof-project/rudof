@@ -4192,6 +4192,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "rudof_typing"
+version = "0.3.16"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "rudof_viz"
 version = "0.3.16"
 dependencies = [
@@ -4829,6 +4836,7 @@ dependencies = [
 name = "shex_validation"
 version = "0.3.16"
 dependencies = [
+ "colored",
  "either",
  "indexmap 2.14.0",
  "itertools 0.14.0",
@@ -4837,6 +4845,7 @@ dependencies = [
  "rudof_config",
  "rudof_iri",
  "rudof_rdf",
+ "rudof_typing",
  "serde",
  "serde_json",
  "shex_ast",

@@ -13,6 +13,7 @@ repository.workspace = true
 #default = []
 
 [dependencies]
+colored.workspace = true
 either.workspace = true     # "1"
 indexmap.workspace = true   # { version = "2" }
 rudof_config.workspace = true
@@ -20,6 +21,7 @@ rudof_iri.workspace = true
 itertools.workspace = true
 prefixmap.workspace = true
 rbe.workspace = true
+rudof_typing.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shex_ast.workspace = true

@@ -7,6 +7,7 @@ use crate::ValidatorErrors;
 use crate::atom;
 use crate::no_match_reason::NoMatchReason;
 use crate::ref_typing::RefTyping;
+use crate::typing::{ObservableTyping, Typing, ValidationResult};
 use crate::validator_error::*;
 use either::Either;
 use indexmap::IndexSet;
@@ -43,7 +44,6 @@ type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
-type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
 
 #[derive(Debug, Clone)]
 pub struct Engine {
@@ -53,7 +53,7 @@ pub struct Engine {
     step_counter: usize,
     reasons: HashMap<PosAtom, Vec<Reason>>,
     errors: HashMap<NegAtom, Vec<ValidatorError>>,
-    typing: HashMap<(Node, ShapeLabelIdx), ValidationResult>,
+    typing: ObservableTyping,
     hyp_touched: bool,
 }
 
@@ -66,7 +66,7 @@ impl Engine {
             step_counter: 0,
             reasons: HashMap::new(),
             errors: HashMap::new(),
-            typing: HashMap::new(),
+            typing: ObservableTyping::new(config.typing_observer()),
             hyp_touched: false,
         }
     }
@@ -95,13 +95,26 @@ impl Engine {
                         continue;
                     }
                     let mut hyp = Vec::new();
-                    match self.prove(&node, &idx, &mut hyp, schema, rdf)? {
-                        Either::Right(reasons) => {
+                    match self.prove(&node, &idx, &mut hyp, schema, rdf) {
+                        Ok(Either::Right(reasons)) => {
                             self.add_checked_pos(atom, reasons);
                         },
-                        Either::Left(errors) => {
+                        Ok(Either::Left(errors)) => {
                             self.add_checked_neg(atom, errors);
                         },
+                        Err(ValidatorError::Cancelled { .. }) => {
+                            // Validation was interrupted: stop here and let the
+                            // caller see whatever was already proved. The
+                            // in-flight pair goes back to `pending` so it's
+                            // reported as `Pending` rather than lost.
+                            debug!(
+                                pending = self.pending.len() + 1,
+                                "ShEx validation cancelled; returning partial results"
+                            );
+                            self.pending.insert(atom);
+                            break;
+                        },
+                        Err(e) => return Err(e),
                     }
                 },
                 Atom::Neg((node, idx)) => {

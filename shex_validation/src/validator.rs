@@ -3,6 +3,7 @@ use crate::ValidatorConfig;
 use crate::atom;
 use crate::engine::Engine;
 use crate::validator_error::*;
+use colored::Color;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};
 use serde_json::Value;
@@ -14,6 +15,7 @@ use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ResultShapeMap;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::shapemap::query_shape_map::QueryShapeMap;
+use std::str::FromStr;
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -91,6 +93,29 @@ impl Validator {
         &self.schema
     }
 
+    /// The config to hand `Engine::new`: same as `self.config`, except that
+    /// when `show_intermediate_results` is on and no observer was installed
+    /// explicitly, a [`ConsoleTypingObserver`] is added, bound to the
+    /// prefixmaps available for *this* call — `schema`'s own prefixmap for
+    /// shape labels, and `maybe_nodes_prefixmap` (only known per-call, not
+    /// at construction time) for nodes.
+    fn engine_config(&self, schema: &SchemaIR, maybe_nodes_prefixmap: &Option<PrefixMap>) -> ValidatorConfig {
+        if self.config.show_intermediate_results() && self.config.typing_observer().is_none() {
+            let nodes_prefixmap = maybe_nodes_prefixmap.clone().unwrap_or_default();
+            let conformant_color = Color::from_str(self.config.conformant_color()).unwrap_or(Color::Green);
+            let non_conformant_color = Color::from_str(self.config.non_conformant_color()).unwrap_or(Color::Red);
+            let observer = crate::typing::ConsoleTypingObserver::new(
+                schema,
+                nodes_prefixmap,
+                conformant_color,
+                non_conformant_color,
+            );
+            self.config.clone().with_typing_observer(std::sync::Arc::new(observer))
+        } else {
+            self.config.clone()
+        }
+    }
+
     /// validate a node against a shape label
     pub fn validate_node_shape<S>(
         &mut self,
@@ -103,7 +128,7 @@ impl Validator {
     where
         S: NeighsRDF + QueryRDF,
     {
-        let mut engine = Engine::new(&self.config);
+        let mut engine = Engine::new(&self.engine_config(schema, maybe_nodes_prefixmap));
         let shape_expr_label: ShapeExprLabel = shape.into();
         let idx = self.get_shape_expr_label(&shape_expr_label, schema)?;
         engine.add_pending(node.clone(), idx);
@@ -131,7 +156,7 @@ impl Validator {
     where
         S: NeighsRDF + QueryRDF,
     {
-        let mut engine = Engine::new(&self.config);
+        let mut engine = Engine::new(&self.engine_config(schema, maybe_nodes_prefixmap));
 
         // Fill the engine's pending atoms with the node-shape pairs from the QueryShapeMap,
         // converting shape labels to indices and nodes to objects as needed.

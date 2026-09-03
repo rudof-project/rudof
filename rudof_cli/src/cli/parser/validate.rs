@@ -135,6 +135,12 @@ pub struct ValidateArgs {
     #[arg(long = "map-state", value_name = "FILE", help = "MapState file name")]
     pub map_state: Option<PathBuf>,
 
+    #[arg(
+        long = "show-intermediate-results",
+        help = "Print each (node, shape) result as soon as it's computed, instead of only the final report"
+    )]
+    pub show_intermediate_results: bool,
+
     #[command(flatten)]
     pub common: CommonArgsAll,
 }

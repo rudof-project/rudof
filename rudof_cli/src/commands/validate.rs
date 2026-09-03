@@ -50,6 +50,7 @@ impl ValidateCommand {
             strict_iris: false,
             external_resolvers: Vec::new(),
             list_external_resolvers: false,
+            show_intermediate_results: self.args.show_intermediate_results,
             common: self.args.common.clone(),
         })
     }

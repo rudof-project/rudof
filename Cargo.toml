@@ -23,6 +23,7 @@ members = [
     "shex_ast",
     "shex_testsuite",
     "shex_validation",
+    "rudof_typing",
     "sparql_service",
     "benchmarks/bench-shex",
     "benchmarks/bench-issue730",
@@ -334,6 +335,7 @@ rudof_cli = { version = "0.3.16", path = "./rudof_cli" }
 rudof_config = { version = "0.3.16", path = "./rudof_config" }
 rudof_iri = { version = "0.3.16", path = "./rudof_iri" }
 rudof_rdf = { version = "0.3.16", path = "./rudof_rdf", default-features = false }
+rudof_typing = { version = "0.3.16", path = "./rudof_typing" }
 rudof_viz = { version = "0.3.16", path = "./rudof_viz" }
 rudof_generate = { version = "0.3.16", path = "./rudof_generate" }
 rudof_lib = { version = "0.3.16", path = "./rudof_lib" }

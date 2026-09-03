@@ -6,6 +6,7 @@ use shex_ast::shapemap::ShapemapConfig;
 use std::sync::Arc;
 
 use crate::ShExConfig;
+use crate::typing::TypingObserver;
 
 /// This struct can be used to customize the behavour of ShEx validators
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,6 +43,31 @@ pub struct ValidatorConfig {
     /// [`Self::with_external_resolver`].
     #[serde(skip)]
     pub(crate) external_resolvers: ExternalShapeResolverRegistry,
+
+    /// Observer notified whenever the ShEx engine caches a newly-proved
+    /// `(node, shape)` result, for surfacing intermediate validation
+    /// progress to the caller. Cannot be loaded from TOML — install it
+    /// programmatically via [`Self::with_typing_observer`].
+    #[serde(skip)]
+    pub(crate) typing_observer: Option<Arc<TypingObserver>>,
+
+    /// Whether to print each `(node, shape)` result as soon as it's cached,
+    /// instead of only showing the final report (default: false). When set
+    /// and no [`Self::with_typing_observer`] was installed explicitly, the
+    /// validator installs a default console-printing observer.
+    #[serde(rename = "show_intermediate_results")]
+    pub(crate) show_intermediate_results: bool,
+
+    /// Color used to print "conformant" in intermediate results (default:
+    /// "green"). An unrecognized color name falls back to the default.
+    #[serde(rename = "conformant_color")]
+    pub(crate) conformant_color: String,
+
+    /// Color used to print "non-conformant" in intermediate results
+    /// (default: "red"). An unrecognized color name falls back to the
+    /// default.
+    #[serde(rename = "non_conformant_color")]
+    pub(crate) non_conformant_color: String,
 }
 
 impl PartialEq for ValidatorConfig {
@@ -52,6 +78,9 @@ impl PartialEq for ValidatorConfig {
             && self.shapemap == other.shapemap
             && self.check_negation_requirement == other.check_negation_requirement
             && self.width == other.width
+            && self.show_intermediate_results == other.show_intermediate_results
+            && self.conformant_color == other.conformant_color
+            && self.non_conformant_color == other.non_conformant_color
     }
 }
 
@@ -65,6 +94,10 @@ impl ValidatorConfig {
             shapemap: Self::default_shapemap(),
             check_negation_requirement: Self::default_check_negation_requirement(),
             external_resolvers: ExternalShapeResolverRegistry::default(),
+            typing_observer: None,
+            show_intermediate_results: Self::default_show_intermediate_results(),
+            conformant_color: Self::default_conformant_color(),
+            non_conformant_color: Self::default_non_conformant_color(),
         }
     }
 
@@ -114,6 +147,29 @@ impl ValidatorConfig {
         self.external_resolvers = std::mem::take(&mut self.external_resolvers).with_resolver_arc(r);
         self
     }
+
+    /// Install an observer notified on every newly-cached `(node, shape)`
+    /// validation result. Returns the updated config for builder-style
+    /// chaining.
+    pub fn with_typing_observer(mut self, observer: Arc<TypingObserver>) -> Self {
+        self.typing_observer = Some(observer);
+        self
+    }
+
+    pub fn with_show_intermediate_results(mut self, flag: bool) -> Self {
+        self.show_intermediate_results = flag;
+        self
+    }
+
+    pub fn with_conformant_color(mut self, color: impl Into<String>) -> Self {
+        self.conformant_color = color.into();
+        self
+    }
+
+    pub fn with_non_conformant_color(mut self, color: impl Into<String>) -> Self {
+        self.non_conformant_color = color.into();
+        self
+    }
 }
 
 impl ValidatorConfig {
@@ -144,6 +200,22 @@ impl ValidatorConfig {
     pub fn external_resolvers(&self) -> &ExternalShapeResolverRegistry {
         &self.external_resolvers
     }
+
+    pub fn typing_observer(&self) -> Option<Arc<TypingObserver>> {
+        self.typing_observer.clone()
+    }
+
+    pub fn show_intermediate_results(&self) -> bool {
+        self.show_intermediate_results
+    }
+
+    pub fn conformant_color(&self) -> &str {
+        &self.conformant_color
+    }
+
+    pub fn non_conformant_color(&self) -> &str {
+        &self.non_conformant_color
+    }
 }
 
 /// Serde stuff
@@ -156,6 +228,9 @@ impl ValidatorConfig {
     #[inline] fn default_shapemap() -> ShapemapConfig { ShapemapConfig::new() }
     #[inline] fn default_check_negation_requirement() -> bool { true }
     #[inline] fn default_width() -> usize { 80 }
+    #[inline] fn default_show_intermediate_results() -> bool { false }
+    #[inline] fn default_conformant_color() -> String { "green".to_string() }
+    #[inline] fn default_non_conformant_color() -> String { "red".to_string() }
 }
 
 impl Default for ValidatorConfig {
@@ -179,6 +254,24 @@ mod tests {
             ValidatorConfig::default_check_negation_requirement()
         );
         assert_eq!(c.width(), ValidatorConfig::default_width());
+        assert!(!c.show_intermediate_results());
+        assert_eq!(c.conformant_color(), "green");
+        assert_eq!(c.non_conformant_color(), "red");
+    }
+
+    #[test]
+    fn toml_configures_intermediate_results_and_colors() {
+        let c: ValidatorConfig = toml::from_str(
+            r#"
+            show_intermediate_results = true
+            conformant_color = "cyan"
+            non_conformant_color = "magenta"
+        "#,
+        )
+        .unwrap();
+        assert!(c.show_intermediate_results());
+        assert_eq!(c.conformant_color(), "cyan");
+        assert_eq!(c.non_conformant_color(), "magenta");
     }
 
     #[test]

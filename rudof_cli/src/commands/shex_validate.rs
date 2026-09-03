@@ -58,7 +58,11 @@ impl Command for ShexValidateCommand {
         // dependencies instead of failing fast.
         {
             let mut cfg = ctx.rudof.config().execute().clone();
-            let vc = cfg.shex_validator().clone().with_max_steps(Some(self.args.max_steps));
+            let vc = cfg
+                .shex_validator()
+                .clone()
+                .with_max_steps(Some(self.args.max_steps))
+                .with_show_intermediate_results(self.args.show_intermediate_results);
             cfg = cfg.with_shex_validator(vc);
             ctx.rudof.update_config(cfg).execute();
         }
