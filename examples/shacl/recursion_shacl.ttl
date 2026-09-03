@@ -27,3 +27,6 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 
 :d a :Person ;
    :name  23      .  # Should fail
+
+:e a :Person ;
+   :name  "Emily" .

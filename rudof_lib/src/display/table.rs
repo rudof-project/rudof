@@ -27,8 +27,17 @@ impl Table for ValidationReport {
         colored: Option<bool>,
         terminal_width: Option<usize>,
     ) -> Result<(), Error> {
-        if self.results().is_empty() {
-            return write!(writer, "No Errors found");
+        if self.results().is_empty() && self.evidences().is_empty() {
+            return if self.conforms() {
+                write!(writer, "No Errors found")
+            } else {
+                // `store_errors = false`: the data doesn't conform, but no
+                // per-violation detail was kept to show in a table.
+                write!(
+                    writer,
+                    "Does not conform (violation details were not retained; set store_errors = true to see them)"
+                )
+            };
         }
 
         let detailed = detailed.unwrap_or(false);
@@ -36,15 +45,7 @@ impl Table for ValidationReport {
         let colored = colored.unwrap_or(false);
 
         let mut builder = Builder::default();
-        let mut header = vec![
-            "Severity",
-            "Node",
-            "Component",
-            "Path",
-            "Value",
-            "Source shape",
-            "Details",
-        ];
+        let mut header = vec!["Severity", "Node", "Component", "Path", "Value", "Source shape"];
         if detailed {
             header.push("Details");
         }
@@ -68,22 +69,52 @@ impl Table for ValidationReport {
             let path = self.nodes_prefixmap().show(&result.path());
             let source = self.nodes_prefixmap().show(&result.source());
             let value = self.nodes_prefixmap().show(&result.value());
-            let details: String;
 
-            let mut record = vec![&severity, &node, &component, &path, &value, &source];
+            let mut record = vec![severity, node, component, path, value, source];
 
             if detailed {
-                details = result
+                let details = result
                     .message()
                     .iter()
                     .fold(String::new(), |acc, (lang, msg)| match lang {
                         None => format!("{}- {}\n", acc, msg),
                         Some(lang) => format!("{}- {}: {}\n", acc, lang, msg),
                     });
-                record.push(&details);
+                record.push(details);
             }
             builder.push_record(record);
         }
+
+        // Nodes/shapes that conform, shown alongside the violations so a
+        // report with `store_evidences` enabled tells the full story in one
+        // table — marked "Conforms" in green rather than a real severity,
+        // since evidence isn't a violation.
+        for evidence in self.evidences() {
+            let status_str = "Conforms";
+            let status = match colored {
+                true => status_str.green(),
+                false => ColoredString::from(status_str),
+            }
+            .to_string();
+            let node = self.nodes_prefixmap().show(evidence.focus_node());
+            let component = self.nodes_prefixmap().show(evidence.constraint_component());
+            let path = self.nodes_prefixmap().show(&evidence.path());
+            let source = self.nodes_prefixmap().show(&evidence.source());
+            let value = self.nodes_prefixmap().show(&evidence.value());
+
+            let mut record = vec![status, node, component.clone(), path, value, source];
+
+            if detailed {
+                let details = format!("- {component} satisfied\n");
+                let details = match colored {
+                    true => details.green().to_string(),
+                    false => details,
+                };
+                record.push(details);
+            }
+            builder.push_record(record);
+        }
+
         let table = builder
             .build()
             .with(Style::modern_rounded())

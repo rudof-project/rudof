@@ -10,7 +10,7 @@ mod result;
 mod sorting;
 
 use crate::error::ValidationError;
-pub use evidence::Evidence;
+pub use evidence::{Evidence, EvidenceKind};
 pub use outcome::ValidationOutcome;
 pub use result::ValidationResult;
 use rudof_rdf::rdf_core::term::Object;

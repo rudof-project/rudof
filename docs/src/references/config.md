@@ -281,17 +281,20 @@ copy of `[rdf]`, which is always overwritten by the top-level `[rdf]` on resolve
 |---|---|---|---|
 | `store_errors` | boolean | `true` | Keep violations in the `ValidationReport` returned by validation. Turning this off still computes conformance correctly — `conforms` stays accurate — it just omits the per-violation detail, which is cheaper to carry around when you only need the boolean. |
 | `store_evidences` | boolean | `false` | Also keep evidence for *why* each `(node, shape)` pair conforms, not just why it fails. Off by default since most validation runs only care about violations. |
-| `recursion_semantics` | `"cautious"` \| `"brave"` | `"cautious"` | How to resolve a shape that (directly or transitively) references itself, for the data instances where that reference actually forms a cycle. `cautious` assumes a node caught in such a cycle does **not** conform unless that can be shown without relying on the cycle; `brave` assumes it **does** conform as long as that assumption is self-consistent. Only recursion through monotonic constructs (`sh:and`, `sh:or`, `sh:node`, `sh:property`, `sh:minCount`, `sh:closed`, ...) is guaranteed sound either way — a schema whose only cycles go through negation (`sh:not`, `sh:xone`, `sh:qualifiedMaxCount`, `sh:qualifiedValueShapesDisjoint`) is rejected before validation even starts. |
+| `evidence_shapes_only` | boolean | `false` | When `store_evidences` is on, keep only the per-shape summary evidence (one per conforming `(node, shape)` pair with its own targets, e.g. "conforms to `:PersonShape`") and drop the finer per-constraint-component evidence (`sh:datatype`, `sh:minCount`, ...). No effect when `store_evidences` is off. |
+| `recursion_semantics` | `"none"` \| `"cautious"` \| `"brave"` | `"cautious"` | Whether a shape that (directly or transitively) references itself is accepted at all, and if so, how a cycle in the data is resolved. `none` rejects the shapes graph outright — a schema-loading error — the moment it contains such a cycle, regardless of the data. `cautious` (the default) accepts it and assumes a node caught in a cycle does **not** conform unless that can be shown without relying on the cycle; `brave` accepts it and assumes it **does** conform as long as that assumption is self-consistent. Only recursion through monotonic constructs (`sh:and`, `sh:or`, `sh:node`, `sh:property`, `sh:minCount`, `sh:closed`, ...) is guaranteed sound under `cautious`/`brave` — a schema whose only cycles go through negation (`sh:not`, `sh:xone`, `sh:qualifiedMaxCount`, `sh:qualifiedValueShapesDisjoint`) is always rejected, regardless of this setting. |
 
-These three keys only affect what the *report* contains and how a cyclic shape reference is
-resolved — a shape with no cycles in it validates identically regardless of
-`recursion_semantics`, and `store_errors`/`store_evidences` never change whether the data
-conforms, only what detail comes back.
+`store_errors`/`store_evidences`/`evidence_shapes_only` only affect what the *report*
+contains, never whether the data conforms. `recursion_semantics` is different: setting it to
+`none` turns what would otherwise load and validate successfully back into a hard error (any
+cyclic shape reference) — and for a shape with no cycles in it, this setting has no effect at
+all.
 
 ```toml
 [shacl]
 store_errors = true
 store_evidences = false
+evidence_shapes_only = false
 recursion_semantics = "cautious"
 ```
 

@@ -111,13 +111,23 @@ pub struct ShaclValidateArgs {
     pub with_evidences: bool,
 
     #[arg(
+        long = "evidences-shapes-only",
+        help = "With --with-evidences: keep only the per-shape summary (e.g. \"conforms to \
+                :PersonShape\"), dropping the finer per-constraint-component evidence \
+                (default: keep everything). No effect without --with-evidences."
+    )]
+    pub evidences_shapes_only: bool,
+
+    #[arg(
         long = "recursion-semantics",
         value_name = "MODE",
         ignore_case = true,
         value_enum,
-        help = "How to resolve a recursive (cyclic) shape reference: `cautious` (default) \
-                assumes it does NOT conform unless proven otherwise; `brave` assumes it DOES \
-                conform as long as that's self-consistent"
+        help = "Whether to accept a shapes graph with a recursive (cyclic) shape reference, and \
+                how to resolve it: `cautious` (default) accepts it and assumes a node caught in \
+                the cycle does NOT conform unless proven otherwise; `brave` accepts it and \
+                assumes such a node DOES conform as long as that's self-consistent; `none` \
+                rejects it outright"
     )]
     pub recursion_semantics: Option<RecursionSemanticsCli>,
 

@@ -5,6 +5,7 @@ use crate::ir::error::IRError;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::rdf::ShaclParser;
+use crate::validator::RecursionSemantics;
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
@@ -207,7 +208,17 @@ impl IRSchema {
         ids.into_iter().map(|id| self.register_shape(&id, None, ast)).collect()
     }
 
+    /// Compiles with [`RecursionSemantics::default`] — i.e. a shapes graph
+    /// with a cyclic shape reference is rejected. Use
+    /// [`Self::compile_with_recursion`] to opt into accepting one.
     pub fn compile(ast: &ASTSchema) -> Result<Self, IRError> {
+        Self::compile_with_recursion(ast, RecursionSemantics::default())
+    }
+
+    /// Compiles a shapes graph, controlling whether a cyclic shape
+    /// reference is accepted and, if so, how it's resolved at validation
+    /// time. See [`RecursionSemantics`].
+    pub fn compile_with_recursion(ast: &ASTSchema, recursion_semantics: RecursionSemantics) -> Result<Self, IRError> {
         let mut schema_ir = Self::new(ast.prefixmap().clone()).with_base(ast.base().cloned());
 
         for (id, shape) in ast.iter() {
@@ -223,7 +234,13 @@ impl IRSchema {
             warn!(
                 "More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion"
             );
-            if schema_ir.dependency_graph.has_neg_cycle() {
+            let has_neg_cycle = schema_ir.dependency_graph.has_neg_cycle();
+            // Negative (stratified) recursion through `sh:not`/`sh:xone`/etc.
+            // isn't supported yet regardless of `recursion_semantics`; a
+            // purely positive cycle is only accepted if the caller opted in
+            // (`RecursionSemantics::Cautious`/`Brave`) — see
+            // `crate::validator::recursion`.
+            if has_neg_cycle || !recursion_semantics.allows_recursion() {
                 let cycles: Vec<Vec<Object>> = schema_ir
                     .dependency_graph
                     .cycles()
@@ -242,17 +259,17 @@ impl IRSchema {
                             .collect()
                     })
                     .collect();
+                if has_neg_cycle {
+                    warn!(
+                        "Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation"
+                    );
+                    return Err(IRError::DependencyGraphHasNegativeCycles { cycles });
+                }
                 warn!(
-                    "Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation"
+                    "Recursive shapes are disabled (recursion_semantics = none): rejecting the cyclic schema. Set recursion_semantics to \"cautious\" or \"brave\" to allow it."
                 );
-                return Err(IRError::DependencyGraphHasNegativeCycles { cycles });
+                return Err(IRError::DependencyGraphHasCycles { cycles });
             }
-            // A purely positive cycle: allowed. The validator cuts it at
-            // runtime instead of recursing forever, using the configured
-            // `RecursionSemantics` (cautious/LFP or brave/GFP) — see
-            // `crate::validator::recursion`. Negative (stratified) recursion
-            // through `sh:not`/`sh:xone`/etc. is not yet supported and is
-            // rejected above.
             warn!("The cycle is purely positive: validation will handle it via the configured recursion semantics.");
         }
 

@@ -48,7 +48,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let mut validator: DataValidation = rdf.clone().into();
         let schema = ShaclParser::new(rdf).parse().unwrap();
-        let schema_ir: IRSchema = schema.try_into().unwrap();
+        let schema_ir = IRSchema::compile_with_recursion(&schema, config.recursion_semantics()).unwrap();
         validator
             .validate(&schema_ir, &ShaclValidationMode::Native, config)
             .unwrap()
@@ -97,6 +97,59 @@ prefix : <http://example.org/>
                 .iter()
                 .any(|e| e.focus_node().to_string().contains("ok"))
         );
+    }
+
+    #[test]
+    fn shape_level_evidence_is_recorded_even_when_no_sub_constraint_evidence_fires() {
+        // `:e` has no `:knows` value at all, so the Node component's
+        // per-value iteration never runs and produces no evidence of its
+        // own — but `:e` still fully conforms to `:PersonShape` (the
+        // property is optional, no sh:minCount), and that should be
+        // visible as its own evidence, not silently absent.
+        let graph = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:PersonShape a sh:NodeShape ;
+  sh:targetClass :Person ;
+  sh:property [ sh:path :knows ; sh:node :PersonShape ] .
+
+:e a :Person .
+"#;
+        let config = ShaclConfig::default().with_store_evidences(true);
+        let report = validate_with_config(graph, &config);
+        assert!(report.conforms());
+        assert!(
+            report
+                .evidences()
+                .iter()
+                .any(|e| e.focus_node().to_string().contains("e")
+                    && e.constraint_component().to_string().contains("PersonShape")),
+            "{:?}",
+            report.evidences()
+        );
+    }
+
+    #[test]
+    fn evidence_shapes_only_drops_component_level_evidence_but_keeps_shape_level() {
+        let full_config = ShaclConfig::default().with_store_evidences(true);
+        let full = validate_with_config(MIN_COUNT_GRAPH, &full_config);
+        // Sanity check: without the filter, both granularities are present.
+        assert!(full.evidences().iter().any(|e| e.is_shape_level()));
+        assert!(full.evidences().iter().any(|e| !e.is_shape_level()));
+
+        let shapes_only_config = ShaclConfig::default()
+            .with_store_evidences(true)
+            .with_evidence_shapes_only(true);
+        let shapes_only = validate_with_config(MIN_COUNT_GRAPH, &shapes_only_config);
+        assert!(!shapes_only.evidences().is_empty());
+        assert!(
+            shapes_only.evidences().iter().all(|e| e.is_shape_level()),
+            "{:?}",
+            shapes_only.evidences()
+        );
+        // Violations are untouched by this flag.
+        assert_eq!(shapes_only.results().len(), full.results().len());
     }
 
     #[test]
@@ -194,10 +247,21 @@ prefix : <http://example.org/>
 "#;
 
     #[test]
+    fn none_mode_rejects_the_cyclic_schema_outright() {
+        // Default: recursive shapes are opt-in, so a cyclic schema fails to
+        // compile at all rather than being validated.
+        let rdf = RdfData::from_str(MUTUAL_CYCLE_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let schema = ShaclParser::new(rdf).parse().unwrap();
+        let result = IRSchema::compile_with_recursion(&schema, RecursionSemantics::None);
+        assert!(result.is_err(), "expected a cyclic schema to be rejected under None");
+    }
+
+    #[test]
     fn cautious_mode_rejects_an_ungrounded_cycle() {
         // Least fixpoint: nothing in the cycle can be justified without
         // assuming itself, so it's assumed non-conformant.
-        let report = validate_with_config(MUTUAL_CYCLE_GRAPH, &ShaclConfig::default());
+        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let report = validate_with_config(MUTUAL_CYCLE_GRAPH, &config);
         assert!(!report.conforms());
     }
 
@@ -230,7 +294,8 @@ prefix : <http://example.org/>
 :n2 a :ListNode ; :next :n3 .
 :n3 a :ListNode .
 "#;
-        let cautious = validate_with_config(graph, &ShaclConfig::default());
+        let cautious_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let cautious = validate_with_config(graph, &cautious_config);
         assert!(cautious.conforms(), "{:?}", cautious.results());
 
         let brave_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Brave);
@@ -281,7 +346,8 @@ prefix : <http://example.org/>
             ));
         }
 
-        let report = validate_with_config(&graph, &ShaclConfig::default());
+        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let report = validate_with_config(&graph, &config);
         assert!(
             report
                 .results()

@@ -856,6 +856,31 @@ fn validate_with_shacl_config(config: shacl::validator::ShaclConfig) -> shacl::v
 }
 
 #[test]
+fn table_shows_conforming_evidence_rows_in_green_alongside_violations() {
+    use crate::display::Table;
+
+    let config = shacl::validator::ShaclConfig::default().with_store_evidences(true);
+    let report = validate_with_shacl_config(config);
+
+    // :Alice conforms (an evidence row) and :Bob doesn't (a violation row) —
+    // both should show up in the same table.
+    let mut colored = Vec::new();
+    report.table(&mut colored, Some(true), Some(true), Some(120)).unwrap();
+    let colored = String::from_utf8(colored).unwrap();
+    assert!(colored.contains("Conforms"), "{colored}");
+    assert!(colored.contains("Alice"), "{colored}");
+    assert!(colored.contains("Bob"), "{colored}");
+
+    // Same assertions with color turned off, to check the plain text
+    // content isn't accidentally hidden inside escape codes only.
+    let mut plain = Vec::new();
+    report.table(&mut plain, Some(true), Some(false), Some(120)).unwrap();
+    let plain = String::from_utf8(plain).unwrap();
+    assert!(plain.contains("Conforms"), "{plain}");
+    assert!(plain.contains("satisfied"), "{plain}");
+}
+
+#[test]
 fn errors_only_mode_is_the_default_behavior() {
     let report = validate_with_shacl_config(shacl::validator::ShaclConfig::default());
     assert!(!report.conforms());

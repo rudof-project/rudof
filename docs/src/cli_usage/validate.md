@@ -59,9 +59,11 @@ Options:
           SHACL only: don't retain violations in the validation report (default: violations are kept)
       --with-evidences
           SHACL only: also retain evidence for why (node, shape) pairs conform (default: not kept)
+      --evidences-shapes-only
+          SHACL only, with --with-evidences: keep only the per-shape summary evidence, dropping the finer per-constraint-component evidence (default: keep everything)
       --recursion-semantics <MODE>
-          SHACL only: how to resolve a recursive (cyclic) shape reference
-          [possible values: cautious, brave]
+          SHACL only: whether to accept a recursive (cyclic) shape reference, and how to resolve it
+          [possible values: none, cautious, brave]
   -c, --config-file <FILE>
           Config file name
   -o, --output-file <FILE>
