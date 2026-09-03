@@ -1,0 +1,13 @@
+[package]
+name = "rudof_typing"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/rudof_typing"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+either.workspace = true

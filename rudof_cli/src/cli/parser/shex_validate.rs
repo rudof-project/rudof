@@ -172,6 +172,12 @@ pub struct ShexValidateArgs {
     )]
     pub list_external_resolvers: bool,
 
+    #[arg(
+        long = "show-intermediate-results",
+        help = "Print each (node, shape) result as soon as it's computed, instead of only the final report"
+    )]
+    pub show_intermediate_results: bool,
+
     #[command(flatten)]
     pub common: CommonArgsAll,
 }
