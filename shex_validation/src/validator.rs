@@ -232,7 +232,11 @@ impl Validator {
         let nodes_prefixmap = match maybe_nodes_prefixmap {
             Some(pm) => pm.clone(),
             None => PrefixMap::default(),
-        };
+        }
+        // Predicates shown alongside nodes in errors/reasons come from the schema
+        // (e.g. `<#name>` under a `BASE`), so relativize them the same way shape
+        // labels are relativized via `self.schema.prefixmap()`.
+        .with_base(self.schema.base().cloned());
         let mut result = ResultShapeMap::new()
             .with_nodes_prefixmap(&nodes_prefixmap)
             .with_shapes_prefixmap(&self.schema.prefixmap());

@@ -27,6 +27,11 @@ pub struct PrefixMap {
 
     /// Whether to generate hyperlink when qualifying an IRI
     hyperlink: bool,
+
+    /// Base IRI used to shorten IRIs that don't match any prefix alias but
+    /// share this IRI as a prefix, e.g. if the base is `http://example.org/`
+    /// then `http://example.org/foo` qualifies as `<foo>`.
+    base: Option<IriS>,
 }
 
 impl PartialEq for PrefixMap {
@@ -174,6 +179,22 @@ impl PrefixMap {
     pub fn with_hyperlink(mut self, hyperlink: bool) -> Self {
         self.hyperlink = hyperlink;
         self
+    }
+
+    /// Sets the base IRI used to shorten IRIs that don't match any prefix alias
+    pub fn with_base(mut self, base: Option<IriS>) -> Self {
+        self.base = base;
+        self
+    }
+
+    /// Sets the base IRI used to shorten IRIs that don't match any prefix alias
+    pub fn set_base(&mut self, base: Option<IriS>) {
+        self.base = base;
+    }
+
+    /// Returns the base IRI used to shorten IRIs that don't match any prefix alias, if any
+    pub fn base(&self) -> Option<&IriS> {
+        self.base.as_ref()
     }
 
     /// Color the alias when qualifying an IRI
@@ -341,6 +362,7 @@ impl PrefixMap {
     /// Qualifies an IRI against a [`PrefixMap`]
     ///
     /// If it can't qualify the IRI, it returns the iri between `<` and `>`
+    /// (relative to the [`PrefixMap`]'s base IRI, if one is set and matches)
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
@@ -367,7 +389,12 @@ impl PrefixMap {
 
     /// Qualifies an IRI against a [`PrefixMap`]
     ///
-    /// If it can't qualify the IRI, returns [`None`]
+    /// If it can't qualify the IRI against a prefix alias, but the [`PrefixMap`]
+    /// has a base IRI that is a prefix of `iri`, it returns the base-relative
+    /// form between `<` and `>`, e.g. `<foo>` if the base is `http://example.org/`
+    /// and `iri` is `http://example.org/foo`.
+    ///
+    /// Otherwise, returns [`None`]
     ///
     /// ```
     /// # use std::collections::HashMap;
@@ -390,13 +417,27 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify_optional(&self, iri: &IriS) -> Option<String> {
-        let (alias, rest) = self.longest_prefix_match(iri)?;
-        let s = self.format_colored(alias, rest);
+        let s = if let Some((alias, rest)) = self.longest_prefix_match(iri) {
+            self.format_colored(alias, rest)
+        } else {
+            format!("<{}>", self.base_relative_match(iri)?)
+        };
 
         if self.hyperlink {
             Some(format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", iri.as_str(), s))
         } else {
             Some(s)
+        }
+    }
+
+    /// Returns the IRI relative to the [`PrefixMap`]'s base IRI, if a base is
+    /// set and it is a prefix of `iri`
+    fn base_relative_match(&self, iri: &IriS) -> Option<String> {
+        let base = self.base.as_ref()?;
+        if iri.as_str().starts_with(base.as_str()) {
+            Some(iri.relative_from(base))
+        } else {
+            None
         }
     }
 
@@ -426,6 +467,10 @@ impl PrefixMap {
         let (s, length) = if let Some((alias, rest)) = self.longest_prefix_match(iri) {
             let s = self.format_colored(alias, rest);
             let length = alias.len() + 1 + rest.len();
+            (s, length)
+        } else if let Some(relative) = self.base_relative_match(iri) {
+            let s = format!("<{relative}>");
+            let length = relative.len() + 2;
             (s, length)
         } else {
             let s = format!("<{iri}>");
@@ -635,5 +680,25 @@ mod tests {
 
         let relative = IriS::new_unchecked("relative");
         assert_eq!(pm.qualify(&relative), "<relative>");
+    }
+
+    #[test]
+    fn test_qualify_relative_to_base() {
+        let pm: PrefixMap = HashMap::from([("", "https://example.org/"), ("schema", "https://schema.org/")])
+            .try_into()
+            .unwrap();
+        let pm = pm.with_base(Some(IriS::new_unchecked("http://a.example/")));
+
+        // A prefix alias match still wins over the base
+        let a = IriS::new_unchecked("https://example.org/a");
+        assert_eq!(pm.qualify(&a), ":a");
+
+        // No alias matches, but the base does: relativize against it
+        let observation = IriS::new_unchecked("http://a.example/#Observation");
+        assert_eq!(pm.qualify(&observation), "<#Observation>");
+
+        // Neither an alias nor the base matches: full IRI
+        let other = IriS::new_unchecked("https://other.org/foo");
+        assert_eq!(pm.qualify(&other), "<https://other.org/foo>");
     }
 }

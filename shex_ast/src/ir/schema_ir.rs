@@ -77,7 +77,13 @@ impl SchemaIR {
     }
 
     pub fn set_default_base_prefixes(&mut self, default_base: Option<IriS>) {
-        self.base = default_base;
+        self.base = default_base.clone();
+        self.prefixmap.set_base(default_base);
+    }
+
+    /// Returns the base IRI declared in the schema (`BASE <...>`), if any
+    pub fn base(&self) -> Option<&IriS> {
+        self.base.as_ref()
     }
 
     pub fn set_start_actions(&mut self, start_acts: Vec<SemAct>) {
@@ -99,6 +105,7 @@ impl SchemaIR {
 
     pub fn set_prefixmap(&mut self, prefixmap: Option<PrefixMap>) {
         self.prefixmap = prefixmap.clone().unwrap_or_default();
+        self.prefixmap.set_base(self.base.clone());
     }
 
     pub fn add_abstract_shape(&mut self, idx: ShapeLabelIdx) {
@@ -385,9 +392,10 @@ impl SchemaIR {
         let mut compiler = AST2IR::with_registry(resolve_method, registry);
         // `AST2IR::compile` applies `external_resolvers` to the root and imported schemas.
         compiler.compile(schema_json, &schema_json.source_iri(), base, self, external_resolvers)?;
-        if let Some(base) = base {
-            self.set_default_base_prefixes(base.clone().into());
-        }
+        // Use the schema's own resolution base (which reflects a `BASE <...>` declaration in
+        // the document, if any) for display purposes, not the caller-supplied default `base`
+        // used above only to resolve relative IRIs before any in-document `BASE` is seen.
+        self.set_default_base_prefixes(schema_json.base());
         Ok(())
     }
 

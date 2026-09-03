@@ -167,6 +167,7 @@ where
             prefixmap: schema
                 .prefixmap()
                 .unwrap_or_default()
+                .with_base(schema.base())
                 .with_qualify_localname_color(DEFAULT_QUALIFY_LOCALNAME_COLOR)
                 .with_qualify_prefix_color(DEFAULT_QUALIFY_ALIAS_COLOR)
                 .with_qualify_semicolon_color(DEFAULT_QUALIFY_SEMICOLON_COLOR),
