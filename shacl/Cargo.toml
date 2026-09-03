@@ -17,6 +17,7 @@ sparql = ["dep:sparql_service", "sparql_service/sparql", "rudof_rdf/sparql"]
 [dependencies]
 anyhow.workspace = true
 dashmap.workspace = true
+either.workspace = true
 indoc.workspace = true
 itertools.workspace = true
 petgraph.workspace = true
@@ -25,6 +26,7 @@ rayon.workspace = true
 rudof_rdf.workspace = true
 rudof_config.workspace = true
 rudof_iri.workspace = true
+rudof_typing.workspace = true
 rust_decimal.workspace = true
 serde.workspace = true
 sparql_service = { workspace = true, optional = true }

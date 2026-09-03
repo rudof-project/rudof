@@ -10,6 +10,10 @@ use crate::validator::constraints::NativeValidator;
 use crate::validator::constraints::sparql::{inject_values_into_where, path_to_sparql};
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
+#[cfg(feature = "sparql")]
+use crate::validator::report::Evidence;
+use crate::validator::report::ValidationOutcome;
+#[cfg(feature = "sparql")]
 use crate::validator::report::ValidationResult;
 #[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
@@ -31,9 +35,9 @@ impl<RDF: NeighsRDF + Debug + 'static> NativeValidator<RDF> for BasicSparql {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         // Silently skip since sh:sparql requires a SPARQL engine
-        Ok(Vec::new())
+        Ok(ValidationOutcome::new())
     }
 }
 
@@ -49,9 +53,9 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         if self.deactivated() == Some(true) {
-            return Ok(Vec::new());
+            return Ok(ValidationOutcome::new());
         }
 
         let prefix_header = self
@@ -68,7 +72,7 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
         let select_with_path = self.select().replace("$PATH", &path_str);
 
         let constraint_component = Object::Iri(component.into());
-        let mut results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
 
         for (focus_node, _) in value_nodes.iter() {
             // Bind ?this via a VALUES clause and inject it in the WHERE block
@@ -80,6 +84,7 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
                 .query_select(&full_query)
                 .map_err(ValidationError::select_query_error::<RDF>)?;
 
+            let mut any_violation = false;
             for sol in solutions.iter() {
                 // A binding of ?failure = true signals a constraint failure
                 if let Some(failure_term) = sol.find_solution("failure")
@@ -123,7 +128,8 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
                     self.message().cloned().unwrap_or_default()
                 };
 
-                results.push(
+                any_violation = true;
+                outcome.push_violation(
                     ValidationResult::new(result_focus, constraint_component.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(result_path)
@@ -131,8 +137,17 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
                         .with_message(message),
                 );
             }
+
+            if !any_violation {
+                let focus_obj = RDF::term_as_object(focus_node)?;
+                outcome.push_evidence(
+                    Evidence::new(focus_obj, constraint_component.clone())
+                        .with_source(Some(shape.id().clone()))
+                        .with_path(maybe_path.cloned()),
+                );
+            }
         }
 
-        Ok(results)
+        Ok(outcome)
     }
 }

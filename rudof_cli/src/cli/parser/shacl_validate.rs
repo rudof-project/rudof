@@ -1,7 +1,7 @@
 use crate::cli::parser::CommonArgsAll;
 use crate::cli::wrappers::{
-    DataFormatCli, DataReaderModeCli, ResultShaclValidationFormatCli, ShaclFormatCli, ShaclValidationModeCli,
-    ShaclValidationSortByModeCli,
+    DataFormatCli, DataReaderModeCli, RecursionSemanticsCli, ResultShaclValidationFormatCli, ShaclFormatCli,
+    ShaclValidationModeCli, ShaclValidationSortByModeCli,
 };
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -97,6 +97,29 @@ pub struct ShaclValidateArgs {
         value_enum
     )]
     pub sort_by: ShaclValidationSortByModeCli,
+
+    #[arg(
+        long = "no-errors",
+        help = "Don't retain violations in the validation report (default: violations are kept)"
+    )]
+    pub no_errors: bool,
+
+    #[arg(
+        long = "with-evidences",
+        help = "Also retain evidence for why (node, shape) pairs conform (default: not kept)"
+    )]
+    pub with_evidences: bool,
+
+    #[arg(
+        long = "recursion-semantics",
+        value_name = "MODE",
+        ignore_case = true,
+        value_enum,
+        help = "How to resolve a recursive (cyclic) shape reference: `cautious` (default) \
+                assumes it does NOT conform unless proven otherwise; `brave` assumes it DOES \
+                conform as long as that's self-consistent"
+    )]
+    pub recursion_semantics: Option<RecursionSemanticsCli>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

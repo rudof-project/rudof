@@ -1,4 +1,5 @@
 use crate::error::ValidationError;
+use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
 #[cfg(feature = "sparql")]
 use crate::validator::engine::SparqlEngine;
@@ -61,10 +62,10 @@ impl ShaclProcessor<RdfData> for GraphValidation {
         self.store.store()
     }
 
-    fn runner(mode: &ShaclValidationMode) -> Box<dyn Engine<RdfData>> {
+    fn runner(mode: &ShaclValidationMode, config: &ShaclConfig) -> Box<dyn Engine<RdfData>> {
         match mode {
-            ShaclValidationMode::Native => Box::new(NativeEngine::new()),
-            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
+            ShaclValidationMode::Native => Box::new(NativeEngine::new(config.recursion_semantics())),
+            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new(config.recursion_semantics())),
         }
     }
 
@@ -79,9 +80,9 @@ impl ShaclProcessor<OxigraphInMemory> for GraphValidation {
         self.store.store()
     }
 
-    fn runner(mode: &ShaclValidationMode) -> Box<dyn Engine<OxigraphInMemory>> {
+    fn runner(mode: &ShaclValidationMode, config: &ShaclConfig) -> Box<dyn Engine<OxigraphInMemory>> {
         match mode {
-            ShaclValidationMode::Native => Box::new(NativeEngine::new()),
+            ShaclValidationMode::Native => Box::new(NativeEngine::new(config.recursion_semantics())),
         }
     }
 }

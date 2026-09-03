@@ -7,7 +7,9 @@ use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::ValidationOutcome;
+#[cfg(feature = "sparql")]
+use crate::validator::report::{Evidence, ValidationResult};
 use rudof_rdf::rdf_core::term::Term;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
@@ -34,7 +36,7 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let class_fn = |vn: &S::Term| {
             if vn.is_literal() {
                 return true;
@@ -78,15 +80,15 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clas
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let class_sparql = match object_as_sparql(self.class_rule()) {
             Some(s) => s,
-            None => return Ok(Vec::new()),
+            None => return Ok(ValidationOutcome::new()),
         };
         let class_term: S::Term = self.class_rule().clone().into();
         let component_obj = Object::iri(component.into());
         let msg = format!("Class constraint not satisfied for class {}", self.class_rule());
-        let mut results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
 
         for (focus, vns) in value_nodes.iter() {
             let focus_obj = S::term_as_object(focus)?;
@@ -105,19 +107,25 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clas
                     store.query_ask(&query).map_err(ValidationError::ask_query_error::<S>)?
                 };
 
-                if !conforms {
-                    let value = S::term_as_object(vn).ok();
+                let value = S::term_as_object(vn).ok();
+                if conforms {
+                    let ev = Evidence::new(focus_obj.clone(), component_obj.clone())
+                        .with_source(Some(shape.id().clone()))
+                        .with_path(maybe_path.cloned())
+                        .with_value(value);
+                    outcome.push_evidence(ev);
+                } else {
                     let vr = ValidationResult::new(focus_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_message(MessageMap::from(msg.as_str()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
-                    results.push(vr);
+                    outcome.push_violation(vr);
                 }
             }
         }
 
-        Ok(results)
+        Ok(outcome)
     }
 }
 

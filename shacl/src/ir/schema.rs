@@ -223,31 +223,37 @@ impl IRSchema {
             warn!(
                 "More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion"
             );
-            let cycles: Vec<Vec<Object>> = schema_ir
-                .dependency_graph
-                .cycles()
-                .into_iter()
-                .map(|cycle| {
-                    cycle
-                        .into_iter()
-                        .map(|idx| {
-                            schema_ir.idx_labels_map.get(&idx).cloned().unwrap_or_else(|| {
-                                panic!(
-                                    "Internal error: Shape label index {idx} not found in idx_labels_map: {:?}",
-                                    schema_ir.idx_labels_map
-                                )
-                            })
-                        })
-                        .collect()
-                })
-                .collect();
             if schema_ir.dependency_graph.has_neg_cycle() {
+                let cycles: Vec<Vec<Object>> = schema_ir
+                    .dependency_graph
+                    .cycles()
+                    .into_iter()
+                    .map(|cycle| {
+                        cycle
+                            .into_iter()
+                            .map(|idx| {
+                                schema_ir.idx_labels_map.get(&idx).cloned().unwrap_or_else(|| {
+                                    panic!(
+                                        "Internal error: Shape label index {idx} not found in idx_labels_map: {:?}",
+                                        schema_ir.idx_labels_map
+                                    )
+                                })
+                            })
+                            .collect()
+                    })
+                    .collect();
                 warn!(
                     "Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation"
                 );
                 return Err(IRError::DependencyGraphHasNegativeCycles { cycles });
             }
-            return Err(IRError::DependencyGraphHasCycles { cycles });
+            // A purely positive cycle: allowed. The validator cuts it at
+            // runtime instead of recursing forever, using the configured
+            // `RecursionSemantics` (cautious/LFP or brave/GFP) — see
+            // `crate::validator::recursion`. Negative (stratified) recursion
+            // through `sh:not`/`sh:xone`/etc. is not yet supported and is
+            // rejected above.
+            warn!("The cycle is purely positive: validation will handle it via the configured recursion semantics.");
         }
 
         Ok(schema_ir)

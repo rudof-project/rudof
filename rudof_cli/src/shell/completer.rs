@@ -509,6 +509,20 @@ mod tests {
     }
 
     #[test]
+    fn completes_shacl_validate_recursion_semantics_value() {
+        let helper = ShellHelper::new(vec!["shacl-validate".to_string()], vec![], vec![]);
+        let history = DefaultHistory::new();
+        let ctx = Context::new(&history);
+
+        let line = "shacl-validate --recursion-semantics ca";
+        let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
+
+        assert_eq!(start, "shacl-validate --recursion-semantics ".len());
+        let replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
+        assert_eq!(replacements, vec!["cautious"]);
+    }
+
+    #[test]
     fn does_not_intercept_flag_value_completion_for_non_enum_flags() {
         // `-o`/`--output-file` takes a file path, not a fixed set of values, so this must fall
         // through to plain filename completion instead of being (wrongly) treated as empty.

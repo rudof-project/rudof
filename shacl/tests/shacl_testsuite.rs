@@ -3,6 +3,8 @@ use crate::common::{Manifest, TestSuiteError};
 #[cfg(not(target_family = "wasm"))]
 use shacl::error::IRError;
 #[cfg(not(target_family = "wasm"))]
+use shacl::validator::ShaclConfig;
+#[cfg(not(target_family = "wasm"))]
 use shacl::validator::ShaclValidationMode;
 #[cfg(not(target_family = "wasm"))]
 use shacl::validator::processor::{DataValidation, ShaclProcessor};
@@ -29,7 +31,7 @@ fn test(path: String, mode: ShaclValidationMode) -> Result<(), TestSuiteError> {
             .map_err(|e: IRError| TestSuiteError::TestShapesCompilation(e.to_string()))?;
 
         let report = validator
-            .validate(&test_shapes, &mode)
+            .validate(&test_shapes, &mode, &ShaclConfig::default())
             .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
 
         if report != test.report {

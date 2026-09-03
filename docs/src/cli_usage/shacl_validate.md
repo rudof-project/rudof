@@ -93,6 +93,54 @@ Refer to the [Example in the book](https://book.validatingrdf.com/bookHtml011.ht
 rudof shacl-validate --shapes shapes.ttl non-conformant.ttl
 ```
 
+## Controlling what the report contains
+
+By default, a validation report lists every violation but no explanation of *why* the
+conforming nodes conform. Two flags change that:
+
+```sh
+rudof shacl-validate --shapes shapes.ttl data.ttl --no-errors
+rudof shacl-validate --shapes shapes.ttl data.ttl --with-evidences
+```
+
+- `--no-errors` drops the per-violation detail from the report, keeping only the overall
+  conforms/does-not-conform verdict. Useful when you only need the boolean and want a
+  smaller report.
+- `--with-evidences` adds the opposite information: for every `(node, shape)` pair that
+  *does* conform, a record of why. Off by default, since most validation runs only care
+  about failures.
+
+The two are independent, so all four combinations are available (default: errors only).
+The same two keys can be set persistently in `rudof.toml` — see [`[shacl]`](../references/config.md#shacl--shacl-validation) in the config reference.
+
+## Recursive shapes
+
+A shape may reference itself, directly or through other shapes — for example, a `Person`
+shape whose `knows` property must itself point to a `Person`. Validating such a shape
+against data that actually contains a cycle (`:alice knows :bob`, `:bob knows :alice`) needs
+a rule for what happens when the validator comes back around to a node it's already in the
+middle of checking. `--recursion-semantics` picks that rule:
+
+```sh
+rudof shacl-validate --shapes shapes.ttl data.ttl --recursion-semantics cautious
+rudof shacl-validate --shapes shapes.ttl data.ttl --recursion-semantics brave
+```
+
+- `cautious` (the default) assumes a node caught in a cycle does **not** conform unless
+  that can be shown without relying on the cycle. A cycle with no independent way to
+  ground it — like `:alice`/`:bob` above, if nothing else establishes either of them as a
+  `Person` — ends up **not** conforming.
+- `brave` assumes a node caught in a cycle **does** conform, as long as that assumption
+  doesn't contradict anything else in the shape. The same cycle then **conforms**.
+
+Shapes with no cycles in them validate identically either way — this only matters for the
+specific nodes actually caught in a cycle. It's also only guaranteed to give a sensible
+answer for cycles built from monotonic constraints (`sh:and`, `sh:or`, `sh:node`,
+`sh:property`, `sh:minCount`, `sh:closed`, and similar): a schema whose only cycles pass
+through negation (`sh:not`, `sh:xone`, `sh:qualifiedMaxCount`,
+`sh:qualifiedValueShapesDisjoint`) is rejected before validation starts, since there isn't
+yet a supported way to resolve that case.
+
 ## Selecting the RDF backend
 
 By default, validation data is loaded into an in-process `memory` graph. Use `--backend` to switch to a QLever Docker container or a remote SPARQL endpoint:

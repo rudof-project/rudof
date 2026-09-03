@@ -5,7 +5,7 @@ use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::ValidationOutcome;
 use rudof_rdf::rdf_core::term::literal::Literal;
 use rudof_rdf::rdf_core::term::{Iri, Term};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
@@ -29,7 +29,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let max_length_fn = |vn: &S::Term| {
             if vn.is_blank_node() {
                 return true;
@@ -67,7 +67,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MaxL
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         let max = self.max_length();
 
         let query_fn = |vn: &S::Term| -> Option<String> {

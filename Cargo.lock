@@ -4709,6 +4709,7 @@ version = "0.3.16"
 dependencies = [
  "anyhow",
  "dashmap",
+ "either",
  "indoc",
  "itertools 0.14.0",
  "oxrdf",
@@ -4718,6 +4719,7 @@ dependencies = [
  "rudof_config",
  "rudof_iri",
  "rudof_rdf",
+ "rudof_typing",
  "rust_decimal",
  "serde",
  "sparql_service",

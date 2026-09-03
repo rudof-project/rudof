@@ -4,7 +4,7 @@ use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::validator::constraints::NativeValidator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 #[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::term::Term;
 use rudof_rdf::rdf_core::term::{Object, Triple};
@@ -29,14 +29,14 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Closed {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         if !self.is_closed() {
-            return Ok(Vec::new());
+            return Ok(ValidationOutcome::new());
         }
 
         let allowed_props = shape.allowed_properties();
         let component_obj = Object::iri(component.into());
-        let mut results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
 
         for (fnode, _) in value_nodes.iter() {
             let subject = match S::term_as_subject(fnode) {
@@ -49,22 +49,29 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Closed {
                 .map_err(ValidationError::new_graph_error::<S>)?;
 
             let focus_obj = S::term_as_object(fnode)?;
+            let mut disallowed_found = false;
 
             for triple in triples {
                 let (_, pred, obj) = triple.into_components();
                 let pred_iri = pred.into();
                 if !allowed_props.contains(&pred_iri) {
+                    disallowed_found = true;
                     let value = S::term_as_object(&obj).ok();
                     let vr = ValidationResult::new(focus_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(Some(SHACLPath::iri(pred_iri)))
                         .with_value(value);
-                    results.push(vr);
+                    outcome.push_violation(vr);
                 }
+            }
+
+            if !disallowed_found {
+                let ev = Evidence::new(focus_obj, component_obj.clone()).with_source(Some(shape.id().clone()));
+                outcome.push_evidence(ev);
             }
         }
 
-        Ok(results)
+        Ok(outcome)
     }
 }
 
@@ -80,14 +87,14 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clos
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         if !self.is_closed() {
-            return Ok(Vec::new());
+            return Ok(ValidationOutcome::new());
         }
 
         let allowed_props = shape.allowed_properties();
         let component_obj = Object::iri(component.into());
-        let mut results = Vec::new();
+        let mut outcome = ValidationOutcome::new();
 
         let not_in_clause = if allowed_props.is_empty() {
             String::new()
@@ -145,7 +152,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clos
                 Box::new(rows.into_iter())
             };
 
+            let mut disallowed_found = false;
             for (pred_obj, value) in triples_iter {
+                disallowed_found = true;
                 let path = match &pred_obj {
                     Object::Iri(iri) => Some(SHACLPath::iri(iri.clone())),
                     _ => None,
@@ -154,10 +163,15 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clos
                     .with_source(Some(shape.id().clone()))
                     .with_path(path)
                     .with_value(value);
-                results.push(vr);
+                outcome.push_violation(vr);
+            }
+
+            if !disallowed_found {
+                let ev = Evidence::new(focus_obj, component_obj.clone()).with_source(Some(shape.id().clone()));
+                outcome.push_evidence(ev);
             }
         }
 
-        Ok(results)
+        Ok(outcome)
     }
 }

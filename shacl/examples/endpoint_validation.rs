@@ -5,6 +5,7 @@ fn main() {}
 fn main() -> anyhow::Result<()> {
     use prefixmap::PrefixMap;
     use rudof_rdf::rdf_core::RDFFormat;
+    use shacl::validator::ShaclConfig;
     use shacl::validator::ShaclValidationMode;
     use shacl::validator::processor::{EndpointValidation, ShaclProcessor};
     use shacl::validator::store::ShaclDataManager;
@@ -32,7 +33,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut endpoint_validation = EndpointValidation::new("https://query.wikidata.org/sparql", &PrefixMap::default())?;
 
-    let report = endpoint_validation.validate(&schema, &ShaclValidationMode::Native)?;
+    let report = endpoint_validation.validate(&schema, &ShaclValidationMode::Native, &ShaclConfig::default())?;
 
     println!("{report}");
     Ok(())

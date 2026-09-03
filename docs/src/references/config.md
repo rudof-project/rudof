@@ -273,12 +273,27 @@ programmatically (`add_external_resolver`) or via CLI flags, not through `rudof.
 
 Source: [`shacl/src/validator/config.rs`](https://github.com/rudof-project/rudof/blob/master/shacl/src/validator/config.rs)
 
-Not compiled in on the `wasm` target.
+Not compiled in on the `wasm` target. Besides the keys below, this section also embeds a
+copy of `[rdf]`, which is always overwritten by the top-level `[rdf]` on resolve (see
+[Base IRI propagation](#base-iri-propagation)) — it isn't independently settable.
 
-This section currently has no independently-settable keys of its own — its only field is
-an embedded copy of `[rdf]`, which is always overwritten by the top-level `[rdf]` on
-resolve. It's included here for completeness / forward compatibility (e.g. `rudof config`
-will still show a `[shacl]` table).
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `store_errors` | boolean | `true` | Keep violations in the `ValidationReport` returned by validation. Turning this off still computes conformance correctly — `conforms` stays accurate — it just omits the per-violation detail, which is cheaper to carry around when you only need the boolean. |
+| `store_evidences` | boolean | `false` | Also keep evidence for *why* each `(node, shape)` pair conforms, not just why it fails. Off by default since most validation runs only care about violations. |
+| `recursion_semantics` | `"cautious"` \| `"brave"` | `"cautious"` | How to resolve a shape that (directly or transitively) references itself, for the data instances where that reference actually forms a cycle. `cautious` assumes a node caught in such a cycle does **not** conform unless that can be shown without relying on the cycle; `brave` assumes it **does** conform as long as that assumption is self-consistent. Only recursion through monotonic constructs (`sh:and`, `sh:or`, `sh:node`, `sh:property`, `sh:minCount`, `sh:closed`, ...) is guaranteed sound either way — a schema whose only cycles go through negation (`sh:not`, `sh:xone`, `sh:qualifiedMaxCount`, `sh:qualifiedValueShapesDisjoint`) is rejected before validation even starts. |
+
+These three keys only affect what the *report* contains and how a cyclic shape reference is
+resolved — a shape with no cycles in it validates identically regardless of
+`recursion_semantics`, and `store_errors`/`store_evidences` never change whether the data
+conforms, only what detail comes back.
+
+```toml
+[shacl]
+store_errors = true
+store_evidences = false
+recursion_semantics = "cautious"
+```
 
 ## `[shex2uml]` — ShEx → UML/PlantUML conversion
 

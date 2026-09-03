@@ -14,8 +14,9 @@ use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::collections::HashSet;
 
 use crate::error::ValidationError;
+use crate::validator::RecursionSemantics;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
-use crate::validator::report::ValidationResult;
+use crate::validator::report::ValidationOutcome;
 pub use native::NativeEngine;
 #[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
@@ -46,7 +47,7 @@ pub trait Engine<S: NeighsRDF>: Send {
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError>;
+    ) -> Result<ValidationOutcome, ValidationError>;
 
     fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<FocusNodes<S>, ValidationError> {
         let targets_iter: Vec<_> = targets
@@ -87,16 +88,33 @@ pub trait Engine<S: NeighsRDF>: Send {
         Ok(FocusNodes::new(nodes))
     }
 
-    fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>);
+    fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, outcome: ValidationOutcome);
 
     fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool;
 
-    /// Returns the cached validation results for a given `(node, shape_idx)` pair, if any.
+    /// Returns the cached validation outcome for a given `(node, shape_idx)` pair, if any.
     ///
-    /// Returns an owned [`Vec`] so that implementations backed by concurrent data
-    /// structures can return data without tying the lifetime to
-    /// an internal lock guard.
-    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<Vec<ValidationResult>>;
+    /// Returns an owned [`ValidationOutcome`] so that implementations backed by concurrent
+    /// data structures can return data without tying the lifetime to an internal lock guard.
+    fn get_cached_outcome(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<ValidationOutcome>;
+
+    /// Which fixpoint semantics to assume when a recursive shape reference
+    /// (a cycle) is encountered during validation.
+    fn recursion_semantics(&self) -> RecursionSemantics;
+
+    /// Whether `(node, shape_idx)` is currently being validated further up
+    /// this engine's own call stack — i.e. a nested reference back to it
+    /// would be a cyclic (recursive) shape reference. Unlike
+    /// [`Self::has_validated`], this is per-engine, in-progress state, not
+    /// the shared, finished-results cache.
+    fn is_in_chain(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool;
+
+    /// Marks `(node, shape_idx)` as currently being validated, so a nested
+    /// call that reaches it again can be detected via [`Self::is_in_chain`].
+    fn chain_enter(&mut self, node: Object, shape_idx: ShapeLabelIdx);
+
+    /// Un-marks `(node, shape_idx)` once its validation has finished.
+    fn chain_exit(&mut self, node: &Object, shape_idx: ShapeLabelIdx);
 }
 
 #[cfg(feature = "sparql")]

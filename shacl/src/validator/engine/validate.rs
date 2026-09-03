@@ -5,7 +5,8 @@ use crate::validator::engine::Engine;
 use crate::validator::engine::focus_nodes_ops::FocusNodesOps;
 use crate::validator::engine::value_nodes_ops::ValueNodesOps;
 use crate::validator::nodes::FocusNodes;
-use crate::validator::report::ValidationResult;
+use crate::validator::recursion::cut_outcome;
+use crate::validator::report::{ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
@@ -21,7 +22,7 @@ pub trait Validate<RDF: Rdf> {
         targets: Option<&FocusNodes<RDF>>,
         source_shape: Option<&IRShape>, // TODO - Review if this is needed since its probably the same as self
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError>;
+    ) -> Result<ValidationOutcome, ValidationError>;
 }
 
 impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
@@ -32,10 +33,10 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         targets: Option<&FocusNodes<RDF>>,
         source_shape: Option<&IRShape>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ValidationError> {
+    ) -> Result<ValidationOutcome, ValidationError> {
         // Skips validation if shape is deactivated
         if self.deactivated() {
-            return Ok(Vec::new());
+            return Ok(ValidationOutcome::new());
         }
 
         // Get focus nodes
@@ -48,17 +49,43 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         let idx = shapes_graph.get_idx(self.id());
 
         // Check the cache: filter out focus nodes that have already been validated
-        // and collect their cached results
-        let mut cached_results = Vec::new();
+        // and collect their cached outcome. Focus nodes that are already being
+        // validated further up this engine's own call stack (a recursive shape
+        // reference) are cut with the default outcome for the configured
+        // recursion semantics instead of recursing forever — see
+        // `crate::validator::recursion`.
+        let mut cached_outcome = ValidationOutcome::new();
+        let mut entered_chain = Vec::new();
+        // Multi-node calls only ever occur for a *batch* of independent
+        // targets (this shape's own top-level targets, or several reifiers
+        // of one triple) — siblings, not ancestors of each other. Only a
+        // single-node call represents one specific node's own place on the
+        // recursive-descent path, so only those are chain-eligible: a
+        // sibling batch must never poison another sibling by making it look
+        // like an ancestor just because they're being resolved together.
+        // Every *nested* recursive call in this crate targets exactly one
+        // node (`FocusNodes::single`), so this doesn't weaken cycle
+        // detection — it just avoids false positives at the batch root.
+        let single_node_call = focus_nodes.len() == 1;
         let uncached_focus_nodes = if let Some(idx) = idx {
             let mut uncached = Vec::new();
             for fnode in focus_nodes.iter() {
                 let node_object = RDF::term_as_object(fnode);
-                if let Ok(ref obj) = node_object
-                    && let Some(results) = runner.get_cached_results(obj, *idx)
-                {
-                    cached_results.extend(results);
+                let Ok(obj) = node_object else {
+                    uncached.push(fnode.clone());
                     continue;
+                };
+                if let Some(outcome) = runner.get_cached_outcome(&obj, *idx) {
+                    cached_outcome.extend(outcome);
+                    continue;
+                }
+                if runner.is_in_chain(&obj, *idx) {
+                    cached_outcome.extend(cut_outcome(runner.recursion_semantics(), self, &obj));
+                    continue;
+                }
+                if single_node_call {
+                    runner.chain_enter(obj.clone(), *idx);
+                    entered_chain.push(obj);
                 }
                 uncached.push(fnode.clone());
             }
@@ -67,9 +94,9 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
             focus_nodes.clone()
         };
 
-        // If all focus nodes were cached, return early
+        // If all focus nodes were cached (or cut as recursive references), return early
         if uncached_focus_nodes.is_empty() {
-            return Ok(cached_results);
+            return Ok(cached_outcome);
         }
 
         // ValueNodes = set of nodes that are going to be used during validation
@@ -79,9 +106,9 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         let components = self.components();
 
         // 3. Check each of the components
-        let mut component_validation_results = Vec::new();
+        let mut component_outcome = ValidationOutcome::new();
         for component in components.iter() {
-            let results = runner.evaluate(
+            let outcome = runner.evaluate(
                 store,
                 self,
                 component,
@@ -90,7 +117,7 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
                 self.path(),
                 shapes_graph,
             )?;
-            component_validation_results.extend(results);
+            component_outcome.extend(outcome);
         }
 
         // After validating the constraints of the current shape, validate any nested
@@ -106,18 +133,18 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         // is preserved: if the same value node is reached from N different focus nodes,
         // the nested property shape is invoked N times. The shared cache ensures each
         // unique (value-node, shape) pair is only truly validated once; subsequent
-        // invocations for the same pair return the cached results, correctly producing
+        // invocations for the same pair return the cached outcome, correctly producing
         // one violation entry per path that led to the offending node.
-        let mut property_shapes_validation_results = Vec::new();
+        let mut property_shapes_outcome = ValidationOutcome::new();
         for ps in self.property_shapes().iter() {
             let shape = shapes_graph.get_shape_from_idx_e(ps)?;
             for (_, vn) in value_nodes.iter() {
-                let results = shape.validate(store, runner, Some(vn), Some(self), shapes_graph)?;
-                property_shapes_validation_results.extend(results);
+                let outcome = shape.validate(store, runner, Some(vn), Some(self), shapes_graph)?;
+                property_shapes_outcome.extend(outcome);
             }
         }
 
-        let reification_results = if let Some(reifier_info) = self.reifier_info() {
+        let reification_outcome = if let Some(reifier_info) = self.reifier_info() {
             validate_reifiers(
                 self,
                 store,
@@ -128,38 +155,49 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
                 shapes_graph,
             )?
         } else {
-            Vec::new()
+            ValidationOutcome::new()
         };
 
-        // Collect all NEW validation results (from uncached focus nodes)
-        let new_results: Vec<ValidationResult> = component_validation_results
-            .into_iter()
-            .chain(property_shapes_validation_results)
-            .chain(reification_results)
-            .collect();
+        // Collect all NEW outcome (from uncached focus nodes)
+        let mut new_outcome = ValidationOutcome::new();
+        new_outcome.extend(component_outcome);
+        new_outcome.extend(property_shapes_outcome);
+        new_outcome.extend(reification_outcome);
 
-        // Record new results in the cache per focus node
+        // These nodes are no longer "in progress": a nested call reaching
+        // them now would be a fresh lookup, not a recursive reference.
         if let Some(idx) = idx {
-            // Group results by focus node in O(M), then record each in O(1)
-            let mut by_focus: HashMap<Object, Vec<ValidationResult>> = uncached_focus_nodes
-                .iter()
-                .filter_map(|n| RDF::term_as_object(n).ok())
-                .map(|obj| (obj, Vec::new()))
-                .collect();
-            for r in &new_results {
-                if let Some(bucket) = by_focus.get_mut(r.focus_node()) {
-                    bucket.push(r.clone());
-                }
-            }
-            for (node_object, node_results) in by_focus {
-                runner.record_validation(node_object, *idx, node_results);
+            for obj in &entered_chain {
+                runner.chain_exit(obj, *idx);
             }
         }
 
-        // Merge cached results with newly computed results
-        let mut all_results = cached_results;
-        all_results.extend(new_results);
-        Ok(all_results)
+        // Record new outcome in the cache per focus node
+        if let Some(idx) = idx {
+            // Group violations/evidences by focus node in O(M), then record each in O(1)
+            let mut by_focus: HashMap<Object, ValidationOutcome> = uncached_focus_nodes
+                .iter()
+                .filter_map(|n| RDF::term_as_object(n).ok())
+                .map(|obj| (obj, ValidationOutcome::new()))
+                .collect();
+            for v in new_outcome.violations() {
+                if let Some(bucket) = by_focus.get_mut(v.focus_node()) {
+                    bucket.push_violation(v.clone());
+                }
+            }
+            for e in new_outcome.evidences() {
+                if let Some(bucket) = by_focus.get_mut(e.focus_node()) {
+                    bucket.push_evidence(e.clone());
+                }
+            }
+            for (node_object, node_outcome) in by_focus {
+                runner.record_validation(node_object, *idx, node_outcome);
+            }
+        }
+
+        // Merge cached outcome with newly computed outcome
+        cached_outcome.extend(new_outcome);
+        Ok(cached_outcome)
     }
 }
 
@@ -171,8 +209,8 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
     reifier_info: &ReifierInfo,
     focus_nodes: &FocusNodes<RDF>,
     shapes_graph: &IRSchema,
-) -> Result<Vec<ValidationResult>, ValidationError> {
-    let mut results = Vec::new();
+) -> Result<ValidationOutcome, ValidationError> {
+    let mut outcome = ValidationOutcome::new();
 
     for node in focus_nodes.iter() {
         for reifier_shape in reifier_info.reifier_shape() {
@@ -199,7 +237,7 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
                     ))
                     .with_path(Some(SHACLPath::iri(pred.clone())))
                     .with_source(source_shape.map(|s| s.id()).cloned());
-                    results.push(vr_single);
+                    outcome.push_violation(vr_single);
                     continue;
                 }
                 let reifier_nodes = reifier_subjects
@@ -207,16 +245,16 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
                     .map(RDF::subject_as_term)
                     .collect::<HashSet<_>>();
                 let reifier_shape = shapes_graph.get_shape_from_idx_e(reifier_shape)?;
-                let vr_iter = reifier_shape.validate(
+                let inner_outcome = reifier_shape.validate(
                     store,
                     runner,
                     Some(&FocusNodes::from_iter(reifier_nodes)),
                     Some(shape),
                     shapes_graph,
                 )?;
-                results.extend(vr_iter)
+                outcome.extend(inner_outcome)
             }
         }
     }
-    Ok(results)
+    Ok(outcome)
 }

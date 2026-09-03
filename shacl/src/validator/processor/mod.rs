@@ -6,9 +6,10 @@ mod rdf_data;
 
 use crate::error::ValidationError;
 use crate::ir::IRSchema;
+use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, Validate};
-use crate::validator::report::ValidationReport;
+use crate::validator::report::{ValidationOutcome, ValidationReport};
 #[cfg(feature = "sparql")]
 pub use endpoint::EndpointValidation;
 pub use graph::GraphValidation;
@@ -27,7 +28,7 @@ use std::fmt::Debug;
 pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
     fn store(&self) -> &S;
 
-    fn runner(mode: &ShaclValidationMode) -> Box<dyn Engine<S>>;
+    fn runner(mode: &ShaclValidationMode, config: &ShaclConfig) -> Box<dyn Engine<S>>;
 
     /// Called once before validation begins. Implementations that need lazy
     /// initialization (e.g. building an in-memory SPARQL store from a graph)
@@ -50,24 +51,28 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
     ///
     /// * `shapes_graph` - A compiled SHACL shapes graph
     /// * `mode` - The validation mode to be applied during the validation process
+    /// * `config` - Controls whether the returned report retains violations
+    ///   and/or evidence (both are always computed internally, regardless of
+    ///   this config, since the cache needs full detail for correctness)
     fn validate(
         &mut self,
         shapes_graph: &IRSchema,
         mode: &ShaclValidationMode,
+        config: &ShaclConfig,
     ) -> Result<ValidationReport, ValidationError> {
         self.prepare_store()?;
         let store = self.store();
 
         // Build shared indexes once. Forked engines share
         // the data, avoiding redundant scans.
-        let mut master_runner = Self::runner(mode);
+        let mut master_runner = Self::runner(mode, config);
         master_runner.build_indexes(store)?;
 
         // Group shapes-with-targets by topological level so that dependencies
         // are always validated before the shapes that reference them.
         let levels = shapes_graph.shapes_with_targets_by_level();
 
-        let mut all_results = Vec::new();
+        let mut all_outcome = ValidationOutcome::new();
 
         for level in levels {
             // Fork one engine per shape in this level. Each fork shares the
@@ -75,7 +80,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
             let mut forked_runners: Vec<Box<dyn Engine<S>>> = level.iter().map(|_| master_runner.fork()).collect();
 
             // Validate all shapes in the level in parallel.
-            let level_results: Vec<Result<Vec<_>, ValidationError>> = forked_runners
+            let level_results: Vec<Result<ValidationOutcome, ValidationError>> = forked_runners
                 .par_iter_mut()
                 .zip(level.par_iter())
                 .map(|(runner, idx)| {
@@ -85,7 +90,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
                 .collect();
 
             for result in level_results {
-                all_results.extend(result?);
+                all_outcome.extend(result?);
             }
         }
 
@@ -94,6 +99,17 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
             pm.merge(store_pm);
         }
 
-        Ok(ValidationReport::new().with_results(all_results).with_prefixmap(pm))
+        let conforms = all_outcome.conforms();
+        let (violations, evidences) = all_outcome.into_parts();
+
+        let mut report = ValidationReport::new().with_conforms(conforms).with_prefixmap(pm);
+        if config.store_errors() {
+            report = report.with_results(violations);
+        }
+        if config.store_evidences() {
+            report = report.with_evidences(evidences);
+        }
+
+        Ok(report)
     }
 }

@@ -75,9 +75,11 @@ impl DependencyGraph {
     /// Level 0 contains shapes that do not depend on any other shape.
     /// Level N contains shapes whose dependencies are all in levels 0..N-1.
     ///
-    /// Shapes involved in cycles are not reachable via Kahn's algorithm and are
-    /// therefore omitted from the result (the caller should handle them separately,
-    /// e.g. by falling back to sequential validation).
+    /// Shapes involved in a cycle are never reachable via Kahn's algorithm proper
+    /// (their `remaining_deps` count never reaches zero), so they're collected into
+    /// one extra trailing level instead of being silently dropped. Validating that
+    /// level relies on the engine's own recursive-reference cutting (see
+    /// `crate::validator::recursion`) rather than on level ordering to terminate.
     pub fn topological_levels(&self) -> Vec<Vec<ShapeLabelIdx>> {
         // Edge A -> B means "A depends on B".
         // We want to validate B before A, so we assign B a lower level.
@@ -106,6 +108,7 @@ impl DependencyGraph {
         }
 
         let mut levels: Vec<Vec<ShapeLabelIdx>> = Vec::new();
+        let mut placed: std::collections::HashSet<ShapeLabelIdx> = std::collections::HashSet::new();
         let mut current: Vec<ShapeLabelIdx> = remaining_deps
             .iter()
             .filter(|&(_, count)| *count == 0)
@@ -114,6 +117,7 @@ impl DependencyGraph {
         current.sort_unstable();
 
         while !current.is_empty() {
+            placed.extend(current.iter().copied());
             levels.push(current.clone());
             let mut next: Vec<ShapeLabelIdx> = Vec::new();
             for done in &current {
@@ -127,6 +131,19 @@ impl DependencyGraph {
             }
             next.sort_unstable();
             current = next;
+        }
+
+        // Shapes still stuck with remaining_deps > 0 are part of a cycle (or
+        // depend, transitively, only on cyclic shapes) and were never placed
+        // above. Group them into one trailing level instead of dropping them.
+        let mut leftover: Vec<ShapeLabelIdx> = remaining_deps
+            .keys()
+            .copied()
+            .filter(|node| !placed.contains(node))
+            .collect();
+        if !leftover.is_empty() {
+            leftover.sort_unstable();
+            levels.push(leftover);
         }
 
         levels

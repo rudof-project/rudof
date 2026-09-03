@@ -12,3 +12,18 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
         sh:maxCount 1 .
 :knowsShape sh:path :knows ;
         sh:node :PersonShape .
+
+:a a :Person ;
+   :name  "Alice" ;
+   :knows :a  .
+
+:b a :Person ;
+   :name  "Bob"    ;
+   :knows :c .
+
+:c a :Person ;
+   :name  "Carol"  ;
+   :knows :b .
+
+:d a :Person ;
+   :name  23      .  # Should fail
