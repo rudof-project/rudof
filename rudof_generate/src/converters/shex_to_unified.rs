@@ -72,7 +72,7 @@ impl ShExToUnified {
         if let ShapeExpr::Shape(s) = &shape_decl.shape_expr
             && let Some(expr) = &s.expression
         {
-            target_class = Self::derive_target_class(&expr.te);
+            target_class = Self::derive_target_class(&expr.te, &shape_id);
             self.extract_properties(&expr.te, &mut properties, metrics);
         }
 
@@ -97,28 +97,68 @@ impl ShExToUnified {
     /// Only a single-valued set yields a target: a set naming several classes
     /// does not say which one an instance should receive, so those are left for
     /// value-set handling rather than guessed at here.
-    fn derive_target_class(expr: &TripleExpr) -> Option<String> {
+    ///
+    /// A shape may state more than one such constraint, because instances of it
+    /// carry more than one type. Extracted schemas do this for shapes that
+    /// specialise another --- `:ResearchAssistant` requires both
+    /// `ub:GraduateStudent` and `ub:ResearchAssistant`. Taking whichever came
+    /// first would give three such shapes the same type and erase the
+    /// distinction between them, so the class whose name matches the shape's is
+    /// preferred, which is the one a `sh:targetClass` names for the same shape.
+    fn derive_target_class(expr: &TripleExpr, shape_id: &str) -> Option<String> {
+        let candidates = Self::rdf_type_values(expr);
+        if candidates.is_empty() {
+            return None;
+        }
+        let shape_local = Self::local_name(shape_id);
+        candidates
+            .iter()
+            .find(|candidate| Self::local_name(candidate) == shape_local)
+            .or_else(|| candidates.first())
+            .cloned()
+    }
+
+    /// Every class named by a single-valued `rdf:type` constraint of this shape,
+    /// in the order the schema states them.
+    fn rdf_type_values(expr: &TripleExpr) -> Vec<String> {
         match expr {
             TripleExpr::EachOf { expressions, .. } | TripleExpr::OneOf { expressions, .. } => {
-                expressions.iter().find_map(|e| Self::derive_target_class(&e.te))
+                expressions.iter().flat_map(|e| Self::rdf_type_values(&e.te)).collect()
             },
             TripleExpr::TripleConstraint {
                 predicate, value_expr, ..
             } => {
-                if !Self::is_rdf_type(&predicate.to_string()) {
-                    return None;
-                }
-                let ShapeExpr::NodeConstraint(node_constraint) = &**value_expr.as_ref()? else {
-                    return None;
+                let extract = || -> Option<String> {
+                    if !Self::is_rdf_type(&predicate.to_string()) {
+                        return None;
+                    }
+                    let ShapeExpr::NodeConstraint(node_constraint) = &**value_expr.as_ref()? else {
+                        return None;
+                    };
+                    let values = node_constraint.values()?;
+                    let [ValueSetValue::ObjectValue(ObjectValue::IriRef(iri))] = values.as_slice() else {
+                        return None;
+                    };
+                    Some(Self::strip_angle_brackets(&iri.to_string()))
                 };
-                let values = node_constraint.values()?;
-                let [ValueSetValue::ObjectValue(ObjectValue::IriRef(iri))] = values.as_slice() else {
-                    return None;
-                };
-                Some(Self::strip_angle_brackets(&iri.to_string()))
+                extract().into_iter().collect()
             },
-            TripleExpr::Ref(_) => None,
+            TripleExpr::Ref(_) => Vec::new(),
         }
+    }
+
+    /// The last path segment of an IRI, which is how a shape and the class it
+    /// describes are named alike.
+    fn local_name(iri: &str) -> &str {
+        Self::strip_angle_brackets_str(iri)
+            .rsplit(['#', '/', ':'])
+            .next()
+            .unwrap_or(iri)
+    }
+
+    /// Borrowing form of [`Self::strip_angle_brackets`].
+    fn strip_angle_brackets_str(iri: &str) -> &str {
+        iri.strip_prefix('<').and_then(|r| r.strip_suffix('>')).unwrap_or(iri)
     }
 
     /// Whether a predicate names `rdf:type`, written out in full or prefixed.
