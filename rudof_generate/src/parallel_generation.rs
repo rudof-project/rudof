@@ -251,6 +251,16 @@ impl ParallelGenerator {
                 continue;
             }
 
+            // Properties whose range is another shape belong to the relationship
+            // linking phase, which resolves them against the entity registries once
+            // every shape has been materialised. Emitting them here as well produced
+            // two values for every such property -- one pointing at a synthetic
+            // nested entity, one at a registry entity -- which violates any
+            // declared maximum cardinality of 1.
+            if property_info.shape_ref.is_some() {
+                continue;
+            }
+
             let min_card = property_info.min_cardinality.unwrap_or(0);
             let effective_min = if config.ignore_min_cardinality { 0 } else { min_card };
 
