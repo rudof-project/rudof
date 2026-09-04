@@ -1,7 +1,7 @@
 use crate::config::{CardinalityStrategy, EntityDistribution, GenerationConfig};
 use crate::field_generators::{FieldGenerationManager, GenerationContext};
 use crate::shape_processing::ShapeInfo;
-use crate::unified_constraints::UnifiedConstraint;
+use crate::unified_constraints::{NodeKind, UnifiedConstraint};
 use crate::{DataGeneratorError, Result};
 use oxrdf::{Literal, NamedNode, NamedOrBlankNode, Term, Triple};
 use rand::SeedableRng;
@@ -247,6 +247,36 @@ impl ParallelGenerator {
         }
     }
 
+    /// Whether a property's constraints ask for an IRI value.
+    ///
+    /// `BlankNodeOrIri` and `IriOrLiteral` admit an IRI among their options, and
+    /// an IRI satisfies all three without needing a datatype the schema did not
+    /// give.
+    fn expects_an_iri(constraints: &[UnifiedConstraint]) -> bool {
+        constraints.iter().any(|constraint| {
+            matches!(
+                constraint,
+                UnifiedConstraint::NodeKind(NodeKind::Iri)
+                    | UnifiedConstraint::NodeKind(NodeKind::BlankNodeOrIri)
+                    | UnifiedConstraint::NodeKind(NodeKind::IriOrLiteral)
+            )
+        })
+    }
+
+    /// A fresh IRI for a property that requires one but names no shape.
+    ///
+    /// Derived from the subject and the property so that it is unique without a
+    /// counter, stable under a fixed seed, and recognisable as generated rather
+    /// than resolvable.
+    fn mint_iri_value(entity_iri: &str, property_iri: &str, value_idx: usize) -> String {
+        let local = property_iri
+            .rsplit(['#', '/'])
+            .next()
+            .filter(|segment| !segment.is_empty())
+            .unwrap_or("value");
+        format!("{entity_iri}/{local}/{value_idx}")
+    }
+
     /// The IRI that entities of `shape_info` are typed with.
     ///
     /// A schema that declares a target -- `sh:targetClass`, or a ShEx `rdf:type`
@@ -442,6 +472,21 @@ impl ParallelGenerator {
                         NamedOrBlankNode::NamedNode(entity_node.clone()),
                         NamedNode::new_unchecked(&property_info.property_iri),
                         literal_term,
+                    ));
+                } else if Self::expects_an_iri(&property_info.constraints) {
+                    // A property constrained to an IRI that names no shape.
+                    // Nothing says which entity it should point at, so a fresh
+                    // IRI is minted rather than a relationship invented;
+                    // emitting nothing would silently drop a property the
+                    // schema may require.
+                    triples.push(Triple::new(
+                        NamedOrBlankNode::NamedNode(entity_node.clone()),
+                        NamedNode::new_unchecked(&property_info.property_iri),
+                        Term::NamedNode(NamedNode::new_unchecked(Self::mint_iri_value(
+                            &entity_iri,
+                            &property_info.property_iri,
+                            value_idx,
+                        ))),
                     ));
                 }
             }
