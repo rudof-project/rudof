@@ -38,13 +38,34 @@ impl ConformanceMetrics {
 
         let total_generated_triples = triples.len();
 
+        // Entities are typed with the class their shape targets, so a type IRI in
+        // the data is not itself a shape identifier and has to be resolved back
+        // to one. Shapes that declare no target are typed with their own IRI and
+        // resolve to themselves. Where two shapes name the same target class the
+        // first wins; the model offers nothing to separate them.
+        let mut class_to_shape: HashMap<&str, &str> = HashMap::new();
+        for (shape_id, shape) in &model.shapes {
+            if let Some(target_class) = &shape.target_class {
+                class_to_shape.entry(target_class.as_str()).or_insert(shape_id.as_str());
+            }
+        }
+        let resolve_shape = |type_iri: &str| -> Option<String> {
+            if model.shapes.contains_key(type_iri) {
+                Some(type_iri.to_string())
+            } else {
+                class_to_shape.get(type_iri).map(|s| (*s).to_string())
+            }
+        };
+
         let mut subject_type: HashMap<NamedOrBlankNode, String> = HashMap::new();
         let mut outgoing_counts: HashMap<(NamedOrBlankNode, String), usize> = HashMap::new();
 
         for triple in &triples {
             if triple.predicate.as_str() == RDF_TYPE {
-                if let Term::NamedNode(shape_node) = &triple.object {
-                    subject_type.insert(triple.subject.clone(), shape_node.as_str().to_string());
+                if let Term::NamedNode(type_node) = &triple.object
+                    && let Some(shape_id) = resolve_shape(type_node.as_str())
+                {
+                    subject_type.insert(triple.subject.clone(), shape_id);
                 }
             } else {
                 let key = (triple.subject.clone(), triple.predicate.as_str().to_string());
@@ -57,7 +78,7 @@ impl ConformanceMetrics {
         for triple in &triples {
             let is_valid = if triple.predicate.as_str() == RDF_TYPE {
                 match &triple.object {
-                    Term::NamedNode(shape_node) => model.shapes.contains_key(shape_node.as_str()),
+                    Term::NamedNode(type_node) => resolve_shape(type_node.as_str()).is_some(),
                     _ => false,
                 }
             } else {
