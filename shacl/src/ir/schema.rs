@@ -1,11 +1,11 @@
 use crate::ast::{ASTSchema, ASTShape};
 use crate::error::ASTError;
+use crate::ir::RecursionSemantics;
 use crate::ir::dg::{DependencyGraph, PosNeg, ShapeRecursionKind};
 use crate::ir::error::IRError;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::rdf::ShaclParser;
-use crate::ir::RecursionSemantics;
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
