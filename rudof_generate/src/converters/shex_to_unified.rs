@@ -4,7 +4,7 @@ use crate::unified_constraints::{
 };
 use crate::{DataGeneratorError, Result};
 use rudof_iri::IriS;
-use shex_ast::ast::{NodeConstraint, ShapeDecl, ShapeExpr, TripleExpr, XsFacet};
+use shex_ast::ast::{NodeConstraint, ObjectValue, ShapeDecl, ShapeExpr, TripleExpr, ValueSetValue, XsFacet};
 use shex_ast::compact::ShExParser;
 use std::path::Path;
 
@@ -67,19 +67,75 @@ impl ShExToUnified {
     fn convert_shape_decl(&self, shape_decl: &ShapeDecl, metrics: &mut TranslationMetrics) -> UnifiedShape {
         let shape_id = shape_decl.id.to_string();
         let mut properties = Vec::new();
+        let mut target_class = None;
 
         if let ShapeExpr::Shape(s) = &shape_decl.shape_expr
             && let Some(expr) = &s.expression
         {
+            target_class = Self::derive_target_class(&expr.te);
             self.extract_properties(&expr.te, &mut properties, metrics);
         }
 
         UnifiedShape {
             id: shape_id,
-            target_class: None, // ShEx doesn't have explicit target classes
+            target_class,
             properties,
             closed: false, // TODO: extract from ShEx closed property if available
         }
+    }
+
+    /// Find the class this shape expects its instances to carry.
+    ///
+    /// ShEx has no `sh:targetClass`, but the same intent is expressed as a
+    /// constraint on `rdf:type` whose value set names one IRI, which is how
+    /// shape extractors emit it:
+    ///
+    /// ```text
+    /// :Publication { rdf:type [ub:Publication] ; ... }
+    /// ```
+    ///
+    /// Only a single-valued set yields a target: a set naming several classes
+    /// does not say which one an instance should receive, so those are left for
+    /// value-set handling rather than guessed at here.
+    fn derive_target_class(expr: &TripleExpr) -> Option<String> {
+        match expr {
+            TripleExpr::EachOf { expressions, .. } | TripleExpr::OneOf { expressions, .. } => {
+                expressions.iter().find_map(|e| Self::derive_target_class(&e.te))
+            },
+            TripleExpr::TripleConstraint {
+                predicate, value_expr, ..
+            } => {
+                if !Self::is_rdf_type(&predicate.to_string()) {
+                    return None;
+                }
+                let ShapeExpr::NodeConstraint(node_constraint) = &**value_expr.as_ref()? else {
+                    return None;
+                };
+                let values = node_constraint.values()?;
+                let [ValueSetValue::ObjectValue(ObjectValue::IriRef(iri))] = values.as_slice() else {
+                    return None;
+                };
+                Some(Self::strip_angle_brackets(&iri.to_string()))
+            },
+            TripleExpr::Ref(_) => None,
+        }
+    }
+
+    /// Whether a predicate names `rdf:type`, written out in full or prefixed.
+    fn is_rdf_type(predicate: &str) -> bool {
+        matches!(
+            Self::strip_angle_brackets(predicate).as_str(),
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" | "rdf:type" | "a"
+        )
+    }
+
+    /// IRIs reach us either bare or in the `<...>` form, depending on how the
+    /// schema was written; the generator needs them bare.
+    fn strip_angle_brackets(iri: &str) -> String {
+        iri.strip_prefix('<')
+            .and_then(|rest| rest.strip_suffix('>'))
+            .unwrap_or(iri)
+            .to_string()
     }
 
     fn extract_properties(
