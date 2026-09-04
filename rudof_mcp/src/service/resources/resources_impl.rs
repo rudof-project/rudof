@@ -9,10 +9,7 @@ use crate::service::mcp_service::RudofMcpService;
 use crate::service::pagination::{DEFAULT_PAGE_SIZE, parse_cursor};
 use rmcp::{
     ErrorData as McpError, RoleServer,
-    model::{
-        Annotated, ListResourcesResult, PaginatedRequestParams, RawResource, ReadResourceRequestParams,
-        ReadResourceResult,
-    },
+    model::{ListResourcesResult, PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResult, Resource},
     service::RequestContext,
 };
 
@@ -32,7 +29,7 @@ pub async fn list_resources(
     _ctx: RequestContext<RoleServer>,
 ) -> Result<ListResourcesResult, McpError> {
     // Collect all resources from different modules
-    let mut all_resources: Vec<Annotated<RawResource>> = Vec::new();
+    let mut all_resources: Vec<Resource> = Vec::new();
 
     all_resources.extend(get_data_resources());
     all_resources.extend(get_node_resources());

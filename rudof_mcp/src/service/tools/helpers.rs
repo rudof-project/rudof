@@ -1,5 +1,5 @@
 use crate::service::errors::internal_error;
-use rmcp::{ErrorData as McpError, model::CallToolResult, model::Content};
+use rmcp::{ErrorData as McpError, model::CallToolResult, model::ContentBlock};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -51,7 +51,7 @@ impl ToolExecutionError {
         } else {
             self.message
         };
-        CallToolResult::error(vec![Content::text(text)])
+        CallToolResult::error(vec![ContentBlock::text(text)])
     }
 }
 

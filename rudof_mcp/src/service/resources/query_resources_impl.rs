@@ -10,7 +10,7 @@
 
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, RawResource, ReadResourceResult},
+    model::{ReadResourceResult, Resource},
 };
 
 use crate::service::resources::{json_resource_result, make_resource};
@@ -19,7 +19,7 @@ use crate::service::tools::helpers::{
 };
 
 /// Returns the list of SPARQL query-related resources.
-pub fn get_query_resources() -> Vec<Annotated<RawResource>> {
+pub fn get_query_resources() -> Vec<Resource> {
     vec![
         make_resource(
             "rudof://formats/query-types",

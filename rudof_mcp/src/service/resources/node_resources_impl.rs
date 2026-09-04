@@ -9,14 +9,14 @@
 
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, RawResource, ReadResourceResult},
+    model::{ReadResourceResult, Resource},
 };
 
 use crate::service::resources::{json_resource_result, make_resource};
 use crate::service::tools::helpers::{NODE_MODE_ENTRIES, option_entries_json};
 
 /// Returns the list of node inspection resources.
-pub fn get_node_resources() -> Vec<Annotated<RawResource>> {
+pub fn get_node_resources() -> Vec<Resource> {
     vec![make_resource(
         "rudof://formats/node-modes",
         "Node Inspection Modes",

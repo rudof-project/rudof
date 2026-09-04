@@ -2,7 +2,7 @@ use crate::service::{errors::*, mcp_service::RudofMcpService};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content},
+    model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{InputSpec, ShExFormat};
 use schemars::JsonSchema;
@@ -215,8 +215,8 @@ pub async fn show_shex_impl(
     let results_preview = code_block_preview(preview_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(format!("## Results Preview\n\n{}", results_preview)),
+        ContentBlock::text(summary),
+        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
     ]);
     result.structured_content = Some(structured);
 
@@ -345,8 +345,8 @@ pub async fn check_shex_impl(
     let results_preview = code_block_preview("text", &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(format!("## Results Preview\n\n{}", results_preview)),
+        ContentBlock::text(summary),
+        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
     ]);
     result.structured_content = Some(structured);
 

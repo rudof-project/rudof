@@ -310,8 +310,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base64"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
+
+[[package]]
 name = "bench-issue730"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "rudof_lib",
@@ -320,7 +326,7 @@ dependencies = [
 
 [[package]]
 name = "bench-shex"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "criterion",
@@ -408,7 +414,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee04c4c84f1f811b017f2fbb7dd8815c976e7ca98593de9c1e2afad0f636bff4"
 dependencies = [
  "async-stream",
- "base64",
+ "base64 0.22.1",
  "bitflags",
  "bollard-buildkit-proto",
  "bollard-stubs",
@@ -465,7 +471,7 @@ version = "1.52.1-rc.29.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f0a8ca8799131c1837d1282c3f81f31e76ceb0ce426e04a7fe1ccee3287c066"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bollard-buildkit-proto",
  "bytes",
  "prost",
@@ -1169,6 +1175,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed17f5901b6630b993ca003def43f2f8ef4014fc13b047b57aad617ff32bc2ec"
+dependencies = [
+ "darling_core 0.24.1",
+ "darling_macro 0.24.1",
+]
+
+[[package]]
 name = "darling_core"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1196,6 +1212,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling_core"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6837e2cf7485aaae18f86181d2f0e9a7ed297a025e220aeabf63fdebd3a2ddff"
+dependencies = [
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim 0.11.1",
+ "syn 3.0.3",
+]
+
+[[package]]
 name = "darling_macro"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1215,6 +1244,17 @@ dependencies = [
  "darling_core 0.23.0",
  "quote",
  "syn 2.0.118",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ac7135c3ef02b2f7833bbeb1be5ba7f966dcde8a87c6b87f65a778d71a02785"
+dependencies = [
+ "darling_core 0.24.1",
+ "quote",
+ "syn 3.0.3",
 ]
 
 [[package]]
@@ -1239,7 +1279,7 @@ checksum = "be1e0bca6c3637f992fc1cc7cbc52a78c1ef6db076dbf1059c4323d6a2048376"
 
 [[package]]
 name = "dctap"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "calamine",
  "csv",
@@ -1353,7 +1393,7 @@ version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29547a1dc60885a552306986316bc9701ba120c1a8db6769fa68691529ad373d"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "serde",
  "serde_json",
 ]
@@ -1420,7 +1460,7 @@ dependencies = [
 
 [[package]]
 name = "emacs-rudof"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "emacs",
@@ -2031,7 +2071,7 @@ version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-util",
@@ -2611,7 +2651,7 @@ dependencies = [
 
 [[package]]
 name = "mie"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "hashlink",
  "rudof_iri",
@@ -3151,7 +3191,7 @@ dependencies = [
 
 [[package]]
 name = "pgschema"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "clap",
@@ -3276,7 +3316,7 @@ dependencies = [
 
 [[package]]
 name = "prefixmap"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "colored",
  "indexmap 2.14.0",
@@ -3489,7 +3529,7 @@ dependencies = [
 
 [[package]]
 name = "pyrudof"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "pyo3",
  "pythonize",
@@ -3726,7 +3766,7 @@ dependencies = [
 
 [[package]]
 name = "rbe"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "criterion",
  "either",
@@ -3746,7 +3786,7 @@ dependencies = [
 
 [[package]]
 name = "rbe_testsuite"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "indoc",
@@ -3759,7 +3799,7 @@ dependencies = [
 
 [[package]]
 name = "rdf_config"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "hashlink",
  "indexmap 2.14.0",
@@ -3857,7 +3897,7 @@ version = "0.12.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-core",
@@ -3937,18 +3977,19 @@ dependencies = [
 
 [[package]]
 name = "rmcp"
-version = "1.3.0"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2231b2c085b371c01bc90c0e6c1cab8834711b6394533375bdbf870b0166d419"
+checksum = "42b6914fac0be956fe704a38239c3f44a9f841d1b06a5713d2f638065593f5b5"
 dependencies = [
  "async-trait",
- "base64",
+ "base64 0.23.1",
  "bytes",
  "chrono",
  "futures",
  "http",
  "http-body",
  "http-body-util",
+ "indexmap 2.14.0",
  "pastey",
  "pin-project-lite",
  "rand 0.10.1",
@@ -3968,20 +4009,20 @@ dependencies = [
 
 [[package]]
 name = "rmcp-macros"
-version = "1.3.0"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36ea0e100fadf81be85d7ff70f86cd805c7572601d4ab2946207f36540854b43"
+checksum = "cdf1c49bd4d52014b94db0877410db273c2008f01628b0252a2e9460ad9b7fda"
 dependencies = [
- "darling 0.23.0",
+ "darling 0.24.1",
  "proc-macro2",
  "quote",
  "serde_json",
- "syn 2.0.118",
+ "syn 3.0.3",
 ]
 
 [[package]]
 name = "rudof_cli"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "clap",
@@ -4025,7 +4066,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_config"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "dirs",
  "serde",
@@ -4035,7 +4076,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_generate"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4063,7 +4104,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_iri"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "getrandom 0.3.4",
  "getrandom 0.4.3",
@@ -4079,7 +4120,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_lib"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "colored",
  "crossterm",
@@ -4117,12 +4158,12 @@ dependencies = [
 
 [[package]]
 name = "rudof_mcp"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "axum",
  "axum-server",
- "base64",
+ "base64 0.22.1",
  "chrono",
  "clap",
  "http-body-util",
@@ -4147,7 +4188,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_rdf"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "bollard",
  "colored",
@@ -4193,14 +4234,14 @@ dependencies = [
 
 [[package]]
 name = "rudof_typing"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "either",
 ]
 
 [[package]]
 name = "rudof_viz"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "serde",
  "tempfile",
@@ -4655,7 +4696,7 @@ version = "3.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76a5c54c7310e7b8b9577c286d7e399ddd876c3e12b3ed917a8aabc4b96e9e8c"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bs58",
  "chrono",
  "hex",
@@ -4705,7 +4746,7 @@ dependencies = [
 
 [[package]]
 name = "shacl"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -4730,7 +4771,7 @@ dependencies = [
 
 [[package]]
 name = "shapes_comparator"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "prefixmap",
  "rudof_config",
@@ -4748,7 +4789,7 @@ dependencies = [
 
 [[package]]
 name = "shapes_converter"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "chrono",
  "dctap",
@@ -4785,7 +4826,7 @@ dependencies = [
 
 [[package]]
 name = "shex_ast"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "colored",
  "const_format",
@@ -4816,7 +4857,7 @@ dependencies = [
 
 [[package]]
 name = "shex_testsuite"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "anyhow",
  "clap",
@@ -4836,7 +4877,7 @@ dependencies = [
 
 [[package]]
 name = "shex_validation"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "colored",
  "either",
@@ -5015,7 +5056,7 @@ dependencies = [
 
 [[package]]
 name = "sparql_service"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "colored",
  "const_format",
@@ -5049,9 +5090,9 @@ dependencies = [
 
 [[package]]
 name = "sse-stream"
-version = "0.2.3"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3962b63f038885f15bce2c6e02c0e7925c072f1ac86bb60fd44c5c6b762fb72"
+checksum = "c25ac7aff0abd1dbc474536e40416e1102c7dd9bfba0b9861c6d357f835dcfb4"
 dependencies = [
  "bytes",
  "futures-util",
@@ -5551,7 +5592,7 @@ checksum = "ac2a5518c70fa84342385732db33fb3f44bc4cc748936eb5833d2df34d6445ef"
 dependencies = [
  "async-trait",
  "axum",
- "base64",
+ "base64 0.22.1",
  "bytes",
  "h2",
  "http",
@@ -5798,7 +5839,7 @@ version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dea7109cdcd5864d4eeb1b58a1648dc9bf520360d7af16ec26d0a9354bafcfc0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "log",
  "percent-encoding",
  "rustls",
@@ -5813,7 +5854,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e994ba84b0bd1b1b0cf92878b7ef898a5c1760108fe7b6010327e274917a808c"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "http",
  "httparse",
  "log",

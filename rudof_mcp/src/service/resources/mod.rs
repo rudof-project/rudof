@@ -8,24 +8,12 @@ mod shex_validate_resources_impl;
 use crate::service::errors::internal_error;
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
+    model::{ReadResourceResult, Resource, ResourceContents},
 };
 use serde_json::Value;
 
-pub(crate) fn make_resource(uri: &str, name: &str, description: &str, mime_type: &str) -> Annotated<RawResource> {
-    Annotated {
-        raw: RawResource {
-            uri: uri.to_string(),
-            name: name.to_string(),
-            description: Some(description.to_string()),
-            mime_type: Some(mime_type.to_string()),
-            title: None,
-            size: None,
-            icons: None,
-            meta: None,
-        },
-        annotations: None,
-    }
+pub(crate) fn make_resource(uri: &str, name: &str, description: &str, mime_type: &str) -> Resource {
+    Resource::new(uri, name).with_description(description).with_mime_type(mime_type)
 }
 
 pub(crate) fn json_resource_result(uri: &str, value: &Value) -> Result<ReadResourceResult, McpError> {

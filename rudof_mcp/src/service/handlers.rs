@@ -33,21 +33,27 @@ impl ServerHandler for RudofMcpService {
     /// - **resources**: Available
     /// - **logging**: Enabled for client-side log filtering
     /// - **completions**: Enabled for argument suggestions
+    // `enable_logging_with` is deprecated by SEP-2577; the protocol still
+    // supports it and there is no replacement API, so it stays in use.
+    #[allow(deprecated)]
     fn get_info(&self) -> ServerInfo {
         tracing::debug!("Generating ServerInfo");
 
+        let mut prompts_capability = PromptsCapability::default();
+        prompts_capability.list_changed = Some(false);
+
+        let mut resources_capability = ResourcesCapability::default();
+        resources_capability.subscribe = Some(false);
+        resources_capability.list_changed = Some(false);
+
+        let mut tools_capability = ToolsCapability::default();
+        tools_capability.list_changed = Some(false);
+
         let capabilities = ServerCapabilities::builder()
             .enable_logging_with(serde_json::Map::new())
-            .enable_prompts_with(PromptsCapability {
-                list_changed: Some(false),
-            })
-            .enable_resources_with(ResourcesCapability {
-                subscribe: Some(false),
-                list_changed: Some(false),
-            })
-            .enable_tools_with(ToolsCapability {
-                list_changed: Some(false),
-            })
+            .enable_prompts_with(prompts_capability)
+            .enable_resources_with(resources_capability)
+            .enable_tools_with(tools_capability)
             .enable_completions_with(serde_json::Map::new())
             .build();
 
@@ -163,11 +169,11 @@ impl ServerHandler for RudofMcpService {
         &self,
         request: ReadResourceRequestParams,
         _context: RequestContext<RoleServer>,
-    ) -> Result<ReadResourceResult, McpError> {
+    ) -> Result<ReadResourceResponse, McpError> {
         tracing::debug!(uri = %request.uri, "Reading resource");
 
         // Delegate read handling to resources module
-        read_resource(self, request).await
+        read_resource(self, request).await.map(Into::into)
     }
 
     /// Return a list of available resource templates
@@ -183,6 +189,8 @@ impl ServerHandler for RudofMcpService {
     }
 
     /// Handle MCP initialization, logging HTTP context if available, and return server info
+    // `LoggingLevel` is deprecated by SEP-2577; see the `get_info` note above.
+    #[allow(deprecated)]
     async fn initialize(
         &self,
         _request: InitializeRequestParams,
@@ -210,6 +218,8 @@ impl ServerHandler for RudofMcpService {
     /// Handle dynamic log level changes from the client
     /// This updates the MCP logging notification level, controlling which log messages
     /// are sent to the client via MCP notifications.
+    // `SetLevelRequestParams` is deprecated by SEP-2577; see the `get_info` note above.
+    #[allow(deprecated)]
     async fn set_level(
         &self,
         request: SetLevelRequestParams,
@@ -229,11 +239,13 @@ impl ServerHandler for RudofMcpService {
     }
 
     // Construct a ToolCallContext and delegate to the generated router
+    // `LoggingLevel` is deprecated by SEP-2577; see the `get_info` note above.
+    #[allow(deprecated)]
     async fn call_tool(
         &self,
         request: CallToolRequestParams,
         context: RequestContext<RoleServer>,
-    ) -> Result<CallToolResult, McpError> {
+    ) -> Result<CallToolResponse, McpError> {
         tracing::debug!(tool_name = %request.name, "Tool call requested");
 
         RudofMcpService::with_request_context(context.clone(), async {
@@ -289,6 +301,7 @@ impl ServerHandler for RudofMcpService {
             result
         })
         .await
+        .map(Into::into)
     }
 
     // Construct a PromptContext and delegate to the generated router
@@ -296,13 +309,13 @@ impl ServerHandler for RudofMcpService {
         &self,
         request: GetPromptRequestParams,
         context: RequestContext<RoleServer>,
-    ) -> Result<GetPromptResult, McpError> {
+    ) -> Result<GetPromptResponse, McpError> {
         tracing::debug!(prompt_name = %request.name, "Prompt retrieval requested");
 
         let ctx = rmcp::handler::server::prompt::PromptContext::new(self, request.name, request.arguments, context);
 
         let result = self.prompt_router.get_prompt(ctx).await?;
-        Ok(result)
+        Ok(result.into())
     }
 
     // Handle completion requests for prompt/resource arguments
@@ -312,9 +325,11 @@ impl ServerHandler for RudofMcpService {
         _context: RequestContext<RoleServer>,
     ) -> Result<CompleteResult, McpError> {
         // Extract the reference information and argument name.
-        // Note: rmcp 1.3.0 Reference only exposes Prompt and Resource variants —
+        // Note: Reference only exposes Prompt and Resource variants —
         // there is no Reference::Tool yet, so tool-argument completions are not
         // served via this endpoint. See get_tool_argument_completions in mcp_service.rs.
+        // `Reference` is `#[non_exhaustive]`, so a wildcard arm is required even
+        // though only two variants exist today.
         let completions = match &request.r#ref {
             Reference::Prompt(prompt_ref) => {
                 self.get_prompt_argument_completions(&prompt_ref.name, &request.argument.name)
@@ -322,6 +337,7 @@ impl ServerHandler for RudofMcpService {
             Reference::Resource(resource_ref) => {
                 self.get_resource_uri_completions(&resource_ref.uri, &request.argument.name)
             },
+            _ => Vec::new(),
         };
 
         let completion = CompletionInfo::with_all_values(completions).map_err(|e| McpError::invalid_params(e, None))?;
@@ -340,7 +356,7 @@ impl ServerHandler for RudofMcpService {
         notification: CancelledNotificationParam,
         _context: NotificationContext<RoleServer>,
     ) -> () {
-        tracing::debug!(request_id = %notification.request_id, "Operation cancelled by client");
+        tracing::debug!(request_id = ?notification.request_id, "Operation cancelled by client");
     }
 
     // Handle progress notifications from client

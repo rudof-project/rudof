@@ -11,7 +11,7 @@
 
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, RawResource, ReadResourceResult},
+    model::{ReadResourceResult, Resource},
 };
 
 use crate::service::resources::{json_resource_result, make_resource};
@@ -21,7 +21,7 @@ use crate::service::tools::helpers::{
 };
 
 /// Returns the list of SHACL validation-related resources.
-pub fn get_shacl_validate_resources() -> Vec<Annotated<RawResource>> {
+pub fn get_shacl_validate_resources() -> Vec<Resource> {
     vec![
         make_resource(
             "rudof://formats/shacl",

@@ -4,7 +4,7 @@ use crate::service::resources::{json_resource_result, make_resource};
 use crate::service::tools::helpers::{RDF_FORMAT_ENTRIES, format_entries_json};
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
+    model::{ReadResourceResult, Resource, ResourceContents},
 };
 use rudof_lib::formats::ResultDataFormat;
 use serde_json::json;
@@ -14,7 +14,7 @@ use std::str::FromStr;
 ///
 /// These resources allow clients to access the currently loaded RDF
 /// data in various serialization formats.
-pub fn get_data_resources() -> Vec<Annotated<RawResource>> {
+pub fn get_data_resources() -> Vec<Resource> {
     vec![
         make_resource(
             "rudof://current-data",
