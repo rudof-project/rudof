@@ -11,7 +11,7 @@ impl FieldGenerator for PatternGenerator {
         if let Some(pattern_value) = context.parameters.get("pattern")
             && let Some(pattern) = pattern_value.as_str()
         {
-            return self.generate_from_pattern(pattern);
+            return self.generate_from_pattern(pattern, context);
         }
 
         // Fallback to heuristic-based generation based on property name
@@ -29,11 +29,11 @@ impl FieldGenerator for PatternGenerator {
 
 impl PatternGenerator {
     /// Generate a string that matches the given regex pattern
-    fn generate_from_pattern(&self, pattern: &str) -> Result<String> {
+    fn generate_from_pattern(&self, pattern: &str, context: &GenerationContext) -> Result<String> {
         // For now, implement common pattern matching
         // In a full implementation, you'd use a regex-to-string generation library
 
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         // Handle common patterns - check international first
         if pattern.contains("\\+1-\\d{3}-\\d{3}-\\d{4}") || pattern.contains("\\+1\\-\\d{3}\\-\\d{3}\\-\\d{4}") {
@@ -165,7 +165,7 @@ impl PatternGenerator {
         if pattern.starts_with("^") && pattern.ends_with("$") {
             // Handle anchored patterns by removing anchors
             let inner_pattern = &pattern[1..pattern.len() - 1];
-            return self.generate_from_pattern(inner_pattern);
+            return self.generate_from_pattern(inner_pattern, context);
         }
 
         // Generic pattern handling for simple cases
@@ -371,7 +371,7 @@ impl PatternGenerator {
 
     /// Heuristic-based generation when no pattern is available
     fn generate_heuristic(&self, context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         let property_lower = context.property.to_lowercase();
 
