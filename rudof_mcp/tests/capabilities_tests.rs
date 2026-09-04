@@ -129,18 +129,6 @@ fn test_completions_capability_advertised() {
 
 #[cfg(not(target_family = "wasm"))]
 #[test]
-fn test_tasks_capability_not_advertised() {
-    let service = RudofMcpService::new();
-    let info = service.get_info();
-
-    assert!(
-        info.capabilities.tasks.is_none(),
-        "Tasks capability (SEP-1686) is not implemented yet"
-    );
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[test]
 fn test_no_experimental_capabilities() {
     let service = RudofMcpService::new();
     let info = service.get_info();

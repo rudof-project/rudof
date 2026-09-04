@@ -301,7 +301,6 @@ impl ServerHandler for RudofMcpService {
             result
         })
         .await
-        .map(Into::into)
     }
 
     // Construct a PromptContext and delegate to the generated router
@@ -315,7 +314,7 @@ impl ServerHandler for RudofMcpService {
         let ctx = rmcp::handler::server::prompt::PromptContext::new(self, request.name, request.arguments, context);
 
         let result = self.prompt_router.get_prompt(ctx).await?;
-        Ok(result.into())
+        Ok(result)
     }
 
     // Handle completion requests for prompt/resource arguments
