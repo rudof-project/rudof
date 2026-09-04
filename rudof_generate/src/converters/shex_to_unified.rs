@@ -291,6 +291,14 @@ impl ShExToUnified {
         }
     }
 
+    /// Translate a ShEx cardinality into the unified interval.
+    ///
+    /// `None` on the way out means unbounded, so an omitted upper bound must
+    /// not be passed through as `None`: ShEx defines an omitted cardinality as
+    /// exactly `{1,1}`, and reading it as unbounded would let the generator
+    /// emit any number of values for a property the schema pins to one.
+    /// A negative upper bound is ShEx's own spelling of unbounded and does
+    /// become `None`.
     fn convert_cardinality(&self, min: Option<i32>, max: Option<i32>) -> (Option<u32>, Option<u32>) {
         let min_card = match min {
             None => Some(1), // Default min cardinality is 1
@@ -298,7 +306,11 @@ impl ShExToUnified {
             Some(_) => Some(0), // Negative values become 0
         };
 
-        let max_card = max.and_then(|m| if m >= 0 { Some(m as u32) } else { None });
+        let max_card = match max {
+            Some(m) if m >= 0 => Some(m as u32),
+            Some(_) => None,  // `*` or `+`: genuinely unbounded
+            None => min_card, // omitted: exactly as many as the minimum
+        };
 
         (min_card, max_card)
     }

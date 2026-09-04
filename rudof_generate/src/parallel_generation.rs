@@ -466,10 +466,14 @@ impl ParallelGenerator {
         let min_card_raw = min_cardinality.unwrap_or(0).max(0) as usize;
         // Apply ignore_min_cardinality: if true, treat min as 0
         let min_card = if config.ignore_min_cardinality { 0 } else { min_card_raw };
+        // An absent maximum means unbounded in both languages -- ShEx `*`/`+`
+        // and a SHACL shape with no `sh:maxCount` all arrive here as `None`, as
+        // does the explicit `-1` the legacy path uses. A generator has to pick
+        // some number, and that number bounds the output, so it is configurable
+        // rather than an undocumented constant.
         let max_card = match max_cardinality {
-            Some(-1) => 5, // Unbounded, but cap at reasonable limit for properties
+            Some(-1) | None => config.unbounded_property_values.max(min_card),
             Some(max) => (max as usize).max(min_card),
-            None => 1,
         };
 
         match self.config.cardinality_strategy {
@@ -612,10 +616,11 @@ impl ParallelGenerator {
     ) -> usize {
         // Absent minimum means optional, as above.
         let min_card = min_cardinality.unwrap_or(0).max(0) as usize;
+        // Unbounded, as above, and additionally limited by how many entities of
+        // the target shape exist to point at.
         let max_card = match max_cardinality {
-            Some(-1) => available_targets.min(20), // Unbounded, but cap at reasonable limit
+            Some(-1) | None => available_targets.min(self.config.unbounded_reference_values),
             Some(max) => (max as usize).min(available_targets),
-            None => 1.min(available_targets),
         };
 
         let max_card = max_card.max(min_card);

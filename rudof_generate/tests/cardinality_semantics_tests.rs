@@ -141,7 +141,10 @@ PREFIX :    <http://weso.es/shapes/>
 "#,
     );
 
-    let content = generate(&schema, dir.path().join("out.ttl"), CardinalityStrategy::Minimum).await?;
+    // Checked under the maximum strategy, which is where an upper bound that
+    // was lost in translation shows up: ShEx's default is exactly one, not one
+    // or more.
+    let content = generate(&schema, dir.path().join("out.ttl"), CardinalityStrategy::Maximum).await?;
     let counts = counts_per_subject(&content, "label");
 
     assert!(!counts.is_empty(), "expected generated entities");
@@ -178,6 +181,57 @@ async fn maximum_strategy_respects_max_count() -> Result<()> {
     assert!(
         counts.iter().all(|&n| (1..=3).contains(&n)),
         "realised cardinality must stay inside [1, 3], got {counts:?}"
+    );
+    Ok(())
+}
+
+/// A schema that sets no upper bound permits any number of values, so the
+/// number the generator picks is a configuration choice rather than a
+/// correctness one. It defaults to one and must be raisable.
+#[tokio::test]
+async fn the_unbounded_cap_is_configurable() -> Result<()> {
+    let dir = tempfile::tempdir().unwrap();
+    let schema = write(
+        &dir,
+        "unbounded.shex",
+        r#"
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX ex:  <http://example.org/>
+PREFIX :    <http://weso.es/shapes/>
+
+:Widget {
+   rdf:type  [ex:Widget]  ;
+   ex:tag    xsd:string  *
+}
+"#,
+    );
+
+    let run = async |cap: usize, name: &str| -> Result<Vec<usize>> {
+        let mut config = GeneratorConfig::default();
+        config.output.path = dir.path().join(name);
+        config.generation.entity_count = 3;
+        config.generation.seed = Some(5);
+        config.generation.cardinality_strategy = CardinalityStrategy::Maximum;
+        config.generation.unbounded_property_values = cap;
+
+        let mut generator = DataGenerator::new(config.clone())?;
+        generator.load_schema_auto(&schema).await?;
+        generator.generate().await?;
+        let content = std::fs::read_to_string(&config.output.path)?;
+        Ok(counts_per_subject(&content, "tag"))
+    };
+
+    let few = run(2, "few.ttl").await?;
+    let many = run(7, "many.ttl").await?;
+
+    assert!(
+        few.iter().all(|&n| n <= 2),
+        "a cap of 2 must bound an unbounded property, got {few:?}"
+    );
+    assert!(
+        many.iter().any(|&n| n > 2),
+        "raising the cap must let more values through, got {many:?}"
     );
     Ok(())
 }
