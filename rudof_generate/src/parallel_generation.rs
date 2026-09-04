@@ -209,6 +209,17 @@ impl ParallelGenerator {
         config
     }
 
+    /// The IRI that entities of `shape_info` are typed with.
+    ///
+    /// A schema that declares a target -- `sh:targetClass`, or a ShEx `rdf:type`
+    /// value set -- is asking for its instances to carry that class, and the
+    /// targets it declares select nothing unless they do. Shapes without a
+    /// target fall back to the shape IRI, which is the only identifier
+    /// available for them.
+    fn type_iri_for<'a>(shape_info: &'a ShapeInfo, shape_id: &'a str) -> &'a str {
+        shape_info.target_class.as_deref().unwrap_or(shape_id)
+    }
+
     /// Generate a single entity
     async fn generate_single_entity(&self, shape_info: &ShapeInfo, entity_index: usize) -> Result<Vec<Triple>> {
         let mut triples = Vec::new();
@@ -219,11 +230,13 @@ impl ParallelGenerator {
         // Get effective configuration for this shape
         let config = self.get_effective_config(shape_id);
 
-        // Add type triple
+        // Add type triple. Entities are typed with the class the shape targets,
+        // so that the targets declared by the source schema select them; the
+        // shape IRI is only a fallback for shapes that declare no target.
         triples.push(Triple::new(
             NamedOrBlankNode::NamedNode(entity_node.clone()),
             NamedNode::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-            Term::NamedNode(NamedNode::new_unchecked(shape_id)),
+            Term::NamedNode(NamedNode::new_unchecked(Self::type_iri_for(shape_info, shape_id))),
         ));
 
         // Generate property triples
@@ -602,7 +615,7 @@ impl ParallelGenerator {
         triples.push(Triple::new(
             NamedOrBlankNode::NamedNode(entity_node.clone()),
             NamedNode::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-            Term::NamedNode(NamedNode::new_unchecked(shape_id)),
+            Term::NamedNode(NamedNode::new_unchecked(Self::type_iri_for(shape_info, shape_id))),
         ));
 
         // Generate properties for nested entity (only data properties to avoid infinite recursion)
