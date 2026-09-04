@@ -157,12 +157,39 @@ rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantic
   ```
 
 A shape with no cycles in it validates identically under all three, so there's no harm in
-leaving `--recursion-semantics` unset unless you actually have a recursive shape. Even under
-`cautious`/`brave`, only cycles built from monotonic constraints (`sh:and`, `sh:or`,
-`sh:node`, `sh:property`, `sh:minCount`, `sh:closed`, and similar) are guaranteed to give a
-sensible answer: a schema whose only cycles pass through negation (`sh:not`, `sh:xone`,
-`sh:qualifiedMaxCount`, `sh:qualifiedValueShapesDisjoint`) is always rejected, since there
-isn't yet a supported way to resolve that case.
+leaving `--recursion-semantics` unset unless you actually have a recursive shape.
+
+### Recursion and negation
+
+A cycle built only from monotonic constraints (`sh:and`, `sh:or`, `sh:node`, `sh:property`,
+`sh:minCount`, `sh:closed`, and similar) is always safe under `cautious`/`brave`. A cycle
+that also carries a negating constraint (`sh:not`, `sh:xone`, `sh:qualifiedMaxCount`,
+`sh:qualifiedValueShapesDisjoint`) needs one more condition, *stratification*: every negating
+constraint in the cycle must target a shape that doesn't itself depend on any recursion —
+directly or transitively. Such a shape can always be resolved on its own, independently of
+the cycle it's negated from, so there's no ordering problem. A schema like this:
+
+```turtle
+:PersonShape a sh:NodeShape ;
+    sh:targetClass :Person ;
+    sh:not :RobotShape ;                       # RobotShape is unrelated to the recursion
+    sh:property [ sh:path :knows ; sh:node :PersonShape ] .
+
+:RobotShape a sh:NodeShape ;
+    sh:property [ sh:path :isRobot ; sh:hasValue true ] .
+```
+
+compiles and validates normally under both `cautious` and `brave`: `sh:not :RobotShape` is
+checked exactly as it would be outside any cycle, and the recursive `:knows` property is
+still resolved per the chosen semantics.
+
+What's still rejected, under every `--recursion-semantics` value including `brave`, is a
+negating constraint that reaches back into a cycle — its own, or a different recursive
+shape's. There's no order left to evaluate it in: whichever fixpoint gets picked for the
+negated shape, the negation's own meaning stops being simple to define. Use `rudof shacl -s
+shapes.ttl -r internal` to see how each shape in a schema is classified — *not recursive*,
+*positive recursive*, *stratified recursive*, or *non-stratified recursive* — including which
+ones would need this to be resolved.
 
 ## Selecting the RDF backend
 

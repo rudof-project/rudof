@@ -1,0 +1,37 @@
+prefix :       <http://example.org/>
+prefix sh:     <http://www.w3.org/ns/shacl#>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:Friendly a sh:NodeShape ;
+    sh:targetClass :Person ;  
+    sh:property :nameShape, :knowsShape .
+
+:NonFriendly a sh:NodeShape ;
+    sh:targetClass :Person ;  
+    sh:not [ sh:node :Friendly ] .
+
+
+:nameShape sh:path :name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 .
+:knowsShape sh:path :knows ;
+        sh:node :PersonShape .
+
+:a a :Person ;
+   :name  "Alice" ;
+   :knows :a  .
+
+:b a :Person ;
+   :name  "Bob"    ;
+   :knows :c .
+
+:c a :Person ;
+   :name  "Carol"  ;
+   :knows :b .
+
+:d a :Person ;
+   :name  23      .  # Should fail
+
+:e a :Person ;
+   :name  "Emily" .
