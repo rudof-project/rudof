@@ -9,7 +9,15 @@ RUN groupadd -g 10001 -r dockergrp && useradd -r -g dockergrp -u 10001 dockeruse
 ARG BINARY_NAME_DEFAULT
 ENV BINARY_NAME=$BINARY_NAME_DEFAULT
 
-RUN apt-get update && apt-get install -y --no-install-recommends libssl-dev pkg-config \
+# GitHub Actions runners live in Azure; the default archive.ubuntu.com mirror
+# is frequently slow/unreachable from there, so point apt at the Azure mirror.
+RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
+        sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \
+    fi
+RUN apt-get update -o Acquire::Retries=3 \
+    && apt-get install -y -o Acquire::Retries=3 --no-install-recommends libssl-dev pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Now add the rest of the project and build the real main
@@ -22,7 +30,12 @@ RUN set -x && cp target/x86_64-unknown-linux-gnu/release/$BINARY_NAME /build-out
 FROM ubuntu:26.04
 
 RUN groupadd -g 10001 -r dockergrp && useradd -r -g dockergrp -u 10001 dockeruser
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
+        sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \
+    fi
+RUN apt-get update -o Acquire::Retries=3 && apt-get install -y -o Acquire::Retries=3 --no-install-recommends \
     ca-certificates libssl3 libstdc++6 zlib1g libzstd1 \
     && rm -rf /var/lib/apt/lists/*
 USER dockeruser
