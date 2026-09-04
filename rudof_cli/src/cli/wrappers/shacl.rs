@@ -23,6 +23,7 @@ cli_wrapper!(
     RecursionSemanticsCli,
     RecursionSemantics,
     {
+        None,
         Cautious,
         Brave,
     }

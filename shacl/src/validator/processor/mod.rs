@@ -107,6 +107,11 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
             report = report.with_results(violations);
         }
         if config.store_evidences() {
+            let evidences = if config.evidence_shapes_only() {
+                evidences.into_iter().filter(|e| e.is_shape_level()).collect()
+            } else {
+                evidences
+            };
             report = report.with_evidences(evidences);
         }
 

@@ -1,67 +1,26 @@
-//! Cycle-breaking for recursive shapes.
+//! Validator-side support for [`RecursionSemantics`]: parsing it from a
+//! string, and cutting a cyclic `(node, shape)` reference during
+//! validation.
 //!
-//! A shape can reference itself, directly or through other shapes (e.g. a
-//! `Person` shape whose `knows` property must itself be a `Person`). Without
-//! special handling, validating such a shape against data that actually
-//! contains a cycle would recurse forever. Instead, while validating
-//! `(node, shape)`, if a nested validation call re-enters that very same
-//! `(node, shape)` pair, we cut the cycle and assume a default verdict for
-//! that inner reference, then keep evaluating the rest of the shape's
-//! constraints against that assumption. The default is a choice of
-//! semantics ([`RecursionSemantics`]): assume the cut reference does *not*
-//! conform (cautious) or *does* conform (brave).
-//!
-//! Only positive recursion (shapes combined via `sh:and`, `sh:or`,
-//! `sh:node`, `sh:property`, `sh:minCount`, `sh:closed`, ...) is soundly
-//! handled by this: those constraints are monotonic, so cutting a cycle can
-//! only make the final verdict more permissive or more restrictive in a
-//! well-behaved way. Constructs that rely on negation (`sh:not`, `sh:xone`,
-//! `sh:qualifiedMaxCount`, `sh:qualifiedValueShapesDisjoint`) are cut the
-//! same way here for simplicity, but a cycle passing through one of them is
-//! not guaranteed sound — stratified negation is left for a future
-//! extension.
+//! The [`RecursionSemantics`] type itself lives in [`crate::ir`] because
+//! schema compilation needs it on the `wasm` target too, where this
+//! (native-only) validator module isn't compiled. See that module for the
+//! semantics of each variant.
 
 use crate::error::ValidationError;
-use crate::ir::IRShape;
+use crate::ir::{IRShape, RecursionSemantics};
 use crate::types::MessageMap;
 use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
-use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-
-/// Which fixpoint semantics to use when a recursive shape reference is
-/// encountered during validation.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum RecursionSemantics {
-    /// Least fixpoint (LFP): "believe a node conforms only if that can be
-    /// justified without ever assuming the very fact being proven." A
-    /// cyclic reference is cut by assuming it does **not** conform.
-    #[default]
-    Cautious,
-    /// Greatest fixpoint (GFP): "accept any assignment that is
-    /// self-consistent, even if the only reason it holds together is the
-    /// cycle itself." A cyclic reference is cut by assuming it **does**
-    /// conform.
-    Brave,
-}
-
-impl Display for RecursionSemantics {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            RecursionSemantics::Cautious => write!(f, "cautious"),
-            RecursionSemantics::Brave => write!(f, "brave"),
-        }
-    }
-}
 
 impl FromStr for RecursionSemantics {
     type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
+            "none" => Ok(Self::None),
             "cautious" | "lfp" => Ok(Self::Cautious),
             "brave" | "gfp" => Ok(Self::Brave),
             other => Err(Self::Err::UnsupportedMode(other.to_string())),
@@ -82,6 +41,13 @@ fn recursion_constraint_component() -> Object {
 
 /// Cuts a cyclic reference to `(node, shape)`, returning the outcome assumed
 /// under `semantics` instead of recursing further.
+///
+/// A schema compiled with [`RecursionSemantics::None`] never has a cycle to
+/// cut in the first place (compilation rejects it first — see
+/// `IRSchema::compile_with_recursion`), so this should never actually be
+/// called with `None`. It's handled the same as `Cautious` regardless, so
+/// that reusing an already-compiled cyclic schema under a config that was
+/// changed to `None` afterwards degrades safely instead of panicking.
 pub(crate) fn cut_outcome(semantics: RecursionSemantics, shape: &IRShape, node: &Object) -> ValidationOutcome {
     let component = recursion_constraint_component();
     match semantics {
@@ -89,7 +55,7 @@ pub(crate) fn cut_outcome(semantics: RecursionSemantics, shape: &IRShape, node: 
             let evidence = Evidence::new(node.clone(), component).with_source(Some(shape.id().clone()));
             ValidationOutcome::from_evidence(evidence)
         },
-        RecursionSemantics::Cautious => {
+        RecursionSemantics::Cautious | RecursionSemantics::None => {
             let msg = format!(
                 "Recursive reference to shape {} for node {node} assumed non-conformant (cautious/LFP semantics)",
                 shape.id()
@@ -107,12 +73,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn default_is_cautious() {
-        assert_eq!(RecursionSemantics::default(), RecursionSemantics::Cautious);
-    }
-
-    #[test]
     fn from_str_accepts_names_and_lfp_gfp_aliases() {
+        assert_eq!("none".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::None);
         assert_eq!(
             "cautious".parse::<RecursionSemantics>().unwrap(),
             RecursionSemantics::Cautious
@@ -131,7 +93,11 @@ mod tests {
 
     #[test]
     fn display_round_trips_through_from_str() {
-        for s in [RecursionSemantics::Cautious, RecursionSemantics::Brave] {
+        for s in [
+            RecursionSemantics::None,
+            RecursionSemantics::Cautious,
+            RecursionSemantics::Brave,
+        ] {
             assert_eq!(s.to_string().parse::<RecursionSemantics>().unwrap(), s);
         }
     }

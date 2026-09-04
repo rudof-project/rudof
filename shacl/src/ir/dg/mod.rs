@@ -9,6 +9,9 @@ use std::fmt::{Display, Formatter};
 
 mod iterator;
 mod pos_neg;
+mod stratification;
+
+pub use stratification::ShapeRecursionKind;
 
 #[derive(Default, Debug, Clone)]
 pub struct DependencyGraph {
@@ -18,32 +21,6 @@ pub struct DependencyGraph {
 impl DependencyGraph {
     pub fn new() -> Self {
         DependencyGraph { graph: GraphMap::new() }
-    }
-
-    pub fn neg_cycles(&self) -> Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>> {
-        let mut result = Vec::new();
-        let scc = tarjan_scc(&self.graph);
-        for component in scc {
-            let mut neg_cycle = Vec::new();
-            for node in component.iter().as_slice() {
-                let edges = self.graph.edges_directed(*node, Outgoing);
-                for edge in edges {
-                    if component.contains(&edge.target()) && !edge.weight().value() {
-                        let mut shapes = Vec::new();
-                        for node in component.iter() {
-                            shapes.push(*node);
-                        }
-                        let target = edge.target();
-                        neg_cycle.push((*node, target, shapes));
-                        break;
-                    }
-                }
-            }
-            if !neg_cycle.is_empty() {
-                result.push(neg_cycle);
-            }
-        }
-        result
     }
 
     pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
@@ -58,11 +35,6 @@ impl DependencyGraph {
     pub fn cycles(&self) -> Vec<Vec<ShapeLabelIdx>> {
         let scc = tarjan_scc(&self.graph);
         scc.into_iter().filter(|component| component.len() > 1).collect()
-    }
-
-    pub fn has_neg_cycle(&self) -> bool {
-        let neg_cycles = self.neg_cycles();
-        !neg_cycles.is_empty()
     }
 
     pub fn all_edges(&self) -> DependencyGraphIter<'_> {

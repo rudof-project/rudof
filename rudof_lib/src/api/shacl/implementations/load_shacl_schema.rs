@@ -7,6 +7,7 @@ use crate::{
 use rudof_iri::{IriS, MimeType};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use shacl::error::IRError;
+use shacl::ir::IRSchema;
 use shacl::rdf::ShaclParser;
 use sparql_service::RdfData;
 use std::io::Read;
@@ -99,20 +100,23 @@ fn read_shacl_schema(
             error: error.to_string(),
         })?;
 
+    let recursion_semantics = rudof.config().execute().shacl().recursion_semantics();
     rudof.shacl_shapes = Some(
-        shacl_schema
-            .try_into()
-            .map_err(|e: IRError| ShaclError::FailedParsingShaclSchema {
+        IRSchema::compile_with_recursion(&shacl_schema, recursion_semantics).map_err(|e: IRError| {
+            ShaclError::FailedParsingShaclSchema {
                 source_name: schema.source_name(),
                 format: schema_format.to_string(),
                 error: e.to_string(),
-            })?,
+            }
+        })?,
     );
 
     Ok(())
 }
 
 fn extract_shacl_shapes_from_data(rudof: &mut Rudof) -> Result<()> {
+    let recursion_semantics = rudof.config().execute().shacl().recursion_semantics();
+
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if !data.is_rdf() {
@@ -131,13 +135,13 @@ fn extract_shacl_shapes_from_data(rudof: &mut Rudof) -> Result<()> {
             })?;
 
     rudof.shacl_shapes = Some(
-        shacl_schema
-            .try_into()
-            .map_err(|e: IRError| ShaclError::FailedParsingShaclSchema {
+        IRSchema::compile_with_recursion(&shacl_schema, recursion_semantics).map_err(|e: IRError| {
+            ShaclError::FailedParsingShaclSchema {
                 source_name: "loaded RDF data".to_string(),
                 format: "loaded RDF data format".to_string(),
                 error: e.to_string(),
-            })?,
+            }
+        })?,
     );
 
     Ok(())

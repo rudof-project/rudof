@@ -6,7 +6,7 @@ use crate::validator::engine::focus_nodes_ops::FocusNodesOps;
 use crate::validator::engine::value_nodes_ops::ValueNodesOps;
 use crate::validator::nodes::FocusNodes;
 use crate::validator::recursion::cut_outcome;
-use crate::validator::report::{ValidationOutcome, ValidationResult};
+use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
@@ -190,6 +190,27 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
                     bucket.push_evidence(e.clone());
                 }
             }
+
+            // A node's per-constraint evidence (pushed above, one per
+            // `sh:datatype`/`sh:minCount`/etc.) doesn't by itself say
+            // anything about the *shape* as a whole. For a shape with its
+            // own targets — i.e. one a user actually validates data
+            // against, as opposed to an internal, target-less property
+            // shape — also record one top-level evidence per conforming
+            // focus node, so e.g. ":e conforms to :PersonShape" shows up
+            // even though ":e" has no violations (and possibly no other
+            // evidence at all, if none of its constraints happened to
+            // iterate any value).
+            if !self.targets().is_empty() {
+                for (node_object, node_outcome) in by_focus.iter_mut() {
+                    if node_outcome.conforms() {
+                        let evidence = Evidence::new_shape(node_object.clone(), self.id().clone());
+                        node_outcome.push_evidence(evidence.clone());
+                        new_outcome.push_evidence(evidence);
+                    }
+                }
+            }
+
             for (node_object, node_outcome) in by_focus {
                 runner.record_validation(node_object, *idx, node_outcome);
             }

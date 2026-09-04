@@ -34,10 +34,15 @@ impl Command for ShaclValidateCommand {
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
 
-        // Only override the config's store_errors/store_evidences/recursion_semantics
-        // flags when the corresponding CLI flag is explicitly passed, so the
-        // defaults (errors kept, evidence not, cautious/LFP) survive otherwise.
-        if self.args.no_errors || self.args.with_evidences || self.args.recursion_semantics.is_some() {
+        // Only override the config's store_errors/store_evidences/evidence_shapes_only/
+        // recursion_semantics flags when the corresponding CLI flag is explicitly
+        // passed, so the defaults (errors kept, evidence not, everything when
+        // evidence is on, cautious/LFP) survive otherwise.
+        if self.args.no_errors
+            || self.args.with_evidences
+            || self.args.evidences_shapes_only
+            || self.args.recursion_semantics.is_some()
+        {
             let mut cfg = ctx.rudof.config().execute().clone();
             let mut sc = cfg.shacl().clone();
             if self.args.no_errors {
@@ -45,6 +50,9 @@ impl Command for ShaclValidateCommand {
             }
             if self.args.with_evidences {
                 sc = sc.with_store_evidences(true);
+            }
+            if self.args.evidences_shapes_only {
+                sc = sc.with_evidence_shapes_only(true);
             }
             if let Some(semantics) = self.args.recursion_semantics {
                 sc = sc.with_recursion_semantics(semantics.into());

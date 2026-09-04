@@ -48,7 +48,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let mut validator: DataValidation = rdf.clone().into();
         let schema = ShaclParser::new(rdf).parse().unwrap();
-        let schema_ir: IRSchema = schema.try_into().unwrap();
+        let schema_ir = IRSchema::compile_with_recursion(&schema, config.recursion_semantics()).unwrap();
         validator
             .validate(&schema_ir, &ShaclValidationMode::Native, config)
             .unwrap()
@@ -97,6 +97,59 @@ prefix : <http://example.org/>
                 .iter()
                 .any(|e| e.focus_node().to_string().contains("ok"))
         );
+    }
+
+    #[test]
+    fn shape_level_evidence_is_recorded_even_when_no_sub_constraint_evidence_fires() {
+        // `:e` has no `:knows` value at all, so the Node component's
+        // per-value iteration never runs and produces no evidence of its
+        // own — but `:e` still fully conforms to `:PersonShape` (the
+        // property is optional, no sh:minCount), and that should be
+        // visible as its own evidence, not silently absent.
+        let graph = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:PersonShape a sh:NodeShape ;
+  sh:targetClass :Person ;
+  sh:property [ sh:path :knows ; sh:node :PersonShape ] .
+
+:e a :Person .
+"#;
+        let config = ShaclConfig::default().with_store_evidences(true);
+        let report = validate_with_config(graph, &config);
+        assert!(report.conforms());
+        assert!(
+            report
+                .evidences()
+                .iter()
+                .any(|e| e.focus_node().to_string().contains("e")
+                    && e.constraint_component().to_string().contains("PersonShape")),
+            "{:?}",
+            report.evidences()
+        );
+    }
+
+    #[test]
+    fn evidence_shapes_only_drops_component_level_evidence_but_keeps_shape_level() {
+        let full_config = ShaclConfig::default().with_store_evidences(true);
+        let full = validate_with_config(MIN_COUNT_GRAPH, &full_config);
+        // Sanity check: without the filter, both granularities are present.
+        assert!(full.evidences().iter().any(|e| e.is_shape_level()));
+        assert!(full.evidences().iter().any(|e| !e.is_shape_level()));
+
+        let shapes_only_config = ShaclConfig::default()
+            .with_store_evidences(true)
+            .with_evidence_shapes_only(true);
+        let shapes_only = validate_with_config(MIN_COUNT_GRAPH, &shapes_only_config);
+        assert!(!shapes_only.evidences().is_empty());
+        assert!(
+            shapes_only.evidences().iter().all(|e| e.is_shape_level()),
+            "{:?}",
+            shapes_only.evidences()
+        );
+        // Violations are untouched by this flag.
+        assert_eq!(shapes_only.results().len(), full.results().len());
     }
 
     #[test]
@@ -194,10 +247,21 @@ prefix : <http://example.org/>
 "#;
 
     #[test]
+    fn none_mode_rejects_the_cyclic_schema_outright() {
+        // Default: recursive shapes are opt-in, so a cyclic schema fails to
+        // compile at all rather than being validated.
+        let rdf = RdfData::from_str(MUTUAL_CYCLE_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let schema = ShaclParser::new(rdf).parse().unwrap();
+        let result = IRSchema::compile_with_recursion(&schema, RecursionSemantics::None);
+        assert!(result.is_err(), "expected a cyclic schema to be rejected under None");
+    }
+
+    #[test]
     fn cautious_mode_rejects_an_ungrounded_cycle() {
         // Least fixpoint: nothing in the cycle can be justified without
         // assuming itself, so it's assumed non-conformant.
-        let report = validate_with_config(MUTUAL_CYCLE_GRAPH, &ShaclConfig::default());
+        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let report = validate_with_config(MUTUAL_CYCLE_GRAPH, &config);
         assert!(!report.conforms());
     }
 
@@ -230,7 +294,8 @@ prefix : <http://example.org/>
 :n2 a :ListNode ; :next :n3 .
 :n3 a :ListNode .
 "#;
-        let cautious = validate_with_config(graph, &ShaclConfig::default());
+        let cautious_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let cautious = validate_with_config(graph, &cautious_config);
         assert!(cautious.conforms(), "{:?}", cautious.results());
 
         let brave_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Brave);
@@ -281,7 +346,8 @@ prefix : <http://example.org/>
             ));
         }
 
-        let report = validate_with_config(&graph, &ShaclConfig::default());
+        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let report = validate_with_config(&graph, &config);
         assert!(
             report
                 .results()
@@ -291,5 +357,149 @@ prefix : <http://example.org/>
             report.results()
         );
         assert_eq!(report.results().len(), CYCLE_LEN, "{:?}", report.results());
+    }
+
+    /// `:PersonShape` is recursive (via `:knowsShape`), and also carries a
+    /// `sh:not :RobotShape` constraint. `:RobotShape` is not itself
+    /// recursive and doesn't depend on anything that is, so the negation is
+    /// stratified: it can be settled independently of the recursive part.
+    const STRATIFIED_NEGATION_GRAPH: &str = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:PersonShape a sh:NodeShape ;
+  sh:targetClass :Person ;
+  sh:not :RobotShape ;
+  sh:property [ sh:path :knows ; sh:node :PersonShape ] .
+
+:RobotShape a sh:NodeShape ;
+  sh:property [ sh:path :isRobot ; sh:hasValue true ] .
+
+:human a :Person ; :knows :human .
+:robot a :Person ; :isRobot true ; :knows :robot .
+"#;
+
+    #[test]
+    fn stratified_negation_compiles_under_both_recursion_semantics() {
+        for semantics in [RecursionSemantics::Cautious, RecursionSemantics::Brave] {
+            let rdf =
+                RdfData::from_str(STRATIFIED_NEGATION_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let schema = ShaclParser::new(rdf).parse().unwrap();
+            let result = IRSchema::compile_with_recursion(&schema, semantics);
+            assert!(
+                result.is_ok(),
+                "expected a stratified cycle to compile under {semantics:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn stratified_negation_rejects_the_negated_node_independently_of_the_recursion_semantics() {
+        // The `sh:not` check doesn't depend on the cycle at all, so it gives
+        // the same answer for `:robot` under both cautious and brave: the
+        // negation fails regardless of how the *unrelated* recursive part
+        // (which `:robot` also happens to sit in) is resolved.
+        for semantics in [RecursionSemantics::Cautious, RecursionSemantics::Brave] {
+            let config = ShaclConfig::default().with_recursion_semantics(semantics);
+            let report = validate_with_config(STRATIFIED_NEGATION_GRAPH, &config);
+            assert!(
+                report
+                    .results()
+                    .iter()
+                    .any(|r| r.focus_node().to_string().contains("robot")),
+                "expected :robot to violate sh:not under {semantics:?}: {:?}",
+                report.results()
+            );
+        }
+    }
+
+    #[test]
+    fn stratified_negation_agrees_with_recursion_semantics_for_the_cycle_itself() {
+        // `:human`'s conformance hinges purely on the self-cycle (it isn't a
+        // robot, so `sh:not` never fires for it) — cautious/brave disagree
+        // on it exactly as they would without the negation present at all.
+        let cautious_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let cautious = validate_with_config(STRATIFIED_NEGATION_GRAPH, &cautious_config);
+        assert!(
+            cautious
+                .results()
+                .iter()
+                .any(|r| r.focus_node().to_string().contains("human")),
+            "expected :human to be rejected under cautious: {:?}",
+            cautious.results()
+        );
+
+        let brave_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Brave);
+        let brave = validate_with_config(STRATIFIED_NEGATION_GRAPH, &brave_config);
+        assert!(
+            brave
+                .results()
+                .iter()
+                .all(|r| !r.focus_node().to_string().contains("human")),
+            "expected :human to conform under brave: {:?}",
+            brave.results()
+        );
+    }
+
+    #[test]
+    fn recursion_kinds_reports_stratified_for_the_stratified_negation_schema() {
+        use crate::ir::dg::ShapeRecursionKind;
+
+        let rdf = RdfData::from_str(STRATIFIED_NEGATION_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let schema = ShaclParser::new(rdf).parse().unwrap();
+        let schema_ir = IRSchema::compile_with_recursion(&schema, RecursionSemantics::Brave).unwrap();
+
+        let kinds = schema_ir.recursion_kinds();
+        let person_kind = kinds
+            .iter()
+            .find(|(label, _)| label.to_string().contains("PersonShape"))
+            .map(|(_, kind)| *kind)
+            .expect("PersonShape should appear in the dependency graph");
+        assert_eq!(person_kind, ShapeRecursionKind::Stratified);
+
+        let robot_kind = kinds
+            .iter()
+            .find(|(label, _)| label.to_string().contains("RobotShape"))
+            .map(|(_, kind)| *kind);
+        assert_ne!(robot_kind, Some(ShapeRecursionKind::Stratified));
+    }
+
+    /// `:PersonShape` negates `:OtherRecursiveShape`, which is itself
+    /// recursive (via `:friendShape`) and entirely unrelated to
+    /// `:PersonShape`'s own cycle. There is no order in which both
+    /// fixpoints can be soundly resolved, so this is rejected outright —
+    /// under every recursion semantics, including `brave`.
+    const NON_STRATIFIED_NEGATION_GRAPH: &str = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:PersonShape a sh:NodeShape ;
+  sh:targetClass :Person ;
+  sh:not :OtherRecursiveShape ;
+  sh:property [ sh:path :knows ; sh:node :PersonShape ] .
+
+:OtherRecursiveShape a sh:NodeShape ;
+  sh:property [ sh:path :friend ; sh:node :OtherRecursiveShape ] .
+
+:a a :Person ; :knows :a .
+"#;
+
+    #[test]
+    fn negation_of_an_unrelated_recursive_shape_is_rejected_under_every_semantics() {
+        for semantics in [RecursionSemantics::Cautious, RecursionSemantics::Brave] {
+            let rdf = RdfData::from_str(
+                NON_STRATIFIED_NEGATION_GRAPH,
+                &RDFFormat::Turtle,
+                None,
+                &ReaderMode::Strict,
+            )
+            .unwrap();
+            let schema = ShaclParser::new(rdf).parse().unwrap();
+            let result = IRSchema::compile_with_recursion(&schema, semantics);
+            assert!(
+                result.is_err(),
+                "expected negation of an unrelated recursive shape to be rejected under {semantics:?}"
+            );
+        }
     }
 }

@@ -61,6 +61,32 @@ In the example below, `rudof` will read a SHACL file in Turle and convert it to 
 rudof shacl -s simple_shacl.ttl -r rdfxml -o output.rdf
 ```
 
+## Checking whether shapes are recursive
+
+`-r internal` shows `rudof`'s internal representation of the shapes graph, including a
+"Recursive shapes" section that classifies every shape that takes part in a cyclic shape
+reference:
+
+```sh
+rudof shacl -s recursive_shapes.ttl -r internal
+```
+
+Each recursive shape is reported as one of:
+
+- **positive recursive** — the cycle uses only monotonic constraints (`sh:and`, `sh:or`,
+  `sh:node`, `sh:property`, ...); supported under both `cautious` and `brave`.
+- **stratified recursive** — the cycle also carries a negating constraint (`sh:not`,
+  `sh:xone`, ...), but it targets a shape outside of any recursion, so it can be resolved
+  independently; supported under both `cautious` and `brave`.
+- **non-stratified recursive** — a negating constraint in the cycle reaches back into a
+  recursive shape (its own, or a different one's); no safe order exists to resolve it, so a
+  schema like this is always rejected, at `-s`/`--shapes` load time.
+
+Shapes that aren't part of any cycle are omitted from this section (or the whole section
+reads "none" if the schema has no recursion at all). See
+[Recursive shapes](./shacl_validate.md#recursive-shapes) for the full explanation and how
+`--recursion-semantics` picks between `cautious` and `brave`.
+
 ## Selecting the RDF backend
 
 By default, SHACL data is loaded into an in-process `memory` graph. Use `--backend` to switch to a QLever Docker container or a remote SPARQL endpoint:

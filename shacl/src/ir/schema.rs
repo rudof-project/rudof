@@ -1,6 +1,7 @@
 use crate::ast::{ASTSchema, ASTShape};
 use crate::error::ASTError;
-use crate::ir::dg::{DependencyGraph, PosNeg};
+use crate::ir::RecursionSemantics;
+use crate::ir::dg::{DependencyGraph, PosNeg, ShapeRecursionKind};
 use crate::ir::error::IRError;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
@@ -115,6 +116,22 @@ impl IRSchema {
         self.iter().filter(|(_, shape)| !shape.targets().is_empty())
     }
 
+    /// Classifies every shape by how it participates in recursion (not
+    /// recursive, positive recursive, stratified recursive, or
+    /// non-stratified recursive). See [`ShapeRecursionKind`].
+    ///
+    /// A schema that compiled successfully never contains a
+    /// non-stratified shape — [`Self::compile_with_recursion`] rejects
+    /// those outright — but the classification is still exposed here so
+    /// callers (e.g. the `shacl` command) can report each shape's kind.
+    pub fn recursion_kinds(&self) -> HashMap<&Object, ShapeRecursionKind> {
+        self.dependency_graph
+            .shape_recursion_kinds()
+            .into_iter()
+            .filter_map(|(idx, kind)| self.idx_labels_map.get(&idx).map(|label| (label, kind)))
+            .collect()
+    }
+
     /// Returns the indices of shapes with targets, grouped into topological levels.
     ///
     /// Shapes in the same level have no dependency relationship with each other and
@@ -207,7 +224,17 @@ impl IRSchema {
         ids.into_iter().map(|id| self.register_shape(&id, None, ast)).collect()
     }
 
+    /// Compiles with [`RecursionSemantics::default`] — i.e. a shapes graph
+    /// with a cyclic shape reference is rejected. Use
+    /// [`Self::compile_with_recursion`] to opt into accepting one.
     pub fn compile(ast: &ASTSchema) -> Result<Self, IRError> {
+        Self::compile_with_recursion(ast, RecursionSemantics::default())
+    }
+
+    /// Compiles a shapes graph, controlling whether a cyclic shape
+    /// reference is accepted and, if so, how it's resolved at validation
+    /// time. See [`RecursionSemantics`].
+    pub fn compile_with_recursion(ast: &ASTSchema, recursion_semantics: RecursionSemantics) -> Result<Self, IRError> {
         let mut schema_ir = Self::new(ast.prefixmap().clone()).with_base(ast.base().cloned());
 
         for (id, shape) in ast.iter() {
@@ -220,10 +247,15 @@ impl IRSchema {
             warn!(
                 "The dependency graph has cycles. This is known as a recursive schema and the SHACL semantics for these schemas is implementation dependent"
             );
-            warn!(
-                "More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion"
-            );
-            if schema_ir.dependency_graph.has_neg_cycle() {
+
+            // A cycle is safe to accept (subject to `recursion_semantics`)
+            // as long as it's not `NonStratified`: either it's built purely
+            // from monotonic constraints, or every negating constraint it
+            // carries targets a shape that doesn't itself depend on any
+            // recursion — see `ShapeRecursionKind` for the full condition.
+            let is_stratified = schema_ir.dependency_graph.is_stratified();
+
+            if !is_stratified || !recursion_semantics.allows_recursion() {
                 let cycles: Vec<Vec<Object>> = schema_ir
                     .dependency_graph
                     .cycles()
@@ -242,18 +274,20 @@ impl IRSchema {
                             .collect()
                     })
                     .collect();
+                if !is_stratified {
+                    warn!(
+                        "Warning: The dependency graph has non-stratified negation: a negating constraint reaches back into a recursive shape. This may lead to unexpected behavior in SHACL validation"
+                    );
+                    return Err(IRError::DependencyGraphHasNegativeCycles { cycles });
+                }
                 warn!(
-                    "Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation"
+                    "Recursive shapes are disabled (recursion_semantics = none): rejecting the cyclic schema. Set recursion_semantics to \"cautious\" or \"brave\" to allow it."
                 );
-                return Err(IRError::DependencyGraphHasNegativeCycles { cycles });
+                return Err(IRError::DependencyGraphHasCycles { cycles });
             }
-            // A purely positive cycle: allowed. The validator cuts it at
-            // runtime instead of recursing forever, using the configured
-            // `RecursionSemantics` (cautious/LFP or brave/GFP) — see
-            // `crate::validator::recursion`. Negative (stratified) recursion
-            // through `sh:not`/`sh:xone`/etc. is not yet supported and is
-            // rejected above.
-            warn!("The cycle is purely positive: validation will handle it via the configured recursion semantics.");
+            warn!(
+                "The cycle is stratified (any negation in it targets recursion-free shapes): validation will handle it via the configured recursion semantics."
+            );
         }
 
         Ok(schema_ir)
@@ -326,6 +360,22 @@ impl Display for IRSchema {
         for (node, shape) in self.shapes.iter() {
             writeln!(f, "[{node}] -> {shape}")?;
         }
-        writeln!(f, "Dependency graph: {}", self.dependency_graph)
+        writeln!(f, "Dependency graph: {}", self.dependency_graph)?;
+
+        let mut recursive_shapes: Vec<(&Object, ShapeRecursionKind)> = self
+            .recursion_kinds()
+            .into_iter()
+            .filter(|(_, kind)| *kind != ShapeRecursionKind::NonRecursive)
+            .collect();
+        if recursive_shapes.is_empty() {
+            writeln!(f, "Recursive shapes: none")
+        } else {
+            recursive_shapes.sort_by_key(|(label, _)| label.to_string());
+            writeln!(f, "Recursive shapes:")?;
+            for (label, kind) in recursive_shapes {
+                writeln!(f, "  {label}: {kind}")?;
+            }
+            Ok(())
+        }
     }
 }

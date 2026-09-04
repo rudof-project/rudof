@@ -21,9 +21,17 @@ pub struct ShaclConfig {
     #[serde(rename = "store_evidences")]
     pub(crate) store_evidences: bool,
 
-    /// Fixpoint semantics assumed when a recursive shape reference (a
-    /// cycle) is encountered during validation (default: cautious/LFP).
-    /// See [`RecursionSemantics`].
+    /// When `store_evidences` is on, whether to keep only the per-shape
+    /// summary evidence (one per conforming `(node, shape)` pair with its
+    /// own targets) and drop the finer-grained per-constraint-component
+    /// evidence (default: false — keep everything). Has no effect when
+    /// `store_evidences` is off. See [`crate::validator::report::EvidenceKind`].
+    #[serde(rename = "evidence_shapes_only")]
+    pub(crate) evidence_shapes_only: bool,
+
+    /// Whether a shapes graph with a cyclic shape reference is accepted
+    /// and, if so, how the cycle is resolved during validation (default:
+    /// `cautious`/LFP). See [`RecursionSemantics`].
     #[serde(rename = "recursion_semantics")]
     pub(crate) recursion_semantics: RecursionSemantics,
 }
@@ -34,6 +42,7 @@ impl ShaclConfig {
             data: Self::default_data_config(),
             store_errors: Self::default_store_errors(),
             store_evidences: Self::default_store_evidences(),
+            evidence_shapes_only: Self::default_evidence_shapes_only(),
             recursion_semantics: Self::default_recursion_semantics(),
         }
     }
@@ -50,6 +59,11 @@ impl ShaclConfig {
 
     pub fn with_store_evidences(mut self, flag: bool) -> Self {
         self.store_evidences = flag;
+        self
+    }
+
+    pub fn with_evidence_shapes_only(mut self, flag: bool) -> Self {
+        self.evidence_shapes_only = flag;
         self
     }
 
@@ -72,6 +86,10 @@ impl ShaclConfig {
         self.store_evidences
     }
 
+    pub fn evidence_shapes_only(&self) -> bool {
+        self.evidence_shapes_only
+    }
+
     pub fn recursion_semantics(&self) -> RecursionSemantics {
         self.recursion_semantics
     }
@@ -84,6 +102,7 @@ impl ShaclConfig {
     #[inline] fn default_data_config() -> RdfDataConfig { RdfDataConfig::default() }
     #[inline] fn default_store_errors() -> bool { true }
     #[inline] fn default_store_evidences() -> bool { false }
+    #[inline] fn default_evidence_shapes_only() -> bool { false }
     #[inline] fn default_recursion_semantics() -> RecursionSemantics { RecursionSemantics::default() }
 }
 
@@ -106,6 +125,7 @@ mod tests {
         assert_eq!(c.rdf_data(), &ShaclConfig::default_data_config());
         assert!(c.store_errors());
         assert!(!c.store_evidences());
+        assert!(!c.evidence_shapes_only());
         assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Cautious);
     }
 
@@ -141,6 +161,18 @@ mod tests {
         .unwrap();
         assert!(!c.store_errors());
         assert!(c.store_evidences());
+    }
+
+    #[test]
+    fn builder_sets_evidence_shapes_only() {
+        let c = ShaclConfig::default().with_evidence_shapes_only(true);
+        assert!(c.evidence_shapes_only());
+    }
+
+    #[test]
+    fn toml_configures_evidence_shapes_only() {
+        let c: ShaclConfig = toml::from_str(r#"evidence_shapes_only = true"#).unwrap();
+        assert!(c.evidence_shapes_only());
     }
 
     #[test]
