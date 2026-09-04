@@ -416,7 +416,10 @@ pub async fn export_image_impl(
         image_format, size_bytes
     );
 
-    let mut result = CallToolResult::success(vec![ContentBlock::text(summary), ContentBlock::image(base64_data, mime_type)]);
+    let mut result = CallToolResult::success(vec![
+        ContentBlock::text(summary),
+        ContentBlock::image(base64_data, mime_type),
+    ]);
     result.structured_content = Some(structured);
 
     Ok(result)

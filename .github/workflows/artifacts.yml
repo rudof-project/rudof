@@ -50,7 +50,10 @@ jobs:
           - target: aarch64
             vm: macos-latest
     env:
-      MACOSX_DEPLOYMENT_TARGET: '12.0'
+      # lbug (LadybugDB) uses std::format; Apple's libc++ only implements the
+      # floating-point to_chars/from_chars it needs from macOS 13.3 onward,
+      # and marks them unavailable (hard compile error) below that.
+      MACOSX_DEPLOYMENT_TARGET: '13.3'
     steps:
       - name: Allow the workflow to access the files of the repository
         uses: actions/checkout@v4

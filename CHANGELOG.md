@@ -7,6 +7,29 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.3.18 
+### Fixed
+
+Fix release/artifact builds broken by the lbug dependency
+
+lbug (LadybugDB) imposes platform floors that broke both artifact jobs:
+
+- Linux: it only ships glibc prebuilt static libs and needs C++20
+  <format>, unavailable in the musl-cross-make toolchains. Build
+  Dockerfile_rudof against x86_64-unknown-linux-gnu instead of musl,
+  and ship a slim ubuntu:26.04 runtime image (matching the builder's
+  glibc) instead of FROM scratch, with the runtime libs lbug/openssl
+  need (libssl3, libstdc++6, zlib1g, libzstd1).
+
+- macOS: building lbug from source hits std::format, whose
+  floating-point to_chars/from_chars Apple's libc++ only supports
+  from macOS 13.3 onward. Bump artifacts.yml's mac job
+  MACOSX_DEPLOYMENT_TARGET from 12.0 to 13.3.
+
+Also fix Dockerfile_rudof's ENTRYPOINT, which used exec-form and never
+actually expanded $BINARY_NAME so the image could never run; and fix
+the `as`/`AS` FROM casing lint warning.
+
 ## 0.3.17
 
 The comments below gather changes between 0.3.14 and 0.3.17.

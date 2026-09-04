@@ -13,7 +13,9 @@ use rmcp::{
 use serde_json::Value;
 
 pub(crate) fn make_resource(uri: &str, name: &str, description: &str, mime_type: &str) -> Resource {
-    Resource::new(uri, name).with_description(description).with_mime_type(mime_type)
+    Resource::new(uri, name)
+        .with_description(description)
+        .with_mime_type(mime_type)
 }
 
 pub(crate) fn json_resource_result(uri: &str, value: &Value) -> Result<ReadResourceResult, McpError> {

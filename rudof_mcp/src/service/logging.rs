@@ -222,8 +222,7 @@ pub async fn send_log(
         param = param.with_logger(logger);
     }
 
-    if let Err(e) = peer.notify_logging_message(param).await
-    {
+    if let Err(e) = peer.notify_logging_message(param).await {
         tracing::error!(
             error = ?e,
             level = ?level,
