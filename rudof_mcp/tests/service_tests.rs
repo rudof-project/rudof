@@ -282,6 +282,7 @@ mod completion_tests {
 // =============================================================================
 
 #[cfg(not(target_family = "wasm"))]
+#[allow(deprecated)]
 mod log_level_tests {
     use super::*;
     use rmcp::model::LoggingLevel;

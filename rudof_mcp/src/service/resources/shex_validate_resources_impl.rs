@@ -13,7 +13,7 @@
 
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, RawResource, ReadResourceResult},
+    model::{ReadResourceResult, Resource},
 };
 use rudof_lib::Rudof;
 use serde_json::json;
@@ -25,7 +25,7 @@ use crate::service::tools::helpers::{
 };
 
 /// Returns the list of ShEx validation-related resources.
-pub fn get_shex_validate_resources() -> Vec<Annotated<RawResource>> {
+pub fn get_shex_validate_resources() -> Vec<Resource> {
     vec![
         make_resource(
             "rudof://formats/shex",

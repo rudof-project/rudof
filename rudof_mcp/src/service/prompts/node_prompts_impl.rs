@@ -1,7 +1,7 @@
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{GetPromptResult, PromptMessage, PromptMessageRole},
+    model::{GetPromptResult, PromptMessage, Role},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -56,14 +56,14 @@ pub async fn explore_rdf_node_prompt_impl(
 
     let messages = vec![
         PromptMessage::new_text(
-            PromptMessageRole::User,
+            Role::User,
             format!(
                 "Explore RDF node `{}` with mode: **{}**, predicates: {}",
                 node, mode_str, predicates_display
             ),
         ),
         PromptMessage::new_text(
-            PromptMessageRole::Assistant,
+            Role::Assistant,
             format!(
                 "# Exploring RDF Node: `{}`\n\n\
                 I'll analyze this node in the loaded RDF graph to discover its relationships and structure.\n\n\

@@ -2,7 +2,7 @@ use crate::service::{errors::*, mcp_service::RudofMcpService};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content},
+    model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat};
 use schemars::JsonSchema;
@@ -375,9 +375,9 @@ pub async fn validate_shex_impl(
     let results_preview = code_block_preview(results_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(format!("## Schema Preview\n\n{}", schema_preview)),
-        Content::text(format!("## Results Preview\n\n{}", results_preview)),
+        ContentBlock::text(summary),
+        ContentBlock::text(format!("## Schema Preview\n\n{}", schema_preview)),
+        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
     ]);
     result.structured_content = Some(structured);
 

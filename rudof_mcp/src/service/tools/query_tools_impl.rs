@@ -1,8 +1,12 @@
 use crate::service::{errors::*, mcp_service::*};
+// `CreateMessageRequestParams`/`SamplingMessage` (MCP sampling) are
+// deprecated by SEP-2577; the protocol still supports sampling and there
+// is no replacement API, so they stay in use here.
+#[allow(deprecated)]
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content, CreateMessageRequestParams, SamplingMessage},
+    model::{CallToolResult, ContentBlock, CreateMessageRequestParams, SamplingMessage},
 };
 use rudof_lib::formats::{InputSpec, ResultQueryFormat};
 use schemars::JsonSchema;
@@ -48,6 +52,9 @@ pub struct QueryExecutionResponse {
 ///
 /// Uses the MCP sampling capability to request LLM assistance in
 /// converting natural language to SPARQL.
+// MCP sampling is deprecated by SEP-2577; the protocol still supports it
+// and there is no replacement API, so it stays in use here.
+#[allow(deprecated)]
 async fn generate_sparql_from_natural_language(natural_language: &str) -> Result<String, McpError> {
     let system_message = r#"You are a SPARQL query expert. Convert natural language questions into valid SPARQL queries.
                                     - Only output the SPARQL query, no explanations or markdown formatting
@@ -282,9 +289,9 @@ pub async fn execute_sparql_query_impl(
     let results_display = code_block_preview(results_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(format!("## Query Preview\n\n{}", query_display)),
-        Content::text(format!("## Results Preview\n\n{}", results_display)),
+        ContentBlock::text(summary),
+        ContentBlock::text(format!("## Query Preview\n\n{}", query_display)),
+        ContentBlock::text(format!("## Results Preview\n\n{}", results_display)),
     ]);
     result.structured_content = Some(structured);
 

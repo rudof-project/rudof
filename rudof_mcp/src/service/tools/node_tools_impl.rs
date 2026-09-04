@@ -2,7 +2,7 @@ use crate::service::{errors::*, mcp_service::*};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content},
+    model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{IriNormalizationMode, NodeInspectionMode};
 use schemars::JsonSchema;
@@ -322,8 +322,8 @@ pub async fn node_info_impl(
     let results_preview = code_block_preview("text", &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(format!("## Results Preview\n\n{}", results_preview)),
+        ContentBlock::text(summary),
+        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
     ]);
     result.structured_content = Some(structured);
 

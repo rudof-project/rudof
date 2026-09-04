@@ -1,7 +1,7 @@
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{GetPromptResult, PromptMessage, PromptMessageRole},
+    model::{GetPromptResult, PromptMessage, Role},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -36,11 +36,11 @@ pub async fn analyze_rdf_data_prompt_impl(
 
     let messages = vec![
         PromptMessage::new_text(
-            PromptMessageRole::User,
+            Role::User,
             format!("Analyze the loaded RDF data, focusing on: {}", focus_description),
         ),
         PromptMessage::new_text(
-            PromptMessageRole::Assistant,
+            Role::Assistant,
             format!(
                 "# RDF Data Analysis Guide\n\n\
                 I'll help you analyze the RDF data currently loaded in Rudof, focusing on **{}**.\n\n\

@@ -3,7 +3,7 @@ use crate::service::{errors::*, mcp_service::RudofMcpService};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content},
+    model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{
     InputSpec, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
@@ -226,8 +226,8 @@ pub async fn validate_shacl_impl(
     );
 
     let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(format!("## Validation Results\n\n{}", output_str)),
+        ContentBlock::text(summary),
+        ContentBlock::text(format!("## Validation Results\n\n{}", output_str)),
     ]);
     result.structured_content = Some(structured);
 

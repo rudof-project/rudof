@@ -22,6 +22,12 @@
 //! messages at or above the minimum severity are sent. For example,
 //! setting the level to "Warning" will send Warning, Error, Critical,
 //! Alert, and Emergency messages, but suppress Notice, Info, and Debug.
+//!
+//! `rmcp` deprecates the MCP logging capability (SEP-2577), but the
+//! protocol still supports it and there is no replacement API, so this
+//! module keeps using it and silences the resulting deprecation warnings.
+
+#![allow(deprecated)]
 
 use rmcp::model::LoggingLevel;
 use serde_json::{Value, json};
@@ -211,14 +217,12 @@ pub async fn send_log(
         }
     }
 
-    if let Err(e) = peer
-        .notify_logging_message(rmcp::model::LoggingMessageNotificationParam {
-            level,
-            logger,
-            data: data.to_json(),
-        })
-        .await
-    {
+    let mut param = rmcp::model::LoggingMessageNotificationParam::new(level, data.to_json());
+    if let Some(logger) = logger {
+        param = param.with_logger(logger);
+    }
+
+    if let Err(e) = peer.notify_logging_message(param).await {
         tracing::error!(
             error = ?e,
             level = ?level,

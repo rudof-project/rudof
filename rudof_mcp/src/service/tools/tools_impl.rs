@@ -224,78 +224,32 @@ pub fn tool_router_public() -> ToolRouter<RudofMcpService> {
 /// # Returns
 ///
 /// A vector of `Tool` definitions with annotations for all registered tools.
-fn output_schema_for<T: JsonSchema + 'static>(tool_name: &str) -> Arc<rmcp::model::JsonObject> {
-    rmcp::handler::server::tool::schema_for_output::<T>().unwrap_or_else(|e| {
-        tracing::error!(
-            tool_name = %tool_name,
-            error = %e,
-            "Invalid tool output schema; falling back to empty schema"
-        );
-        Arc::new(rmcp::model::JsonObject::default())
-    })
-}
-
-fn apply_tool_metadata(
-    tool: &mut rmcp::model::Tool,
-    task_support: rmcp::model::TaskSupport,
-    output_schema: Arc<rmcp::model::JsonObject>,
-) {
-    tool.execution = Some(rmcp::model::ToolExecution::from_raw(Some(task_support)));
-    tool.output_schema = Some(output_schema);
+fn output_schema_for<T: JsonSchema + 'static>() -> Arc<rmcp::model::JsonObject> {
+    rmcp::handler::server::tool::schema_for_output::<T>()
 }
 
 fn build_annotated_tools() -> Vec<rmcp::model::Tool> {
     let mut tools = tool_router_public().list_all();
 
     for tool in tools.iter_mut() {
-        let (output_schema, task_support) = match tool.name.as_ref() {
-            "load_rdf_data_from_sources" => (
-                output_schema_for::<LoadRdfDataFromSourcesResponse>("load_rdf_data_from_sources"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "export_rdf_data" => (
-                output_schema_for::<ExportRdfDataResponse>("export_rdf_data"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "export_plantuml" => (
-                output_schema_for::<ExportPlantUmlResponse>("export_plantuml"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "export_image" => (
-                output_schema_for::<ExportImageResponse>("export_image"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "node_info" => (
-                output_schema_for::<NodeInfoResponse>("node_info"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "execute_sparql_query" => (
-                output_schema_for::<QueryExecutionResponse>("execute_sparql_query"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "show_shex" => (
-                output_schema_for::<ShowShexResponse>("show_shex"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "check_shex" => (
-                output_schema_for::<CheckShexResponse>("check_shex"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "validate_shex" => (
-                output_schema_for::<ValidateShexResponse>("validate_shex"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
-            "validate_shacl" => (
-                output_schema_for::<ValidateShaclResponse>("validate_shacl"),
-                rmcp::model::TaskSupport::Forbidden,
-            ),
+        let output_schema = match tool.name.as_ref() {
+            "load_rdf_data_from_sources" => output_schema_for::<LoadRdfDataFromSourcesResponse>(),
+            "export_rdf_data" => output_schema_for::<ExportRdfDataResponse>(),
+            "export_plantuml" => output_schema_for::<ExportPlantUmlResponse>(),
+            "export_image" => output_schema_for::<ExportImageResponse>(),
+            "node_info" => output_schema_for::<NodeInfoResponse>(),
+            "execute_sparql_query" => output_schema_for::<QueryExecutionResponse>(),
+            "show_shex" => output_schema_for::<ShowShexResponse>(),
+            "check_shex" => output_schema_for::<CheckShexResponse>(),
+            "validate_shex" => output_schema_for::<ValidateShexResponse>(),
+            "validate_shacl" => output_schema_for::<ValidateShaclResponse>(),
             _ => {
                 tracing::warn!(tool_name = %tool.name, "Tool missing output schema");
                 continue;
             },
         };
 
-        apply_tool_metadata(tool, task_support, output_schema);
+        tool.output_schema = Some(output_schema);
     }
 
     tools

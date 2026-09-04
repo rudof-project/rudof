@@ -5,7 +5,7 @@
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{GetPromptResult, PromptMessage, PromptMessageRole},
+    model::{GetPromptResult, PromptMessage, Role},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -87,14 +87,14 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
     let messages = vec![
         PromptMessage::new_text(
-            PromptMessageRole::User,
+            Role::User,
             format!(
                 "Guide me through {} validation.\nNode: {}\nShape: {}",
                 technology_label, node_display, shape_display
             ),
         ),
         PromptMessage::new_text(
-            PromptMessageRole::Assistant,
+            Role::Assistant,
             format!(
                 "# {} Validation Guide\n\n\
                 I'll help you validate your RDF data using **{}**.\n\n\

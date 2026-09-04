@@ -11,6 +11,9 @@ use crate::service::tools::helpers::{
     SPARQL_RESULT_FORMAT_LIST,
 };
 use crate::service::{logging::LogRateLimiter, prompts, state, tools};
+// `LoggingLevel` is deprecated by SEP-2577; the protocol still supports
+// MCP logging and there is no replacement API, so it stays in use here.
+#[allow(deprecated)]
 use rmcp::{
     RoleServer,
     handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
@@ -94,6 +97,7 @@ pub struct RudofMcpService {
     ///
     /// Set via `logging/setLevel` requests. Only log messages at or
     /// above this severity level are sent to the client.
+    #[allow(deprecated)]
     pub current_min_log_level: Arc<RwLock<Option<LoggingLevel>>>,
 
     /// Rate limiter for outbound MCP logging notifications.

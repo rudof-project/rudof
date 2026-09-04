@@ -2,7 +2,7 @@ use base64::{Engine as _, engine::general_purpose};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content},
+    model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{DataFormat, InputSpec, ResultDataFormat};
 use schemars::JsonSchema;
@@ -220,7 +220,7 @@ pub async fn load_rdf_data_from_sources_impl(
         sources_count, data_format_str, triple_count
     );
 
-    let mut result = CallToolResult::success(vec![Content::text(summary)]);
+    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
 
     // Explicitly release the Mutex lock before the async persist_state_with() call.
@@ -297,8 +297,8 @@ pub async fn export_rdf_data_impl(
         format_str, size_bytes
     );
     let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(format!("## Data Preview\n\n{}", preview)),
+        ContentBlock::text(summary),
+        ContentBlock::text(format!("## Data Preview\n\n{}", preview)),
     ]);
     result.structured_content = Some(structured);
 
@@ -346,8 +346,8 @@ pub async fn export_plantuml_impl(
     let preview = code_block_preview("plantuml", &str, DEFAULT_CONTENT_PREVIEW_CHARS);
     let summary = format!("PlantUML export completed. Size: {} chars", size);
     let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(format!("## Diagram Preview\n\n{}", preview)),
+        ContentBlock::text(summary),
+        ContentBlock::text(format!("## Diagram Preview\n\n{}", preview)),
     ]);
     result.structured_content = Some(structured);
 
@@ -416,7 +416,10 @@ pub async fn export_image_impl(
         image_format, size_bytes
     );
 
-    let mut result = CallToolResult::success(vec![Content::text(summary), Content::image(base64_data, mime_type)]);
+    let mut result = CallToolResult::success(vec![
+        ContentBlock::text(summary),
+        ContentBlock::image(base64_data, mime_type),
+    ]);
     result.structured_content = Some(structured);
 
     Ok(result)
