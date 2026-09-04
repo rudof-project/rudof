@@ -6,8 +6,12 @@ use crate::{DataGeneratorError, Result};
 use oxrdf::{Literal, NamedNode, NamedOrBlankNode, Term, Triple};
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_impl::OxigraphInMemory;
+use rand::SeedableRng;
+use rand::rngs::StdRng;
 use serde_json::{Value, json};
 use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -47,9 +51,10 @@ impl ParallelGenerator {
 
     /// Generate synthetic data in parallel
     pub async fn generate_data(&self, config: &GenerationConfig) -> Result<OxigraphInMemory> {
-        // Set up random seed if provided
+        // Every random decision below derives its generator from this seed and
+        // the coordinates of the decision, so a seeded run is reproducible
+        // regardless of how the per-shape tasks interleave.
         if let Some(seed) = config.seed {
-            // Note: In a real implementation, you'd want to use a seeded RNG
             tracing::info!("Using random seed: {}", seed);
         }
 
@@ -106,7 +111,14 @@ impl ParallelGenerator {
                 let base_count = config.entity_count / num_shapes;
                 let remainder = config.entity_count % num_shapes;
 
-                for (i, shape_id) in shapes.keys().enumerate() {
+                // Sorted, because the remainder is handed to the first few shapes
+                // and `HashMap` iteration order varies between processes. Left
+                // unsorted, which shapes receive the extra entity changes from run
+                // to run, and with it the size of the generated graph.
+                let mut shape_ids: Vec<&String> = shapes.keys().collect();
+                shape_ids.sort();
+
+                for (i, shape_id) in shape_ids.into_iter().enumerate() {
                     let count = if i < remainder { base_count + 1 } else { base_count };
                     distribution.insert(shape_id.clone(), count);
                 }
@@ -209,6 +221,32 @@ impl ParallelGenerator {
         config
     }
 
+    /// A random number generator for one decision during generation.
+    ///
+    /// Generation runs one task per shape, so a single shared generator would
+    /// either have to be locked -- serialising the phase the parallelism exists
+    /// for -- or produce a different stream depending on how the tasks
+    /// interleaved. Instead each decision derives its own generator from the
+    /// configured seed and the coordinates of the decision itself, so the
+    /// stream a value comes from does not depend on scheduling and the same
+    /// seed reproduces the same graph.
+    ///
+    /// Without a seed the generator is drawn from entropy, which keeps the
+    /// unseeded behaviour that callers who do not ask for reproducibility get.
+    fn derive_rng(&self, salt: &str, discriminator: &str, index: usize) -> StdRng {
+        match self.config.seed {
+            Some(seed) => {
+                let mut hasher = DefaultHasher::new();
+                seed.hash(&mut hasher);
+                salt.hash(&mut hasher);
+                discriminator.hash(&mut hasher);
+                index.hash(&mut hasher);
+                StdRng::seed_from_u64(hasher.finish())
+            },
+            None => StdRng::from_entropy(),
+        }
+    }
+
     /// The IRI that entities of `shape_info` are typed with.
     ///
     /// A schema that declares a target -- `sh:targetClass`, or a ShEx `rdf:type`
@@ -245,7 +283,7 @@ impl ParallelGenerator {
         let mut variance_multiplier = 1.0;
         if config.property_count_variance > 0.0 {
             use rand::Rng;
-            let mut rng = rand::thread_rng();
+            let mut rng = self.derive_rng("variance", shape_id, entity_index);
             // random range [-variance, +variance]
             let variance_factor = rng.gen_range(-config.property_count_variance..=config.property_count_variance);
             variance_multiplier = 1.0 + variance_factor;
@@ -292,9 +330,9 @@ impl ParallelGenerator {
             PropertySelectionStrategy::All | PropertySelectionStrategy::Weighted => {
                 // Weighted is treated as All for now (future work)
                 // Independent probability check for each candidate using effective_probability
+                use rand::Rng;
+                let mut rng = self.derive_rng("fill", shape_id, entity_index);
                 for prop in candidates {
-                    use rand::Rng;
-                    let mut rng = rand::thread_rng();
                     let roll: f64 = rng.r#gen();
                     if roll <= effective_probability {
                         properties_to_generate.push(prop);
@@ -322,7 +360,7 @@ impl ParallelGenerator {
                 slots_for_candidates = slots_for_candidates.min(candidates.len());
 
                 if slots_for_candidates > 0 {
-                    let mut rng = rand::thread_rng();
+                    let mut rng = self.derive_rng("select", shape_id, entity_index);
                     candidates.shuffle(&mut rng);
                     for slot in candidates.iter().take(slots_for_candidates) {
                         properties_to_generate.push(slot);
@@ -337,7 +375,7 @@ impl ParallelGenerator {
         // 2. Apply max_properties_per_instance limit
         if config.max_properties_per_instance > 0 && properties_to_generate.len() > config.max_properties_per_instance {
             use rand::seq::SliceRandom;
-            let mut rng = rand::thread_rng();
+            let mut rng = self.derive_rng("truncate", shape_id, entity_index);
             properties_to_generate.shuffle(&mut rng);
             properties_to_generate.truncate(config.max_properties_per_instance);
         }
@@ -346,6 +384,7 @@ impl ParallelGenerator {
         for property_info in properties_to_generate {
             // Handle cardinality for both data and object properties
             let num_values = self.calculate_property_value_count(
+                &property_info.property_iri,
                 property_info.min_cardinality,
                 property_info.max_cardinality,
                 entity_index,
@@ -385,7 +424,8 @@ impl ParallelGenerator {
                         property_info.property_iri.clone(),
                         datatype.clone(),
                         format!("{entity_iri}-{value_idx}"),
-                    );
+                    )
+                    .with_seed(self.config.seed);
 
                     // Add constraint parameters to context
                     let constraint_params = self.constraints_to_parameters(&property_info.constraints);
@@ -413,6 +453,7 @@ impl ParallelGenerator {
     /// Calculate how many values to generate for a property based on cardinality
     fn calculate_property_value_count(
         &self,
+        property_iri: &str,
         min_cardinality: Option<i32>,
         max_cardinality: Option<i32>,
         entity_index: usize,
@@ -432,7 +473,7 @@ impl ParallelGenerator {
             CardinalityStrategy::Maximum => max_card,
             CardinalityStrategy::Random => {
                 use rand::Rng;
-                let mut rng = rand::thread_rng();
+                let mut rng = self.derive_rng("value_count", property_iri, entity_index);
                 if min_card == max_card {
                     min_card
                 } else {
@@ -523,6 +564,7 @@ impl ParallelGenerator {
 
             // Calculate number of relationships based on cardinality strategy
             let num_relationships = self.calculate_relationship_count(
+                &dependency.property,
                 dependency.min_cardinality,
                 dependency.max_cardinality,
                 to_entities.len(),
@@ -558,6 +600,7 @@ impl ParallelGenerator {
     /// Calculate the number of relationships to create based on cardinality and strategy
     fn calculate_relationship_count(
         &self,
+        property_iri: &str,
         min_cardinality: Option<i32>,
         max_cardinality: Option<i32>,
         available_targets: usize,
@@ -577,7 +620,7 @@ impl ParallelGenerator {
             CardinalityStrategy::Maximum => max_card,
             CardinalityStrategy::Random => {
                 use rand::Rng;
-                let mut rng = rand::thread_rng();
+                let mut rng = self.derive_rng("relationship_count", property_iri, entity_index);
                 if min_card == max_card {
                     min_card
                 } else {
@@ -627,6 +670,7 @@ impl ParallelGenerator {
 
             if let Some(datatype) = &property_info.datatype {
                 let num_values = self.calculate_property_value_count(
+                    &property_info.property_iri,
                     property_info.min_cardinality,
                     property_info.max_cardinality,
                     parent_entity_index,
@@ -638,7 +682,8 @@ impl ParallelGenerator {
                         property_info.property_iri.clone(),
                         datatype.clone(),
                         format!("{}-nested-{}", entity_node.as_str(), value_idx),
-                    );
+                    )
+                    .with_seed(self.config.seed);
 
                     let literal_value = self.field_manager.generate_field(&context)?;
                     let literal_term = self.create_typed_literal(&literal_value, datatype)?;

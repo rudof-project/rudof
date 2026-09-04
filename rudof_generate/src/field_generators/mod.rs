@@ -27,6 +27,8 @@ pub struct GenerationContext {
     pub quality: DataQuality,
     /// Locale for text generation
     pub locale: String,
+    /// Seed for reproducible value generation, when one was configured.
+    pub seed: Option<u64>,
 }
 
 impl GenerationContext {
@@ -38,6 +40,36 @@ impl GenerationContext {
             parameters: HashMap::new(),
             quality: DataQuality::Medium,
             locale: "en".to_string(),
+            seed: None,
+        }
+    }
+
+    /// Attach the configured seed, so that values are reproducible.
+    pub fn with_seed(mut self, seed: Option<u64>) -> Self {
+        self.seed = seed;
+        self
+    }
+
+    /// A random number generator for this value.
+    ///
+    /// Derived from the seed together with the property and subject the value
+    /// belongs to, so that each value has its own stream and the same seed
+    /// reproduces the same literal in the same place. Unseeded runs draw from
+    /// entropy, which is the behaviour callers get today.
+    pub fn rng(&self) -> rand::rngs::StdRng {
+        use rand::SeedableRng;
+        match self.seed {
+            Some(seed) => {
+                use std::collections::hash_map::DefaultHasher;
+                use std::hash::{Hash, Hasher};
+                let mut hasher = DefaultHasher::new();
+                seed.hash(&mut hasher);
+                self.property.hash(&mut hasher);
+                self.subject.hash(&mut hasher);
+                self.datatype.hash(&mut hasher);
+                rand::rngs::StdRng::seed_from_u64(hasher.finish())
+            },
+            None => rand::rngs::StdRng::from_entropy(),
         }
     }
 
