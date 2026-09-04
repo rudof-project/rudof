@@ -16,7 +16,7 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
         sh:minCount 1 ;
         sh:maxCount 1 .
 :knowsShape sh:path :knows ;
-        sh:node :PersonShape .
+        sh:node :Friendly .
 
 :a a :Person ;
    :name  "Alice" ;
@@ -31,7 +31,7 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
    :knows :b .
 
 :d a :Person ;
-   :name  23      .  # Should fail
+   :name  23      .  # Should fail as Friendly, but passes as NonFriendly
 
 :e a :Person ;
    :name  "Emily" .

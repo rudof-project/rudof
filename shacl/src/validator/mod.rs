@@ -16,6 +16,6 @@ pub mod report;
 pub mod store;
 pub mod typing;
 
+pub use crate::ir::RecursionSemantics;
 pub use config::ShaclConfig;
 pub use mode::ShaclValidationMode;
-pub use recursion::RecursionSemantics;
