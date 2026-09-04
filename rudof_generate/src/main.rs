@@ -21,7 +21,7 @@ async fn main() {
     // Parse command line arguments
     let matches = Command::new("rudof_generate")
         .about("Generate synthetic RDF data from ShEx or SHACL schemas")
-        .version("0.1.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .arg(
             Arg::new("config")
                 .long("config")
