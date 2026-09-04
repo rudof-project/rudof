@@ -459,7 +459,11 @@ impl ParallelGenerator {
         entity_index: usize,
         config: &GenerationConfig,
     ) -> usize {
-        let min_card_raw = min_cardinality.unwrap_or(1).max(0) as usize;
+        // An absent minimum means the property is optional. Only SHACL reaches
+        // this point undeclared -- the ShEx converter has already normalised an
+        // omitted cardinality to the `{1,1}` that language defines -- and in
+        // SHACL a missing `sh:minCount` is a minimum of zero.
+        let min_card_raw = min_cardinality.unwrap_or(0).max(0) as usize;
         // Apply ignore_min_cardinality: if true, treat min as 0
         let min_card = if config.ignore_min_cardinality { 0 } else { min_card_raw };
         let max_card = match max_cardinality {
@@ -606,7 +610,8 @@ impl ParallelGenerator {
         available_targets: usize,
         entity_index: usize,
     ) -> usize {
-        let min_card = min_cardinality.unwrap_or(1).max(0) as usize;
+        // Absent minimum means optional, as above.
+        let min_card = min_cardinality.unwrap_or(0).max(0) as usize;
         let max_card = match max_cardinality {
             Some(-1) => available_targets.min(20), // Unbounded, but cap at reasonable limit
             Some(max) => (max as usize).min(available_targets),
