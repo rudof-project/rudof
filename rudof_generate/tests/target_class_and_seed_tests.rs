@@ -191,3 +191,41 @@ async fn the_same_seed_reproduces_the_same_graph() -> Result<()> {
     );
     Ok(())
 }
+
+/// A shape whose instances carry several types must keep its own identity.
+///
+/// Extracted schemas state one `rdf:type` constraint per class an instance
+/// carries, so a shape that specialises another names both. Taking whichever
+/// came first gave every such shape the same type and erased the distinction
+/// between them -- three shapes collapsing into one -- which a SHACL
+/// `sh:targetClass` for the same shape would not do.
+#[tokio::test]
+async fn a_shape_with_several_rdf_type_constraints_keeps_its_own_class() -> Result<()> {
+    let dir = tempfile::tempdir().unwrap();
+    let schema = write(
+        &dir,
+        "multi.shex",
+        r#"
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX ex:  <http://example.org/>
+PREFIX :    <http://weso.es/shapes/>
+
+:ResearchAssistant {
+   rdf:type  [ex:GraduateStudent]  ;
+   rdf:type  [ex:ResearchAssistant]  ;
+   ex:label  xsd:string
+}
+"#,
+    );
+
+    let content = generate(&schema, dir.path().join("out.ttl"), 3, Some(1)).await?;
+    let types = types_in(&content);
+
+    assert!(!types.is_empty(), "expected at least one typed entity");
+    assert!(
+        types.iter().all(|t| t == "http://example.org/ResearchAssistant"),
+        "the shape's own class must win over the one it specialises, found {types:?}"
+    );
+    Ok(())
+}
