@@ -13,6 +13,10 @@ pub struct ShapeInfo {
     pub declaration: ShapeDecl,
     pub dependencies: Vec<ShapeDependency>,
     pub properties: Vec<PropertyInfo>,
+    /// The class that entities of this shape are typed with, when the schema
+    /// declares one (SHACL `sh:targetClass`, or a ShEx `rdf:type` value set).
+    /// `None` means the shape carries no target, and the shape IRI is used.
+    pub target_class: Option<String>,
 }
 
 /// Dependency between shapes
@@ -125,6 +129,7 @@ impl ShapeProcessor {
         }
 
         Ok(ShapeInfo {
+            target_class: None,
             declaration: shape.clone(),
             dependencies,
             properties,

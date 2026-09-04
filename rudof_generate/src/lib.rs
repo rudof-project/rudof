@@ -254,6 +254,7 @@ impl DataGenerator {
                 declaration: dummy_decl,
                 dependencies,
                 properties,
+                target_class: unified_shape.target_class.clone(),
             });
         }
 
