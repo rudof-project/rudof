@@ -17,7 +17,7 @@ pub struct StringGenerator;
 
 impl FieldGenerator for StringGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         // Generate based on property context
         let value = if context.property.contains("name") || context.property.contains("Name") {
@@ -49,7 +49,7 @@ pub struct IntegerGenerator;
 
 impl FieldGenerator for IntegerGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         // Get range from parameters or use defaults
         let min = context.parameters.get("min").and_then(|v| v.as_i64()).unwrap_or(-1000) as i32;
@@ -74,7 +74,7 @@ pub struct DecimalGenerator;
 
 impl FieldGenerator for DecimalGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         let min = context.parameters.get("min").and_then(|v| v.as_f64()).unwrap_or(-500.0);
 
@@ -104,7 +104,7 @@ pub struct BooleanGenerator;
 
 impl FieldGenerator for BooleanGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         let true_probability = context
             .parameters
@@ -130,7 +130,7 @@ pub struct DateGenerator;
 
 impl FieldGenerator for DateGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         let start_year = context
             .parameters
@@ -165,7 +165,7 @@ pub struct DateTimeGenerator;
 
 impl FieldGenerator for DateTimeGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         let start_year = context
             .parameters
@@ -204,8 +204,8 @@ impl FieldGenerator for DateTimeGenerator {
 pub struct UriGenerator;
 
 impl FieldGenerator for UriGenerator {
-    fn generate(&self, _context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+    fn generate(&self, context: &GenerationContext) -> Result<String> {
+        let mut rng = context.rng();
 
         let domains = [
             "example.com",

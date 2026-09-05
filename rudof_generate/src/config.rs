@@ -54,6 +54,21 @@ pub struct GenerationConfig {
 
     /// Per-type coherence settings overrides
     pub type_overrides: HashMap<String, TypeOverrideConfig>,
+
+    // --- Unbounded cardinalities ---
+    /// How many values to emit for a data property whose upper bound the schema
+    /// leaves open (ShEx `*` or `+`, or a SHACL shape with no `sh:maxCount`).
+    ///
+    /// Such a schema permits any number, so every setting here is conformant
+    /// and the choice is about how much data to produce rather than whether it
+    /// is valid. One is the default because it is the smallest conformant
+    /// answer; raise it to exercise multi-valued properties.
+    pub unbounded_property_values: usize,
+
+    /// The same for properties whose range is another shape. Kept separate
+    /// because a reference is additionally limited by how many entities of the
+    /// target shape exist to point at.
+    pub unbounded_reference_values: usize,
 }
 
 impl Default for GenerationConfig {
@@ -71,6 +86,8 @@ impl Default for GenerationConfig {
             property_count_variance: 0.0,
             excluded_properties: Vec::new(),
             type_overrides: HashMap::new(),
+            unbounded_property_values: 1,
+            unbounded_reference_values: 1,
         }
     }
 }

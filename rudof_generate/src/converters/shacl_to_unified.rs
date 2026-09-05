@@ -77,17 +77,20 @@ impl ShaclToUnified {
         let mut properties = Vec::new();
 
         // Extract target class if available
-        let target_class = node_shape.targets().first().and_then(|target| match target {
+        let mut target_class = node_shape.targets().first().and_then(|target| match target {
             Target::Class(tc) => Some(tc.to_string()),
             _ => None,
         });
 
         // Process property shapes
         for prop_ref in node_shape.property_shapes() {
-            if let Some(ASTShape::PropertyShape(prop_shape)) = schema.get_shape(prop_ref)
-                && let Some(unified_prop) = self.convert_property_shape(prop_shape, metrics)
-            {
-                properties.push(unified_prop);
+            if let Some(ASTShape::PropertyShape(prop_shape)) = schema.get_shape(prop_ref) {
+                if target_class.is_none() {
+                    target_class = Self::target_class_from_type_constraint(prop_shape);
+                }
+                if let Some(unified_prop) = self.convert_property_shape(prop_shape, metrics) {
+                    properties.push(unified_prop);
+                }
             }
         }
 
@@ -101,6 +104,39 @@ impl ShaclToUnified {
             properties,
             closed,
         }
+    }
+
+    /// The class a shape expects on `rdf:type`, when it states one without
+    /// declaring a target.
+    ///
+    /// A shape may constrain `rdf:type` to a single value rather than declaring
+    /// `sh:targetClass`, which says just as clearly what its instances should
+    /// carry. Without this, such a shape falls back to being typed with its own
+    /// IRI and then fails the very `sh:in` it declares.
+    ///
+    /// Only a single-valued constraint yields a target, for the same reason as
+    /// on the ShEx side: a set of several classes does not determine which one
+    /// an instance should receive.
+    fn target_class_from_type_constraint(prop_shape: &ASTPropertyShape) -> Option<String> {
+        const RDF_TYPE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+
+        let path = prop_shape.path().to_string();
+        let path = path
+            .strip_prefix('<')
+            .and_then(|p| p.strip_suffix('>'))
+            .unwrap_or(&path);
+        if path != RDF_TYPE {
+            return None;
+        }
+
+        prop_shape.components().iter().find_map(|component| match component {
+            ASTComponent::In(values) => match values.as_slice() {
+                [Value::Iri(iri)] => Some(iri.to_string()),
+                _ => None,
+            },
+            ASTComponent::HasValue(Value::Iri(iri)) => Some(iri.to_string()),
+            _ => None,
+        })
     }
 
     fn convert_property_shape(

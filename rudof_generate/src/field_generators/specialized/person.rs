@@ -8,7 +8,7 @@ pub struct PersonGenerator;
 
 impl FieldGenerator for PersonGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
-        let mut rng = rand::thread_rng();
+        let mut rng = context.rng();
 
         if context.property.contains("firstName") || context.property.ends_with("fname") {
             Ok(generate_first_name(&mut rng, &context.locale))
