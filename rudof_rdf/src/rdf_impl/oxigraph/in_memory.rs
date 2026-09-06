@@ -1,7 +1,9 @@
 use super::in_memory_error::OxigraphInMemoryError;
 #[cfg(feature = "sparql")]
 use crate::rdf_core::query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName};
-use crate::rdf_core::{AsyncRDF, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf};
+use crate::rdf_core::{
+    AsyncRDF, BlankNodeMode, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, apply_blank_node_mode,
+};
 
 use crate::rdf_core::vocabs::RdfVocab;
 use colored::*;
@@ -1063,14 +1065,26 @@ impl BuildRDF for OxigraphInMemory {
     ///
     /// Returns an error if serialization fails or if the writer encounters an I/O error.
     fn serialize<W: Write>(&self, format: &RDFFormat, write: &mut W) -> Result<(), Self::Err> {
+        self.serialize_with_blank_node_mode(format, BlankNodeMode::default(), write)
+    }
+
+    fn serialize_with_blank_node_mode<W: Write>(
+        &self,
+        format: &RDFFormat,
+        mode: BlankNodeMode,
+        write: &mut W,
+    ) -> Result<(), Self::Err> {
         let mut serializer = RdfSerializer::from_format(cnv_rdf_format(format));
 
         for (prefix, iri) in &self.pm.map {
             serializer = serializer.with_prefix(prefix, iri.as_str())?;
         }
 
+        let triples: Vec<OxTriple> = self.graph.iter().map(TripleRef::into_owned).collect();
+        let triples = apply_blank_node_mode(triples, mode);
+
         let mut writer = serializer.for_writer(write);
-        for triple in self.graph.iter() {
+        for triple in &triples {
             writer.serialize_triple(triple)?;
         }
         writer.finish()?;

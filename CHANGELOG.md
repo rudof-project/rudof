@@ -3,6 +3,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- `BuildRDF::serialize_with_blank_node_mode`: serializes a graph with explicit control over blank node identifiers via the new `BlankNodeMode` enum — `Simplify` (default) rewrites blank nodes to short sequential ids (`_:b0`, `_:b1`, ...) in the order they're first encountered, `Preserve` keeps the original identifiers. `BuildRDF::serialize` now delegates to it with `BlankNodeMode::default()`, so existing output is unchanged (#797)
 ### Fixed
 ### Changed
 ### Removed

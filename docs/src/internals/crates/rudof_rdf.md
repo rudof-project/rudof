@@ -12,6 +12,7 @@ The crate is organized into several key modules:
   - `query`: SPARQL query support and result handling
   - `vocab`: Common RDF, RDFS, XSD, and SHACL vocabulary constants
   - `utils`: Utilities such as regex helpers
+  - `blank_node_mode`: `BlankNodeMode` (`Simplify`/`Preserve`) and `apply_blank_node_mode`, consumed by `BuildRDF::serialize_with_blank_node_mode` to choose whether serialized blank node identifiers are rewritten to short sequential ids (`_:b0`, `_:b1`, ...) or kept as-is
   - `visualizer`: Builds a technology-agnostic diagram model (`VisualRDFGraph`) from an RDF graph and renders it through [`rudof_viz`](./rudof_viz.md)'s `DiagramRenderer`/`ExternalToolRenderer` traits (PlantUML and Graphviz backends) — the actual style/diagram/backend types live in `rudof_viz`, not here
   - `matcher`, `focus_rdf`, `neighs_rdf`, etc.: Advanced graph navigation and matching
 - **rdf_impl**: Implementations of RDF storage and access:
