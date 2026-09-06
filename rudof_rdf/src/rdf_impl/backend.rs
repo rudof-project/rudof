@@ -16,7 +16,7 @@ use super::QleverGraphContainer;
 use super::{OxigraphInMemory, RdfBackendError};
 #[cfg(feature = "sparql")]
 use crate::rdf_core::query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions};
-use crate::rdf_core::{BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf};
+use crate::rdf_core::{BlankNodeMode, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf};
 
 /// Strategy enum that owns one concrete RDF backend.
 #[derive(Debug, Clone)]
@@ -426,6 +426,24 @@ impl BuildRDF for RdfBackend {
             }),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => Ok(BuildRDF::serialize(b, format, writer)?),
+        }
+    }
+
+    fn serialize_with_blank_node_mode<W: io::Write>(
+        &self,
+        format: &RDFFormat,
+        mode: BlankNodeMode,
+        writer: &mut W,
+    ) -> Result<(), Self::Err> {
+        match self {
+            RdfBackend::InMemory(b) => Ok(BuildRDF::serialize_with_blank_node_mode(b, format, mode, writer)?),
+            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            RdfBackend::Endpoint(_) => Err(RdfBackendError::ReadOnly {
+                op: "serialize",
+                backend: "sparql-endpoint",
+            }),
+            #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+            RdfBackend::Qlever(b) => Ok(BuildRDF::serialize_with_blank_node_mode(b, format, mode, writer)?),
         }
     }
 }

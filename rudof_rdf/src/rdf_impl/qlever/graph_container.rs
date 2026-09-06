@@ -21,7 +21,7 @@ use super::index_builder::{build_index, convert_to_native, fingerprint_inputs};
 use super::server::QleverServer;
 use super::{IndexHandle, InputFile, NativeFormat, QleverConfig, QleverError};
 use crate::rdf_core::{
-    Any, AsyncRDF, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf,
+    Any, AsyncRDF, BlankNodeMode, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, apply_blank_node_mode,
     query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions},
 };
 use crate::rdf_impl::OxigraphEndpoint;
@@ -386,6 +386,15 @@ impl BuildRDF for QleverGraphContainer {
     }
 
     fn serialize<W: io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), QleverError> {
+        self.serialize_with_blank_node_mode(format, BlankNodeMode::default(), writer)
+    }
+
+    fn serialize_with_blank_node_mode<W: io::Write>(
+        &self,
+        format: &RDFFormat,
+        mode: BlankNodeMode,
+        writer: &mut W,
+    ) -> Result<(), QleverError> {
         use oxrdfio::RdfSerializer;
 
         let mut serializer = RdfSerializer::from_format(super::index_builder::rdf_format_to_oxrdfio(format));
@@ -398,9 +407,12 @@ impl BuildRDF for QleverGraphContainer {
                 })?;
         }
 
+        let triples: Vec<OxTriple> = self.triples()?.collect();
+        let triples = apply_blank_node_mode(triples, mode);
+
         let mut w = serializer.for_writer(writer);
-        for triple in self.triples()? {
-            w.serialize_triple(&triple).map_err(|e| QleverError::FormatConversion {
+        for triple in &triples {
+            w.serialize_triple(triple).map_err(|e| QleverError::FormatConversion {
                 source_name: self.endpoint_iri.to_string(),
                 error: format!("{e}"),
             })?;

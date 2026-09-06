@@ -2,7 +2,7 @@ use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use std::io::Write;
 
-use crate::rdf_core::{NeighsRDF, RDFFormat};
+use crate::rdf_core::{BlankNodeMode, NeighsRDF, RDFFormat};
 
 /// Trait for building and modifying RDF graphs.
 ///
@@ -105,9 +105,29 @@ pub trait BuildRDF: NeighsRDF {
 
     /// Serializes the graph to an RDF format.
     ///
+    /// Blank node identifiers are simplified to short sequential ids
+    /// (`_:b0`, `_:b1`, ...); see [`BlankNodeMode`]. Use
+    /// [`serialize_with_blank_node_mode`](BuildRDF::serialize_with_blank_node_mode)
+    /// to keep the original blank node identifiers instead.
+    ///
     /// # Arguments
     ///
     /// * `format` - The RDF serialization format to use
     /// * `writer` - The destination for serialized output
     fn serialize<W: Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err>;
+
+    /// Serializes the graph to an RDF format, choosing how blank node
+    /// identifiers are handled.
+    ///
+    /// # Arguments
+    ///
+    /// * `format` - The RDF serialization format to use
+    /// * `mode` - How to handle blank node identifiers, see [`BlankNodeMode`]
+    /// * `writer` - The destination for serialized output
+    fn serialize_with_blank_node_mode<W: Write>(
+        &self,
+        format: &RDFFormat,
+        mode: BlankNodeMode,
+        writer: &mut W,
+    ) -> Result<(), Self::Err>;
 }

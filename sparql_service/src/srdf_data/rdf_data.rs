@@ -10,7 +10,7 @@ use rudof_iri::IriS;
 use rudof_rdf::rdf_impl::QleverGraphContainer;
 use rudof_rdf::{
     rdf_core::{
-        BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
+        BlankNodeMode, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
         query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions},
     },
     rdf_impl::{OxigraphEndpoint, OxigraphInMemory, RdfBackend, ReaderMode},
@@ -562,9 +562,20 @@ impl BuildRDF for RdfData {
     }
 
     fn serialize<W: std::io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err> {
-        BuildRDF::serialize(&self.primary, format, writer).map_err(|e| RdfDataError::Serializing {
-            format: *format,
-            error: format!("{e}"),
+        self.serialize_with_blank_node_mode(format, BlankNodeMode::default(), writer)
+    }
+
+    fn serialize_with_blank_node_mode<W: std::io::Write>(
+        &self,
+        format: &RDFFormat,
+        mode: BlankNodeMode,
+        writer: &mut W,
+    ) -> Result<(), Self::Err> {
+        BuildRDF::serialize_with_blank_node_mode(&self.primary, format, mode, writer).map_err(|e| {
+            RdfDataError::Serializing {
+                format: *format,
+                error: format!("{e}"),
+            }
         })?;
         for (name, endpoint) in &self.endpoints {
             writeln!(writer, "Endpoint {}: {}", name, endpoint.iri())?;

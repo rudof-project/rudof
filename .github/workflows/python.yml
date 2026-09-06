@@ -243,6 +243,20 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter ${{ matrix.python-version }}
           sccache: 'true'
+        env:
+          # x86_64 only: pyo3 links extension modules with `-undefined
+          # dynamic_lookup` (Python symbols resolve at import time instead of
+          # link time). Apple's default linker since Xcode 15 emits "chained
+          # fixups" for dylibs, which can't represent that lazy/unresolved
+          # binding for data symbols -- so any statically-linked object that
+          # references one (here, liblbug.a's CSV reader references the
+          # CPU-dispatch data symbol `__cpu_model`) fails with "ld: fixup
+          # error ... does not have address" instead of resolving lazily
+          # like it used to.
+          # `-ld_classic` selects the pre-Xcode-15 linker, which still
+          # supports `-undefined dynamic_lookup` correctly; it's x86_64-only
+          # because Apple dropped `-ld_classic` for arm64.
+          RUSTFLAGS: ${{ matrix.target == 'x86_64' && '-C link-arg=-Wl,-ld_classic' || '' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:

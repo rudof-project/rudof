@@ -1,4 +1,5 @@
 mod async_rdf;
+mod blank_node_mode;
 mod build_rdf;
 mod endpoint_description;
 mod errors;
@@ -17,6 +18,7 @@ pub mod visualizer;
 pub mod vocabs;
 
 pub use async_rdf::AsyncRDF;
+pub use blank_node_mode::{BlankNodeMode, apply_blank_node_mode};
 pub use build_rdf::BuildRDF;
 pub use endpoint_description::EndpointDescription;
 pub use errors::RDFError;
