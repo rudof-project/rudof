@@ -220,6 +220,18 @@ jobs:
     # default (confirmed: maturin only computes one when none is set).
     env:
       MACOSX_DEPLOYMENT_TARGET: "13.3"
+      # lbug's build.rs downloads a *prebuilt* native static library from
+      # LadybugDB/ladybug's GitHub releases; with no LBUG_VERSION set it
+      # always grabs whatever is tagged "latest" upstream, regardless of the
+      # `lbug` Rust crate version pinned in Cargo.lock. That moving target
+      # broke this job when LadybugDB/ladybug v0.20.2 (2026-09-02) shipped a
+      # macOS x86_64 static build with an unresolved CPU-dispatch symbol
+      # (`___cpu_model`) in its CSV reader, failing only on the x86_64 mac
+      # runner (arm64 and Linux resolve to different archive variants and
+      # were unaffected). Pin to v0.19.1, matching the crate version in
+      # Cargo.lock, so an upstream release can't silently break this build
+      # again; bump deliberately alongside the Cargo.lock `lbug` version.
+      LBUG_VERSION: "0.19.1"
     strategy:
       fail-fast: false
       matrix:
