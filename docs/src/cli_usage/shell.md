@@ -320,6 +320,22 @@ A line starting with `!` runs the rest of the line in the system shell:
 rudof> !ls examples
 ```
 
+Note that `!cd DIR` only changes the directory of that one-off subshell — it has no effect on the running `rudof shell` session. Use the built-in `cd` command below to change the shell's own working directory.
+
+## Changing directory
+
+`cd` with no argument prints the shell's current working directory; `cd DIR` changes it:
+
+```
+rudof> cd
+/home/user/project
+rudof> cd examples
+rudof> data user.ttl
+11 triple(s) loaded
+```
+
+Unlike `!cd DIR`, this changes the actual process working directory, so later relative paths (`data FILE`, `shex FILE`, `!ls`, ...) resolve against the new directory for the rest of the session.
+
 ## Built-in commands
 
 | Command | Effect |
@@ -327,6 +343,7 @@ rudof> !ls examples
 | `help`, `?` | List the available subcommands |
 | `exit`, `quit` | Exit the shell |
 | `!<command>` | Run `<command>` in the system shell |
+| `cd [DIR]` | Show, or change, the shell's current directory (affects later relative paths and `!<command>`) |
 | `endpoint [NAME]` | Show the active endpoint, or activate a registered one |
 | `reset [TARGET...]` | Clear session state, one or more targets, or everything with no argument |
 | `prefixes [add\|rm\|rename\|copy ...]` | Show, or manage, the default prefix declarations |

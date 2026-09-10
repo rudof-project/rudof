@@ -38,6 +38,15 @@ pub struct RdfDataConfig {
     #[serde(rename = "visualization")]
     pub(crate) rdf_visualization: RDFVisualizationConfig,
 
+    /// If true, JSON/JSON-LD data output is indented ("pretty-printed") instead of compact single-line JSON.
+    #[serde(rename = "pretty_json")]
+    pub(crate) pretty_json: bool,
+
+    /// If true, JSON/JSON-LD data output is styled with ANSI colors (keys, strings, numbers, etc.).
+    /// Has no effect unless `pretty_json` is also enabled.
+    #[serde(rename = "colorize_json")]
+    pub(crate) colorize_json: bool,
+
     /// Optional QLever backend configuration. Reading this section from TOML only records the user's preferences, the QLever container is not started
     /// until the caller explicitly invokes [`QleverGraphContainer::from_path`](crate::rdf_impl::QleverGraphContainer::from_path) or `from_reader`.
     #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
@@ -56,6 +65,8 @@ impl RdfDataConfig {
             endpoints: Self::default_endpoints(),
             automatic_base: Self::default_automatic_base(),
             rdf_visualization: Self::default_rdf_visualization(),
+            pretty_json: Self::default_pretty_json(),
+            colorize_json: Self::default_colorize_json(),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             qlever: Self::default_qlever(),
         }
@@ -123,6 +134,16 @@ impl RdfDataConfig {
         self
     }
 
+    pub fn with_pretty_json(mut self, flag: bool) -> Self {
+        self.pretty_json = flag;
+        self
+    }
+
+    pub fn with_colorize_json(mut self, flag: bool) -> Self {
+        self.colorize_json = flag;
+        self
+    }
+
     #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
     pub fn with_qlever(mut self, cfg: Option<crate::rdf_impl::QleverConfig>) -> Self {
         self.qlever = cfg;
@@ -161,6 +182,17 @@ impl RdfDataConfig {
         &self.rdf_visualization
     }
 
+    /// Whether JSON/JSON-LD data output should be indented ("pretty-printed") instead of compact single-line JSON.
+    pub fn pretty_json(&self) -> bool {
+        self.pretty_json
+    }
+
+    /// Whether JSON/JSON-LD data output should be styled with ANSI colors. Only takes effect
+    /// when [`RdfDataConfig::pretty_json`] is also enabled.
+    pub fn colorize_json(&self) -> bool {
+        self.colorize_json
+    }
+
     #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
     pub fn qlever(&self) -> Option<&crate::rdf_impl::QleverConfig> {
         self.qlever.as_ref()
@@ -179,6 +211,10 @@ impl RdfDataConfig {
     fn default_automatic_base() -> bool { true }
     #[inline]
     fn default_rdf_visualization() -> RDFVisualizationConfig { RDFVisualizationConfig::default() }
+    #[inline]
+    fn default_pretty_json() -> bool { true }
+    #[inline]
+    fn default_colorize_json() -> bool { false }
 
     #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
     #[inline]

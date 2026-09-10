@@ -276,6 +276,10 @@ fn dispatch(line: &str, ctx: &mut CommandContext) -> Result<()> {
         return Ok(());
     }
 
+    if tokens[0] == "cd" {
+        return handle_cd(&tokens[1..], ctx);
+    }
+
     if tokens[0] == "endpoint" {
         return handle_endpoint(&tokens[1..], ctx);
     }
@@ -454,6 +458,29 @@ impl StatsKind {
 /// [`ShaclCommand`]: crate::commands::ShaclCommand
 fn has_new_data_source(common: &CommonArgsAll, data: &[InputSpec]) -> bool {
     !data.is_empty() || matches!(resolve_backend(common), BackendSpec::Endpoint(_) | BackendSpec::Lbug)
+}
+
+/// Shell-only `cd [DIR]` command.
+///
+/// With no argument, prints the shell's current working directory. With a
+/// `DIR` argument, changes it via `std::env::set_current_dir` — unlike
+/// `!cd DIR`, which only changes the directory of the one-off subshell
+/// spawned to run it and has no effect on the shell itself, this changes the
+/// actual process cwd, so later relative paths (`data FILE`, `!ls`, ...)
+/// resolve against it for the rest of the session.
+fn handle_cd(args: &[String], ctx: &mut CommandContext) -> Result<()> {
+    match args {
+        [] => {
+            let cwd = std::env::current_dir().context("Failed to read current directory")?;
+            writeln!(ctx.writer, "{}", cwd.display())?;
+            Ok(())
+        },
+        [dir] => std::env::set_current_dir(dir).with_context(|| format!("Failed to change directory to '{dir}'")),
+        _ => {
+            writeln!(ctx.writer, "Usage: cd [DIR]")?;
+            Ok(())
+        },
+    }
 }
 
 /// Shell-only `endpoint [NAME|FILE.toml]` command.
@@ -1038,6 +1065,10 @@ fn print_help(ctx: &mut CommandContext) -> Result<()> {
     )?;
     writeln!(
         ctx.writer,
+        "  cd [DIR]       Show, or change, the shell's current directory (affects later relative paths and !<command>)"
+    )?;
+    writeln!(
+        ctx.writer,
         "  endpoint [NAME]  Show the active SPARQL endpoint, or activate a registered one"
     )?;
     writeln!(
@@ -1079,6 +1110,7 @@ fn command_names() -> Vec<String> {
     names.push("help".to_string());
     names.push("exit".to_string());
     names.push("quit".to_string());
+    names.push("cd".to_string());
     names.push("endpoint".to_string());
     names.push("reset".to_string());
     names.push("prefixes".to_string());

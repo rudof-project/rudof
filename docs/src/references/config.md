@@ -93,6 +93,8 @@ Source: [`rudof_rdf/src/rdf_core/rdf_data_config.rs`](https://github.com/rudof-p
 |---|---|---|---|
 | `base_iri` | IRI string | unset | Base IRI to resolve relative IRIs in RDF data. If unset (and `auto_base` is off), relative IRIs are an error. |
 | `local_base` | boolean | `true` | Automatically use the local file/URI being read as the base IRI. |
+| `pretty_json` | boolean | `true` | Indent `json`/`jsonld` result-format output instead of emitting it as compact single-line JSON. |
+| `colorize_json` | boolean | `false` | Style `json`/`jsonld` output with ANSI colors (keys, strings, numbers, ...). Only takes effect when `pretty_json` is also `true`, and only on a real terminal (auto-disabled when output is redirected or piped). |
 | `endpoints` | table of tables | `Wikidata`, `DBpedia`, `UniProt` pre-registered | Named SPARQL endpoints — see [`[rdf.endpoints.<name>]`](#rdfendpointsname) below. |
 | `visualization` | table | see [`[rdf.visualization]`](#rdfvisualization) | Styling for RDF graph visualizations (`svg`/`png`/`plantuml` output). |
 | `qlever` | table, optional | unset | QLever Docker backend settings — see [`[rdf.qlever]`](#rdfqlever) below. Only compiled in with the `qlever` cargo feature, and not available on wasm. |

@@ -4,6 +4,8 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ## [Unreleased]
 ### Added
 - `BuildRDF::serialize_with_blank_node_mode`: serializes a graph with explicit control over blank node identifiers via the new `BlankNodeMode` enum — `Simplify` (default) rewrites blank nodes to short sequential ids (`_:b0`, `_:b1`, ...) in the order they're first encountered, `Preserve` keeps the original identifiers. `BuildRDF::serialize` now delegates to it with `BlankNodeMode::default()`, so existing output is unchanged (#797)
+- `RdfDataConfig` gains `pretty_json` (default `true`) and `colorize_json` (default `false`): `data`/`shell` output in `json`/`jsonld` result format is now indented by default instead of single-line compact JSON; `colorize_json` additionally styles it with ANSI colors (only when `pretty_json` is on, and only on a real terminal). Set `rdf.pretty_json = false` to restore the old compact output. Settable in the shell via `config set rdf.pretty_json false` / `config set rdf.colorize_json true`, or in `rudof.toml` under `[rdf]`
+- `rudof shell`: new built-in `cd [DIR]` command. With no argument, prints the shell's current working directory; with `DIR`, changes it via `std::env::set_current_dir`. Unlike `!cd DIR`, which only affects the one-off subshell spawned to run it, this changes the actual process cwd, so later relative paths (`data FILE`, `!ls`, ...) resolve against it for the rest of the session
 ### Fixed
 ### Changed
 ### Removed
