@@ -306,7 +306,7 @@ checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
 name = "bench-issue730"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "rudof_lib",
@@ -315,7 +315,7 @@ dependencies = [
 
 [[package]]
 name = "bench-shex"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "criterion",
@@ -1264,7 +1264,7 @@ checksum = "be1e0bca6c3637f992fc1cc7cbc52a78c1ef6db076dbf1059c4323d6a2048376"
 
 [[package]]
 name = "dctap"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "calamine",
  "csv",
@@ -1487,7 +1487,7 @@ dependencies = [
 
 [[package]]
 name = "emacs-rudof"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "emacs",
@@ -2725,7 +2725,7 @@ dependencies = [
 
 [[package]]
 name = "mie"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "hashlink",
  "rudof_iri",
@@ -3264,7 +3264,7 @@ dependencies = [
 
 [[package]]
 name = "pgschema"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "clap",
@@ -3398,7 +3398,7 @@ dependencies = [
 
 [[package]]
 name = "prefixmap"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "colored",
  "indexmap 2.14.1",
@@ -3591,7 +3591,7 @@ dependencies = [
 
 [[package]]
 name = "pyrudof"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "pyo3",
  "pythonize",
@@ -3832,7 +3832,7 @@ dependencies = [
 
 [[package]]
 name = "rbe"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "criterion",
  "either",
@@ -3852,7 +3852,7 @@ dependencies = [
 
 [[package]]
 name = "rbe_testsuite"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "indoc",
@@ -3865,7 +3865,7 @@ dependencies = [
 
 [[package]]
 name = "rdf_config"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "hashlink",
  "indexmap 2.14.1",
@@ -4050,7 +4050,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_cli"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "clap",
@@ -4094,7 +4094,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_config"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "dirs",
  "serde",
@@ -4104,7 +4104,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_generate"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4132,7 +4132,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_iri"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "getrandom 0.3.4",
  "getrandom 0.4.3",
@@ -4148,7 +4148,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_lib"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "colored",
  "crossterm",
@@ -4186,7 +4186,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_mcp"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "axum",
@@ -4216,7 +4216,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_rdf"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "bollard",
  "colored",
@@ -4262,14 +4262,14 @@ dependencies = [
 
 [[package]]
 name = "rudof_typing"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "either",
 ]
 
 [[package]]
 name = "rudof_viz"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "serde",
  "tempfile",
@@ -4767,7 +4767,7 @@ dependencies = [
 
 [[package]]
 name = "shacl"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -4792,7 +4792,7 @@ dependencies = [
 
 [[package]]
 name = "shapes_comparator"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "prefixmap",
  "rudof_config",
@@ -4810,7 +4810,7 @@ dependencies = [
 
 [[package]]
 name = "shapes_converter"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "chrono",
  "dctap",
@@ -4847,7 +4847,7 @@ dependencies = [
 
 [[package]]
 name = "shex_ast"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "colored",
  "const_format",
@@ -4878,7 +4878,7 @@ dependencies = [
 
 [[package]]
 name = "shex_testsuite"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "anyhow",
  "clap",
@@ -4898,7 +4898,7 @@ dependencies = [
 
 [[package]]
 name = "shex_validation"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "colored",
  "either",
@@ -5077,7 +5077,7 @@ dependencies = [
 
 [[package]]
 name = "sparql_service"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "colored",
  "const_format",
