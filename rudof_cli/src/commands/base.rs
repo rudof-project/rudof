@@ -74,7 +74,22 @@ impl CommandContext {
         let common = extract_common(cmd);
 
         // Load config
-        let config = RudofConfig::discover(common.config().map(|p| p.as_path()))?;
+        #[allow(unused_mut)]
+        let mut config = RudofConfig::discover(common.config().map(|p| p.as_path()))?;
+
+        // `--qlever-index-dir` overrides `[rdf.qlever] index_dir` from the
+        // loaded config, so the index location can be pinned/shared without
+        // having to write a TOML file.
+        #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+        if let Some(dir) = common.qlever_index_dir() {
+            let rdf_data = config.rdf_data().clone();
+            let qlever = rdf_data
+                .qlever()
+                .cloned()
+                .unwrap_or_default()
+                .with_index_dir(dir.clone());
+            config = config.with_rdf_data(rdf_data.with_qlever(Some(qlever)));
+        }
 
         // A persisted `logging.level` (e.g. from `~/.config/rudof/config.toml`
         // or a discovered `rudof.toml`) sets the startup tracing filter, same
@@ -178,6 +193,7 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::ShexCheck(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
@@ -190,6 +206,7 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::ShaclValidate(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
@@ -197,6 +214,7 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::Data(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
@@ -204,6 +222,7 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::Node(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
@@ -211,6 +230,7 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::Shacl(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
@@ -218,6 +238,7 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::DCTap(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
@@ -250,6 +271,7 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::Sparql(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),

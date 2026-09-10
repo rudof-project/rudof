@@ -137,6 +137,15 @@ impl CommonArgs {
             CommonArgs::None => false,
         }
     }
+
+    /// Returns the `--qlever-index-dir` override, if set. Only ever `Some`
+    /// for [`CommonArgs::All`] — the only variant that carries a backend.
+    pub fn qlever_index_dir(&self) -> Option<&PathBuf> {
+        match self {
+            CommonArgs::All(args) => args.qlever_index_dir.as_ref(),
+            _ => None,
+        }
+    }
 }
 
 /// Full set of common arguments for commands that support config and output.
@@ -196,6 +205,23 @@ pub struct CommonArgsAll {
         conflicts_with = "backend"
     )]
     pub endpoint: Option<String>,
+
+    /// Directory for the QLever on-disk index, overriding `[rdf.qlever]
+    /// index_dir` from the TOML config.
+    ///
+    /// Only meaningful with `--backend qlever`. Naming a directory explicitly
+    /// is how you find out (and share) where an index lives: pass the same
+    /// directory again — from this machine or another rudof session pointed
+    /// at the same path (e.g. a shared/mounted volume) — and the idempotent
+    /// build step is skipped, going straight to serving. When unset, rudof
+    /// resolves a per-input fingerprinted path under the platform cache dir
+    /// and logs it at startup.
+    #[arg(
+        long = "qlever-index-dir",
+        value_name = "DIR",
+        help = "Directory for the QLever on-disk index (--backend qlever only); enables sharing/reuse across sessions"
+    )]
+    pub qlever_index_dir: Option<PathBuf>,
 }
 
 /// Common arguments for commands that need config and output but not a backend.
@@ -239,4 +265,39 @@ pub struct CommonArgsOutputForceOverWrite {
         default_value_t = false
     )]
     pub force_overwrite: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CommonArgsAll;
+    use clap::Parser;
+
+    /// Standalone wrapper so `CommonArgsAll` can be parsed on its own, the
+    /// same way it's `#[command(flatten)]`-ed into every real subcommand.
+    #[derive(Debug, Parser)]
+    struct TestCli {
+        #[command(flatten)]
+        common: CommonArgsAll,
+    }
+
+    #[test]
+    fn qlever_index_dir_is_unset_by_default() {
+        let cli = TestCli::parse_from(["test", "--backend", "qlever"]);
+        assert_eq!(cli.common.qlever_index_dir, None);
+    }
+
+    #[test]
+    fn qlever_index_dir_parses_alongside_backend() {
+        let cli = TestCli::parse_from([
+            "test",
+            "--backend",
+            "qlever",
+            "--qlever-index-dir",
+            "/shared/qlever-index",
+        ]);
+        assert_eq!(
+            cli.common.qlever_index_dir,
+            Some(std::path::PathBuf::from("/shared/qlever-index"))
+        );
+    }
 }

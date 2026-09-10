@@ -218,6 +218,7 @@ mod tests {
             force_overwrite: false,
             backend,
             endpoint: endpoint.map(|s| s.to_string()),
+            qlever_index_dir: None,
         }
     }
 

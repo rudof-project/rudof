@@ -75,6 +75,10 @@ pub async fn build_index(inputs: &[InputFile], config: &QleverConfig) -> Result<
         path: index_dir.clone(),
         error,
     })?;
+    info!(
+        "QLever index directory: {} (pass it as --qlever-index-dir, or [rdf.qlever] index_dir, to reuse or share it)",
+        index_dir.display()
+    );
 
     let handle = IndexHandle::new(&index_dir, &config.index_name);
     if handle.is_built() {
