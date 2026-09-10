@@ -205,7 +205,7 @@ Docker container backend (`--backend qlever`). Every field is optional; `rudof` 
 |---|---|---|---|
 | `image_name` | string | `"adfreiburg/qlever"` | Docker image to run. |
 | `image_tag` | string | `"commit-a307781"` | Docker image tag. |
-| `index_dir` | path, optional | `<cache dir>/rudof/qlever/<hash>` | Host directory for the QLever index. |
+| `index_dir` | path, optional | `<cache dir>/rudof/qlever/<hash>` | Host directory for the QLever index. Also settable per-invocation with `--qlever-index-dir <DIR>` (which takes precedence over this key), so you don't need a config file just to pin or share an index location. When left unset, the resolved directory is logged at startup so you can find it, reuse it in later invocations, or copy it to another machine — building the index is idempotent and is skipped whenever the target directory already holds a finished index. |
 | `index_name` | string | `"default"` | Index base name (QLever's `-i`). |
 | `auto_delete_if_created` | boolean | `false` | Delete the index directory when the container is dropped, if this run created it. |
 | `stxxl_memory` | string, optional | unset | STXXL memory for index building. |
