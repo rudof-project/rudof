@@ -3,9 +3,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- `shacl`'s `--result-shapes-format`/`--shapes-format` now accept `json` as an alias for `jsonld`, matching `data`'s `--result-format`.
 ### Fixed
+- `shacl -r jsonld`/`-r json` now honors `rdf.pretty_json`/`rdf.colorize_json` the same way `data`/`shell` already do, so SHACL JSON-LD output is indented by default instead of single-line compact JSON.
+- `convert -x html`: `-t`/`--target-folder` was parsed but silently ignored, so HTML conversion always failed with "Output folder must be specified for HTML conversion" even when `-t` was given (the code was accidentally reading `-o`/`--output-file` instead). `-t` is now wired to the HTML output folder as documented.
+- `shacl-validate --with-evidences`: a `sh:reifierShape` violation (reported against the reifier node) could get silently dropped while bucketing evidence/violations per focus node, wrongly showing the outer node as "Conforms" to its shape even though a nested property (and the plain, non-evidence violations list) correctly failed. Nested property-shape and reifier-shape outcomes are now attributed to the node they were computed on behalf of, instead of by matching each violation's own (possibly more specific) focus node.
 ### Changed
 - Parameter `--predicates` now accepts a comma-separated list of predicates.
+- `mcp`'s `--allowed-network` now also accepts a comma-separated list, in addition to repeating the flag.
 ### Removed
 
 ## 0.3.19

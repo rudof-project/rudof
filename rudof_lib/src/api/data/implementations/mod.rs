@@ -17,6 +17,7 @@ pub use load_service_description::load_service_description;
 pub use reset_data::reset_data;
 pub use reset_service_description::reset_service_description;
 pub use serialize_data::serialize_data;
+pub(crate) use serialize_data::write_pretty_json;
 pub use serialize_service_description::serialize_service_description;
 pub use show_node_info::show_node_info;
 

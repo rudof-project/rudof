@@ -124,7 +124,7 @@ fn serialize_rdf_data<W: io::Write>(
 
 /// Re-parses compact JSON/JSON-LD bytes and re-emits them indented, optionally styled with
 /// ANSI colors (keys cyan, strings green, numbers yellow, booleans magenta, null dimmed).
-fn write_pretty_json<W: io::Write>(writer: &mut W, compact: &[u8], colorize: bool) -> io::Result<()> {
+pub(crate) fn write_pretty_json<W: io::Write>(writer: &mut W, compact: &[u8], colorize: bool) -> io::Result<()> {
     let value: Value = serde_json::from_slice(compact).map_err(io::Error::other)?;
     write_json_value(writer, &value, colorize, 0)?;
     writeln!(writer)

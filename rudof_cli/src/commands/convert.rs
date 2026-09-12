@@ -57,7 +57,7 @@ impl Command for ConvertCommand {
         if let Some(templates_folder) = self.args.template_folder.as_deref() {
             conversion = conversion.with_templates_folder(templates_folder);
         }
-        if let Some(output_folder) = self.args.common.output.as_deref() {
+        if let Some(output_folder) = self.args.target_folder.as_deref() {
             conversion = conversion.with_output_folder(output_folder);
         }
 

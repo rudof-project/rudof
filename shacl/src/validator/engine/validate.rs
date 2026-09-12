@@ -135,17 +135,26 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         // unique (value-node, shape) pair is only truly validated once; subsequent
         // invocations for the same pair return the cached outcome, correctly producing
         // one violation entry per path that led to the offending node.
-        let mut property_shapes_outcome = ValidationOutcome::new();
+        //
+        // A nested call can itself reassign the *reported* focus node further down
+        // (most notably a reifier-shape check, whose violations correctly report the
+        // reifier node as their focus, not the node whose property is being reified).
+        // So the outcome returned by `shape.validate` can't be safely re-bucketed below
+        // by matching each violation's own `focus_node()` against `orig` — instead we
+        // attribute the *entire* returned outcome to `orig`, since that's exactly the
+        // node this loop iteration validated on this shape's behalf.
+        let mut nested_by_focus: HashMap<Object, ValidationOutcome> = HashMap::new();
         for ps in self.property_shapes().iter() {
             let shape = shapes_graph.get_shape_from_idx_e(ps)?;
-            for (_, vn) in value_nodes.iter() {
+            for (orig, vn) in value_nodes.iter() {
                 let outcome = shape.validate(store, runner, Some(vn), Some(self), shapes_graph)?;
-                property_shapes_outcome.extend(outcome);
+                let orig_object = RDF::term_as_object(orig)?;
+                nested_by_focus.entry(orig_object).or_default().extend(outcome);
             }
         }
 
-        let reification_outcome = if let Some(reifier_info) = self.reifier_info() {
-            validate_reifiers(
+        if let Some(reifier_info) = self.reifier_info() {
+            let reification_by_focus = validate_reifiers(
                 self,
                 store,
                 runner,
@@ -153,16 +162,18 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
                 reifier_info,
                 &uncached_focus_nodes,
                 shapes_graph,
-            )?
-        } else {
-            ValidationOutcome::new()
-        };
+            )?;
+            for (node_object, reif_outcome) in reification_by_focus {
+                nested_by_focus.entry(node_object).or_default().extend(reif_outcome);
+            }
+        }
 
         // Collect all NEW outcome (from uncached focus nodes)
         let mut new_outcome = ValidationOutcome::new();
-        new_outcome.extend(component_outcome);
-        new_outcome.extend(property_shapes_outcome);
-        new_outcome.extend(reification_outcome);
+        new_outcome.extend(component_outcome.clone());
+        for outcome in nested_by_focus.values() {
+            new_outcome.extend(outcome.clone());
+        }
 
         // These nodes are no longer "in progress": a nested call reaching
         // them now would be a fresh lookup, not a recursive reference.
@@ -180,14 +191,32 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
                 .filter_map(|n| RDF::term_as_object(n).ok())
                 .map(|obj| (obj, ValidationOutcome::new()))
                 .collect();
-            for v in new_outcome.violations() {
+            // `component_outcome`'s violations/evidences always report one of
+            // `uncached_focus_nodes` verbatim as their focus (`evaluate()` derives
+            // it directly from this shape's own value-node pairing), so matching by
+            // `focus_node()` is safe here.
+            for v in component_outcome.violations() {
                 if let Some(bucket) = by_focus.get_mut(v.focus_node()) {
                     bucket.push_violation(v.clone());
                 }
             }
-            for e in new_outcome.evidences() {
+            for e in component_outcome.evidences() {
                 if let Some(bucket) = by_focus.get_mut(e.focus_node()) {
                     bucket.push_evidence(e.clone());
+                }
+            }
+
+            // Nested property-shape / reifier-shape outcomes are attributed
+            // directly to the node this frame validated them on behalf of
+            // (see comment above `nested_by_focus`), not by matching
+            // `focus_node()` — their own violations may correctly report a
+            // different, more specific node (e.g. a value node reached via a
+            // path, or a reifier node) as their focus, which would otherwise
+            // never match a key here and get silently dropped from this
+            // node's bucket, wrongly making it look like it conforms.
+            for (node_object, nested_outcome) in &nested_by_focus {
+                if let Some(bucket) = by_focus.get_mut(node_object) {
+                    bucket.extend(nested_outcome.clone());
                 }
             }
 
@@ -222,6 +251,13 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
     }
 }
 
+/// Validates the reifier(s) of each of `focus_nodes`' relevant triples,
+/// keyed by that *outer* focus node rather than by the reifier node itself.
+/// The inner [`ValidationResult`]s/[`Evidence`]s correctly report the
+/// reifier node as their own SHACL focus node (per spec), but the caller
+/// (`IRShape::validate`) buckets outcomes by the focus nodes it knows about
+/// — the outer ones — so this mapping is what lets a reifier-shape
+/// violation flip the outer node's conformance instead of being dropped.
 fn validate_reifiers<RDF: NeighsRDF + Debug>(
     shape: &IRShape,
     store: &RDF,
@@ -230,10 +266,13 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
     reifier_info: &ReifierInfo,
     focus_nodes: &FocusNodes<RDF>,
     shapes_graph: &IRSchema,
-) -> Result<ValidationOutcome, ValidationError> {
-    let mut outcome = ValidationOutcome::new();
+) -> Result<HashMap<Object, ValidationOutcome>, ValidationError> {
+    let mut by_focus: HashMap<Object, ValidationOutcome> = HashMap::new();
 
     for node in focus_nodes.iter() {
+        let node_object = RDF::term_as_object(node)?;
+        let outcome = by_focus.entry(node_object).or_default();
+
         for reifier_shape in reifier_info.reifier_shape() {
             let pred = reifier_info.predicate();
             let pred_iri: RDF::IRI = pred.clone().into();
@@ -277,5 +316,5 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
             }
         }
     }
-    Ok(outcome)
+    Ok(by_focus)
 }

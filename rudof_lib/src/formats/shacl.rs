@@ -25,6 +25,8 @@ pub enum ShaclFormat {
     NQuads,
     /// JSON-LD - JSON format for Linked Data
     JsonLd,
+    /// JSON - alias for JSON-LD
+    Json,
 }
 
 impl From<ShaclFormat> for InnerShaclFormat {
@@ -38,6 +40,7 @@ impl From<ShaclFormat> for InnerShaclFormat {
             ShaclFormat::NQuads => InnerShaclFormat::NQuads,
             ShaclFormat::Internal => InnerShaclFormat::Internal,
             ShaclFormat::JsonLd => InnerShaclFormat::JsonLd,
+            ShaclFormat::Json => InnerShaclFormat::JsonLd,
         }
     }
 }
@@ -60,6 +63,7 @@ impl TryFrom<ShaclFormat> for RDFFormat {
             ShaclFormat::N3 => Ok(RDFFormat::N3),
             ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
             ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
+            ShaclFormat::Json => Ok(RDFFormat::JsonLd),
             ShaclFormat::Internal => Err(ShaclError::InternalSHACLFormatNonReadable),
         }
     }
@@ -76,6 +80,7 @@ impl Display for ShaclFormat {
             ShaclFormat::N3 => write!(dest, "n3"),
             ShaclFormat::NQuads => write!(dest, "nquads"),
             ShaclFormat::JsonLd => write!(dest, "jsonld"),
+            ShaclFormat::Json => write!(dest, "json"),
         }
     }
 }
@@ -93,6 +98,7 @@ impl FromStr for ShaclFormat {
             "n3" => Ok(ShaclFormat::N3),
             "nquads" => Ok(ShaclFormat::NQuads),
             "jsonld" => Ok(ShaclFormat::JsonLd),
+            "json" => Ok(ShaclFormat::Json),
             other => Err(ShaclError::UnsupportedShaclSchemaFormat {
                 format: other.to_string(),
             }),
@@ -111,6 +117,7 @@ impl MimeType for ShaclFormat {
             ShaclFormat::NQuads => "application/n-quads",
             ShaclFormat::Internal => "text/turtle",
             ShaclFormat::JsonLd => "application/ld+json",
+            ShaclFormat::Json => "application/ld+json",
         }
     }
 }

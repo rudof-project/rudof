@@ -16,6 +16,7 @@ cli_wrapper!(
         N3,
         NQuads,
         JsonLd,
+        Json,
     }
 );
 

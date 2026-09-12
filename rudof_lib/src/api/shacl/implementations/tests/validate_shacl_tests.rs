@@ -916,3 +916,86 @@ fn errors_and_evidences_mode_keeps_both() {
     assert_eq!(report.results().len(), 1);
     assert!(!report.evidences().is_empty());
 }
+
+/// Regression test: a `sh:reifierShape` violation (reported against the
+/// reifier node, not the outer focus node) used to get silently dropped
+/// while bucketing evidence/violations per focus node, making the outer
+/// node's own property shape — and therefore the enclosing node shape —
+/// wrongly look like it conformed in the evidence report, even though the
+/// plain (non-evidence) violations list correctly included the failure.
+#[test]
+fn reifier_shape_violation_is_not_masked_by_a_spurious_conforms_evidence() {
+    use rudof_iri::IriS;
+    use rudof_rdf::rdf_core::term::Object;
+    use shacl::validator::ShaclConfig;
+    use shacl::validator::report::EvidenceKind;
+
+    let config = ShaclConfig::default().with_store_evidences(true);
+    let mut rudof = Rudof::new(RudofConfig::default().with_shacl(config));
+
+    let schema = InputSpec::str(
+        r#"
+        @prefix ex: <http://example.org/> .
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+        ex:UserShape a sh:NodeShape ;
+            sh:targetClass ex:Person ;
+            sh:property [
+                sh:path ex:knows ;
+                sh:class ex:Person ;
+                sh:reificationRequired true ;
+                sh:reifierShape ex:ReifierShape ;
+            ] .
+
+        ex:ReifierShape a sh:NodeShape ;
+            sh:property [
+                sh:path ex:since ;
+                sh:datatype xsd:integer ;
+                sh:minCount 1 ;
+                sh:maxCount 1 ;
+            ] .
+        "#,
+    );
+    load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
+
+    let data = InputSpec::str(
+        r#"
+        @prefix ex: <http://example.org/> .
+
+        ex:b a ex:Person ; ex:name "Robert" .
+        ex:c a ex:Person ;
+             ex:name "Alice" ;
+             ex:knows ex:b {| ex:since "Unknown" |} .
+        "#,
+    );
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        None,
+        None,
+        None,
+        None,
+        None,
+        EndpointStrategy::default(),
+    )
+    .unwrap();
+
+    validate_shacl(&mut rudof, None).unwrap();
+    let report = rudof.shacl_validation_results.unwrap();
+
+    // `ex:since "Unknown"` on the reifier fails `sh:datatype xsd:integer`,
+    // so this must not conform overall...
+    assert!(!report.conforms());
+
+    // ...and `ex:c` must not get a "shape satisfied" evidence for
+    // `ex:UserShape` — that's exactly the bug: the reifier violation was
+    // dropped from `ex:c`'s bucket, making it look like it had none.
+    let c = Object::iri(IriS::new_unchecked("http://example.org/c"));
+    let user_shape = Object::iri(IriS::new_unchecked("http://example.org/UserShape"));
+    let spuriously_conforms = report.evidences().iter().any(|e| {
+        e.kind() == EvidenceKind::Shape && e.focus_node() == &c && e.constraint_component() == &user_shape
+    });
+    assert!(!spuriously_conforms, "{:#?}", report.evidences());
+}
