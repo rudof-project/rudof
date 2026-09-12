@@ -49,7 +49,17 @@ fn convert_to_html_accepts_target_folder_flag() {
 
     let out = rudof_in(
         dir.path(),
-        &["convert", "-s", "schema.shex", "-m", "shex", "-x", "html", "-t", "html_output"],
+        &[
+            "convert",
+            "-s",
+            "schema.shex",
+            "-m",
+            "shex",
+            "-x",
+            "html",
+            "-t",
+            "html_output",
+        ],
     );
 
     // Whether or not this environment has PlantUML available for diagram

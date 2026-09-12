@@ -994,8 +994,9 @@ fn reifier_shape_violation_is_not_masked_by_a_spurious_conforms_evidence() {
     // dropped from `ex:c`'s bucket, making it look like it had none.
     let c = Object::iri(IriS::new_unchecked("http://example.org/c"));
     let user_shape = Object::iri(IriS::new_unchecked("http://example.org/UserShape"));
-    let spuriously_conforms = report.evidences().iter().any(|e| {
-        e.kind() == EvidenceKind::Shape && e.focus_node() == &c && e.constraint_component() == &user_shape
-    });
+    let spuriously_conforms = report
+        .evidences()
+        .iter()
+        .any(|e| e.kind() == EvidenceKind::Shape && e.focus_node() == &c && e.constraint_component() == &user_shape);
     assert!(!spuriously_conforms, "{:#?}", report.evidences());
 }
