@@ -48,10 +48,11 @@ pub struct McpArgs {
         long = "allowed-network",
         value_name = "CIDR",
         help = "Allowed IP network in CIDR notation (only used with http-sse transport). \
-              Can be specified multiple times to allow multiple networks. \
+              Can be comma-separated or specified multiple times to allow multiple networks. \
               Examples: 127.0.0.1, 192.168.1.0/24, 10.0.0.0/8, ::1. \
               If not specified, defaults to localhost only (127.0.0.0/8 and ::1/128)",
-        num_args = 0.. // allows multiple vales
+        num_args = 0.., // allows multiple values
+        value_delimiter = ','
     )]
     pub allowed_networks: Vec<String>,
 }

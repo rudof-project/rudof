@@ -5,6 +5,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Added
 ### Fixed
 ### Changed
+- Parameter `--predicates` now accepts a comma-separated list of predicates.
 ### Removed
 
 ## 0.3.19

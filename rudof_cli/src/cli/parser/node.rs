@@ -57,7 +57,8 @@ pub struct NodeArgs {
         short = 'p',
         long = "predicates",
         value_name = "PREDICATES",
-        help = "List of predicates to show"
+        value_delimiter = ',',
+        help = "List of predicates to show (comma-separated, or repeat -p)"
     )]
     pub predicates: Option<Vec<String>>,
 
