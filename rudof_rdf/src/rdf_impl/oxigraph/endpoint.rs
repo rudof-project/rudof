@@ -1573,13 +1573,41 @@ async fn make_sparql_query_ask_async(
 /// - The response is not a boolean result
 fn parse_sparql_ask_results(body: &str) -> Result<bool> {
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
+    let sanitized = sanitize_sparql_json_body(body);
 
-    match json_parser.for_reader(body.as_bytes())? {
+    match json_parser.for_reader(sanitized.as_bytes())? {
         ReaderQueryResultsParserOutput::Boolean(b) => Ok(b),
         _ => Err(OxigraphEndpointError::ParsingBody {
             body: format!("Expected boolean ASK result, got: {}", body),
         }),
     }
+}
+
+/// Strips non-standard top-level members from a SPARQL JSON results body.
+///
+/// The SPARQL 1.1 Query Results JSON Format only defines `head`, `results`
+/// and `boolean` at the top level, but some endpoints (e.g. QLever) append
+/// extra vendor metadata such as `"meta":{"query-time-ms":...}` after
+/// `results`. `sparesults`'s streaming reader is strict and fails with
+/// "Unexpected JSON after the end of the bindings array" when it encounters
+/// such trailing members, even though the response is otherwise valid JSON.
+/// Re-serializing with only the spec-defined keys keeps `sparesults` happy
+/// while tolerating endpoint-specific extensions.
+///
+/// If `body` is not valid JSON, it is returned unchanged so the underlying
+/// parser can report the original error.
+fn sanitize_sparql_json_body(body: &str) -> std::borrow::Cow<'_, str> {
+    let Ok(serde_json::Value::Object(mut map)) = serde_json::from_str::<serde_json::Value>(body) else {
+        return std::borrow::Cow::Borrowed(body);
+    };
+
+    let known_keys = ["head", "results", "boolean"];
+    if map.keys().all(|k| known_keys.contains(&k.as_str())) {
+        return std::borrow::Cow::Borrowed(body);
+    }
+
+    map.retain(|k, _| known_keys.contains(&k.as_str()));
+    std::borrow::Cow::Owned(serde_json::Value::Object(map).to_string())
 }
 
 /// Parses SPARQL JSON results into a vector of query solutions.
@@ -1600,8 +1628,9 @@ fn parse_sparql_ask_results(body: &str) -> Result<bool> {
 /// - Individual solutions cannot be parsed
 fn parse_sparql_json_results(body: &str) -> Result<Vec<OxQuerySolution>> {
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
+    let sanitized = sanitize_sparql_json_body(body);
 
-    if let ReaderQueryResultsParserOutput::Solutions(solutions) = json_parser.for_reader(body.as_bytes())? {
+    if let ReaderQueryResultsParserOutput::Solutions(solutions) = json_parser.for_reader(sanitized.as_bytes())? {
         // Collect all solutions, propagating any parsing errors
         solutions
             .collect::<std::result::Result<Vec<_>, _>>()
