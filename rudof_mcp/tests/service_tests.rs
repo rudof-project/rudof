@@ -99,6 +99,8 @@ mod tool_router_tests {
             "node_info",
             "reset_session_state",
             "change_directory",
+            "get_rudof_version",
+            "manage_prefixes",
         ];
 
         for expected in expected_tools {

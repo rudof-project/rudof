@@ -47,7 +47,7 @@ The Rudof MCP server exposes the following capabilities:
 
 ### Available Tools
 
-The MCP server provides 12 tools organized by functionality:
+The MCP server provides 14 tools organized by functionality:
 
 **Data Management:**
 
@@ -90,6 +90,8 @@ The MCP server provides 12 tools organized by functionality:
 |------|-------------|
 | `reset_session_state` | Clear session state (all, or specific targets like data/shex/shacl/...) |
 | `change_directory` | Get or change this session's virtual working directory used to resolve relative file paths |
+| `get_rudof_version` | Report the rudof version this MCP server is running |
+| `manage_prefixes` | Show or manage the session's default prefixes (list/add/remove/rename/copy), mirroring the shell's `prefixes` command |
 
 ### Available Prompts
 

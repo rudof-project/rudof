@@ -21,11 +21,13 @@ use std::sync::{Arc, OnceLock};
 // Import the public helper functions from the implementation files
 use crate::service::tools::data_tools_impl::*;
 use crate::service::tools::node_tools_impl::*;
+use crate::service::tools::prefix_tools_impl::*;
 use crate::service::tools::query_tools_impl::*;
 use crate::service::tools::session_tools_impl::*;
 use crate::service::tools::shacl_validate_tools_impl::*;
 use crate::service::tools::shex_tools_impl::*;
 use crate::service::tools::shex_validate_tools_impl::*;
+use crate::service::tools::version_tools_impl::*;
 
 #[tool_router]
 impl RudofMcpService {
@@ -252,6 +254,38 @@ impl RudofMcpService {
     ) -> Result<CallToolResult, McpError> {
         change_directory_impl(self, params).await
     }
+
+    /// Report the rudof version this MCP server is running.
+    #[tool(
+        name = "get_rudof_version",
+        description = "Report the rudof version this MCP server is running (the same version reported by `rudof --version`). Takes no parameters.",
+        annotations(
+            title = "Get Rudof Version",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
+    )]
+    pub async fn get_rudof_version(&self, params: Parameters<EmptyRequest>) -> Result<CallToolResult, McpError> {
+        get_version_impl(self, params).await
+    }
+
+    /// Show, or manage, the session's default prefix declarations.
+    #[tool(
+        name = "manage_prefixes",
+        description = "Show or manage the session's default prefix declarations -- the prefixes assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes, independently of whatever prefixes a loaded resource already declares. Mirrors the `prefixes` command in the rudof shell. `action` defaults to \"list\" (no other fields needed). \"add\" requires `alias` and `iri`. \"remove\" requires `alias`. \"rename\" and \"copy\" require `alias` (the existing one) and `new_alias`. Always returns the full, current list of default prefixes after the action.",
+        annotations(
+            title = "Show/Manage Default Prefixes",
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = false,
+            open_world_hint = false,
+        )
+    )]
+    pub async fn manage_prefixes(&self, params: Parameters<ManagePrefixesRequest>) -> Result<CallToolResult, McpError> {
+        manage_prefixes_impl(self, params).await
+    }
 }
 
 /// Public wrapper to expose the generated router from the macro
@@ -288,6 +322,8 @@ fn build_annotated_tools() -> Vec<rmcp::model::Tool> {
             "validate_shacl" => output_schema_for::<ValidateShaclResponse>(),
             "reset_session_state" => output_schema_for::<ResetSessionStateResponse>(),
             "change_directory" => output_schema_for::<ChangeDirectoryResponse>(),
+            "get_rudof_version" => output_schema_for::<GetVersionResponse>(),
+            "manage_prefixes" => output_schema_for::<ManagePrefixesResponse>(),
             _ => {
                 tracing::warn!(tool_name = %tool.name, "Tool missing output schema");
                 continue;
