@@ -219,7 +219,9 @@ mod tests {
             .expect("list should not be a protocol error");
         assert_ne!(result.is_error, Some(true));
 
-        let structured = result.structured_content.expect("response should have structured content");
+        let structured = result
+            .structured_content
+            .expect("response should have structured content");
         let prefixes = structured.get("prefixes").and_then(|v| v.as_array()).unwrap();
         assert!(prefixes.is_empty());
     }
@@ -236,7 +238,9 @@ mod tests {
         .expect("add should not be a protocol error");
         assert_ne!(add_result.is_error, Some(true));
 
-        let structured = add_result.structured_content.expect("response should have structured content");
+        let structured = add_result
+            .structured_content
+            .expect("response should have structured content");
         let prefixes = structured.get("prefixes").and_then(|v| v.as_array()).unwrap();
         assert_eq!(prefixes.len(), 1);
         assert_eq!(prefixes[0]["alias"], "wd");
@@ -288,7 +292,9 @@ mod tests {
             .expect("rename should not be a protocol error");
         assert_ne!(result.is_error, Some(true));
 
-        let structured = result.structured_content.expect("response should have structured content");
+        let structured = result
+            .structured_content
+            .expect("response should have structured content");
         let prefixes = structured.get("prefixes").and_then(|v| v.as_array()).unwrap();
         assert_eq!(prefixes.len(), 1);
         assert_eq!(prefixes[0]["alias"], "wikidata");
@@ -309,7 +315,9 @@ mod tests {
             .expect("copy should not be a protocol error");
         assert_ne!(result.is_error, Some(true));
 
-        let structured = result.structured_content.expect("response should have structured content");
+        let structured = result
+            .structured_content
+            .expect("response should have structured content");
         let prefixes = structured.get("prefixes").and_then(|v| v.as_array()).unwrap();
         assert_eq!(prefixes.len(), 2);
     }

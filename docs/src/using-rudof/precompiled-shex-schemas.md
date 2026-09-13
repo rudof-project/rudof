@@ -61,6 +61,55 @@ rudof shex-validate \
   examples/user.ttl
 ```
 
+### 3. Inspect a compiled cache with `shex`
+
+`shex` also accepts `--compiled-schema`, mirroring `shex-validate`. This
+is useful to inspect a cache produced elsewhere without needing the
+original schema source file:
+
+```sh
+rudof shex --compiled-schema user.ircache -r internal --statistics true --show-dependencies true
+```
+
+This loads the `SchemaIR` straight from the cache (skipping parsing,
+imports and AST-to-IR compilation) and prints its internal
+representation, shape statistics, and dependency graph.
+
+**Only `-r internal` (and statistics/dependencies, which read from the
+same `SchemaIR`) work against a compiled schema.** Every other result
+format (`shexc`, `shexj`, `json`, `jsonld`, `turtle`, `plantuml`, …)
+needs the original parsed schema (AST), which the precompiled cache
+does not preserve -- only the compiled `SchemaIR` is. Asking for one of
+those formats fails with an error naming the limitation. To convert a
+schema to one of those formats, load the original source with
+`--schema` instead of `--compiled-schema`.
+
+### 4. The unified alternative: `binary` as a `ShExFormat`
+
+Everything above also works without the dedicated `--compile-to`/
+`--compiled-schema` flags, since `binary` is a regular `ShExFormat` value
+usable anywhere a ShEx format is accepted -- the same `-s`/`-f`/`-r`/`-o`
+flags used to convert between `shexc`, `shexj`, `turtle`, etc. drive
+compiling and loading the cache too:
+
+```sh
+# Compile: same effect as --compile-to.
+rudof shex -s examples/user.shex -r binary -o user.ircache
+
+# Load the cache back: same effect as --compiled-schema.
+rudof shex -f binary -s user.ircache -r internal --statistics true
+
+# shex-validate accepts -f binary the same way.
+rudof shex-validate -s user.ircache -f binary --shapemap examples/user.sm examples/user.ttl
+```
+
+Both spellings produce byte-identical caches and behave identically --
+`--compile-to`/`--compiled-schema` are dedicated shortcuts for the same
+underlying `ShExFormat::Binary` handling, kept around because they read
+more explicitly in scripts. Pick whichever fits your command better; the
+"only `internal` is recoverable afterwards" limitation above applies the
+same way regardless of which flags loaded the cache.
+
 ## Other Considerations
 
 - **The cache is bound to a version.** Loading a cache produced by an incompatible

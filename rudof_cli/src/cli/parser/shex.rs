@@ -12,9 +12,21 @@ pub struct ShexArgs {
         short = 's',
         long = "schema",
         value_name = "INPUT",
-        help = "Schema, FILE, URI or - for stdin. If omitted, shows the currently loaded schema"
+        help = "Schema, FILE, URI or - for stdin. If omitted, shows the currently loaded schema",
+        conflicts_with = "compiled_schema"
     )]
     pub schema: Option<InputSpec>,
+
+    #[arg(
+        long = "compiled-schema",
+        value_name = "FILE",
+        help = "Precompiled ShEx SchemaIR cache file, as produced by --compile-to. Loads it directly, \
+                skipping parsing, imports and AST-to-IR compilation. Only -r/--result-format internal \
+                (plus --statistics/--show-dependencies) can be used with it -- other result formats need \
+                the original schema, loaded via --schema.",
+        conflicts_with_all = ["schema", "schema_format", "base"]
+    )]
+    pub compiled_schema: Option<InputSpec>,
 
     #[arg(
         short = 'f',
@@ -52,7 +64,8 @@ pub struct ShexArgs {
     pub show_time: Option<bool>,
 
     #[arg(
-        long = "show-schema", 
+        long = "show-schema",
+        help = "Show the loaded schema (default). Overridden by a later --no-show-schema.",
         default_value_t = true,
         action = clap::ArgAction::SetTrue,
         overrides_with = "no_show_schema"
@@ -60,8 +73,12 @@ pub struct ShexArgs {
     pub show_schema: bool,
 
     #[arg(
-        long = "no-show-schema", 
-        action = clap::ArgAction::SetFalse,
+        long = "no-show-schema",
+        help = "Don't show the loaded schema -- useful with -f binary to load a precompiled schema \
+                without also trying (and failing) to render it in the default result format, which \
+                needs the original schema. Overridden by a later --show-schema.",
+        default_value_t = false,
+        action = clap::ArgAction::SetTrue,
         overrides_with = "show_schema"
     )]
     pub no_show_schema: bool,
@@ -92,7 +109,8 @@ pub struct ShexArgs {
     #[arg(
         long = "compile-to",
         value_name = "FILE",
-        help = "Compile the ShEx schema and write the precompiled SchemaIR cache to FILE."
+        help = "Compile the ShEx schema and write the precompiled SchemaIR cache to FILE.",
+        conflicts_with = "compiled_schema"
     )]
     pub compile_to: Option<PathBuf>,
 

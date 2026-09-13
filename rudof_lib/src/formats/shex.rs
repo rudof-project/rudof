@@ -41,6 +41,15 @@ pub enum ShExFormat {
     Svg,
     /// PNG - Portable Network Graphics image format for visual output
     Png,
+    /// Binary - precompiled `SchemaIR` cache (as written by `--compile-to` /
+    /// read by `--compiled-schema`). As an input format, loads the cache
+    /// directly, skipping parsing, imports and AST-to-IR compilation. As a
+    /// result format, compiles the currently loaded schema and writes the
+    /// cache instead of a textual serialization -- the parsed schema (AST)
+    /// is not recoverable from it afterwards, so only `Internal` (plus
+    /// statistics/dependencies) works as a *result* format when a schema was
+    /// itself loaded from `Binary`.
+    Binary,
 }
 
 impl Display for ShExFormat {
@@ -61,6 +70,7 @@ impl Display for ShExFormat {
             ShExFormat::PlantUML => write!(dest, "plantuml"),
             ShExFormat::Svg => write!(dest, "svg"),
             ShExFormat::Png => write!(dest, "png"),
+            ShExFormat::Binary => write!(dest, "binary"),
         }
     }
 }
@@ -126,6 +136,7 @@ impl FromStr for ShExFormat {
             "plantuml" => Ok(ShExFormat::PlantUML),
             "svg" => Ok(ShExFormat::Svg),
             "png" => Ok(ShExFormat::Png),
+            "binary" => Ok(ShExFormat::Binary),
             other => Err(ShExError::UnsupportedShExFormat {
                 format: other.to_string(),
             }),
@@ -151,6 +162,7 @@ impl MimeType for ShExFormat {
             ShExFormat::PlantUML => "text/plain",
             ShExFormat::Svg => "image/svg+xml",
             ShExFormat::Png => "image/png",
+            ShExFormat::Binary => "application/octet-stream",
         }
     }
 }

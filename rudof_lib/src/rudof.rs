@@ -388,6 +388,15 @@ impl Rudof {
         self.shex_schema.as_ref()
     }
 
+    /// Returns the number of shapes (including any pulled in via imports) in
+    /// the currently compiled ShEx `SchemaIR`, or `None` if no ShEx schema is
+    /// loaded. Available regardless of whether the schema was parsed from
+    /// source or loaded from a precompiled cache -- unlike [`Self::shex_schema`],
+    /// which needs the parsed AST.
+    pub fn shex_schema_shapes_count(&self) -> Option<usize> {
+        self.shex_schema_ir.as_ref().map(ShExSchemaIR::total_shapes_count)
+    }
+
     /// Returns the currently loaded SHACL shapes, if any.
     pub fn shacl_shapes(&self) -> Option<&IRSchema> {
         self.shacl_shapes.as_ref()

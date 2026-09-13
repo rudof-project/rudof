@@ -31,6 +31,19 @@ pub fn load_shex_schema(
 ) -> Result<()> {
     let (schema_format, base_schema, reader_mode) = init_defaults(rudof, schema_format, base_schema, reader_mode)?;
 
+    // `Binary` loads a precompiled `SchemaIR` cache (as written by
+    // `--result-format binary`/`compile_shex_schema_to_file`), which has its
+    // own dedicated loader -- it skips parsing, imports and AST-to-IR
+    // compilation entirely, so it doesn't go through the generic reader/base
+    // handling the other formats below share.
+    if matches!(schema_format, ShExFormat::Binary) {
+        return crate::api::shex::implementations::load_shex_schema_precompiled::load_shex_schema_precompiled(
+            rudof,
+            schema,
+            Some(&reader_mode),
+        );
+    }
+
     let schema_reader = schema
         .open_read(Some(schema_format.mime_type()), "ShEx Schema")
         .map_err(|error| ShExError::DataSourceSpec {

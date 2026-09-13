@@ -168,10 +168,25 @@ fn serialize_schema(
         false => ShExFormatter::default().without_colors(),
     };
 
-    let shex_schema = rudof.shex_schema.as_ref().ok_or(ShExError::NoShExSchemaLoaded)?;
+    // Only fetched when the requested format actually needs the parsed AST --
+    // a schema loaded via `load_shex_schema_precompiled` only has `shex_schema_ir`
+    // (the AST isn't part of the precompiled cache), so `Internal`/`Simple`
+    // must not force this to be `Some` up front.
+    let require_shex_schema = || {
+        rudof.shex_schema.as_ref().ok_or_else(|| {
+            if rudof.shex_schema_ir.is_some() {
+                ShExError::PrecompiledSchemaFormatUnavailable {
+                    format: shex_format.to_string(),
+                }
+            } else {
+                ShExError::NoShExSchemaLoaded
+            }
+        })
+    };
 
     match shex_format {
         ShExFormat::ShExC => {
+            let shex_schema = require_shex_schema()?;
             formatter
                 .write_schema(shex_schema, writer)
                 .map_err(|e| ShExError::FailedSerializingShExSchema {
@@ -180,6 +195,7 @@ fn serialize_schema(
                 })?;
         },
         ShExFormat::ShExJ | ShExFormat::Json | ShExFormat::JsonLd => {
+            let shex_schema = require_shex_schema()?;
             serde_json::to_writer_pretty(writer, &shex_schema).map_err(|e| ShExError::FailedSerializingShExSchema {
                 format: shex_format.to_string(),
                 error: e.to_string(),
@@ -198,6 +214,7 @@ fn serialize_schema(
         | ShExFormat::TriG
         | ShExFormat::N3
         | ShExFormat::NQuads => {
+            let shex_schema = require_shex_schema()?;
             let rdf_format: RDFFormat = shex_format.try_into()?;
             let mut rdf_writer = OxigraphInMemory::new();
             // Carry the schema's own prefixes over into the generated RDF
@@ -219,16 +236,21 @@ fn serialize_schema(
                 .serialize(&rdf_format, writer)
                 .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
         },
+        ShExFormat::Binary => {
+            crate::api::shex::implementations::compile_shex_schema_to_file::compile_shex_schema_to_file(rudof, writer)?;
+        },
         ShExFormat::Simple => {
             return Err(ShExError::FailedSerializingShExSchema {
                 format: shex_format.to_string(),
                 error: "this format can be used to read a ShEx schema, but not to write one out; \
-                        use shexc, shexj, json, jsonld, internal, turtle, ntriples, rdfxml, trig, n3 or nquads instead"
+                        use shexc, shexj, json, jsonld, internal, binary, turtle, ntriples, rdfxml, trig, n3 or \
+                        nquads instead"
                     .to_string(),
             }
             .into());
         },
         ShExFormat::PlantUML | ShExFormat::Svg | ShExFormat::Png => {
+            let shex_schema = require_shex_schema()?;
             let mut converter = ShEx2Uml::new(rudof.config.shex2uml());
             converter
                 .convert(shex_schema)

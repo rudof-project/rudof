@@ -21,6 +21,7 @@ cli_wrapper!(
         NQuads,
         PlantUML,
         Svg,
-        Png
+        Png,
+        Binary
     }
 );

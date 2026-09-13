@@ -187,6 +187,7 @@ impl TryFrom<ShExFormatCli> for ShaclFormatCli {
             ShExFormatCli::PlantUML => bail!("Validation using SHACL mode doesn't support PlantUML format"),
             ShExFormatCli::Svg => bail!("Validation using SHACL mode doesn't support Svg format"),
             ShExFormatCli::Png => bail!("Validation using SHACL mode doesn't support Png format"),
+            ShExFormatCli::Binary => bail!("Validation using SHACL mode doesn't support Binary format"),
         }
     }
 }

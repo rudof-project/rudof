@@ -229,14 +229,60 @@ rudof shex-validate --schema user.shex --node :a --shape-label :User user.ttl
 
 ## Precompiling the schema to a SchemaIR cache
 
-The `--compile-to <FILE>` option runs the AST to IR compilation and writes
-the resulting `SchemaIR` to `FILE`. That file can then be reused by
-`shex-validate --compiled-schema <FILE>` to skip parsing and
-compilation on subsequent runs.
+`binary` is a `ShExFormat` like any other (`shexc`, `shexj`, `turtle`, ...):
+it represents the precompiled `SchemaIR` cache. That means the same
+`-s`/`-f`/`-r`/`-o` flags you already use to load and convert a schema also
+compile it and load a compiled cache back, with no dedicated flags needed:
+
+```sh
+# Compile: load ShExC, write the compiled cache with -r binary -o.
+rudof shex -s examples/user.shex -r binary -o user.ircache
+
+# Load the cache back with -f binary -s, e.g. to inspect it.
+rudof shex -f binary -s user.ircache -r internal --statistics true
+```
+
+This is equivalent to the dedicated `--compile-to`/`--compiled-schema`
+flags, which still work and produce byte-identical caches:
 
 ```sh
 rudof shex --schema examples/user.shex --compile-to user.ircache
+rudof shex --compiled-schema user.ircache -r internal --statistics true
 ```
+
+`shex-validate` accepts `-f binary` the same way, in addition to its own
+`--compiled-schema`/`--compile-to` flags:
+
+```sh
+rudof shex-validate -s user.ircache -f binary --shapemap examples/user.sm examples/user.ttl
+```
+
+Only `-r internal` (and `--statistics`/`--show-dependencies`, which read
+the same `SchemaIR`) work as a *result* format once a schema was loaded
+from `binary` (whichever way) -- other result formats need the parsed
+schema (AST), which the cache doesn't preserve, so they require loading
+the original source with `-s`/`--schema` (or `-f`/`--schema-format` set to
+something other than `binary`) instead. If you don't need any result at
+all -- e.g. just loading the cache to validate against with `shex-validate`,
+or to inspect it another way -- pass `--no-show-schema` to skip the
+default `-r shexc` attempt (which would otherwise fail for the same
+AST-not-cached reason):
+
+```sh
+rudof shex -f binary -s user.ircache --no-show-schema
+```
+
+Compiling to a cache (`-r binary -o FILE` or `--compile-to FILE`) prints a
+short confirmation to stderr instead of leaving the terminal silent:
+
+```
+$ rudof shex -s examples/user.shex -r binary -o user.ircache
+2 shape(s) saved in user.ircache
+```
+
+The count comes from the compiled `SchemaIR` and includes `start` if the
+schema declares one (alongside every named shape), which is why it can be
+one higher than the number of shape declarations you wrote by hand.
 
 See the [precompiled ShEx schemas how-to](../using-rudof/precompiled-shex-schemas.md)
 for the full compile - validate workflow.
@@ -253,13 +299,14 @@ Usage: rudof shex [OPTIONS]
 
 Options:
   -s, --schema <INPUT>            Schema, FILE, URI or - for stdin. If omitted, shows the currently loaded schema
-  -f, --format <FORMAT>           Schema format (ShExC, ShExJ, Turtle, ...), default = ShExC [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads, plantuml, svg, png]
-  -r, --result-format <FORMAT>    Result schema format [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads, plantuml, svg, png]
+      --compiled-schema <FILE>    Precompiled ShEx SchemaIR cache file, as produced by --compile-to. Loads it directly, skipping parsing, imports and AST-to-IR compilation. Only -r/--result-format internal (plus --statistics/--show-dependencies) can be used with it -- other result formats need the original schema, loaded via --schema.
+  -f, --format <FORMAT>           Schema format (ShExC, ShExJ, Turtle, ...), default = ShExC [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads, plantuml, svg, png, binary]
+  -r, --result-format <FORMAT>    Result schema format [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads, plantuml, svg, png, binary]
       --viz-engine <ENGINE>       Visualization engine for image (SVG/PNG) result formats [default: plantuml] [possible values: plantuml, graphviz]
   -l, --shape-label <LABEL>       shape label
   -t, --show-time <BOOL>          Show processing time [possible values: true, false]
-      --show-schema
-      --no-show-schema
+      --show-schema               Show the loaded schema (default). Overridden by a later --no-show-schema.
+      --no-show-schema            Don't show the loaded schema -- useful with -f binary to load a precompiled schema without also trying (and failing) to render it in the default result format, which needs the original schema. Overridden by a later --show-schema.
       --statistics <BOOL>         Show statistics about the schema [possible values: true, false]
   -b, --base <IRI>                Base IRI
       --reader-mode <MODE>        RDF Reader mode (strict or lax) [default: strict] [possible values: lax, strict]

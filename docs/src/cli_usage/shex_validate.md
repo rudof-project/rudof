@@ -65,6 +65,17 @@ rudof shex-validate \
   examples/user.ttl
 ```
 
+Equivalently, `binary` is a regular value of `-f`/`--schema-format`, so
+`-s`/`--schema` also loads a cache when paired with it -- no dedicated flag
+needed:
+
+```sh
+rudof shex-validate \
+  --schema user.ircache --schema-format binary \
+  --shapemap examples/user.sm \
+  examples/user.ttl
+```
+
 ### Compiling as a side-effect
 
 `--compile-to <FILE>` can be passed alongside `--schema`. Subsequent runs can then drop `--schema` and `--compile-to` and use
@@ -196,7 +207,7 @@ Options:
   -s, --schema <INPUT>            Schema file name, URI or - (for stdin). If omitted, reuses the currently loaded schema
       --compiled-schema <FILE>    Precompiled ShEx SchemaIR cache file.
       --compile-to <FILE>         Compile the ShEx schema and write the precompiled SchemaIR cache to FILE.
-  -f, --schema-format <FORMAT>    ShEx Schema format [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads]
+  -f, --schema-format <FORMAT>    ShEx Schema format [default: shexc] [possible values: internal, simple, shexc, shexj, json, jsonld, turtle, ntriples, rdfxml, trig, n3, nquads, plantuml, svg, png, binary]
   -m, --shapemap <INPUT>          ShapeMap
       --shapemap-format <FORMAT>  ShapeMap format [possible values: compact, internal, json, details, csv]
   -n, --node <NODE>               Node to validate

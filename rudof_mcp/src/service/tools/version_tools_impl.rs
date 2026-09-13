@@ -57,7 +57,9 @@ mod tests {
             .expect("get_version should not be a protocol error");
         assert_ne!(result.is_error, Some(true));
 
-        let structured = result.structured_content.expect("response should have structured content");
+        let structured = result
+            .structured_content
+            .expect("response should have structured content");
         let version = structured
             .get("version")
             .and_then(|v| v.as_str())

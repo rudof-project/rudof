@@ -28,8 +28,10 @@ pub use validate_shex::validate_shex;
 
 #[cfg(test)]
 mod tests {
+    mod binary_format_tests;
     mod check_shex_schema_tests;
     mod load_shapemap_tests;
+    mod load_shex_schema_precompiled_tests;
     mod load_shex_schema_tests;
     mod validate_shex_tests;
 }

@@ -8,7 +8,7 @@ pub enum ShExError {
 
     /// The ShEx format specified is not supported by Rudof.
     #[error(
-        "Unsupported ShEx format: '{format}'. Valid formats are: 'internal', 'simple', 'shexc', 'shexj', 'json', 'jsonld', 'turtle', 'ntriples', 'rdfxml', 'trig', 'n3', 'nquads', 'plantuml', 'svg', 'png'"
+        "Unsupported ShEx format: '{format}'. Valid formats are: 'internal', 'simple', 'shexc', 'shexj', 'json', 'jsonld', 'turtle', 'ntriples', 'rdfxml', 'trig', 'n3', 'nquads', 'plantuml', 'svg', 'png', 'binary'"
     )]
     UnsupportedShExFormat { format: String },
 
@@ -31,6 +31,15 @@ pub enum ShExError {
     /// No ShEx schema loaded.
     #[error("No ShEx schema loaded")]
     NoShExSchemaLoaded,
+
+    /// A schema loaded from a precompiled `SchemaIR` cache (see
+    /// `load_shex_schema_precompiled`) was asked for an output format that
+    /// needs the original parsed schema (AST), which the cache doesn't
+    /// preserve -- only the compiled `SchemaIR` is.
+    #[error(
+        "Format '{format}' requires the original parsed ShEx schema, which isn't available for a schema loaded from a precompiled cache. Use 'internal' to view the compiled SchemaIR, or load the original ShExC/ShExJ source with --schema to convert it to '{format}'"
+    )]
+    PrecompiledSchemaFormatUnavailable { format: String },
 
     /// No shapemap loaded.
     #[error("No shapemap loaded")]

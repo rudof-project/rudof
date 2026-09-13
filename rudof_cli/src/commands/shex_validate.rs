@@ -4,7 +4,7 @@ use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Context, Result};
 use rudof_lib::Rudof;
-use rudof_lib::formats::{BackendSpec, InputSpec, IriNormalizationMode};
+use rudof_lib::formats::{BackendSpec, InputSpec, IriNormalizationMode, ShExFormat};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::str::FromStr;
@@ -89,9 +89,14 @@ impl Command for ShexValidateCommand {
         }
 
         if let Some(compiled_schema) = self.args.compiled_schema.as_ref() {
+            // `--compiled-schema` is a dedicated shortcut for the same
+            // `ShExFormat::Binary` handling that `-f binary` drives -- both
+            // load the precompiled `SchemaIR` cache directly, skipping
+            // parsing, imports and AST-to-IR compilation.
             ctx.rudof
-                .load_shex_schema_precompiled(compiled_schema)
+                .load_shex_schema(compiled_schema)
                 .with_reader_mode(&reader_mode)
+                .with_shex_schema_format(&ShExFormat::Binary)
                 .execute()?;
         } else if let Some(schema) = self.args.schema.as_ref() {
             let schema = expand_prefixed_input(schema, ctx, &backend)?;
@@ -107,10 +112,17 @@ impl Command for ShexValidateCommand {
             shex_schema_loading.execute()?;
 
             if let Some(cache_path) = self.args.compile_to.as_deref() {
+                // Likewise, `--compile-to` is a shortcut for
+                // `serialize_shex_schema`'s `ShExFormat::Binary` result
+                // format -- the same one `-r binary` drives on the `shex`
+                // command.
                 let file = File::create(cache_path)
                     .with_context(|| format!("Failed to create precompiled cache file '{}'", cache_path.display()))?;
                 let mut writer = BufWriter::new(file);
-                ctx.rudof.compile_shex_schema_to_file(&mut writer).execute()?;
+                ctx.rudof
+                    .serialize_shex_schema(&mut writer)
+                    .with_result_shex_format(&ShExFormat::Binary)
+                    .execute()?;
             }
         }
         // Neither `--schema` nor `--compiled-schema` given: reuse whatever
