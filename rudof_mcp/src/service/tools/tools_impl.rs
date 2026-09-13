@@ -22,6 +22,7 @@ use std::sync::{Arc, OnceLock};
 use crate::service::tools::data_tools_impl::*;
 use crate::service::tools::node_tools_impl::*;
 use crate::service::tools::query_tools_impl::*;
+use crate::service::tools::session_tools_impl::*;
 use crate::service::tools::shacl_validate_tools_impl::*;
 use crate::service::tools::shex_tools_impl::*;
 use crate::service::tools::shex_validate_tools_impl::*;
@@ -209,6 +210,48 @@ impl RudofMcpService {
     pub async fn validate_shacl(&self, params: Parameters<ValidateShaclRequest>) -> Result<CallToolResult, McpError> {
         validate_shacl_impl(self, params).await
     }
+
+    // -------------------------------------------------------------------------
+    // Session Management Tools
+    // -------------------------------------------------------------------------
+
+    /// Reset session state (RDF data, loaded schemas/shapes, results, ...).
+    #[tool(
+        name = "reset_session_state",
+        description = "Clear session state loaded so far in this MCP session. With no `targets` (or [\"all\"]), clears everything (RDF data, ShEx/SHACL/pgschema/DCTap schemas, shapemap, query/validation results, ...) — the same as starting a fresh session. With one or more target names, clears only that state, leaving the rest untouched. Valid targets: data, shex, shex-validation, shacl, shacl-validation, pgschema, pgschema-validation, shapemap, dctap, service, query, sparql, typemap, rdf-config.",
+        annotations(
+            title = "Reset Session State",
+            read_only_hint = false,
+            destructive_hint = true,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
+    )]
+    pub async fn reset_session_state(
+        &self,
+        params: Parameters<ResetSessionStateRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        reset_session_state_impl(self, params).await
+    }
+
+    /// Get or change this session's virtual working directory.
+    #[tool(
+        name = "change_directory",
+        description = "Get or change this MCP session's virtual working directory, which relative local file paths passed to other tools (e.g. `load_rdf_data_from_sources`, `show_shex`, `validate_shacl`) are resolved against. Omit `path` to just report the current session directory. Each session has its own independent working directory — this never changes the server process's actual directory or affects other sessions.",
+        annotations(
+            title = "Get/Change Session Working Directory",
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = false,
+            open_world_hint = false,
+        )
+    )]
+    pub async fn change_directory(
+        &self,
+        params: Parameters<ChangeDirectoryRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        change_directory_impl(self, params).await
+    }
 }
 
 /// Public wrapper to expose the generated router from the macro
@@ -243,6 +286,8 @@ fn build_annotated_tools() -> Vec<rmcp::model::Tool> {
             "check_shex" => output_schema_for::<CheckShexResponse>(),
             "validate_shex" => output_schema_for::<ValidateShexResponse>(),
             "validate_shacl" => output_schema_for::<ValidateShaclResponse>(),
+            "reset_session_state" => output_schema_for::<ResetSessionStateResponse>(),
+            "change_directory" => output_schema_for::<ChangeDirectoryResponse>(),
             _ => {
                 tracing::warn!(tool_name = %tool.name, "Tool missing output schema");
                 continue;

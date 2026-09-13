@@ -79,7 +79,7 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route rdf --a
 
 | Capability | Description |
 |------------|-------------|
-| **Tools** | 10 tools for validation, querying, and data operations |
+| **Tools** | 12 tools for validation, querying, data, and session operations |
 | **Prompts** | Guided templates for common validation workflows |
 | **Resources** | Current RDF data exposed in multiple formats |
 | **Resource Templates** | URI template for accessing RDF data in any supported format |
@@ -123,6 +123,13 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route rdf --a
 | Tool | Description |
 |------|-------------|
 | `validate_shacl` | Validate the loaded RDF data against a SHACL schema |
+
+### Session Management
+
+| Tool | Description |
+|------|-------------|
+| `reset_session_state` | Clear session state (all, or specific targets like data/shex/shacl/...) |
+| `change_directory` | Get or change this session's virtual working directory used to resolve relative file paths |
 
 
 ## Prompts

@@ -93,7 +93,13 @@ mod tool_router_tests {
         let tool_names: Vec<_> = tools.iter().map(|t| t.name.to_string()).collect();
 
         // Verify some expected tools exist
-        let expected_tools = vec!["load_rdf_data_from_sources", "export_rdf_data", "node_info"];
+        let expected_tools = vec![
+            "load_rdf_data_from_sources",
+            "export_rdf_data",
+            "node_info",
+            "reset_session_state",
+            "change_directory",
+        ];
 
         for expected in expected_tools {
             assert!(

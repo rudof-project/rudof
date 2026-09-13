@@ -4,7 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, ContentBlock},
 };
-use rudof_lib::formats::{InputSpec, ShExFormat};
+use rudof_lib::formats::ShExFormat;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -68,6 +68,7 @@ pub async fn show_shex_impl(
     }): Parameters<ShowShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
+    let session_dir = service.session_dir.read().await.clone();
 
     let shex_format_hint = format!("Supported values: {}", SHEX_FORMATS);
 
@@ -75,7 +76,7 @@ pub async fn show_shex_impl(
         &schema,
         "schema",
         "Provide valid schema content, URL, or file path",
-        InputSpec::from_str,
+        |s| resolve_input_spec(&session_dir, s),
     ) {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
@@ -262,6 +263,7 @@ pub async fn check_shex_impl(
     }): Parameters<CheckShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let rudof = service.rudof.lock().await;
+    let session_dir = service.session_dir.read().await.clone();
 
     let shex_format_hint = format!("Supported values: {}", SHEX_FORMATS);
 
@@ -269,7 +271,7 @@ pub async fn check_shex_impl(
         &schema,
         "schema",
         "Provide valid schema content, URL, or file path",
-        InputSpec::from_str,
+        |s| resolve_input_spec(&session_dir, s),
     ) {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),

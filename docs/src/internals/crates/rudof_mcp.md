@@ -31,7 +31,7 @@ The Rudof MCP server exposes the following capabilities:
 
 | Capability    | Description                                           |
 |--------------|-------------------------------------------------------|
-| `tools`       | 10 tools for validation, querying, and data operations |
+| `tools`       | 12 tools for validation, querying, data, and session operations |
 | `prompts`     | Guided templates for common workflows                  |
 | `resources`   | Access to RDF data and format metadata                 |
 | `resource templates` | URI template for accessing RDF data in any supported format |
@@ -40,7 +40,7 @@ The Rudof MCP server exposes the following capabilities:
 
 ## Available Tools
 
-The MCP server provides 10 tools grouped by functionality.
+The MCP server provides 12 tools grouped by functionality.
 
 ### Data Management
 
@@ -78,6 +78,13 @@ The MCP server provides 10 tools grouped by functionality.
 | Tool | Description |
 |------|-------------|
 | `validate_shacl` | Validate RDF data against a SHACL schema |
+
+### Session Management
+
+| Tool | Description |
+|------|-------------|
+| `reset_session_state` | Clear session state (all, or specific targets like data/shex/shacl/...) |
+| `change_directory` | Get or change this session's virtual working directory used to resolve relative file paths |
 
 ## Available Prompts
 

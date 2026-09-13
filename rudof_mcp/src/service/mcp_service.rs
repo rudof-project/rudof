@@ -3,7 +3,7 @@
 //! This module contains the main [`RudofMcpService`] struct which implements
 //! the MCP `ServerHandler` trait and manages all server state.
 
-use std::{future::Future, sync::Arc};
+use std::{future::Future, path::PathBuf, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::service::tools::helpers::{
@@ -104,6 +104,19 @@ pub struct RudofMcpService {
     ///
     /// Helps avoid flooding clients with `notifications/message`.
     pub(crate) log_rate_limiter: Arc<Mutex<LogRateLimiter>>,
+
+    /// This session's virtual working directory, used to resolve relative local
+    /// file paths passed to tools (schema/data/shapes arguments, ...).
+    ///
+    /// Deliberately *not* backed by `std::env::set_current_dir`: under the
+    /// streamable-HTTP transport many sessions (each with their own
+    /// `RudofMcpService`) can run concurrently inside one OS process, and the
+    /// process's current directory is shared global state — one session's `cd`
+    /// would otherwise silently redirect every other session's relative paths.
+    /// Starts at the server process's actual cwd and is only ever read/written
+    /// through this field; see [`tools::resolve_input_spec`](crate::service::tools::helpers::resolve_input_spec)
+    /// for how tools resolve paths against it.
+    pub session_dir: Arc<RwLock<PathBuf>>,
 }
 
 impl RudofMcpService {
@@ -152,12 +165,15 @@ impl RudofMcpService {
             }
         }
 
+        let session_dir = std::env::current_dir().map_err(|e| ServiceCreationError::RudofError(e.to_string()))?;
+
         Ok(Self {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
             prompt_router: prompts::prompt_router_public(),
             current_min_log_level: Arc::new(RwLock::new(None)),
             log_rate_limiter: Arc::new(Mutex::new(LogRateLimiter::default())),
+            session_dir: Arc::new(RwLock::new(session_dir)),
         })
     }
 
