@@ -5,9 +5,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, ContentBlock},
 };
-use rudof_lib::formats::{
-    InputSpec, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
-};
+use rudof_lib::formats::{ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -77,6 +75,7 @@ pub async fn validate_shacl_impl(
     }): Parameters<ValidateShaclRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
+    let session_dir = service.session_dir.read().await.clone();
 
     let shape_format_hint = format!("Supported values: {}", SHACL_FORMATS);
     let mode_hint = "Supported values: native, sparql";
@@ -87,7 +86,7 @@ pub async fn validate_shacl_impl(
         shapes.as_deref(),
         "shapes",
         "Provide valid SHACL shapes content, URL, or file path",
-        InputSpec::from_str,
+        |s| resolve_input_spec(&session_dir, s),
     ) {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),

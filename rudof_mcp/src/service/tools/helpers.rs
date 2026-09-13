@@ -1,7 +1,9 @@
 use crate::service::errors::internal_error;
 use rmcp::{ErrorData as McpError, model::CallToolResult, model::ContentBlock};
+use rudof_lib::{errors::InputSpecError, formats::InputSpec};
 use serde::Serialize;
 use serde_json::{Value, json};
+use std::path::Path;
 
 /// Result type for parsing operations that may produce tool execution errors.
 ///
@@ -86,6 +88,25 @@ where
     value
         .map(|raw| parse_value_with_hint(raw, value_name, hint, &parser))
         .transpose()
+}
+
+/// Parse a path-, URL-, or content-like string into an [`InputSpec`], resolving a
+/// relative local path against the session's virtual working directory (`base_dir`,
+/// see [`RudofMcpService::session_dir`](crate::service::mcp_service::RudofMcpService::session_dir))
+/// rather than the OS process's current directory.
+///
+/// [`InputSpec::from_str`] itself decides whether `s` looks like a path by checking
+/// it against the *process* cwd (`Path::new(s).is_file()`), which would ignore a
+/// session's virtual `cd`. So this checks `base_dir.join(s)` first — if that
+/// resolves to a real file/dir, it's used directly as an [`InputSpec::Path`]
+/// (absolute `s` passes through `join` unchanged); otherwise this falls back to
+/// `InputSpec::from_str` unchanged, so URLs, CURIEs, and inline content still work.
+pub fn resolve_input_spec(base_dir: &Path, s: &str) -> Result<InputSpec, InputSpecError> {
+    let candidate = base_dir.join(s);
+    if candidate.is_file() || candidate.is_dir() {
+        return Ok(InputSpec::path(candidate));
+    }
+    s.parse()
 }
 
 /// Serialize tool response objects into MCP structured content.

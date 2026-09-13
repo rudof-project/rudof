@@ -47,7 +47,7 @@ The Rudof MCP server exposes the following capabilities:
 
 ### Available Tools
 
-The MCP server provides 10 tools organized by functionality:
+The MCP server provides 12 tools organized by functionality:
 
 **Data Management:**
 
@@ -83,6 +83,13 @@ The MCP server provides 10 tools organized by functionality:
 | Tool | Description |
 |------|-------------|
 | `validate_shacl` | Validate RDF data against a SHACL schema |
+
+**Session Management:**
+
+| Tool | Description |
+|------|-------------|
+| `reset_session_state` | Clear session state (all, or specific targets like data/shex/shacl/...) |
+| `change_directory` | Get or change this session's virtual working directory used to resolve relative file paths |
 
 ### Available Prompts
 

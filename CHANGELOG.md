@@ -3,6 +3,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- `rudof_mcp`: two new tools bringing the shell's `reset`/`cd` commands to MCP sessions. `reset_session_state` clears session state (all, or specific targets — data, shex, shacl, shapemap, ...), mirroring the shell's `reset` and `rudof_lib::Rudof::reset_*`. `change_directory` gets/sets the session's *virtual* working directory used to resolve relative local file paths passed to other tools (`load_rdf_data_from_sources`, `show_shex`, `validate_shacl`, ...) — deliberately not `std::env::set_current_dir` like the shell's `cd`, since under the streamable-HTTP transport several sessions run concurrently in one OS process and share its real cwd; each session now tracks its own instead.
 - `shacl`'s `--result-shapes-format`/`--shapes-format` now accept `json` as an alias for `jsonld`, matching `data`'s `--result-format`.
 ### Fixed
 - `shacl -r jsonld`/`-r json` now honors `rdf.pretty_json`/`rdf.colorize_json` the same way `data`/`shell` already do, so SHACL JSON-LD output is indented by default instead of single-line compact JSON.

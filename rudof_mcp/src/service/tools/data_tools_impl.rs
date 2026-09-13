@@ -122,6 +122,7 @@ pub async fn load_rdf_data_from_sources_impl(
         endpoint,
     }) = params;
     let mut rudof = service.rudof.lock().await;
+    let session_dir = service.session_dir.read().await.clone();
 
     let data_entries = data.unwrap_or_default();
 
@@ -138,7 +139,7 @@ pub async fn load_rdf_data_from_sources_impl(
     // Parse data specifications - return Tool Execution Error for invalid input
     let data_specs: Vec<InputSpec> = match data_entries
         .iter()
-        .map(|s| InputSpec::from_str(s))
+        .map(|s| resolve_input_spec(&session_dir, s))
         .collect::<Result<Vec<_>, _>>()
     {
         Ok(specs) => specs,
