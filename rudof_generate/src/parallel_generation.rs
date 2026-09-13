@@ -1,13 +1,17 @@
 use crate::config::{CardinalityStrategy, EntityDistribution, GenerationConfig};
 use crate::field_generators::{FieldGenerationManager, GenerationContext};
 use crate::shape_processing::ShapeInfo;
-use crate::unified_constraints::UnifiedConstraint;
+use crate::unified_constraints::{NodeKind, UnifiedConstraint};
 use crate::{DataGeneratorError, Result};
 use oxrdf::{Literal, NamedNode, NamedOrBlankNode, Term, Triple};
+use rand::SeedableRng;
+use rand::rngs::StdRng;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use serde_json::{Value, json};
 use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -47,9 +51,10 @@ impl ParallelGenerator {
 
     /// Generate synthetic data in parallel
     pub async fn generate_data(&self, config: &GenerationConfig) -> Result<OxigraphInMemory> {
-        // Set up random seed if provided
+        // Every random decision below derives its generator from this seed and
+        // the coordinates of the decision, so a seeded run is reproducible
+        // regardless of how the per-shape tasks interleave.
         if let Some(seed) = config.seed {
-            // Note: In a real implementation, you'd want to use a seeded RNG
             tracing::info!("Using random seed: {}", seed);
         }
 
@@ -106,7 +111,14 @@ impl ParallelGenerator {
                 let base_count = config.entity_count / num_shapes;
                 let remainder = config.entity_count % num_shapes;
 
-                for (i, shape_id) in shapes.keys().enumerate() {
+                // Sorted, because the remainder is handed to the first few shapes
+                // and `HashMap` iteration order varies between processes. Left
+                // unsorted, which shapes receive the extra entity changes from run
+                // to run, and with it the size of the generated graph.
+                let mut shape_ids: Vec<&String> = shapes.keys().collect();
+                shape_ids.sort();
+
+                for (i, shape_id) in shape_ids.into_iter().enumerate() {
                     let count = if i < remainder { base_count + 1 } else { base_count };
                     distribution.insert(shape_id.clone(), count);
                 }
@@ -209,6 +221,73 @@ impl ParallelGenerator {
         config
     }
 
+    /// A random number generator for one decision during generation.
+    ///
+    /// Generation runs one task per shape, so a single shared generator would
+    /// either have to be locked -- serialising the phase the parallelism exists
+    /// for -- or produce a different stream depending on how the tasks
+    /// interleaved. Instead each decision derives its own generator from the
+    /// configured seed and the coordinates of the decision itself, so the
+    /// stream a value comes from does not depend on scheduling and the same
+    /// seed reproduces the same graph.
+    ///
+    /// Without a seed the generator is drawn from entropy, which keeps the
+    /// unseeded behaviour that callers who do not ask for reproducibility get.
+    fn derive_rng(&self, salt: &str, discriminator: &str, index: usize) -> StdRng {
+        match self.config.seed {
+            Some(seed) => {
+                let mut hasher = DefaultHasher::new();
+                seed.hash(&mut hasher);
+                salt.hash(&mut hasher);
+                discriminator.hash(&mut hasher);
+                index.hash(&mut hasher);
+                StdRng::seed_from_u64(hasher.finish())
+            },
+            None => StdRng::from_entropy(),
+        }
+    }
+
+    /// Whether a property's constraints ask for an IRI value.
+    ///
+    /// `BlankNodeOrIri` and `IriOrLiteral` admit an IRI among their options, and
+    /// an IRI satisfies all three without needing a datatype the schema did not
+    /// give.
+    fn expects_an_iri(constraints: &[UnifiedConstraint]) -> bool {
+        constraints.iter().any(|constraint| {
+            matches!(
+                constraint,
+                UnifiedConstraint::NodeKind(NodeKind::Iri)
+                    | UnifiedConstraint::NodeKind(NodeKind::BlankNodeOrIri)
+                    | UnifiedConstraint::NodeKind(NodeKind::IriOrLiteral)
+            )
+        })
+    }
+
+    /// A fresh IRI for a property that requires one but names no shape.
+    ///
+    /// Derived from the subject and the property so that it is unique without a
+    /// counter, stable under a fixed seed, and recognisable as generated rather
+    /// than resolvable.
+    fn mint_iri_value(entity_iri: &str, property_iri: &str, value_idx: usize) -> String {
+        let local = property_iri
+            .rsplit(['#', '/'])
+            .next()
+            .filter(|segment| !segment.is_empty())
+            .unwrap_or("value");
+        format!("{entity_iri}/{local}/{value_idx}")
+    }
+
+    /// The IRI that entities of `shape_info` are typed with.
+    ///
+    /// A schema that declares a target -- `sh:targetClass`, or a ShEx `rdf:type`
+    /// value set -- is asking for its instances to carry that class, and the
+    /// targets it declares select nothing unless they do. Shapes without a
+    /// target fall back to the shape IRI, which is the only identifier
+    /// available for them.
+    fn type_iri_for<'a>(shape_info: &'a ShapeInfo, shape_id: &'a str) -> &'a str {
+        shape_info.target_class.as_deref().unwrap_or(shape_id)
+    }
+
     /// Generate a single entity
     async fn generate_single_entity(&self, shape_info: &ShapeInfo, entity_index: usize) -> Result<Vec<Triple>> {
         let mut triples = Vec::new();
@@ -219,11 +298,13 @@ impl ParallelGenerator {
         // Get effective configuration for this shape
         let config = self.get_effective_config(shape_id);
 
-        // Add type triple
+        // Add type triple. Entities are typed with the class the shape targets,
+        // so that the targets declared by the source schema select them; the
+        // shape IRI is only a fallback for shapes that declare no target.
         triples.push(Triple::new(
             NamedOrBlankNode::NamedNode(entity_node.clone()),
             NamedNode::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-            Term::NamedNode(NamedNode::new_unchecked(shape_id)),
+            Term::NamedNode(NamedNode::new_unchecked(Self::type_iri_for(shape_info, shape_id))),
         ));
 
         // Generate property triples
@@ -232,7 +313,7 @@ impl ParallelGenerator {
         let mut variance_multiplier = 1.0;
         if config.property_count_variance > 0.0 {
             use rand::Rng;
-            let mut rng = rand::thread_rng();
+            let mut rng = self.derive_rng("variance", shape_id, entity_index);
             // random range [-variance, +variance]
             let variance_factor = rng.gen_range(-config.property_count_variance..=config.property_count_variance);
             variance_multiplier = 1.0 + variance_factor;
@@ -248,6 +329,16 @@ impl ParallelGenerator {
         for property_info in &shape_info.properties {
             // Check if property is explicitly excluded
             if config.excluded_properties.contains(&property_info.property_iri) {
+                continue;
+            }
+
+            // Properties whose range is another shape belong to the relationship
+            // linking phase, which resolves them against the entity registries once
+            // every shape has been materialised. Emitting them here as well produced
+            // two values for every such property -- one pointing at a synthetic
+            // nested entity, one at a registry entity -- which violates any
+            // declared maximum cardinality of 1.
+            if property_info.shape_ref.is_some() {
                 continue;
             }
 
@@ -269,9 +360,9 @@ impl ParallelGenerator {
             PropertySelectionStrategy::All | PropertySelectionStrategy::Weighted => {
                 // Weighted is treated as All for now (future work)
                 // Independent probability check for each candidate using effective_probability
+                use rand::Rng;
+                let mut rng = self.derive_rng("fill", shape_id, entity_index);
                 for prop in candidates {
-                    use rand::Rng;
-                    let mut rng = rand::thread_rng();
                     let roll: f64 = rng.r#gen();
                     if roll <= effective_probability {
                         properties_to_generate.push(prop);
@@ -299,7 +390,7 @@ impl ParallelGenerator {
                 slots_for_candidates = slots_for_candidates.min(candidates.len());
 
                 if slots_for_candidates > 0 {
-                    let mut rng = rand::thread_rng();
+                    let mut rng = self.derive_rng("select", shape_id, entity_index);
                     candidates.shuffle(&mut rng);
                     for slot in candidates.iter().take(slots_for_candidates) {
                         properties_to_generate.push(slot);
@@ -314,7 +405,7 @@ impl ParallelGenerator {
         // 2. Apply max_properties_per_instance limit
         if config.max_properties_per_instance > 0 && properties_to_generate.len() > config.max_properties_per_instance {
             use rand::seq::SliceRandom;
-            let mut rng = rand::thread_rng();
+            let mut rng = self.derive_rng("truncate", shape_id, entity_index);
             properties_to_generate.shuffle(&mut rng);
             properties_to_generate.truncate(config.max_properties_per_instance);
         }
@@ -323,6 +414,7 @@ impl ParallelGenerator {
         for property_info in properties_to_generate {
             // Handle cardinality for both data and object properties
             let num_values = self.calculate_property_value_count(
+                &property_info.property_iri,
                 property_info.min_cardinality,
                 property_info.max_cardinality,
                 entity_index,
@@ -362,7 +454,8 @@ impl ParallelGenerator {
                         property_info.property_iri.clone(),
                         datatype.clone(),
                         format!("{entity_iri}-{value_idx}"),
-                    );
+                    )
+                    .with_seed(self.config.seed);
 
                     // Add constraint parameters to context
                     let constraint_params = self.constraints_to_parameters(&property_info.constraints);
@@ -380,6 +473,21 @@ impl ParallelGenerator {
                         NamedNode::new_unchecked(&property_info.property_iri),
                         literal_term,
                     ));
+                } else if Self::expects_an_iri(&property_info.constraints) {
+                    // A property constrained to an IRI that names no shape.
+                    // Nothing says which entity it should point at, so a fresh
+                    // IRI is minted rather than a relationship invented;
+                    // emitting nothing would silently drop a property the
+                    // schema may require.
+                    triples.push(Triple::new(
+                        NamedOrBlankNode::NamedNode(entity_node.clone()),
+                        NamedNode::new_unchecked(&property_info.property_iri),
+                        Term::NamedNode(NamedNode::new_unchecked(Self::mint_iri_value(
+                            &entity_iri,
+                            &property_info.property_iri,
+                            value_idx,
+                        ))),
+                    ));
                 }
             }
         }
@@ -390,18 +498,27 @@ impl ParallelGenerator {
     /// Calculate how many values to generate for a property based on cardinality
     fn calculate_property_value_count(
         &self,
+        property_iri: &str,
         min_cardinality: Option<i32>,
         max_cardinality: Option<i32>,
         entity_index: usize,
         config: &GenerationConfig,
     ) -> usize {
-        let min_card_raw = min_cardinality.unwrap_or(1).max(0) as usize;
+        // An absent minimum means the property is optional. Only SHACL reaches
+        // this point undeclared -- the ShEx converter has already normalised an
+        // omitted cardinality to the `{1,1}` that language defines -- and in
+        // SHACL a missing `sh:minCount` is a minimum of zero.
+        let min_card_raw = min_cardinality.unwrap_or(0).max(0) as usize;
         // Apply ignore_min_cardinality: if true, treat min as 0
         let min_card = if config.ignore_min_cardinality { 0 } else { min_card_raw };
+        // An absent maximum means unbounded in both languages -- ShEx `*`/`+`
+        // and a SHACL shape with no `sh:maxCount` all arrive here as `None`, as
+        // does the explicit `-1` the legacy path uses. A generator has to pick
+        // some number, and that number bounds the output, so it is configurable
+        // rather than an undocumented constant.
         let max_card = match max_cardinality {
-            Some(-1) => 5, // Unbounded, but cap at reasonable limit for properties
+            Some(-1) | None => config.unbounded_property_values.max(min_card),
             Some(max) => (max as usize).max(min_card),
-            None => 1,
         };
 
         match self.config.cardinality_strategy {
@@ -409,7 +526,7 @@ impl ParallelGenerator {
             CardinalityStrategy::Maximum => max_card,
             CardinalityStrategy::Random => {
                 use rand::Rng;
-                let mut rng = rand::thread_rng();
+                let mut rng = self.derive_rng("value_count", property_iri, entity_index);
                 if min_card == max_card {
                     min_card
                 } else {
@@ -500,6 +617,7 @@ impl ParallelGenerator {
 
             // Calculate number of relationships based on cardinality strategy
             let num_relationships = self.calculate_relationship_count(
+                &dependency.property,
                 dependency.min_cardinality,
                 dependency.max_cardinality,
                 to_entities.len(),
@@ -535,16 +653,19 @@ impl ParallelGenerator {
     /// Calculate the number of relationships to create based on cardinality and strategy
     fn calculate_relationship_count(
         &self,
+        property_iri: &str,
         min_cardinality: Option<i32>,
         max_cardinality: Option<i32>,
         available_targets: usize,
         entity_index: usize,
     ) -> usize {
-        let min_card = min_cardinality.unwrap_or(1).max(0) as usize;
+        // Absent minimum means optional, as above.
+        let min_card = min_cardinality.unwrap_or(0).max(0) as usize;
+        // Unbounded, as above, and additionally limited by how many entities of
+        // the target shape exist to point at.
         let max_card = match max_cardinality {
-            Some(-1) => available_targets.min(20), // Unbounded, but cap at reasonable limit
+            Some(-1) | None => available_targets.min(self.config.unbounded_reference_values),
             Some(max) => (max as usize).min(available_targets),
-            None => 1.min(available_targets),
         };
 
         let max_card = max_card.max(min_card);
@@ -554,7 +675,7 @@ impl ParallelGenerator {
             CardinalityStrategy::Maximum => max_card,
             CardinalityStrategy::Random => {
                 use rand::Rng;
-                let mut rng = rand::thread_rng();
+                let mut rng = self.derive_rng("relationship_count", property_iri, entity_index);
                 if min_card == max_card {
                     min_card
                 } else {
@@ -592,7 +713,7 @@ impl ParallelGenerator {
         triples.push(Triple::new(
             NamedOrBlankNode::NamedNode(entity_node.clone()),
             NamedNode::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-            Term::NamedNode(NamedNode::new_unchecked(shape_id)),
+            Term::NamedNode(NamedNode::new_unchecked(Self::type_iri_for(shape_info, shape_id))),
         ));
 
         // Generate properties for nested entity (only data properties to avoid infinite recursion)
@@ -604,6 +725,7 @@ impl ParallelGenerator {
 
             if let Some(datatype) = &property_info.datatype {
                 let num_values = self.calculate_property_value_count(
+                    &property_info.property_iri,
                     property_info.min_cardinality,
                     property_info.max_cardinality,
                     parent_entity_index,
@@ -615,7 +737,8 @@ impl ParallelGenerator {
                         property_info.property_iri.clone(),
                         datatype.clone(),
                         format!("{}-nested-{}", entity_node.as_str(), value_idx),
-                    );
+                    )
+                    .with_seed(self.config.seed);
 
                     let literal_value = self.field_manager.generate_field(&context)?;
                     let literal_term = self.create_typed_literal(&literal_value, datatype)?;

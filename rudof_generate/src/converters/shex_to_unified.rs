@@ -4,7 +4,7 @@ use crate::unified_constraints::{
 };
 use crate::{DataGeneratorError, Result};
 use rudof_iri::IriS;
-use shex_ast::ast::{NodeConstraint, ShapeDecl, ShapeExpr, TripleExpr, XsFacet};
+use shex_ast::ast::{NodeConstraint, ObjectValue, ShapeDecl, ShapeExpr, TripleExpr, ValueSetValue, XsFacet};
 use shex_ast::compact::ShExParser;
 use std::path::Path;
 
@@ -67,19 +67,115 @@ impl ShExToUnified {
     fn convert_shape_decl(&self, shape_decl: &ShapeDecl, metrics: &mut TranslationMetrics) -> UnifiedShape {
         let shape_id = shape_decl.id.to_string();
         let mut properties = Vec::new();
+        let mut target_class = None;
 
         if let ShapeExpr::Shape(s) = &shape_decl.shape_expr
             && let Some(expr) = &s.expression
         {
+            target_class = Self::derive_target_class(&expr.te, &shape_id);
             self.extract_properties(&expr.te, &mut properties, metrics);
         }
 
         UnifiedShape {
             id: shape_id,
-            target_class: None, // ShEx doesn't have explicit target classes
+            target_class,
             properties,
             closed: false, // TODO: extract from ShEx closed property if available
         }
+    }
+
+    /// Find the class this shape expects its instances to carry.
+    ///
+    /// ShEx has no `sh:targetClass`, but the same intent is expressed as a
+    /// constraint on `rdf:type` whose value set names one IRI, which is how
+    /// shape extractors emit it:
+    ///
+    /// ```text
+    /// :Publication { rdf:type [ub:Publication] ; ... }
+    /// ```
+    ///
+    /// Only a single-valued set yields a target: a set naming several classes
+    /// does not say which one an instance should receive, so those are left for
+    /// value-set handling rather than guessed at here.
+    ///
+    /// A shape may state more than one such constraint, because instances of it
+    /// carry more than one type. Extracted schemas do this for shapes that
+    /// specialise another --- `:ResearchAssistant` requires both
+    /// `ub:GraduateStudent` and `ub:ResearchAssistant`. Taking whichever came
+    /// first would give three such shapes the same type and erase the
+    /// distinction between them, so the class whose name matches the shape's is
+    /// preferred, which is the one a `sh:targetClass` names for the same shape.
+    fn derive_target_class(expr: &TripleExpr, shape_id: &str) -> Option<String> {
+        let candidates = Self::rdf_type_values(expr);
+        if candidates.is_empty() {
+            return None;
+        }
+        let shape_local = Self::local_name(shape_id);
+        candidates
+            .iter()
+            .find(|candidate| Self::local_name(candidate) == shape_local)
+            .or_else(|| candidates.first())
+            .cloned()
+    }
+
+    /// Every class named by a single-valued `rdf:type` constraint of this shape,
+    /// in the order the schema states them.
+    fn rdf_type_values(expr: &TripleExpr) -> Vec<String> {
+        match expr {
+            TripleExpr::EachOf { expressions, .. } | TripleExpr::OneOf { expressions, .. } => {
+                expressions.iter().flat_map(|e| Self::rdf_type_values(&e.te)).collect()
+            },
+            TripleExpr::TripleConstraint {
+                predicate, value_expr, ..
+            } => {
+                let extract = || -> Option<String> {
+                    if !Self::is_rdf_type(&predicate.to_string()) {
+                        return None;
+                    }
+                    let ShapeExpr::NodeConstraint(node_constraint) = &**value_expr.as_ref()? else {
+                        return None;
+                    };
+                    let values = node_constraint.values()?;
+                    let [ValueSetValue::ObjectValue(ObjectValue::IriRef(iri))] = values.as_slice() else {
+                        return None;
+                    };
+                    Some(Self::strip_angle_brackets(&iri.to_string()))
+                };
+                extract().into_iter().collect()
+            },
+            TripleExpr::Ref(_) => Vec::new(),
+        }
+    }
+
+    /// The last path segment of an IRI, which is how a shape and the class it
+    /// describes are named alike.
+    fn local_name(iri: &str) -> &str {
+        Self::strip_angle_brackets_str(iri)
+            .rsplit(['#', '/', ':'])
+            .next()
+            .unwrap_or(iri)
+    }
+
+    /// Borrowing form of [`Self::strip_angle_brackets`].
+    fn strip_angle_brackets_str(iri: &str) -> &str {
+        iri.strip_prefix('<').and_then(|r| r.strip_suffix('>')).unwrap_or(iri)
+    }
+
+    /// Whether a predicate names `rdf:type`, written out in full or prefixed.
+    fn is_rdf_type(predicate: &str) -> bool {
+        matches!(
+            Self::strip_angle_brackets(predicate).as_str(),
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" | "rdf:type" | "a"
+        )
+    }
+
+    /// IRIs reach us either bare or in the `<...>` form, depending on how the
+    /// schema was written; the generator needs them bare.
+    fn strip_angle_brackets(iri: &str) -> String {
+        iri.strip_prefix('<')
+            .and_then(|rest| rest.strip_suffix('>'))
+            .unwrap_or(iri)
+            .to_string()
     }
 
     fn extract_properties(
@@ -235,6 +331,14 @@ impl ShExToUnified {
         }
     }
 
+    /// Translate a ShEx cardinality into the unified interval.
+    ///
+    /// `None` on the way out means unbounded, so an omitted upper bound must
+    /// not be passed through as `None`: ShEx defines an omitted cardinality as
+    /// exactly `{1,1}`, and reading it as unbounded would let the generator
+    /// emit any number of values for a property the schema pins to one.
+    /// A negative upper bound is ShEx's own spelling of unbounded and does
+    /// become `None`.
     fn convert_cardinality(&self, min: Option<i32>, max: Option<i32>) -> (Option<u32>, Option<u32>) {
         let min_card = match min {
             None => Some(1), // Default min cardinality is 1
@@ -242,7 +346,11 @@ impl ShExToUnified {
             Some(_) => Some(0), // Negative values become 0
         };
 
-        let max_card = max.and_then(|m| if m >= 0 { Some(m as u32) } else { None });
+        let max_card = match max {
+            Some(m) if m >= 0 => Some(m as u32),
+            Some(_) => None,  // `*` or `+`: genuinely unbounded
+            None => min_card, // omitted: exactly as many as the minimum
+        };
 
         (min_card, max_card)
     }
