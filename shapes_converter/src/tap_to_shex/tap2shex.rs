@@ -210,6 +210,7 @@ fn parse_node_constraint(
             if let Some(constraint) = statement.value_constraint() {
                 parse_constraint(constraint, config, &mut nc, statement.source_line_number())?;
             }
+            *shape_expr = Some(ShapeExpr::node_constraint(nc));
         },
         datatypes => {
             let mut shape_exprs = Vec::new();
@@ -291,3 +292,84 @@ fn parse_single_shape_ref(s: &ShapeId, config: &Tap2ShExConfig) -> Result<IriRef
         Ok(None)
     }
 }*/
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dctap::{DCTap, TapConfig};
+
+    fn convert_csv(csv: &str) -> Schema {
+        let dctap = DCTap::from_reader(csv.as_bytes(), &TapConfig::default()).expect("valid DCTAP CSV");
+        Tap2ShEx::new(&Tap2ShExConfig::default())
+            .convert(&dctap)
+            .expect("DCTAP to ShEx conversion should succeed")
+    }
+
+    fn schema_to_shexc(schema: &Schema) -> String {
+        let mut buffer = Vec::new();
+        shex_ast::ShExFormatter::default()
+            .write_schema(schema, &mut buffer)
+            .expect("serializing to ShExC should succeed");
+        String::from_utf8(buffer).unwrap()
+    }
+
+    /// Regression test: `parse_node_constraint`'s single-`valueDataType`
+    /// branch built a `NodeConstraint` with the datatype but never wrote it
+    /// back to `*shape_expr`, so every property with exactly one
+    /// `valueDataType` got a bare triple constraint (`<pred> .`) instead of
+    /// `<pred> xsd:sometype` -- silently dropping the datatype.
+    #[test]
+    fn single_value_datatype_is_not_dropped() {
+        let csv = "shapeID,propertyID,mandatory,repeatable,valueDataType\n\
+                    User,name,TRUE,FALSE,xsd:string\n\
+                    ,age,FALSE,FALSE,xsd:integer\n";
+
+        let schema = convert_csv(csv);
+        let shexc = schema_to_shexc(&schema);
+
+        assert!(
+            shexc.contains("xsd:string"),
+            "expected the single valueDataType 'xsd:string' to survive conversion, got:\n{shexc}"
+        );
+        assert!(
+            shexc.contains("xsd:integer"),
+            "expected the single valueDataType 'xsd:integer' to survive conversion, got:\n{shexc}"
+        );
+        assert!(
+            !shexc.contains(" . ") && !shexc.contains(" .;") && !shexc.contains(" .\n"),
+            "expected no bare (datatype-less) triple constraints, got:\n{shexc}"
+        );
+    }
+
+    /// A property with no `valueDataType` at all still gets a bare triple
+    /// constraint -- that's correct, not a regression of the fix above.
+    #[test]
+    fn no_value_datatype_still_produces_a_bare_triple_constraint() {
+        let csv = "shapeID,propertyID,mandatory,repeatable\nUser,knows,FALSE,TRUE\n";
+
+        let schema = convert_csv(csv);
+        let shexc = schema_to_shexc(&schema);
+
+        assert!(
+            shexc.contains("<http://default/knows> . *"),
+            "expected a bare (datatype-less) triple constraint for 'knows', got:\n{shexc}"
+        );
+    }
+
+    /// Multiple `valueDataType` values (space-separated -- see
+    /// `dctap::tap_reader::get_strs` -- and already handled by the
+    /// `datatypes` match arm before this fix) keep working: each becomes its
+    /// own alternative in an OR of node constraints.
+    #[test]
+    fn multiple_value_datatypes_still_produce_an_alternation() {
+        let csv = "shapeID,propertyID,mandatory,repeatable,valueDataType\n\
+                    User,identifier,FALSE,FALSE,xsd:string xsd:integer\n";
+
+        let schema = convert_csv(csv);
+        let shexc = schema_to_shexc(&schema);
+
+        assert!(shexc.contains("xsd:string"), "got:\n{shexc}");
+        assert!(shexc.contains("xsd:integer"), "got:\n{shexc}");
+        assert!(shexc.contains("OR"), "expected an alternation, got:\n{shexc}");
+    }
+}
