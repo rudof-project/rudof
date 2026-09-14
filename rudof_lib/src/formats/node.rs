@@ -1,6 +1,9 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+use rudof_rdf::rdf_core::ArcDirection;
+use shex_ast::SchemaIRError::ShapeLabelNotFound;
+
 use crate::errors::NodeInspectionError;
 
 /// Controls how bare IRI strings are handled before being passed to `ShapeMapParser`.
@@ -46,6 +49,14 @@ impl NodeInspectionMode {
 
     pub fn show_incoming(&self) -> bool {
         matches!(self, NodeInspectionMode::Incoming | NodeInspectionMode::Both)
+    }
+
+    pub fn directions(&self) -> &'static [ArcDirection] {
+        match self {
+            NodeInspectionMode::Outgoing => &[ArcDirection::Outgoing],
+            NodeInspectionMode::Incoming => &[ArcDirection::Incoming],
+            NodeInspectionMode::Both => &[ArcDirection::Outgoing, ArcDirection::Incoming],
+        }
     }
 }
 

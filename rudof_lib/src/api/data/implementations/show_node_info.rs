@@ -411,7 +411,7 @@ fn create_outgoing_glyphs() -> termtree::GlyphPalette {
 /// * Full IRIs: `<http://example.org/node>` or `http://example.org/node` (lax mode only)
 /// * Prefixed names: `ex:node`
 /// * Blank nodes: `_:b1`
-fn parse_node_selector(node_str: &str, iri_mode: IriNormalizationMode) -> Result<NodeSelector> {
+pub fn parse_node_selector(node_str: &str, iri_mode: IriNormalizationMode) -> Result<NodeSelector> {
     let normalized = crate::utils::normalize_iri_str(node_str, iri_mode);
     let node_str = normalized.as_str();
     ShapeMapParser::parse_node_selector(node_str).map_err(|e| {
@@ -437,7 +437,7 @@ fn parse_iri_ref(iri: &str) -> Result<IriRef> {
 /// Converts predicate strings to IRI objects.
 ///
 /// Handles both prefixed names (e.g., `"rdf:type"`) and full IRIs.
-fn convert_predicate_strings_to_iris<S>(predicates: &[String], rdf: &S) -> Result<Vec<S::IRI>>
+pub fn convert_predicate_strings_to_iris<S>(predicates: &[String], rdf: &S) -> Result<Vec<S::IRI>>
 where
     S: NeighsRDF,
 {

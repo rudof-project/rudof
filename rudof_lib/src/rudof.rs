@@ -1,54 +1,34 @@
 use crate::{
-    RudofConfig,
-    api::{
-        comparison::builders::ShowSchemaComparisonBuilder,
-        conversion::builders::ShowSchemaConversionBuilder,
-        core::{
+    RudofConfig, api::{
+        comparison::builders::ShowSchemaComparisonBuilder, conversion::builders::ShowSchemaConversionBuilder, core::{
             CoreOperations,
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
-        },
-        data::builders::{
-            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, ResetDataBuilder,
-            ResetServiceDescriptionBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder,
-            ShowNodeInfoBuilder,
-        },
-        dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder},
-        generation::builders::GenerateDataBuilder,
-        map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
-        materialize::builders::MaterializeBuilder,
-        pg_db::builders::{
+        }, data::builders::{
+            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, NodeNeighborhoodBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
+        }, dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder}, generation::builders::GenerateDataBuilder, map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder}, materialize::builders::MaterializeBuilder, pg_db::builders::{
             ConnectPgDbBuilder, LoadPgDbBuilder, PgDbDdlBuilder, QueryCypherBuilder, ResetPgDbConnectionBuilder,
-        },
-        pgschema::builders::{
+        }, pgschema::builders::{
             LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
             ResetPgSchemaValidationBuilder, ResetTypemapBuilder, SerializePgSchemaBuilder,
             SerializePgSchemaValidationResultsBuilder,
-        },
-        prefixes::builders::{
+        }, prefixes::builders::{
             AddPrefixBuilder, CopyPrefixBuilder, PrefixesBuilder, RemovePrefixBuilder, RenamePrefixBuilder,
-        },
-        query::builders::{
+        }, query::builders::{
             LoadSparqlQueryBuilder, ResetQueryResultsBuilder, ResetSparqlQueryBuilder, RunQueryBuilder,
             SerializeQueryResultsBuilder, SerializeSparqlQueryBuilder,
-        },
-        rdf_config::builders::{LoadRdfConfigBuilder, ResetRdfConfigBuilder, SerializeRdfConfigBuilder},
-        shacl::builders::{
+        }, rdf_config::builders::{LoadRdfConfigBuilder, ResetRdfConfigBuilder, SerializeRdfConfigBuilder}, shacl::builders::{
             LoadShaclShapesBuilder, ResetShaclBuilder, ResetShaclShapesBuilder, SerializeShaclShapesBuilder,
             SerializeShaclValidationResultsBuilder, ValidateShaclBuilder,
-        },
-        shex::builders::{
+        }, shex::builders::{
             AddNodeShapeToShapemapBuilder, CheckShexSchemaBuilder, CompileShexSchemaToFileBuilder, LoadShapemapBuilder,
             LoadShexSchemaBuilder, LoadShexSchemaPrecompiledBuilder, ResetShapemapBuilder, ResetShexBuilder,
             ResetShexSchemaBuilder, SerializeShapemapBuilder, SerializeShexSchemaBuilder,
             SerializeShexValidationResultsBuilder, ValidateShexBuilder,
         },
-    },
-    errors::{RudofError, ShExError},
-    formats::{
+    }, errors::{RudofError, ShExError}, formats::{
         BackendSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, GenerationSchemaFormat,
         InputSpec, ResultConversionFormat, ResultConversionMode,
-    },
-    types::{Data, QueryResult},
+    }, types::{Data, QueryResult},
 };
 use dctap::DCTap as DCTAP;
 use pgschema::{pgs::PropertyGraphSchema, type_map::TypeMap, validation_result::ValidationResult};
@@ -347,6 +327,15 @@ impl Rudof {
         writer: &'a mut W,
     ) -> ShowNodeInfoBuilder<'a, W> {
         ShowNodeInfoBuilder::new(self, node, writer)
+    }
+
+    /// Returns a `NodeNeighborhoodBuilder` that iterates lazily over the arcs around
+    /// the given `node` (within the loaded data), without rendering them.
+    /// 
+    /// # Parameters
+    /// - `node`: the IRI or ID of the node to inspect.
+    pub fn node_neighborhood<'a>(&'a self, node: &'a str) -> NodeNeighborhoodBuilder<'a> {
+        NodeNeighborhoodBuilder::new(self, node)
     }
 
     /// Returns a `ListEndpointsBuilder` that enumerates known endpoints.
