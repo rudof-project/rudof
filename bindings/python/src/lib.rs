@@ -20,13 +20,14 @@ pub mod pyrudof {
 
     #[pymodule_export]
     pub use super::{
-        PyCardinalityStrategy, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDataGenerator, PyDataQuality,
-        PyDbEngine, PyDdlDialect, PyEntityDistribution, PyGeneratorConfig, PyOutputFormat, PyPgSchemaFormat,
-        PyQueryResultFormat, PyQueryType, PyRDFFormat, PyRdfConfigFormat, PyReaderMode, PyResultConversionFormat,
-        PyResultConversionMode, PyResultDCTapFormat, PyResultDataFormat, PyResultPgSchemaValidationFormat,
-        PyResultRdfConfigFormat, PyResultShaclValidationFormat, PyResultShexValidationFormat, PyRudof, PyRudofConfig,
-        PyRudofError, PySchemaFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFormat, PyShaclValidationMode,
-        PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource, PyShexValidationSortMode,
+        PyArcDirection, PyCardinalityStrategy, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDataGenerator,
+        PyDataQuality, PyDbEngine, PyDdlDialect, PyEntityDistribution, PyGeneratorConfig, PyNeighborArc,
+        PyNodeNeighborhood, PyOutputFormat, PyPgSchemaFormat, PyQueryResultFormat, PyQueryType, PyRDFFormat,
+        PyRdfConfigFormat, PyReaderMode, PyResultConversionFormat, PyResultConversionMode, PyResultDCTapFormat,
+        PyResultDataFormat, PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat, PyResultShaclValidationFormat,
+        PyResultShexValidationFormat, PyRudof, PyRudofConfig, PyRudofError, PySchemaFormat, PyServiceDescriptionFormat,
+        PyShExFormat, PyShaclFormat, PyShaclValidationMode, PyShaclValidationSortMode, PyShapeMapFormat,
+        PyShapesGraphSource, PyShexValidationSortMode,
     };
 
     #[pymodule_init]

@@ -5,19 +5,20 @@
 //! SPARQL queries, and related semantic web technologies.
 
 use crate::PyRudofConfig;
-use pyo3::{Py, PyAny, PyErr, PyResult, Python, exceptions::PyValueError, pyclass, pymethods};
+use pyo3::{Py, PyAny, PyErr, PyRef, PyResult, Python, exceptions::PyValueError, pyclass, pymethods};
 use pythonize::pythonize;
 use rudof_lib::{
     Rudof,
     errors::{InputSpecError, RudofError},
     formats::{
         BackendSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DCTapFormat, DataFormat,
-        DataReaderMode, DdlDialect, InputSpec, NodeInspectionMode, PgSchemaFormat, QueryType, RdfConfigFormat,
-        ResultConversionFormat, ResultConversionMode, ResultDCTapFormat, ResultDataFormat,
+        DataReaderMode, DdlDialect, InputSpec, IriNormalizationMode, NodeInspectionMode, PgSchemaFormat, QueryType,
+        RdfConfigFormat, ResultConversionFormat, ResultConversionMode, ResultDCTapFormat, ResultDataFormat,
         ResultPgSchemaValidationFormat, ResultQueryFormat, ResultRdfConfigFormat, ResultServiceFormat,
         ResultShExValidationFormat, ResultShaclValidationFormat, ShExFormat, ShExValidationSortByMode, ShaclFormat,
         ShaclValidationMode, ShaclValidationSortByMode, ShapeMapFormat,
     },
+    types::{ArcDirection, NeighborArc},
 };
 use std::{io::BufWriter, path::Path, str::FromStr};
 
@@ -199,6 +200,40 @@ impl PyRudof {
             .map_err(cnv_err)?;
 
         Ok(output)
+    }
+
+    #[pyo3(signature = (node_selector, predicates=None, mode=None, depth=None, strict_iris=None))]
+    pub fn node_neighborhood(
+        &self,
+        node_selector: &str,
+        predicates: Option<Vec<String>>,
+        mode: Option<&str>,
+        depth: Option<usize>,
+        strict_iris: Option<bool>,
+    ) -> PyResult<PyNodeNeighborhood> {
+        let mut neighborhood = self.inner.node_neighborhood(node_selector);
+        if let Some(predicates) = predicates.as_deref() {
+            neighborhood = neighborhood.with_predicates(predicates);
+        }
+        let aux_mode;
+        if let Some(mode) = mode {
+            aux_mode = NodeInspectionMode::from_str(mode).map_err(|e| cnv_err(e.into()))?;
+            neighborhood = neighborhood.with_mode(&aux_mode);
+        }
+        if let Some(depth) = depth {
+            neighborhood = neighborhood.with_depth(depth);
+        }
+        if strict_iris.unwrap_or(false) {
+            neighborhood = neighborhood.with_iri_mode(IriNormalizationMode::Strict);
+        }
+
+        let arcs = neighborhood
+            .execute()
+            .map_err(cnv_err)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(cnv_err)?;
+
+        Ok(PyNodeNeighborhood { arcs: arcs.into_iter() })
     }
 
     /// Loads RDF data from a string, file path or URL. If a SPARQL endpoint is specified, it loads data from the endpoint instead.
@@ -2539,5 +2574,114 @@ fn cnv_query_result_format(format: Option<&PyQueryResultFormat>) -> Option<&Resu
         PyQueryResultFormat::TriG => Some(&ResultQueryFormat::TriG),
         PyQueryResultFormat::N3 => Some(&ResultQueryFormat::N3),
         PyQueryResultFormat::NQuads => Some(&ResultQueryFormat::NQuads),
+    }
+}
+
+/// A single arc for a node's neighborhood.
+#[pyclass(name = "NeighborArc")]
+#[derive(Clone)]
+pub struct PyNeighborArc {
+    inner: NeighborArc,
+}
+
+#[pymethods]
+impl PyNeighborArc {
+    #[getter]
+    pub fn root(&self) -> String {
+        self.inner.root.to_string()
+    }
+
+    #[getter]
+    pub fn direction(&self) -> PyArcDirection {
+        self.inner.direction.into()
+    }
+
+    #[getter]
+    pub fn depth(&self) -> usize {
+        self.inner.depth
+    }
+
+    #[getter]
+    pub fn node(&self) -> String {
+        self.inner.node.to_string()
+    }
+
+    #[getter]
+    pub fn predicate(&self) -> String {
+        self.inner.predicate.as_str().to_string()
+    }
+
+    #[getter]
+    pub fn neighbor(&self) -> String {
+        self.inner.neighbor.to_string()
+    }
+
+    #[getter]
+    pub fn is_last(&self) -> bool {
+        self.inner.is_last
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!(
+            "NeighborArc(node='{}', predicate='{}', neighbor='{}', direction={}, depth={})",
+            self.node(),
+            self.predicate(),
+            self.neighbor(),
+            self.direction().__str__(),
+            self.depth()
+        )
+    }
+}
+
+/// Direction in wich an arc is followed from the node being expanded.
+#[pyclass(eq, eq_int, name = "ArcDirection")]
+#[derive(PartialEq, Clone, Copy)]
+pub enum PyArcDirection {
+    Outgoing,
+    Incoming,
+}
+
+#[pymethods]
+impl PyArcDirection {
+    #[new]
+    pub fn __init__(py: Python<'_>) -> Self {
+        py.detach(|| PyArcDirection::Outgoing)
+    }
+
+    pub fn __str__(&self) -> &'static str {
+        match self {
+            PyArcDirection::Outgoing => "outgoing",
+            PyArcDirection::Incoming => "incoming",
+        }
+    }
+}
+
+impl From<ArcDirection> for PyArcDirection {
+    fn from(direction: ArcDirection) -> Self {
+        match direction {
+            ArcDirection::Outgoing => PyArcDirection::Outgoing,
+            ArcDirection::Incoming => PyArcDirection::Incoming,
+        }
+    }
+}
+
+/// Iterator over the arcs around a node, in depth-first order.
+#[pyclass(name = "NeighborArcIterator")]
+pub struct PyNodeNeighborhood {
+    arcs: std::vec::IntoIter<NeighborArc>,
+}
+
+#[pymethods]
+impl PyNodeNeighborhood {
+    pub fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    pub fn __next__(&mut self) -> Option<PyNeighborArc> {
+        self.arcs.next().map(|arc| PyNeighborArc { inner: arc })
+    }
+
+    pub fn __length_hint__(&self) -> usize {
+        self.arcs.len()
     }
 }
