@@ -2,7 +2,6 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use rudof_rdf::rdf_core::ArcDirection;
-use shex_ast::SchemaIRError::ShapeLabelNotFound;
 
 use crate::errors::NodeInspectionError;
 

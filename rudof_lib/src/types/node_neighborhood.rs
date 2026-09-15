@@ -1,8 +1,8 @@
-use std::{iter::FusedIterator, vec::IntoIter};
-use rudof_iri::IriS;
-use rudof_rdf::rdf_core::{ArcDirection, NeighsIterator, Rdf, term::Object, NeighArc};
-use sparql_service::RdfData;
 use crate::{Result, errors::DataError};
+use rudof_iri::IriS;
+use rudof_rdf::rdf_core::{ArcDirection, NeighArc, NeighsIterator, Rdf, term::Object};
+use sparql_service::RdfData;
+use std::{iter::FusedIterator, vec::IntoIter};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NeighborArc {
@@ -11,7 +11,8 @@ pub struct NeighborArc {
     pub depth: usize,
     pub node: Object,
     pub predicate: IriS,
-    pub neighbor: Object
+    pub neighbor: Object,
+    pub is_last: bool,
 }
 
 pub struct NodeNeighborhood<'a> {
@@ -21,7 +22,7 @@ pub struct NodeNeighborhood<'a> {
     directions: &'static [ArcDirection],
     max_depth: usize,
     current: Option<(Object, NeighsIterator<'a, RdfData>)>,
-    finished: bool
+    finished: bool,
 }
 
 impl<'a> NodeNeighborhood<'a> {
@@ -30,7 +31,7 @@ impl<'a> NodeNeighborhood<'a> {
         roots: Vec<<RdfData as Rdf>::Term>,
         predicates: Vec<<RdfData as Rdf>::IRI>,
         directions: &'static [ArcDirection],
-        max_depth: usize
+        max_depth: usize,
     ) -> Self {
         Self {
             rdf,
@@ -39,7 +40,7 @@ impl<'a> NodeNeighborhood<'a> {
             directions,
             max_depth,
             current: None,
-            finished: false
+            finished: false,
         }
     }
 
@@ -61,11 +62,11 @@ impl Iterator for NodeNeighborhood<'_> {
                         let root = root.clone();
                         return match to_neighbor_arc(root, arc) {
                             Ok(arc) => Some(Ok(arc)),
-                            Err(e) => self.fail(e)
+                            Err(e) => self.fail(e),
                         };
                     },
                     Some(Err(e)) => return self.fail(DataError::FailedArcRetrieval { error: e.to_string() }),
-                    None => self.current = None
+                    None => self.current = None,
                 }
                 continue;
             }
@@ -76,13 +77,13 @@ impl Iterator for NodeNeighborhood<'_> {
             };
             let root_object = match RdfData::term_as_object(&root) {
                 Ok(object) => object,
-                Err(e) => return self.fail(DataError::FailedQualification { error: e.to_string() })
+                Err(e) => return self.fail(DataError::FailedQualification { error: e.to_string() }),
             };
             let neighs = NeighsIterator::new(self.rdf, root)
-               .with_directions(self.directions)
-               .with_predicates(self.predicates.clone())
-               .with_max_depth(self.max_depth);
-            self.current = Some((root_object, neighs));  
+                .with_directions(self.directions)
+                .with_predicates(self.predicates.clone())
+                .with_max_depth(self.max_depth);
+            self.current = Some((root_object, neighs));
         }
         None
     }
@@ -96,9 +97,11 @@ fn to_neighbor_arc(root: Object, arc: NeighArc<RdfData>) -> std::result::Result<
         root,
         direction,
         depth: arc.depth,
-        node: RdfData::term_as_object(&arc.node).map_err(|e| DataError::FailedQualification { error: e.to_string() })?,
+        node: RdfData::term_as_object(&arc.node)
+            .map_err(|e| DataError::FailedQualification { error: e.to_string() })?,
         predicate: predicate.into(),
-        neighbor: RdfData::term_as_object(&neighbor).map_err(|e| DataError::FailedQualification { error: e.to_string() })?
+        neighbor: RdfData::term_as_object(&neighbor)
+            .map_err(|e| DataError::FailedQualification { error: e.to_string() })?,
+        is_last: arc.is_last,
     })
 }
-

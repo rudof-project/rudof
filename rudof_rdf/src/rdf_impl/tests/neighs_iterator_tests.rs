@@ -29,6 +29,7 @@ fn test_incoming_outgoing_neighs_depth_1() {
             depth: 1,
             node: iri("a").into(),
             neigh: Neigh::direct(iri("p"), iri("b").into()),
+            is_last: false
         }
     );
 
@@ -39,10 +40,10 @@ fn test_incoming_outgoing_neighs_depth_1() {
             depth: 1,
             node: iri("a").into(),
             neigh: Neigh::direct(iri("r"), iri("c").into()),
+            is_last: true
         }
     );
 
-    
     let arc3 = neighs.next().unwrap().unwrap();
     assert_eq!(
         arc3,
@@ -50,8 +51,9 @@ fn test_incoming_outgoing_neighs_depth_1() {
             depth: 1,
             node: iri("a").into(),
             neigh: Neigh::inverse(iri("p"), iri("e").into()),
+            is_last: true
         }
     );
 
-    assert!(neighs.next().is_none()); 
+    assert!(neighs.next().is_none());
 }

@@ -4177,7 +4177,6 @@ dependencies = [
  "sparql_service",
  "tabled",
  "tempfile",
- "termtree",
  "thiserror 2.0.20",
  "tokio",
  "toml",

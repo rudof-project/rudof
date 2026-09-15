@@ -1,10 +1,14 @@
 use crate::{
-    Result, Rudof, api::data::implementations::{
-        dereference, list_endpoints, load_data, load_service_description, node_neighborhood, reset_data, reset_service_description, serialize_data, serialize_service_description, show_node_info,
-    }, formats::{
+    Result, Rudof,
+    api::data::implementations::{
+        dereference, list_endpoints, load_data, load_service_description, node_neighborhood, reset_data,
+        reset_service_description, serialize_data, serialize_service_description, show_node_info,
+    },
+    formats::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
         ResultServiceFormat,
-    }, types::NodeNeighborhood,
+    },
+    types::NodeNeighborhood,
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
 use rudof_viz::VizEngine;
@@ -130,17 +134,17 @@ pub trait DataOperations {
     ) -> Result<()>;
 
     /// Returns a lazy iterator over the neighborhood of every node matched by `node`
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `node` - Node identifier (IRI, prefixed name, or blank node) whose neighborhood is traversed
     /// * `predicates` - Optional list of predicates; when given, only arcs with these predicates are followed
     /// * `mode - Optional inspection mode selecting the arc directions
     /// * `depth`- Optional maximum transversal depth (default is 1)
     /// * `iri_mode` - IRI normalization mode to apply when parsing the node identifier
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if no RDF data is loaded or the node selector or predicates can´t be resolved.
     fn node_neighborhood<'a>(
         &'a self,
@@ -148,7 +152,7 @@ pub trait DataOperations {
         predicates: Option<&[String]>,
         mode: Option<&NodeInspectionMode>,
         depth: Option<usize>,
-        iri_mode: IriNormalizationMode
+        iri_mode: IriNormalizationMode,
     ) -> Result<NodeNeighborhood<'a>>;
 
     /// Lists the registered SPARQL endpoints.
@@ -268,9 +272,8 @@ impl DataOperations for Rudof {
         predicates: Option<&[String]>,
         mode: Option<&NodeInspectionMode>,
         depth: Option<usize>,
-        iri_mode: IriNormalizationMode
-    ) -> Result<NodeNeighborhood<'a>>
-    {
+        iri_mode: IriNormalizationMode,
+    ) -> Result<NodeNeighborhood<'a>> {
         node_neighborhood(self, node, predicates, mode, depth, iri_mode)
     }
 

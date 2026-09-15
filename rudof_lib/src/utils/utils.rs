@@ -1,11 +1,13 @@
 use crate::{
     Result, Rudof,
-    errors::IriError,
+    errors::{DataError, IriError},
     formats::{IriNormalizationMode, QueryType},
 };
 use crossterm::terminal;
+use prefixmap::IriRef;
 use rudof_iri::IriS;
-use rudof_rdf::rdf_core::query::SparqlQuery;
+use rudof_rdf::rdf_core::{NeighsRDF, query::SparqlQuery};
+use shex_ast::{ShapeMapParser, shapemap::NodeSelector};
 use std::{env, str::FromStr};
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
@@ -94,4 +96,54 @@ pub fn detect_query_type(query: &SparqlQuery) -> QueryType {
     } else {
         QueryType::Describe
     }
+}
+
+/// Parses a node selector string into a `NodeSelector` instance.
+pub fn parse_node_selector(node: &str, iri_mode: IriNormalizationMode) -> Result<NodeSelector> {
+    let normalized = normalize_iri_str(node, iri_mode);
+    ShapeMapParser::parse_node_selector(normalized.as_str()).map_err(|e| {
+        Box::new(DataError::FailedNodeSelectorParse {
+            node: normalized.as_str().to_string(),
+            error: e.to_string(),
+        })
+        .into()
+    })
+}
+
+/// Converts predicate strings to IRI objects
+pub fn convert_predicate_strings_to_iris<S>(predicates: &[String], rdf: &S) -> Result<Vec<S::IRI>>
+where
+    S: NeighsRDF,
+{
+    predicates
+        .iter()
+        .map(|pred_str| {
+            let iri_ref = parse_iri_ref(pred_str)?;
+
+            let iri = match iri_ref {
+                IriRef::Prefixed { prefix, local } => {
+                    rdf.resolve_prefix_local(prefix.as_str(), local.as_str()).map_err(|e| {
+                        Box::new(DataError::FailedPrefixResolution {
+                            prefix: prefix.to_string(),
+                            error: e.to_string(),
+                        })
+                    })?
+                },
+                IriRef::Iri(iri) => iri,
+            };
+
+            Ok(iri.into())
+        })
+        .collect()
+}
+
+/// Parses an IRI string into an `IriRef` instance.
+fn parse_iri_ref(iri: &str) -> Result<IriRef> {
+    ShapeMapParser::parse_iri_ref(iri).map_err(|e| {
+        Box::new(DataError::FailedIriRefParse {
+            iri: iri.to_string(),
+            error: e.to_string(),
+        })
+        .into()
+    })
 }

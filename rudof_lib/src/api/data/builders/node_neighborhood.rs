@@ -1,4 +1,9 @@
-use crate::{Result, Rudof, api::data::DataOperations, formats::{IriNormalizationMode, NodeInspectionMode}, types::NodeNeighborhood};
+use crate::{
+    Result, Rudof,
+    api::data::DataOperations,
+    formats::{IriNormalizationMode, NodeInspectionMode},
+    types::NodeNeighborhood,
+};
 
 /// Builder for `node_neighborhood` operation.
 pub struct NodeNeighborhoodBuilder<'a> {
@@ -7,7 +12,7 @@ pub struct NodeNeighborhoodBuilder<'a> {
     predicates: Option<&'a [String]>,
     mode: Option<&'a NodeInspectionMode>,
     depth: Option<usize>,
-    iri_mode: IriNormalizationMode
+    iri_mode: IriNormalizationMode,
 }
 
 impl<'a> NodeNeighborhoodBuilder<'a> {
@@ -18,7 +23,7 @@ impl<'a> NodeNeighborhoodBuilder<'a> {
             predicates: None,
             mode: None,
             depth: None,
-            iri_mode: IriNormalizationMode::default()
+            iri_mode: IriNormalizationMode::default(),
         }
     }
 
@@ -49,7 +54,7 @@ impl<'a> NodeNeighborhoodBuilder<'a> {
             self.predicates,
             self.mode,
             self.depth,
-            self.iri_mode
+            self.iri_mode,
         )
     }
 }
