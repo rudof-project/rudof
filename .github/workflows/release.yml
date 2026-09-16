@@ -85,17 +85,17 @@ jobs:
       - name: Verify version was updated
         run: grep '^version = "${{ steps.version.outputs.new }}"' Cargo.toml
 
-      - name: Update version in flake.nix
+      - name: Update nix version
         if: ${{ !inputs.prerelease }}
         run: |
           NEW="${{ steps.version.outputs.new }}"
-          sed -i "s/rudof_version = \"[^\"]*\"/rudof_version = \"${NEW}\"/" flake.nix
+          sed -i "s/version = \"[^\"]*\"/version = \"${NEW}\"/" nix/packages.nix
 
       - name: Commit and push
         run: |
           git config user.name "rudof-bot[bot]"
           git config user.email "${{ secrets.RUDOF_BOT_ID }}+rudof-bot[bot]@users.noreply.github.com"
-          git add Cargo.toml flake.nix
+          git add Cargo.toml nix/packages.nix
           git commit -m "chore: release ${{ steps.version.outputs.new }} [skip ci]"
           git push
 
