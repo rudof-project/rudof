@@ -1,3 +1,0 @@
-engine = "ladybug"
-path = "/home/labra/src/rust/rudof/target/pp.lbug"
-read_only = false
