@@ -1,6 +1,6 @@
 {
-  perSystem = { self', pkgs, ... }: {
-    devShells.default = self'.craneLib.devShell {
+  perSystem = { self', pkgs, craneLib, ... }: {
+    devShells.default = craneLib.devShell {
       packages = with pkgs; [
         self'.packages.toolchain
         cargo-edit
