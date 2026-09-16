@@ -26,7 +26,16 @@ in rec {
       # Prevent crane from stripping .rustemo files, which are needed for rustemo
       || (lib.hasSuffix ".rustemo" path)
       # Prevent crane from stripping .md files, which are needed for shacl lib.rs docs
-      || (lib.hasSuffix ".md" path);
+      || (lib.hasSuffix ".md" path)
+      # Prevent crane from stripping files which are needed for tests
+      || (lib.hasSuffix ".ttl" path)
+      || (lib.hasSuffix ".shex" path)
+      || (lib.hasSuffix ".sm" path)
+      || (lib.hasSuffix ".rq" path)
+      || (lib.hasSuffix ".pgs" path)
+      || (lib.hasSuffix ".map" path)
+      || (lib.hasSuffix ".pg" path)
+      || (lib.hasSuffix ".csv" path);
   };
 
   commonArgs = {
@@ -37,12 +46,18 @@ in rec {
     strictDeps = true;
 
     # Needed for rustemo
-    nativeBuildInputs = with pkgs; [git];
+    nativeBuildInputs = with pkgs; [
+      git
+      cmakeMinimal
+      python3
+    ];
 
-    buildInputs = lib.optionals pkgs.stdenv.isDarwin [
+    buildInputs = with pkgs; [ openssl ]
+      ++ lib.optionals pkgs.stdenv.isDarwin [
       pkgs.libiconv
     ];
   };
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+  inherit pkgs;
 }
