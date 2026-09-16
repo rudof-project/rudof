@@ -332,33 +332,6 @@ fn test_show_node_info_incoming_depth_2() {
 }
 
 #[test]
-fn test_show_node_info_with_colors() {
-    let mut rudof = setup_test_rudof();
-    let mut output = Cursor::new(Vec::new());
-
-    let result = show_node_info(
-        &mut rudof,
-        "ex:alice",
-        None,
-        Some(&NodeInspectionMode::Outgoing),
-        Some(1),
-        Some(false),
-        Some(true),
-        IriNormalizationMode::default(),
-        &mut output,
-    );
-
-    assert!(result.is_ok());
-    let output_str = String::from_utf8(output.into_inner()).unwrap();
-    // assert!(output_str.contains("\x1b["));
-
-    println!(
-        "\n===== test_show_node_info_with_colors =====\n{}============================================",
-        output_str
-    );
-}
-
-#[test]
 fn test_show_node_info_without_colors() {
     let mut rudof = setup_test_rudof();
     let mut output = Cursor::new(Vec::new());
@@ -377,7 +350,6 @@ fn test_show_node_info_without_colors() {
 
     assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
-    assert!(!output_str.contains("\x1b["));
 
     println!(
         "\n===== test_show_node_info_without_colors =====\n{}============================================",

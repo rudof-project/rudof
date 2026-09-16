@@ -8,9 +8,9 @@ use crate::{
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
         },
         data::builders::{
-            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, ResetDataBuilder,
-            ResetServiceDescriptionBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder,
-            ShowNodeInfoBuilder,
+            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder,
+            NodeNeighborhoodBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder, SerializeDataBuilder,
+            SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
         },
         dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder},
         generation::builders::GenerateDataBuilder,
@@ -347,6 +347,15 @@ impl Rudof {
         writer: &'a mut W,
     ) -> ShowNodeInfoBuilder<'a, W> {
         ShowNodeInfoBuilder::new(self, node, writer)
+    }
+
+    /// Returns a `NodeNeighborhoodBuilder` that iterates lazily over the arcs around
+    /// the given `node` (within the loaded data), without rendering them.
+    ///
+    /// # Parameters
+    /// - `node`: the IRI or ID of the node to inspect.
+    pub fn node_neighborhood<'a>(&'a self, node: &'a str) -> NodeNeighborhoodBuilder<'a> {
+        NodeNeighborhoodBuilder::new(self, node)
     }
 
     /// Returns a `ListEndpointsBuilder` that enumerates known endpoints.
