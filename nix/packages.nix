@@ -32,7 +32,7 @@
           python3
         ];
         buildInputs = [ pkgs.openssl ]
-          ++ lib.optionals pkgs.stdenv.isDarwin [
+          ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
           pkgs.libiconv
         ];
       };
