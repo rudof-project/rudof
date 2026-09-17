@@ -12,5 +12,12 @@
         echo "rudof development shell loaded"
       '';
     };
+
+    devShells.rudof = pkgs.mkShell {
+      packages = [ self'.packages.rudof ];
+      shellHook = ''
+        echo "rudof runtime shell loaded";
+      '';
+    };
   };
 }
