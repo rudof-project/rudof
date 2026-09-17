@@ -23,6 +23,7 @@ pub use backend_error::RdfBackendError;
 mod tests {
     mod in_memory_tests;
     mod neighs_iterator_tests;
+    mod shacl_path_literal_tests;
 
     #[cfg(feature = "qlever-docker-tests")]
     mod qlever_docker;
