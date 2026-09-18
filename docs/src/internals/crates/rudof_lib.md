@@ -113,7 +113,66 @@ rudof.show_node_info(&node, &mut std::io::stdout())
 rudof.reset_data().execute()
 ```
 
-#### 2.2 Property Graph Data
+#### 2.2 Node Neighborhood
+
+`show_node_info` renders the neighborhood of a node as an ASCII tree. When the traversal itself is what you need (instead of its textual rendering), `node_neighborhood` exposes the very same traversal as a lazy iterator of `NeighborArc` values, so callers get the structure without having to parse box-drawing characters.
+
+The builder accepts the same options as `show_node_info` (predicates, inspection mode, depth and IRI normalization), and the resulting `NodeNeighborhood` yields one `Result<NeighborArc>` per visited arc, in depth-first order, for every node matched by the node selector. Each `NeighborArc` carries:
+
+- `root`: the matched node the traversal started from.
+- `direction`: `ArcDirection::Outgoing` (the node is the subject) or `ArcDirection::Incoming` (the node is the object).
+- `depth`: distance from `root`, starting at 1.
+- `node`, `predicate`, `neighbor`: the arc itself.
+- `is_last`: whether this is the last arc among the siblings of `node`, which is what the tree renderer uses to draw the branch corners.
+
+Because the iterator borrows the loaded graph, the `Rudof` instance cannot be mutated while it is alive.
+
+```rust
+use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::formats::{InputSpec, IriNormalizationMode, NodeInspectionMode};
+use rudof_lib::types::{ArcDirection, NeighborArc};
+use std::str::FromStr;
+
+let mut rudof = Rudof::new(RudofConfig::default());
+let rdf_data_input = vec![InputSpec::from_str(
+    r#"
+        prefix ex: <http://example.org/>
+        ex:alice ex:knows ex:bob ;
+            ex:age 30 .
+        ex:bob   ex:knows ex:carol .
+        ex:dave  ex:knows ex:alice .
+    "#
+).unwrap()];
+
+// Load RDF data into Rudof's state
+rudof.load_data().with_data(&rdf_data_input).execute().unwrap();
+
+// Traverse the neighborhood of "ex:alice" instead of rendering it
+let predicates = vec!["ex:knows".to_string()];
+let neighborhood = rudof.node_neighborhood("ex:alice")
+    .with_mode(&NodeInspectionMode::Both)
+    .with_predicates(&predicates)
+    .with_depth(2)
+    .with_iri_mode(IriNormalizationMode::Lax)
+    .execute()
+    .unwrap();
+
+for arc in neighborhood {
+    let NeighborArc { depth, direction, node, predicate, neighbor, .. } = arc.unwrap();
+    let arrow = match direction {
+        ArcDirection::Outgoing => "-->",
+        ArcDirection::Incoming => "<--",
+    };
+    println!("{:indent$}{node} {arrow} {predicate} {arrow} {neighbor}", "", indent = (depth - 1) * 2);
+}
+
+// Prints:
+// http://example.org/alice --> http://example.org/knows --> http://example.org/bob
+//   http://example.org/bob --> http://example.org/knows --> http://example.org/carol
+// http://example.org/alice <-- http://example.org/knows <-- http://example.org/dave
+```
+
+#### 2.3 Property Graph Data
 
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
@@ -139,7 +198,7 @@ rudof.load_data()
 rudof.serialize_data(&mut std::io::stdout()).execute().unwrap();
 ```
 
-#### 2.3 SPARQL Endpoint
+#### 2.4 SPARQL Endpoint
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
 
@@ -159,7 +218,7 @@ rudof.load_data()
     .unwrap();
 ```
 
-#### 2.4 Service Description
+#### 2.5 Service Description
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
 use rudof_lib::formats::{
