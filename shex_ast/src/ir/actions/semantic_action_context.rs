@@ -14,6 +14,10 @@ pub struct SemanticActionContext {
     predicate: Option<Pred>,
     object: Option<Node>,
 
+    /// The node the semantic action's condition is being evaluated against:
+    /// the focus node for a node constraint, the value for a triple constraint.
+    node: Option<Node>,
+
     #[serde(skip)]
     registry: Option<Arc<SemanticActionsRegistry>>,
 }
@@ -24,6 +28,7 @@ impl SemanticActionContext {
             subject: None,
             predicate: None,
             object: None,
+            node: None,
             registry: None,
         }
     }
@@ -39,11 +44,21 @@ impl SemanticActionContext {
         self.object.clone()
     }
 
+    pub fn n(&self) -> Option<Node> {
+        self.node.clone()
+    }
+
+    pub fn with_node(mut self, node: Node) -> Self {
+        self.node = Some(node);
+        self
+    }
+
     pub fn triple(subject: &Node, predicate: &Pred, object: &Node) -> Self {
         SemanticActionContext {
             subject: Some(subject.clone()),
             predicate: Some(predicate.clone()),
             object: Some(object.clone()),
+            node: None,
             registry: None,
         }
     }
@@ -53,6 +68,7 @@ impl SemanticActionContext {
             subject: Some(subject.clone()),
             predicate: None,
             object: None,
+            node: None,
             registry: None,
         }
     }
@@ -62,6 +78,7 @@ impl SemanticActionContext {
             subject: None,
             predicate: None,
             object: Some(object.clone()),
+            node: None,
             registry: None,
         }
     }
@@ -71,6 +88,7 @@ impl SemanticActionContext {
             subject: None,
             predicate: Some(predicate.clone()),
             object: None,
+            node: None,
             registry: None,
         }
     }

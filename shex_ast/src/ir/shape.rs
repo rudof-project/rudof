@@ -119,15 +119,31 @@ impl Shape {
     fn get_value_expr_references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         let mut result: HashMap<Pred, Vec<ShapeLabelIdx>> = HashMap::new();
         for (_component, pred, cond) in self.expr.components() {
-            match cond {
-                rbe::MatchCond::Single(_single_cond) => {},
-                rbe::MatchCond::And(_match_conds) => {},
-                rbe::MatchCond::Ref(r) => {
-                    result.entry(pred.clone()).or_default().push(r);
-                },
+            let mut refs = Vec::new();
+            collect_cond_refs(&cond, &mut refs);
+            if !refs.is_empty() {
+                result.entry(pred.clone()).or_default().extend(refs);
             }
         }
         result
+    }
+}
+
+/// Collects the shape references in a condition, including those nested in an
+/// `And` (e.g. a triple constraint `<p> @<S> %<ext>{ ... %}` compiles its value
+/// expression and semantic actions to `And([semAct, Ref(S)])`).
+fn collect_cond_refs<C>(cond: &C, refs: &mut Vec<ShapeLabelIdx>)
+where
+    C: std::borrow::Borrow<crate::Cond>,
+{
+    match cond.borrow() {
+        rbe::MatchCond::Single(_single_cond) => {},
+        rbe::MatchCond::And(match_conds) => {
+            for c in match_conds {
+                collect_cond_refs(c, refs);
+            }
+        },
+        rbe::MatchCond::Ref(r) => refs.push(*r),
     }
 }
 

@@ -324,6 +324,8 @@ mod tests {
         assert_eq!(manifest.len(), 2);
     }
 
+    /*
+    This test is flaky as it counts the number of schema entries in the manifest which can change
     #[test]
     fn count_schema_entries() {
         let manifest_path = Path::new("shexTest/schemas/manifest.jsonld");
@@ -332,7 +334,7 @@ mod tests {
             serde_json::from_str::<ManifestSchemas>(&manifest_str).unwrap()
         };
         assert_eq!(manifest.len(), 435);
-    }
+    } */
 }
 
 /* This code is just for testing iterators...

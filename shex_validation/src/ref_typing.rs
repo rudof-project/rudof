@@ -23,6 +23,12 @@ impl RefTyping {
         self.passed.contains(pair)
     }
 
+    /// `true` only when the pair's proof was attempted and definitely failed.
+    /// Pairs never attempted (or proved) return `false`.
+    pub(crate) fn is_failed(&self, pair: &(Node, ShapeLabelIdx)) -> bool {
+        !self.passed.contains(pair) && self.errors.contains_key(pair)
+    }
+
     pub(crate) fn insert_passed(&mut self, node: Node, idx: ShapeLabelIdx) {
         self.passed.insert((node, idx));
     }

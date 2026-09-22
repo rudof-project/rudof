@@ -675,6 +675,8 @@ where
             .append(self.opt_pp(nc.datatype(), self.pp_datatype()))
             .append(self.opt_pp(nc.values(), self.pp_value_set()))
             .append(self.opt_pp(nc.xs_facet(), self.pp_xsfacets()))
+            .append(self.opt_pp1(&nc.annotations(), self.pp_annotations()))
+            .append(self.opt_pp1(&nc.sem_acts(), self.pp_actions()))
     }
 
     fn pp_node_kind(&self) -> impl Fn(&NodeKind, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {

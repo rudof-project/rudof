@@ -120,7 +120,7 @@ impl MatchKind<Pred, Node, ShapeLabelIdx, SemanticActionContext> for CondKind {
                 }
             },
             CondKind::SemAct { name, code } => match ctx.registry() {
-                Some(reg) => match reg.run_action(name, code.as_deref(), ctx) {
+                Some(reg) => match reg.run_action(name, code.as_deref(), &ctx.clone().with_node(v.clone())) {
                     Ok(()) => empty(),
                     Err(e) => error(format!("Semantic action error for {name}: {e}")),
                 },
