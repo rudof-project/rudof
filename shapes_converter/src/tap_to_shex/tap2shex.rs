@@ -307,7 +307,10 @@ mod tests {
 
     fn schema_to_shexc(schema: &Schema) -> String {
         let mut buffer = Vec::new();
+        // `.without_colors()`: these tests assert on plain ShExC content,
+        // not styling -- `ShExFormatter::default()` colorizes.
         shex_ast::ShExFormatter::default()
+            .without_colors()
             .write_schema(schema, &mut buffer)
             .expect("serializing to ShExC should succeed");
         String::from_utf8(buffer).unwrap()

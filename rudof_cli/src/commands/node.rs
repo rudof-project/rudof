@@ -66,7 +66,8 @@ impl Command for NodeCommand {
             .show_node_info(self.args.node.as_ref(), &mut ctx.writer)
             .with_show_node_mode(&show_node_mode)
             .with_depth(self.args.depth)
-            .with_iri_mode(iri_mode);
+            .with_iri_mode(iri_mode)
+            .with_show_colors(ctx.color.enabled());
         if let Some(predicates) = self.args.predicates.as_deref() {
             showing_node_info = showing_node_info.with_predicates(predicates);
         }
