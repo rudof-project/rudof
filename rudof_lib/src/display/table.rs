@@ -52,9 +52,9 @@ impl Table for ValidationReport {
         builder.push_record(header);
 
         let pm = if colored {
-            PrefixMap::basic()
+            PrefixMap::basic().with_hyperlink(true).with_default_colors()
         } else {
-            PrefixMap::basic().with_hyperlink(true).without_default_colors()
+            PrefixMap::basic()
         };
 
         for result in self.results() {

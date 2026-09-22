@@ -33,7 +33,9 @@ use crate::pp_object_value;
 ///
 /// let expected = "prefix ex: <http://example.org/>\nex:S {  }\n";
 ///
-/// assert_eq!(ShExFormatter::default().format_schema(&schema), expected);
+/// // `.without_colors()`: `ShExFormatter::default()` colorizes; this
+/// // example compares against plain text.
+/// assert_eq!(ShExFormatter::default().without_colors().format_schema(&schema), expected);
 /// ```
 #[derive(Debug, Clone)]
 pub struct ShExFormatter {

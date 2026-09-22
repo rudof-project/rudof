@@ -1,6 +1,6 @@
 use crate::error::PrefixMapError;
 use crate::{IriRef, Show};
-use colored::*;
+use colored::Color;
 use indexmap::IndexMap;
 use rudof_iri::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::MapAccess, de::Visitor, ser::SerializeMap};
@@ -167,8 +167,9 @@ impl PrefixMap {
             .with_qualify_semicolon_color(None)
     }
 
-    /// Use default colors when qualifying IRIs
-    pub fn without_default_colors(mut self) -> Self {
+    /// Enables the default color scheme (blue prefix, red colon, black
+    /// local name) when qualifying IRIs.
+    pub fn with_default_colors(mut self) -> Self {
         self.qualify_localname_color = Some(Color::Black);
         self.qualify_prefix_color = Some(Color::Blue);
         self.qualify_semicolon_color = Some(Color::Red);
@@ -197,27 +198,41 @@ impl PrefixMap {
         self.base.as_ref()
     }
 
+    /// Wraps `text` in the ANSI escape codes for `color`.
+    ///
+    /// This always emits the escape codes, unlike the `colored` crate's
+    /// `Colorize` trait: it doesn't second-guess the caller by consulting
+    /// `colored`'s process-wide, environment/tty-derived `SHOULD_COLORIZE`
+    /// flag. That flag is about whether *stdout* is a terminal, which is
+    /// irrelevant here since qualifying is often written into an in-memory
+    /// buffer rather than printed directly — callers that don't want color
+    /// already have `without_colors`/`with_default_colors` to say so
+    /// explicitly, so honor that choice rather than an unrelated ambient one.
+    fn colorize(text: &str, color: Color) -> String {
+        format!("\x1b[{}m{text}\x1b[0m", color.to_fg_str())
+    }
+
     /// Color the alias when qualifying an IRI
-    fn alias_color(&self, alias: &str) -> ColoredString {
+    fn alias_color(&self, alias: &str) -> String {
         match self.qualify_prefix_color {
-            Some(color) => alias.color(color),
-            None => ColoredString::from(alias),
+            Some(color) => Self::colorize(alias, color),
+            None => alias.to_string(),
         }
     }
 
     /// Color the local name when qualifying an IRI
-    fn local_color(&self, rest: &str) -> ColoredString {
+    fn local_color(&self, rest: &str) -> String {
         match self.qualify_localname_color {
-            Some(color) => rest.color(color),
-            None => ColoredString::from(rest),
+            Some(color) => Self::colorize(rest, color),
+            None => rest.to_string(),
         }
     }
 
     /// Color the semicolon when qualifying an IRI
-    fn semicolon_color(&self) -> ColoredString {
+    fn semicolon_color(&self) -> String {
         match self.qualify_semicolon_color {
-            Some(color) => ":".color(color),
-            None => ColoredString::from(":"),
+            Some(color) => Self::colorize(":", color),
+            None => ":".to_string(),
         }
     }
 
@@ -321,7 +336,7 @@ impl PrefixMap {
         ])
         .try_into()
         .unwrap();
-        pm.without_default_colors().with_hyperlink(true)
+        pm.with_default_colors().with_hyperlink(true)
     }
 
     /// Default DBpedia prefix map
@@ -337,7 +352,7 @@ impl PrefixMap {
         ])
         .try_into()
         .unwrap();
-        pm.without_default_colors().with_hyperlink(true)
+        pm.with_default_colors().with_hyperlink(true)
     }
 
     /// Default Uniprot prefix map
@@ -353,7 +368,7 @@ impl PrefixMap {
         ])
         .try_into()
         .unwrap();
-        pm.without_default_colors().with_hyperlink(true)
+        pm.with_default_colors().with_hyperlink(true)
     }
 }
 
