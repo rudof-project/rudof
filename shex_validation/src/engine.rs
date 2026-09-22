@@ -1727,7 +1727,7 @@ impl Engine {
                 let term: S::Term = lit.into();
                 term
             },
-            Object::Triple { .. } => todo!(),
+            Object::Triple { .. } => node.as_object().clone().into(),
         }
     }
 
