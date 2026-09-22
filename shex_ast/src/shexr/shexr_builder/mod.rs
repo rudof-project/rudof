@@ -346,6 +346,14 @@ impl<'a, RDF: BuildRDF> Ctx<'a, RDF> {
             let list = self.list_to_rdf(&values, Self::value_set_value_to_term)?;
             self.add_triple(node.clone(), ShexRVocab::sx_values(), list)?;
         }
+        if let Some(sem_acts) = nc.sem_acts() {
+            let list = self.list_to_rdf(&sem_acts, Self::sem_act_to_rdf)?;
+            self.add_triple(node.clone(), ShexRVocab::sx_sem_acts(), list)?;
+        }
+        if let Some(annotations) = nc.annotations() {
+            let list = self.list_to_rdf(&annotations, Self::annotation_to_rdf)?;
+            self.add_triple(node.clone(), ShexRVocab::sx_annotation_prop(), list)?;
+        }
         Ok(node.into())
     }
 

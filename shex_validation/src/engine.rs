@@ -394,7 +394,10 @@ impl Engine {
             if schema.is_abstract(idx) {
                 let descendants = schema.descendants(idx);
                 if descendants.is_empty() {
-                    return Err(ValidatorError::AbstractShapeNoDescendants { idx: *idx });
+                    // A node only conforms to an abstract shape through one of its
+                    // descendants, so with none it simply doesn't conform: report a
+                    // nonconformant result rather than aborting validation.
+                    return fail(ValidatorError::AbstractShapeNoDescendants { idx: *idx });
                 }
                 // Each descendant gets its own prove call so it builds a fresh typing
                 // with all the dependencies it actually needs (RESTRICTS semantics).
@@ -701,7 +704,7 @@ impl Engine {
                 }
                 // Lenient predicates (in EXTRA): only values that satisfy a leaf condition
                 // participate in the RBE; non-matching values fall into M^∉ and are ignored.
-                matches_any_leaf(shape.triple_expr(), pred, value, ctx)
+                matches_any_leaf(shape.triple_expr(), pred, value, ctx, typing)
             })
             .collect::<Vec<_>>();
         if shape.is_closed() && !reminder.is_empty() {
@@ -806,7 +809,8 @@ impl Engine {
                     conjuncts_ok = conjuncts_ok && collect_constraint_exprs(schema, se, node, &mut constraint_tes);
                 }
                 for nc in &ncs {
-                    let ctx = SemanticActionContext::subject(node);
+                    let ctx =
+                        SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc());
                     conjuncts_ok = conjuncts_ok && nc.cond().matches(node, &ctx).is_ok();
                 }
                 if !conjuncts_ok {
@@ -1192,7 +1196,13 @@ impl Engine {
 
         let values_ctx: Vec<_> = values
             .iter()
-            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .map(|(p, v)| {
+                (
+                    p.clone(),
+                    v.clone(),
+                    SemanticActionContext::triple(node, p, v).with_registry(schema.semantic_actions_registry_arc()),
+                )
+            })
             .filter(|(pred, value, ctx)| {
                 let matches_leaf = bucket_exprs.values().any(|rbes| {
                     rbes.iter().any(|rbe| {
@@ -1379,7 +1389,7 @@ impl Engine {
         };
         match &se {
             ShapeExpr::NodeConstraint(nc) => {
-                let ctx = SemanticActionContext::subject(node);
+                let ctx = SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc());
                 match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => pass(Reason::NodeConstraint {
                         node: node.clone(),
@@ -1785,7 +1795,7 @@ fn try_split_constraint(schema: &SchemaIR, cidx: &ShapeLabelIdx, node: &Node, ou
             Some(true)
         },
         Some(ShapeExpr::NodeConstraint(nc)) => {
-            let ctx = SemanticActionContext::subject(node);
+            let ctx = SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc());
             Some(nc.cond().matches(node, &ctx).is_ok())
         },
         Some(ShapeExpr::Ref { idx }) => try_split_constraint(schema, idx, node, out),
@@ -1818,13 +1828,14 @@ fn collect_constraint_exprs(schema: &SchemaIR, se: &ShapeExpr, node: &Node, out:
             true
         },
         ShapeExpr::NodeConstraint(nc) => {
-            let ctx = SemanticActionContext::subject(node);
+            let ctx = SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc());
             nc.cond().matches(node, &ctx).is_ok()
         },
         ShapeExpr::Ref { idx } => match schema.get_main_shape_constraints(idx) {
             Some((ncs, main, rest)) => {
                 for nc in &ncs {
-                    let ctx = SemanticActionContext::subject(node);
+                    let ctx =
+                        SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc());
                     if nc.cond().matches(node, &ctx).is_err() {
                         return false;
                     }
@@ -2137,15 +2148,23 @@ fn cond_has_ref(cond: &MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContex
 
 /// Returns true if `(pred, value)` satisfies at least one leaf condition in `expr`.
 ///
-/// For `MatchCond::Ref` leaves the value is kept in M^∈ conservatively — the RBE /
-/// pending-typing path already handles shape-reference validation correctly.
-fn matches_any_leaf(expr: &Expr, pred: &Pred, value: &Node, ctx: &SemanticActionContext) -> bool {
+/// For `MatchCond::Ref` leaves (shape references, but also compound value
+/// expressions such as `NOT [...]`, which compile to references) the value is
+/// excluded only when `typing` says the referenced shape definitely failed for
+/// it; otherwise it is kept in M^∈ conservatively and the RBE / pending-typing
+/// path decides.
+fn matches_any_leaf(expr: &Expr, pred: &Pred, value: &Node, ctx: &SemanticActionContext, typing: &RefTyping) -> bool {
     for (_, key, cond) in expr.components() {
         if &key != pred {
             continue;
         }
-        if cond_has_ref(&cond) || cond.matches(value, ctx).is_ok() {
-            return true;
+        if let Ok(pending) = cond.matches(value, ctx) {
+            let refuted = pending
+                .iter_vr()
+                .any(|(n, idx, _)| typing.is_failed(&(n.clone(), *idx)));
+            if !refuted {
+                return true;
+            }
         }
     }
     false

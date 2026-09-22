@@ -478,6 +478,12 @@ fn parse_node_constraint<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<NodeC
         nc = nc.with_values(values);
     }
 
+    rdf.set_focus(&node);
+    let sem_acts = read_list_property(rdf, ShexRVocab::sx_sem_acts(), parse_sem_act)?;
+    rdf.set_focus(&node);
+    let annotations = read_list_property(rdf, ShexRVocab::sx_annotation_prop(), parse_annotation)?;
+    nc = nc.with_sem_acts(sem_acts).with_annotations(annotations);
+
     Ok(nc)
 }
 
