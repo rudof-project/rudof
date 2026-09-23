@@ -32,7 +32,7 @@ jobs:
           app-id: ${{ secrets.RUDOF_BOT_ID }}
           private-key: ${{ secrets.RUDOF_BOT_PK }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-tags: true
