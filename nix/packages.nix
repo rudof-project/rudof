@@ -1,4 +1,4 @@
-{ rootPath, ... }: {
+{ rootPath, self, ... }: {
   perSystem = { self', craneLib, lib, pkgs, utils, ... }: let
     workspace = {
       src = lib.cleanSourceWith {
@@ -37,7 +37,13 @@
       // {
         inherit cargoArtifacts;
         pname = "rudof";
-        meta.mainProgram = "rudof";
+        meta = {
+          mainProgram = self.lib.name;
+          description = self.lib.description;
+          homepage = self.lib.homepage;
+          license = self.lib.licenses;
+          platforms = self.lib.systems;
+        };
         preCheck = ''
           ${utils.env}
         '';
