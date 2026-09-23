@@ -1,9 +1,10 @@
 { moduleWithSystem, self, inputs, lib, ... }: let
   mkOptions = { pkgs, rudofPkg }: {
-    enable = lib.mkEnableOption "Whether to enable rudof";
+    enable = lib.mkEnableOption "rudof";
     package = lib.mkOption {
       type = lib.types.package;
       default = rudofPkg;
+      defaultText = lib.literalExpression "rudof.packages.<system>.rudof";
       description = "The rudof package to use";
     };
     settings = lib.mkOption {
@@ -11,13 +12,18 @@
         freeformType = (pkgs.formats.toml { }).type;
       };
       default = { };
+      example = {
+        version = rudofPkg.version;
+        base_iri = "http://base_iri/";
+        rdf.base_iri= "http://new_base_iri/";
+      };
       description = "Configuration for rudof in nix";
     };
     extraArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      example = [ "" ];
-      description = "Additional arguments for rudof";
+      example = [ "--config-file" "/etc/${configPath}" "--force-overwrite" ];
+      description = "Additional arguments passed to rudof";
     };
   };
   mkWrapper = { pkgs, cfg }: pkgs.symlinkJoin {
@@ -38,6 +44,9 @@
     file = mkConfig { inherit pkgs cfg; };
   };
 in {
+  # Needed to expose the options to the doc generation tool
+  flake.lib.mkRudofOptions = mkOptions;
+
   flake-file.inputs = {
     home-manager = {
       url = "github:nix-community/home-manager";
