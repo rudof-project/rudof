@@ -39,7 +39,8 @@ def test_skipped_example_is_still_importable(key: str) -> None:
 def test_every_example_file_is_in_the_manifest() -> None:
     """An example script that nobody registered is an example nobody tests."""
     on_disk = {
-        str(p.relative_to(EXAMPLES_DIR))
+        # The manifest spells its paths with forward slashes on every platform.
+        p.relative_to(EXAMPLES_DIR).as_posix()
         for p in EXAMPLES_DIR.rglob("*.py")
         if not p.name.startswith("_")
     }

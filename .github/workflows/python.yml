@@ -269,7 +269,7 @@ jobs:
           name: wheels-sdist
           path: bindings/python/dist
       - name: Install Built sdist
-        run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
+        run: python3 -m pip install -vv bindings/python/dist/pyrudof-*.tar.gz
       - name: Test Built sdist
         run: |
           python3 -m pip install "pytest~=8.0"

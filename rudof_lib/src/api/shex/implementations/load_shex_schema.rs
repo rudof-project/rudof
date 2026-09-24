@@ -52,7 +52,15 @@ pub fn load_shex_schema(
 
     match schema_format {
         ShExFormat::ShExC => {
-            load_shex_schema_shexc(rudof, schema_reader, &schema.source_name(), base_schema, &reader_mode)?;
+            let source_iri = source_iri(schema)?;
+            load_shex_schema_shexc(
+                rudof,
+                schema_reader,
+                &schema.source_name(),
+                &source_iri,
+                base_schema,
+                &reader_mode,
+            )?;
         },
         ShExFormat::ShExJ => {
             load_shex_schema_shexj(rudof, schema_reader, &schema.source_name(), base_schema, &reader_mode)?;
@@ -80,6 +88,42 @@ pub fn load_shex_schema(
     Ok(())
 }
 
+/// The IRI identifying `schema` as a document, used to resolve the relative IRIs
+/// (and the `IMPORT`s) it contains.
+#[cfg(not(target_family = "wasm"))]
+fn source_iri(schema: &InputSpec) -> Result<IriS> {
+    if matches!(schema, InputSpec::Path(_)) {
+        return Ok(schema.as_iri()?);
+    }
+
+    let cwd = env::current_dir().map_err(|e| IriError::PathConversionError {
+        path: ".".to_string(),
+        error: format!("Error resolving source IRI. Failed to get current directory: {e}"),
+    })?;
+
+    let url = Url::from_directory_path(&cwd).map_err(|_| IriError::PathConversionError {
+        path: cwd.to_string_lossy().to_string(),
+        error: "Error resolving source IRI. Cannot convert current directory to a file URL".to_string(),
+    })?;
+
+    let source_name = schema.source_name();
+    let iri = IriS::from_str_base(&source_name, Some(url.as_str())).map_err(|e| IriError::ParseError {
+        iri: source_name.clone(),
+        error: format!("Failed to parse source name as IRI: {e}"),
+    })?;
+    Ok(iri)
+}
+
+#[cfg(target_family = "wasm")]
+fn source_iri(schema: &InputSpec) -> Result<IriS> {
+    let source_name = schema.source_name();
+    let iri = IriS::from_str(&source_name).map_err(|error| IriError::ParseError {
+        iri: source_name.clone(),
+        error: error.to_string(),
+    })?;
+    Ok(iri)
+}
+
 fn init_defaults(
     rudof: &mut Rudof,
     schema_format: Option<&ShExFormat>,
@@ -98,6 +142,7 @@ fn load_shex_schema_shexc<R: io::Read>(
     rudof: &mut Rudof,
     mut schema_reader: R,
     source_name: &str,
+    source_iri: &IriS,
     base_schema: IriS,
     reader_mode: &DataReaderMode,
 ) -> Result<()> {
@@ -111,33 +156,7 @@ fn load_shex_schema_shexc<R: io::Read>(
         })?;
     let header = default_prefix_header(rudof, &content, PrefixDirective::Sparql);
     let prefixed_reader = io::Cursor::new(format!("{header}{content}"));
-    #[cfg(target_family = "wasm")]
-    let source_iri = {
-        IriS::from_str(source_name).map_err(|error| IriError::ParseError {
-            iri: source_name.to_string(),
-            error: error.to_string(),
-        })?
-    };
-
-    #[cfg(not(target_family = "wasm"))]
-    let source_iri = {
-        let cwd = env::current_dir().map_err(|e| IriError::PathConversionError {
-            path: ".".to_string(),
-            error: format!("Error resolving source IRI. Failed to get current directory: {e}"),
-        })?;
-
-        let url = Url::from_directory_path(&cwd).map_err(|_| IriError::PathConversionError {
-            path: cwd.to_string_lossy().to_string(),
-            error: "Error resolving source IRI. Cannot convert current directory to a file URL".to_string(),
-        })?;
-
-        IriS::from_str_base(source_name, Some(url.as_str())).map_err(|e| IriError::ParseError {
-            iri: source_name.to_string(),
-            error: format!("Failed to parse source name as IRI: {e}"),
-        })?
-    };
-
-    let schema = ShExParser::from_reader(prefixed_reader, Some(base_schema.clone()), &source_iri).map_err(|error| {
+    let schema = ShExParser::from_reader(prefixed_reader, Some(base_schema.clone()), source_iri).map_err(|error| {
         ShExError::FailedParsingShExSchema {
             error: error.to_string(),
             source_name: source_name.to_string(),

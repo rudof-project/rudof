@@ -22,36 +22,33 @@ pub mod _pyrudof {
 
     #[pymodule_export]
     pub use crate::error::{
-        ComparisonError, ConfigError, ConversionError, DCTapError, DataError, GenerateError,
-        InputError, IriError, MapStateError, MaterializeError, NodeInspectionError, PgDbError,
-        PgSchemaError, PrefixesError, QueryError, RdfConfigError, RudofError, ServiceError,
-        ShExError, ShaclError, ShapeMapError, UnsupportedOperationError, ValidationError,
+        ComparisonError, ConfigError, ConversionError, DCTapError, DataError, GenerateError, InputError, IriError,
+        MapStateError, MaterializeError, NodeInspectionError, PgDbError, PgSchemaError, PrefixesError, QueryError,
+        RdfConfigError, RudofError, ServiceError, ShExError, ShaclError, ShapeMapError, UnsupportedOperationError,
+        ValidationError,
     };
 
     #[pymodule_export]
     pub use crate::formats::{
-        PyArcDirection, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDbEngine,
-        PyDdlDialect, PyNeighborArc, PyNodeNeighborhood, PyPgSchemaFormat, PyQueryResultFormat,
-        PyQueryType, PyRDFFormat, PyRdfConfigFormat, PyReaderMode, PyResultConversionFormat,
-        PyResultConversionMode, PyResultDCTapFormat, PyResultDataFormat,
+        PyArcDirection, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDbEngine, PyDdlDialect, PyNeighborArc,
+        PyNodeNeighborhood, PyPgSchemaFormat, PyQueryResultFormat, PyQueryType, PyRDFFormat, PyRdfConfigFormat,
+        PyReaderMode, PyResultConversionFormat, PyResultConversionMode, PyResultDCTapFormat, PyResultDataFormat,
         PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat, PyResultShaclValidationFormat,
-        PyResultShexValidationFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFormat,
-        PyShaclValidationMode, PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource,
-        PyShexValidationSortMode,
+        PyResultShexValidationFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFormat, PyShaclValidationMode,
+        PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource, PyShexValidationSortMode,
     };
 
     #[pymodule_export]
     pub use crate::generate::{
-        PyCardinalityStrategy, PyDataGenerator, PyDataQuality, PyEntityDistribution,
-        PyGeneratorConfig, PyOutputFormat, PySchemaFormat,
+        PyCardinalityStrategy, PyDataGenerator, PyDataQuality, PyEntityDistribution, PyGeneratorConfig, PyOutputFormat,
+        PySchemaFormat,
     };
 
     #[pymodule_export]
     pub use crate::formats::{
-        PyPgSchemaValidationEntries, PyPgSchemaValidationEntry, PyPgSchemaValidationReport,
-        PyQueryResults, PyQueryRows, PyShExValidationEntries, PyShExValidationEntry,
-        PyShExValidationReport, PyShaclValidationEntries, PyShaclValidationEntry,
-        PyShaclValidationReport,
+        PyPgSchemaValidationEntries, PyPgSchemaValidationEntry, PyPgSchemaValidationReport, PyQueryResults,
+        PyQueryRows, PyShExValidationEntries, PyShExValidationEntry, PyShExValidationReport, PyShaclValidationEntries,
+        PyShaclValidationEntry, PyShaclValidationReport,
     };
 }
 

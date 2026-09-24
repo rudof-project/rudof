@@ -663,9 +663,9 @@ class Rudof:
             reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
                 - ``Lax``: Continue on errors
                 - ``Strict``: Fail on first error
-            merge (bool, optional): If ``True``, merge with existing data; if ``False``, replace current data. 
+            merge (bool, optional): If ``True``, merge with existing data; if ``False``, replace current data.
                 Defaults to ``False``.
-            endpoint (str, optional): SPARQL endpoint URL to load data from. If provided, it overrides the ``input`` 
+            endpoint (str, optional): SPARQL endpoint URL to load data from. If provided, it overrides the ``input``
                 parameter.
         
         Raises:
@@ -738,7 +738,7 @@ class Rudof:
             predicates (list[str], optional): Filter by specific predicates. Empty list means all predicates.
             mode (str, optional): Node inspection mode — ``"outgoing"``, ``"incoming"`` or ``"both"``. Defaults to ``"both"``.
             show_colors (bool, optional): Use ANSI terminal colors in output. Defaults to ``True``.
-            depth (int, optional): Neighborhood distance (1 = direct neighbors, 2 = neighbors of neighbors, ...). 
+            depth (int, optional): Neighborhood distance (1 = direct neighbors, 2 = neighbors of neighbors, ...).
                 Defaults to ``1``.
         
         Returns:
@@ -760,7 +760,7 @@ class Rudof:
             predicates (list[str], optional): Filter by specific predicates.
             mode (str, optional): ``"outgoing"``, ``"incoming"`` or ``"both"``. Defaults to ``"both"``.
             depth (int, optional): Neighborhood distance. Defaults to ``1``.
-            strict_iris (bool, optional): Require angle-bracketed IRIs instead of auto-wrapping bare ones. 
+            strict_iris (bool, optional): Require angle-bracketed IRIs instead of auto-wrapping bare ones.
                 Defaults to ``False``.
         
         Returns:
@@ -812,7 +812,7 @@ class Rudof:
         
         Args:
             path (str | os.PathLike, optional): Path to the database directory. Required unless ``in_memory=True``.
-            in_memory (bool, optional): Create a transient in-memory database. Its connection cannot be reused, 
+            in_memory (bool, optional): Create a transient in-memory database. Its connection cannot be reused,
                 since it does not outlive the process. Defaults to ``False``.
             read_only (bool, optional): Open the database in read-only mode. Defaults to ``False``.
             engine (DbEngine, optional): Database engine. Defaults to ``DbEngine.Lbug``, the only one supported today.
@@ -845,7 +845,7 @@ class Rudof:
         
         Args:
             data (str | os.PathLike): Inline data, file path or URL to the RDF data.
-            shapes (str | os.PathLike, optional): Inline shapes, file path or URL to SHACL shapes. If not given, 
+            shapes (str | os.PathLike, optional): Inline shapes, file path or URL to SHACL shapes. If not given,
                 shapes embedded in the data itself are used.
             skip_validation (bool, optional): Skip SHACL validation and just copy the data
                 — the database DDL enforces conformance. Defaults to ``False``.
@@ -1218,7 +1218,7 @@ class Rudof:
         Loads a SHACL shapes graph from a string, file path or URL.
         
         Args:
-            input (str | os.PathLike, optional): Inline shapes, file path or URL. If not provided, the shapes are 
+            input (str | os.PathLike, optional): Inline shapes, file path or URL. If not provided, the shapes are
                 extracted from the currently loaded data.
             format (ShaclFormat, optional): RDF format. Defaults to ``ShaclFormat.Turtle``.
             base (str, optional): Base IRI for resolving relative IRIs.
