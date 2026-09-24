@@ -1,8 +1,8 @@
-from pyrudof import RDFFormat, ShapeMapFormat, ShExFormat, Rudof, RudofConfig
+"""Validate inline RDF data against an inline ShEx schema and ShapeMap."""
 
-rudof = Rudof(RudofConfig())
+from pyrudof import RDFFormat, Rudof, ShapeMapFormat, ShExFormat
 
-schema = """
+SCHEMA = """
 PREFIX : <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -11,15 +11,28 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 }
 """
 
-data = """
+DATA = """
 PREFIX : <http://example.org/>
 
 :alice :name "Alice" .
 """
 
-shapemap = ":alice@:Person"
+SHAPEMAP = ":alice@:Person"
 
-rudof.read_shex(schema, ShExFormat.ShExC)
-rudof.read_data(data, RDFFormat.Turtle)
-rudof.read_shapemap(shapemap, ShapeMapFormat.Compact)
-rudof.validate_shex()
+
+def main() -> None:
+    with Rudof() as rudof:
+        rudof.read_shex(SCHEMA, ShExFormat.ShExC)
+        rudof.read_data(DATA, RDFFormat.Turtle)
+        rudof.read_shapemap(SHAPEMAP, ShapeMapFormat.Compact)
+
+        report = rudof.validate_shex()
+
+        print(f"conforms: {report.conforms}")
+        print(f"entries: {len(report)}")
+        for entry in report:
+            print(f"{entry.node} @ {entry.shape}: {entry.status}")
+
+
+if __name__ == "__main__":
+    main()

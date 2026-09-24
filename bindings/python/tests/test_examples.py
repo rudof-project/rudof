@@ -1,97 +1,47 @@
 """
-Test suite for documented examples from bindings/python/examples/.
-
-Tests are auto-generated from examples.toml.  Each example's .py file is
-executed as a subprocess so it runs exactly as a user would run it.
-
-Run all tests (skipped examples are skipped by default):
-    python -m unittest test_examples -v
-
-Run ALL examples including those marked skip_test=true:
-    RUN_SKIPPED_EXAMPLES=1 python -m unittest test_examples -v          # Linux/macOS
-    $env:RUN_SKIPPED_EXAMPLES="1"; python -m unittest test_examples -v  # PowerShell
+Run every example in the manifest and check its recorded output.
 """
 
-import os
-import subprocess
-import sys
-import unittest
-from pathlib import Path
+import runpy
 
-from examples_registry import EXAMPLES_CATALOG, get_all_categories, get_examples_by_category
+import pytest
 
+from examples._registry import EXAMPLES_CATALOG, EXAMPLES_DIR
 
-# Resolve once: bindings/python/tests/ -> bindings/python/ -> bindings/python/examples/
-_EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
-
-# Ensure subprocesses use UTF-8 (avoids cp1252 errors on Windows)
-_ENV = {**os.environ, "PYTHONUTF8": "1"}
-
-# When set to a truthy value, tests marked skip_test=true will run anyway.
-_RUN_SKIPPED = os.environ.get("RUN_SKIPPED_EXAMPLES", "").strip() not in ("", "0")
+RUNNABLE = {k: e for k, e in EXAMPLES_CATALOG.items() if not e["skip_test"]}
+SKIPPED = {k: e for k, e in EXAMPLES_CATALOG.items() if e["skip_test"]}
 
 
-def _make_test(example_key: str):
-    """Create a test method for a single example."""
+@pytest.mark.parametrize("key", sorted(RUNNABLE), ids=sorted(RUNNABLE))
+def test_example(
+    key: str,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    example = RUNNABLE[key]
+    monkeypatch.chdir(EXAMPLES_DIR)
 
-    def test_method(self):
-        example = EXAMPLES_CATALOG[example_key]
+    runpy.run_path(str(EXAMPLES_DIR / example["source_file"]), run_name="__main__")
 
-        if example.get("skip_test", False) and not _RUN_SKIPPED:
-            self.skipTest(f"skip_test=true for '{example_key}' (set RUN_SKIPPED_EXAMPLES=1 to run)")
-
-        source_file = example["source_file"]
-        expected_output = example.get("expected_output", [])
-
-        result = subprocess.run(
-            [sys.executable, source_file],
-            cwd=str(_EXAMPLES_DIR),
-            capture_output=True,
-            text=True,
-            timeout=60,
-            env=_ENV,
-        )
-
-        self.assertEqual(
-            result.returncode, 0,
-            f"Example '{example_key}' ({source_file}) failed:\n"
-            f"--- stdout ---\n{result.stdout}\n"
-            f"--- stderr ---\n{result.stderr}",
-        )
-
-        # Check expected substrings if any
-        for expected in expected_output:
-            self.assertIn(
-                expected, result.stdout,
-                f"Example '{example_key}': expected '{expected}' in output",
-            )
-
-    test_method.__doc__ = f"Test example: {example_key}"
-    return test_method
+    out = capsys.readouterr().out
+    for expected in example["expected_output"]:
+        assert expected in out, f"{key}: missing {expected!r}\n--- actual ---\n{out}"
 
 
-def _build_test_classes():
-    """Dynamically create one TestCase class per category."""
-    for category in get_all_categories():
-        examples = get_examples_by_category(category)
-        if not examples:
-            continue
-
-        class_name = f"Test{category.capitalize()}Examples"
-        attrs: dict = {}
-
-        for key in examples:
-            method_name = f"test_{key}"
-            attrs[method_name] = _make_test(key)
-
-        cls = type(class_name, (unittest.TestCase,), attrs)
-        # Register in module globals so unittest discovery finds them
-        globals()[class_name] = cls
+@pytest.mark.parametrize("key", sorted(SKIPPED), ids=sorted(SKIPPED) or ["none"])
+def test_skipped_example_is_still_importable(key: str) -> None:
+    """A skipped example is not run, but it must still parse and define ``main``."""
+    source = EXAMPLES_DIR / SKIPPED[key]["source_file"]
+    compile(source.read_text(encoding="utf-8"), str(source), "exec")
+    assert "def main()" in source.read_text(encoding="utf-8")
 
 
-_build_test_classes()
-
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
-
+def test_every_example_file_is_in_the_manifest() -> None:
+    """An example script that nobody registered is an example nobody tests."""
+    on_disk = {
+        str(p.relative_to(EXAMPLES_DIR))
+        for p in EXAMPLES_DIR.rglob("*.py")
+        if not p.name.startswith("_")
+    }
+    registered = {e["source_file"] for e in EXAMPLES_CATALOG.values()}
+    assert on_disk == registered

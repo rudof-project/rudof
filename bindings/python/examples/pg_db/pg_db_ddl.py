@@ -1,8 +1,11 @@
-from pyrudof import DdlDialect, Rudof, RudofConfig
+"""Derive a property graph schema from RDF data and emit it as Cypher DDL.
 
-rudof = Rudof(RudofConfig())
+Stateless: no database is opened or touched.
+"""
 
-data = """
+from pyrudof import DdlDialect, Rudof
+
+DATA = """
 @prefix : <http://example.org/> .
 :alice a :Person ;
     :name "Alice" ;
@@ -11,6 +14,11 @@ data = """
     :name "Bob" .
 """
 
-# Stateless: derives a property graph schema from the data and emits DDL,
-# without opening or touching any database.
-print(rudof.pg_db_ddl(data, DdlDialect.Cypher))
+
+def main() -> None:
+    with Rudof() as rudof:
+        print(rudof.pg_db_ddl(DATA, DdlDialect.Cypher))
+
+
+if __name__ == "__main__":
+    main()

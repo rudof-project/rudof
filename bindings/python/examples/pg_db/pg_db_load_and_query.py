@@ -1,11 +1,11 @@
-import os
-import tempfile
+"""Connect to a LadybugDB database, load RDF data into it, and query it with Cypher."""
 
-from pyrudof import Rudof, RudofConfig
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-rudof = Rudof(RudofConfig())
+from pyrudof import Rudof
 
-data = """
+DATA = """
 @prefix : <http://example.org/> .
 :alice a :Person ;
     :name "Alice" ;
@@ -14,15 +14,22 @@ data = """
     :name "Bob" .
 """
 
-# A fresh, throwaway LadybugDB database for this example run.
-db_path = os.path.join(tempfile.mkdtemp(), "example.lbug")
-rudof.connect_pg_db(db_path)
 
-# Skips SHACL validation for brevity; see the `load` CLI docs for the
-# validated flow. `load_pg_db` returns progress text describing what was
-# derived/inserted.
-print(rudof.load_pg_db(data, skip_validation=True))
+def main() -> None:
+    with TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "example.lbug"
 
-# `query_cypher` reuses the database connected above; no path needed here.
-result = rudof.query_cypher("MATCH (n:Person) RETURN n.name ORDER BY n.name")
-print(result)
+        with Rudof() as rudof:
+            rudof.connect_pg_db(db_path)
+
+            report = rudof.load_pg_db(DATA, skip_validation=True)
+            print(f"loaded: {'Inserted' in report}")
+
+            result = rudof.query_cypher("MATCH (n:Person) RETURN n.name ORDER BY n.name")
+            print(result["columns"])
+            for row in result["rows"]:
+                print(row)
+
+
+if __name__ == "__main__":
+    main()

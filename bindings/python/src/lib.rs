@@ -1,39 +1,60 @@
-#![allow(clippy::useless_conversion)]
-
-#[cfg(not(target_family = "wasm"))]
+#![cfg(not(target_family = "wasm"))]
 use pyo3::prelude::*;
-#[cfg(not(target_family = "wasm"))]
-mod pyrudof_config;
-#[cfg(not(target_family = "wasm"))]
-mod pyrudof_generate;
-#[cfg(not(target_family = "wasm"))]
-mod pyrudof_lib;
 
-#[cfg(not(target_family = "wasm"))]
-pub use crate::{pyrudof_config::*, pyrudof_generate::*, pyrudof_lib::*};
+#[macro_use]
+mod macros;
 
-// Rudof Python bindings
-#[cfg(not(target_family = "wasm"))]
+mod api;
+mod config;
+mod error;
+mod formats;
+mod generate;
+mod input;
+mod output;
+
 #[pymodule]
-pub mod pyrudof {
-    use super::*;
+pub mod _pyrudof {
+    #[pymodule_export]
+    pub use crate::api::PyRudof;
 
     #[pymodule_export]
-    pub use super::{
-        PyArcDirection, PyCardinalityStrategy, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDataGenerator,
-        PyDataQuality, PyDbEngine, PyDdlDialect, PyEntityDistribution, PyGeneratorConfig, PyNeighborArc,
-        PyNodeNeighborhood, PyOutputFormat, PyPgSchemaFormat, PyQueryResultFormat, PyQueryType, PyRDFFormat,
-        PyRdfConfigFormat, PyReaderMode, PyResultConversionFormat, PyResultConversionMode, PyResultDCTapFormat,
-        PyResultDataFormat, PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat, PyResultShaclValidationFormat,
-        PyResultShexValidationFormat, PyRudof, PyRudofConfig, PyRudofError, PySchemaFormat, PyServiceDescriptionFormat,
-        PyShExFormat, PyShaclFormat, PyShaclValidationMode, PyShaclValidationSortMode, PyShapeMapFormat,
-        PyShapesGraphSource, PyShexValidationSortMode,
+    pub use crate::config::PyRudofConfig;
+
+    #[pymodule_export]
+    pub use crate::error::{
+        ComparisonError, ConfigError, ConversionError, DCTapError, DataError, GenerateError,
+        InputError, IriError, MapStateError, MaterializeError, NodeInspectionError, PgDbError,
+        PgSchemaError, PrefixesError, QueryError, RdfConfigError, RudofError, ServiceError,
+        ShExError, ShaclError, ShapeMapError, UnsupportedOperationError, ValidationError,
     };
 
-    #[pymodule_init]
-    fn pymodule_init(module: &Bound<'_, PyModule>) -> PyResult<()> {
-        module.add("__package__", "rudof")?;
-        module.add("__version__", env!("CARGO_PKG_VERSION"))?;
-        module.add("__author__", env!("CARGO_PKG_AUTHORS").replace(':', "\n"))
-    }
+    #[pymodule_export]
+    pub use crate::formats::{
+        PyArcDirection, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDbEngine,
+        PyDdlDialect, PyNeighborArc, PyNodeNeighborhood, PyPgSchemaFormat, PyQueryResultFormat,
+        PyQueryType, PyRDFFormat, PyRdfConfigFormat, PyReaderMode, PyResultConversionFormat,
+        PyResultConversionMode, PyResultDCTapFormat, PyResultDataFormat,
+        PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat, PyResultShaclValidationFormat,
+        PyResultShexValidationFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFormat,
+        PyShaclValidationMode, PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource,
+        PyShexValidationSortMode,
+    };
+
+    #[pymodule_export]
+    pub use crate::generate::{
+        PyCardinalityStrategy, PyDataGenerator, PyDataQuality, PyEntityDistribution,
+        PyGeneratorConfig, PyOutputFormat, PySchemaFormat,
+    };
+
+    #[pymodule_export]
+    pub use crate::formats::{
+        PyPgSchemaValidationEntries, PyPgSchemaValidationEntry, PyPgSchemaValidationReport,
+        PyQueryResults, PyQueryRows, PyShExValidationEntries, PyShExValidationEntry,
+        PyShExValidationReport, PyShaclValidationEntries, PyShaclValidationEntry,
+        PyShaclValidationReport,
+    };
 }
+
+// Produces `pyrudof::stub_info()`, which `src/bin/stub_gen.rs` calls to write the type stub.
+#[cfg(feature = "stub-gen")]
+::pyo3_stub_gen::define_stub_info_gatherer!(stub_info);
