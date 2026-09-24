@@ -8,7 +8,6 @@ use prefixmap::error::DerefError;
 use prefixmap::{DerefIri, IriRef};
 use rudof_iri::error::IriSError;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
-use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
     Deserialize, Serialize, Serializer,
@@ -707,32 +706,21 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ValueSetValueType::Double) => match value {
-                        Some(s) => {
-                            let n = f64::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!("Can't parse value {s} as double: Error {e}"))
-                            })?;
-                            Ok(ValueSetValue::ObjectValue(ObjectValue::double(n)))
-                        },
+                        Some(s) => ObjectValue::numeric_literal(&s, DOUBLE_STR)
+                            .map(ValueSetValue::ObjectValue)
+                            .map_err(de::Error::custom),
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ValueSetValueType::Decimal) => match value {
-                        Some(s) => {
-                            let n = Decimal::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!("Can't parse value {s} as decimal: Error {e}"))
-                            })?;
-                            let v = ValueSetValue::ObjectValue(ObjectValue::decimal(n));
-                            Ok(v)
-                        },
+                        Some(s) => ObjectValue::numeric_literal(&s, DECIMAL_STR)
+                            .map(ValueSetValue::ObjectValue)
+                            .map_err(de::Error::custom),
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ValueSetValueType::Integer) => match value {
-                        Some(s) => {
-                            let n = isize::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!("Can't parse value {s} as integer: Error {e}"))
-                            })?;
-                            let v = ValueSetValue::ObjectValue(ObjectValue::integer(n));
-                            Ok(v)
-                        },
+                        Some(s) => ObjectValue::numeric_literal(&s, INTEGER_STR)
+                            .map(ValueSetValue::ObjectValue)
+                            .map_err(de::Error::custom),
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ValueSetValueType::Other(iri)) => match value {
@@ -780,5 +768,32 @@ impl<'de> Deserialize<'de> for ValueSetValue {
             }
         }
         deserializer.deserialize_any(ValueSetValueVisitor)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_iri::IriS;
+
+    // Value set literals keep their lexical form so they compare as RDF terms.
+    #[test]
+    fn numeric_value_set_values_keep_lexical_form() {
+        for (value, local) in [("00", "integer"), ("0.0", "decimal"), ("0.0e0", "double")] {
+            let datatype = format!("http://www.w3.org/2001/XMLSchema#{local}");
+            let json = format!(r#"{{ "value": "{value}", "type": "{datatype}" }}"#);
+            let parsed: ValueSetValue = serde_json::from_str(&json).unwrap();
+            let expected = ValueSetValue::ObjectValue(ObjectValue::datatype_literal(
+                value,
+                &IriRef::iri(IriS::new_unchecked(&datatype)),
+            ));
+            assert_eq!(parsed, expected, "{json}");
+        }
+        assert!(
+            serde_json::from_str::<ValueSetValue>(
+                r#"{ "value": "a", "type": "http://www.w3.org/2001/XMLSchema#integer" }"#
+            )
+            .is_err()
+        );
     }
 }

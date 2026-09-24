@@ -22,6 +22,11 @@ pub(crate) fn pp_object_value<'a, A>(
                 None => doc.text(str),
             }
         },
+        ObjectValue::Literal(ConcreteLiteral::DatatypeLiteral { lexical_form, datatype })
+            if is_bare_numeric(lexical_form, datatype) =>
+        {
+            doc.text(lexical_form.clone())
+        },
         ObjectValue::Literal(
             ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }
             | ConcreteLiteral::WrongDatatypeLiteral {
@@ -124,4 +129,34 @@ where
 
 fn pp_iri<'a, A>(iri: &IriS, doc: &'a Arena<'a, A>, prefixmap: &PrefixMap) -> DocBuilder<'a, Arena<'a, A>, A> {
     doc.text(prefixmap.qualify(iri))
+}
+
+/// Checks if a datatype literal can be written as a bare ShExC numeric literal
+/// (`INTEGER`, `DECIMAL` or `DOUBLE`) that the parser reads back as the same literal.
+pub(crate) fn is_bare_numeric(lexical_form: &str, datatype: &IriRef) -> bool {
+    let IriRef::Iri(iri) = datatype else {
+        return false;
+    };
+    let unsigned = lexical_form.strip_prefix(['+', '-']).unwrap_or(lexical_form);
+    let is_digits = |s: &str| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit());
+    match iri.as_str() {
+        "http://www.w3.org/2001/XMLSchema#integer" => is_digits(unsigned),
+        "http://www.w3.org/2001/XMLSchema#decimal" => {
+            matches!(unsigned.split_once('.'), Some((int, frac)) if (int.is_empty() || is_digits(int)) && is_digits(frac))
+        },
+        "http://www.w3.org/2001/XMLSchema#double" => match unsigned.split_once(['e', 'E']) {
+            Some((mantissa, exp)) => {
+                let exp = exp.strip_prefix(['+', '-']).unwrap_or(exp);
+                let mantissa_ok = match mantissa.split_once('.') {
+                    Some((int, frac)) => {
+                        (is_digits(int) && (frac.is_empty() || is_digits(frac))) || (int.is_empty() && is_digits(frac))
+                    },
+                    None => is_digits(mantissa),
+                };
+                mantissa_ok && is_digits(exp)
+            },
+            None => false,
+        },
+        _ => false,
+    }
 }
