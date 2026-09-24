@@ -2,8 +2,8 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{
-        PyReaderMode, PyResultShaclValidationFormat, PyShaclFormat, PyShaclValidationMode,
-        PyShaclValidationReport, PyShaclValidationSortMode,
+        PyReaderMode, PyResultShaclValidationFormat, PyShaclFormat, PyShaclValidationMode, PyShaclValidationReport,
+        PyShaclValidationSortMode,
     },
     input::InputArg,
     output,
@@ -11,8 +11,7 @@ use crate::{
 use pyo3::prelude::*;
 use rudof_lib::errors::RudofError as CoreError;
 use rudof_lib::formats::{
-    DataReaderMode, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode,
-    ShaclValidationSortByMode,
+    DataReaderMode, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
 };
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
@@ -21,7 +20,7 @@ impl PyRudof {
     /// Loads a SHACL shapes graph from a string, file path or URL.
     ///
     /// Args:
-    ///     input (str | os.PathLike, optional): Inline shapes, file path or URL. If not provided, the shapes are 
+    ///     input (str | os.PathLike, optional): Inline shapes, file path or URL. If not provided, the shapes are
     ///         extracted from the currently loaded data.
     ///     format (ShaclFormat, optional): RDF format. Defaults to ``ShaclFormat.Turtle``.
     ///     base (str, optional): Base IRI for resolving relative IRIs.

@@ -21,12 +21,7 @@ impl PyRudof {
     ///     InputError: If the input string, file or URL cannot be resolved.
     ///     DCTapError: If the profile is malformed.
     #[pyo3(signature = (input, format = None))]
-    fn read_dctap(
-        &mut self,
-        py: Python<'_>,
-        input: InputArg,
-        format: Option<&PyDCTapFormat>,
-    ) -> Result<()> {
+    fn read_dctap(&mut self, py: Python<'_>, input: InputArg, format: Option<&PyDCTapFormat>) -> Result<()> {
         let InputArg(input) = input;
         let format: Option<DCTapFormat> = format.map(Into::into);
 
@@ -51,11 +46,7 @@ impl PyRudof {
     /// Raises:
     ///     DCTapError: If no profile is loaded or serialization fails.
     #[pyo3(signature = (format = None))]
-    fn serialize_dctap(
-        &self,
-        py: Python<'_>,
-        format: Option<&PyResultDCTapFormat>,
-    ) -> Result<String> {
+    fn serialize_dctap(&self, py: Python<'_>, format: Option<&PyResultDCTapFormat>) -> Result<String> {
         let format: Option<ResultDCTapFormat> = format.map(Into::into);
         output::capture_string_detached(py, move |w| {
             let mut s = self.inner.serialize_dctap(w);

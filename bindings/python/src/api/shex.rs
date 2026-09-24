@@ -2,17 +2,14 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{
-        PyReaderMode, PyResultShexValidationFormat, PyShExFormat, PyShExValidationReport,
-        PyShexValidationSortMode,
+        PyReaderMode, PyResultShexValidationFormat, PyShExFormat, PyShExValidationReport, PyShexValidationSortMode,
     },
     input::InputArg,
     output,
 };
 use pyo3::prelude::*;
 use rudof_lib::errors::RudofError as CoreError;
-use rudof_lib::formats::{
-    DataReaderMode, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode,
-};
+use rudof_lib::formats::{DataReaderMode, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode};
 use std::{io::BufWriter, path::PathBuf};
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
@@ -61,8 +58,7 @@ impl PyRudof {
             let bytes = writer
                 .into_inner()
                 .map_err(|e| CoreError::Generic { error: e.to_string() })?;
-            let message = String::from_utf8(bytes)
-                .map_err(|e| CoreError::Generic { error: e.to_string() })?;
+            let message = String::from_utf8(bytes).map_err(|e| CoreError::Generic { error: e.to_string() })?;
             Ok::<_, CoreError>((is_valid, message))
         })?;
         Ok(out)
@@ -175,8 +171,7 @@ impl PyRudof {
     ///     ShExError: If no ShEx schema is loaded or the file cannot be written.
     fn compile_shex_to_file(&self, py: Python<'_>, path: PathBuf) -> Result<()> {
         py.detach(move || {
-            let file = std::fs::File::create(&path)
-                .map_err(|e| CoreError::Generic { error: e.to_string() })?;
+            let file = std::fs::File::create(&path).map_err(|e| CoreError::Generic { error: e.to_string() })?;
             let mut writer = BufWriter::new(file);
             self.inner.compile_shex_schema_to_file(&mut writer).execute()
         })?;

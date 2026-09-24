@@ -1,17 +1,14 @@
 use crate::{
     api::PyRudof,
     error::Result,
-    formats::{
-        PyConversionFormat, PyConversionMode, PyReaderMode, PyResultConversionFormat,
-        PyResultConversionMode,
-    },
+    formats::{PyConversionFormat, PyConversionMode, PyReaderMode, PyResultConversionFormat, PyResultConversionMode},
     input::InputArg,
     output,
 };
 use pyo3::prelude::*;
 use rudof_lib::formats::{
-    ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DataReaderMode,
-    ResultConversionFormat, ResultConversionMode,
+    ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DataReaderMode, ResultConversionFormat,
+    ResultConversionMode,
 };
 use std::{path::PathBuf, str::FromStr};
 
@@ -73,9 +70,9 @@ impl PyRudof {
         let label2 = label2.map(str::to_owned);
 
         output::capture_string_detached(py, move |w| {
-            let mut c = self.inner.show_schema_comparison(
-                &schema1, &schema2, &format1, &format2, &mode1, &mode2, w,
-            );
+            let mut c = self
+                .inner
+                .show_schema_comparison(&schema1, &schema2, &format1, &format2, &mode1, &mode2, w);
             if let Some(m) = &reader_mode {
                 c = c.with_reader_mode(m);
             }
@@ -143,14 +140,9 @@ impl PyRudof {
         let shape = shape.map(str::to_owned);
 
         output::capture_string_detached(py, move |w| {
-            let mut c = self.inner.show_schema_conversion(
-                &schema,
-                &input_mode,
-                &output_mode,
-                &input_format,
-                &output_format,
-                w,
-            );
+            let mut c =
+                self.inner
+                    .show_schema_conversion(&schema, &input_mode, &output_mode, &input_format, &output_format, w);
             if let Some(b) = &base {
                 c = c.with_base(b);
             }

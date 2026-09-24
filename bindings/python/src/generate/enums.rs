@@ -50,8 +50,15 @@ pyenum! {
 
 /// How entities are distributed across the shapes of a schema.
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass_enum)]
-#[pyclass(eq, eq_int, hash, frozen, from_py_object, name = "EntityDistribution",
-          module = "pyrudof._pyrudof")]
+#[pyclass(
+    eq,
+    eq_int,
+    hash,
+    frozen,
+    from_py_object,
+    name = "EntityDistribution",
+    module = "pyrudof._pyrudof"
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PyEntityDistribution {
     /// Equal distribution across all shapes.

@@ -19,7 +19,7 @@ impl PyRudof {
     ///
     /// Args:
     ///     path (str | os.PathLike, optional): Path to the database directory. Required unless ``in_memory=True``.
-    ///     in_memory (bool, optional): Create a transient in-memory database. Its connection cannot be reused, 
+    ///     in_memory (bool, optional): Create a transient in-memory database. Its connection cannot be reused,
     ///         since it does not outlive the process. Defaults to ``False``.
     ///     read_only (bool, optional): Open the database in read-only mode. Defaults to ``False``.
     ///     engine (DbEngine, optional): Database engine. Defaults to ``DbEngine.Lbug``, the only one supported today.
@@ -108,7 +108,7 @@ impl PyRudof {
     ///
     /// Args:
     ///     data (str | os.PathLike): Inline data, file path or URL to the RDF data.
-    ///     shapes (str | os.PathLike, optional): Inline shapes, file path or URL to SHACL shapes. If not given, 
+    ///     shapes (str | os.PathLike, optional): Inline shapes, file path or URL to SHACL shapes. If not given,
     ///         shapes embedded in the data itself are used.
     ///     skip_validation (bool, optional): Skip SHACL validation and just copy the data
     ///         — the database DDL enforces conformance. Defaults to ``False``.
@@ -142,10 +142,7 @@ impl PyRudof {
         let base = base.map(str::to_owned);
 
         output::capture_string_detached(py, move |w| {
-            let mut b = self
-                .inner
-                .load_pg_db(&data, w)
-                .with_skip_validation(skip_validation);
+            let mut b = self.inner.load_pg_db(&data, w).with_skip_validation(skip_validation);
             if let Some(db) = &db {
                 b = b.with_db(db, false);
             }
@@ -193,8 +190,7 @@ impl PyRudof {
             q.execute()
         })?;
 
-        let obj = pythonize::pythonize(py, &result)
-            .map_err(|e| CoreError::Generic { error: e.to_string() })?;
+        let obj = pythonize::pythonize(py, &result).map_err(|e| CoreError::Generic { error: e.to_string() })?;
         Ok(obj.unbind())
     }
 }

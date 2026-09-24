@@ -23,12 +23,7 @@ impl PyRudof {
     ///     InputError: If the input string, file or URL cannot be resolved.
     ///     QueryError: If the query is malformed.
     #[pyo3(signature = (input, query_type = None))]
-    fn read_query(
-        &mut self,
-        py: Python<'_>,
-        input: InputArg,
-        query_type: Option<&PyQueryType>,
-    ) -> Result<()> {
+    fn read_query(&mut self, py: Python<'_>, input: InputArg, query_type: Option<&PyQueryType>) -> Result<()> {
         let InputArg(input) = input;
         let query_type: Option<QueryType> = query_type.map(Into::into);
 
@@ -93,11 +88,7 @@ impl PyRudof {
     /// Raises:
     ///     QueryError: If there are no results, or serialization fails.
     #[pyo3(signature = (format = None))]
-    fn serialize_query_results(
-        &self,
-        py: Python<'_>,
-        format: Option<&PyQueryResultFormat>,
-    ) -> Result<String> {
+    fn serialize_query_results(&self, py: Python<'_>, format: Option<&PyQueryResultFormat>) -> Result<String> {
         let format: Option<ResultQueryFormat> = format.map(Into::into);
         output::capture_string_detached(py, move |w| {
             let mut s = self.inner.serialize_query_results(w);

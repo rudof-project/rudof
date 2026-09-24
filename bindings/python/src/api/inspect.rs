@@ -19,7 +19,7 @@ impl PyRudof {
     ///     predicates (list[str], optional): Filter by specific predicates. Empty list means all predicates.
     ///     mode (str, optional): Node inspection mode — ``"outgoing"``, ``"incoming"`` or ``"both"``. Defaults to ``"both"``.
     ///     show_colors (bool, optional): Use ANSI terminal colors in output. Defaults to ``True``.
-    ///     depth (int, optional): Neighborhood distance (1 = direct neighbors, 2 = neighbors of neighbors, ...). 
+    ///     depth (int, optional): Neighborhood distance (1 = direct neighbors, 2 = neighbors of neighbors, ...).
     ///         Defaults to ``1``.
     ///
     /// Returns:
@@ -70,7 +70,7 @@ impl PyRudof {
     ///     predicates (list[str], optional): Filter by specific predicates.
     ///     mode (str, optional): ``"outgoing"``, ``"incoming"`` or ``"both"``. Defaults to ``"both"``.
     ///     depth (int, optional): Neighborhood distance. Defaults to ``1``.
-    ///     strict_iris (bool, optional): Require angle-bracketed IRIs instead of auto-wrapping bare ones. 
+    ///     strict_iris (bool, optional): Require angle-bracketed IRIs instead of auto-wrapping bare ones.
     ///         Defaults to ``False``.
     ///
     /// Returns:

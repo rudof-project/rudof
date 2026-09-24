@@ -147,11 +147,7 @@ impl PyQueryResults {
 
     /// The number of solutions. ``1`` for ASK, ``0`` for a graph result.
     fn __len__(&self) -> usize {
-        if self.boolean.is_some() {
-            1
-        } else {
-            self.rows.len()
-        }
+        if self.boolean.is_some() { 1 } else { self.rows.len() }
     }
 
     fn __iter__(slf: PyRef<'_, Self>) -> PyQueryRows {
@@ -163,18 +159,11 @@ impl PyQueryResults {
 
     fn __repr__(&self) -> String {
         if let Some(answer) = self.boolean {
-            format!(
-                "QueryResults(boolean={})",
-                if answer { "True" } else { "False" }
-            )
+            format!("QueryResults(boolean={})", if answer { "True" } else { "False" })
         } else if self.graph.is_some() {
             "QueryResults(graph=...)".to_string()
         } else {
-            format!(
-                "QueryResults(variables={:?}, rows={})",
-                self.variables,
-                self.rows.len()
-            )
+            format!("QueryResults(variables={:?}, rows={})", self.variables, self.rows.len())
         }
     }
 }

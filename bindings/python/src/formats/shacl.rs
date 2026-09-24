@@ -1,7 +1,5 @@
 use pyo3::prelude::*;
-use rudof_lib::formats::{
-    ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
-};
+use rudof_lib::formats::{ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode};
 
 pyenum! {
     /// SHACL shapes graph serialization formats.
@@ -97,7 +95,15 @@ pyenum! {
 /// Shapes can come from the current SHACL schema or be extracted from the current RDF
 /// data graph.
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass_enum)]
-#[pyclass(eq, eq_int, hash, frozen, from_py_object, name = "ShapesGraphSource", module = "pyrudof._pyrudof")]
+#[pyclass(
+    eq,
+    eq_int,
+    hash,
+    frozen,
+    from_py_object,
+    name = "ShapesGraphSource",
+    module = "pyrudof._pyrudof"
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PyShapesGraphSource {
     /// Shapes come from the current RDF data graph.
@@ -128,10 +134,7 @@ impl PyShapesGraphSource {
     /// Every variant of this enum, in declaration order.
     #[classmethod]
     fn all(_cls: &Bound<'_, pyo3::types::PyType>) -> Vec<PyShapesGraphSource> {
-        vec![
-            PyShapesGraphSource::CurrentData,
-            PyShapesGraphSource::CurrentSchema,
-        ]
+        vec![PyShapesGraphSource::CurrentData, PyShapesGraphSource::CurrentSchema]
     }
 }
 
@@ -139,7 +142,13 @@ use rudof_lib::types::{ShaclValidationReport, ShaclValidationResult};
 
 /// One violation of a SHACL validation report.
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass)]
-#[pyclass(frozen, get_all, from_py_object, name = "ShaclValidationEntry", module = "pyrudof._pyrudof")]
+#[pyclass(
+    frozen,
+    get_all,
+    from_py_object,
+    name = "ShaclValidationEntry",
+    module = "pyrudof._pyrudof"
+)]
 #[derive(Clone)]
 pub struct PyShaclValidationEntry {
     /// The node that failed validation, as a string.

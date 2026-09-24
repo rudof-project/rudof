@@ -1,6 +1,4 @@
-use rudof_lib::formats::{
-    ConversionFormat, ConversionMode, ResultConversionFormat, ResultConversionMode,
-};
+use rudof_lib::formats::{ConversionFormat, ConversionMode, ResultConversionFormat, ResultConversionMode};
 
 pyenum! {
     /// Conversion input modes - the kind of schema being converted from.

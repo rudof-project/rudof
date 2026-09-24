@@ -40,12 +40,7 @@ impl PyRudof {
     ///     MaterializeError: If no ShEx schema or MapState is loaded, if the node IRI is
     ///         invalid, or if materialization or serialization fails.
     #[pyo3(signature = (format = None, node = None))]
-    fn materialize(
-        &self,
-        py: Python<'_>,
-        format: Option<&PyResultDataFormat>,
-        node: Option<&str>,
-    ) -> Result<String> {
+    fn materialize(&self, py: Python<'_>, format: Option<&PyResultDataFormat>, node: Option<&str>) -> Result<String> {
         let format: Option<ResultDataFormat> = format.map(Into::into);
         let node = node.map(str::to_owned);
 

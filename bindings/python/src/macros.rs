@@ -19,8 +19,8 @@
 /// * `PyRDFFormat` — the Rust type generated here.
 /// * `DataFormat` — the `rudof_lib` (or `rudof_generate`) type it converts to and from.
 /// * `default = Turtle` — what `RDFFormat()` returns from Python.
-/// * `from_str` — optional literal token. Emits a `from_str` classmethod; only write it 
-/// when the target type implements [`core::str::FromStr`].
+/// * `from_str` — optional literal token. Emits a `from_str` classmethod; only write it
+///   when the target type implements [`core::str::FromStr`].
 /// * Variant pairs are written `Py => Rust` explicitly, because the names do not always
 ///   match.
 ///
@@ -82,7 +82,7 @@ macro_rules! pyenum {
             fn __repr__(&self) -> String {
                 format!("{}.{}", $name, self.__str__())
             }
-            
+
             #[classmethod]
             fn all(_cls: &::pyo3::Bound<'_, ::pyo3::types::PyType>) -> Vec<$Py> {
                 vec![ $( $Py::$PyV, )+ ]

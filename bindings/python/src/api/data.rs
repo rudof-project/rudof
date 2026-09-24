@@ -22,9 +22,9 @@ impl PyRudof {
     ///     reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
     ///         - ``Lax``: Continue on errors
     ///         - ``Strict``: Fail on first error
-    ///     merge (bool, optional): If ``True``, merge with existing data; if ``False``, replace current data. 
+    ///     merge (bool, optional): If ``True``, merge with existing data; if ``False``, replace current data.
     ///         Defaults to ``False``.
-    ///     endpoint (str, optional): SPARQL endpoint URL to load data from. If provided, it overrides the ``input`` 
+    ///     endpoint (str, optional): SPARQL endpoint URL to load data from. If provided, it overrides the ``input``
     ///         parameter.
     ///
     /// Raises:
@@ -84,11 +84,7 @@ impl PyRudof {
     /// Raises:
     ///     DataError: If serialization fails.
     #[pyo3(signature = (format = None))]
-    fn serialize_data(
-        &mut self,
-        py: Python<'_>,
-        format: Option<&PyResultDataFormat>,
-    ) -> Result<String> {
+    fn serialize_data(&mut self, py: Python<'_>, format: Option<&PyResultDataFormat>) -> Result<String> {
         let format: Option<ResultDataFormat> = format.map(Into::into);
         output::capture_string_detached(py, move |w| {
             let mut s = self.inner.serialize_data(w);

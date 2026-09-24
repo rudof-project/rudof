@@ -1,6 +1,6 @@
 use crate::config::PyRudofConfig;
 use pyo3::prelude::*;
-use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::Rudof;
 
 /// Main interface for working with Semantic Web operations.
 ///
@@ -22,9 +22,7 @@ impl PyRudof {
     #[new]
     #[pyo3(signature = (config = None))]
     fn __init__(config: Option<&PyRudofConfig>) -> Self {
-        let config = config
-            .map(|c| c.inner.clone())
-            .unwrap_or_else(RudofConfig::new);
+        let config = config.map(|c| c.inner.clone()).unwrap_or_default();
         Self {
             inner: Rudof::new(config),
         }

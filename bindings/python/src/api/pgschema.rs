@@ -1,9 +1,7 @@
 use crate::{
     api::PyRudof,
     error::Result,
-    formats::{
-        PyPgSchemaFormat, PyPgSchemaValidationReport, PyResultPgSchemaValidationFormat,
-    },
+    formats::{PyPgSchemaFormat, PyPgSchemaValidationReport, PyResultPgSchemaValidationFormat},
     input::InputArg,
     output,
 };
@@ -24,12 +22,7 @@ impl PyRudof {
     ///     InputError: If the input string, file or URL cannot be resolved.
     ///     PgSchemaError: If the schema cannot be parsed.
     #[pyo3(signature = (input, format = None))]
-    fn read_pgschema(
-        &mut self,
-        py: Python<'_>,
-        input: InputArg,
-        format: Option<&PyPgSchemaFormat>,
-    ) -> Result<()> {
+    fn read_pgschema(&mut self, py: Python<'_>, input: InputArg, format: Option<&PyPgSchemaFormat>) -> Result<()> {
         let InputArg(input) = input;
         let format: Option<PgSchemaFormat> = format.map(Into::into);
 
@@ -54,11 +47,7 @@ impl PyRudof {
     /// Raises:
     ///     PgSchemaError: If no schema is loaded or serialization fails.
     #[pyo3(signature = (format = None))]
-    fn serialize_pgschema(
-        &self,
-        py: Python<'_>,
-        format: Option<&PyPgSchemaFormat>,
-    ) -> Result<String> {
+    fn serialize_pgschema(&self, py: Python<'_>, format: Option<&PyPgSchemaFormat>) -> Result<String> {
         let format: Option<PgSchemaFormat> = format.map(Into::into);
         output::capture_string_detached(py, move |w| {
             let mut s = self.inner.serialize_pg_schema(w);
@@ -97,12 +86,9 @@ impl PyRudof {
     fn validate_pgschema(&mut self, py: Python<'_>) -> Result<PyPgSchemaValidationReport> {
         py.detach(|| self.inner.validate_pgschema().execute())?;
 
-        let result = self
-            .inner
-            .pgschema_validation_results()
-            .ok_or(CoreError::Generic {
-                error: "validate_pgschema produced no results".into(),
-            })?;
+        let result = self.inner.pgschema_validation_results().ok_or(CoreError::Generic {
+            error: "validate_pgschema produced no results".into(),
+        })?;
         Ok(PyPgSchemaValidationReport::new(result))
     }
 

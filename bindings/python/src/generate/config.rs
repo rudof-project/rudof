@@ -1,8 +1,6 @@
 use crate::{
     error::Result,
-    generate::enums::{
-        PyCardinalityStrategy, PyDataQuality, PyEntityDistribution, PyOutputFormat, PySchemaFormat,
-    },
+    generate::enums::{PyCardinalityStrategy, PyDataQuality, PyEntityDistribution, PyOutputFormat, PySchemaFormat},
 };
 use pyo3::prelude::*;
 use rudof_lib::errors::{GenerationError, RudofError as CoreError};
@@ -10,10 +8,7 @@ use std::path::PathBuf;
 
 /// Routes a `rudof_generate` config failure through the crate's error boundary.
 fn config_error(e: impl std::fmt::Display) -> CoreError {
-    GenerationError::WrongGeneratorConfig {
-        error: e.to_string(),
-    }
-    .into()
+    GenerationError::WrongGeneratorConfig { error: e.to_string() }.into()
 }
 
 /// Configuration for synthetic data generation.

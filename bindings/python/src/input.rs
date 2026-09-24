@@ -5,8 +5,7 @@ use std::{path::PathBuf, str::FromStr};
 
 /// Parses a string as an [`InputSpec`] — inline content, a file path, or a URL.
 pub(crate) fn input_spec(s: &str) -> Result<InputSpec> {
-    let spec =
-        InputSpec::from_str(s).map_err(|e| InputSpecError::InvalidInput { error: e.to_string() })?;
+    let spec = InputSpec::from_str(s).map_err(|e| InputSpecError::InvalidInput { error: e.to_string() })?;
     Ok(spec)
 }
 

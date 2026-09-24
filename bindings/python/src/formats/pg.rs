@@ -1,7 +1,5 @@
 use pyo3::prelude::*;
-use rudof_lib::formats::{
-    BackendSpec, DdlDialect, PgSchemaFormat, ResultPgSchemaValidationFormat,
-};
+use rudof_lib::formats::{BackendSpec, DdlDialect, PgSchemaFormat, ResultPgSchemaValidationFormat};
 
 pyenum! {
     /// Property graph schema formats.
@@ -37,7 +35,15 @@ pyenum! {
 }
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass_enum)]
-#[pyclass(eq, eq_int, hash, frozen, from_py_object, name = "DbEngine", module = "pyrudof._pyrudof")]
+#[pyclass(
+    eq,
+    eq_int,
+    hash,
+    frozen,
+    from_py_object,
+    name = "DbEngine",
+    module = "pyrudof._pyrudof"
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PyDbEngine {
     /// LadybugDB, a local embedded property graph database.
@@ -87,7 +93,13 @@ use rudof_lib::types::{PgSchemaResultAssociation, PgSchemaValidationResult};
 
 /// One ``(node, type)`` association of a property graph schema validation result.
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass)]
-#[pyclass(frozen, get_all, from_py_object, name = "PgSchemaValidationEntry", module = "pyrudof._pyrudof")]
+#[pyclass(
+    frozen,
+    get_all,
+    from_py_object,
+    name = "PgSchemaValidationEntry",
+    module = "pyrudof._pyrudof"
+)]
 #[derive(Clone)]
 pub struct PyPgSchemaValidationEntry {
     /// The identifier of the node that was checked.
@@ -169,11 +181,7 @@ impl PyPgSchemaValidationReport {
     /// The associations that do **not** conform.
     #[getter]
     fn violations(&self) -> Vec<PyPgSchemaValidationEntry> {
-        self.entries
-            .iter()
-            .filter(|e| !e.conforms)
-            .cloned()
-            .collect()
+        self.entries.iter().filter(|e| !e.conforms).cloned().collect()
     }
 
     fn __len__(&self) -> usize {

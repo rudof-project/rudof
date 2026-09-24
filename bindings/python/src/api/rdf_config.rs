@@ -21,12 +21,7 @@ impl PyRudof {
     ///     InputError: If the input string, file or URL cannot be resolved.
     ///     RdfConfigError: If the document is malformed.
     #[pyo3(signature = (input, format = None))]
-    fn read_rdf_config(
-        &mut self,
-        py: Python<'_>,
-        input: InputArg,
-        format: Option<&PyRdfConfigFormat>,
-    ) -> Result<()> {
+    fn read_rdf_config(&mut self, py: Python<'_>, input: InputArg, format: Option<&PyRdfConfigFormat>) -> Result<()> {
         let InputArg(input) = input;
         let format: Option<RdfConfigFormat> = format.map(Into::into);
 
@@ -51,11 +46,7 @@ impl PyRudof {
     /// Raises:
     ///     RdfConfigError: If no document is loaded or serialization fails.
     #[pyo3(signature = (format = None))]
-    fn serialize_rdf_config(
-        &self,
-        py: Python<'_>,
-        format: Option<&PyResultRdfConfigFormat>,
-    ) -> Result<String> {
+    fn serialize_rdf_config(&self, py: Python<'_>, format: Option<&PyResultRdfConfigFormat>) -> Result<String> {
         let format: Option<ResultRdfConfigFormat> = format.map(Into::into);
         output::capture_string_detached(py, move |w| {
             let mut s = self.inner.serialize_rdf_config(w);

@@ -85,9 +85,7 @@ pub struct PyNodeNeighborhood {
 
 impl PyNodeNeighborhood {
     pub(crate) fn new(arcs: Vec<NeighborArc>) -> Self {
-        Self {
-            arcs: arcs.into_iter(),
-        }
+        Self { arcs: arcs.into_iter() }
     }
 }
 

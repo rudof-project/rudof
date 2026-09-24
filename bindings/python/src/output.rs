@@ -19,5 +19,5 @@ fn finish(writer: BufWriter<Vec<u8>>) -> Result<String> {
     let bytes = writer
         .into_inner()
         .map_err(|e| CoreError::Generic { error: e.to_string() })?;
-    String::from_utf8(bytes).map_err(|e| Error(CoreError::Generic { error: e.to_string() }))
+    String::from_utf8(bytes).map_err(|e| Error::from(CoreError::Generic { error: e.to_string() }))
 }

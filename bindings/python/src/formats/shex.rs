@@ -84,7 +84,13 @@ pyenum! {
 
 /// One ``(node, shape, status)`` row of a ShEx validation result.
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass)]
-#[pyclass(frozen, get_all, from_py_object, name = "ShExValidationEntry", module = "pyrudof._pyrudof")]
+#[pyclass(
+    frozen,
+    get_all,
+    from_py_object,
+    name = "ShExValidationEntry",
+    module = "pyrudof._pyrudof"
+)]
 #[derive(Clone)]
 pub struct PyShExValidationEntry {
     /// The focus node, as a string.
@@ -137,9 +143,9 @@ fn status_details(status: &ShExValidationStatus) -> Option<String> {
         ShExValidationStatus::Conformant(info) => Some(info.to_string()),
         ShExValidationStatus::NonConformant(info) => Some(info.to_string()),
         ShExValidationStatus::Pending => None,
-        ShExValidationStatus::Inconsistent(conformant, non_conformant) => Some(format!(
-            "Conformant: {conformant}, Non-conformant: {non_conformant}"
-        )),
+        ShExValidationStatus::Inconsistent(conformant, non_conformant) => {
+            Some(format!("Conformant: {conformant}, Non-conformant: {non_conformant}"))
+        },
     }
 }
 

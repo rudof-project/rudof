@@ -57,11 +57,7 @@ impl PyRudof {
     /// Raises:
     ///     ShapeMapError: If serialization fails.
     #[pyo3(signature = (format = None))]
-    fn serialize_shapemap(
-        &self,
-        py: Python<'_>,
-        format: Option<&PyShapeMapFormat>,
-    ) -> Result<String> {
+    fn serialize_shapemap(&self, py: Python<'_>, format: Option<&PyShapeMapFormat>) -> Result<String> {
         let format: Option<ShapeMapFormat> = format.map(Into::into);
         output::capture_string_detached(py, move |w| {
             let mut s = self.inner.serialize_shapemap(w);

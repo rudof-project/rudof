@@ -7,24 +7,15 @@ use rudof_lib::errors::{GenerationError, RudofError as CoreError};
 use std::path::PathBuf;
 
 fn creation_error(e: impl std::fmt::Display) -> CoreError {
-    GenerationError::FailedCreatingDataGenerator {
-        error: e.to_string(),
-    }
-    .into()
+    GenerationError::FailedCreatingDataGenerator { error: e.to_string() }.into()
 }
 
 fn loading_error(e: impl std::fmt::Display) -> CoreError {
-    GenerationError::FailedLoadingSchema {
-        error: e.to_string(),
-    }
-    .into()
+    GenerationError::FailedLoadingSchema { error: e.to_string() }.into()
 }
 
 fn generating_error(e: impl std::fmt::Display) -> CoreError {
-    GenerationError::FailedGeneratingData {
-        error: e.to_string(),
-    }
-    .into()
+    GenerationError::FailedGeneratingData { error: e.to_string() }.into()
 }
 
 /// Generates synthetic RDF data from a ShEx or SHACL schema.
@@ -46,8 +37,7 @@ impl PyDataGenerator {
     ///     GenerateError: If the generator cannot be initialized.
     #[new]
     fn __init__(config: &PyGeneratorConfig) -> Result<Self> {
-        let inner =
-            rudof_generate::DataGenerator::new(config.inner.clone()).map_err(creation_error)?;
+        let inner = rudof_generate::DataGenerator::new(config.inner.clone()).map_err(creation_error)?;
         Ok(Self { inner })
     }
 
@@ -113,12 +103,7 @@ impl PyDataGenerator {
     /// Raises:
     ///     GenerateError: If schema loading or generation fails.
     #[pyo3(signature = (schema_path, format = None))]
-    fn run_with_format(
-        &mut self,
-        py: Python<'_>,
-        schema_path: PathBuf,
-        format: Option<PySchemaFormat>,
-    ) -> Result<()> {
+    fn run_with_format(&mut self, py: Python<'_>, schema_path: PathBuf, format: Option<PySchemaFormat>) -> Result<()> {
         let format = format.map(Into::into);
         let rt = runtime()?;
         py.detach(|| rt.block_on(self.inner.run_with_format(&schema_path, format)))
