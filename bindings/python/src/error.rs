@@ -73,18 +73,34 @@ sub!(GenerateError, "Synthetic data generation failed.");
 sub!(IriError, "An IRI was malformed or could not be resolved.");
 sub!(PrefixesError, "A prefix declaration operation failed.");
 sub!(UnsupportedOperationError, "The requested operation is not implemented.");
+sub!(
+    InternalError,
+    "A Rust panic was caught at the Python boundary. Always a bug in rudof; the session \
+     may be left in an inconsistent state, so create a fresh Rudof rather than reusing it."
+);
 
-pub(crate) struct Error(pub(crate) Box<CoreError>);
+pub(crate) enum Error {
+    /// An error `rudof_lib` returned.
+    Core(Box<CoreError>),
+    /// A Rust panic caught by [`crate::guard`] instead of being allowed to cross the FFI
+    /// boundary as `pyo3_runtime.PanicException`.
+    Panicked(String),
+}
+
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 impl<E: Into<CoreError>> From<E> for Error {
     fn from(value: E) -> Self {
-        Error(Box::new(value.into()))
+        Error::Core(Box::new(value.into()))
     }
 }
 
 impl From<Error> for PyErr {
-    fn from(Error(e): Error) -> Self {
+    fn from(error: Error) -> Self {
+        let e = match error {
+            Error::Core(e) => e,
+            Error::Panicked(msg) => return InternalError::new_err(msg),
+        };
         let msg = e.to_string();
         let err = match e.as_ref() {
             CoreError::Config(_) => ConfigError::new_err(msg),

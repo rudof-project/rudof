@@ -1,4 +1,4 @@
-use crate::{api::PyRudof, error::Result, formats::PyResultDataFormat, output};
+use crate::{api::PyRudof, error::Result, formats::PyResultDataFormat, guard, output};
 use pyo3::prelude::*;
 use rudof_lib::formats::ResultDataFormat;
 use std::path::PathBuf;
@@ -17,7 +17,7 @@ impl PyRudof {
     /// Raises:
     ///     MapStateError: If the file cannot be read or the JSON is malformed.
     fn read_map_state(&mut self, py: Python<'_>, path: PathBuf) -> Result<()> {
-        py.detach(move || self.inner.load_map_state(&path).execute())?;
+        guard::detached(py, move || self.inner.load_map_state(&path).execute())?;
         Ok(())
     }
 

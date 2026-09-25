@@ -25,6 +25,7 @@ __all__ = [
     "GenerateError",
     "GeneratorConfig",
     "InputError",
+    "InternalError",
     "IriError",
     "MapStateError",
     "MaterializeError",
@@ -372,6 +373,12 @@ class InputError(RudofError):
     """
     ...
 
+class InternalError(RudofError):
+    r"""
+    A Rust panic was caught at the Python boundary. Always a bug in rudof; the session may be left in an inconsistent state, so create a fresh Rudof rather than reusing it.
+    """
+    ...
+
 class IriError(RudofError):
     r"""
     An IRI was malformed or could not be resolved.
@@ -399,6 +406,12 @@ class NeighborArc:
     def root(self) -> builtins.str:
         r"""
         The node the neighborhood expansion started from.
+        
+        Raises:
+            InternalError: If the term has no string rendering yet. `Display for Object` is
+                unimplemented for RDF 1.2 triple terms, so an arc that reaches one panics on
+                being formatted; the guard turns that into a catchable error. Remove the
+                guard once terms are returned typed instead of pre-rendered.
         """
     @property
     def direction(self) -> ArcDirection:
@@ -414,6 +427,9 @@ class NeighborArc:
     def node(self) -> builtins.str:
         r"""
         The node this arc starts from.
+        
+        Raises:
+            InternalError: As :attr:`root`.
         """
     @property
     def predicate(self) -> builtins.str:
@@ -424,6 +440,10 @@ class NeighborArc:
     def neighbor(self) -> builtins.str:
         r"""
         The node on the other end of the arc.
+        
+        Raises:
+            InternalError: As :attr:`root`. This is the getter RDF 1.2 data actually reaches:
+                a reifier's ``rdf:reifies`` arc has a triple term as its neighbor.
         """
     @property
     def is_last(self) -> builtins.bool:
@@ -436,10 +456,22 @@ class NeighborArc:
 class NeighborArcIterator:
     r"""
     Iterator over the arcs around a node, in depth-first order.
+    
+    The arcs are collected by :meth:`Rudof.node_neighborhood` before this object exists, so
+    ``__length_hint__`` is exact rather than a hint.
     """
+    @property
+    def truncated(self) -> builtins.bool:
+        r"""
+        ``True`` when a ``limit`` cut the neighborhood short, so more arcs exist than this
+        iterator will yield. Always ``False`` when no ``limit`` was given.
+        """
     def __iter__(self) -> NeighborArcIterator: ...
     def __next__(self) -> NeighborArc: ...
-    def __length_hint__(self) -> builtins.int: ...
+    def __length_hint__(self) -> builtins.int:
+        r"""
+        The number of arcs still to be yielded. Exact, not an estimate.
+        """
 
 class NodeInspectionError(RudofError):
     r"""
@@ -535,6 +567,20 @@ class QueryError(RudofError):
 class QueryResults:
     r"""
     The result of the most recent :meth:`Rudof.run_query` call.
+    
+    The three query shapes are not interchangeable, so the container protocol is only
+    offered where it means something:
+    
+    ==========  ==================  =========================  =====================
+    query       ``len()``           iteration                  ``bool()``
+    ==========  ==================  =========================  =====================
+    SELECT      solutions           one dict per solution      any solution
+    ASK         ``TypeError``       ``TypeError``              the answer
+    CONSTRUCT   ``TypeError``       ``TypeError``              any triple
+    ==========  ==================  =========================  =====================
+    
+    ``len()`` and iteration always agree. ``bool()`` is defined for every shape, so
+    ``if results:`` is the one test that works everywhere.
     """
     @property
     def variables(self) -> builtins.list[builtins.str]:
@@ -556,6 +602,10 @@ class QueryResults:
     def graph(self) -> typing.Optional[builtins.str]:
         r"""
         The serialized graph of a CONSTRUCT or DESCRIBE query, or ``None`` otherwise.
+        
+        A string, in the serialization :meth:`Rudof.run_query` produced — Turtle today. It is
+        not parsed, which is why the result has no triple count and does not iterate; to
+        consume the triples, load the string into another :class:`Rudof`.
         """
     @property
     def is_boolean(self) -> builtins.bool:
@@ -573,9 +623,31 @@ class QueryResults:
         """
     def __len__(self) -> builtins.int:
         r"""
-        The number of solutions. ``1`` for ASK, ``0`` for a graph result.
+        The number of solutions of a SELECT.
+        
+        Only a SELECT result is a collection, so only a SELECT has a length, and it always
+        agrees with what iteration yields.
+        
+        Raises:
+            TypeError: For an ASK result, which is one boolean rather than a collection, and
+                for a CONSTRUCT or DESCRIBE, whose graph is an unparsed string. Use
+                :attr:`boolean` or :attr:`graph`; ``bool(results)`` works for every type.
         """
-    def __iter__(self) -> QueryRowIterator: ...
+    def __iter__(self) -> QueryRowIterator:
+        r"""
+        Iterates a SELECT's solutions, one dict per solution.
+        
+        Raises:
+            TypeError: For an ASK, CONSTRUCT or DESCRIBE result, as :meth:`__len__`.
+        """
+    def __bool__(self) -> builtins.bool:
+        r"""
+        Whether the query returned anything: the answer for an ASK, and whether any solution
+        or triple came back otherwise.
+        
+        Defined explicitly so `if results:` works for every query type, including the ones
+        whose :meth:`__len__` raises — Python would otherwise fall back to ``__len__``.
+        """
     def __repr__(self) -> builtins.str: ...
 
 @typing.final
@@ -751,24 +823,34 @@ class Rudof:
         Note:
             Colors require a terminal with ANSI escape sequence support.
         """
-    def node_neighborhood(self, node_selector: builtins.str, predicates: typing.Optional[typing.Sequence[builtins.str]] = None, mode: typing.Optional[builtins.str] = None, depth: typing.Optional[builtins.int] = None, strict_iris: typing.Optional[builtins.bool] = None) -> NeighborArcIterator:
+    def node_neighborhood(self, node_selector: builtins.str, predicates: typing.Optional[typing.Sequence[builtins.str]] = None, mode: typing.Optional[builtins.str] = None, depth: typing.Optional[builtins.int] = None, strict_iris: typing.Optional[builtins.bool] = None, limit: typing.Optional[builtins.int] = None) -> NeighborArcIterator:
         r"""
         Returns an iterator over the arcs around a node, in depth-first order.
         
         Args:
             node_selector (str): Node identifier, as in :meth:`node_info`.
-            predicates (list[str], optional): Filter by specific predicates.
+            predicates (list[str], optional): Filter by specific predicates. Each entry must
+                be an angle-bracketed IRI (``<http://example.org/p>``) or a prefixed name
+                (``:p``). A bare IRI is **not** accepted here, even with the default
+                ``strict_iris=False``, which relaxes ``node_selector`` only.
             mode (str, optional): ``"outgoing"``, ``"incoming"`` or ``"both"``. Defaults to ``"both"``.
             depth (int, optional): Neighborhood distance. Defaults to ``1``.
-            strict_iris (bool, optional): Require angle-bracketed IRIs instead of auto-wrapping bare ones.
-                Defaults to ``False``.
+            strict_iris (bool, optional): Require angle-bracketed IRIs in ``node_selector``
+                instead of auto-wrapping bare ones. Defaults to ``False``.
+            limit (int, optional): Stop after this many arcs. Unbounded when omitted.
         
         Returns:
             NeighborArcIterator: The arcs around the node.
         
         Raises:
             NodeInspectionError: If the mode is invalid.
-            DataError: If an arc cannot be retrieved.
+            DataError: If an arc cannot be retrieved, or a predicate is a bare IRI.
+        
+        Note:
+            The arcs are materialized before this returns, so a hub node queried without
+            ``limit`` allocates its whole fanout and breaking out of the loop early saves
+            nothing. Pass ``limit`` to bound the work and check
+            :attr:`NeighborArcIterator.truncated` to learn whether it cut the result short.
         """
     def read_map_state(self, path: builtins.str | os.PathLike | pathlib.Path) -> None:
         r"""

@@ -2,6 +2,7 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{PyDbEngine, PyDdlDialect, PyRDFFormat},
+    guard,
     input::InputArg,
     output,
 };
@@ -37,7 +38,7 @@ impl PyRudof {
     ) -> Result<()> {
         let engine: Option<BackendSpec> = engine.map(Into::into);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self
                 .inner
                 .connect_pg_db(path.as_deref())
@@ -84,7 +85,7 @@ impl PyRudof {
         let graph_type_name = graph_type_name.map(str::to_owned);
         let base = base.map(str::to_owned);
 
-        let ddl = py.detach(move || {
+        let ddl = guard::detached(py, move || {
             let mut b = self.inner.pg_db_ddl(&data);
             if let Some(d) = &dialect {
                 b = b.with_dialect(d);
@@ -182,7 +183,7 @@ impl PyRudof {
     ) -> Result<Py<PyAny>> {
         let InputArg(query) = query;
 
-        let result = py.detach(move || {
+        let result = guard::detached(py, move || {
             let mut q = self.inner.query_cypher(&query);
             if let Some(db) = &db {
                 q = q.with_db(db, read_only);

@@ -1,3 +1,4 @@
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use rudof_lib::formats::{QueryType, ResultQueryFormat};
@@ -45,6 +46,20 @@ pyenum! {
 }
 
 /// The result of the most recent :meth:`Rudof.run_query` call.
+///
+/// The three query shapes are not interchangeable, so the container protocol is only
+/// offered where it means something:
+///
+/// ==========  ==================  =========================  =====================
+/// query       ``len()``           iteration                  ``bool()``
+/// ==========  ==================  =========================  =====================
+/// SELECT      solutions           one dict per solution      any solution
+/// ASK         ``TypeError``       ``TypeError``              the answer
+/// CONSTRUCT   ``TypeError``       ``TypeError``              any triple
+/// ==========  ==================  =========================  =====================
+///
+/// ``len()`` and iteration always agree. ``bool()`` is defined for every shape, so
+/// ``if results:`` is the one test that works everywhere.
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass)]
 #[pyclass(frozen, name = "QueryResults", module = "pyrudof._pyrudof")]
 pub struct PyQueryResults {
@@ -54,7 +69,44 @@ pub struct PyQueryResults {
     graph: Option<String>,
 }
 
+/// Which shape a [`PyQueryResults`] holds.
+///
+/// Only [`Kind::Select`] is a collection; the container protocol is refused for the other
+/// two rather than answered with a value that contradicts iteration.
+#[derive(Copy, Clone)]
+enum Kind {
+    Select,
+    Ask,
+    Graph,
+}
+
+impl Kind {
+    /// The `TypeError` for using the container protocol on a non-collection result.
+    fn not_a_collection(self, verb: &str) -> PyErr {
+        let (name, alternative) = match self {
+            Kind::Ask => ("an ASK result", "`.boolean` for the answer"),
+            Kind::Graph => ("a CONSTRUCT or DESCRIBE result", "`.graph` for the serialized graph"),
+            // Unreachable: a Select is a collection. Kept exhaustive rather than
+            // unreachable!(), which would reintroduce a panic on this path.
+            Kind::Select => ("a SELECT result", "`.rows`"),
+        };
+        PyTypeError::new_err(format!(
+            "{name} {verb}; use {alternative}, or `bool(results)` to test whether the query returned anything"
+        ))
+    }
+}
+
 impl PyQueryResults {
+    fn kind(&self) -> Kind {
+        if self.boolean.is_some() {
+            Kind::Ask
+        } else if self.graph.is_some() {
+            Kind::Graph
+        } else {
+            Kind::Select
+        }
+    }
+
     /// The result of a SELECT query.
     pub(crate) fn select(variables: Vec<String>, rows: Vec<Vec<Option<String>>>) -> Self {
         Self {
@@ -109,6 +161,10 @@ impl PyQueryResults {
     }
 
     /// The serialized graph of a CONSTRUCT or DESCRIBE query, or ``None`` otherwise.
+    ///
+    /// A string, in the serialization :meth:`Rudof.run_query` produced — Turtle today. It is
+    /// not parsed, which is why the result has no triple count and does not iterate; to
+    /// consume the triples, load the string into another :class:`Rudof`.
     #[getter]
     fn graph(&self) -> Option<String> {
         self.graph.clone()
@@ -145,15 +201,50 @@ impl PyQueryResults {
         Ok(solutions.into_any().unbind())
     }
 
-    /// The number of solutions. ``1`` for ASK, ``0`` for a graph result.
-    fn __len__(&self) -> usize {
-        if self.boolean.is_some() { 1 } else { self.rows.len() }
+    /// The number of solutions of a SELECT.
+    ///
+    /// Only a SELECT result is a collection, so only a SELECT has a length, and it always
+    /// agrees with what iteration yields.
+    ///
+    /// Raises:
+    ///     TypeError: For an ASK result, which is one boolean rather than a collection, and
+    ///         for a CONSTRUCT or DESCRIBE, whose graph is an unparsed string. Use
+    ///         :attr:`boolean` or :attr:`graph`; ``bool(results)`` works for every type.
+    fn __len__(&self) -> PyResult<usize> {
+        match self.kind() {
+            Kind::Select => Ok(self.rows.len()),
+            kind => Err(kind.not_a_collection("has no length")),
+        }
     }
 
-    fn __iter__(slf: PyRef<'_, Self>) -> PyQueryRows {
-        PyQueryRows {
-            variables: slf.variables.clone(),
-            inner: slf.rows.clone().into_iter(),
+    /// Iterates a SELECT's solutions, one dict per solution.
+    ///
+    /// Raises:
+    ///     TypeError: For an ASK, CONSTRUCT or DESCRIBE result, as :meth:`__len__`.
+    fn __iter__(slf: PyRef<'_, Self>) -> PyResult<PyQueryRows> {
+        match slf.kind() {
+            Kind::Select => Ok(PyQueryRows {
+                variables: slf.variables.clone(),
+                inner: slf.rows.clone().into_iter(),
+            }),
+            kind => Err(kind.not_a_collection("is not iterable")),
+        }
+    }
+
+    /// Whether the query returned anything: the answer for an ASK, and whether any solution
+    /// or triple came back otherwise.
+    ///
+    /// Defined explicitly so `if results:` works for every query type, including the ones
+    /// whose :meth:`__len__` raises — Python would otherwise fall back to ``__len__``.
+    fn __bool__(&self) -> bool {
+        if let Some(answer) = self.boolean {
+            return answer;
+        }
+        match &self.graph {
+            // Whether the graph holds any triple, without committing to a serialization:
+            // `graph` is whatever format `run_query` produced, which is Turtle today.
+            Some(graph) => !graph.trim().is_empty(),
+            None => !self.rows.is_empty(),
         }
     }
 
