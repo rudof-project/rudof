@@ -502,4 +502,59 @@ prefix : <http://example.org/>
             );
         }
     }
+
+    /// A SPARQL-based constraint with `{?varName}` and `{$varName}` blocks in `sh:message`.
+    /// The query selects `$this`, `?value` and `?age`. It does not select `?missing`.
+    const SPARQL_MESSAGE_GRAPH: &str = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix : <http://example.org/>
+
+:PersonShape a sh:NodeShape ;
+  sh:targetClass :Person ;
+  sh:sparql [
+    sh:message "{$this} has name {?value} and age {?age}. Unknown: {?missing}." ,
+               "{$this} tiene nombre {?value}"@es ;
+    sh:select """
+      SELECT $this ?value ?age WHERE {
+        $this <http://example.org/name> ?value .
+        $this <http://example.org/age> ?age .
+        FILTER (?age < 18)
+      }
+    """
+  ] .
+
+:alice a :Person ; :name "Alice" ; :age 30 .
+:bob a :Person ; :name "Bob"@en ; :age 12 .
+"#;
+
+    fn sparql_message_report(mode: ShaclValidationMode) -> crate::validator::report::ValidationReport {
+        let rdf = RdfData::from_str(SPARQL_MESSAGE_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let mut validator: DataValidation = rdf.clone().into();
+        let schema = ShaclParser::new(rdf).parse().unwrap();
+        let schema_ir: IRSchema = schema.try_into().unwrap();
+        validator.validate(&schema_ir, &mode, &ShaclConfig::default()).unwrap()
+    }
+
+    #[test]
+    fn sparql_constraint_message_interpolates_result_variables() {
+        use rudof_rdf::rdf_core::term::literal::Lang;
+
+        for mode in [ShaclValidationMode::Native, ShaclValidationMode::Sparql] {
+            let report = sparql_message_report(mode);
+            assert_eq!(report.results().len(), 1, "mode {mode:?}");
+
+            let message = report.results()[0].message();
+            assert_eq!(
+                message.get(None).map(String::as_str),
+                Some("http://example.org/bob has name Bob and age 12. Unknown: {?missing}."),
+                "mode {mode:?}"
+            );
+            assert_eq!(
+                message.get(Some(&Lang::new("es").unwrap())).map(String::as_str),
+                Some("http://example.org/bob tiene nombre Bob"),
+                "mode {mode:?}"
+            );
+        }
+    }
 }

@@ -2,7 +2,7 @@ use crate::error::ValidationError;
 use crate::ir::components::BasicSparql;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 #[cfg(feature = "sparql")]
-use crate::types::MessageMap;
+use crate::types::{MessageMap, object_to_message_value};
 #[cfg(feature = "sparql")]
 use crate::validator::constraints::BasicSparqlValidator;
 use crate::validator::constraints::NativeValidator;
@@ -121,11 +121,19 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
                     .and_then(|t| RDF::term_as_object(t).ok())
                     .or_else(|| RDF::term_as_object(focus_node).ok());
 
-                // sh:resultMessage: prefer ?message binding, then self.message
+                // sh:resultMessage: prefer ?message binding, then self.message.
+                // In self.message, replace the {?varName} and {$varName} blocks with the SELECT result values.
+                // If the query does not select $this, use the focus node as the value of $this.
                 let message = if let Some(msg_term) = sol.find_solution("message") {
                     MessageMap::from(format!("{msg_term}"))
                 } else {
-                    self.message().cloned().unwrap_or_default()
+                    let resolve = |name: &str| {
+                        let term = sol
+                            .find_solution(name)
+                            .or_else(|| (name == "this").then_some(focus_node))?;
+                        RDF::term_as_object(term).ok().map(|obj| object_to_message_value(&obj))
+                    };
+                    self.message().map(|m| m.interpolate(resolve)).unwrap_or_default()
                 };
 
                 any_violation = true;
