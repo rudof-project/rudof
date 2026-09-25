@@ -1,8 +1,8 @@
-from pyrudof import ReaderMode, Rudof, RudofConfig
+"""Compare two ShEx schemas and report the differences between two shapes."""
 
-rudof = Rudof(RudofConfig())
+from pyrudof import ReaderMode, Rudof
 
-schema1 = """
+SCHEMA1 = """
 PREFIX : <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -11,7 +11,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 }
 """
 
-schema2 = """
+SCHEMA2 = """
 PREFIX : <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -21,16 +21,24 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 }
 """
 
-comparison = rudof.compare_schemas(
-    schema1,
-    schema2,
-    "shex",
-    "shex",
-    "shexc",
-    "shexc",
-    None,
-    None,
-    "http://example.org/Person",
-    "http://example.org/Person",
-    ReaderMode.Lax,
-)
+
+def main() -> None:
+    with Rudof() as rudof:
+        comparison = rudof.compare_schemas(
+            SCHEMA1,
+            SCHEMA2,
+            "shex",
+            "shex",
+            "shexc",
+            "shexc",
+            None,
+            None,
+            "http://example.org/Person",
+            "http://example.org/Person",
+            ReaderMode.Lax,
+        )
+        print(comparison)
+
+
+if __name__ == "__main__":
+    main()

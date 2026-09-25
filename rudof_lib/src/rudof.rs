@@ -548,6 +548,16 @@ impl Rudof {
         self.shex_validation_results.as_ref()
     }
 
+    /// Returns the result of the most recent `validate_shacl()` call, if any.
+    pub fn shacl_validation_results(&self) -> Option<&ValidationReport> {
+        self.shacl_validation_results.as_ref()
+    }
+
+    /// Returns the result of the most recent `validate_pgschema()` call, if any.
+    pub fn pgschema_validation_results(&self) -> Option<&ValidationResult> {
+        self.pg_schema_validation_results.as_ref()
+    }
+
     /// Returns a `ResetShexBuilder` to clear ShEx validation state and results.
     pub fn reset_shex<'a>(&'a mut self) -> ResetShexBuilder<'a> {
         ResetShexBuilder::new(self)

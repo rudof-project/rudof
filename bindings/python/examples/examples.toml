@@ -1,8 +1,10 @@
 # Examples manifest for pyrudof documentation and testing.
 #
-# This file is the single source of truth for documented examples.
-# Both bindings/python/docs/generate_examples_doc.py and bindings/python/tests/test_examples.py
-# read from this file.
+# This file is the single source of truth for documented examples. Both
+# bindings/python/docs/generate_examples_doc.py and bindings/python/tests/test_examples.py
+# read it through examples/_registry.py.
+#
+# `expected_output` holds substrings that must appear in the example's stdout.
 
 [categories.rdf]
 title = "RDF Data Handling"
@@ -54,10 +56,10 @@ description = """Examples for GeneratorConfig and DataGenerator APIs."""
 
 [categories.utility]
 title = "Utility & Introspection"
-description = """Examples for config loading, resets, versioning, and module introspection."""
+description = """Examples for config loading, resets, versioning, error handling, and module introspection."""
 
 [category_order]
-order = ["rdf", "sparql", "shex", "materialize", "shacl", "dctap", "pgschema", "pg_db", "prefixes", "rdf_config", "endpoint", "generate", "utility"]
+order = ["rdf", "prefixes", "sparql", "shex", "materialize", "shacl", "pgschema", "pg_db", "dctap", "rdf_config", "endpoint", "generate", "utility"]
 
 [[example]]
 key = "shex_validate_inline"
@@ -66,7 +68,11 @@ title = "ShEx Validate Inline"
 description = "Validate inline RDF data against an inline ShEx schema and ShapeMap"
 category = "shex"
 files = {}
-expected_output = []
+expected_output = [
+    "conforms: True",
+    "entries: 1",
+    "http://example.org/alice @ http://example.org/Person: conformant",
+]
 
 [[example]]
 key = "shex_validate_file"
@@ -75,7 +81,11 @@ title = "ShEx Validate Files"
 description = "Validate RDF data from files against a ShEx schema and ShapeMap"
 category = "shex"
 files = { schema = "person.shex", data = "person.ttl", shapemap = "person.sm" }
-expected_output = []
+expected_output = [
+    "conforms: True",
+    "violations: 0",
+    "http://example.org/alice @ http://example.org/Person: conformant",
+]
 
 [[example]]
 key = "shex_serialize"
@@ -84,7 +94,11 @@ title = "ShEx Serialize"
 description = "Serialize the currently loaded ShEx schema"
 category = "shex"
 files = { schema = "person.shex" }
-expected_output = []
+expected_output = [
+    ":Person",
+    ":name xsd:string",
+    "ShExJ length: True",
+]
 
 [[example]]
 key = "shapemap_roundtrip"
@@ -92,35 +106,21 @@ source_file = "shex/shapemap_roundtrip.py"
 title = "ShapeMap Roundtrip"
 description = "Load and serialize a ShapeMap"
 category = "shex"
-files = { shapemap = "person.sm" }
-expected_output = []
+files = { shapemap = "person.sm", schema = "person.shex", data = "person.ttl" }
+expected_output = [":alice@:Person"]
 
 [[example]]
 key = "compare_schemas"
 source_file = "shex/compare_schemas.py"
 title = "Compare Schemas"
-description = "Compare two ShEx schemas and print comparison output size"
+description = "Compare two ShEx schemas and report the differences between two shapes"
 category = "shex"
 files = {}
-expected_output = []
-
-[[example]]
-key = "materialize_inline"
-source_file = "materialize/materialize_inline.py"
-title = "Materialize Inline"
-description = "Materialize an RDF graph from an inline ShEx schema and a MapState built in Python"
-category = "materialize"
-files = {}
-expected_output = []
-
-[[example]]
-key = "materialize_file"
-source_file = "materialize/materialize_file.py"
-title = "Materialize from Files"
-description = "Load a ShExJ schema and a MapState file, then materialize with an explicit root subject IRI"
-category = "materialize"
-files = { schema = "person_map.shexj", "map_state" = "person_map_state.json" }
-expected_output = []
+expected_output = [
+    "Shapes Comparison:",
+    "Properties in shape 2 that are not in shape 1:",
+    "http://example.org/age",
+]
 
 [[example]]
 key = "shex_check"
@@ -129,7 +129,13 @@ title = "Check ShEx Schema"
 description = "Check well-formedness of a valid and an invalid ShEx schema"
 category = "shex"
 files = {}
-expected_output = ["True", "False", "negative cycles"]
+expected_output = [
+    "True",
+    "False",
+    "negative cycles",
+    "ex:Shape1",
+    "ex:Shape2",
+]
 
 [[example]]
 key = "shex_precompiled"
@@ -138,16 +144,49 @@ title = "Precompiled ShEx Schema Cache"
 description = "Compile a loaded ShEx schema to a cache file, then validate using the precompiled cache"
 category = "shex"
 files = { schema = "person.shex" }
-expected_output = ["alice"]
+expected_output = [
+    "cache written: True",
+    "conforms: True",
+    "http://example.org/alice @ http://example.org/Person: conformant",
+]
+
+[[example]]
+key = "materialize_inline"
+source_file = "materialize/materialize_inline.py"
+title = "Materialize Inline"
+description = "Materialize an RDF graph from an inline ShEx schema and a MapState built in Python"
+category = "materialize"
+files = {}
+expected_output = [
+    "<http://example.org/name>",
+    "<http://example.org/Alice>",
+]
+
+[[example]]
+key = "materialize_file"
+source_file = "materialize/materialize_file.py"
+title = "Materialize from Files"
+description = "Load a ShExJ schema and a MapState file, then materialize with an explicit root subject IRI"
+category = "materialize"
+files = { schema = "person_map.shexj", map_state = "person_map_state.json" }
+expected_output = [
+    "<http://example.org/Alice>",
+    "<mailto:alice@example.org>",
+]
 
 [[example]]
 key = "shacl_validate_inline"
 source_file = "shacl/shacl_validate_inline.py"
 title = "SHACL Validate Inline"
-description = "Validate inline RDF data with inline SHACL shapes"
+description = "Validate inline RDF data with inline SHACL shapes and read the violation off the report"
 category = "shacl"
 files = {}
-expected_output = []
+expected_output = [
+    "conforms: False",
+    "violations: 1",
+    "Violation on http://example.org/bob",
+    "MinCount(1) not satisfied",
+]
 
 [[example]]
 key = "shacl_validate_file"
@@ -156,16 +195,22 @@ title = "SHACL Validate Files"
 description = "Validate RDF data from files against SHACL shapes"
 category = "shacl"
 files = { schema = "timbl_shapes.ttl", data = "timbl.ttl" }
-expected_output = []
+expected_output = [
+    "conforms: True",
+    "violations: 0",
+]
 
 [[example]]
 key = "shacl_from_data"
 source_file = "shacl/shacl_from_data.py"
 title = "SHACL From Data"
-description = "Extract SHACL shapes from current RDF data and validate"
+description = "Extract SHACL shapes from the current RDF data and validate against them"
 category = "shacl"
 files = {}
-expected_output = []
+expected_output = [
+    "conforms: True",
+    "violations: 0",
+]
 
 [[example]]
 key = "shacl_serialize"
@@ -174,7 +219,10 @@ title = "SHACL Serialize"
 description = "Serialize the currently loaded SHACL graph"
 category = "shacl"
 files = { schema = "timbl_shapes.ttl" }
-expected_output = []
+expected_output = [
+    "serialized shapes: True",
+    "mentions NodeShape: True",
+]
 
 [[example]]
 key = "rdf_data"
@@ -183,16 +231,24 @@ title = "RDF Read and Serialize"
 description = "Read RDF data, merge extra triples, and serialize"
 category = "rdf"
 files = { data = "person.ttl" }
-expected_output = []
+expected_output = [
+    "has alice: True",
+    "has extra: True",
+]
 
 [[example]]
 key = "node_info"
 source_file = "rdf_data/node_info.py"
 title = "Node Info"
-description = "Inspect node neighborhood information in loaded RDF data"
+description = "Inspect a node as a rendered tree and as an iterator of neighbour arcs"
 category = "rdf"
 files = { data = "person.ttl" }
-expected_output = []
+expected_output = [
+    "Outgoing arcs",
+    ":alice",
+    ":name",
+    "Outgoing http://example.org/name -> \"Alice\"",
+]
 
 [[example]]
 key = "list_endpoints"
@@ -200,8 +256,11 @@ source_file = "rdf_data/list_endpoints.py"
 title = "List Endpoints"
 description = "List known SPARQL endpoints"
 category = "rdf"
-files = {}
-expected_output = []
+files = { data = "person.ttl" }
+expected_output = [
+    "endpoints: True",
+    "Wikidata: https://query.wikidata.org/sparql",
+]
 
 [[example]]
 key = "dereference"
@@ -217,10 +276,14 @@ skip_test = true
 key = "dctap_read"
 source_file = "dctap/dctap_read.py"
 title = "Read DCTAP"
-description = "Read DCTAP from inline CSV and from file"
+description = "Read DCTAP from inline CSV and from file, then serialize it"
 category = "dctap"
 files = {}
-expected_output = []
+expected_output = [
+    "Shape(:Person)",
+    ":name",
+    "read from file: True",
+]
 
 [[example]]
 key = "pgschema_read"
@@ -229,16 +292,23 @@ title = "Read PG Schema"
 description = "Read an inline Property Graph schema and serialize it back"
 category = "pgschema"
 files = {}
-expected_output = ["Student"]
+expected_output = [
+    "Property Graph Schema:",
+    "Student",
+]
 
 [[example]]
 key = "pgschema_validate"
 source_file = "pgschema/pgschema_validate.py"
 title = "Validate PG Data"
-description = "Load PG data, a PG schema and a typemap, then validate and serialize the results"
+description = "Load PG data, a PG schema and a typemap, then validate and read the report"
 category = "pgschema"
 files = {}
-expected_output = ["n2_wrong"]
+expected_output = [
+    "conforms: False",
+    "violation: n2_wrong as AdultStudentType",
+    "n1:AdultStudentType: true",
+]
 
 [[example]]
 key = "pg_db_ddl"
@@ -247,7 +317,10 @@ title = "Derive Property Graph DDL"
 description = "Derive a property graph schema from RDF data and emit it as Cypher DDL, without opening a database"
 category = "pg_db"
 files = {}
-expected_output = ["CREATE NODE TABLE Person", "CREATE REL TABLE knows"]
+expected_output = [
+    "CREATE NODE TABLE Person",
+    "CREATE REL TABLE knows",
+]
 
 [[example]]
 key = "pg_db_load_and_query"
@@ -256,7 +329,12 @@ title = "Connect, Load and Query a LadybugDB Database"
 description = "Connect to a LadybugDB database, load RDF data into it, and run a Cypher query against it"
 category = "pg_db"
 files = {}
-expected_output = ["Alice", "Bob"]
+expected_output = [
+    "loaded: True",
+    "['n.name']",
+    "['Alice']",
+    "['Bob']",
+]
 
 [[example]]
 key = "prefixes_manage"
@@ -265,7 +343,10 @@ title = "Manage Prefixes"
 description = "Add, rename, copy and remove entries in the default prefix map"
 category = "prefixes"
 files = {}
-expected_output = ["foaf", "example"]
+expected_output = [
+    "['ex', 'foaf']",
+    "['ex', 'example']",
+]
 
 [[example]]
 key = "rdf_config_read"
@@ -274,43 +355,61 @@ title = "Read RDF-config"
 description = "Read an inline RDF-config YAML specification and serialize it back"
 category = "rdf_config"
 files = {}
-expected_output = ["Person"]
+expected_output = [
+    "Person ex:person1 ex:person2",
+    "ex:Person",
+    "Alice",
+]
 
 [[example]]
 key = "sparql_select_inline"
 source_file = "sparql/sparql_select_inline.py"
 title = "SPARQL SELECT Inline"
-description = "Run an inline SPARQL SELECT query against loaded RDF data"
+description = "Run an inline SPARQL SELECT query and read the bindings off the result object"
 category = "sparql"
 files = { data = "person.ttl" }
-expected_output = []
+expected_output = [
+    "variables: ['?person', '?name']",
+    "rows: 1",
+    "http://example.org/alice",
+]
 
 [[example]]
 key = "sparql_select_file"
 source_file = "sparql/sparql_select_file.py"
 title = "SPARQL SELECT File"
-description = "Load SPARQL query from file and run it"
+description = "Load a SPARQL query from a file and run it"
 category = "sparql"
 files = { data = "person.ttl", query = "person.sparql" }
-expected_output = []
+expected_output = [
+    "variables: ['?person', '?name']",
+    "http://example.org/alice",
+    "Alice",
+]
 
 [[example]]
 key = "sparql_construct"
 source_file = "sparql/sparql_construct.py"
 title = "SPARQL CONSTRUCT"
-description = "Run a CONSTRUCT query and serialize graph results"
+description = "Run a CONSTRUCT query and serialize the resulting graph"
 category = "sparql"
 files = { data = "person.ttl" }
-expected_output = []
+expected_output = [
+    "is_graph: True",
+    "has alice: True",
+]
 
 [[example]]
 key = "sparql_ask"
 source_file = "sparql/sparql_ask.py"
-title = "SPARQL SELECT Internal"
-description = "Run a SELECT query and serialize results using the default internal format"
+title = "SPARQL ASK"
+description = "Run an ASK query and read the boolean answer off the result object"
 category = "sparql"
 files = { data = "person.ttl" }
-expected_output = []
+expected_output = [
+    "is_boolean: True",
+    "answer: True",
+]
 
 [[example]]
 key = "service_description"
@@ -319,7 +418,11 @@ title = "Service Description"
 description = "Read and serialize SPARQL service descriptions"
 category = "endpoint"
 files = {}
-expected_output = []
+expected_output = [
+    "endpoint: http://example.org/sparql",
+    "BasicFederatedQuery",
+    "json mentions the endpoint: True",
+]
 
 [[example]]
 key = "generate_config_core"
@@ -328,7 +431,11 @@ title = "Generator Config Core"
 description = "Set and read core generator configuration values"
 category = "generate"
 files = {}
-expected_output = []
+expected_output = [
+    "entity_count: 5",
+    "seed: 7",
+    "output_path: core_output.ttl",
+]
 
 [[example]]
 key = "generate_config_parallel"
@@ -337,7 +444,12 @@ title = "Generator Config Parallel"
 description = "Configure and read parallel generation settings"
 category = "generate"
 files = {}
-expected_output = []
+expected_output = [
+    "compress: True",
+    "parallel_file_count: 2",
+    "worker_threads: 2",
+    "batch_size: 16",
+]
 
 [[example]]
 key = "generate_config_quality"
@@ -346,7 +458,7 @@ title = "Generator Config Quality"
 description = "Configure locale, quality and distribution settings"
 category = "generate"
 files = {}
-expected_output = []
+expected_output = ["locale: en"]
 
 [[example]]
 key = "generate_config_persistence"
@@ -355,7 +467,11 @@ title = "Generator Config Persistence"
 description = "Persist GeneratorConfig to TOML and load from TOML/JSON"
 category = "generate"
 files = {}
-expected_output = []
+expected_output = [
+    "from TOML, entity_count: 3",
+    "from TOML, seed: 11",
+    "from JSON, entity_count: 4",
+]
 
 [[example]]
 key = "generate_load_methods"
@@ -363,8 +479,12 @@ source_file = "generate/generate_load_methods.py"
 title = "DataGenerator Load Methods"
 description = "Use load_shex_schema, load_shacl_schema, and load_schema_auto"
 category = "generate"
-files = {}
-expected_output = []
+files = { schema = "person.shex" }
+expected_output = [
+    "from ShEx: True",
+    "from SHACL: True",
+    "auto-detected: True",
+]
 
 [[example]]
 key = "generate_run_methods"
@@ -372,8 +492,11 @@ source_file = "generate/generate_run_methods.py"
 title = "DataGenerator Run Methods"
 description = "Use run_with_format and run to execute generation"
 category = "generate"
-files = {}
-expected_output = []
+files = { schema = "person.shex" }
+expected_output = [
+    "run_with_format wrote output: True",
+    "run wrote output: True",
+]
 
 [[example]]
 key = "rudof_config_from_path"
@@ -381,8 +504,8 @@ source_file = "utility/rudof_config_from_path.py"
 title = "RudofConfig From Path"
 description = "Create RudofConfig from a TOML file and initialize Rudof"
 category = "utility"
-files = { config = "example.toml" }
-expected_output = []
+files = { config = "example.toml", data = "person.ttl" }
+expected_output = ["endpoints from example.toml: ['dbpedia', 'uniprot', 'wikidata']"]
 
 [[example]]
 key = "rudof_update_config"
@@ -390,8 +513,12 @@ source_file = "utility/rudof_update_config.py"
 title = "Rudof Update Config"
 description = "Update the configuration of an existing Rudof instance"
 category = "utility"
-files = { config = "example.toml" }
-expected_output = []
+files = { config = "example.toml", data = "person.ttl" }
+expected_output = [
+    "default endpoints: ['DBpedia',",
+    "after update_config: ['dbpedia', 'uniprot', 'wikidata']",
+    "configuration changed: True",
+]
 
 [[example]]
 key = "rudof_resets"
@@ -400,7 +527,7 @@ title = "Rudof Reset Methods"
 description = "Call all reset methods exposed by Rudof"
 category = "utility"
 files = { schema = "person.shex", data = "person.ttl", shapemap = "person.sm", query = "person.sparql" }
-expected_output = []
+expected_output = ["all resets completed"]
 
 [[example]]
 key = "rudof_version"
@@ -409,16 +536,24 @@ title = "Rudof Version"
 description = "Get and print the current Rudof version"
 category = "utility"
 files = {}
-expected_output = []
+expected_output = [
+    "Version:",
+    "non-empty: True",
+]
 
 [[example]]
 key = "module_info"
 source_file = "utility/module_info.py"
 title = "Module Info"
-description = "Print the installed pyrudof module file path"
+description = "Introspect the installed pyrudof package: version, exports, and the native submodule"
 category = "utility"
 files = {}
-expected_output = []
+expected_output = [
+    "package: pyrudof",
+    "version: True",
+    "Rudof lives in: pyrudof._pyrudof",
+    "is typed: True",
+]
 
 [[example]]
 key = "reset_semantics"
@@ -437,7 +572,12 @@ expected_output = [
 key = "error_handling"
 source_file = "utility/error_handling.py"
 title = "Error Handling"
-description = "Catching exceptions raised by rudof operations"
+description = "Catch the specific exception classes rudof raises, and the base class that covers them all"
 category = "utility"
 files = {}
-expected_output = []
+expected_output = [
+    "schema error: ShExError",
+    "input error: InputError",
+    "caused by:",
+    "is a RudofError: True",
+]

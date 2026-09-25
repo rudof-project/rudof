@@ -3,312 +3,466 @@ API Reference
 
 .. py:currentmodule:: pyrudof
 
-This page contains the complete API reference for ``pyrudof``. The library provides Python bindings for performing RDF operations including validation, schema conversion, SPARQL queries, and data generation.
+The complete API reference for ``pyrudof``.
+
+Every class on this page is implemented in Rust and re-exported from the ``pyrudof``
+package. The descriptions are generated from the Rust doc comments, so this page cannot drift from the implementation.
 
 
-Core Classes
-------------
-
-Rudof
-~~~~~
+The session
+-----------
 
 .. autoclass:: Rudof
-   :members:
-   :undoc-members:
-   :special-members: __init__, __repr__
+   :no-members:
+   :special-members: __init__
 
-RudofConfig
-~~~~~~~~~~~
+The session's methods are grouped below by the domain they belong to.
+
+Session lifecycle
+~~~~~~~~~~~~~~~~~
+
+Used as a context manager, the session clears itself on exit.
+
+.. automethod:: Rudof.__enter__
+.. automethod:: Rudof.__exit__
+.. automethod:: Rudof.update_config
+.. automethod:: Rudof.get_version
+
+RDF data
+~~~~~~~~
+
+.. automethod:: Rudof.read_data
+.. automethod:: Rudof.serialize_data
+.. automethod:: Rudof.dereference
+
+ShEx
+~~~~
+
+.. automethod:: Rudof.read_shex
+.. automethod:: Rudof.check_shex
+.. automethod:: Rudof.serialize_current_shex
+.. automethod:: Rudof.compile_shex_to_file
+.. automethod:: Rudof.read_shex_precompiled
+.. automethod:: Rudof.validate_shex
+.. automethod:: Rudof.serialize_shex_validation_results
+.. automethod:: Rudof.add_external_resolver
+.. automethod:: Rudof.clear_external_resolvers
+.. automethod:: Rudof.list_external_resolvers
+.. automethod:: Rudof.read_shapemap
+.. automethod:: Rudof.serialize_shapemap
+
+SHACL
+~~~~~
+
+.. automethod:: Rudof.read_shacl
+.. automethod:: Rudof.serialize_shacl
+.. automethod:: Rudof.validate_shacl
+.. automethod:: Rudof.serialize_shacl_validation_results
+
+SPARQL
+~~~~~~
+
+.. automethod:: Rudof.read_query
+.. automethod:: Rudof.run_query
+.. automethod:: Rudof.serialize_query_results
+.. automethod:: Rudof.list_endpoints
+
+Property graphs
+~~~~~~~~~~~~~~~
+
+.. automethod:: Rudof.read_pgschema
+.. automethod:: Rudof.serialize_pgschema
+.. automethod:: Rudof.read_typemap
+.. automethod:: Rudof.validate_pgschema
+.. automethod:: Rudof.serialize_pgschema_validation_results
+.. automethod:: Rudof.connect_pg_db
+.. automethod:: Rudof.pg_db_ddl
+.. automethod:: Rudof.load_pg_db
+.. automethod:: Rudof.query_cypher
+
+DCTAP
+~~~~~
+
+.. automethod:: Rudof.read_dctap
+.. automethod:: Rudof.serialize_dctap
+
+Service descriptions
+~~~~~~~~~~~~~~~~~~~~
+
+.. automethod:: Rudof.read_service_description
+.. automethod:: Rudof.serialize_service_description
+
+RDF-config
+~~~~~~~~~~
+
+.. automethod:: Rudof.read_rdf_config
+.. automethod:: Rudof.serialize_rdf_config
+
+Conversion and comparison
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automethod:: Rudof.convert_schemas
+.. automethod:: Rudof.compare_schemas
+
+Materialization
+~~~~~~~~~~~~~~~
+
+.. automethod:: Rudof.read_map_state
+.. automethod:: Rudof.materialize
+
+Prefixes
+~~~~~~~~
+
+.. automethod:: Rudof.prefixes
+.. automethod:: Rudof.add_prefix
+.. automethod:: Rudof.remove_prefix
+.. automethod:: Rudof.rename_prefix
+.. automethod:: Rudof.copy_prefix
+
+Node inspection
+~~~~~~~~~~~~~~~
+
+.. automethod:: Rudof.node_info
+.. automethod:: Rudof.node_neighborhood
+
+Resetting state
+~~~~~~~~~~~~~~~
+
+Each method clears one piece of session state; :meth:`Rudof.reset_all` clears everything,
+which is also what leaving the context manager does.
+
+.. automethod:: Rudof.reset_all
+.. automethod:: Rudof.reset_data
+.. automethod:: Rudof.reset_shex
+.. automethod:: Rudof.reset_shex_schema
+.. automethod:: Rudof.reset_shacl
+.. automethod:: Rudof.reset_shacl_validation
+.. automethod:: Rudof.reset_shapemap
+.. automethod:: Rudof.reset_query
+.. automethod:: Rudof.reset_query_results
+.. automethod:: Rudof.reset_dctap
+.. automethod:: Rudof.reset_rdf_config
+.. automethod:: Rudof.reset_service_description
+.. automethod:: Rudof.reset_pgschema
+.. automethod:: Rudof.reset_typemap
+.. automethod:: Rudof.reset_pgschema_validation
+.. automethod:: Rudof.reset_pg_db_connection
+.. automethod:: Rudof.reset_validation_results
+
+Configuration
+~~~~~~~~~~~~~
 
 .. autoclass:: RudofConfig
    :members:
    :undoc-members:
    :special-members: __init__, __repr__
 
-RudofError
-~~~~~~~~~~
 
-.. autoclass:: RudofError
+Exceptions
+----------
+
+Every error raised by ``pyrudof`` is a :class:`RudofError` or a subclass of it, so
+``except RudofError`` catches all of them. Catch a specific subclass when you want to
+distinguish, for example, a malformed schema from an unreachable endpoint.
+
+.. autoexception:: RudofError
+   :members:
+   :show-inheritance:
+
+.. autoexception:: ComparisonError
+   :show-inheritance:
+
+.. autoexception:: ConfigError
+   :show-inheritance:
+
+.. autoexception:: ConversionError
+   :show-inheritance:
+
+.. autoexception:: DCTapError
+   :show-inheritance:
+
+.. autoexception:: DataError
+   :show-inheritance:
+
+.. autoexception:: GenerateError
+   :show-inheritance:
+
+.. autoexception:: InputError
+   :show-inheritance:
+
+.. autoexception:: IriError
+   :show-inheritance:
+
+.. autoexception:: MapStateError
+   :show-inheritance:
+
+.. autoexception:: MaterializeError
+   :show-inheritance:
+
+.. autoexception:: NodeInspectionError
+   :show-inheritance:
+
+.. autoexception:: PgDbError
+   :show-inheritance:
+
+.. autoexception:: PgSchemaError
+   :show-inheritance:
+
+.. autoexception:: PrefixesError
+   :show-inheritance:
+
+.. autoexception:: QueryError
+   :show-inheritance:
+
+.. autoexception:: RdfConfigError
+   :show-inheritance:
+
+.. autoexception:: ServiceError
+   :show-inheritance:
+
+.. autoexception:: ShExError
+   :show-inheritance:
+
+.. autoexception:: ShaclError
+   :show-inheritance:
+
+.. autoexception:: ShapeMapError
+   :show-inheritance:
+
+.. autoexception:: UnsupportedOperationError
+   :show-inheritance:
+
+.. autoexception:: ValidationError
+   :show-inheritance:
+
+
+Results
+-------
+
+The ``validate_*`` and ``run_query`` methods return a result object you can inspect
+directly. The matching ``serialize_*`` methods render the same result as text, for when
+you want to print or store it rather than act on it.
+
+Validation reports
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: ShExValidationReport
    :members:
    :undoc-members:
-   :special-members: __str__, __repr__
+   :special-members: __bool__, __len__, __iter__, __repr__
+
+.. autoclass:: ShExValidationEntry
+   :members:
+   :undoc-members:
+   :special-members: __repr__
+
+.. autoclass:: ShExValidationEntryIterator
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __next__
+
+.. autoclass:: ShaclValidationReport
+   :members:
+   :undoc-members:
+   :special-members: __bool__, __len__, __iter__, __repr__
+
+.. autoclass:: ShaclValidationEntry
+   :members:
+   :undoc-members:
+   :special-members: __repr__
+
+.. autoclass:: ShaclValidationEntryIterator
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __next__
+
+.. autoclass:: PgSchemaValidationReport
+   :members:
+   :undoc-members:
+   :special-members: __bool__, __len__, __iter__, __repr__
+
+.. autoclass:: PgSchemaValidationEntry
+   :members:
+   :undoc-members:
+   :special-members: __repr__
+
+.. autoclass:: PgSchemaValidationEntryIterator
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __next__
+
+Query results
+~~~~~~~~~~~~~
+
+.. autoclass:: QueryResults
+   :members:
+   :undoc-members:
+   :special-members: __len__, __iter__, __repr__
+
+.. autoclass:: QueryRowIterator
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __next__
+
+Node neighborhood
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: NeighborArc
+   :members:
+   :undoc-members:
+   :special-members: __repr__
+
+.. autoclass:: NeighborArcIterator
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __next__
+
+.. autoclass:: ArcDirection
+   :members:
+   :undoc-members:
 
 
-Data Formats
-------------
+Formats
+-------
 
-RDF Formats
-~~~~~~~~~~~
+Every format is a unit enum. All of them support ``==``, ``hash()``, ``str()`` and the
+``all()`` classmethod; those that can be parsed from text also provide ``from_str``.
+Calling the class with no arguments returns its default variant.
+
+RDF data
+~~~~~~~~
 
 .. autoclass:: RDFFormat
    :members:
    :undoc-members:
 
-   Supported RDF serialization formats:
-
-   * ``RDFFormat.Turtle`` - Terse RDF Triple Language (.ttl)
-   * ``RDFFormat.NTriples`` - Line-based RDF format (.nt)
-   * ``RDFFormat.RdfXml`` - XML-based RDF syntax (.rdf, .owl)
-   * ``RDFFormat.TriG`` - Turtle with named graphs (.trig)
-   * ``RDFFormat.N3`` - Notation3 (.n3)
-   * ``RDFFormat.NQuads`` - N-Triples with named graphs (.nq)
-   * ``RDFFormat.JsonLd`` - JSON-LD format (.jsonld)
-
 .. autoclass:: ResultDataFormat
    :members:
    :undoc-members:
-
-   Output formats for serialized RDF data:
-
-   * ``ResultDataFormat.Turtle`` - Turtle
-   * ``ResultDataFormat.NTriples`` - N-Triples
-   * ``ResultDataFormat.RdfXml`` - RDF/XML
-   * ``ResultDataFormat.TriG`` - TriG
-   * ``ResultDataFormat.N3`` - Notation3
-   * ``ResultDataFormat.NQuads`` - N-Quads
-   * ``ResultDataFormat.Compact`` - Compact representation (default)
-   * ``ResultDataFormat.Json`` - JSON
-   * ``ResultDataFormat.PlantUML`` - PlantUML diagram
-   * ``ResultDataFormat.Svg`` - SVG image
-   * ``ResultDataFormat.Png`` - PNG image
-
-ShEx Formats
-~~~~~~~~~~~~
-
-.. autoclass:: ShExFormat
-   :members:
-   :undoc-members:
-
-   Supported ShEx schema formats:
-
-   * ``ShExFormat.ShExC`` - ShEx Compact Syntax (human-readable, .shex)
-   * ``ShExFormat.ShExJ`` - ShEx JSON format (.json)
-   * ``ShExFormat.Turtle`` - ShEx schema as RDF, in Turtle
-   * ``ShExFormat.NTriples`` - ShEx schema as RDF, in N-Triples
-   * ``ShExFormat.RdfXml`` - ShEx schema as RDF, in RDF/XML
-   * ``ShExFormat.TriG`` - ShEx schema as RDF, in TriG
-   * ``ShExFormat.N3`` - ShEx schema as RDF, in Notation3
-   * ``ShExFormat.NQuads`` - ShEx schema as RDF, in N-Quads
-
-.. autoclass:: ResultShexValidationFormat
-   :members:
-   :undoc-members:
-
-   Output formats for ShEx validation results:
-
-   * ``ResultShexValidationFormat.Details`` - Human-readable details (default)
-   * ``ResultShexValidationFormat.Turtle`` - Turtle
-   * ``ResultShexValidationFormat.NTriples`` - N-Triples
-   * ``ResultShexValidationFormat.RdfXml`` - RDF/XML
-   * ``ResultShexValidationFormat.TriG`` - TriG
-   * ``ResultShexValidationFormat.N3`` - Notation3
-   * ``ResultShexValidationFormat.NQuads`` - N-Quads
-   * ``ResultShexValidationFormat.Compact`` - Compact
-   * ``ResultShexValidationFormat.Json`` - JSON
-   * ``ResultShexValidationFormat.Csv`` - CSV
-
-SHACL Formats
-~~~~~~~~~~~~~
-
-.. autoclass:: ShaclFormat
-   :members:
-   :undoc-members:
-
-   SHACL shapes graph serialization formats (all RDF-based):
-
-   * ``ShaclFormat.Turtle`` - Turtle format (.ttl)
-   * ``ShaclFormat.NTriples`` - N-Triples format (.nt)
-   * ``ShaclFormat.RdfXml`` - RDF/XML format (.rdf)
-   * ``ShaclFormat.TriG`` - TriG format (.trig)
-   * ``ShaclFormat.N3`` - Notation3 format (.n3)
-   * ``ShaclFormat.NQuads`` - N-Quads format (.nq)
-
-ShapeMap Formats
-~~~~~~~~~~~~~~~~
-
-.. autoclass:: ShapeMapFormat
-   :members:
-   :undoc-members:
-
-   ShapeMap serialization formats:
-
-   * ``ShapeMapFormat.Compact`` - Compact ShapeMap syntax (human-readable)
-   * ``ShapeMapFormat.Json`` - JSON representation
-
-Other Formats
-~~~~~~~~~~~~~
-
-.. autoclass:: DCTapFormat
-   :members:
-   :undoc-members:
-
-   DCTAP (Dublin Core Tabular Application Profiles) formats:
-
-   * ``DCTapFormat.Csv`` - Comma-separated values (.csv)
-   * ``DCTapFormat.Xlsx`` - Excel spreadsheet (.xlsx)
-
-.. autoclass:: PgSchemaFormat
-   :members:
-   :undoc-members:
-
-   Property Graph schema formats:
-
-   * ``PgSchemaFormat.PgSchemaC`` - Compact Property Graph schema syntax (default)
-
-.. autoclass:: QueryResultFormat
-   :members:
-   :undoc-members:
-
-   SPARQL query result formats:
-
-   * ``QueryResultFormat.Turtle`` - Turtle format (.ttl)
-   * ``QueryResultFormat.NTriples`` - N-Triples format (.nt)
-   * ``QueryResultFormat.RdfXml`` - RDF/XML format (.rdf)
-   * ``QueryResultFormat.TriG`` - TriG format (.trig)
-   * ``QueryResultFormat.N3`` - Notation3 format (.n3)
-   * ``QueryResultFormat.NQuads`` - N-Quads format (.nq)
-   * ``QueryResultFormat.Csv`` - CSV table format (.csv)
-
-.. autoclass:: QueryType
-   :members:
-   :undoc-members:
-
-   SPARQL query type:
-
-   * ``QueryType.Select`` - SELECT query
-   * ``QueryType.Construct`` - CONSTRUCT query
-   * ``QueryType.Ask`` - ASK query
-   * ``QueryType.Describe`` - DESCRIBE query
-
-.. autoclass:: ServiceDescriptionFormat
-   :members:
-   :undoc-members:
-
-   SPARQL Service Description formats:
-
-   * ``ServiceDescriptionFormat.Internal`` - Internal representation
-   * ``ServiceDescriptionFormat.Json`` - JSON format
-   * ``ServiceDescriptionFormat.Mie`` - MIE specification format
-
-
-RDF-config Formats
-~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: RdfConfigFormat
-   :members:
-   :undoc-members:
-
-   RDF-config input formats:
-
-   * ``RdfConfigFormat.Yaml`` - YAML-based RDF-config specification (default)
-
-.. autoclass:: ResultRdfConfigFormat
-   :members:
-   :undoc-members:
-
-   RDF-config output formats:
-
-   * ``ResultRdfConfigFormat.Internal`` - Internal representation (default)
-   * ``ResultRdfConfigFormat.Yaml`` - YAML
-
-Reader Configuration
---------------------
 
 .. autoclass:: ReaderMode
    :members:
    :undoc-members:
 
-   Controls error handling during parsing:
+ShEx
+~~~~
 
-   * ``ReaderMode.Lax`` - Ignore non-fatal errors and continue (default, recommended for real-world data)
-   * ``ReaderMode.Strict`` - Fail immediately on first error (useful for strict validation)
-
-Validation
-----------
-
-SHACL Validation
-~~~~~~~~~~~~~~~~
-
-.. autoclass:: ShaclValidationMode
+.. autoclass:: ShExFormat
    :members:
    :undoc-members:
 
-   SHACL validation engines:
-
-   * ``ShaclValidationMode.Native`` - Native SHACL validation engine (faster, recommended)
-   * ``ShaclValidationMode.Sparql`` - SPARQL-based validation (slower, useful for debugging)
-
-.. autoclass:: ShapesGraphSource
+.. autoclass:: ResultShexValidationFormat
    :members:
    :undoc-members:
-
-   Source of SHACL shapes for validation:
-
-   * ``ShapesGraphSource.CurrentData`` - Extract shapes from the current RDF data graph
-   * ``ShapesGraphSource.CurrentSchema`` - Use the currently loaded SHACL schema
-
-ShEx Validation
-~~~~~~~~~~~~~~~
 
 .. autoclass:: ShexValidationSortMode
    :members:
    :undoc-members:
 
-   Sort modes for validation result table display:
+.. autoclass:: ShapeMapFormat
+   :members:
+   :undoc-members:
 
-   * ``ShexValidationSortMode.Node`` - Sort by focus node
-   * ``ShexValidationSortMode.Shape`` - Sort by shape label
-   * ``ShexValidationSortMode.Status`` - Sort by validation status
-   * ``ShexValidationSortMode.Details`` - Sort by detailed information
+SHACL
+~~~~~
 
-PG Schema Validation
-~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: ShaclFormat
+   :members:
+   :undoc-members:
+
+.. autoclass:: ShaclValidationMode
+   :members:
+   :undoc-members:
+
+.. autoclass:: ShaclValidationSortMode
+   :members:
+   :undoc-members:
+
+.. autoclass:: ResultShaclValidationFormat
+   :members:
+   :undoc-members:
+
+.. autoclass:: ShapesGraphSource
+   :members:
+   :undoc-members:
+
+DCTAP
+~~~~~
+
+.. autoclass:: DCTapFormat
+   :members:
+   :undoc-members:
+
+.. autoclass:: ResultDCTapFormat
+   :members:
+   :undoc-members:
+
+Property graphs
+~~~~~~~~~~~~~~~
+
+.. autoclass:: PgSchemaFormat
+   :members:
+   :undoc-members:
 
 .. autoclass:: ResultPgSchemaValidationFormat
    :members:
    :undoc-members:
 
-   Output formats for Property Graph schema validation results:
+.. autoclass:: DbEngine
+   :members:
+   :undoc-members:
 
-   * ``ResultPgSchemaValidationFormat.Compact`` - Compact output (default)
-   * ``ResultPgSchemaValidationFormat.Details`` - Human-readable details
-   * ``ResultPgSchemaValidationFormat.Json`` - JSON
-   * ``ResultPgSchemaValidationFormat.Csv`` - CSV
+.. autoclass:: DdlDialect
+   :members:
+   :undoc-members:
+
+SPARQL
+~~~~~~
+
+.. autoclass:: QueryType
+   :members:
+   :undoc-members:
+
+.. autoclass:: QueryResultFormat
+   :members:
+   :undoc-members:
+
+Conversion
+~~~~~~~~~~
+
+.. autoclass:: ConversionMode
+   :members:
+   :undoc-members:
+
+.. autoclass:: ResultConversionMode
+   :members:
+   :undoc-members:
+
+.. autoclass:: ConversionFormat
+   :members:
+   :undoc-members:
+
+.. autoclass:: ResultConversionFormat
+   :members:
+   :undoc-members:
+
+Service descriptions and RDF-config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: ServiceDescriptionFormat
+   :members:
+   :undoc-members:
+
+.. autoclass:: RdfConfigFormat
+   :members:
+   :undoc-members:
+
+.. autoclass:: ResultRdfConfigFormat
+   :members:
+   :undoc-members:
 
 
-Materialize
------------
-
-The ``materialize`` operation generates an RDF graph by combining a ShEx schema
-(which describes the graph structure via Map semantic actions) with a MapState
-that supplies the concrete node values.
-
-**Workflow:**
-
-1. Load a ShEx schema with Map semantic actions using :meth:`Rudof.read_shex`.
-2. Load the MapState (produced by running ShEx validation with Map extensions,
-   or built manually as a JSON file) using :meth:`Rudof.read_map_state`.
-3. Call :meth:`Rudof.materialize` to produce the serialized RDF graph.
-
-**MapState JSON format:**
-
-The MapState file is a JSON object that maps each Map-extension IRI key
-(the ``code`` value in a ``SemAct`` of type ``http://shex.io/extensions/Map/``)
-to an RDF node value. IRI nodes use ``{"Iri": "<iri-string>"}``:
-
-.. code-block:: json
-
-   {
-     "http://example.org/name": {"Iri": "http://example.org/Alice"},
-     "http://example.org/email": {"Iri": "mailto:alice@example.org"}
-   }
-
-See the :doc:`examples` page for full working examples.
-
-
-Data Generation
+Data generation
 ---------------
 
-For the complete data generation API reference (``GeneratorConfig``,
-``DataGenerator``, ``SchemaFormat``, ``OutputFormat``, ``CardinalityStrategy``,
-``EntityDistribution``, ``DataQuality``), see :doc:`generate`.
+For ``GeneratorConfig``, ``DataGenerator`` and the generator enums, see :doc:`generate`.

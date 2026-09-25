@@ -33,47 +33,62 @@ permissions:
   contents: write
 
 jobs:
+  python-checks:
+    name: Lint, types and generated files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build and install pyrudof with its dev extras
+        run: python3 -m pip install -e ".[dev]"
+        working-directory: bindings/python
+      - name: mypy
+        run: python3 -m mypy
+        working-directory: bindings/python
+      - name: sphinx-lint
+        run: sphinx-lint docs/
+        working-directory: bindings/python
+      - name: Docs build cleanly
+        run: python3 -m sphinx -W -b html docs docs/_build/html
+        working-directory: bindings/python
+      - name: examples.rst is in sync with examples.toml
+        run: python3 docs/generate_examples_doc.py --check
+        working-directory: bindings/python
+      - name: The generated stub is in sync with the Rust surface
+        run: |
+          cargo run --bin stub_gen --features stub-gen
+          git diff --exit-code -- python/pyrudof/_pyrudof/__init__.pyi
+        working-directory: bindings/python
+
   linux:
     runs-on: ${{ matrix.vm }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ 3.12 ]
         target: [ x86_64, aarch64 ]
         include:
           - target: x86_64
             vm: ubuntu-latest
           - target: aarch64
             vm: ubuntu-24.04-arm
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-#      - name: Fix openssl regression
-#        run: cargo update openssl-src --precise 300.5.0+3.5.0
+          python-version: "3.12"
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           working-directory: bindings/python
           target: ${{ matrix.target }}
-          # `auto` picks manylinux2014 (CentOS 7), whose default toolchain
-          # predates GCC 13. `lbug` (LadybugDB) ships prebuilt headers built
-          # against GCC 13 and using C++23's <format>, which manylinux2014's
-          # compiler can't parse ("fatal error: format: No such file or
-          # directory"). manylinux_2_28 (AlmaLinux 8) would make
-          # gcc-toolset-13 installable, but its default OpenSSL is 1.1.1,
-          # which lacks `SSL_get1_peer_certificate` (added in OpenSSL 3.0)
-          # that lbug's prebuilt library calls -- the resulting wheel links
-          # fine (Linux allows unresolved symbols in a .so at link time) but
-          # fails at import with "undefined symbol: SSL_get1_peer_certificate"
-          # once loaded against a real 1.1.1 on the test runner. manylinux_2_34
-          # (AlmaLinux 9) defaults to OpenSSL 3.x, matching what the
-          # ubuntu-latest/ubuntu-24.04-arm runners used below have, so the
-          # wheel's dynamic OpenSSL dependency resolves consistently.
           manylinux: "2_34"
-          args: --release --out dist --interpreter ${{ matrix.python-version }}
+          args: --release --out dist
           sccache: 'true'
           before-script-linux: |
             # If we're running on rhel/almalinux (manylinux containers), install needed packages.
@@ -108,34 +123,23 @@ jobs:
       - name: Install Built Wheel
         run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
       - name: Test Built Wheel
-        run: cd bindings/python/tests && python3 -m unittest discover -vvv
+        run: |
+          python3 -m pip install "pytest~=8.0"
+          python3 -m pytest
+        working-directory: bindings/python
 
   windows:
     runs-on: Windows-2022
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ 3.12 ]
         target: [ x64 ]
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      # `lbug` (LadybugDB) unconditionally links against OpenSSL
-      # (`cargo:rustc-link-lib=dylib=ssl`/`crypto`) on every platform, via a
-      # raw `cargo:rustc-link-lib` directive rather than the `openssl-sys`
-      # build system -- so OPENSSL_LIB_DIR/OPENSSL_DIR below (which only
-      # openssl-sys-based crates read) don't help it. On the MSVC target
-      # that raw directive makes the linker look for a file literally named
-      # `ssl.lib`/`crypto.lib`, but the pre-installed Windows OpenSSL ships
-      # them as `libssl.lib`/`libcrypto.lib` (upstream OpenSSL naming) --
-      # hence "LINK : fatal error LNK1181: cannot open input file 'ssl.lib'".
-      # Copy them to the names the linker expects and put that directory on
-      # LIB. Mirrors the equivalent step in artifacts.yml's windows job
-      # (already needed there for the same reason, since rudof_cli has
-      # depended on lbug since before this).
+          python-version: "3.12"
       - name: Point Cargo at the pre-installed OpenSSL
         run: |
           $opensslLibDir = "C:\Program Files\OpenSSL\lib"
@@ -170,15 +174,8 @@ jobs:
         with:
           working-directory: bindings/python
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter ${{ matrix.python-version }}
+          args: --release --out dist
           sccache: 'true'
-      # pyrudof.pyd dynamically depends on libssl-3-x64.dll/libcrypto-3-x64.dll,
-      # which aren't present on an arbitrary end user's machine any more than
-      # on this runner. delvewheel is the Windows analogue of auditwheel: it
-      # copies the required DLLs into the wheel (under pyrudof.libs\) and
-      # patches the extension module to load them from there regardless of
-      # PATH, so both this CI's test step and real installs work without
-      # requiring OpenSSL to be separately installed.
       - name: Repair wheel with delvewheel (vendor OpenSSL DLLs)
         run: |
           python3 -m pip install delvewheel
@@ -193,9 +190,6 @@ jobs:
           path: bindings/python/dist
       - name: Install Built Wheel
         run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
-      # Diagnostic: if importing pyrudof still fails with "DLL load failed",
-      # Python's error doesn't name the missing dependency. List what the
-      # built .pyd actually needs so the next failure is actionable.
       - name: List pyrudof.pyd's DLL dependencies
         run: |
           $sitePkg = python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
@@ -208,22 +202,18 @@ jobs:
               Write-Host "dumpbin not found"
           }
       - name: Test Built Wheel
-        run: cd bindings/python/tests && python3 -m unittest discover -vvv
+        run: |
+          python3 -m pip install "pytest~=8.0"
+          python3 -m pytest
+        working-directory: bindings/python
 
   macos:
     runs-on: ${{ matrix.vm }}
-    # `lbug` (LadybugDB)'s cxx FFI bridge uses C++20's <format>, which Apple's
-    # libc++ only makes available starting deployment target 13.3 (Ventura) --
-    # below that, `<format>`'s contents are availability-gated out entirely.
-    # maturin/rustc otherwise default x86_64 to 10.7/10.12 and arm64 to 11.0,
-    # both too old. An explicit MACOSX_DEPLOYMENT_TARGET here overrides that
-    # default (confirmed: maturin only computes one when none is set).
     env:
       MACOSX_DEPLOYMENT_TARGET: "13.3"
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ 3.12 ]
         target: [x86_64, aarch64]
         include:
           - target: x86_64
@@ -235,27 +225,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           working-directory: bindings/python
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter ${{ matrix.python-version }}
+          args: --release --out dist
           sccache: 'true'
         env:
-          # x86_64 only: pyo3 links extension modules with `-undefined
-          # dynamic_lookup` (Python symbols resolve at import time instead of
-          # link time). Apple's default linker since Xcode 15 emits "chained
-          # fixups" for dylibs, which can't represent that lazy/unresolved
-          # binding for data symbols -- so any statically-linked object that
-          # references one (here, liblbug.a's CSV reader references the
-          # CPU-dispatch data symbol `__cpu_model`) fails with "ld: fixup
-          # error ... does not have address" instead of resolving lazily
-          # like it used to.
-          # `-ld_classic` selects the pre-Xcode-15 linker, which still
-          # supports `-undefined dynamic_lookup` correctly; it's x86_64-only
-          # because Apple dropped `-ld_classic` for arm64.
           RUSTFLAGS: ${{ matrix.target == 'x86_64' && '-C link-arg=-Wl,-ld_classic' || '' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -265,34 +243,44 @@ jobs:
       - name: Install Built Wheel
         run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
       - name: Test Built Wheel
-        run: cd bindings/python/tests && python3 -m unittest discover -vvv
+        run: |
+          python3 -m pip install "pytest~=8.0"
+          python3 -m pytest
+        working-directory: bindings/python
 
-#  sdist:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#      - name: Build sdist
-#        uses: PyO3/maturin-action@v1
-#        with:
-#          working-directory: bindings/python
-#          command: sdist
-#          args: --out dist
-#      - name: Upload sdist
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: wheels
-#          path: bindings/python/dist
-#      - name: Install Built sdist
-#        run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
-#      - name: Test Built sdist
-#        run: cd bindings/python/tests && python3 -m unittest discover -vvv
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: bindings/python
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: bindings/python/dist
+      - name: Install Built sdist
+        run: python3 -m pip install -vv bindings/python/dist/pyrudof-*.tar.gz
+      - name: Test Built sdist
+        run: |
+          python3 -m pip install "pytest~=8.0"
+          python3 -m pytest
+        working-directory: bindings/python
 
   release:
     name: Release
     if: github.event.action == 'published'
     runs-on: ubuntu-latest
-    # needs: [linux, windows, macos, sdist]
-    needs: [linux, macos, windows]
+    needs: [python-checks, linux, macos, windows, sdist]
     steps:
       - uses: actions/download-artifact@v4
         with:
