@@ -1,8 +1,4 @@
 1dotIMPORT1dot
-1val1DECIMAL
-1val1DOUBLE
-1val1DOUBLElowercase
-1val1INTEGER
 1valExprRef-IV1
 1valExprRefbnode-IV1
 2EachInclude1-IS2
@@ -18,14 +14,8 @@
 3circRefS2-Icirc
 3circRefS3-IS12
 3circRefS3-Icirc
-AND3G
-ANDAbstract
-Extend3G
-ExtendAND3G
-ExtendANDExtend3GAND3G
-Extends-sAB
-ExtendsRepeatedP
 _all
+extends-open-or-each-each
 kitchenSink
 start2RefS1-IstartS2
 start2RefS2-IstartS1

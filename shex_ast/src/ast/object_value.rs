@@ -60,6 +60,26 @@ impl ObjectValue {
         ObjectValue::Literal(ConcreteLiteral::lit_datatype(lexical_form, datatype))
     }
 
+    /// Creates an `xsd:integer`, `xsd:decimal` or `xsd:double` literal from a ShExJ value.
+    /// The lexical form is kept because ShEx value sets compare literals as RDF terms
+    /// (e.g. `[0]` does not match `"00"`), in the same way as the ShExC parser does.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the lexical form is not valid for the datatype.
+    pub(crate) fn numeric_literal(lexical_form: &str, datatype: &str) -> Result<ObjectValue, String> {
+        match datatype {
+            INTEGER_STR => ConcreteLiteral::parse_integer(lexical_form).map(|_| ()),
+            DECIMAL_STR => ConcreteLiteral::parse_decimal(lexical_form).map(|_| ()),
+            DOUBLE_STR => ConcreteLiteral::parse_double(lexical_form).map(|_| ()),
+            _ => Err(format!("{datatype} is not a numeric datatype")),
+        }?;
+        Ok(ObjectValue::datatype_literal(
+            lexical_form,
+            &IriRef::iri(IriS::new_unchecked(datatype)),
+        ))
+    }
+
     pub fn lexical_form(&self) -> String {
         match self {
             ObjectValue::IriRef(iri) => iri.to_string(),
@@ -316,30 +336,15 @@ impl<'de> Deserialize<'de> for ObjectValue {
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ObjectValueType::Decimal) => match value {
-                        Some(s) => {
-                            let n = Decimal::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!("Can't parse value {s} as decimal: Error {e}"))
-                            })?;
-                            Ok(ObjectValue::decimal(n))
-                        },
+                        Some(s) => ObjectValue::numeric_literal(&s, DECIMAL_STR).map_err(de::Error::custom),
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ObjectValueType::Double) => match value {
-                        Some(s) => {
-                            let n = f64::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!("Can't parse value {s} as double: Error {e}"))
-                            })?;
-                            Ok(ObjectValue::double(n))
-                        },
+                        Some(s) => ObjectValue::numeric_literal(&s, DOUBLE_STR).map_err(de::Error::custom),
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ObjectValueType::Integer) => match value {
-                        Some(s) => {
-                            let n = isize::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!("Can't parse value {s} as integer: Error {e}"))
-                            })?;
-                            Ok(ObjectValue::integer(n))
-                        },
+                        Some(s) => ObjectValue::numeric_literal(&s, INTEGER_STR).map_err(de::Error::custom),
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ObjectValueType::Other(iri)) => match value {
@@ -418,5 +423,50 @@ impl Display for ObjectValue {
             ObjectValue::IriRef(iri_ref) => write!(f, "{iri_ref}"),
             ObjectValue::Literal(sliteral) => write!(f, "{sliteral}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn xsd(local: &str) -> IriRef {
+        IriRef::iri(IriS::new_unchecked(&format!(
+            "http://www.w3.org/2001/XMLSchema#{local}"
+        )))
+    }
+
+    // ShEx value sets compare literals as RDF terms, so the ShExJ value must keep
+    // its lexical form (like the ShExC parser and the RDF data do).
+    #[test]
+    fn numeric_values_keep_lexical_form() {
+        for (value, local) in [
+            ("0", "integer"),
+            ("00", "integer"),
+            ("+1", "integer"),
+            ("0.0", "decimal"),
+            ("0.0e0", "double"),
+            ("0.0E0", "double"),
+        ] {
+            let json = format!(r#"{{ "value": "{value}", "type": "http://www.w3.org/2001/XMLSchema#{local}" }}"#);
+            let parsed: ObjectValue = serde_json::from_str(&json).unwrap();
+            assert_eq!(parsed, ObjectValue::datatype_literal(value, &xsd(local)), "{json}");
+        }
+    }
+
+    #[test]
+    fn numeric_values_with_invalid_lexical_form_are_rejected() {
+        for (value, local) in [("a", "integer"), ("1.5", "integer"), ("x", "decimal"), ("y", "double")] {
+            let json = format!(r#"{{ "value": "{value}", "type": "http://www.w3.org/2001/XMLSchema#{local}" }}"#);
+            assert!(serde_json::from_str::<ObjectValue>(&json).is_err(), "{json}");
+        }
+    }
+
+    #[test]
+    fn numeric_values_roundtrip_through_json() {
+        let json = r#"{"value":"00","type":"http://www.w3.org/2001/XMLSchema#integer"}"#;
+        let parsed: ObjectValue = serde_json::from_str(json).unwrap();
+        let reparsed: ObjectValue = serde_json::from_str(&serde_json::to_string(&parsed).unwrap()).unwrap();
+        assert_eq!(parsed, reparsed);
     }
 }
