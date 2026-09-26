@@ -5,6 +5,7 @@ use crate::{
         PyReaderMode, PyResultShaclValidationFormat, PyShaclFormat, PyShaclValidationMode, PyShaclValidationReport,
         PyShaclValidationSortMode,
     },
+    guard,
     input::InputArg,
     output,
 };
@@ -43,7 +44,7 @@ impl PyRudof {
         let reader_mode: Option<DataReaderMode> = reader_mode.map(Into::into);
         let base = base.map(str::to_owned);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_shacl_shapes();
             if let Some(i) = &input {
                 b = b.with_shacl_schema(i);
@@ -106,7 +107,7 @@ impl PyRudof {
     ) -> Result<PyShaclValidationReport> {
         let mode: Option<ShaclValidationMode> = mode.map(Into::into);
 
-        py.detach(|| {
+        guard::detached(py, || {
             let mut b = self.inner.validate_shacl();
             if let Some(m) = &mode {
                 b = b.with_shacl_validation_mode(m);
@@ -121,7 +122,9 @@ impl PyRudof {
             .ok_or(CoreError::Generic {
                 error: "validate_shacl produced no results".into(),
             })?;
-        Ok(PyShaclValidationReport::new(report))
+        // Guarded because building the report renders every focus node and value to a
+        // string, which panics on a term `rudof_rdf` cannot format yet.
+        guard::catch_value(|| PyShaclValidationReport::new(report))
     }
 
     /// Serializes the results of the most recent :meth:`validate_shacl` call.

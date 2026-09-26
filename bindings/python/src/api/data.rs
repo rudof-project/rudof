@@ -2,6 +2,7 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{PyRDFFormat, PyReaderMode, PyResultDataFormat},
+    guard,
     input::InputArg,
     output,
 };
@@ -48,7 +49,7 @@ impl PyRudof {
         let base = base.map(str::to_owned);
         let endpoint = endpoint.map(str::to_owned);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_data();
             if let Some(i) = &input {
                 b = b.with_data(i);
@@ -116,7 +117,7 @@ impl PyRudof {
         let reader_mode: Option<DataReaderMode> = reader_mode.map(Into::into);
         let uri = uri.to_owned();
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.dereference(&uri);
             if let Some(m) = &reader_mode {
                 b = b.with_reader_mode(m);

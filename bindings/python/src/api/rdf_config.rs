@@ -2,6 +2,7 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{PyRdfConfigFormat, PyResultRdfConfigFormat},
+    guard,
     input::InputArg,
     output,
 };
@@ -25,7 +26,7 @@ impl PyRudof {
         let InputArg(input) = input;
         let format: Option<RdfConfigFormat> = format.map(Into::into);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_rdf_config(&input);
             if let Some(f) = &format {
                 b = b.with_rdf_config_format(f);

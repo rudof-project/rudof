@@ -1,4 +1,4 @@
-use crate::{api::PyRudof, error::Result, formats::PyShapeMapFormat, input::InputArg, output};
+use crate::{api::PyRudof, error::Result, formats::PyShapeMapFormat, guard, input::InputArg, output};
 use pyo3::prelude::*;
 use rudof_lib::formats::ShapeMapFormat;
 
@@ -30,7 +30,7 @@ impl PyRudof {
         let base_nodes = base_nodes.map(str::to_owned);
         let base_shapes = base_shapes.map(str::to_owned);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_shapemap(&input);
             if let Some(f) = &format {
                 b = b.with_shapemap_format(f);

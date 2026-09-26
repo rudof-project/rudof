@@ -2,6 +2,7 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{PyQueryResultFormat, PyQueryResults, PyQueryType},
+    guard,
     input::InputArg,
     output,
 };
@@ -27,7 +28,7 @@ impl PyRudof {
         let InputArg(input) = input;
         let query_type: Option<QueryType> = query_type.map(Into::into);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_sparql_query(&input);
             if let Some(t) = &query_type {
                 b = b.with_query_type(t);
@@ -47,7 +48,7 @@ impl PyRudof {
     ///     QueryError: If no query is loaded, or execution fails.
     #[pyo3(signature = ())]
     fn run_query(&mut self, py: Python<'_>) -> Result<PyQueryResults> {
-        py.detach(|| self.inner.run_query().execute())?;
+        guard::detached(py, || self.inner.run_query().execute())?;
 
         let results = self.inner.query_results().ok_or(CoreError::Generic {
             error: "run_query produced no results".into(),
@@ -107,7 +108,7 @@ impl PyRudof {
     /// Raises:
     ///     QueryError: If the endpoint registry cannot be read.
     fn list_endpoints(&mut self, py: Python<'_>) -> Result<Vec<(String, String)>> {
-        let endpoints = py.detach(|| self.inner.list_endpoints().execute())?;
+        let endpoints = guard::detached(py, || self.inner.list_endpoints().execute())?;
         Ok(endpoints)
     }
 }
