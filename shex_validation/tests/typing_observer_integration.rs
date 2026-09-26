@@ -14,6 +14,21 @@ use shex_ast::shapemap::{NodeSelector, QueryShapeMap, ShapeSelector};
 use shex_ast::{Node, ResolveMethod, ShExParser, ShapeExprLabel, ir::ast2ir::AST2IR};
 use shex_validation::{Reason, ValidationResult, Validator, ValidatorConfig, ValidatorError};
 
+/// `rudof_rdf::cancellation` is a single process-wide flag, and the test
+/// harness runs the tests in this binary on parallel threads. Without this
+/// lock, the cancellation test's `request_cancellation()` can land while
+/// another test is mid-validation and leave its result `Pending`. Every test
+/// here holds this lock for its whole body.
+static CANCELLATION_LOCK: Mutex<()> = Mutex::new(());
+
+fn serialize() -> std::sync::MutexGuard<'static, ()> {
+    // A panicking test poisons the lock; later tests should still run.
+    let guard = CANCELLATION_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    // ...and must not inherit a cancellation it left set before panicking.
+    rudof_rdf::cancellation::reset();
+    guard
+}
+
 fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
     let base = IriS::new_unchecked("http://a.example/");
     let ast = ShExParser::parse(schema_src, Some(base.clone()), &base).expect("parse schema");
@@ -70,6 +85,7 @@ const NESTED_DATA: &str = r#"<http://a.example/n1> <http://a.example/p> <http://
 
 #[test]
 fn observer_sees_dependency_result_before_the_shape_that_needed_it() {
+    let _guard = serialize();
     let observer = Arc::new(RecordingObserver::default());
     let config = ValidatorConfig::default().with_typing_observer(observer.clone());
     let compiled = compile(NESTED_SCHEMA, &config);
@@ -99,6 +115,7 @@ fn observer_sees_dependency_result_before_the_shape_that_needed_it() {
 
 #[test]
 fn show_intermediate_results_auto_installs_a_default_observer() {
+    let _guard = serialize();
     // No `with_typing_observer` call at all: `show_intermediate_results(true)`
     // alone must be enough for `Validator::new` to install a default
     // (console-printing) observer, and validation must still succeed.
@@ -118,6 +135,7 @@ fn show_intermediate_results_auto_installs_a_default_observer() {
 
 #[test]
 fn explicit_observer_wins_over_show_intermediate_results() {
+    let _guard = serialize();
     // When both are set, the explicitly-supplied observer must be the one
     // that's actually notified, not silently replaced by the default one.
     let observer = Arc::new(RecordingObserver::default());
@@ -160,6 +178,7 @@ impl rudof_typing::TypingObserver<Node, shex_ast::ShapeLabelIdx, ValidatorError,
 
 #[test]
 fn cancelling_mid_validation_still_returns_results_for_finished_independent_pairs() {
+    let _guard = serialize();
     rudof_rdf::cancellation::reset();
 
     let config = ValidatorConfig::default().with_typing_observer(Arc::new(CancelAfterFirstInsert));
