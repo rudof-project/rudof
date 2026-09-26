@@ -1,7 +1,7 @@
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 mod endpoint;
 mod graph;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 mod rdf_data;
 
 use crate::error::ValidationError;
@@ -10,11 +10,11 @@ use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::report::{ValidationOutcome, ValidationReport};
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 pub use endpoint::EndpointValidation;
 pub use graph::GraphValidation;
 use rayon::prelude::*;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 pub use rdf_data::DataValidation;
 use rudof_rdf::rdf_core::NeighsRDF;
 use std::fmt::Debug;

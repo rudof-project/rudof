@@ -1,6 +1,6 @@
 mod core;
 mod sparql;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 mod test;
 
 use crate::error::ValidationError;
@@ -12,12 +12,12 @@ use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
 use crate::validator::engine::Engine;
 use crate::validator::iteration::IterationStrategy;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use either::Either;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
@@ -53,7 +53,7 @@ pub trait NativeValidator<RDF: NeighsRDF> {
     ) -> Result<ValidationOutcome, ValidationError>;
 }
 // TODO - Move to crate::validator
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 pub trait BasicSparqlValidator<RDF: QueryRDF + NeighsRDF + Debug> {
     fn validate_sparql(
         &self,
@@ -98,7 +98,7 @@ macro_rules! impl_validators_via_validate {
             }
         }
 
-        #[cfg(feature = "sparql")]
+        #[cfg(sparql_validation)]
         impl<S> crate::validator::constraints::BasicSparqlValidator<S> for $ty
         where
             S: rudof_rdf::rdf_core::query::QueryRDF + rudof_rdf::rdf_core::NeighsRDF + std::fmt::Debug + 'static,
@@ -207,7 +207,7 @@ impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<
     }
 }
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn BasicSparqlValidator<S> + 'a>
     for ShaclComponent<'a, S>
 {
@@ -389,7 +389,7 @@ fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
 /// is treated as conforming (use this for cases where the value node can't be
 /// rendered into a SPARQL query — e.g. blank nodes that the SPARQL engine
 /// would otherwise alias-match).
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 fn validate_ask_with_opt<S: QueryRDF>(
     component: &IRComponent,
     shape: &IRShape,
@@ -422,7 +422,7 @@ fn validate_ask_with_opt<S: QueryRDF>(
 /// text is treated by the SPARQL engine as a fresh
 /// existential variable, not a reference to the concrete
 /// blank node in the data graph.
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 pub(crate) fn object_as_sparql(object: &Object) -> Option<String> {
     match object {
         Object::Iri(iri) => Some(format!("<{}>", iri.as_str())),
@@ -442,14 +442,14 @@ pub(crate) fn object_as_sparql(object: &Object) -> Option<String> {
 }
 
 /// Formats a Term as SPARQL term syntax.
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 pub(crate) fn term_as_sparql<S: Rdf>(term: &S::Term) -> Option<String> {
     let obj = S::term_as_object(term).ok()?;
     object_as_sparql(&obj)
 }
 
 /// Escape a string for inclusion in a SPARQL double-quoted literal.
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 fn escape_sparql_string(s: impl AsRef<str>) -> String {
     let mut out = String::with_capacity(s.as_ref().len());
     for ch in s.as_ref().chars() {

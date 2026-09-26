@@ -1,0 +1,41 @@
+[package]
+name = "rudof_wasm"
+version.workspace = true
+authors.workspace = true
+description = "WebAssembly bindings for rudof: ShEx and SHACL validation of RDF data"
+documentation = "https://rudof-project.github.io/rudof/"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["rdf", "shex", "shacl", "wasm", "validation"]
+publish = false
+
+[lib]
+name = "rudof_wasm"
+# "cdylib" is the `.wasm` module consumed by `wasm-bindgen`; "rlib" lets the
+# integration tests (and native builds) link against the Rust API.
+crate-type = ["cdylib", "rlib"]
+doctest = false
+
+[dependencies]
+prefixmap.workspace = true
+rudof_iri.workspace = true
+# `sparql` provides `QueryRDF` for the in-memory graph (backed by Oxigraph's
+# embedded store), which the ShEx validator requires. It does not pull in any
+# network code on `wasm`.
+rudof_rdf = { workspace = true, features = ["sparql"] }
+serde_json.workspace = true
+# Only the native SHACL engine is used. (A path dependency, because workspace
+# inheritance can't switch off default features.)
+shacl = { path = "../../shacl", default-features = false }
+shex_ast.workspace = true
+shex_validation.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+console_error_panic_hook = "0.1"
+wasm-bindgen = "0.2"
+
+[target.'cfg(target_family = "wasm")'.dev-dependencies]
+wasm-bindgen-test = "0.3"

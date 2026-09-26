@@ -9,13 +9,13 @@ use crate::validator::report::ValidationOutcome;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use crate::validator::constraints::{BasicSparqlValidator, object_as_sparql, term_as_sparql, validate_ask_with_opt};
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use indoc::formatdoc;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use rudof_rdf::rdf_core::query::QueryRDF;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use rudof_rdf::rdf_core::term::{Object, Term};
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
@@ -45,7 +45,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
     }
 }
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MaxInclusive {
     fn validate_sparql(
         &self,
