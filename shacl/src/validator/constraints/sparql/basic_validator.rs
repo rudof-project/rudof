@@ -2,7 +2,7 @@ use crate::error::ValidationError;
 use crate::ir::components::BasicSparql;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 #[cfg(sparql_validation)]
-use crate::types::MessageMap;
+use crate::types::{MessageMap, object_to_message_value};
 #[cfg(sparql_validation)]
 use crate::validator::constraints::BasicSparqlValidator;
 use crate::validator::constraints::NativeValidator;
