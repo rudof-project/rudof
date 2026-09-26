@@ -1,4 +1,5 @@
 mod closed_info;
+mod message_interpolation;
 mod message_map;
 mod node_kind;
 mod severity;
@@ -7,6 +8,7 @@ mod target;
 mod value;
 
 pub use closed_info::ClosedInfo;
+pub use message_interpolation::{interpolate_message, object_to_message_value};
 pub use message_map::MessageMap;
 pub use node_kind::NodeKind;
 pub use severity::Severity;

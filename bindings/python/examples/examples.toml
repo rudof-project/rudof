@@ -240,7 +240,7 @@ expected_output = [
 key = "node_info"
 source_file = "rdf_data/node_info.py"
 title = "Node Info"
-description = "Inspect a node as a rendered tree and as an iterator of neighbour arcs"
+description = "Inspect a node as a rendered tree and as an iterator of neighbour arcs, bounded with `limit`"
 category = "rdf"
 files = { data = "person.ttl" }
 expected_output = [
@@ -248,6 +248,10 @@ expected_output = [
     ":alice",
     ":name",
     "Outgoing http://example.org/name -> \"Alice\"",
+    # Which two arcs `limit=2` returns depends on graph iteration order, so assert the
+    # count and the truncation flag rather than the arcs themselves.
+    "showing 2 arcs, more available: True",
+    "showing 3 arcs, more available: False",
 ]
 
 [[example]]
