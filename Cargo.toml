@@ -383,3 +383,11 @@ uuid = { version = "1.0", features = ["v4"] }
 walkdir = "2"
 yaml-rust2 = { version = "0.10" }
 zip = "2"
+
+# Release build optimized for size, used for the WebAssembly bindings
+# (bindings/wasm/build.sh). Native release builds are unaffected.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1

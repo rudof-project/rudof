@@ -23,9 +23,11 @@ pub mod js;
 
 pub use error::{Error, Result};
 pub use reports::{
-    ExternalResolver, NeighborArc, NodeNeighborhood, PgSchemaValidationEntry, PgSchemaValidationReport, QueryResults,
-    ShExCheck, ShExValidationEntry, ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
+    ExternalResolver, NeighborArc, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationEntry,
+    ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
 };
+#[cfg(feature = "pgschema")]
+pub use reports::{PgSchemaValidationEntry, PgSchemaValidationReport};
 pub use session::Session;
 
 use rudof_lib::RudofConfig;

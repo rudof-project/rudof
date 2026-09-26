@@ -44,6 +44,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run cargo check
         run: cargo check --workspace
+      # rudof_lib without its optional subsystems (see its Cargo features)
+      - name: Run cargo check on rudof_lib without optional features
+        run: cargo check -p rudof_lib --all-targets --no-default-features --features sparql
 
   check-wasm:
     name: Check wasm
@@ -64,6 +67,8 @@ jobs:
         run: cargo check -p shacl --no-default-features --target wasm32-unknown-unknown
       - name: Run cargo check on the wasm bindings
         run: cargo check -p rudof_wasm --all-targets --target wasm32-unknown-unknown
+      - name: Run cargo check on the wasm bindings without optional features
+        run: cargo check -p rudof_wasm --all-targets --target wasm32-unknown-unknown --no-default-features
 
   rustfmt:
     name: Rustfmt
@@ -147,6 +152,10 @@ jobs:
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
         run: cargo test -p rudof_wasm --target wasm32-unknown-unknown
+      - name: Run the validation tests on wasm without optional features
+        env:
+          CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+        run: cargo test -p rudof_wasm --target wasm32-unknown-unknown --no-default-features
       - name: Build the JavaScript package
         run: bindings/wasm/build.sh
       - uses: actions/setup-node@v4

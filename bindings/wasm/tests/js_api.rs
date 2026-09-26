@@ -110,6 +110,12 @@ fn more_reports_are_plain_objects() {
     assert_eq!(get(&arc, "direction"), "outgoing");
     assert_eq!(get(&arc, "isLast"), JsValue::TRUE);
 
+    #[cfg(feature = "pgschema")]
+    pgschema_report_is_a_plain_object();
+}
+
+#[cfg(feature = "pgschema")]
+fn pgschema_report_is_a_plain_object() {
     let mut rudof = JsRudof::new(None);
     rudof
         .read_data(r#"(n1 {"Student"}["age": 12])"#, Some("pg".into()), None, None, None)

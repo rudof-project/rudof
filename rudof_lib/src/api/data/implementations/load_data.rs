@@ -6,6 +6,7 @@ use crate::{
     types::Data,
     utils::{PrefixDirective, default_prefix_header, get_base_iri},
 };
+#[cfg(feature = "pgschema")]
 use pgschema::parser::pg_builder::PgBuilder;
 use prefixmap::PrefixMap;
 use regex::Regex;
@@ -64,6 +65,15 @@ fn init_defaults(
     ))
 }
 
+#[cfg(not(feature = "pgschema"))]
+fn load_data_from_specs_pg(_rudof: &mut Rudof, _data: &[InputSpec], _merge: bool) -> Result<()> {
+    Err(Box::new(DataError::DataSourceSpec {
+        message: "Property graph data needs the `pgschema` feature of rudof_lib".to_string(),
+    })
+    .into())
+}
+
+#[cfg(feature = "pgschema")]
 fn load_data_from_specs_pg(rudof: &mut Rudof, data: &[InputSpec], merge: bool) -> Result<()> {
     for input_spec in data {
         let mut data_reader = input_spec
@@ -240,6 +250,7 @@ fn read_rdf_data<R: Read>(
     Ok(())
 }
 
+#[cfg(feature = "pgschema")]
 fn read_pg_data<R: io::Read>(rudof: &mut Rudof, data_reader: &mut R, source_name: &str, merge: bool) -> Result<()> {
     if !merge || rudof.data.is_none() || matches!(rudof.data, Some(ref data) if data.is_rdf()) {
         rudof.data = Some(Data::empty_pg());

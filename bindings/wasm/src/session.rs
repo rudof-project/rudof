@@ -7,18 +7,26 @@
 //! URLs and SPARQL endpoints are not available on `wasm`.
 
 use crate::error::{Error, Result};
+#[cfg(feature = "pgschema")]
+use crate::reports::PgSchemaValidationReport;
 use crate::reports::{
-    ExternalResolver, NodeNeighborhood, PgSchemaValidationReport, QueryResults, ShExCheck, ShExValidationReport,
-    ShaclValidationReport,
+    ExternalResolver, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationReport, ShaclValidationReport,
 };
+#[cfg(feature = "comparison")]
+use rudof_lib::formats::{ComparisonFormat, ComparisonMode};
+#[cfg(feature = "conversion")]
+use rudof_lib::formats::{ConversionFormat, ConversionMode, ResultConversionFormat, ResultConversionMode};
+#[cfg(feature = "dctap")]
+use rudof_lib::formats::{DCTapFormat, ResultDCTapFormat};
 use rudof_lib::formats::{
-    ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DCTapFormat, DataFormat, DataReaderMode,
-    InputSpec, IriNormalizationMode, NodeInspectionMode, PgSchemaFormat, QueryType, RdfConfigFormat,
-    ResultConversionFormat, ResultConversionMode, ResultDCTapFormat, ResultDataFormat, ResultPgSchemaValidationFormat,
-    ResultQueryFormat, ResultRdfConfigFormat, ResultServiceFormat, ResultShExValidationFormat,
-    ResultShaclValidationFormat, ShExFormat, ShExValidationSortByMode, ShaclFormat, ShaclValidationMode,
-    ShaclValidationSortByMode, ShapeMapFormat,
+    DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, QueryType, ResultDataFormat,
+    ResultQueryFormat, ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat, ShExFormat,
+    ShExValidationSortByMode, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode, ShapeMapFormat,
 };
+#[cfg(feature = "pgschema")]
+use rudof_lib::formats::{PgSchemaFormat, ResultPgSchemaValidationFormat};
+#[cfg(feature = "rdf-config")]
+use rudof_lib::formats::{RdfConfigFormat, ResultRdfConfigFormat};
 use rudof_lib::{Rudof, RudofConfig};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -384,10 +392,12 @@ impl Session {
         self.rudof.reset_query_results().execute();
     }
 
+    #[cfg(feature = "dctap")]
     pub fn reset_dctap(&mut self) {
         self.rudof.reset_dctap().execute();
     }
 
+    #[cfg(feature = "rdf-config")]
     pub fn reset_rdf_config(&mut self) {
         self.rudof.reset_rdf_config().execute();
     }
@@ -396,14 +406,17 @@ impl Session {
         self.rudof.reset_service_description().execute();
     }
 
+    #[cfg(feature = "pgschema")]
     pub fn reset_pgschema(&mut self) {
         self.rudof.reset_pg_schema().execute();
     }
 
+    #[cfg(feature = "pgschema")]
     pub fn reset_typemap(&mut self) {
         self.rudof.reset_typemap().execute();
     }
 
+    #[cfg(feature = "pgschema")]
     pub fn reset_pgschema_validation(&mut self) {
         self.rudof.reset_pg_schema_validation().execute();
     }
@@ -413,6 +426,7 @@ impl Session {
     pub fn reset_validation_results(&mut self) {
         self.rudof.reset_shex().execute();
         self.rudof.reset_shacl().execute();
+        #[cfg(feature = "pgschema")]
         self.rudof.reset_pg_schema_validation().execute();
     }
 
@@ -580,6 +594,7 @@ impl Session {
 
     /// Compares two schemas (`mode1`/`mode2`: `shex`, `shacl`, ...), or only
     /// the shapes `label1` and `label2`.
+    #[cfg(feature = "comparison")]
     #[allow(clippy::too_many_arguments)]
     pub fn compare_schemas(
         &mut self,
@@ -627,6 +642,7 @@ impl Session {
     /// Converts a schema between modes (e.g. `shex` to `uml`, `shacl` to
     /// `shex`, `dctap` to `shex`). Conversions that write to a folder (HTML)
     /// or render images are not available on `wasm`.
+    #[cfg(feature = "conversion")]
     #[allow(clippy::too_many_arguments)]
     pub fn convert_schemas(
         &mut self,
@@ -667,6 +683,7 @@ impl Session {
     // ------------------------------------------------------------------------
 
     /// Loads a DCTAP profile (`csv` by default).
+    #[cfg(feature = "dctap")]
     pub fn read_dctap(&mut self, dctap: &str, format: Option<&str>) -> Result<()> {
         let input = InputSpec::str(dctap);
         let format: Option<DCTapFormat> = parse(format, "DCTAP format")?;
@@ -677,6 +694,7 @@ impl Session {
         Ok(b.execute()?)
     }
 
+    #[cfg(feature = "dctap")]
     pub fn serialize_dctap(&self, format: Option<&str>) -> Result<String> {
         let format: Option<ResultDCTapFormat> = parse(format, "result DCTAP format")?;
         capture(|w| {
@@ -689,6 +707,7 @@ impl Session {
     }
 
     /// Loads an rdf-config document (YAML).
+    #[cfg(feature = "rdf-config")]
     pub fn read_rdf_config(&mut self, rdf_config: &str, format: Option<&str>) -> Result<()> {
         let input = InputSpec::str(rdf_config);
         let format: Option<RdfConfigFormat> = parse(format, "rdf-config format")?;
@@ -699,6 +718,7 @@ impl Session {
         Ok(b.execute()?)
     }
 
+    #[cfg(feature = "rdf-config")]
     pub fn serialize_rdf_config(&self, format: Option<&str>) -> Result<String> {
         let format: Option<ResultRdfConfigFormat> = parse(format, "result rdf-config format")?;
         capture(|w| {
@@ -750,6 +770,7 @@ impl Session {
     // ------------------------------------------------------------------------
 
     /// Loads a property graph schema (PGSchemaC).
+    #[cfg(feature = "pgschema")]
     pub fn read_pgschema(&mut self, pgschema: &str, format: Option<&str>) -> Result<()> {
         let input = InputSpec::str(pgschema);
         let format: Option<PgSchemaFormat> = parse(format, "property graph schema format")?;
@@ -760,6 +781,7 @@ impl Session {
         Ok(b.execute()?)
     }
 
+    #[cfg(feature = "pgschema")]
     pub fn serialize_pgschema(&self, format: Option<&str>) -> Result<String> {
         let format: Option<PgSchemaFormat> = parse(format, "property graph schema format")?;
         capture(|w| {
@@ -772,6 +794,7 @@ impl Session {
     }
 
     /// Loads a type map, associating property graph nodes with schema types.
+    #[cfg(feature = "pgschema")]
     pub fn read_typemap(&mut self, typemap: &str) -> Result<()> {
         let input = InputSpec::str(typemap);
         Ok(self.rudof.load_typemap(&input).execute()?)
@@ -779,6 +802,7 @@ impl Session {
 
     /// Validates the current property graph data (loaded with `read_data` in
     /// `pg` format) against the property graph schema, for the type map.
+    #[cfg(feature = "pgschema")]
     pub fn validate_pgschema(&mut self) -> Result<PgSchemaValidationReport> {
         self.rudof.validate_pgschema().execute()?;
         let result = self.rudof.pgschema_validation_results().ok_or_else(|| {
@@ -790,6 +814,7 @@ impl Session {
         Ok(result.into())
     }
 
+    #[cfg(feature = "pgschema")]
     pub fn serialize_pgschema_validation_results(&self, format: Option<&str>) -> Result<String> {
         let format: Option<ResultPgSchemaValidationFormat> =
             parse(format, "property graph schema validation result format")?;
@@ -815,6 +840,7 @@ where
 }
 
 /// Parses a required string argument with `T`'s `FromStr`.
+#[cfg(any(feature = "comparison", feature = "conversion"))]
 fn required<T>(value: &str, what: &str) -> Result<T>
 where
     T: FromStr,

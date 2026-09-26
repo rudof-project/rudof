@@ -12,8 +12,17 @@ set -euo pipefail
 cd "$(dirname "$0")"
 root="$(cargo metadata --format-version 1 --no-deps | sed -n 's/.*"workspace_root":"\([^"]*\)".*/\1/p')"
 
-cargo build -p rudof_wasm --release --target wasm32-unknown-unknown
-wasm="$root/target/wasm32-unknown-unknown/release/rudof_wasm.wasm"
+# All the features of rudof_wasm by default. RUDOF_WASM_FEATURES selects some
+# instead, e.g. RUDOF_WASM_FEATURES="" for only RDF data, ShEx, SHACL and
+# SPARQL, or RUDOF_WASM_FEATURES="dctap,conversion" (see the README).
+features=()
+if [ -n "${RUDOF_WASM_FEATURES+set}" ]; then
+    features=(--no-default-features --features "$RUDOF_WASM_FEATURES")
+fi
+
+# The `wasm-release` profile (see the workspace Cargo.toml) optimizes for size.
+cargo build -p rudof_wasm --profile wasm-release --target wasm32-unknown-unknown "${features[@]}"
+wasm="$root/target/wasm32-unknown-unknown/wasm-release/rudof_wasm.wasm"
 wasm-bindgen --target web --out-dir pkg "$wasm"
 wasm-bindgen --target nodejs --out-dir pkg-node "$wasm"
 

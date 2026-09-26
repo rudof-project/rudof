@@ -1,7 +1,6 @@
 use crate::{
     Result, Rudof,
     api::{
-        dctap::implementations::load_dctap,
         shacl::implementations::{load_shacl_schema, serialize_shacl_schema},
         shex::implementations::{load_shex_schema, serialize_shex_schema},
     },
@@ -12,12 +11,14 @@ use crate::{
     },
 };
 use rudof_viz::{DiagramScope, ImageFormat, VizEngine};
-use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
+use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx};
 use shex_ast::ShapeMapParser;
 use std::{
     io,
     path::{Path, PathBuf},
 };
+#[cfg(feature = "dctap")]
+use {crate::api::dctap::implementations::load_dctap, shapes_converter::Tap2ShEx};
 
 #[allow(clippy::too_many_arguments)]
 pub fn show_schema_conversion<W: io::Write>(
@@ -103,6 +104,8 @@ pub fn show_schema_conversion<W: io::Write>(
             show_time,
             writer,
         ),
+        // DCTAP conversions need the `dctap` feature; without it they are unsupported.
+        #[cfg(feature = "dctap")]
         (ConversionMode::Dctap, ResultConversionMode::ShEx) => show_schema_conversion_dctap_to_shex(
             rudof,
             schema,
@@ -114,9 +117,11 @@ pub fn show_schema_conversion<W: io::Write>(
             show_time,
             writer,
         ),
+        #[cfg(feature = "dctap")]
         (ConversionMode::Dctap, ResultConversionMode::Uml) => {
             show_schema_conversion_dctap_to_uml(rudof, schema, input_format, output_format, shape, viz_engine, writer)
         },
+        #[cfg(feature = "dctap")]
         (ConversionMode::Dctap, ResultConversionMode::Html) => match output_folder {
             Some(of) => {
                 show_schema_conversion_dctap_to_html(rudof, schema, input_format, output_format, templates_folder, of)
@@ -417,13 +422,7 @@ fn show_schema_conversion_shacl_to_shex<W: io::Write>(
 
     let shex_schema = InputSpec::Str(converter.current_shex().to_string());
     println!("Generated ShEx schema:\n{}", converter.current_shex());
-    load_shex_schema(
-        rudof,
-        &shex_schema,
-        Some(&crate::formats::ShExFormat::ShExJ),
-        base,
-        reader_mode,
-    )?;
+    load_shex_schema(rudof, &shex_schema, Some(&ShExFormat::ShExJ), base, reader_mode)?;
 
     serialize_shex_schema(
         rudof,
@@ -441,6 +440,7 @@ fn show_schema_conversion_shacl_to_shex<W: io::Write>(
     Ok(())
 }
 
+#[cfg(feature = "dctap")]
 fn show_schema_conversion_dctap_to_shex<W: io::Write>(
     rudof: &mut Rudof,
     schema: &InputSpec,
@@ -485,6 +485,7 @@ fn show_schema_conversion_dctap_to_shex<W: io::Write>(
     Ok(())
 }
 
+#[cfg(feature = "dctap")]
 fn show_schema_conversion_dctap_to_uml<W: io::Write>(
     rudof: &mut Rudof,
     schema: &InputSpec,
@@ -530,6 +531,7 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
     )
 }
 
+#[cfg(feature = "dctap")]
 fn show_schema_conversion_dctap_to_html<P: AsRef<std::path::Path>>(
     rudof: &mut Rudof,
     schema: &InputSpec,

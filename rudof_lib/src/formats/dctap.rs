@@ -1,4 +1,5 @@
 use crate::errors::DCTapError;
+#[cfg(feature = "dctap")]
 use dctap::dctap_format::DCTAPFormat;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -33,6 +34,7 @@ pub enum ResultDCTapFormat {
 // DCTAPFormat
 // ============================================================================
 
+#[cfg(feature = "dctap")]
 impl From<DCTapFormat> for DCTAPFormat {
     fn from(format: DCTapFormat) -> Self {
         match format {

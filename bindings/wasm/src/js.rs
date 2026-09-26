@@ -438,11 +438,13 @@ impl JsRudof {
         self.session.reset_query_results();
     }
 
+    #[cfg(feature = "dctap")]
     #[wasm_bindgen(js_name = resetDctap)]
     pub fn reset_dctap(&mut self) {
         self.session.reset_dctap();
     }
 
+    #[cfg(feature = "rdf-config")]
     #[wasm_bindgen(js_name = resetRdfConfig)]
     pub fn reset_rdf_config(&mut self) {
         self.session.reset_rdf_config();
@@ -453,16 +455,19 @@ impl JsRudof {
         self.session.reset_service_description();
     }
 
+    #[cfg(feature = "pgschema")]
     #[wasm_bindgen(js_name = resetPgschema)]
     pub fn reset_pgschema(&mut self) {
         self.session.reset_pgschema();
     }
 
+    #[cfg(feature = "pgschema")]
     #[wasm_bindgen(js_name = resetTypemap)]
     pub fn reset_typemap(&mut self) {
         self.session.reset_typemap();
     }
 
+    #[cfg(feature = "pgschema")]
     #[wasm_bindgen(js_name = resetPgschemaValidation)]
     pub fn reset_pgschema_validation(&mut self) {
         self.session.reset_pgschema_validation();
@@ -574,6 +579,7 @@ impl JsRudof {
 
     /// Compares two schemas (`mode1`/`mode2`: `shex`, `shacl`, ...), or only
     /// the shapes `label1` and `label2`.
+    #[cfg(feature = "comparison")]
     #[wasm_bindgen(js_name = compareSchemas)]
     #[allow(clippy::too_many_arguments)]
     pub fn compare_schemas(
@@ -608,6 +614,7 @@ impl JsRudof {
     /// Converts a schema between modes (e.g. `shex` to `uml`, `shacl` to
     /// `shex`, `dctap` to `shex`). Conversions that write to a folder (HTML)
     /// or render images are not available on wasm.
+    #[cfg(feature = "conversion")]
     #[wasm_bindgen(js_name = convertSchemas)]
     #[allow(clippy::too_many_arguments)]
     pub fn convert_schemas(
@@ -636,22 +643,26 @@ impl JsRudof {
     // DCTAP, rdf-config and service descriptions
 
     /// Loads a DCTAP profile (`csv` by default).
+    #[cfg(feature = "dctap")]
     #[wasm_bindgen(js_name = readDctap)]
     pub fn read_dctap(&mut self, dctap: &str, format: Option<String>) -> Result<(), JsValue> {
         Ok(self.session.read_dctap(dctap, format.as_deref())?)
     }
 
+    #[cfg(feature = "dctap")]
     #[wasm_bindgen(js_name = serializeDctap)]
     pub fn serialize_dctap(&self, format: Option<String>) -> Result<String, JsValue> {
         Ok(self.session.serialize_dctap(format.as_deref())?)
     }
 
     /// Loads an rdf-config document (YAML).
+    #[cfg(feature = "rdf-config")]
     #[wasm_bindgen(js_name = readRdfConfig)]
     pub fn read_rdf_config(&mut self, rdf_config: &str, format: Option<String>) -> Result<(), JsValue> {
         Ok(self.session.read_rdf_config(rdf_config, format.as_deref())?)
     }
 
+    #[cfg(feature = "rdf-config")]
     #[wasm_bindgen(js_name = serializeRdfConfig)]
     pub fn serialize_rdf_config(&self, format: Option<String>) -> Result<String, JsValue> {
         Ok(self.session.serialize_rdf_config(format.as_deref())?)
@@ -682,17 +693,20 @@ impl JsRudof {
     // Property graph schemas
 
     /// Loads a property graph schema (PGSchemaC).
+    #[cfg(feature = "pgschema")]
     #[wasm_bindgen(js_name = readPgschema)]
     pub fn read_pgschema(&mut self, pgschema: &str, format: Option<String>) -> Result<(), JsValue> {
         Ok(self.session.read_pgschema(pgschema, format.as_deref())?)
     }
 
+    #[cfg(feature = "pgschema")]
     #[wasm_bindgen(js_name = serializePgschema)]
     pub fn serialize_pgschema(&self, format: Option<String>) -> Result<String, JsValue> {
         Ok(self.session.serialize_pgschema(format.as_deref())?)
     }
 
     /// Loads a type map, associating property graph nodes with schema types.
+    #[cfg(feature = "pgschema")]
     #[wasm_bindgen(js_name = readTypemap)]
     pub fn read_typemap(&mut self, typemap: &str) -> Result<(), JsValue> {
         Ok(self.session.read_typemap(typemap)?)
@@ -700,11 +714,13 @@ impl JsRudof {
 
     /// Validates the current property graph (loaded with `readData` in `pg`
     /// format) against the property graph schema, for the type map.
+    #[cfg(feature = "pgschema")]
     #[wasm_bindgen(js_name = validatePgschema, unchecked_return_type = "PgSchemaValidationReport")]
     pub fn validate_pgschema(&mut self) -> Result<JsValue, JsValue> {
         to_js(&self.session.validate_pgschema()?)
     }
 
+    #[cfg(feature = "pgschema")]
     #[wasm_bindgen(js_name = serializePgschemaValidationResults)]
     pub fn serialize_pgschema_validation_results(&self, format: Option<String>) -> Result<String, JsValue> {
         Ok(self.session.serialize_pgschema_validation_results(format.as_deref())?)

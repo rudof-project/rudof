@@ -117,6 +117,7 @@ fn external_resolvers() {
 
 // Schema conversion and comparison
 
+#[cfg(feature = "conversion")]
 #[test]
 fn convert_schemas() {
     let mut rudof = Session::new(None);
@@ -148,6 +149,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     assert_eq!(err.name(), "RangeError", "{err}");
 }
 
+#[cfg(feature = "comparison")]
 #[test]
 fn compare_schemas() {
     let other = r#"
@@ -176,6 +178,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 // DCTAP, rdf-config and service descriptions
 
+#[cfg(feature = "dctap")]
 #[test]
 fn dctap() {
     let tap = "shapeId,propertyId,mandatory,valueDatatype\nPerson,name,true,xsd:string\n";
@@ -183,14 +186,18 @@ fn dctap() {
     rudof.read_dctap(tap, Some("csv")).unwrap();
     let serialized = rudof.serialize_dctap(None).unwrap();
     assert!(serialized.contains("name"), "{serialized}");
-    let shex = rudof
-        .convert_schemas(tap, "dctap", "shex", "csv", "shexc", None, None, None)
-        .unwrap();
-    assert!(shex.contains("name"), "{shex}");
+    #[cfg(feature = "conversion")]
+    {
+        let shex = rudof
+            .convert_schemas(tap, "dctap", "shex", "csv", "shexc", None, None, None)
+            .unwrap();
+        assert!(shex.contains("name"), "{shex}");
+    }
     rudof.reset_dctap();
     assert!(rudof.serialize_dctap(None).is_err());
 }
 
+#[cfg(feature = "rdf-config")]
 #[test]
 fn rdf_config() {
     let config = r#"
@@ -225,6 +232,7 @@ fn service_description() {
 
 // Property graph schemas
 
+#[cfg(feature = "pgschema")]
 #[test]
 fn pgschema_validation() {
     let mut rudof = Session::new(None);

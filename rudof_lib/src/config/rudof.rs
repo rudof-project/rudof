@@ -1,4 +1,5 @@
 use crate::config::{CommonConfig, LoggingConfig};
+#[cfg(feature = "dctap")]
 use dctap::TapConfig;
 use rudof_config::{ConfigError, TomlConfig};
 #[cfg(not(target_family = "wasm"))]
@@ -7,7 +8,9 @@ use rudof_rdf::rdf_core::RdfDataConfig;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use shacl::validator::ShaclConfig;
+#[cfg(feature = "comparison")]
 use shapes_comparator::ComparatorConfig;
+#[cfg(feature = "conversion")]
 use shapes_converter::{ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
@@ -41,20 +44,27 @@ pub struct RudofConfig {
     pub(crate) shex_validator: ValidatorConfig,
     #[serde(rename = "shacl")]
     pub(crate) shacl: ShaclConfig,
+    #[cfg(feature = "conversion")]
     #[serde(rename = "shex2uml")]
     pub(crate) shex2uml: ShEx2UmlConfig,
+    #[cfg(feature = "conversion")]
     #[serde(rename = "shex2html")]
     pub(crate) shex2html: ShEx2HtmlConfig,
+    #[cfg(feature = "conversion")]
     #[serde(rename = "shacl2shex")]
     pub(crate) shacl2shex: Shacl2ShExConfig,
+    #[cfg(feature = "dctap")]
     #[serde(rename = "tap")]
     pub(crate) tap: TapConfig,
+    #[cfg(feature = "conversion")]
     #[serde(rename = "tap2shex")]
     pub(crate) tap2shex: Tap2ShExConfig,
+    #[cfg(feature = "conversion")]
     #[serde(rename = "shex2sparql")]
     pub(crate) shex2sparql: ShEx2SparqlConfig,
     #[serde(rename = "service")]
     pub(crate) service: ServiceConfig,
+    #[cfg(feature = "comparison")]
     #[serde(rename = "comparator")]
     pub(crate) comparator: ComparatorConfig,
 }
@@ -71,12 +81,19 @@ impl RudofConfig {
             shex: Self::default_shex_config(),
             shex_validator: Self::default_shex_validator_config(),
             shacl: Self::default_shacl_config(),
+            #[cfg(feature = "conversion")]
             shex2uml: Self::default_shex2uml_config(),
+            #[cfg(feature = "conversion")]
             shex2html: Self::default_shex2html_config(),
+            #[cfg(feature = "conversion")]
             shacl2shex: Self::default_shacl2shex_config(),
+            #[cfg(feature = "dctap")]
             tap: Self::default_tap_config(),
+            #[cfg(feature = "conversion")]
             tap2shex: Self::default_tap2shex_config(),
+            #[cfg(feature = "conversion")]
             shex2sparql: Self::default_shex2sparql_config(),
+            #[cfg(feature = "comparison")]
             comparator: Self::default_comparator_config(),
         };
         cfg.resolve();
@@ -175,31 +192,37 @@ impl RudofConfig {
         self
     }
 
+    #[cfg(feature = "conversion")]
     pub fn with_shex2uml(mut self, cfg: ShEx2UmlConfig) -> Self {
         self.shex2uml = cfg;
         self
     }
 
+    #[cfg(feature = "conversion")]
     pub fn with_shex2html(mut self, cfg: ShEx2HtmlConfig) -> Self {
         self.shex2html = cfg;
         self
     }
 
+    #[cfg(feature = "conversion")]
     pub fn with_shacl2shex(mut self, cfg: Shacl2ShExConfig) -> Self {
         self.shacl2shex = cfg;
         self
     }
 
+    #[cfg(feature = "dctap")]
     pub fn with_tap(mut self, cfg: TapConfig) -> Self {
         self.tap = cfg;
         self
     }
 
+    #[cfg(feature = "conversion")]
     pub fn with_tap2shex(mut self, cfg: Tap2ShExConfig) -> Self {
         self.tap2shex = cfg;
         self
     }
 
+    #[cfg(feature = "conversion")]
     pub fn with_shex2sparql(mut self, cfg: ShEx2SparqlConfig) -> Self {
         self.shex2sparql = cfg;
         self
@@ -210,6 +233,7 @@ impl RudofConfig {
         self
     }
 
+    #[cfg(feature = "comparison")]
     pub fn with_comparator(mut self, cfg: ComparatorConfig) -> Self {
         self.comparator = cfg;
         self
@@ -249,30 +273,37 @@ impl RudofConfig {
         &self.shacl
     }
 
+    #[cfg(feature = "conversion")]
     pub fn shex2uml(&self) -> &ShEx2UmlConfig {
         &self.shex2uml
     }
 
+    #[cfg(feature = "conversion")]
     pub fn shex2html(&self) -> &ShEx2HtmlConfig {
         &self.shex2html
     }
 
+    #[cfg(feature = "conversion")]
     pub fn shacl2shex(&self) -> &Shacl2ShExConfig {
         &self.shacl2shex
     }
 
+    #[cfg(feature = "dctap")]
     pub fn tap(&self) -> &TapConfig {
         &self.tap
     }
 
+    #[cfg(feature = "conversion")]
     pub fn tap2shex(&self) -> &Tap2ShExConfig {
         &self.tap2shex
     }
 
+    #[cfg(feature = "conversion")]
     pub fn shex2sparql(&self) -> &ShEx2SparqlConfig {
         &self.shex2sparql
     }
 
+    #[cfg(feature = "comparison")]
     pub fn comparator(&self) -> &ComparatorConfig {
         &self.comparator
     }
@@ -326,12 +357,19 @@ impl RudofConfig {
     #[inline] fn default_shex_config() -> ShExConfig { ShExConfig::default() }
     #[inline] fn default_shex_validator_config() -> ValidatorConfig { ValidatorConfig::default() }
     #[inline] fn default_shacl_config() -> ShaclConfig { ShaclConfig::default() }
+    #[cfg(feature = "conversion")]
     #[inline] fn default_shex2uml_config() -> ShEx2UmlConfig { ShEx2UmlConfig::default() }
+    #[cfg(feature = "conversion")]
     #[inline] fn default_shex2html_config() -> ShEx2HtmlConfig { ShEx2HtmlConfig::default() }
+    #[cfg(feature = "conversion")]
     #[inline] fn default_shacl2shex_config() -> Shacl2ShExConfig { Shacl2ShExConfig::default() }
+    #[cfg(feature = "dctap")]
     #[inline] fn default_tap_config() -> TapConfig { TapConfig::default() }
+    #[cfg(feature = "conversion")]
     #[inline] fn default_tap2shex_config() -> Tap2ShExConfig { Tap2ShExConfig::default() }
+    #[cfg(feature = "conversion")]
     #[inline] fn default_shex2sparql_config() -> ShEx2SparqlConfig { ShEx2SparqlConfig::default() }
+    #[cfg(feature = "comparison")]
     #[inline] fn default_comparator_config() -> ComparatorConfig { ComparatorConfig::default() }
 
     /// Resolves cross-section inheritance after all config layers have been merged
@@ -348,6 +386,7 @@ impl RudofConfig {
         if self.shex.base().is_none() {
             self.shex = self.shex.clone().with_base(base.clone());
         }
+        #[cfg(feature = "conversion")]
         if self.tap2shex.base_iri().is_none() {
             self.tap2shex = self.tap2shex.clone().with_base_iri(base.clone());
         }
@@ -358,7 +397,10 @@ impl RudofConfig {
         self.shacl = self.shacl.clone().with_rdf_data(self.rdf_data.clone());
 
         // Tap propagation
-        self.tap2shex = self.tap2shex.clone().with_dctap(self.tap.clone());
+        #[cfg(all(feature = "conversion", feature = "dctap"))]
+        {
+            self.tap2shex = self.tap2shex.clone().with_dctap(self.tap.clone());
+        }
 
         // ShEx and RDF propagation
         self.shex_validator = self
@@ -368,13 +410,16 @@ impl RudofConfig {
             .with_rdf_data(self.rdf_data.clone());
 
         // ShEx propagation
-        self.shex2uml = self.shex2uml.clone().with_shex(self.shex.clone());
-        self.shex2html = self
-            .shex2html
-            .clone()
-            .with_shex(self.shex.clone())
-            .with_shex2uml(self.shex2uml.clone());
-        self.shex2sparql = self.shex2sparql.clone().with_shex(self.shex.clone());
+        #[cfg(feature = "conversion")]
+        {
+            self.shex2uml = self.shex2uml.clone().with_shex(self.shex.clone());
+            self.shex2html = self
+                .shex2html
+                .clone()
+                .with_shex(self.shex.clone())
+                .with_shex2uml(self.shex2uml.clone());
+            self.shex2sparql = self.shex2sparql.clone().with_shex(self.shex.clone());
+        }
     }
 }
 
@@ -464,6 +509,7 @@ mod tests {
         assert_eq!(cfg.rdf_data().base().map(|i| i.as_str()), base);
         assert_eq!(cfg.shex().base().map(|i| i.as_str()), base);
         assert_eq!(cfg.service().base().map(|i| i.as_str()), base);
+        #[cfg(feature = "conversion")]
         assert_eq!(cfg.tap2shex().base_iri().map(|i| i.as_str()), base);
     }
 
@@ -493,13 +539,19 @@ mod tests {
         )
         .unwrap();
         assert!(!cfg.shex().show_imports());
+        #[cfg(feature = "dctap")]
         assert_eq!(cfg.tap().delimiter(), ';');
         assert_eq!(cfg.shex_validator().shex(), cfg.shex());
         assert_eq!(cfg.shex_validator().rdf_data(), cfg.rdf_data());
+        #[cfg(feature = "conversion")]
         assert_eq!(cfg.shex2uml().shex(), cfg.shex());
+        #[cfg(feature = "conversion")]
         assert_eq!(cfg.shex2html().shex(), cfg.shex());
+        #[cfg(feature = "conversion")]
         assert_eq!(cfg.shex2html().shex2uml(), cfg.shex2uml());
+        #[cfg(feature = "conversion")]
         assert_eq!(cfg.shex2sparql().shex(), cfg.shex());
+        #[cfg(all(feature = "conversion", feature = "dctap"))]
         assert_eq!(cfg.tap2shex().dctap(), cfg.tap());
         assert_eq!(cfg.shex().rdf_config_shex(), cfg.rdf_data());
         assert_eq!(cfg.shacl().rdf_data(), cfg.rdf_data());

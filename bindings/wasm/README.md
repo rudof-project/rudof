@@ -26,8 +26,45 @@ cargo install wasm-bindgen-cli --locked --version <version of wasm-bindgen in Ca
 - `pkg/`: an ES module for browsers and bundlers (`wasm-bindgen --target web`)
 - `pkg-node/`: a CommonJS module for Node.js (`wasm-bindgen --target nodejs`)
 
-If `wasm-opt` (from [binaryen](https://github.com/WebAssembly/binaryen)) is
-installed, `build.sh` also uses it to shrink the `.wasm` files.
+`build.sh` builds with the `wasm-release` profile of the workspace, which
+optimizes for size (`opt-level = "z"`, LTO, one codegen unit). If `wasm-opt`
+(from [binaryen](https://github.com/WebAssembly/binaryen)) is installed, it also
+uses it to shrink the `.wasm` files further.
+
+### Smaller builds
+
+RDF data, ShEx, SHACL and SPARQL are always included. Other parts of the API
+are Cargo features, all enabled by default, which can be left out to get a
+smaller `.wasm`:
+
+| Feature | Methods |
+|---------|---------|
+| `conversion` | `convertSchemas`, and UML output in `serializeCurrentShex` |
+| `comparison` | `compareSchemas` |
+| `dctap` | `readDctap`, `serializeDctap`, `resetDctap` |
+| `pgschema` | `readPgschema`, `serializePgschema`, `readTypemap`, `validatePgschema`, `serializePgschemaValidationResults` and their resets, and property graph data (`readData(data, "pg")`) |
+| `rdf-config` | `readRdfConfig`, `serializeRdfConfig`, `resetRdfConfig` |
+
+`RUDOF_WASM_FEATURES` selects the features that `build.sh` builds with:
+
+```sh
+RUDOF_WASM_FEATURES="" ./build.sh                 # none: data, ShEx, SHACL, SPARQL
+RUDOF_WASM_FEATURES="conversion,dctap" ./build.sh # only these
+```
+
+Methods of features that are left out are not generated, so they are missing
+from the `.d.ts` files too.
+
+Sizes of the `.wasm` built by `build.sh` (before `wasm-opt`):
+
+| Features | Size | Gzipped |
+|----------|------|---------|
+| all (default) | 9.5 MB | 2.7 MB |
+| none | 7.4 MB | 2.1 MB |
+| only `conversion` | 8.5 MB | 2.4 MB |
+| only `pgschema` | 8.1 MB | 2.3 MB |
+| only `dctap`, `rdf-config` or `comparison` | 7.5 MB | 2.1 MB | The features are those of `rudof_lib`, which can be
+used in the same way by other crates.
 
 ## API
 

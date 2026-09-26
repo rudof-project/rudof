@@ -18,7 +18,20 @@ include = [
 ]
 
 [features]
-default = [ "sparql" ]
+default = [ "sparql", "comparison", "conversion", "dctap", "pgschema", "rdf-config" ]
+# Optional subsystems, which can be left out to make smaller builds (e.g. for
+# wasm). RDF data, ShEx, SHACL and SPARQL are always available.
+# Comparison of schemas.
+comparison = ["dep:shapes_comparator"]
+# Conversion of schemas (ShEx to UML, SHACL to ShEx, ...), and UML/image
+# output of ShEx schemas.
+conversion = ["dep:shapes_converter"]
+# DCTAP profiles.
+dctap = ["dep:dctap"]
+# Property graph schemas and property graph data.
+pgschema = ["dep:pgschema"]
+# rdf-config documents.
+rdf-config = ["dep:rdf_config"]
 # Pull in the QLever Docker backend (sparql_service/qlever + rudof_rdf/qlever).
 qlever = ["sparql_service/qlever", "rudof_rdf/qlever", "dep:tokio"]
 sparql = [ "shacl/sparql", "sparql_service/sparql", "rudof_rdf/sparql" ]
@@ -27,13 +40,13 @@ sparql = [ "shacl/sparql", "sparql_service/sparql", "rudof_rdf/sparql" ]
 tokio = { workspace = true, optional = true }
 rudof_config.workspace = true
 colored.workspace = true
-dctap.workspace = true
+dctap = { workspace = true, optional = true }
 either.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 rudof_iri.workspace = true
 prefixmap.workspace = true
-pgschema.workspace = true
-rdf_config.workspace = true
+pgschema = { workspace = true, optional = true }
+rdf_config = { workspace = true, optional = true }
 # On wasm only the header types are used: requests go through `utils::wasm_stubs`.
 reqwest.workspace = true
 regex.workspace = true
@@ -43,8 +56,8 @@ semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shacl.workspace = true
-shapes_comparator.workspace = true
-shapes_converter.workspace = true
+shapes_comparator = { workspace = true, optional = true }
+shapes_converter = { workspace = true, optional = true }
 shex_ast.workspace = true
 shex_validation.workspace = true
 sparql_service.workspace = true

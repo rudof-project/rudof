@@ -19,8 +19,21 @@ name = "rudof_wasm"
 crate-type = ["cdylib", "rlib"]
 doctest = false
 
+[features]
+default = ["comparison", "conversion", "dctap", "pgschema", "rdf-config"]
+# Optional parts of the API, each backed by the rudof_lib feature of the same
+# name. Leaving them out makes the `.wasm` smaller: RDF data, ShEx, SHACL and
+# SPARQL are always available.
+comparison = ["rudof_lib/comparison"]
+conversion = ["rudof_lib/conversion"]
+dctap = ["rudof_lib/dctap"]
+pgschema = ["rudof_lib/pgschema"]
+rdf-config = ["rudof_lib/rdf-config"]
+
 [dependencies]
-rudof_lib.workspace = true
+# A path dependency, because workspace inheritance can't switch off default
+# features.
+rudof_lib = { path = "../../rudof_lib", default-features = false, features = ["sparql"] }
 serde.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]

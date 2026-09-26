@@ -212,6 +212,7 @@ fn test_load_data_invalid_rdf() {
     assert!(result.is_err());
 }
 
+#[cfg(feature = "pgschema")]
 #[test]
 fn test_load_data_pg_success() {
     let mut rudof = Rudof::new(RudofConfig::default());
@@ -250,6 +251,7 @@ fn test_load_data_pg_success() {
     );
 }
 
+#[cfg(feature = "pgschema")]
 #[test]
 fn test_load_data_pg_merge() {
     let mut rudof = Rudof::new(RudofConfig::default());
@@ -295,6 +297,7 @@ fn test_load_data_pg_merge() {
     );
 }
 
+#[cfg(feature = "pgschema")]
 #[test]
 fn test_load_data_pg_replace() {
     let mut rudof = Rudof::new(RudofConfig::default());
@@ -340,6 +343,7 @@ fn test_load_data_pg_replace() {
     );
 }
 
+#[cfg(feature = "pgschema")]
 #[test]
 fn test_load_data_pg_invalid_syntax() {
     let mut rudof = Rudof::new(RudofConfig::default());

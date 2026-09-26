@@ -3,9 +3,11 @@
 //! to the plain objects returned to JavaScript.
 
 use rudof_lib::types::{
-    ArcDirection, NeighborArc as CoreNeighborArc, PgSchemaResultAssociation, PgSchemaValidationResult, QueryResult,
-    ResultShapeMap, ShExValidationStatus, ShaclValidationReport as CoreShaclReport,
+    ArcDirection, NeighborArc as CoreNeighborArc, QueryResult, ResultShapeMap, ShExValidationStatus,
+    ShaclValidationReport as CoreShaclReport,
 };
+#[cfg(feature = "pgschema")]
+use rudof_lib::types::{PgSchemaResultAssociation, PgSchemaValidationResult};
 use serde::Serialize;
 
 /// The result of ShEx validation: one entry per node/shape association.
@@ -186,6 +188,7 @@ impl From<&QueryResult> for QueryResults {
 
 /// The result of property graph schema validation: one entry per node/type
 /// association.
+#[cfg(feature = "pgschema")]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PgSchemaValidationReport {
@@ -196,6 +199,7 @@ pub struct PgSchemaValidationReport {
     pub violations: Vec<PgSchemaValidationEntry>,
 }
 
+#[cfg(feature = "pgschema")]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PgSchemaValidationEntry {
@@ -206,6 +210,7 @@ pub struct PgSchemaValidationEntry {
     pub details: String,
 }
 
+#[cfg(feature = "pgschema")]
 impl From<&PgSchemaValidationResult> for PgSchemaValidationReport {
     fn from(result: &PgSchemaValidationResult) -> Self {
         let entries: Vec<PgSchemaValidationEntry> = result.associations.iter().map(Into::into).collect();
@@ -218,6 +223,7 @@ impl From<&PgSchemaValidationResult> for PgSchemaValidationReport {
     }
 }
 
+#[cfg(feature = "pgschema")]
 impl From<&PgSchemaResultAssociation> for PgSchemaValidationEntry {
     fn from(association: &PgSchemaResultAssociation) -> Self {
         let details = association
@@ -235,6 +241,7 @@ impl From<&PgSchemaResultAssociation> for PgSchemaValidationEntry {
     }
 }
 
+#[cfg(feature = "pgschema")]
 fn join(parts: impl Iterator<Item = String>) -> String {
     parts.collect::<Vec<_>>().join("; ")
 }
