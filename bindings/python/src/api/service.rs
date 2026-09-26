@@ -2,6 +2,7 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{PyRDFFormat, PyReaderMode, PyServiceDescriptionFormat},
+    guard,
     input::InputArg,
     output,
 };
@@ -36,7 +37,7 @@ impl PyRudof {
         let reader_mode: Option<DataReaderMode> = reader_mode.map(Into::into);
         let base = base.map(str::to_owned);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_service_description(&input);
             if let Some(f) = &format {
                 b = b.with_data_format(f);

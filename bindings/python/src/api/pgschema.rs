@@ -2,6 +2,7 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{PyPgSchemaFormat, PyPgSchemaValidationReport, PyResultPgSchemaValidationFormat},
+    guard,
     input::InputArg,
     output,
 };
@@ -26,7 +27,7 @@ impl PyRudof {
         let InputArg(input) = input;
         let format: Option<PgSchemaFormat> = format.map(Into::into);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_pg_schema(&input);
             if let Some(f) = &format {
                 b = b.with_pg_schema_format(f);
@@ -70,7 +71,7 @@ impl PyRudof {
     ///     PgSchemaError: If the typemap cannot be parsed.
     fn read_typemap(&mut self, py: Python<'_>, input: InputArg) -> Result<()> {
         let InputArg(input) = input;
-        py.detach(move || self.inner.load_typemap(&input).execute())?;
+        guard::detached(py, move || self.inner.load_typemap(&input).execute())?;
         Ok(())
     }
 
@@ -84,7 +85,7 @@ impl PyRudof {
     /// Raises:
     ///     ValidationError: If no data, PG schema, or typemap is loaded.
     fn validate_pgschema(&mut self, py: Python<'_>) -> Result<PyPgSchemaValidationReport> {
-        py.detach(|| self.inner.validate_pgschema().execute())?;
+        guard::detached(py, || self.inner.validate_pgschema().execute())?;
 
         let result = self.inner.pgschema_validation_results().ok_or(CoreError::Generic {
             error: "validate_pgschema produced no results".into(),

@@ -165,6 +165,10 @@ Every error raised by ``pyrudof`` is a :class:`RudofError` or a subclass of it, 
 ``except RudofError`` catches all of them. Catch a specific subclass when you want to
 distinguish, for example, a malformed schema from an unreachable endpoint.
 
+This includes the paths ``rudof`` has not implemented yet: they raise
+:exc:`InternalError` rather than escaping as a ``BaseException`` that ``except RudofError``
+would miss.
+
 .. autoexception:: RudofError
    :members:
    :show-inheritance:
@@ -188,6 +192,9 @@ distinguish, for example, a malformed schema from an unreachable endpoint.
    :show-inheritance:
 
 .. autoexception:: InputError
+   :show-inheritance:
+
+.. autoexception:: InternalError
    :show-inheritance:
 
 .. autoexception:: IriError

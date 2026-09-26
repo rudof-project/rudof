@@ -4,6 +4,7 @@ use crate::{
     formats::{
         PyReaderMode, PyResultShexValidationFormat, PyShExFormat, PyShExValidationReport, PyShexValidationSortMode,
     },
+    guard,
     input::InputArg,
     output,
 };
@@ -43,7 +44,7 @@ impl PyRudof {
         let format: Option<ShExFormat> = format.map(Into::into);
         let base = base.map(str::to_owned);
 
-        let out = py.detach(move || {
+        let out = guard::detached(py, move || {
             let mut writer = BufWriter::new(Vec::new());
             let is_valid = {
                 let mut b = self.inner.check_shex_schema(&input, &mut writer);
@@ -89,7 +90,7 @@ impl PyRudof {
         let reader_mode: Option<DataReaderMode> = reader_mode.map(Into::into);
         let base = base.map(str::to_owned);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_shex_schema(&input);
             if let Some(f) = &format {
                 b = b.with_shex_schema_format(f);
@@ -170,7 +171,7 @@ impl PyRudof {
     /// Raises:
     ///     ShExError: If no ShEx schema is loaded or the file cannot be written.
     fn compile_shex_to_file(&self, py: Python<'_>, path: PathBuf) -> Result<()> {
-        py.detach(move || {
+        guard::detached(py, move || {
             let file = std::fs::File::create(&path).map_err(|e| CoreError::Generic { error: e.to_string() })?;
             let mut writer = BufWriter::new(file);
             self.inner.compile_shex_schema_to_file(&mut writer).execute()
@@ -197,7 +198,7 @@ impl PyRudof {
         let InputArg(path) = path;
         let reader_mode: Option<DataReaderMode> = reader_mode.map(Into::into);
 
-        py.detach(move || {
+        guard::detached(py, move || {
             let mut b = self.inner.load_shex_schema_precompiled(&path);
             if let Some(m) = &reader_mode {
                 b = b.with_reader_mode(m);
@@ -217,7 +218,7 @@ impl PyRudof {
     /// Raises:
     ///     ValidationError: If no schema, data, or ShapeMap is loaded.
     fn validate_shex(&mut self, py: Python<'_>) -> Result<PyShExValidationReport> {
-        py.detach(|| self.inner.validate_shex().execute())?;
+        guard::detached(py, || self.inner.validate_shex().execute())?;
         let results = self
             .inner
             .shex_validation_results()
@@ -225,7 +226,9 @@ impl PyRudof {
             .ok_or(CoreError::Generic {
                 error: "validate_shex produced no results".into(),
             })?;
-        Ok(PyShExValidationReport::new(results))
+        // Guarded for the same reason as `validate_shacl`: building the report renders every
+        // node and shape label to a string.
+        guard::catch_value(|| PyShExValidationReport::new(results))
     }
 
     /// Serializes the results of the most recent :meth:`validate_shex` call.

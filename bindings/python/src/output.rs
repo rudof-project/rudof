@@ -1,4 +1,5 @@
 use crate::error::{Error, Result};
+use crate::guard;
 use pyo3::Python;
 use rudof_lib::errors::RudofError as CoreError;
 use std::io::BufWriter;
@@ -8,7 +9,7 @@ pub(crate) fn capture_string_detached<F>(py: Python<'_>, f: F) -> Result<String>
 where
     F: FnOnce(&mut BufWriter<Vec<u8>>) -> std::result::Result<(), CoreError> + Send,
 {
-    py.detach(move || {
+    guard::detached(py, move || {
         let mut writer = BufWriter::new(Vec::new());
         f(&mut writer)?;
         finish(writer)

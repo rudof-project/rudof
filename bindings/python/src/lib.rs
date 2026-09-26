@@ -9,6 +9,7 @@ mod config;
 mod error;
 mod formats;
 mod generate;
+mod guard;
 mod input;
 mod output;
 
@@ -22,10 +23,10 @@ pub mod _pyrudof {
 
     #[pymodule_export]
     pub use crate::error::{
-        ComparisonError, ConfigError, ConversionError, DCTapError, DataError, GenerateError, InputError, IriError,
-        MapStateError, MaterializeError, NodeInspectionError, PgDbError, PgSchemaError, PrefixesError, QueryError,
-        RdfConfigError, RudofError, ServiceError, ShExError, ShaclError, ShapeMapError, UnsupportedOperationError,
-        ValidationError,
+        ComparisonError, ConfigError, ConversionError, DCTapError, DataError, GenerateError, InputError, InternalError,
+        IriError, MapStateError, MaterializeError, NodeInspectionError, PgDbError, PgSchemaError, PrefixesError,
+        QueryError, RdfConfigError, RudofError, ServiceError, ShExError, ShaclError, ShapeMapError,
+        UnsupportedOperationError, ValidationError,
     };
 
     #[pymodule_export]

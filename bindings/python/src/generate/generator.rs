@@ -1,6 +1,7 @@
 use crate::{
     error::Result,
     generate::{config::PyGeneratorConfig, enums::PySchemaFormat, runtime::runtime},
+    guard,
 };
 use pyo3::prelude::*;
 use rudof_lib::errors::{GenerationError, RudofError as CoreError};
@@ -50,8 +51,9 @@ impl PyDataGenerator {
     ///     GenerateError: If the schema cannot be loaded or parsed.
     fn load_shex_schema(&mut self, py: Python<'_>, path: PathBuf) -> Result<()> {
         let rt = runtime()?;
-        py.detach(|| rt.block_on(self.inner.load_shex_schema(&path)))
-            .map_err(loading_error)?;
+        guard::detached(py, || {
+            rt.block_on(self.inner.load_shex_schema(&path)).map_err(loading_error)
+        })?;
         Ok(())
     }
 
@@ -64,8 +66,9 @@ impl PyDataGenerator {
     ///     GenerateError: If the schema cannot be loaded or parsed.
     fn load_shacl_schema(&mut self, py: Python<'_>, path: PathBuf) -> Result<()> {
         let rt = runtime()?;
-        py.detach(|| rt.block_on(self.inner.load_shacl_schema(&path)))
-            .map_err(loading_error)?;
+        guard::detached(py, || {
+            rt.block_on(self.inner.load_shacl_schema(&path)).map_err(loading_error)
+        })?;
         Ok(())
     }
 
@@ -78,8 +81,9 @@ impl PyDataGenerator {
     ///     GenerateError: If the schema cannot be loaded or parsed.
     fn load_schema_auto(&mut self, py: Python<'_>, path: PathBuf) -> Result<()> {
         let rt = runtime()?;
-        py.detach(|| rt.block_on(self.inner.load_schema_auto(&path)))
-            .map_err(loading_error)?;
+        guard::detached(py, || {
+            rt.block_on(self.inner.load_schema_auto(&path)).map_err(loading_error)
+        })?;
         Ok(())
     }
 
@@ -89,8 +93,7 @@ impl PyDataGenerator {
     ///     GenerateError: If data generation fails.
     fn generate(&mut self, py: Python<'_>) -> Result<()> {
         let rt = runtime()?;
-        py.detach(|| rt.block_on(self.inner.generate()))
-            .map_err(generating_error)?;
+        guard::detached(py, || rt.block_on(self.inner.generate()).map_err(generating_error))?;
         Ok(())
     }
 
@@ -106,8 +109,10 @@ impl PyDataGenerator {
     fn run_with_format(&mut self, py: Python<'_>, schema_path: PathBuf, format: Option<PySchemaFormat>) -> Result<()> {
         let format = format.map(Into::into);
         let rt = runtime()?;
-        py.detach(|| rt.block_on(self.inner.run_with_format(&schema_path, format)))
-            .map_err(generating_error)?;
+        guard::detached(py, || {
+            rt.block_on(self.inner.run_with_format(&schema_path, format))
+                .map_err(generating_error)
+        })?;
         Ok(())
     }
 
