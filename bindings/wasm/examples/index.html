@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>rudof wasm validation</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
+    textarea { width: 100%; box-sizing: border-box; height: 12rem; font-family: monospace; }
+    input { width: 100%; box-sizing: border-box; font-family: monospace; }
+    pre { background: #f4f4f4; padding: 0.5rem; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <!-- Serve the bindings/wasm directory over HTTP after running ./build.sh,
+       e.g. `python3 -m http.server`, and open /examples/index.html -->
+  <h1>rudof: ShEx and SHACL validation in WebAssembly</h1>
+  <div class="grid">
+    <label>RDF data (Turtle)
+      <textarea id="data">prefix : <http://example.org/>
+:alice :name "Alice" ; :age 23 .
+:bob   :name "Bob"   ; :age "unknown" .</textarea>
+    </label>
+    <label>ShEx schema (ShExC)
+      <textarea id="shex">prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:Person { :name xsd:string ; :age xsd:integer }</textarea>
+      Shapemap <input id="shapemap" value=":alice@:Person, :bob@:Person">
+      <button id="validate-shex">Validate with ShEx</button>
+    </label>
+    <label>SHACL shapes (Turtle)
+      <textarea id="shacl">prefix : <http://example.org/>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:PersonShape a sh:NodeShape ;
+  sh:targetSubjectsOf :name ;
+  sh:property [ sh:path :age ; sh:datatype xsd:integer ] .</textarea>
+      <button id="validate-shacl">Validate with SHACL</button>
+    </label>
+  </div>
+  <h2>Result</h2>
+  <pre id="output">Loading…</pre>
+
+  <script type="module">
+    import init, { validateShex, validateShacl } from "../pkg/rudof_wasm.js";
+
+    const $ = (id) => document.getElementById(id);
+    const show = (run) => {
+      try {
+        $("output").textContent = JSON.stringify(JSON.parse(run()), null, 2);
+      } catch (e) {
+        $("output").textContent = `Error: ${e.message}`;
+      }
+    };
+
+    await init();
+    $("output").textContent = "Ready.";
+    $("validate-shex").onclick = () =>
+      show(() => validateShex($("data").value, $("shex").value, $("shapemap").value));
+    $("validate-shacl").onclick = () =>
+      show(() => validateShacl($("data").value, $("shacl").value));
+  </script>
+</body>
+</html>

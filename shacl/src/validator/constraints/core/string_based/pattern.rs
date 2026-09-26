@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::components::Pattern;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use crate::validator::constraints::escape_sparql_string;
 use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
@@ -12,11 +12,11 @@ use rudof_rdf::rdf_core::term::Term;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use crate::validator::constraints::{BasicSparqlValidator, term_as_sparql, validate_ask_with_opt};
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use indoc::formatdoc;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use rudof_rdf::rdf_core::query::QueryRDF;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
@@ -49,7 +49,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
     }
 }
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Pattern {
     fn validate_sparql(
         &self,

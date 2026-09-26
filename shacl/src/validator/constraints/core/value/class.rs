@@ -1,28 +1,28 @@
 use crate::error::ValidationError;
 use crate::ir::components::Class;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use crate::types::MessageMap;
 use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationOutcome;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use crate::validator::report::{Evidence, ValidationResult};
 use rudof_rdf::rdf_core::term::Term;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use std::fmt::Debug;
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use crate::validator::constraints::{BasicSparqlValidator, object_as_sparql, term_as_sparql};
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use indoc::formatdoc;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use rudof_rdf::rdf_core::query::QueryRDF;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use rudof_rdf::rdf_core::term::Object;
 
 impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
@@ -68,7 +68,7 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
     }
 }
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Class {
     fn validate_sparql(
         &self,
@@ -129,7 +129,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clas
     }
 }
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 fn blank_is_instance<S: NeighsRDF>(store: &S, vn: &S::Term, class_term: &S::Term) -> Result<bool, ValidationError> {
     let types = store.objects_for(vn, &RdfVocab::rdf_type().into()).unwrap_or_default();
     Ok(types.iter().any(|ctype| {

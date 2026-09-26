@@ -25,8 +25,7 @@
 //!
 //! This type lives in the IR module (rather than the validator module)
 //! because schema compilation (`IRSchema::compile_with_recursion`) needs it
-//! to decide whether a cyclic shapes graph is acceptable, and the IR module
-//! — unlike the validator — is compiled for the `wasm` target too.
+//! to decide whether a cyclic shapes graph is acceptable.
 
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};

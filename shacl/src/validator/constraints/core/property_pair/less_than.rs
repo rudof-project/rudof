@@ -2,15 +2,15 @@ use crate::error::ValidationError;
 use crate::ir::components::LessThan;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use crate::validator::constraints::BasicSparqlValidator;
 use crate::validator::constraints::NativeValidator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use indoc::formatdoc;
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
@@ -93,7 +93,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
     }
 }
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for LessThan {
     fn validate_sparql(
         &self,

@@ -1,9 +1,9 @@
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 mod endpoint;
 mod graph;
 mod manager;
 
-#[cfg(feature = "sparql")]
+#[cfg(sparql_validation)]
 pub use endpoint::Endpoint;
 pub use graph::Graph;
 pub use manager::ShaclDataManager;
