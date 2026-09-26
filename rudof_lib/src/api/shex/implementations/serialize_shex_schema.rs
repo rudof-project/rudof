@@ -11,7 +11,9 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ShapeSelector;
 use shex_ast::shexr::shexr_builder::ShExRBuilder;
-use std::{io, time::Instant};
+use std::io;
+#[cfg(not(target_family = "wasm"))]
+use std::time::Instant;
 
 pub fn serialize_shex_schema<W: io::Write>(
     rudof: &Rudof,
@@ -25,6 +27,9 @@ pub fn serialize_shex_schema<W: io::Write>(
     viz_engine: Option<&VizEngine>,
     writer: &mut W,
 ) -> Result<()> {
+    // `Instant` is not available on wasm (calling it panics), where the elapsed
+    // time is not shown.
+    #[cfg(not(target_family = "wasm"))]
     let timer = Instant::now();
 
     let (shape_label, show_schema, show_statistics, show_dependencies, show_time, show_colors, shex_format) =
@@ -59,10 +64,13 @@ pub fn serialize_shex_schema<W: io::Write>(
         serialize_dependencies(rudof, writer)?;
     }
 
+    #[cfg(not(target_family = "wasm"))]
     if show_time {
         writeln!(writer, "elapsed: {:.05?} sec", timer.elapsed().as_secs_f64())
             .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
     }
+    #[cfg(target_family = "wasm")]
+    let _ = show_time;
 
     Ok(())
 }

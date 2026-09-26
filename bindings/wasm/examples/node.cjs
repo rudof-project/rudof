@@ -1,6 +1,6 @@
-// Validates the same RDF data with ShEx and with SHACL from Node.js.
+// Validates RDF data with ShEx and SHACL, and queries it with SPARQL, from Node.js.
 // Run `./build.sh` first, then: node examples/node.cjs
-const { validateShex, validateShacl } = require("../pkg-node/rudof_wasm.js");
+const { Rudof, RudofConfig, validateShex, validateShacl } = require("../pkg-node/rudof_wasm.js");
 
 const data = `
 prefix : <http://example.org/>
@@ -23,20 +23,36 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
   sh:property [ sh:path :age ; sh:datatype xsd:integer ] .
 `;
 
-const shex = JSON.parse(validateShex(data, shexSchema, ":alice@:Person, :bob@:Person"));
+// One-shot validation.
+const shex = validateShex(data, shexSchema, ":alice@:Person, :bob@:Person");
 console.log("ShEx conforms:", shex.conforms);
-for (const r of shex.results) {
-  console.log(`  ${r.node} @ ${r.shape}: ${r.status}`);
+for (const e of shex.entries) {
+  console.log(`  ${e.node} @ ${e.shape}: ${e.status}`);
 }
 
-const shacl = JSON.parse(validateShacl(data, shaclShapes));
+const shacl = validateShacl(data, shaclShapes);
 console.log("SHACL conforms:", shacl.conforms);
-for (const r of shacl.results) {
-  console.log(`  ${r.focusNode} ${r.path}: ${r.severity} (${r.constraintComponent})`);
+for (const e of shacl.entries) {
+  console.log(`  ${e.focusNode} ${e.path}: ${e.severity} (${e.constraintComponent})`);
 }
+
+// A session, as in the Python bindings: loaded data and schemas persist
+// across calls.
+const rudof = new Rudof(RudofConfig.fromToml('base_iri = "http://example.org/"'));
+console.log(`rudof ${rudof.getVersion()}`);
+rudof.readData(data);
+rudof.readShex(shexSchema);
+rudof.readShapemap("{FOCUS :name _}@:Person");
+const report = rudof.validateShex();
+console.log(`Nodes with a name, validated as :Person (${report.violations.length} violation(s)):`);
+console.log(rudof.serializeShexValidationResults("compact"));
+
+rudof.readQuery("PREFIX : <http://example.org/> SELECT ?name ?age WHERE { ?p :name ?name ; :age ?age }");
+const results = rudof.runQuery();
+console.log("SPARQL:", results.kind, results.variables, results.rows);
 
 try {
-  validateShex(data, "not ShEx", ":alice@:Person");
+  rudof.readShex("not ShEx");
 } catch (e) {
-  console.log("Errors are thrown as exceptions:", e.message.split("\n")[0]);
+  console.log(`Errors are thrown as exceptions: ${e.name}: ${e.message.split("\n")[0]}`);
 }

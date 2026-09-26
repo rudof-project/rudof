@@ -1,15 +1,14 @@
 # rudof_wasm
 
 WebAssembly bindings for [rudof](https://github.com/rudof-project/rudof):
-validate RDF data with **ShEx** or **SHACL** from JavaScript, in the browser or
-in Node.js.
+validate RDF data with **ShEx** or **SHACL**, and query it with **SPARQL**,
+from JavaScript, in the browser or in Node.js.
 
-This is a first step towards running rudof on `wasm`. All inputs are passed as
-strings, so anything that needs the filesystem or the network is not
-supported: reading files, dereferencing IRIs, ShEx `IMPORT`s and remote SPARQL
-endpoints. SPARQL queries over the data itself (SHACL-SPARQL constraints, the
-SPARQL SHACL engine, ShapeMap query selectors) run on Oxigraph's embedded
-store.
+All inputs are passed as strings, so anything that needs the filesystem, the
+network or native tools is not supported: reading files, dereferencing IRIs,
+ShEx `IMPORT`s, remote SPARQL endpoints and rendering images. SPARQL queries
+over the data itself (SPARQL queries, SHACL-SPARQL constraints, the SPARQL
+SHACL engine, ShapeMap query selectors) run on Oxigraph's embedded store.
 
 ## Building
 
@@ -32,35 +31,81 @@ installed, `build.sh` also uses it to shrink the `.wasm` files.
 
 ## API
 
-Both functions return a JSON string and throw an `Error` if an input cannot be
-parsed. The optional format arguments accept `turtle` (the default),
-`ntriples`, `rdfxml`, `trig`, `n3`, `nquads` and `jsonld`. The optional
-`base` is used to resolve relative IRIs.
+The bindings are built on `rudof_lib` and mirror the
+[Python bindings](../python): a `Rudof` class keeps a session (loaded data,
+schemas, queries and results), and `validateShex`/`validateShacl` do a whole
+validation in one call. Names follow JavaScript conventions (`read_shex`
+becomes `readShex`), and the generated `.d.ts` files declare every type.
+
+```js
+import init, { Rudof, RudofConfig } from "./pkg/rudof_wasm.js";
+await init();
+
+const rudof = new Rudof(RudofConfig.fromToml('base_iri = "http://example.org/"'));
+rudof.readData(data);                     // Turtle by default
+rudof.readShex(schema);                   // ShExC by default
+rudof.readShapemap(":alice@:Person, {FOCUS :name _}@:Person");
+const report = rudof.validateShex();      // { conforms, entries, violations }
+
+rudof.readShacl(shapes);
+const shaclReport = rudof.validateShacl("sparql");
+
+rudof.readQuery("SELECT ?s WHERE { ?s ?p ?o }");
+const results = rudof.runQuery();         // { kind: "select", variables, rows }
+```
+
+### Rudof
+
+| Area | Methods |
+|------|---------|
+| Session | `new Rudof(config?)`, `updateConfig(config)`, `getVersion()` |
+| RDF data | `readData(data, format?, base?, readerMode?, merge?)`, `serializeData(format?)` |
+| ShEx | `readShex(schema, format?, base?, readerMode?)`, `serializeCurrentShex(format?, shapeLabel?)`, `readShapemap(shapemap, format?, baseNodes?, baseShapes?)`, `serializeShapemap(format?)`, `validateShex()`, `serializeShexValidationResults(format?, sortMode?)` |
+| SHACL | `readShacl(shapes?, format?, base?, readerMode?)` (without `shapes`, they are taken from the data), `serializeShacl(format?)`, `validateShacl(mode?)`, `serializeShaclValidationResults(format?, sortMode?)` |
+| SPARQL | `readQuery(query, queryType?)`, `runQuery()`, `serializeQueryResults(format?)` |
+| Prefixes | `prefixes()`, `addPrefix(alias, iri)`, `removePrefix(alias)`, `renamePrefix(old, new)`, `copyPrefix(old, new)` |
+| Resets | `resetAll()`, `resetData()`, `resetShex()`, `resetShexSchema()`, `resetShapemap()`, `resetShacl()`, `resetShaclValidation()`, `resetQuery()`, `resetQueryResults()` |
+
+Inputs are strings. Formats and modes are strings too, with the names used by
+the command line interface: e.g. `turtle`, `ntriples`, `rdfxml`, `trig`, `n3`,
+`nquads` or `jsonld` for RDF, `shexc` or `shexj` for ShEx, `native` or `sparql`
+for SHACL validation, `strict` or `lax` for the reader mode. Optional arguments
+can be omitted or passed as `undefined`/`null`.
+
+`new RudofConfig()` gives the default configuration, and
+`RudofConfig.fromToml(toml)` reads one with the keys of `rudof.toml`. There is
+no current directory to derive a base IRI from, so the default configuration
+enables `auto_base`: relative IRIs are resolved against `http://base` unless a
+base is given, either as an argument or with `base_iri` in the configuration.
+
+### One-shot validation
 
 ```ts
 validateShex(data: string, schema: string, shapemap: string,
-             dataFormat?: string, base?: string): string
+             dataFormat?: string, base?: string): ShExValidationReport
+validateShacl(data: string, shapes: string, dataFormat?: string,
+              shapesFormat?: string, base?: string,
+              mode?: "native" | "sparql"): ShaclValidationReport
 ```
 
-Validates `data` against a ShExC `schema` for the associations in `shapemap`
-(ShapeMap compact syntax, e.g. `:alice@:Person, :bob@:Person`, or with query
-selectors such as `{FOCUS :name _}@:Person` and `SPARQL "SELECT ..."@:Person`).
-Returns
-`{ conforms, results }`, where each result has the `node`, `shape`, `status`
-(`conformant` or `nonconformant`), `reason` and `appInfo` of one association.
+### Results
 
-```ts
-validateShacl(data: string, shapes: string,
-              dataFormat?: string, shapesFormat?: string, base?: string,
-              mode?: "native" | "sparql"): string
-```
+Reports are plain objects, as in the Python bindings:
 
-Validates `data` against a SHACL shapes graph. `mode` selects the engine that
-evaluates the core constraints: `native` (the default) or `sparql`.
-SHACL-SPARQL constraints (`sh:sparql`) are supported in both modes. Returns
-`{ conforms, results }`, where each result has the `focusNode`, `path`,
-`value`, `sourceShape`, `constraintComponent`, `severity` and `messages`
-(a list of `{ text, lang }`) of one validation result.
+- `ShExValidationReport`: `{ conforms, entries, violations }`, where each entry
+  has the `node`, `shape`, `status` (`conformant`, `nonconformant`, ...) and
+  `details` of one association, and `violations` are the non-conformant ones.
+- `ShaclValidationReport`: `{ conforms, entries, violations }`, where each entry
+  has the `focusNode`, `path`, `value`, `sourceShape`, `constraintComponent`,
+  `severity` and `messages` (a list of `{ text, lang }`) of one result.
+  SHACL-SPARQL constraints (`sh:sparql`) are supported in both modes.
+- `QueryResults`: `{ kind: "select", variables, rows }`,
+  `{ kind: "ask", boolean }` or `{ kind: "graph", graph }`.
+
+Missing values are `null`. Errors are thrown as `Error`s whose `name` is the
+error category, matching the Python exception classes (`DataError`,
+`ShExError`, `ShaclError`, `QueryError`, ...), or `RangeError` for an unknown
+format or mode.
 
 ## Examples
 
@@ -68,23 +113,10 @@ SHACL-SPARQL constraints (`sh:sparql`) are supported in both modes. Returns
 - Browser: serve this directory over HTTP (e.g. `python3 -m http.server`) and
   open `examples/index.html`.
 
-```js
-const { validateShex } = require("./pkg-node/rudof_wasm.js");
-
-const result = JSON.parse(validateShex(
-  `prefix : <http://example.org/>
-   :alice :name "Alice" .`,
-  `prefix : <http://example.org/>
-   prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-   :Person { :name xsd:string }`,
-  ":alice@:Person",
-));
-console.log(result.conforms); // true
-```
-
 ## Testing
 
-The tests in `tests/` run natively and on `wasm`:
+The tests in `tests/` run natively and on `wasm` (`tests/js_api.rs`, which
+checks the values and errors seen by JavaScript, only on `wasm`):
 
 ```sh
 cargo test -p rudof_wasm

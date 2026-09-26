@@ -20,20 +20,17 @@ crate-type = ["cdylib", "rlib"]
 doctest = false
 
 [dependencies]
-prefixmap.workspace = true
-rudof_iri.workspace = true
-# `sparql` provides `QueryRDF` for the in-memory graph (backed by Oxigraph's
-# embedded store), which the ShEx validator requires. It does not pull in any
-# network code on `wasm`.
-rudof_rdf = { workspace = true, features = ["sparql"] }
-serde_json.workspace = true
-shacl.workspace = true
-shex_ast.workspace = true
-shex_validation.workspace = true
+rudof_lib.workspace = true
+serde.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 console_error_panic_hook = "0.1"
+js-sys = "0.3"
+serde-wasm-bindgen = "0.6"
 wasm-bindgen = "0.2"
+
+[dev-dependencies]
+serde_json.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 wasm-bindgen-test = "0.3"

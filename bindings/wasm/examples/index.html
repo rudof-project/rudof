@@ -48,9 +48,9 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     const $ = (id) => document.getElementById(id);
     const show = (run) => {
       try {
-        $("output").textContent = JSON.stringify(JSON.parse(run()), null, 2);
+        $("output").textContent = JSON.stringify(run(), null, 2);
       } catch (e) {
-        $("output").textContent = `Error: ${e.message}`;
+        $("output").textContent = `${e.name}: ${e.message}`;
       }
     };
 
