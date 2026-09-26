@@ -4,10 +4,12 @@ WebAssembly bindings for [rudof](https://github.com/rudof-project/rudof):
 validate RDF data with **ShEx** or **SHACL** from JavaScript, in the browser or
 in Node.js.
 
-This is a minimal first step towards running rudof on `wasm`. All inputs are
-passed as strings, so anything that needs the filesystem or the network is not
-supported: reading files, dereferencing IRIs, ShEx `IMPORT`s, SPARQL endpoints
-and SPARQL-based SHACL validation.
+This is a first step towards running rudof on `wasm`. All inputs are passed as
+strings, so anything that needs the filesystem or the network is not
+supported: reading files, dereferencing IRIs, ShEx `IMPORT`s and remote SPARQL
+endpoints. SPARQL queries over the data itself (SHACL-SPARQL constraints, the
+SPARQL SHACL engine, ShapeMap query selectors) run on Oxigraph's embedded
+store.
 
 ## Building
 
@@ -41,16 +43,21 @@ validateShex(data: string, schema: string, shapemap: string,
 ```
 
 Validates `data` against a ShExC `schema` for the associations in `shapemap`
-(ShapeMap compact syntax, e.g. `:alice@:Person, :bob@:Person`). Returns
+(ShapeMap compact syntax, e.g. `:alice@:Person, :bob@:Person`, or with query
+selectors such as `{FOCUS :name _}@:Person` and `SPARQL "SELECT ..."@:Person`).
+Returns
 `{ conforms, results }`, where each result has the `node`, `shape`, `status`
 (`conformant` or `nonconformant`), `reason` and `appInfo` of one association.
 
 ```ts
 validateShacl(data: string, shapes: string,
-              dataFormat?: string, shapesFormat?: string, base?: string): string
+              dataFormat?: string, shapesFormat?: string, base?: string,
+              mode?: "native" | "sparql"): string
 ```
 
-Validates `data` against a SHACL shapes graph using the native engine. Returns
+Validates `data` against a SHACL shapes graph. `mode` selects the engine that
+evaluates the core constraints: `native` (the default) or `sparql`.
+SHACL-SPARQL constraints (`sh:sparql`) are supported in both modes. Returns
 `{ conforms, results }`, where each result has the `focusNode`, `path`,
 `value`, `sourceShape`, `constraintComponent`, `severity` and `messages`
 (a list of `{ text, lang }`) of one validation result.

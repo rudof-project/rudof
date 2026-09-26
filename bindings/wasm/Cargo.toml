@@ -27,9 +27,7 @@ rudof_iri.workspace = true
 # network code on `wasm`.
 rudof_rdf = { workspace = true, features = ["sparql"] }
 serde_json.workspace = true
-# Only the native SHACL engine is used. (A path dependency, because workspace
-# inheritance can't switch off default features.)
-shacl = { path = "../../shacl", default-features = false }
+shacl.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
 

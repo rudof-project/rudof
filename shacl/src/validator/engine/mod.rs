@@ -1,6 +1,6 @@
 mod focus_nodes_ops;
 mod native;
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 mod sparql;
 mod validate;
 mod value_nodes_ops;
@@ -10,7 +10,7 @@ use crate::types::Target;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use std::collections::HashSet;
 
 use crate::error::ValidationError;
@@ -18,9 +18,9 @@ use crate::validator::RecursionSemantics;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationOutcome;
 pub use native::NativeEngine;
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 pub use sparql::SparqlEngine;
 pub use validate::Validate;
 
@@ -117,7 +117,7 @@ pub trait Engine<S: NeighsRDF>: Send {
     fn chain_exit(&mut self, node: &Object, shape_idx: ShapeLabelIdx);
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 fn select<S: QueryRDF>(store: &S, query: &str, index: &str) -> Result<HashSet<S::Term>, ValidationError> {
     let mut out = HashSet::new();
 

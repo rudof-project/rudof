@@ -1,27 +1,27 @@
-#[cfg(not(target_family = "wasm"))]
+#[cfg(any(not(target_family = "wasm"), feature = "sparql"))]
 use crate::error::ValidationError;
 use crate::validator::store::Store;
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::{rdf_core::RDFFormat, rdf_impl::ReaderMode};
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use sparql_service::RdfData;
 #[cfg(not(target_family = "wasm"))]
 use std::path::Path;
 
 pub struct Graph {
-    #[cfg(sparql_validation)]
+    #[cfg(feature = "sparql")]
     store: RdfData,
-    #[cfg(not(sparql_validation))]
+    #[cfg(not(feature = "sparql"))]
     store: OxigraphInMemory,
 }
 
 impl Graph {
     pub fn new() -> Self {
         Self {
-            #[cfg(sparql_validation)]
+            #[cfg(feature = "sparql")]
             store: RdfData::new(),
-            #[cfg(not(sparql_validation))]
+            #[cfg(not(feature = "sparql"))]
             store: OxigraphInMemory::new(),
         }
     }
@@ -35,9 +35,9 @@ impl Graph {
             &ReaderMode::default(), // TODO - This should revisited
         ) {
             Ok(store) => Ok(Self {
-                #[cfg(sparql_validation)]
+                #[cfg(feature = "sparql")]
                 store: RdfData::from_graph(store)?,
-                #[cfg(not(sparql_validation))]
+                #[cfg(not(feature = "sparql"))]
                 store,
             }),
             Err(err) => Err(err.into()),
@@ -51,7 +51,7 @@ impl Default for Graph {
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 impl TryFrom<OxigraphInMemory> for Graph {
     type Error = ValidationError;
 
@@ -62,35 +62,35 @@ impl TryFrom<OxigraphInMemory> for Graph {
     }
 }
 
-#[cfg(not(sparql_validation))]
+#[cfg(not(feature = "sparql"))]
 impl From<OxigraphInMemory> for Graph {
     fn from(value: OxigraphInMemory) -> Self {
         Self { store: value }
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 impl From<RdfData> for Graph {
     fn from(value: RdfData) -> Self {
         Self { store: value }
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 impl Store<RdfData> for Graph {
     fn store(&self) -> &RdfData {
         &self.store
     }
 }
 
-#[cfg(not(sparql_validation))]
+#[cfg(not(feature = "sparql"))]
 impl Store<OxigraphInMemory> for Graph {
     fn store(&self) -> &OxigraphInMemory {
         &self.store
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 impl Graph {
     pub(crate) fn store_mut(&mut self) -> &mut RdfData {
         &mut self.store

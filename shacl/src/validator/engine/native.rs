@@ -15,9 +15,9 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use crate::validator::constraints::BasicSparqlValidator;
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
 
 pub struct NativeEngine {
@@ -134,7 +134,7 @@ impl NativeEngine {
     }
 }
 
-#[cfg(not(sparql_validation))]
+#[cfg(not(feature = "sparql"))]
 impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
     fn build_indexes(&mut self, store: &RDF) -> Result<(), ValidationError> {
         self.build_indexes_impl(store)
@@ -222,7 +222,7 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 impl<RDF: NeighsRDF + QueryRDF + Debug + 'static> Engine<RDF> for NativeEngine {
     fn build_indexes(&mut self, store: &RDF) -> Result<(), ValidationError> {
         self.build_indexes_impl(store)

@@ -11,11 +11,11 @@ use rudof_rdf::rdf_core::term::{Iri, Term};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use crate::validator::constraints::{BasicSparqlValidator, term_as_sparql, validate_ask_with_opt};
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use indoc::formatdoc;
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
@@ -55,7 +55,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,

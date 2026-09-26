@@ -26,6 +26,7 @@ use shex_ast::ResolveMethod;
 use shex_ast::compact::{ShExParser, ShapeMapParser};
 use shex_ast::ir::actions::semantic_actions_registry::SemanticActionsRegistry;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::shapemap::NodeSelector;
 use shex_validation::{Validator, ValidatorConfig};
 use std::str::FromStr;
 
@@ -52,7 +53,7 @@ pub fn validate_shex(
     base: Option<&str>,
 ) -> Result<String, String> {
     let base = parse_base(base)?;
-    let rdf = parse_data(data, data_format, base.as_ref())?;
+    let mut rdf = parse_data(data, data_format, base.as_ref())?;
 
     let source_iri = base
         .clone()
@@ -71,6 +72,19 @@ pub fn validate_shex(
     let shapemap = ShapeMapParser::parse(shapemap, &nodes_prefixmap, &base, &shapes_prefixmap, &base)
         .map_err(|e| format!("Error parsing shapemap: {e}"))?;
 
+    // Node selectors that query the data run on the graph's embedded SPARQL
+    // store, which is only built on demand.
+    let needs_store = shapemap.iter().any(|association| {
+        matches!(
+            association.node_selector,
+            NodeSelector::Sparql { .. } | NodeSelector::TriplePattern { .. }
+        )
+    });
+    if needs_store {
+        rdf.ensure_store()
+            .map_err(|e| format!("Error preparing RDF data for querying: {e}"))?;
+    }
+
     let result = validator
         .validate_shapemap(&shapemap, &rdf, &schema_ir, &nodes_prefixmap)
         .map_err(|e| format!("Error during ShEx validation: {e}"))?;
@@ -80,13 +94,15 @@ pub fn validate_shex(
     Ok(json!({ "conforms": conforms, "results": results }).to_string())
 }
 
-/// Validates RDF `data` against a SHACL shapes graph `shapes`, using the
-/// native SHACL engine.
+/// Validates RDF `data` against a SHACL shapes graph `shapes`. SHACL-SPARQL
+/// constraints (`sh:sparql`) are supported in both modes.
 ///
 /// * `data_format` / `shapes_format` - RDF formats of `data` and `shapes`
 ///   (`turtle`, `ntriples`, `rdfxml`, `trig`, `n3`, `nquads`, `jsonld`);
 ///   default to Turtle.
 /// * `base` - base IRI used to resolve relative IRIs in data and shapes.
+/// * `mode` - validation engine: `native` (the default) or `sparql`, which
+///   evaluates the core constraints as SPARQL queries.
 ///
 /// Returns a JSON object `{ "conforms": bool, "results": [...] }`, where each
 /// result has the `focusNode`, `path`, `value`, `sourceShape`,
@@ -98,7 +114,11 @@ pub fn validate_shacl(
     data_format: Option<&str>,
     shapes_format: Option<&str>,
     base: Option<&str>,
+    mode: Option<&str>,
 ) -> Result<String, String> {
+    let mode = mode.map_or(Ok(ShaclValidationMode::Native), |m| {
+        ShaclValidationMode::from_str(m).map_err(|e| format!("Invalid SHACL validation mode '{m}': {e}"))
+    })?;
     let base = parse_base(base)?;
     let rdf = parse_data(data, data_format, base.as_ref())?;
     let shapes_format = parse_format(shapes_format)?;
@@ -110,12 +130,9 @@ pub fn validate_shacl(
     )
     .map_err(|e| format!("Error parsing SHACL shapes: {e}"))?;
 
-    // Infallible when `shacl` is built without `sparql` (as this crate asks
-    // for), but fallible when a native workspace build unifies that feature in.
-    #[allow(clippy::unnecessary_fallible_conversions)]
     let graph = Graph::try_from(rdf).map_err(|e| format!("Error preparing RDF data: {e}"))?;
     let report = GraphValidation::new(graph)
-        .validate(&schema, &ShaclValidationMode::Native, &ShaclConfig::default())
+        .validate(&schema, &mode, &ShaclConfig::default())
         .map_err(|e| format!("Error during SHACL validation: {e}"))?;
 
     Ok(shacl_report_to_json(&report).to_string())
@@ -187,8 +204,9 @@ mod js {
             .map_err(|e| JsError::new(&e))
     }
 
-    /// Validates RDF data against a SHACL shapes graph. Returns the
-    /// validation report as a JSON string.
+    /// Validates RDF data against a SHACL shapes graph, with the `native`
+    /// (default) or `sparql` engine. Returns the validation report as a JSON
+    /// string.
     #[wasm_bindgen(js_name = validateShacl)]
     pub fn validate_shacl(
         data: &str,
@@ -196,6 +214,7 @@ mod js {
         data_format: Option<String>,
         shapes_format: Option<String>,
         base: Option<String>,
+        mode: Option<String>,
     ) -> Result<String, JsError> {
         super::validate_shacl(
             data,
@@ -203,6 +222,7 @@ mod js {
             data_format.as_deref(),
             shapes_format.as_deref(),
             base.as_deref(),
+            mode.as_deref(),
         )
         .map_err(|e| JsError::new(&e))
     }

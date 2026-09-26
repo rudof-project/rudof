@@ -1,17 +1,17 @@
-#[cfg(not(target_family = "wasm"))]
+#[cfg(any(not(target_family = "wasm"), feature = "sparql"))]
 use crate::error::ValidationError;
 use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use crate::validator::engine::SparqlEngine;
 use crate::validator::engine::{Engine, NativeEngine};
 use crate::validator::processor::ShaclProcessor;
 use crate::validator::store::{Graph, Store};
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::RDFFormat;
-#[cfg(not(sparql_validation))]
+#[cfg(not(feature = "sparql"))]
 use rudof_rdf::rdf_impl::OxigraphInMemory;
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use sparql_service::RdfData;
 #[cfg(not(target_family = "wasm"))]
 use std::path::Path;
@@ -59,7 +59,7 @@ impl GraphValidation {
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 impl ShaclProcessor<RdfData> for GraphValidation {
     fn store(&self) -> &RdfData {
         self.store.store()
@@ -77,7 +77,7 @@ impl ShaclProcessor<RdfData> for GraphValidation {
     }
 }
 
-#[cfg(not(sparql_validation))]
+#[cfg(not(feature = "sparql"))]
 impl ShaclProcessor<OxigraphInMemory> for GraphValidation {
     fn store(&self) -> &OxigraphInMemory {
         self.store.store()

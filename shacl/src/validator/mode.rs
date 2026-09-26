@@ -13,7 +13,7 @@ pub enum ShaclValidationMode {
     #[default]
     Native,
     /// SPARQL-based engine using SPARQL queries to validate the data
-    #[cfg(sparql_validation)]
+    #[cfg(feature = "sparql")]
     Sparql,
 }
 
@@ -21,7 +21,7 @@ impl Display for ShaclValidationMode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ShaclValidationMode::Native => write!(f, "native"),
-            #[cfg(sparql_validation)]
+            #[cfg(feature = "sparql")]
             ShaclValidationMode::Sparql => write!(f, "sparql"),
         }
     }
@@ -33,7 +33,7 @@ impl FromStr for ShaclValidationMode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "native" => Ok(Self::Native),
-            #[cfg(sparql_validation)]
+            #[cfg(feature = "sparql")]
             "sparql" => Ok(Self::Sparql),
             other => Err(Self::Err::UnsupportedMode(other.to_string())),
         }

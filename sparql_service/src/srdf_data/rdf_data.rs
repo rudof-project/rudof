@@ -8,15 +8,18 @@ use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 #[cfg(feature = "qlever")]
 use rudof_rdf::rdf_impl::QleverGraphContainer;
+#[cfg(not(target_family = "wasm"))]
+use rudof_rdf::{rdf_core::RdfDataConfig, rdf_impl::OxigraphEndpoint};
 use rudof_rdf::{
     rdf_core::{
-        BlankNodeMode, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
+        BlankNodeMode, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf,
         query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions},
     },
-    rdf_impl::{OxigraphEndpoint, OxigraphInMemory, RdfBackend, ReaderMode},
+    rdf_impl::{OxigraphInMemory, RdfBackend, ReaderMode},
 };
 use serde::Serialize;
 use serde::ser::SerializeStruct;
+#[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
@@ -29,6 +32,9 @@ use std::str::FromStr;
 /// with the results of every endpoint registered in `use_endpoints`. The
 /// `endpoints` map is the full catalog (typically populated from
 /// [`RdfDataConfig`]); `use_endpoints` is the subset actually queried.
+///
+/// SPARQL endpoints are not available on `wasm`, where `RdfData` only wraps
+/// the primary backend.
 #[derive(Clone)]
 pub struct RdfData {
     /// Single backend that owns the data. Trait dispatch goes through this.
@@ -36,9 +42,11 @@ pub struct RdfData {
 
     /// Catalog of registered endpoints (e.g. loaded from the TOML config).
     /// Not queried directly — only those moved into `use_endpoints` are.
+    #[cfg(not(target_family = "wasm"))]
     endpoints: HashMap<String, OxigraphEndpoint>,
 
     /// Endpoints actively unioned with the primary on every query.
+    #[cfg(not(target_family = "wasm"))]
     use_endpoints: HashMap<String, OxigraphEndpoint>,
 }
 
@@ -46,7 +54,9 @@ impl RdfData {
     pub fn new() -> RdfData {
         RdfData {
             primary: RdfBackend::default(),
+            #[cfg(not(target_family = "wasm"))]
             endpoints: HashMap::new(),
+            #[cfg(not(target_family = "wasm"))]
             use_endpoints: HashMap::new(),
         }
     }
@@ -74,10 +84,12 @@ impl RdfData {
     }
 
     pub fn reset(&mut self) {
+        #[cfg(not(target_family = "wasm"))]
         self.use_endpoints.clear();
         self.primary = RdfBackend::default();
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn with_rdf_data_config(mut self, rdf_data_config: &RdfDataConfig) -> Result<Self, RdfDataError> {
         let endpoints = rdf_data_config.endpoints();
         for (name, endpoint_description) in endpoints.iter() {
@@ -111,15 +123,20 @@ impl RdfData {
     pub fn from_graph(graph: OxigraphInMemory) -> Result<RdfData, RdfDataError> {
         Ok(RdfData {
             primary: RdfBackend::InMemory(graph),
+            #[cfg(not(target_family = "wasm"))]
             endpoints: HashMap::new(),
+            #[cfg(not(target_family = "wasm"))]
             use_endpoints: HashMap::new(),
         })
     }
 
     /// Cleans the values of endpoints and graph.
     pub fn clean_all(&mut self) {
-        self.endpoints.clear();
-        self.use_endpoints.clear();
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.endpoints.clear();
+            self.use_endpoints.clear();
+        }
         self.primary = RdfBackend::default();
     }
 
@@ -162,7 +179,7 @@ impl RdfData {
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(_) => "qlever",
         };
-        let RdfBackend::InMemory(graph) = &mut self.primary else {
+        let Some(graph) = self.primary.as_in_memory_mut() else {
             return Err(RdfDataError::NotInMemoryBackend { backend: backend_name });
         };
         graph
@@ -175,6 +192,7 @@ impl RdfData {
     /// Creates an RdfData from a single endpoint (registered as both catalog
     /// and active federation member; primary is left as an empty in-memory
     /// backend).
+    #[cfg(not(target_family = "wasm"))]
     pub fn from_endpoint(name: &str, endpoint: OxigraphEndpoint) -> RdfData {
         RdfData {
             primary: RdfBackend::default(),
@@ -185,6 +203,7 @@ impl RdfData {
 
     /// Adds an endpoint to the catalog. Not used at query time until
     /// `use_endpoint` selects it.
+    #[cfg(not(target_family = "wasm"))]
     pub fn add_endpoint(&mut self, name: &str, endpoint: OxigraphEndpoint) {
         self.endpoints
             .entry(name.to_string())
@@ -192,22 +211,27 @@ impl RdfData {
             .or_insert(endpoint);
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn use_endpoints(&self) -> &HashMap<String, OxigraphEndpoint> {
         &self.use_endpoints
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn endpoints(&self) -> &HashMap<String, OxigraphEndpoint> {
         &self.endpoints
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn use_endpoint(&mut self, name: &str, endpoint: OxigraphEndpoint) {
         self.use_endpoints.insert(name.to_string(), endpoint);
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn dont_use_endpoint(&mut self, name: &str) {
         self.use_endpoints.remove(name);
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn endpoints_to_use(&self) -> impl Iterator<Item = (&str, &OxigraphEndpoint)> {
         self.use_endpoints
             .iter()
@@ -237,12 +261,14 @@ impl RdfData {
             format: *format,
             error: format!("{e}"),
         })?;
+        #[cfg(not(target_family = "wasm"))]
         for (name, e) in self.use_endpoints.iter() {
             writeln!(writer, "Endpoint {}: {}", name, e.iri())?
         }
         Ok(())
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn find_endpoint(&self, name: &str) -> Option<OxigraphEndpoint> {
         self.endpoints.get(name).cloned()
     }
@@ -255,12 +281,17 @@ impl RdfData {
             .triples()
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?
             .collect();
-        let endpoint_triples = self
-            .use_endpoints
-            .values()
-            .flat_map(|e| NeighsRDF::triples(e))
-            .flatten();
-        Ok(Box::new(primary_triples.into_iter().chain(endpoint_triples)))
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let endpoint_triples = self
+                .use_endpoints
+                .values()
+                .flat_map(|e| NeighsRDF::triples(e))
+                .flatten();
+            Ok(Box::new(primary_triples.into_iter().chain(endpoint_triples)))
+        }
+        #[cfg(target_family = "wasm")]
+        Ok(Box::new(primary_triples.into_iter()))
     }
 }
 
@@ -270,10 +301,11 @@ impl Serialize for RdfData {
         S: serde::Serializer,
     {
         let mut state = serializer.serialize_struct("RdfData", 2)?;
+        #[cfg(not(target_family = "wasm"))]
         state.serialize_field("endpoints", &self.endpoints)?;
         // Only the in-memory backend has a meaningful serde representation
         // today; remote backends serialize as nothing.
-        if let RdfBackend::InMemory(g) = &self.primary {
+        if let Some(g) = self.primary.as_in_memory() {
             state.serialize_field("graph", g)?;
         }
         state.end()
@@ -282,10 +314,11 @@ impl Serialize for RdfData {
 
 impl Debug for RdfData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RdfData")
-            .field("primary", &self.primary)
-            .field("endpoints", &self.endpoints)
-            .finish()
+        let mut debug = f.debug_struct("RdfData");
+        debug.field("primary", &self.primary);
+        #[cfg(not(target_family = "wasm"))]
+        debug.field("endpoints", &self.endpoints);
+        debug.finish()
     }
 }
 
@@ -306,14 +339,15 @@ impl Rdf for RdfData {
 
     fn prefixmap(&self) -> Option<PrefixMap> {
         let primary_pm = <RdfBackend as Rdf>::prefixmap(&self.primary);
-        if self.use_endpoints.is_empty() {
-            return primary_pm;
+        #[cfg(not(target_family = "wasm"))]
+        if !self.use_endpoints.is_empty() {
+            let mut pm = primary_pm.unwrap_or_default();
+            for e in self.use_endpoints.values() {
+                pm.merge(e.prefixmap().clone());
+            }
+            return Some(pm);
         }
-        let mut pm = primary_pm.unwrap_or_default();
-        for e in self.use_endpoints.values() {
-            pm.merge(e.prefixmap().clone());
-        }
-        Some(pm)
+        primary_pm
     }
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {
@@ -324,6 +358,7 @@ impl Rdf for RdfData {
         {
             return q;
         }
+        #[cfg(not(target_family = "wasm"))]
         for endpoint in self.use_endpoints.values() {
             if let Some(q) = endpoint.prefixmap().qualify_optional(&iri) {
                 return q;
@@ -354,6 +389,7 @@ impl Rdf for RdfData {
         {
             return Ok(iri);
         }
+        #[cfg(not(target_family = "wasm"))]
         for endpoint in self.use_endpoints.values() {
             if let Ok(iri) = endpoint.prefixmap().resolve_prefix_local(prefix, local) {
                 return Ok(iri);
@@ -371,10 +407,12 @@ impl QueryRDF for RdfData {
     where
         Self: Sized,
     {
+        #[cfg_attr(target_family = "wasm", allow(unused_mut))]
         let mut out = self
             .primary
             .query_construct(query_str, format)
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
+        #[cfg(not(target_family = "wasm"))]
         for (_name, endpoint) in self.endpoints_to_use() {
             let extra = endpoint.query_construct(query_str, format)?;
             out.push_str(&extra);
@@ -398,6 +436,7 @@ impl QueryRDF for RdfData {
         sols.extend(converted, primary_pm);
 
         // Federated endpoints.
+        #[cfg(not(target_family = "wasm"))]
         for (_, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;
             let new_sols_converted: Vec<QuerySolution<RdfData>> =
@@ -415,6 +454,7 @@ impl QueryRDF for RdfData {
         {
             return Ok(true);
         }
+        #[cfg(not(target_family = "wasm"))]
         for (_, endpoint) in self.endpoints_to_use() {
             if endpoint.query_ask(query)? {
                 return Ok(true);
@@ -428,17 +468,19 @@ impl NeighsRDF for RdfData {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         // Materialize the primary so the iterator is `'static`; otherwise we
         // can't chain with the endpoint iterators (which are also lazy).
-        let primary: Vec<OxTriple> = self
+        #[cfg_attr(target_family = "wasm", allow(unused_mut))]
+        let mut triples: Vec<OxTriple> = self
             .primary
             .triples()
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?
             .collect();
-        let endpoint_triples: Vec<OxTriple> = self
-            .use_endpoints
-            .values()
-            .flat_map(|e| NeighsRDF::triples(e).map(|i| i.collect::<Vec<_>>()).unwrap_or_default())
-            .collect();
-        let iter: Box<dyn Iterator<Item = OxTriple> + '_> = Box::new(primary.into_iter().chain(endpoint_triples));
+        #[cfg(not(target_family = "wasm"))]
+        triples.extend(
+            self.use_endpoints
+                .values()
+                .flat_map(|e| NeighsRDF::triples(e).map(|i| i.collect::<Vec<_>>()).unwrap_or_default()),
+        );
+        let iter: Box<dyn Iterator<Item = OxTriple> + '_> = Box::new(triples.into_iter());
         Ok(iter)
     }
 
@@ -453,16 +495,17 @@ impl NeighsRDF for RdfData {
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        let primary: Vec<OxTriple> = self
+        #[cfg_attr(target_family = "wasm", allow(unused_mut))]
+        let mut triples: Vec<OxTriple> = self
             .primary
             .triples_matching(subject, predicate, object)
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?
             .collect();
-        let mut endpoint_triples: Vec<OxTriple> = Vec::new();
+        #[cfg(not(target_family = "wasm"))]
         for e in self.use_endpoints.values() {
-            endpoint_triples.extend(e.triples_matching(subject, predicate, object)?);
+            triples.extend(e.triples_matching(subject, predicate, object)?);
         }
-        Ok(primary.into_iter().chain(endpoint_triples))
+        Ok(triples.into_iter())
     }
 
     fn outgoing_arcs_from_list(
@@ -480,11 +523,13 @@ impl NeighsRDF for RdfData {
             return Ok((std::collections::HashMap::new(), Vec::new()));
         }
         // Primary backend (in-memory or endpoint-backed): uses its own FILTER query when available
+        #[cfg_attr(target_family = "wasm", allow(unused_mut))]
         let (mut results, reminder) = self
             .primary
             .outgoing_arcs_from_list(subject, preds)
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
         // Active SPARQL endpoints: each issues a single FILTER query for only the needed predicates
+        #[cfg(not(target_family = "wasm"))]
         for endpoint in self.use_endpoints.values() {
             let (ep_results, _) = endpoint.outgoing_arcs_from_list(subject, preds)?;
             for (pred, objects) in ep_results {
@@ -577,6 +622,7 @@ impl BuildRDF for RdfData {
                 error: format!("{e}"),
             }
         })?;
+        #[cfg(not(target_family = "wasm"))]
         for (name, endpoint) in &self.endpoints {
             writeln!(writer, "Endpoint {}: {}", name, endpoint.iri())?;
         }

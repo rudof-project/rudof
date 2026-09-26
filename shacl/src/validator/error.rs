@@ -1,9 +1,9 @@
 use crate::error::{IRError, ShaclParserError};
 use rudof_rdf::rdf_core::{RDFError, Rdf};
-#[cfg(sparql_validation)]
+#[cfg(all(feature = "sparql", not(target_family = "wasm")))]
 use rudof_rdf::rdf_impl::OxigraphEndpointError;
 use rudof_rdf::rdf_impl::OxigraphInMemoryError;
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 use sparql_service::RdfDataError;
 use thiserror::Error;
 
@@ -12,7 +12,7 @@ use thiserror::Error;
 // TODO - better readability. Also check with other cases like constraints
 #[derive(Debug, Error)]
 pub enum ValidationError {
-    #[cfg(sparql_validation)]
+    #[cfg(feature = "sparql")]
     #[error("Query error: {0}")]
     QueryError(String),
 
@@ -28,11 +28,11 @@ pub enum ValidationError {
     #[error(transparent)]
     RDFError(#[from] Box<RDFError>),
 
-    #[cfg(sparql_validation)]
+    #[cfg(all(feature = "sparql", not(target_family = "wasm")))]
     #[error(transparent)]
     OxigraphEndpointError(#[from] Box<OxigraphEndpointError>),
 
-    #[cfg(sparql_validation)]
+    #[cfg(feature = "sparql")]
     #[error(transparent)]
     RdfDataError(#[from] Box<RdfDataError>),
 
@@ -59,12 +59,12 @@ pub enum ValidationError {
 }
 
 impl ValidationError {
-    #[cfg(sparql_validation)]
+    #[cfg(feature = "sparql")]
     pub fn ask_query_error<RDF: Rdf>(error: RDF::Err) -> Self {
         Self::QueryError(format!("ASK query failed: {error}"))
     }
 
-    #[cfg(sparql_validation)]
+    #[cfg(feature = "sparql")]
     pub fn select_query_error<RDF: Rdf>(error: RDF::Err) -> Self {
         Self::QueryError(format!("SELECT query failed: {error}"))
     }
@@ -90,14 +90,14 @@ impl From<RDFError> for ValidationError {
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(all(feature = "sparql", not(target_family = "wasm")))]
 impl From<OxigraphEndpointError> for ValidationError {
     fn from(value: OxigraphEndpointError) -> Self {
         Self::OxigraphEndpointError(Box::new(value))
     }
 }
 
-#[cfg(sparql_validation)]
+#[cfg(feature = "sparql")]
 impl From<RdfDataError> for ValidationError {
     fn from(value: RdfDataError) -> Self {
         Self::RdfDataError(Box::new(value))

@@ -3134,6 +3134,7 @@ checksum = "7f6632dd080bd07676f06e70254ff5862c9943e9483d700fa7258df73a3f9a6a"
 dependencies = [
  "dashmap",
  "getrandom 0.3.4",
+ "js-sys",
  "libc",
  "oxhttp",
  "oxiri 0.2.11",
@@ -3233,6 +3234,7 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c17c2ae62ac34fda465f6331105906c0e17b4e088dac3249e1f229b962062503"
 dependencies = [
+ "js-sys",
  "thiserror 2.0.20",
 ]
 
