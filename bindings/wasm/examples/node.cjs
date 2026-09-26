@@ -51,6 +51,10 @@ rudof.readQuery("PREFIX : <http://example.org/> SELECT ?name ?age WHERE { ?p :na
 const results = rudof.runQuery();
 console.log("SPARQL:", results.kind, results.variables, results.rows);
 
+// Schema conversion: ShEx to a PlantUML class diagram.
+const uml = rudof.convertSchemas(shexSchema, "shex", "uml", "shexc", "uml");
+console.log("UML:", uml.split("\n").slice(0, 3).join(" | "), "...");
+
 try {
   rudof.readShex("not ShEx");
 } catch (e) {

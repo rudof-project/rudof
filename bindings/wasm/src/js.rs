@@ -55,6 +55,52 @@ export type QueryResults =
   | { kind: "select"; variables: string[]; rows: (string | null)[][] }
   | { kind: "ask"; boolean: boolean }
   | { kind: "graph"; graph: string };
+
+/** The result of property graph schema validation. */
+export interface PgSchemaValidationReport {
+  conforms: boolean;
+  entries: PgSchemaValidationEntry[];
+  /** The entries that do not conform. */
+  violations: PgSchemaValidationEntry[];
+}
+
+export interface PgSchemaValidationEntry {
+  nodeId: string;
+  typeName: string;
+  conforms: boolean;
+  /** The errors or evidences, joined by `; `. */
+  details: string;
+}
+
+/** The arcs around a node. */
+export interface NodeNeighborhood {
+  arcs: NeighborArc[];
+  /** `true` if there were more arcs than the requested limit. */
+  truncated: boolean;
+}
+
+export interface NeighborArc {
+  root: string;
+  direction: "outgoing" | "incoming";
+  depth: number;
+  node: string;
+  predicate: string;
+  neighbor: string;
+  isLast: boolean;
+}
+
+/** The result of `checkShex`. */
+export interface ShExCheck {
+  valid: boolean;
+  message: string;
+}
+
+/** A kind of external shape resolver, for `addExternalResolver`. */
+export interface ExternalResolver {
+  name: string;
+  description: string;
+  specSyntax: string;
+}
 "#;
 
 #[wasm_bindgen(start)]
@@ -390,6 +436,278 @@ impl JsRudof {
     #[wasm_bindgen(js_name = resetQueryResults)]
     pub fn reset_query_results(&mut self) {
         self.session.reset_query_results();
+    }
+
+    #[wasm_bindgen(js_name = resetDctap)]
+    pub fn reset_dctap(&mut self) {
+        self.session.reset_dctap();
+    }
+
+    #[wasm_bindgen(js_name = resetRdfConfig)]
+    pub fn reset_rdf_config(&mut self) {
+        self.session.reset_rdf_config();
+    }
+
+    #[wasm_bindgen(js_name = resetServiceDescription)]
+    pub fn reset_service_description(&mut self) {
+        self.session.reset_service_description();
+    }
+
+    #[wasm_bindgen(js_name = resetPgschema)]
+    pub fn reset_pgschema(&mut self) {
+        self.session.reset_pgschema();
+    }
+
+    #[wasm_bindgen(js_name = resetTypemap)]
+    pub fn reset_typemap(&mut self) {
+        self.session.reset_typemap();
+    }
+
+    #[wasm_bindgen(js_name = resetPgschemaValidation)]
+    pub fn reset_pgschema_validation(&mut self) {
+        self.session.reset_pgschema_validation();
+    }
+
+    /// Clears the ShEx, SHACL and property graph schema validation state: the
+    /// results, and the schemas and ShapeMap they were computed with.
+    #[wasm_bindgen(js_name = resetValidationResults)]
+    pub fn reset_validation_results(&mut self) {
+        self.session.reset_validation_results();
+    }
+
+    // More RDF data operations
+
+    /// Dereferences an IRI and adds the retrieved triples to the current data.
+    /// HTTP requests are not available on wasm, where it throws a `DataError`.
+    pub fn dereference(
+        &mut self,
+        uri: &str,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+        merge: Option<bool>,
+    ) -> Result<(), JsValue> {
+        Ok(self.session.dereference(uri, reader_mode.as_deref(), merge)?)
+    }
+
+    /// The known SPARQL endpoints, as `[name, url]` pairs. Always empty on
+    /// wasm, where SPARQL endpoints are not available.
+    #[wasm_bindgen(js_name = listEndpoints, unchecked_return_type = "[string, string][]")]
+    pub fn list_endpoints(&mut self) -> Result<JsValue, JsValue> {
+        to_js(&self.session.list_endpoints()?)
+    }
+
+    /// Describes the nodes selected by `nodeSelector` (e.g. `:alice`), with
+    /// their outgoing and/or incoming arcs (`mode`: `outgoing`, `incoming` or
+    /// `both`).
+    #[wasm_bindgen(js_name = nodeInfo)]
+    pub fn node_info(
+        &mut self,
+        #[wasm_bindgen(js_name = "nodeSelector")] node_selector: &str,
+        predicates: Option<Vec<String>>,
+        mode: Option<String>,
+        #[wasm_bindgen(js_name = "showColors")] show_colors: Option<bool>,
+        depth: Option<usize>,
+    ) -> Result<String, JsValue> {
+        Ok(self.session.node_info(
+            node_selector,
+            predicates.as_deref(),
+            mode.as_deref(),
+            show_colors,
+            depth,
+        )?)
+    }
+
+    /// The arcs around the nodes selected by `nodeSelector`, up to `depth`
+    /// hops away. With `limit`, at most that many arcs are returned.
+    #[wasm_bindgen(js_name = nodeNeighborhood, unchecked_return_type = "NodeNeighborhood")]
+    pub fn node_neighborhood(
+        &self,
+        #[wasm_bindgen(js_name = "nodeSelector")] node_selector: &str,
+        predicates: Option<Vec<String>>,
+        mode: Option<String>,
+        depth: Option<usize>,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+        limit: Option<usize>,
+    ) -> Result<JsValue, JsValue> {
+        to_js(&self.session.node_neighborhood(
+            node_selector,
+            predicates.as_deref(),
+            mode.as_deref(),
+            depth,
+            strict_iris,
+            limit,
+        )?)
+    }
+
+    /// Materializes the RDF graph described by the ShEx map extension (`Map`
+    /// semantic actions) of the last ShEx validation.
+    pub fn materialize(&self, format: Option<String>, node: Option<String>) -> Result<String, JsValue> {
+        Ok(self.session.materialize(format.as_deref(), node.as_deref())?)
+    }
+
+    // More ShEx operations
+
+    /// Checks whether a ShEx schema is well formed, without loading it.
+    #[wasm_bindgen(js_name = checkShex, unchecked_return_type = "ShExCheck")]
+    pub fn check_shex(&self, schema: &str, format: Option<String>, base: Option<String>) -> Result<JsValue, JsValue> {
+        to_js(&self.session.check_shex(schema, format.as_deref(), base.as_deref())?)
+    }
+
+    /// Adds an external shape resolver, configured by `spec` (see
+    /// `Rudof.listExternalResolvers()`).
+    #[wasm_bindgen(js_name = addExternalResolver)]
+    pub fn add_external_resolver(&mut self, spec: &str) -> Result<(), JsValue> {
+        Ok(self.session.add_external_resolver(spec)?)
+    }
+
+    #[wasm_bindgen(js_name = clearExternalResolvers)]
+    pub fn clear_external_resolvers(&mut self) {
+        self.session.clear_external_resolvers();
+    }
+
+    /// The kinds of external shape resolvers available.
+    #[wasm_bindgen(js_name = listExternalResolvers, unchecked_return_type = "ExternalResolver[]")]
+    pub fn list_external_resolvers() -> Result<JsValue, JsValue> {
+        to_js(&Session::list_external_resolvers())
+    }
+
+    // Schema conversion and comparison
+
+    /// Compares two schemas (`mode1`/`mode2`: `shex`, `shacl`, ...), or only
+    /// the shapes `label1` and `label2`.
+    #[wasm_bindgen(js_name = compareSchemas)]
+    #[allow(clippy::too_many_arguments)]
+    pub fn compare_schemas(
+        &mut self,
+        schema1: &str,
+        schema2: &str,
+        mode1: &str,
+        mode2: &str,
+        format1: &str,
+        format2: &str,
+        base1: Option<String>,
+        base2: Option<String>,
+        label1: Option<String>,
+        label2: Option<String>,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+    ) -> Result<String, JsValue> {
+        Ok(self.session.compare_schemas(
+            schema1,
+            schema2,
+            mode1,
+            mode2,
+            format1,
+            format2,
+            base1.as_deref(),
+            base2.as_deref(),
+            label1.as_deref(),
+            label2.as_deref(),
+            reader_mode.as_deref(),
+        )?)
+    }
+
+    /// Converts a schema between modes (e.g. `shex` to `uml`, `shacl` to
+    /// `shex`, `dctap` to `shex`). Conversions that write to a folder (HTML)
+    /// or render images are not available on wasm.
+    #[wasm_bindgen(js_name = convertSchemas)]
+    #[allow(clippy::too_many_arguments)]
+    pub fn convert_schemas(
+        &mut self,
+        schema: &str,
+        #[wasm_bindgen(js_name = "inputMode")] input_mode: &str,
+        #[wasm_bindgen(js_name = "outputMode")] output_mode: &str,
+        #[wasm_bindgen(js_name = "inputFormat")] input_format: &str,
+        #[wasm_bindgen(js_name = "outputFormat")] output_format: &str,
+        base: Option<String>,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+        shape: Option<String>,
+    ) -> Result<String, JsValue> {
+        Ok(self.session.convert_schemas(
+            schema,
+            input_mode,
+            output_mode,
+            input_format,
+            output_format,
+            base.as_deref(),
+            reader_mode.as_deref(),
+            shape.as_deref(),
+        )?)
+    }
+
+    // DCTAP, rdf-config and service descriptions
+
+    /// Loads a DCTAP profile (`csv` by default).
+    #[wasm_bindgen(js_name = readDctap)]
+    pub fn read_dctap(&mut self, dctap: &str, format: Option<String>) -> Result<(), JsValue> {
+        Ok(self.session.read_dctap(dctap, format.as_deref())?)
+    }
+
+    #[wasm_bindgen(js_name = serializeDctap)]
+    pub fn serialize_dctap(&self, format: Option<String>) -> Result<String, JsValue> {
+        Ok(self.session.serialize_dctap(format.as_deref())?)
+    }
+
+    /// Loads an rdf-config document (YAML).
+    #[wasm_bindgen(js_name = readRdfConfig)]
+    pub fn read_rdf_config(&mut self, rdf_config: &str, format: Option<String>) -> Result<(), JsValue> {
+        Ok(self.session.read_rdf_config(rdf_config, format.as_deref())?)
+    }
+
+    #[wasm_bindgen(js_name = serializeRdfConfig)]
+    pub fn serialize_rdf_config(&self, format: Option<String>) -> Result<String, JsValue> {
+        Ok(self.session.serialize_rdf_config(format.as_deref())?)
+    }
+
+    /// Loads a SPARQL service description, in RDF.
+    #[wasm_bindgen(js_name = readServiceDescription)]
+    pub fn read_service_description(
+        &mut self,
+        #[wasm_bindgen(js_name = "serviceDescription")] service_description: &str,
+        format: Option<String>,
+        base: Option<String>,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+    ) -> Result<(), JsValue> {
+        Ok(self.session.read_service_description(
+            service_description,
+            format.as_deref(),
+            base.as_deref(),
+            reader_mode.as_deref(),
+        )?)
+    }
+
+    #[wasm_bindgen(js_name = serializeServiceDescription)]
+    pub fn serialize_service_description(&self, format: Option<String>) -> Result<String, JsValue> {
+        Ok(self.session.serialize_service_description(format.as_deref())?)
+    }
+
+    // Property graph schemas
+
+    /// Loads a property graph schema (PGSchemaC).
+    #[wasm_bindgen(js_name = readPgschema)]
+    pub fn read_pgschema(&mut self, pgschema: &str, format: Option<String>) -> Result<(), JsValue> {
+        Ok(self.session.read_pgschema(pgschema, format.as_deref())?)
+    }
+
+    #[wasm_bindgen(js_name = serializePgschema)]
+    pub fn serialize_pgschema(&self, format: Option<String>) -> Result<String, JsValue> {
+        Ok(self.session.serialize_pgschema(format.as_deref())?)
+    }
+
+    /// Loads a type map, associating property graph nodes with schema types.
+    #[wasm_bindgen(js_name = readTypemap)]
+    pub fn read_typemap(&mut self, typemap: &str) -> Result<(), JsValue> {
+        Ok(self.session.read_typemap(typemap)?)
+    }
+
+    /// Validates the current property graph (loaded with `readData` in `pg`
+    /// format) against the property graph schema, for the type map.
+    #[wasm_bindgen(js_name = validatePgschema, unchecked_return_type = "PgSchemaValidationReport")]
+    pub fn validate_pgschema(&mut self) -> Result<JsValue, JsValue> {
+        to_js(&self.session.validate_pgschema()?)
+    }
+
+    #[wasm_bindgen(js_name = serializePgschemaValidationResults)]
+    pub fn serialize_pgschema_validation_results(&self, format: Option<String>) -> Result<String, JsValue> {
+        Ok(self.session.serialize_pgschema_validation_results(format.as_deref())?)
     }
 }
 

@@ -7,9 +7,15 @@
 //! URLs and SPARQL endpoints are not available on `wasm`.
 
 use crate::error::{Error, Result};
-use crate::reports::{QueryResults, ShExValidationReport, ShaclValidationReport};
+use crate::reports::{
+    ExternalResolver, NodeNeighborhood, PgSchemaValidationReport, QueryResults, ShExCheck, ShExValidationReport,
+    ShaclValidationReport,
+};
 use rudof_lib::formats::{
-    DataFormat, DataReaderMode, InputSpec, QueryType, ResultDataFormat, ResultQueryFormat, ResultShExValidationFormat,
+    ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DCTapFormat, DataFormat, DataReaderMode,
+    InputSpec, IriNormalizationMode, NodeInspectionMode, PgSchemaFormat, QueryType, RdfConfigFormat,
+    ResultConversionFormat, ResultConversionMode, ResultDCTapFormat, ResultDataFormat, ResultPgSchemaValidationFormat,
+    ResultQueryFormat, ResultRdfConfigFormat, ResultServiceFormat, ResultShExValidationFormat,
     ResultShaclValidationFormat, ShExFormat, ShExValidationSortByMode, ShaclFormat, ShaclValidationMode,
     ShaclValidationSortByMode, ShapeMapFormat,
 };
@@ -377,6 +383,424 @@ impl Session {
     pub fn reset_query_results(&mut self) {
         self.rudof.reset_query_results().execute();
     }
+
+    pub fn reset_dctap(&mut self) {
+        self.rudof.reset_dctap().execute();
+    }
+
+    pub fn reset_rdf_config(&mut self) {
+        self.rudof.reset_rdf_config().execute();
+    }
+
+    pub fn reset_service_description(&mut self) {
+        self.rudof.reset_service_description().execute();
+    }
+
+    pub fn reset_pgschema(&mut self) {
+        self.rudof.reset_pg_schema().execute();
+    }
+
+    pub fn reset_typemap(&mut self) {
+        self.rudof.reset_typemap().execute();
+    }
+
+    pub fn reset_pgschema_validation(&mut self) {
+        self.rudof.reset_pg_schema_validation().execute();
+    }
+
+    /// Clears the ShEx, SHACL and property graph schema validation state: the
+    /// results, and the schemas and ShapeMap they were computed with.
+    pub fn reset_validation_results(&mut self) {
+        self.rudof.reset_shex().execute();
+        self.rudof.reset_shacl().execute();
+        self.rudof.reset_pg_schema_validation().execute();
+    }
+
+    // ------------------------------------------------------------------------
+    // More RDF data operations
+    // ------------------------------------------------------------------------
+
+    /// Dereferences an IRI and adds the retrieved triples to the current data.
+    /// Not available on `wasm`, where it fails with a `DataError`.
+    pub fn dereference(&mut self, uri: &str, reader_mode: Option<&str>, merge: Option<bool>) -> Result<()> {
+        let reader_mode: Option<DataReaderMode> = parse(reader_mode, "reader mode")?;
+        let mut b = self.rudof.dereference(uri);
+        if let Some(m) = &reader_mode {
+            b = b.with_reader_mode(m);
+        }
+        if let Some(merge) = merge {
+            b = b.with_merge(merge);
+        }
+        Ok(b.execute()?)
+    }
+
+    /// The known SPARQL endpoints, as `(name, url)` pairs. Always empty on
+    /// `wasm`, where SPARQL endpoints are not available.
+    pub fn list_endpoints(&mut self) -> Result<Vec<(String, String)>> {
+        Ok(self.rudof.list_endpoints().execute()?)
+    }
+
+    /// Describes the nodes selected by `node_selector` (e.g. `:alice`), with
+    /// their outgoing and/or incoming arcs.
+    pub fn node_info(
+        &mut self,
+        node_selector: &str,
+        predicates: Option<&[String]>,
+        mode: Option<&str>,
+        show_colors: Option<bool>,
+        depth: Option<usize>,
+    ) -> Result<String> {
+        let mode: Option<NodeInspectionMode> = parse(mode, "node inspection mode")?;
+        capture(|w| {
+            let mut b = self.rudof.show_node_info(node_selector, w);
+            if let Some(p) = predicates {
+                b = b.with_predicates(p);
+            }
+            if let Some(m) = &mode {
+                b = b.with_show_node_mode(m);
+            }
+            if let Some(c) = show_colors {
+                b = b.with_show_colors(c);
+            }
+            if let Some(d) = depth {
+                b = b.with_depth(d);
+            }
+            b.execute()
+        })
+    }
+
+    /// The arcs around the nodes selected by `node_selector`, up to `depth`
+    /// hops away. With `limit`, at most that many arcs are returned.
+    pub fn node_neighborhood(
+        &self,
+        node_selector: &str,
+        predicates: Option<&[String]>,
+        mode: Option<&str>,
+        depth: Option<usize>,
+        strict_iris: Option<bool>,
+        limit: Option<usize>,
+    ) -> Result<NodeNeighborhood> {
+        let mode: Option<NodeInspectionMode> = parse(mode, "node inspection mode")?;
+        let mut b = self.rudof.node_neighborhood(node_selector);
+        if let Some(p) = predicates {
+            b = b.with_predicates(p);
+        }
+        if let Some(m) = &mode {
+            b = b.with_mode(m);
+        }
+        if let Some(d) = depth {
+            b = b.with_depth(d);
+        }
+        if strict_iris.unwrap_or(false) {
+            b = b.with_iri_mode(IriNormalizationMode::Strict);
+        }
+        let arcs = b.execute()?;
+        // One arc past `limit`, to tell whether the neighborhood was truncated.
+        let mut arcs = match limit {
+            Some(limit) => arcs
+                .take(limit.saturating_add(1))
+                .collect::<std::result::Result<Vec<_>, _>>(),
+            None => arcs.collect(),
+        }?;
+        let truncated = limit.is_some_and(|limit| arcs.len() > limit);
+        if let Some(limit) = limit {
+            arcs.truncate(limit);
+        }
+        Ok(NodeNeighborhood {
+            arcs: arcs.iter().map(Into::into).collect(),
+            truncated,
+        })
+    }
+
+    /// Materializes the RDF graph described by the ShEx map extension
+    /// (`Map` semantic actions) of the last ShEx validation.
+    pub fn materialize(&self, format: Option<&str>, node: Option<&str>) -> Result<String> {
+        let format: Option<ResultDataFormat> = parse(format, "result data format")?;
+        capture(|w| {
+            let mut m = self.rudof.materialize(w);
+            if let Some(f) = &format {
+                m = m.with_result_format(f);
+            }
+            if let Some(n) = node {
+                m = m.with_initial_node_iri(n);
+            }
+            m.execute()
+        })
+    }
+
+    // ------------------------------------------------------------------------
+    // More ShEx operations
+    // ------------------------------------------------------------------------
+
+    /// Checks whether a ShEx schema is well formed, without loading it.
+    pub fn check_shex(&self, schema: &str, format: Option<&str>, base: Option<&str>) -> Result<ShExCheck> {
+        let input = InputSpec::str(schema);
+        let format: Option<ShExFormat> = parse(format, "ShEx format")?;
+        let mut output = Vec::new();
+        let valid = {
+            let mut b = self.rudof.check_shex_schema(&input, &mut output);
+            if let Some(f) = &format {
+                b = b.with_shex_schema_format(f);
+            }
+            if let Some(base) = base {
+                b = b.with_base(base);
+            }
+            b.execute()?
+        };
+        let message = String::from_utf8(output)
+            .map_err(|e| Error::new("RudofError", format!("Output is not valid UTF-8: {e}")))?;
+        Ok(ShExCheck { valid, message })
+    }
+
+    /// Adds an external shape resolver, configured by `spec` (see
+    /// [`Session::list_external_resolvers`] for the syntax of each kind).
+    pub fn add_external_resolver(&mut self, spec: &str) -> Result<()> {
+        Ok(self.rudof.add_external_resolver(spec)?)
+    }
+
+    pub fn clear_external_resolvers(&mut self) {
+        self.rudof.clear_external_resolvers();
+    }
+
+    /// The kinds of external shape resolvers available.
+    pub fn list_external_resolvers() -> Vec<ExternalResolver> {
+        Rudof::list_external_resolvers()
+            .into_iter()
+            .map(|info| ExternalResolver {
+                name: info.name.to_string(),
+                description: info.description.to_string(),
+                spec_syntax: info.spec_syntax.to_string(),
+            })
+            .collect()
+    }
+
+    // ------------------------------------------------------------------------
+    // Schema conversion and comparison
+    // ------------------------------------------------------------------------
+
+    /// Compares two schemas (`mode1`/`mode2`: `shex`, `shacl`, ...), or only
+    /// the shapes `label1` and `label2`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn compare_schemas(
+        &mut self,
+        schema1: &str,
+        schema2: &str,
+        mode1: &str,
+        mode2: &str,
+        format1: &str,
+        format2: &str,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        label1: Option<&str>,
+        label2: Option<&str>,
+        reader_mode: Option<&str>,
+    ) -> Result<String> {
+        let (input1, input2) = (InputSpec::str(schema1), InputSpec::str(schema2));
+        let mode1 = required::<ComparisonMode>(mode1, "comparison mode")?;
+        let mode2 = required::<ComparisonMode>(mode2, "comparison mode")?;
+        let format1 = required::<ComparisonFormat>(format1, "comparison format")?;
+        let format2 = required::<ComparisonFormat>(format2, "comparison format")?;
+        let reader_mode: Option<DataReaderMode> = parse(reader_mode, "reader mode")?;
+        capture(|w| {
+            let mut c = self
+                .rudof
+                .show_schema_comparison(&input1, &input2, &format1, &format2, &mode1, &mode2, w);
+            if let Some(m) = &reader_mode {
+                c = c.with_reader_mode(m);
+            }
+            if let Some(b) = base1 {
+                c = c.with_base1(b);
+            }
+            if let Some(b) = base2 {
+                c = c.with_base2(b);
+            }
+            if let Some(l) = label1 {
+                c = c.with_shape1(l);
+            }
+            if let Some(l) = label2 {
+                c = c.with_shape2(l);
+            }
+            c.execute()
+        })
+    }
+
+    /// Converts a schema between modes (e.g. `shex` to `uml`, `shacl` to
+    /// `shex`, `dctap` to `shex`). Conversions that write to a folder (HTML)
+    /// or render images are not available on `wasm`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn convert_schemas(
+        &mut self,
+        schema: &str,
+        input_mode: &str,
+        output_mode: &str,
+        input_format: &str,
+        output_format: &str,
+        base: Option<&str>,
+        reader_mode: Option<&str>,
+        shape: Option<&str>,
+    ) -> Result<String> {
+        let input = InputSpec::str(schema);
+        let input_mode = required::<ConversionMode>(input_mode, "conversion mode")?;
+        let output_mode = required::<ResultConversionMode>(output_mode, "result conversion mode")?;
+        let input_format = required::<ConversionFormat>(input_format, "conversion format")?;
+        let output_format = required::<ResultConversionFormat>(output_format, "result conversion format")?;
+        let reader_mode: Option<DataReaderMode> = parse(reader_mode, "reader mode")?;
+        capture(|w| {
+            let mut c =
+                self.rudof
+                    .show_schema_conversion(&input, &input_mode, &output_mode, &input_format, &output_format, w);
+            if let Some(b) = base {
+                c = c.with_base(b);
+            }
+            if let Some(m) = &reader_mode {
+                c = c.with_reader_mode(m);
+            }
+            if let Some(s) = shape {
+                c = c.with_shape(s);
+            }
+            c.execute()
+        })
+    }
+
+    // ------------------------------------------------------------------------
+    // DCTAP, rdf-config and service descriptions
+    // ------------------------------------------------------------------------
+
+    /// Loads a DCTAP profile (`csv` by default).
+    pub fn read_dctap(&mut self, dctap: &str, format: Option<&str>) -> Result<()> {
+        let input = InputSpec::str(dctap);
+        let format: Option<DCTapFormat> = parse(format, "DCTAP format")?;
+        let mut b = self.rudof.load_dctap(&input);
+        if let Some(f) = &format {
+            b = b.with_dctap_format(f);
+        }
+        Ok(b.execute()?)
+    }
+
+    pub fn serialize_dctap(&self, format: Option<&str>) -> Result<String> {
+        let format: Option<ResultDCTapFormat> = parse(format, "result DCTAP format")?;
+        capture(|w| {
+            let mut s = self.rudof.serialize_dctap(w);
+            if let Some(f) = &format {
+                s = s.with_result_dctap_format(f);
+            }
+            s.execute()
+        })
+    }
+
+    /// Loads an rdf-config document (YAML).
+    pub fn read_rdf_config(&mut self, rdf_config: &str, format: Option<&str>) -> Result<()> {
+        let input = InputSpec::str(rdf_config);
+        let format: Option<RdfConfigFormat> = parse(format, "rdf-config format")?;
+        let mut b = self.rudof.load_rdf_config(&input);
+        if let Some(f) = &format {
+            b = b.with_rdf_config_format(f);
+        }
+        Ok(b.execute()?)
+    }
+
+    pub fn serialize_rdf_config(&self, format: Option<&str>) -> Result<String> {
+        let format: Option<ResultRdfConfigFormat> = parse(format, "result rdf-config format")?;
+        capture(|w| {
+            let mut s = self.rudof.serialize_rdf_config(w);
+            if let Some(f) = &format {
+                s = s.with_result_rdf_config_format(f);
+            }
+            s.execute()
+        })
+    }
+
+    /// Loads a SPARQL service description, in RDF.
+    pub fn read_service_description(
+        &mut self,
+        service_description: &str,
+        format: Option<&str>,
+        base: Option<&str>,
+        reader_mode: Option<&str>,
+    ) -> Result<()> {
+        let input = InputSpec::str(service_description);
+        let format: Option<DataFormat> = parse(format, "data format")?;
+        let reader_mode: Option<DataReaderMode> = parse(reader_mode, "reader mode")?;
+        let mut b = self.rudof.load_service_description(&input);
+        if let Some(f) = &format {
+            b = b.with_data_format(f);
+        }
+        if let Some(base) = base {
+            b = b.with_base(base);
+        }
+        if let Some(m) = &reader_mode {
+            b = b.with_reader_mode(m);
+        }
+        Ok(b.execute()?)
+    }
+
+    pub fn serialize_service_description(&self, format: Option<&str>) -> Result<String> {
+        let format: Option<ResultServiceFormat> = parse(format, "service description format")?;
+        capture(|w| {
+            let mut s = self.rudof.serialize_service_description(w);
+            if let Some(f) = &format {
+                s = s.with_result_service_format(f);
+            }
+            s.execute()
+        })
+    }
+
+    // ------------------------------------------------------------------------
+    // Property graph schemas
+    // ------------------------------------------------------------------------
+
+    /// Loads a property graph schema (PGSchemaC).
+    pub fn read_pgschema(&mut self, pgschema: &str, format: Option<&str>) -> Result<()> {
+        let input = InputSpec::str(pgschema);
+        let format: Option<PgSchemaFormat> = parse(format, "property graph schema format")?;
+        let mut b = self.rudof.load_pg_schema(&input);
+        if let Some(f) = &format {
+            b = b.with_pg_schema_format(f);
+        }
+        Ok(b.execute()?)
+    }
+
+    pub fn serialize_pgschema(&self, format: Option<&str>) -> Result<String> {
+        let format: Option<PgSchemaFormat> = parse(format, "property graph schema format")?;
+        capture(|w| {
+            let mut s = self.rudof.serialize_pg_schema(w);
+            if let Some(f) = &format {
+                s = s.with_result_pg_schema_format(f);
+            }
+            s.execute()
+        })
+    }
+
+    /// Loads a type map, associating property graph nodes with schema types.
+    pub fn read_typemap(&mut self, typemap: &str) -> Result<()> {
+        let input = InputSpec::str(typemap);
+        Ok(self.rudof.load_typemap(&input).execute()?)
+    }
+
+    /// Validates the current property graph data (loaded with `read_data` in
+    /// `pg` format) against the property graph schema, for the type map.
+    pub fn validate_pgschema(&mut self) -> Result<PgSchemaValidationReport> {
+        self.rudof.validate_pgschema().execute()?;
+        let result = self.rudof.pgschema_validation_results().ok_or_else(|| {
+            Error::new(
+                "ValidationError",
+                "Property graph schema validation produced no results",
+            )
+        })?;
+        Ok(result.into())
+    }
+
+    pub fn serialize_pgschema_validation_results(&self, format: Option<&str>) -> Result<String> {
+        let format: Option<ResultPgSchemaValidationFormat> =
+            parse(format, "property graph schema validation result format")?;
+        capture(|w| {
+            let mut s = self.rudof.serialize_pgschema_validation_results(w);
+            if let Some(f) = &format {
+                s = s.with_result_pg_schema_validation_format(f);
+            }
+            s.execute()
+        })
+    }
 }
 
 /// Parses an optional string argument with `T`'s `FromStr`.
@@ -388,6 +812,15 @@ where
     value
         .map(|v| T::from_str(v).map_err(|e| Error::invalid_argument(format!("Invalid {what} '{v}': {e}"))))
         .transpose()
+}
+
+/// Parses a required string argument with `T`'s `FromStr`.
+fn required<T>(value: &str, what: &str) -> Result<T>
+where
+    T: FromStr,
+    T::Err: Display,
+{
+    T::from_str(value).map_err(|e| Error::invalid_argument(format!("Invalid {what} '{value}': {e}")))
 }
 
 /// Runs a serializer writing to a buffer, and returns what it wrote.

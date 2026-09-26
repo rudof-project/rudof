@@ -93,3 +93,35 @@ fn rudof_class_workflow() {
     assert!(prefixes.iter().any(|pair| array(&pair).get(0) == "ex"));
     assert!(!rudof.get_version().is_empty());
 }
+
+#[test]
+fn more_reports_are_plain_objects() {
+    let resolvers = array(&JsRudof::list_external_resolvers().unwrap());
+    assert!(resolvers.length() > 0);
+    assert!(get(&resolvers.get(0), "specSyntax").is_string());
+
+    let mut rudof = JsRudof::new(None);
+    rudof.read_data(DATA, None, None, None, None).unwrap();
+    let neighborhood = rudof
+        .node_neighborhood(":alice", Some(vec![":name".to_string()]), None, None, None, Some(5))
+        .unwrap();
+    assert_eq!(get(&neighborhood, "truncated"), JsValue::FALSE);
+    let arc = array(&get(&neighborhood, "arcs")).get(0);
+    assert_eq!(get(&arc, "direction"), "outgoing");
+    assert_eq!(get(&arc, "isLast"), JsValue::TRUE);
+
+    let mut rudof = JsRudof::new(None);
+    rudof
+        .read_data(r#"(n1 {"Student"}["age": 12])"#, Some("pg".into()), None, None, None)
+        .unwrap();
+    rudof
+        .read_pgschema(
+            "CREATE NODE TYPE ( AdultType: Student { age: INTEGER CHECK > 18 })",
+            None,
+        )
+        .unwrap();
+    rudof.read_typemap("n1: AdultType").unwrap();
+    let report = rudof.validate_pgschema().unwrap();
+    assert_eq!(get(&report, "conforms"), JsValue::FALSE);
+    assert_eq!(get(&array(&get(&report, "violations")).get(0), "nodeId"), "n1");
+}

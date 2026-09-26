@@ -59,12 +59,27 @@ const results = rudof.runQuery();         // { kind: "select", variables, rows }
 | Area | Methods |
 |------|---------|
 | Session | `new Rudof(config?)`, `updateConfig(config)`, `getVersion()` |
-| RDF data | `readData(data, format?, base?, readerMode?, merge?)`, `serializeData(format?)` |
-| ShEx | `readShex(schema, format?, base?, readerMode?)`, `serializeCurrentShex(format?, shapeLabel?)`, `readShapemap(shapemap, format?, baseNodes?, baseShapes?)`, `serializeShapemap(format?)`, `validateShex()`, `serializeShexValidationResults(format?, sortMode?)` |
+| RDF data | `readData(data, format?, base?, readerMode?, merge?)`, `serializeData(format?)`, `dereference(uri, readerMode?, merge?)`, `listEndpoints()` |
+| Nodes | `nodeInfo(nodeSelector, predicates?, mode?, showColors?, depth?)`, `nodeNeighborhood(nodeSelector, predicates?, mode?, depth?, strictIris?, limit?)` |
+| ShEx | `readShex(schema, format?, base?, readerMode?)`, `checkShex(schema, format?, base?)`, `serializeCurrentShex(format?, shapeLabel?)`, `readShapemap(shapemap, format?, baseNodes?, baseShapes?)`, `serializeShapemap(format?)`, `validateShex()`, `serializeShexValidationResults(format?, sortMode?)`, `materialize(format?, node?)`, `addExternalResolver(spec)`, `clearExternalResolvers()`, `Rudof.listExternalResolvers()` |
 | SHACL | `readShacl(shapes?, format?, base?, readerMode?)` (without `shapes`, they are taken from the data), `serializeShacl(format?)`, `validateShacl(mode?)`, `serializeShaclValidationResults(format?, sortMode?)` |
 | SPARQL | `readQuery(query, queryType?)`, `runQuery()`, `serializeQueryResults(format?)` |
+| Schemas | `convertSchemas(schema, inputMode, outputMode, inputFormat, outputFormat, base?, readerMode?, shape?)`, `compareSchemas(schema1, schema2, mode1, mode2, format1, format2, base1?, base2?, label1?, label2?, readerMode?)` |
+| DCTAP | `readDctap(dctap, format?)`, `serializeDctap(format?)` |
+| rdf-config | `readRdfConfig(rdfConfig, format?)`, `serializeRdfConfig(format?)` |
+| Service descriptions | `readServiceDescription(serviceDescription, format?, base?, readerMode?)`, `serializeServiceDescription(format?)` |
+| Property graph schemas | `readPgschema(pgschema, format?)`, `serializePgschema(format?)`, `readTypemap(typemap)`, `validatePgschema()` (with property graph data loaded with `readData(data, "pg")`), `serializePgschemaValidationResults(format?)` |
 | Prefixes | `prefixes()`, `addPrefix(alias, iri)`, `removePrefix(alias)`, `renamePrefix(old, new)`, `copyPrefix(old, new)` |
-| Resets | `resetAll()`, `resetData()`, `resetShex()`, `resetShexSchema()`, `resetShapemap()`, `resetShacl()`, `resetShaclValidation()`, `resetQuery()`, `resetQueryResults()` |
+| Resets | `resetAll()`, `resetData()`, `resetShex()`, `resetShexSchema()`, `resetShapemap()`, `resetShacl()`, `resetShaclValidation()`, `resetQuery()`, `resetQueryResults()`, `resetDctap()`, `resetRdfConfig()`, `resetServiceDescription()`, `resetPgschema()`, `resetTypemap()`, `resetPgschemaValidation()`, `resetValidationResults()` |
+
+Everything in the Python bindings is available, except what needs files or
+native libraries: `read_map_state`, `compile_shex_to_file` and
+`read_shex_precompiled` (which take file paths), property graph databases
+(`connect_pg_db`, `pg_db_ddl`, `load_pg_db`, `query_cypher`) and data
+generation. `dereference` and `listEndpoints` are there for completeness, but
+there is no network access on wasm: `dereference` throws a `DataError`, and
+`listEndpoints` returns `[]`. Conversions that render images or write HTML to a
+folder fail too.
 
 Inputs are strings. Formats and modes are strings too, with the names used by
 the command line interface: e.g. `turtle`, `ntriples`, `rdfxml`, `trig`, `n3`,
@@ -101,6 +116,14 @@ Reports are plain objects, as in the Python bindings:
   SHACL-SPARQL constraints (`sh:sparql`) are supported in both modes.
 - `QueryResults`: `{ kind: "select", variables, rows }`,
   `{ kind: "ask", boolean }` or `{ kind: "graph", graph }`.
+- `PgSchemaValidationReport`: `{ conforms, entries, violations }`, where each
+  entry has the `nodeId`, `typeName`, `conforms` and `details` of one
+  node/type association.
+- `NodeNeighborhood`: `{ arcs, truncated }`, where each arc has its `root`,
+  `direction` (`outgoing` or `incoming`), `depth`, `node`, `predicate`,
+  `neighbor` and `isLast`.
+- `checkShex` returns `{ valid, message }`, and `listExternalResolvers`
+  a list of `{ name, description, specSyntax }`.
 
 Missing values are `null`. Errors are thrown as `Error`s whose `name` is the
 error category, matching the Python exception classes (`DataError`,

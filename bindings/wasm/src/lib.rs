@@ -23,7 +23,8 @@ pub mod js;
 
 pub use error::{Error, Result};
 pub use reports::{
-    QueryResults, ShExValidationEntry, ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
+    ExternalResolver, NeighborArc, NodeNeighborhood, PgSchemaValidationEntry, PgSchemaValidationReport, QueryResults,
+    ShExCheck, ShExValidationEntry, ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
 };
 pub use session::Session;
 

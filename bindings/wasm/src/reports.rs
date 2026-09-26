@@ -2,7 +2,10 @@
 //! the Python bindings. They own their data and serialize (with camelCase keys)
 //! to the plain objects returned to JavaScript.
 
-use rudof_lib::types::{QueryResult, ResultShapeMap, ShExValidationStatus, ShaclValidationReport as CoreShaclReport};
+use rudof_lib::types::{
+    ArcDirection, NeighborArc as CoreNeighborArc, PgSchemaResultAssociation, PgSchemaValidationResult, QueryResult,
+    ResultShapeMap, ShExValidationStatus, ShaclValidationReport as CoreShaclReport,
+};
 use serde::Serialize;
 
 /// The result of ShEx validation: one entry per node/shape association.
@@ -179,4 +182,124 @@ impl From<&QueryResult> for QueryResults {
             },
         }
     }
+}
+
+/// The result of property graph schema validation: one entry per node/type
+/// association.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PgSchemaValidationReport {
+    /// `true` if the property graph conforms to the schema.
+    pub conforms: bool,
+    pub entries: Vec<PgSchemaValidationEntry>,
+    /// The entries that do not conform.
+    pub violations: Vec<PgSchemaValidationEntry>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PgSchemaValidationEntry {
+    pub node_id: String,
+    pub type_name: String,
+    pub conforms: bool,
+    /// The errors (when it does not conform) or evidences, joined by `; `.
+    pub details: String,
+}
+
+impl From<&PgSchemaValidationResult> for PgSchemaValidationReport {
+    fn from(result: &PgSchemaValidationResult) -> Self {
+        let entries: Vec<PgSchemaValidationEntry> = result.associations.iter().map(Into::into).collect();
+        let violations = entries.iter().filter(|e| !e.conforms).cloned().collect();
+        PgSchemaValidationReport {
+            conforms: result.is_valid,
+            entries,
+            violations,
+        }
+    }
+}
+
+impl From<&PgSchemaResultAssociation> for PgSchemaValidationEntry {
+    fn from(association: &PgSchemaResultAssociation) -> Self {
+        let details = association
+            .details
+            .as_ref()
+            .map_left(|errors| join(errors.iter().map(ToString::to_string)))
+            .map_right(|evidences| join(evidences.iter().map(ToString::to_string)))
+            .into_inner();
+        PgSchemaValidationEntry {
+            node_id: association.node_id.clone(),
+            type_name: association.type_name.clone(),
+            conforms: association.conforms,
+            details,
+        }
+    }
+}
+
+fn join(parts: impl Iterator<Item = String>) -> String {
+    parts.collect::<Vec<_>>().join("; ")
+}
+
+/// The arcs around a node, as returned by `node_neighborhood`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeNeighborhood {
+    pub arcs: Vec<NeighborArc>,
+    /// `true` if there were more arcs than the requested limit.
+    pub truncated: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NeighborArc {
+    /// The node whose neighborhood the arc belongs to.
+    pub root: String,
+    /// `outgoing` or `incoming`.
+    pub direction: String,
+    /// Distance from the root, starting at 1.
+    pub depth: usize,
+    /// The node the arc starts from.
+    pub node: String,
+    pub predicate: String,
+    /// The node at the other end of the arc.
+    pub neighbor: String,
+    /// `true` for the last arc of `node` in this direction.
+    pub is_last: bool,
+}
+
+impl From<&CoreNeighborArc> for NeighborArc {
+    fn from(arc: &CoreNeighborArc) -> Self {
+        NeighborArc {
+            root: arc.root.to_string(),
+            direction: match arc.direction {
+                ArcDirection::Outgoing => "outgoing",
+                ArcDirection::Incoming => "incoming",
+            }
+            .to_string(),
+            depth: arc.depth,
+            node: arc.node.to_string(),
+            predicate: arc.predicate.to_string(),
+            neighbor: arc.neighbor.to_string(),
+            is_last: arc.is_last,
+        }
+    }
+}
+
+/// The result of checking a ShEx schema with `check_shex`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShExCheck {
+    /// `true` if the schema is well formed.
+    pub valid: bool,
+    /// The messages reported by the check.
+    pub message: String,
+}
+
+/// An external shape resolver that can be added with `add_external_resolver`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExternalResolver {
+    pub name: String,
+    pub description: String,
+    /// The syntax of the spec string that configures it.
+    pub spec_syntax: String,
 }
