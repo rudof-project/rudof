@@ -1,5 +1,11 @@
 #[cfg(feature = "dctap")]
 use crate::api::dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder};
+#[cfg(not(target_family = "wasm"))]
+use crate::api::generation::builders::GenerateDataBuilder;
+#[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
+use crate::api::pg_db::builders::{
+    ConnectPgDbBuilder, LoadPgDbBuilder, PgDbDdlBuilder, QueryCypherBuilder, ResetPgDbConnectionBuilder,
+};
 #[cfg(feature = "pgschema")]
 use crate::api::pgschema::builders::{
     LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
@@ -8,13 +14,6 @@ use crate::api::pgschema::builders::{
 };
 #[cfg(feature = "rdf-config")]
 use crate::api::rdf_config::builders::{LoadRdfConfigBuilder, ResetRdfConfigBuilder, SerializeRdfConfigBuilder};
-#[cfg(not(target_family = "wasm"))]
-use crate::api::{
-    generation::builders::GenerateDataBuilder,
-    pg_db::builders::{
-        ConnectPgDbBuilder, LoadPgDbBuilder, PgDbDdlBuilder, QueryCypherBuilder, ResetPgDbConnectionBuilder,
-    },
-};
 #[cfg(not(target_family = "wasm"))]
 use crate::formats::GenerationSchemaFormat;
 use crate::{
@@ -83,7 +82,7 @@ use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
 use shex_validation::Validator as ShExValidator;
 use sparql_service::ServiceDescription;
 use std::io;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -882,7 +881,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `path`: path to the database directory (not needed with `.with_in_memory(true)`).
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn connect_pg_db<'a>(&'a mut self, path: Option<&'a Path>) -> ConnectPgDbBuilder<'a> {
         ConnectPgDbBuilder::new(self, path)
     }
@@ -893,7 +892,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `data`: RDF data to derive the schema from.
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn pg_db_ddl<'a>(&'a self, data: &'a [InputSpec]) -> PgDbDdlBuilder<'a> {
         PgDbDdlBuilder::new(self, data)
     }
@@ -905,7 +904,7 @@ impl Rudof {
     /// # Parameters
     /// - `data`: RDF data to load.
     /// - `writer`: destination for progress output.
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn load_pg_db<'a, W: io::Write>(
         &'a mut self,
         data: &'a [InputSpec],
@@ -919,14 +918,14 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `query`: a file, a URL, `-` for stdin, or the Cypher query text itself.
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn query_cypher<'a>(&'a mut self, query: &'a InputSpec) -> QueryCypherBuilder<'a> {
         QueryCypherBuilder::new(self, query)
     }
 
     /// Returns a `ResetPgDbConnectionBuilder` to clear the stored property
     /// graph database connection info.
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn reset_pg_db_connection<'a>(&'a mut self) -> ResetPgDbConnectionBuilder<'a> {
         ResetPgDbConnectionBuilder::new(self)
     }

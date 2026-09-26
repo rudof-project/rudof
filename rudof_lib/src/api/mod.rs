@@ -17,7 +17,8 @@ pub mod dctap;
 pub mod generation;
 pub mod map_state;
 pub mod materialize;
-#[cfg(not(target_family = "wasm"))]
+// The property graph database needs the `pg-db` feature.
+#[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
 pub mod pg_db;
 #[cfg(feature = "pgschema")]
 pub mod pgschema;

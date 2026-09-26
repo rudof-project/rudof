@@ -18,7 +18,7 @@ include = [
 ]
 
 [features]
-default = [ "sparql", "comparison", "conversion", "dctap", "pgschema", "rdf-config" ]
+default = [ "sparql", "comparison", "conversion", "dctap", "pg-db", "pgschema", "rdf-config" ]
 # Optional subsystems, which can be left out to make smaller builds (e.g. for
 # wasm). RDF data, ShEx, SHACL and SPARQL are always available.
 # Comparison of schemas.
@@ -28,6 +28,8 @@ comparison = ["dep:shapes_comparator"]
 conversion = ["dep:shapes_converter"]
 # DCTAP profiles.
 dctap = ["dep:dctap"]
+# Embedded property graph database (lbug, a C++ library; native only).
+pg-db = ["dep:lbug"]
 # Property graph schemas and property graph data.
 pgschema = ["dep:pgschema"]
 # rdf-config documents.
@@ -69,7 +71,7 @@ url.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 crossterm.workspace = true
-lbug.workspace = true
+lbug = { workspace = true, optional = true }
 rudof_generate.workspace = true
 
 [dev-dependencies]
