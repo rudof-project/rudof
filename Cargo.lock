@@ -4393,6 +4393,7 @@ dependencies = [
  "toml 0.9.12+spec-1.1.0",
  "tracing",
  "url",
+ "wasm-bindgen-test",
 ]
 
 [[package]]

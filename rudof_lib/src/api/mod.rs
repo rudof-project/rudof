@@ -8,9 +8,13 @@ pub mod conversion;
 pub mod core;
 pub mod data;
 pub mod dctap;
+// Data generation and property graph databases rely on native-only crates
+// (`rudof_generate`, `lbug`).
+#[cfg(not(target_family = "wasm"))]
 pub mod generation;
 pub mod map_state;
 pub mod materialize;
+#[cfg(not(target_family = "wasm"))]
 pub mod pg_db;
 pub mod pgschema;
 pub mod prefixes;

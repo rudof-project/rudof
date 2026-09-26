@@ -332,7 +332,7 @@ impl VisualRDFGraph {
     ///
     /// `mode` is currently ignored (RDF diagrams are always rendered in full), matching prior
     /// behavior. `plantuml_path` is only consulted when `engine` is `VizEngine::PlantUml`.
-    #[cfg(not(target_family = "wasm"))]
+    /// Always fails on `wasm`, where the external renderers can't be run.
     pub fn as_image<W: Write, P: AsRef<std::path::Path>>(
         &self,
         writer: &mut W,

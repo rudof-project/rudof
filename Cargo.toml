@@ -340,7 +340,7 @@ rudof_viz = { version = "0.3.21", path = "./rudof_viz" }
 rudof_generate = { version = "0.3.21", path = "./rudof_generate" }
 rudof_lib = { version = "0.3.21", path = "./rudof_lib" }
 rudof_mcp = { version = "0.3.21", path = "./rudof_mcp" }
-rustemo = "0.9.1"
+rustemo = { version = "0.9.1", default-features = false }
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"
 rustyline = { version = "18.0", default-features = false, features = [

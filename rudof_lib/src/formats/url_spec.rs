@@ -1,4 +1,7 @@
 use crate::errors::InputSpecError;
+#[cfg(target_family = "wasm")]
+use crate::utils::{Client, ClientBuilder};
+#[cfg(not(target_family = "wasm"))]
 use reqwest::blocking::{Client, ClientBuilder};
 use std::fmt::Display;
 use url::Url;

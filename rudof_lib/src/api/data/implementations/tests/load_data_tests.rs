@@ -382,6 +382,8 @@ fn test_load_data_endpoint_success() {
     assert!(rudof.data.as_ref().unwrap().is_rdf());
 }
 
+// SPARQL endpoints are only available natively.
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_load_data_endpoint_uses_configured_prefixmap_for_known_endpoint() {
     let mut rudof = Rudof::new(RudofConfig::default());

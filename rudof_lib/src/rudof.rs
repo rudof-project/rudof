@@ -1,3 +1,12 @@
+#[cfg(not(target_family = "wasm"))]
+use crate::api::{
+    generation::builders::GenerateDataBuilder,
+    pg_db::builders::{
+        ConnectPgDbBuilder, LoadPgDbBuilder, PgDbDdlBuilder, QueryCypherBuilder, ResetPgDbConnectionBuilder,
+    },
+};
+#[cfg(not(target_family = "wasm"))]
+use crate::formats::GenerationSchemaFormat;
 use crate::{
     RudofConfig,
     api::{
@@ -13,12 +22,8 @@ use crate::{
             SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
         },
         dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder},
-        generation::builders::GenerateDataBuilder,
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
-        pg_db::builders::{
-            ConnectPgDbBuilder, LoadPgDbBuilder, PgDbDdlBuilder, QueryCypherBuilder, ResetPgDbConnectionBuilder,
-        },
         pgschema::builders::{
             LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
             ResetPgSchemaValidationBuilder, ResetTypemapBuilder, SerializePgSchemaBuilder,
@@ -45,8 +50,8 @@ use crate::{
     },
     errors::{RudofError, ShExError},
     formats::{
-        BackendSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, GenerationSchemaFormat,
-        InputSpec, ResultConversionFormat, ResultConversionMode,
+        BackendSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, InputSpec,
+        ResultConversionFormat, ResultConversionMode,
     },
     types::{Data, QueryResult},
 };
@@ -67,7 +72,9 @@ use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
 use shex_validation::Validator as ShExValidator;
 use sparql_service::ServiceDescription;
 use std::io;
-use std::path::{Path, PathBuf};
+#[cfg(not(target_family = "wasm"))]
+use std::path::Path;
+use std::path::PathBuf;
 
 /// Typedef for `Result` returned by Rudof operations, where errors are boxed into `RudofError`.
 /// Allows easier error handling across library-specific subsystems.
@@ -839,6 +846,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `path`: path to the database directory (not needed with `.with_in_memory(true)`).
+    #[cfg(not(target_family = "wasm"))]
     pub fn connect_pg_db<'a>(&'a mut self, path: Option<&'a Path>) -> ConnectPgDbBuilder<'a> {
         ConnectPgDbBuilder::new(self, path)
     }
@@ -849,6 +857,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `data`: RDF data to derive the schema from.
+    #[cfg(not(target_family = "wasm"))]
     pub fn pg_db_ddl<'a>(&'a self, data: &'a [InputSpec]) -> PgDbDdlBuilder<'a> {
         PgDbDdlBuilder::new(self, data)
     }
@@ -860,6 +869,7 @@ impl Rudof {
     /// # Parameters
     /// - `data`: RDF data to load.
     /// - `writer`: destination for progress output.
+    #[cfg(not(target_family = "wasm"))]
     pub fn load_pg_db<'a, W: io::Write>(
         &'a mut self,
         data: &'a [InputSpec],
@@ -873,12 +883,14 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `query`: a file, a URL, `-` for stdin, or the Cypher query text itself.
+    #[cfg(not(target_family = "wasm"))]
     pub fn query_cypher<'a>(&'a mut self, query: &'a InputSpec) -> QueryCypherBuilder<'a> {
         QueryCypherBuilder::new(self, query)
     }
 
     /// Returns a `ResetPgDbConnectionBuilder` to clear the stored property
     /// graph database connection info.
+    #[cfg(not(target_family = "wasm"))]
     pub fn reset_pg_db_connection<'a>(&'a mut self) -> ResetPgDbConnectionBuilder<'a> {
         ResetPgDbConnectionBuilder::new(self)
     }
@@ -901,6 +913,7 @@ impl Rudof {
     /// - `number_entities`: approximate number of target entities to generate. `None` defers to
     ///   the `entity_count` set by [`GenerateDataBuilder::with_config_file`], or the generator's
     ///   own default if neither is given.
+    #[cfg(not(target_family = "wasm"))]
     pub fn generate_data<'a>(
         &'a self,
         schema: &'a InputSpec,
