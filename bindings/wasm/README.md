@@ -4,6 +4,10 @@ WebAssembly bindings for [rudof](https://github.com/rudof-project/rudof):
 validate RDF data with **ShEx** or **SHACL**, and query it with **SPARQL**,
 from JavaScript, in the browser or in Node.js.
 
+They are published to npm as [`rudof`](https://www.npmjs.com/package/rudof)
+(`npm install rudof`); [npm/README.md](npm/README.md) is the package's README,
+with its usage. This file is about developing the bindings.
+
 All inputs are passed as strings, so anything that needs the filesystem, the
 network or native tools is not supported: reading files, dereferencing IRIs,
 ShEx `IMPORT`s, remote SPARQL endpoints and rendering images. SPARQL queries
@@ -21,15 +25,36 @@ cargo install wasm-bindgen-cli --locked --version <version of wasm-bindgen in Ca
 ./build.sh
 ```
 
-`build.sh` generates two packages:
+`build.sh` assembles the npm package in `pkg/`:
 
-- `pkg/`: an ES module for browsers and bundlers (`wasm-bindgen --target web`)
-- `pkg-node/`: a CommonJS module for Node.js (`wasm-bindgen --target nodejs`)
+- `pkg/package.json`: [npm/package.json](npm/package.json), with the version of
+  the workspace
+- `pkg/web/`: an ES module for browsers and bundlers (`wasm-bindgen --target web`)
+- `pkg/node/`: a CommonJS module for Node.js (`wasm-bindgen --target nodejs`),
+  which loads the same `.wasm` file as `pkg/web/`
+
+`import "rudof"` and `require("rudof")` pick `node/` in Node.js and `web/`
+everywhere else (`exports` in `package.json`); `rudof/web` and `rudof/node`
+select one explicitly.
 
 `build.sh` builds with the `wasm-release` profile of the workspace, which
 optimizes for size (`opt-level = "z"`, LTO, one codegen unit). If `wasm-opt`
-(from [binaryen](https://github.com/WebAssembly/binaryen)) is installed, it also
-uses it to shrink the `.wasm` files further.
+(from [binaryen](https://github.com/WebAssembly/binaryen), e.g.
+`npm install -g binaryen`) is installed, it also uses it to shrink the `.wasm`
+by about 40%; releases require it (`RUDOF_WASM_OPT=required`).
+
+`npm/smoke-test.sh` packs `pkg/` with `npm pack`, installs the tarball in an
+empty project and uses it with `require`, `import` and the web build, as CI
+does. `examples/node.cjs` (`node examples/node.cjs`) uses `pkg/` directly, and
+`examples/index.html` uses it in a browser (serve this directory over HTTP,
+e.g. with `python3 -m http.server`, and open `/examples/index.html`).
+
+## Publishing
+
+The [npm workflow](../../.github/workflows/npm.yml) publishes the package when
+a GitHub release is published (see `release.yml`), with the version of the
+workspace; release candidates (`X.Y.Z-rc.N`) get the `next` tag instead of
+`latest`. It can also be run by hand, as a dry run by default.
 
 ### Smaller builds
 
@@ -55,7 +80,8 @@ RUDOF_WASM_FEATURES="conversion,dctap" ./build.sh # only these
 Methods of features that are left out are not generated, so they are missing
 from the `.d.ts` files too.
 
-Sizes of the `.wasm` built by `build.sh` (before `wasm-opt`):
+Sizes of the `.wasm` built by `build.sh` before `wasm-opt`, which shrinks it
+by about 40% more (to 6.0 MB, 2.2 MB gzipped, with every feature):
 
 | Features | Size | Gzipped |
 |----------|------|---------|
@@ -63,8 +89,10 @@ Sizes of the `.wasm` built by `build.sh` (before `wasm-opt`):
 | none | 7.4 MB | 2.1 MB |
 | only `conversion` | 8.5 MB | 2.4 MB |
 | only `pgschema` | 8.1 MB | 2.3 MB |
-| only `dctap`, `rdf-config` or `comparison` | 7.5 MB | 2.1 MB | The features are those of `rudof_lib`, which can be
-used in the same way by other crates.
+| only `dctap`, `rdf-config` or `comparison` | 7.5 MB | 2.1 MB |
+
+The features are those of `rudof_lib`, which can be used in the same way by
+other crates.
 
 ## API
 
@@ -75,7 +103,7 @@ validation in one call. Names follow JavaScript conventions (`read_shex`
 becomes `readShex`), and the generated `.d.ts` files declare every type.
 
 ```js
-import init, { Rudof, RudofConfig } from "./pkg/rudof_wasm.js";
+import init, { Rudof, RudofConfig } from "rudof"; // or "./pkg/web/rudof_wasm.js"
 await init();
 
 const rudof = new Rudof(RudofConfig.fromToml('base_iri = "http://example.org/"'));

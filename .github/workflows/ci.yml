@@ -156,10 +156,12 @@ jobs:
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
         run: cargo test -p rudof_wasm --target wasm32-unknown-unknown --no-default-features
-      - name: Build the JavaScript package
+      - name: Build the npm package
         run: bindings/wasm/build.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Run the Node.js example
         run: node bindings/wasm/examples/node.cjs
+      - name: Install and test the packed npm package
+        run: bindings/wasm/npm/smoke-test.sh

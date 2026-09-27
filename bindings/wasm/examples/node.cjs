@@ -1,6 +1,6 @@
 // Validates RDF data with ShEx and SHACL, and queries it with SPARQL, from Node.js.
 // Run `./build.sh` first, then: node examples/node.cjs
-const { Rudof, RudofConfig, validateShex, validateShacl } = require("../pkg-node/rudof_wasm.js");
+const { Rudof, RudofConfig, validateShex, validateShacl } = require("../pkg");
 
 const data = `
 prefix : <http://example.org/>
