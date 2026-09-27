@@ -313,3 +313,36 @@ fn network_operations_on_wasm() {
     rudof.read_data(DATA, None, None, None, None).unwrap();
     assert!(rudof.list_endpoints().unwrap().is_empty());
 }
+
+#[cfg(feature = "pgschema")]
+#[test]
+fn pg_data_serialization() {
+    let mut rudof = Session::new(None);
+    rudof
+        .read_data(
+            r#"(n2 {Person} [ name: "Bob" ])
+(n1 {Person, Student} [ name: "Alice", age: 23 ])
+(n1) - (e1 {knows}) -> (n2)"#,
+            Some("pg"),
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+    // YARS-PG by default, sorted, and readable again
+    let yarspg = rudof.serialize_data(Some("compact")).unwrap();
+    assert_eq!(
+        yarspg.trim_end(),
+        r#"(n1 {Person, Student} [age: 23, name: "Alice"])
+(n2 {Person} [name: "Bob"])
+(n1) - (e1 {knows}) -> (n2)"#
+    );
+    assert_eq!(rudof.serialize_data(None).unwrap(), yarspg);
+    let mut again = Session::new(None);
+    again.read_data(&yarspg, Some("pg"), None, None, None).unwrap();
+    assert_eq!(again.serialize_data(None).unwrap(), yarspg);
+
+    let json = rudof.serialize_data(Some("json")).unwrap();
+    assert!(json.contains("\"source\": \"n1\""), "{json}");
+    assert!(json.contains("\"Student\""), "{json}");
+}

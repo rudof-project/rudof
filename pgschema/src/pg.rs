@@ -1,6 +1,6 @@
 use crate::{
     edge::Edge, edge_id::EdgeId, label_set::LabelSet, node::Node, node_id::NodeId, pgs_error::PgsError, record::Record,
-    type_name::LabelName,
+    type_name::LabelName, value::Value,
 };
 use either::Either;
 use std::{collections::HashMap, fmt::Display};
@@ -222,5 +222,234 @@ impl Display for PropertyGraph {
             writeln!(f, "Edge {}: {}", edge_label, edge)?;
         }
         Ok(())
+    }
+}
+
+impl PropertyGraph {
+    /// Serializes the graph in YARS-PG, the syntax it is parsed from: one
+    /// node or edge per line, sorted by name, with sorted labels and keys, so
+    /// that the output is stable and can be parsed again.
+    pub fn to_yarspg(&self) -> String {
+        let mut lines: Vec<String> = Vec::new();
+        for (name, node) in self.named_nodes() {
+            lines.push(format!(
+                "({}{})",
+                yarspg_identifier(name),
+                yarspg_labels_record(node.labels(), node.content())
+            ));
+        }
+        for (name, edge) in self.named_edges() {
+            let node_name = |id: &NodeId| {
+                self.node_name(id)
+                    .map(yarspg_identifier)
+                    .unwrap_or_else(|| id.to_string())
+            };
+            let id = name.map(|n| format!("{} ", yarspg_identifier(n))).unwrap_or_default();
+            lines.push(format!(
+                "({}) - ({}{}) -> ({})",
+                node_name(edge.source()),
+                id,
+                yarspg_labels_record(edge.labels(), edge.content()).trim_start(),
+                node_name(edge.target())
+            ));
+        }
+        lines.join("\n")
+    }
+
+    /// The graph as JSON: `{"nodes": [...], "edges": [...]}`, where each node
+    /// has an `id`, `labels` and `properties` (each key with the list of its
+    /// values), and each edge also a `source` and a `target`.
+    pub fn to_json(&self) -> serde_json::Value {
+        use serde_json::json;
+        let nodes: Vec<_> = self
+            .named_nodes()
+            .into_iter()
+            .map(|(name, node)| {
+                json!({
+                    "id": name,
+                    "labels": node.labels().iter().collect::<Vec<_>>(),
+                    "properties": json_record(node.content()),
+                })
+            })
+            .collect();
+        let edges: Vec<_> = self
+            .named_edges()
+            .into_iter()
+            .map(|(name, edge)| {
+                json!({
+                    "id": name,
+                    "source": self.node_name(edge.source()),
+                    "target": self.node_name(edge.target()),
+                    "labels": edge.labels().iter().collect::<Vec<_>>(),
+                    "properties": json_record(edge.content()),
+                })
+            })
+            .collect();
+        json!({ "nodes": nodes, "edges": edges })
+    }
+
+    fn node_name(&self, id: &NodeId) -> Option<&str> {
+        self.node_names
+            .iter()
+            .find(|(_, node_id)| *node_id == id)
+            .map(|(name, _)| name.as_str())
+    }
+
+    /// Nodes with their names, sorted by name.
+    fn named_nodes(&self) -> Vec<(&str, &Node)> {
+        let mut nodes: Vec<_> = self
+            .node_names
+            .iter()
+            .filter_map(|(name, id)| self.nodes.get(id).map(|node| (name.as_str(), node)))
+            .collect();
+        nodes.sort_by_key(|(name, _)| *name);
+        nodes
+    }
+
+    /// Edges with their names (`None` for edges without one), sorted by name,
+    /// then by source and target.
+    fn named_edges(&self) -> Vec<(Option<&str>, &Edge)> {
+        let mut edges: Vec<_> = self
+            .edges
+            .iter()
+            .map(|(id, edge)| {
+                let name = self
+                    .edge_names
+                    .iter()
+                    .find(|(name, edge_id)| *edge_id == id && !name.is_empty())
+                    .map(|(name, _)| name.as_str());
+                (name, edge)
+            })
+            .collect();
+        edges.sort_by_key(|(name, edge)| {
+            (
+                *name,
+                self.node_name(edge.source()).map(str::to_string),
+                self.node_name(edge.target()).map(str::to_string),
+            )
+        });
+        edges
+    }
+}
+
+/// A name or label: bare when it is a YARS-PG identifier, quoted otherwise.
+fn yarspg_identifier(name: &str) -> String {
+    if !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
+        name.to_string()
+    } else {
+        yarspg_string(name)
+    }
+}
+
+fn yarspg_string(s: &str) -> String {
+    format!("\"{}\"", s.replace('"', "\\\""))
+}
+
+fn yarspg_value(value: &Value) -> String {
+    match value {
+        Value::String(s) => yarspg_string(s),
+        Value::Integer(i) => i.to_string(),
+        Value::Date(d) => format!("DATE \"{d}\""),
+        Value::Bool(true) => "TRUE".to_string(),
+        Value::Bool(false) => "FALSE".to_string(),
+    }
+}
+
+/// ` {Label, ...} [key: value, key: [value, ...], ...]`, leaving out empty parts.
+fn yarspg_labels_record(labels: &LabelSet, record: &Record) -> String {
+    let mut out = String::new();
+    if labels.iter().next().is_some() {
+        let labels: Vec<_> = labels.iter().map(|l| yarspg_identifier(l)).collect();
+        out.push_str(&format!(" {{{}}}", labels.join(", ")));
+    }
+    let mut properties: Vec<_> = record.iter().collect();
+    properties.sort_by_key(|(key, _)| *key);
+    if !properties.is_empty() {
+        let properties: Vec<_> = properties
+            .into_iter()
+            .map(|(key, values)| {
+                let mut values: Vec<_> = values.iter().collect();
+                values.sort();
+                let values = match values.as_slice() {
+                    [value] => yarspg_value(value),
+                    _ => format!(
+                        "[{}]",
+                        values.iter().map(|v| yarspg_value(v)).collect::<Vec<_>>().join(", ")
+                    ),
+                };
+                format!("{}: {values}", yarspg_identifier(key.str()))
+            })
+            .collect();
+        out.push_str(&format!(" [{}]", properties.join(", ")));
+    }
+    out
+}
+
+fn json_value(value: &Value) -> serde_json::Value {
+    match value {
+        Value::String(s) => serde_json::Value::from(s.as_str()),
+        Value::Integer(i) => serde_json::Value::from(*i),
+        Value::Date(d) => serde_json::Value::from(d.to_string()),
+        Value::Bool(b) => serde_json::Value::from(*b),
+    }
+}
+
+fn json_record(record: &Record) -> serde_json::Map<String, serde_json::Value> {
+    record
+        .iter()
+        .map(|(key, values)| {
+            let mut values: Vec<_> = values.iter().collect();
+            values.sort();
+            (
+                key.str().to_string(),
+                serde_json::Value::Array(values.into_iter().map(json_value).collect()),
+            )
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod yarspg_tests {
+    use crate::parser::pg_builder::PgBuilder;
+
+    const GRAPH: &str = r#"
+(n1 {Person} [ name: "Alice", birthdate: DATE "2010-07-22" ])
+(n2 {Person, Student} [ id: 234, name: "Robert \"Bob\" Smith", aliases: ["Bob", "Robbie"], active: TRUE ])
+(n3 {Course})
+(n1) - (e1 {knows} [since: 2020 ]) -> (n2)
+(n2) - ({EnrolledIn}) -> (n3)
+"#;
+
+    #[test]
+    fn yarspg_round_trip() {
+        let graph = PgBuilder::new().parse_pg(GRAPH).unwrap();
+        let yarspg = graph.to_yarspg();
+        assert_eq!(
+            yarspg,
+            r#"(n1 {Person} [birthdate: DATE "2010-07-22", name: "Alice"])
+(n2 {Person, Student} [active: TRUE, aliases: ["Bob", "Robbie"], id: 234, name: "Robert \"Bob\" Smith"])
+(n3 {Course})
+(n2) - ({EnrolledIn}) -> (n3)
+(n1) - (e1 {knows} [since: 2020]) -> (n2)"#
+        );
+        let again = PgBuilder::new().parse_pg(&yarspg).unwrap();
+        assert_eq!(again.to_yarspg(), yarspg);
+        assert_eq!((again.node_count(), again.edge_count()), (3, 2));
+    }
+
+    #[test]
+    fn json() {
+        let graph = PgBuilder::new().parse_pg(GRAPH).unwrap();
+        let json = graph.to_json();
+        assert_eq!(json["nodes"].as_array().unwrap().len(), 3);
+        assert_eq!(json["nodes"][1]["id"], "n2");
+        assert_eq!(
+            json["nodes"][1]["properties"]["aliases"],
+            serde_json::json!(["Bob", "Robbie"])
+        );
+        assert_eq!(json["nodes"][1]["properties"]["id"], serde_json::json!([234]));
+        assert_eq!(json["edges"][1]["id"], "e1");
+        assert_eq!(json["edges"][1]["source"], "n1");
+        assert_eq!(json["edges"][0]["id"], serde_json::Value::Null);
     }
 }

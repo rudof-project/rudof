@@ -45,13 +45,20 @@ fn serialize_pg_data<W: io::Write>(
     }
 
     let graph = data.unwrap_pg_mut();
-
-    write!(writer, "{graph}").map_err(|e| {
+    let failed = |error: String| {
         Box::new(DataError::FailedSerializingData {
             format: result_data_format.to_string(),
-            error: e.to_string(),
+            error,
         })
-    })?;
+    };
+
+    // Property graphs are written as JSON with `json`, and otherwise in
+    // YARS-PG, the syntax they are read from (RDF formats don't apply).
+    let serialized = match result_data_format {
+        ResultDataFormat::Json => serde_json::to_string_pretty(&graph.to_json()).map_err(|e| failed(e.to_string()))?,
+        _ => graph.to_yarspg(),
+    };
+    writeln!(writer, "{serialized}").map_err(|e| failed(e.to_string()))?;
 
     Ok(())
 }

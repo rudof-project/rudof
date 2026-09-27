@@ -140,8 +140,9 @@ fn get_values(values: Values) -> Result<HashSet<Value>, PgsError> {
 fn get_value(value: SingleValue) -> Result<Value, PgsError> {
     match value {
         SingleValue::StringValue(s) => {
-            let cleaned = remove_quotes(s.as_str());
-            Ok(Value::str(cleaned))
+            // `\"` is the only escape in YARS-PG strings
+            let cleaned = remove_quotes(s.as_str()).replace("\\\"", "\"");
+            Ok(Value::str(&cleaned))
         },
         SingleValue::NumberValue(str_number_) => {
             let number = str_number_
