@@ -54,8 +54,17 @@ code { font-family: var(--mono); font-size: 0.9em; }
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
 }
-.brand { display: flex; align-items: baseline; gap: 0.5rem; }
-.logo { font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
+.brand { display: flex; align-items: center; gap: 0.5rem; }
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.logo img { height: 32px; width: auto; }
 .subtitle { color: var(--muted); }
 .links { display: flex; gap: 1rem; }
 .links a { text-decoration: none; }

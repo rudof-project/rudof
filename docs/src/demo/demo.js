@@ -650,7 +650,9 @@ for (const prefix of Object.keys(validators)) {
 try {
   rudofModule = await import(RUDOF_MODULE);
   await rudofModule.default();
+  // The version reported by the loaded module, not the one requested
   setStatus("ready", `rudof ${new rudofModule.Rudof().getVersion()} ready`);
+  $("status").title = `@rudof/rudof from ${RUDOF_MODULE}`;
   for (const b of document.querySelectorAll('button[id$="-validate"]')) b.disabled = false;
 } catch (e) {
   console.error(e);
