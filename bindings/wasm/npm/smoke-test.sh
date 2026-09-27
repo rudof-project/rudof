@@ -39,7 +39,7 @@ EOF
 
 # CommonJS (Node.js build)
 cat > cjs.cjs <<'EOF'
-const { validateShex, validateShacl, Rudof } = require("rudof");
+const { validateShex, validateShacl, Rudof } = require("@rudof/rudof");
 const { data, shex, shapemap, shacl, check } = require("./data.js");
 check("require", validateShex(data, shex, shapemap), validateShacl(data, shacl));
 if (!/^\d+\.\d+\.\d+/.test(new Rudof().getVersion())) throw new Error("getVersion");
@@ -48,7 +48,7 @@ node cjs.cjs
 
 # ES modules (Node.js build)
 cat > esm.mjs <<'EOF'
-import { validateShex, validateShacl } from "rudof";
+import { validateShex, validateShacl } from "@rudof/rudof";
 import inputs from "./data.js";
 const { data, shex, shapemap, shacl, check } = inputs;
 check("import", validateShex(data, shex, shapemap), validateShacl(data, shacl));
@@ -59,10 +59,10 @@ node esm.mjs
 cat > web.mjs <<'EOF'
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import init, { validateShex, validateShacl } from "rudof/web";
+import init, { validateShex, validateShacl } from "@rudof/rudof/web";
 import inputs from "./data.js";
 const require = createRequire(import.meta.url);
-await init({ module_or_path: await readFile(require.resolve("rudof/rudof_wasm_bg.wasm")) });
+await init({ module_or_path: await readFile(require.resolve("@rudof/rudof/rudof_wasm_bg.wasm")) });
 const { data, shex, shapemap, shacl, check } = inputs;
 check("web", validateShex(data, shex, shapemap), validateShacl(data, shacl));
 EOF
@@ -70,7 +70,7 @@ node web.mjs
 
 # TypeScript declarations are where package.json says
 for f in node/rudof_wasm.d.ts web/rudof_wasm.d.ts; do
-    test -f "node_modules/rudof/$f" || { echo "missing $f" >&2; exit 1; }
+    test -f "node_modules/@rudof/rudof/$f" || { echo "missing $f" >&2; exit 1; }
 done
 
 echo "$tarball"

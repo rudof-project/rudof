@@ -1,5 +1,5 @@
 {
-  "name": "rudof",
+  "name": "@rudof/rudof",
   "version": "0.0.0",
   "description": "Validate RDF data with ShEx and SHACL, and query it with SPARQL, in the browser and in Node.js",
   "keywords": [

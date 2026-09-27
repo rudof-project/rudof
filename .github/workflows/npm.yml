@@ -1,7 +1,7 @@
 name: npm
 
 # Publishes the JavaScript/WebAssembly bindings (bindings/wasm) to npm as the
-# `rudof` package when a GitHub release is published, with the version of the
+# `@rudof/rudof` package when a GitHub release is published, with the version of the
 # workspace. Pull requests and pushes test the package in ci.yml.
 on:
   release:
@@ -87,5 +87,5 @@ jobs:
           if [ "${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}" = "true" ]; then
             args+=(--dry-run)
           fi
-          echo "Publishing rudof $version: npm publish $tarball ${args[*]}"
+          echo "Publishing @rudof/rudof $version: npm publish $tarball ${args[*]}"
           npm publish "$tarball" "${args[@]}"

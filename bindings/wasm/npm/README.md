@@ -1,4 +1,4 @@
-# rudof
+# @rudof/rudof
 
 Validate RDF data with **ShEx** and **SHACL**, and query it with **SPARQL**,
 in the browser and in Node.js.
@@ -9,14 +9,14 @@ compiled to WebAssembly. Its API mirrors rudof's
 declarations.
 
 ```sh
-npm install rudof
+npm install @rudof/rudof
 ```
 
 ## Node.js
 
 ```js
-const { validateShex, validateShacl } = require("rudof");
-// or: import { validateShex, validateShacl } from "rudof";
+const { validateShex, validateShacl } = require("@rudof/rudof");
+// or: import { validateShex, validateShacl } from "@rudof/rudof";
 
 const data = `
 prefix : <http://example.org/>
@@ -43,7 +43,7 @@ In browsers the WebAssembly module is loaded asynchronously, so call the
 default export once before anything else:
 
 ```js
-import init, { validateShacl } from "rudof";
+import init, { validateShacl } from "@rudof/rudof";
 
 await init();
 const report = validateShacl(data, shapes);
@@ -52,14 +52,14 @@ const report = validateShacl(data, shapes);
 Bundlers that understand `new URL("...", import.meta.url)` (Vite, webpack 5,
 Parcel, Rollup with a URL plugin, esbuild with a file loader) include the
 `.wasm` file automatically. Without a bundler, import
-`rudof/web/rudof_wasm.js` from a CDN or from your own copy of the package, or
+`@rudof/rudof/web/rudof_wasm.js` from a CDN or from your own copy of the package, or
 give `init` the URL (or the bytes) of the `.wasm` file:
 
 ```js
 await init({ module_or_path: "/assets/rudof_wasm_bg.wasm" });
 ```
 
-The file is exported as `rudof/rudof_wasm_bg.wasm`.
+The file is exported as `@rudof/rudof/rudof_wasm_bg.wasm`.
 
 ## Sessions
 
@@ -68,7 +68,7 @@ The file is exported as `rudof/rudof_wasm_bg.wasm`.
 across calls, as in the Python bindings:
 
 ```js
-import { Rudof, RudofConfig } from "rudof";
+import { Rudof, RudofConfig } from "@rudof/rudof";
 
 const rudof = new Rudof(RudofConfig.fromToml('base_iri = "http://example.org/"'));
 rudof.readData(data);                     // Turtle by default

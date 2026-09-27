@@ -4,8 +4,8 @@ WebAssembly bindings for [rudof](https://github.com/rudof-project/rudof):
 validate RDF data with **ShEx** or **SHACL**, and query it with **SPARQL**,
 from JavaScript, in the browser or in Node.js.
 
-They are published to npm as [`rudof`](https://www.npmjs.com/package/rudof)
-(`npm install rudof`); [npm/README.md](npm/README.md) is the package's README,
+They are published to npm as [`@rudof/rudof`](https://www.npmjs.com/package/@rudof/rudof)
+(`npm install @rudof/rudof`); [npm/README.md](npm/README.md) is the package's README,
 with its usage. This file is about developing the bindings.
 
 All inputs are passed as strings, so anything that needs the filesystem, the
@@ -33,8 +33,8 @@ cargo install wasm-bindgen-cli --locked --version <version of wasm-bindgen in Ca
 - `pkg/node/`: a CommonJS module for Node.js (`wasm-bindgen --target nodejs`),
   which loads the same `.wasm` file as `pkg/web/`
 
-`import "rudof"` and `require("rudof")` pick `node/` in Node.js and `web/`
-everywhere else (`exports` in `package.json`); `rudof/web` and `rudof/node`
+`import "@rudof/rudof"` and `require("@rudof/rudof")` pick `node/` in Node.js and `web/`
+everywhere else (`exports` in `package.json`); `@rudof/rudof/web` and `@rudof/rudof/node`
 select one explicitly.
 
 `build.sh` builds with the `wasm-release` profile of the workspace, which
@@ -103,7 +103,7 @@ validation in one call. Names follow JavaScript conventions (`read_shex`
 becomes `readShex`), and the generated `.d.ts` files declare every type.
 
 ```js
-import init, { Rudof, RudofConfig } from "rudof"; // or "./pkg/web/rudof_wasm.js"
+import init, { Rudof, RudofConfig } from "@rudof/rudof"; // or "./pkg/web/rudof_wasm.js"
 await init();
 
 const rudof = new Rudof(RudofConfig.fromToml('base_iri = "http://example.org/"'));

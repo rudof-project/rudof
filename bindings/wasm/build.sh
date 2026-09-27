@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the rudof_wasm module and assembles the `rudof` npm package in pkg/:
+# Builds the rudof_wasm module and assembles the `@rudof/rudof` npm package in pkg/:
 #   pkg/package.json  package metadata (from npm/package.json, with the
 #                     version of the rudof_wasm crate)
 #   pkg/web/          ES module for browsers and bundlers (wasm-bindgen --target web)
@@ -67,4 +67,4 @@ echo '{ "type": "commonjs" }' > pkg/node/package.json
 sed "s/\"version\": \"0.0.0\"/\"version\": \"$version\"/" npm/package.json > pkg/package.json
 cp npm/README.md pkg/README.md
 cp "$root/LICENSE-MIT" "$root/LICENSE-APACHE" pkg/
-echo "Built the rudof npm package $version in $(pwd)/pkg"
+echo "Built the @rudof/rudof npm package $version in $(pwd)/pkg"
