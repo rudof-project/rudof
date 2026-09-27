@@ -1,0 +1,90 @@
+name: npm
+
+# Publishes the JavaScript/WebAssembly bindings (bindings/wasm) to npm as the
+# `rudof` package when a GitHub release is published, with the version of the
+# workspace. Pull requests and pushes test the package in ci.yml.
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Dry run: build and test the package, and run `npm publish --dry-run`"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build and test the npm package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-bindgen-cli
+        # The CLI version must match the `wasm-bindgen` crate in Cargo.lock
+        run: cargo install wasm-bindgen-cli --locked --version "$(sed -n '/^name = "wasm-bindgen"$/{n;s/version = "\(.*\)"/\1/p}' Cargo.lock)"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install wasm-opt
+        # binaryen's npm package ships wasm-opt; it shrinks the module by ~40%
+        run: npm install -g binaryen@132
+      - name: Build the npm package
+        env:
+          RUDOF_WASM_OPT: required
+        run: bindings/wasm/build.sh
+      - name: Install and test the packed npm package
+        run: |
+          tarball="$(bindings/wasm/npm/smoke-test.sh | tail -1)"
+          mkdir dist
+          mv "$tarball" dist/
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: dist/*.tgz
+
+  publish:
+    name: Publish to npm
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Trusted publishing (OIDC) and provenance statements
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Update npm
+        # Trusted publishing needs npm 11.5.1 or later
+        run: npm install -g npm@latest
+      - name: Publish
+        env:
+          # Only needed until trusted publishing is configured on npmjs.com
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          tarball="$(ls dist/*.tgz)"
+          version="$(tar -xOzf "$tarball" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0)).version')"
+          args=(--access public --provenance)
+          # Release candidates (X.Y.Z-rc.N) must not become `latest`
+          if [[ "$version" == *-* ]]; then
+            args+=(--tag next)
+          fi
+          if [ "${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          echo "Publishing rudof $version: npm publish $tarball ${args[*]}"
+          npm publish "$tarball" "${args[@]}"
