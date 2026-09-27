@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>rudof online demo</title>
-  <meta name="description" content="Validate RDF data with ShEx and SHACL in your browser, with rudof compiled to WebAssembly.">
+  <meta name="description" content="Validate RDF data with ShEx and SHACL, property graphs with PGSchema, and convert RDF between formats in your browser, with rudof compiled to WebAssembly.">
   <link rel="icon" href="../favicon.svg">
   <link rel="stylesheet" href="demo.css">
   <script type="module" src="demo.js"></script>
@@ -25,7 +25,8 @@
   <main>
     <p class="intro">
       Validate RDF data with <strong>ShEx</strong> or <strong>SHACL</strong>,
-      and property graphs with <strong>PGSchema</strong>.
+      and property graphs with <strong>PGSchema</strong>, or convert RDF data
+      between formats.
       Everything runs in your browser: rudof is compiled to WebAssembly, and
       nothing you type is sent anywhere.
       <span id="status" class="status loading" role="status">Loading rudof…</span>
@@ -35,6 +36,7 @@
       <button role="tab" id="tab-shex" aria-controls="panel-shex" aria-selected="true">ShEx</button>
       <button role="tab" id="tab-shacl" aria-controls="panel-shacl" aria-selected="false" tabindex="-1">SHACL</button>
       <button role="tab" id="tab-pgschema" aria-controls="panel-pgschema" aria-selected="false" tabindex="-1">PGSchema</button>
+      <button role="tab" id="tab-rdf" aria-controls="panel-rdf" aria-selected="false" tabindex="-1">RDF</button>
     </div>
 
     <!-- ShEx -->
@@ -276,6 +278,62 @@ e2: EnrolledInType</textarea>
         <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
         <pre class="output"></pre>
         <div class="table-output" hidden></div>
+      </div>
+    </section>
+
+    <!-- RDF -->
+    <section id="panel-rdf" role="tabpanel" aria-labelledby="tab-rdf" class="panel" hidden>
+      <div class="inputs two">
+        <div class="field">
+          <div class="field-head">
+            <label for="rdf-data">RDF data</label>
+            <select id="rdf-data-format" aria-label="Input format">
+              <option value="turtle">Turtle</option>
+              <option value="ntriples">N-Triples</option>
+              <option value="rdfxml">RDF/XML</option>
+              <option value="jsonld">JSON-LD</option>
+              <option value="trig">TriG</option>
+              <option value="n3">N3</option>
+              <option value="nquads">N-Quads</option>
+            </select>
+          </div>
+          <textarea id="rdf-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:alice a foaf:Person ;
+       foaf:name "Alice"@en ;
+       foaf:birthday "1995-03-12"^^xsd:date ;
+       foaf:knows :bob, [ foaf:name "Carol" ] .
+
+:bob   a foaf:Person ;
+       foaf:name "Bob" .</textarea>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="rdf-result-format">Converted to</label>
+            <select id="rdf-result-format">
+              <option value="ntriples">N-Triples</option>
+              <option value="turtle">Turtle</option>
+              <option value="rdfxml">RDF/XML</option>
+              <option value="jsonld">JSON-LD</option>
+              <option value="trig">TriG</option>
+              <option value="n3">N3</option>
+              <option value="nquads">N-Quads</option>
+              <option value="plantuml">PlantUML (diagram source)</option>
+            </select>
+          </div>
+          <div class="result converted" id="rdf-result">
+            <div class="result-head"><span class="verdict">Press Convert</span><span class="timing"></span></div>
+            <pre class="output"></pre>
+          </div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="rdf-validate" disabled>Convert</button>
+        <button class="secondary" id="rdf-copy" disabled>Copy</button>
+        <button class="secondary" id="rdf-use-as-input" disabled title="Replace the input with the converted data">Use as input</button>
+        <span class="shortcut">Ctrl + Enter</span>
       </div>
     </section>
   </main>

@@ -223,3 +223,27 @@ table.report .details {
   color: var(--muted);
   min-width: 16rem;
 }
+
+/* RDF tab: the converted data sits next to the input */
+.result.converted { display: flex; flex-direction: column; height: 16rem; }
+.result.converted:not([data-kind]) .result-head { color: var(--muted); font-weight: 400; }
+.result.converted .output { flex: 1; min-height: 0; overflow: auto; }
+
+button.secondary {
+  font: inherit;
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+button.secondary:disabled { opacity: 0.5; cursor: default; }
+
+/* Narrow screens: keep the four tabs on one line, and let long status
+   messages wrap. */
+.status { max-width: 100%; }
+.tabs { overflow-x: auto; scrollbar-width: none; }
+@media (max-width: 480px) {
+  [role="tab"] { padding: 0.5rem 0.8rem; }
+}

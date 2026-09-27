@@ -34,8 +34,13 @@ for (const tab of tabs) {
   });
 }
 
-const initial = tabs.find((t) => `#${t.id.replace("tab-", "")}` === location.hash);
-if (initial) selectTab(initial);
+// The URL fragment (#shex, #shacl, ...) selects a tab, on load and when it changes.
+function selectTabFromHash() {
+  const tab = tabs.find((t) => `#${t.id.replace("tab-", "")}` === location.hash);
+  if (tab) selectTab(tab);
+}
+selectTabFromHash();
+window.addEventListener("hashchange", selectTabFromHash);
 
 // ---------------------------------------------------------------------------
 // Results
@@ -206,11 +211,66 @@ function serializePgschema() {
   return session("pgschema").serializePgschemaValidationResults(format);
 }
 
+const label = (id) => $(id).selectedOptions[0].text;
+
+function rdfVerdict(triples) {
+  const to = label("rdf-result-format").replace(" (diagram source)", "");
+  return `${count(triples, "triple")}, ${label("rdf-data-format")} → ${to}`;
+}
+
+function convertRdf() {
+  const rudof = session("rdf");
+  const start = performance.now();
+  rudof.resetAll();
+  rudof.readData($("rdf-data").value, $("rdf-data-format").value);
+  // Counted in N-Triples, one triple per line.
+  const triples = rudof.serializeData("ntriples").split("\n").filter((l) => l.trim()).length;
+  const millis = performance.now() - start;
+  return {
+    verdict: rdfVerdict(triples),
+    kind: "ok",
+    millis,
+    triples,
+  };
+}
+
+function serializeRdf() {
+  const output = session("rdf").serializeData($("rdf-result-format").value);
+  // The verdict names the output format, which may have just changed.
+  last.rdf.verdict = rdfVerdict(last.rdf.triples);
+  return output;
+}
+
 const validators = {
   shex: { validate: validateShex, serialize: serializeShex },
   shacl: { validate: validateShacl, serialize: serializeShacl },
   pgschema: { validate: validatePgschema, serialize: serializePgschema },
+  rdf: { validate: convertRdf, serialize: serializeRdf },
 };
+
+// RDF tab: copy the result, or use it as the new input.
+function updateRdfButtons() {
+  const converted = Boolean(last.rdf) && !crashed;
+  $("rdf-copy").disabled = !converted;
+  $("rdf-use-as-input").disabled = !converted || $("rdf-result-format").value === "plantuml";
+}
+
+$("rdf-copy").addEventListener("click", async () => {
+  const button = $("rdf-copy");
+  try {
+    await navigator.clipboard.writeText($("rdf-result").querySelector(".output").textContent);
+    button.textContent = "Copied";
+  } catch {
+    button.textContent = "Copy failed";
+  }
+  setTimeout(() => (button.textContent = "Copy"), 1500);
+});
+
+$("rdf-use-as-input").addEventListener("click", () => {
+  $("rdf-data").value = $("rdf-result").querySelector(".output").textContent;
+  $("rdf-data-format").value = $("rdf-result-format").value;
+  $("rdf-data").focus();
+});
 
 // The last successful validation of each tab, so that changing the result
 // format serializes it again without validating again.
@@ -220,22 +280,25 @@ function run(prefix) {
   if (!rudofModule || crashed) return;
   const { validate, serialize } = validators[prefix];
   try {
-    const summary = validate();
-    last[prefix] = summary;
-    showResult(prefix, { ...summary, output: serialize() });
+    last[prefix] = validate();
+    const output = serialize();
+    showResult(prefix, { ...last[prefix], output });
   } catch (e) {
     delete last[prefix];
     showError(prefix, e);
   }
+  updateRdfButtons();
 }
 
 function reformat(prefix) {
   if (!last[prefix] || crashed) return;
   try {
-    showResult(prefix, { ...last[prefix], output: validators[prefix].serialize() });
+    const output = validators[prefix].serialize();
+    showResult(prefix, { ...last[prefix], output });
   } catch (e) {
     showError(prefix, e);
   }
+  updateRdfButtons();
 }
 
 for (const prefix of Object.keys(validators)) {
