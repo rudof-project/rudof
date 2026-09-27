@@ -76,7 +76,8 @@ jobs:
           # Only needed until trusted publishing is configured on npmjs.com
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          tarball="$(ls dist/*.tgz)"
+          # A path without ./ is read by npm 11+ as a GitHub shorthand (user/repo)
+          tarball="$(ls ./dist/*.tgz)"
           version="$(tar -xOzf "$tarball" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0)).version')"
           args=(--access public --provenance)
           # Release candidates (X.Y.Z-rc.N) must not become `latest`
