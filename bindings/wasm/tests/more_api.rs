@@ -254,6 +254,8 @@ fn shex_formats_round_trip() {
             .unwrap_or_else(|e| panic!("{format} read as {input_format}: {e}\n{serialized}"));
         let again = other.serialize_current_shex(Some("shexc"), None).unwrap();
         assert!(again.contains("Person"), "{format}: {again}");
+        // Blank nodes of ShExR are not triple expression labels
+        assert!(!again.contains("$_:"), "{format}: {again}");
         if format == "shexj" {
             assert_eq!(other.serialize_current_shex(Some("shexj"), None).unwrap(), shexj);
         }
