@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>rudof online demo</title>
+  <meta name="description" content="Validate RDF data with ShEx and SHACL in your browser, with rudof compiled to WebAssembly.">
+  <link rel="icon" href="../favicon.svg">
+  <link rel="stylesheet" href="demo.css">
+  <script type="module" src="demo.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a href="../index.html" class="logo">rudof</a>
+      <span class="subtitle">online demo</span>
+    </div>
+    <nav class="links">
+      <a href="../index.html">Manual</a>
+      <a href="https://www.npmjs.com/package/@rudof/rudof">npm</a>
+      <a href="https://github.com/rudof-project/rudof">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="intro">
+      Validate RDF data with <strong>ShEx</strong> or <strong>SHACL</strong>.
+      Everything runs in your browser: rudof is compiled to WebAssembly, and
+      nothing you type is sent anywhere.
+      <span id="status" class="status loading" role="status">Loading rudof…</span>
+    </p>
+
+    <div class="tabs" role="tablist" aria-label="Validation language">
+      <button role="tab" id="tab-shex" aria-controls="panel-shex" aria-selected="true">ShEx</button>
+      <button role="tab" id="tab-shacl" aria-controls="panel-shacl" aria-selected="false" tabindex="-1">SHACL</button>
+    </div>
+
+    <!-- ShEx -->
+    <section id="panel-shex" role="tabpanel" aria-labelledby="tab-shex" class="panel">
+      <div class="inputs two">
+        <div class="field">
+          <div class="field-head">
+            <label for="shex-data">RDF data</label>
+            <select id="shex-data-format" aria-label="RDF data format">
+              <option value="turtle">Turtle</option>
+              <option value="ntriples">N-Triples</option>
+              <option value="rdfxml">RDF/XML</option>
+              <option value="jsonld">JSON-LD</option>
+              <option value="trig">TriG</option>
+              <option value="n3">N3</option>
+              <option value="nquads">N-Quads</option>
+            </select>
+          </div>
+          <textarea id="shex-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:alice :name "Alice" ;
+       :birthDate "1995-03-12"^^xsd:date ;
+       :knows :carol .
+
+:bob   :name "Robert", "Bob" ;
+       :birthDate "unknown" .
+
+:carol :name "Carol" .</textarea>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="shex-schema">ShEx schema</label>
+            <select id="shex-schema-format" aria-label="ShEx schema format">
+              <option value="shexc">ShExC</option>
+              <option value="shexj">ShExJ</option>
+            </select>
+          </div>
+          <textarea id="shex-schema" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:Person {
+  :name      xsd:string ;
+  :birthDate xsd:date ? ;
+  :knows     @:Person *
+}</textarea>
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-head">
+          <label for="shex-shapemap">Shape map</label>
+          <span class="hint">e.g. <code>:alice@:Person</code> or <code>{FOCUS :name _}@:Person</code></span>
+        </div>
+        <textarea id="shex-shapemap" class="short" spellcheck="false">:alice@:Person, :bob@:Person, :carol@:Person</textarea>
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="shex-validate" disabled>Validate</button>
+        <label class="inline">Result format
+          <select id="shex-result-format">
+            <option value="compact">Compact</option>
+            <option value="details">Details</option>
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+        </label>
+        <span class="shortcut">Ctrl + Enter</span>
+      </div>
+      <div class="result" id="shex-result" hidden>
+        <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+        <pre class="output"></pre>
+      </div>
+    </section>
+
+    <!-- SHACL -->
+    <section id="panel-shacl" role="tabpanel" aria-labelledby="tab-shacl" class="panel" hidden>
+      <div class="inputs two">
+        <div class="field">
+          <div class="field-head">
+            <label for="shacl-data">RDF data</label>
+            <select id="shacl-data-format" aria-label="RDF data format">
+              <option value="turtle">Turtle</option>
+              <option value="ntriples">N-Triples</option>
+              <option value="rdfxml">RDF/XML</option>
+              <option value="jsonld">JSON-LD</option>
+              <option value="trig">TriG</option>
+              <option value="n3">N3</option>
+              <option value="nquads">N-Quads</option>
+            </select>
+          </div>
+          <textarea id="shacl-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:alice a :Person ;
+       :name "Alice" ;
+       :birthDate "1995-03-12"^^xsd:date .
+
+:bob   a :Person ;
+       :name "Robert", "Bob" ;
+       :birthDate "unknown" .</textarea>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="shacl-shapes">Shapes graph</label>
+            <select id="shacl-shapes-format" aria-label="Shapes graph format">
+              <option value="turtle">Turtle</option>
+              <option value="ntriples">N-Triples</option>
+              <option value="rdfxml">RDF/XML</option>
+              <option value="jsonld">JSON-LD</option>
+              <option value="trig">TriG</option>
+              <option value="n3">N3</option>
+              <option value="nquads">N-Quads</option>
+            </select>
+          </div>
+          <textarea id="shacl-shapes" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix sh: &lt;http://www.w3.org/ns/shacl#&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:PersonShape a sh:NodeShape ;
+  sh:targetClass :Person ;
+  sh:property [
+    sh:path :name ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:path :birthDate ;
+    sh:datatype xsd:date
+  ] .</textarea>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="shacl-validate" disabled>Validate</button>
+        <label class="inline">Result format
+          <select id="shacl-result-format">
+            <option value="compact">Compact</option>
+            <option value="details">Details</option>
+            <option value="minimal">Minimal</option>
+            <option value="turtle">Turtle</option>
+            <option value="ntriples">N-Triples</option>
+            <option value="rdfxml">RDF/XML</option>
+            <option value="trig">TriG</option>
+            <option value="n3">N3</option>
+            <option value="nquads">N-Quads</option>
+          </select>
+        </label>
+        <label class="inline">Engine
+          <select id="shacl-mode">
+            <option value="native">Native</option>
+            <option value="sparql">SPARQL</option>
+          </select>
+        </label>
+        <span class="shortcut">Ctrl + Enter</span>
+      </div>
+      <div class="result" id="shacl-result" hidden>
+        <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+        <pre class="output"></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Using the <a href="https://www.npmjs.com/package/@rudof/rudof"><code>@rudof/rudof</code></a>
+    npm package, which you can use in your own pages and in Node.js.
+  </footer>
+</body>
+</html>
