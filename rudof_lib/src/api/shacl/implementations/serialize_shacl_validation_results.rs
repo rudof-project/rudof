@@ -39,7 +39,11 @@ pub fn serialize_shacl_validation_results<W: io::Write>(
                 .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultShaclValidationFormat::Json => {
-            todo!("Generation of JSON for SHACL validation report is not implemented yet")
+            return Err(ShaclError::FailedSerializingShaclValidationResults {
+                format: "json".to_string(),
+                error: "not implemented yet".to_string(),
+            }
+            .into());
         },
         _ => {
             serialize_shacl_validation_results_rdf(

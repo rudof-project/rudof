@@ -187,6 +187,16 @@ fn session_shex_workflow() {
     assert!(shapemap.contains("alice"), "{shapemap}");
     let results = rudof.serialize_shex_validation_results(Some("compact"), None).unwrap();
     assert!(results.contains("bob"), "{results}");
+    for format in ["details", "json", "csv"] {
+        let results = rudof.serialize_shex_validation_results(Some(format), None).unwrap();
+        assert!(results.contains("bob"), "{format}: {results}");
+    }
+    // RDF formats are not implemented for ShEx results: an error, not a panic
+    // (which would abort the wasm module).
+    let err = rudof
+        .serialize_shex_validation_results(Some("turtle"), None)
+        .unwrap_err();
+    assert!(err.to_string().contains("turtle"), "{err}");
 
     // Validating again with another ShapeMap reuses the data and schema.
     rudof.reset_shapemap();
@@ -205,6 +215,13 @@ fn session_shacl_workflow() {
     assert!(shapes.contains("http://www.w3.org/ns/shacl#datatype"), "{shapes}");
     let results = rudof.serialize_shacl_validation_results(Some("turtle"), None).unwrap();
     assert!(results.contains("ValidationReport"), "{results}");
+    let results = rudof.serialize_shacl_validation_results(Some("minimal"), None).unwrap();
+    assert!(results.contains("1 violations"), "{results}");
+    // JSON is not implemented for SHACL results: an error, not a panic.
+    let err = rudof
+        .serialize_shacl_validation_results(Some("json"), None)
+        .unwrap_err();
+    assert!(err.to_string().contains("json"), "{err}");
 
     // Fixing the data makes it conform.
     rudof.reset_data();
