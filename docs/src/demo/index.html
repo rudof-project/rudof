@@ -84,12 +84,19 @@ prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
                 <option value="trig">TriG</option>
                 <option value="n3">N3</option>
                 <option value="nquads">N-Quads</option>
-                <option value="plantuml">PlantUML (diagram source)</option>
+                <option value="plantuml">Diagram (PlantUML)</option>
               </select>
             </div>
             <div class="result converted" id="rdf-result">
               <div class="result-head"><span class="verdict">Press Convert</span><span class="timing"></span></div>
               <pre class="output"></pre>
+              <div class="diagram" hidden>
+                <div class="diagram-tools">
+                  <button class="link" data-action="source">Show PlantUML source</button>
+                  <a class="link" data-action="download" download="rdf.svg">Download SVG</a>
+                </div>
+                <div class="diagram-image"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -191,6 +198,7 @@ prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
               <select id="shex-schema-format" aria-label="ShEx schema format">
                 <option value="shexc">ShExC</option>
                 <option value="shexj">ShExJ</option>
+                <option value="turtle">ShExR (Turtle)</option>
               </select>
             </div>
             <textarea id="shex-schema" spellcheck="false">prefix : &lt;http://example.org/&gt;
@@ -225,6 +233,31 @@ prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
         <div class="result" id="shex-result" hidden>
           <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
           <pre class="output"></pre>
+        </div>
+        <div class="toolbar schema-tools">
+          <label class="inline">Convert the schema to
+            <select id="shex-schema-result-format">
+            <option value="shexc">ShExC</option>
+            <option value="shexj">ShExJ</option>
+            <option value="turtle">ShExR (Turtle)</option>
+            <option value="ntriples">ShExR (N-Triples)</option>
+            <option value="rdfxml">ShExR (RDF/XML)</option>
+            <option value="plantuml" selected>UML diagram</option>
+            <option value="sparql">SPARQL query</option>
+            </select>
+          </label>
+          <button class="secondary" id="shex-schema-validate" disabled>Convert schema</button>
+        </div>
+        <div class="result" id="shex-schema-result" hidden>
+          <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+          <pre class="output"></pre>
+          <div class="diagram" hidden>
+            <div class="diagram-tools">
+              <button class="link" data-action="source">Show PlantUML source</button>
+              <a class="link" data-action="download" download="shex.svg">Download SVG</a>
+            </div>
+            <div class="diagram-image"></div>
+          </div>
         </div>
       </section>
 
@@ -311,6 +344,33 @@ prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
         <div class="result" id="shacl-result" hidden>
           <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
           <pre class="output"></pre>
+        </div>
+        <div class="toolbar schema-tools">
+          <label class="inline">Convert the schema to
+            <select id="shacl-schema-result-format">
+            <option value="turtle">Turtle</option>
+            <option value="ntriples">N-Triples</option>
+            <option value="rdfxml">RDF/XML</option>
+            <option value="jsonld">JSON-LD</option>
+            <option value="trig">TriG</option>
+            <option value="n3">N3</option>
+            <option value="nquads">N-Quads</option>
+            <option value="shexc" selected>ShEx (ShExC)</option>
+            <option value="plantuml">UML diagram (via ShEx)</option>
+            </select>
+          </label>
+          <button class="secondary" id="shacl-schema-validate" disabled>Convert schema</button>
+        </div>
+        <div class="result" id="shacl-schema-result" hidden>
+          <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+          <pre class="output"></pre>
+          <div class="diagram" hidden>
+            <div class="diagram-tools">
+              <button class="link" data-action="source">Show PlantUML source</button>
+              <a class="link" data-action="download" download="shacl.svg">Download SVG</a>
+            </div>
+            <div class="diagram-image"></div>
+          </div>
         </div>
       </section>
 

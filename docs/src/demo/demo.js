@@ -6,6 +6,11 @@
 const RUDOF_VERSION = "0.3";
 const RUDOF_MODULE = `https://cdn.jsdelivr.net/npm/@rudof/rudof@${RUDOF_VERSION}/web/rudof_wasm.js`;
 
+// PlantUML, compiled to JavaScript with TeaVM, draws the diagrams. It is
+// loaded the first time a diagram is shown.
+const PLANTUML_VERSION = "1.2026.8";
+const PLANTUML_BASE = `https://cdn.jsdelivr.net/npm/@plantuml/core@${PLANTUML_VERSION}/`;
+
 const $ = (id) => document.getElementById(id);
 
 // ---------------------------------------------------------------------------
@@ -69,22 +74,91 @@ window.addEventListener("hashchange", selectTabFromHash);
 // ---------------------------------------------------------------------------
 // Results
 
+// `output` is text, an element (a table built from a report), or
+// `{ plantuml }`: the source of a diagram, which is drawn.
 function showResult(prefix, { verdict, kind, output, millis }) {
   const box = $(`${prefix}-result`);
   box.hidden = false;
   box.dataset.kind = kind;
   box.querySelector(".verdict").textContent = verdict;
   box.querySelector(".timing").textContent = millis === undefined ? "" : `${millis.toFixed(0)} ms`;
-  // `output` is text, or an element (a table) built from the report.
   const pre = box.querySelector(".output");
   const table = box.querySelector(".table-output");
+  const diagram = box.querySelector(".diagram");
   const isElement = output instanceof Element;
-  pre.hidden = isElement;
+  const isDiagram = typeof output === "object" && output !== null && "plantuml" in output;
   if (table) {
     table.hidden = !isElement;
     table.replaceChildren(...(isElement ? [output] : []));
   }
+  if (diagram) diagram.hidden = !isDiagram;
+  if (isDiagram) {
+    pre.textContent = output.plantuml;
+    pre.hidden = !diagram.classList.contains("show-source");
+    drawDiagram(box, output.plantuml);
+    return;
+  }
+  diagrams.set(box, null); // a diagram still being drawn is not shown
+  pre.hidden = isElement;
   if (!isElement) pre.textContent = plain(output);
+}
+
+// Diagrams
+
+let plantuml;
+
+function loadPlantuml() {
+  plantuml ??= (async () => {
+    // Graphviz (Viz.js), which PlantUML uses for layout, is a classic script.
+    await new Promise((resolve, reject) => {
+      const script = Object.assign(document.createElement("script"), { src: `${PLANTUML_BASE}viz-global.js` });
+      script.onload = resolve;
+      script.onerror = () => reject(new Error("could not load Graphviz"));
+      document.head.append(script);
+    });
+    return import(`${PLANTUML_BASE}plantuml.js`);
+  })();
+  plantuml.catch(() => (plantuml = undefined)); // try again next time
+  return plantuml;
+}
+
+async function plantumlSvg(source) {
+  const { renderToString } = await loadPlantuml();
+  return new Promise((resolve, reject) =>
+    renderToString(source.split(/\r\n|\r|\n/), resolve, (message) => reject(new Error(message))),
+  );
+}
+
+// The diagram being drawn in each result box, so that only the last one is shown.
+const diagrams = new WeakMap();
+
+async function drawDiagram(box, source) {
+  const image = box.querySelector(".diagram-image");
+  const download = box.querySelector('[data-action="download"]');
+  const token = {};
+  diagrams.set(box, token);
+  const note = (text, className = "diagram-status") => image.replaceChildren(Object.assign(document.createElement("p"), { className, textContent: text }));
+  note(plantuml ? "Drawing the diagram…" : "Loading PlantUML (about 2 MB, only the first time)…");
+  download.removeAttribute("href");
+  try {
+    const svg = await plantumlSvg(source);
+    if (diagrams.get(box) !== token) return;
+    // As an image, so that nothing in the SVG runs in the page
+    if (box.dataset.svg) URL.revokeObjectURL(box.dataset.svg);
+    box.dataset.svg = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    image.replaceChildren(Object.assign(new Image(), { src: box.dataset.svg, alt: "Diagram" }));
+    download.href = box.dataset.svg;
+  } catch (e) {
+    if (diagrams.get(box) === token) note(`Could not draw the diagram: ${e.message ?? e}`, "diagram-status error");
+  }
+}
+
+for (const diagram of document.querySelectorAll(".diagram")) {
+  diagram.querySelector('[data-action="source"]').addEventListener("click", (e) => {
+    const shown = diagram.classList.toggle("show-source");
+    diagram.closest(".result").querySelector(".output").hidden = !shown;
+    e.currentTarget.textContent = shown ? "Hide PlantUML source" : "Show PlantUML source";
+  });
 }
 
 let crashed = false;
@@ -94,7 +168,7 @@ function showError(prefix, e) {
   if (e instanceof WebAssembly.RuntimeError) {
     crashed = true;
     setStatus("error", "rudof stopped working: reload the page to continue");
-    for (const b of document.querySelectorAll("button.primary")) b.disabled = true;
+    for (const b of document.querySelectorAll('button[id$="-validate"]')) b.disabled = true;
     showResult(prefix, {
       verdict: "Internal error",
       kind: "error",
@@ -238,7 +312,7 @@ function serializePgschema() {
 const label = (id) => $(id).selectedOptions[0].text;
 
 function rdfVerdict(triples) {
-  const to = label("rdf-result-format").replace(" (diagram source)", "");
+  const to = label("rdf-result-format").replace(" (PlantUML)", "");
   return `${count(triples, "triple")}, ${label("rdf-data-format")} → ${to}`;
 }
 
@@ -259,7 +333,9 @@ function convertRdf() {
 }
 
 function serializeRdf() {
-  const output = session("rdf").serializeData($("rdf-result-format").value);
+  const format = $("rdf-result-format").value;
+  let output = session("rdf").serializeData(format);
+  if (format === "plantuml") output = { plantuml: output };
   // The verdict names the output format, which may have just changed.
   last.rdf.verdict = rdfVerdict(last.rdf.triples);
   return output;
@@ -435,6 +511,51 @@ function serializeSparql() {
   return graph.serializeData(format);
 }
 
+// Schemas converted to other formats (and diagrams), in their own sessions so
+// that validation results are kept.
+const schemaInput = { shex: "shex-schema-format", shacl: "shacl-shapes-format" };
+
+function schemaVerdict(language) {
+  return `${label(schemaInput[language])} → ${label(`${language}-schema-result-format`)}`;
+}
+
+function readSchema(language) {
+  const rudof = session(`${language}-schema`);
+  const start = performance.now();
+  rudof.resetAll();
+  if (language === "shex") rudof.readShex($("shex-schema").value, $("shex-schema-format").value);
+  else rudof.readShacl($("shacl-shapes").value, $("shacl-shapes-format").value);
+  return { kind: "ok", millis: performance.now() - start, verdict: schemaVerdict(language) };
+}
+
+// SHACL shapes converted to ShEx (ShExJ), through Turtle.
+function shaclToShex(format) {
+  const turtle = session("shacl-schema").serializeShacl("turtle");
+  return session("shacl-convert").convertSchemas(turtle, "shacl", "shex", "turtle", format);
+}
+
+function serializeSchema(language) {
+  const rudof = session(`${language}-schema`);
+  const format = $(`${language}-schema-result-format`).value;
+  last[`${language}-schema`].verdict = schemaVerdict(language);
+  if (language === "shex") {
+    if (format === "plantuml") return { plantuml: rudof.serializeCurrentShex("plantuml") };
+    if (format === "sparql") {
+      return rudof.convertSchemas(rudof.serializeCurrentShex("shexj"), "shex", "sparql", "shexj", "internal");
+    }
+    return rudof.serializeCurrentShex(format);
+  }
+  // SHACL
+  if (format === "shexc") return shaclToShex("shexc");
+  if (format === "plantuml") {
+    const shex = session("shacl-shex");
+    shex.resetAll();
+    shex.readShex(shaclToShex("shexj"), "shexj");
+    return { plantuml: shex.serializeCurrentShex("plantuml") };
+  }
+  return rudof.serializeShacl(format);
+}
+
 const validators = {
   shex: { validate: validateShex, serialize: serializeShex },
   shacl: { validate: validateShacl, serialize: serializeShacl },
@@ -443,6 +564,10 @@ const validators = {
   pg: { validate: convertPg, serialize: serializePg },
   sparql: { validate: runSparql, serialize: serializeSparql },
 };
+// PGSchema has one syntax, PGSchemaC, which rudof can't write yet.
+for (const language of ["shex", "shacl"]) {
+  validators[`${language}-schema`] = { validate: () => readSchema(language), serialize: () => serializeSchema(language) };
+}
 
 // Data tabs: copy the result, or use it as the new input.
 const CONVERTERS = ["rdf", "pg"];
@@ -508,7 +633,7 @@ function reformat(prefix) {
 for (const prefix of Object.keys(validators)) {
   $(`${prefix}-validate`).addEventListener("click", () => run(prefix));
   $(`${prefix}-result-format`).addEventListener("change", () => reformat(prefix));
-  $(`panel-${prefix}`).addEventListener("keydown", (e) => {
+  $(`panel-${prefix}`)?.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       run(prefix);
@@ -523,7 +648,7 @@ try {
   rudofModule = await import(RUDOF_MODULE);
   await rudofModule.default();
   setStatus("ready", `rudof ${new rudofModule.Rudof().getVersion()} ready`);
-  for (const b of document.querySelectorAll("button.primary")) b.disabled = false;
+  for (const b of document.querySelectorAll('button[id$="-validate"]')) b.disabled = false;
 } catch (e) {
   console.error(e);
   setStatus("error", `Could not load rudof: ${e.message ?? e}`);

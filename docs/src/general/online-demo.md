@@ -9,14 +9,24 @@ tabs:
 **Data**
 
 - **RDF**: enter RDF data in any format, choose the output format (Turtle,
-  N-Triples, RDF/XML, JSON-LD, TriG, N3, N-Quads, or the source of a PlantUML
-  diagram) and press **Convert**. **Copy** copies the result, and
+  N-Triples, RDF/XML, JSON-LD, TriG, N3, N-Quads, or a diagram of the graph)
+  and press **Convert**. **Copy** copies the result, and
   **Use as input** replaces the input with it, to convert it again.
 - **Property graph**: enter a property graph in
   [YARS-PG](https://github.com/lszeremeta/yarspg) syntax and press **Convert**
   to check it and see it as YARS-PG (sorted by name) or as JSON.
 
 **Validate**
+
+Under the validation of ShEx and SHACL, **Convert the schema to** converts the
+schema to other formats, or draws it:
+
+- ShEx: ShExC, ShExJ, ShExR (Turtle, N-Triples or RDF/XML), a UML class
+  diagram, or a SPARQL query that finds the nodes with the shape's
+  properties. ShExR can also be the input format of the schema.
+- SHACL: any RDF format, ShEx (ShExC), or a UML diagram through ShEx. Not
+  every SHACL component can be converted to ShEx yet; the error names the
+  ones that can't.
 
 - **ShEx**: enter the RDF data, the ShEx schema and a shape map (for example
   `:alice@:Person`, or `{FOCUS :name _}@:Person` to validate every node with a
@@ -38,6 +48,11 @@ tabs:
   kind), and press **Run query**. `SELECT` results are shown as a table (or JSON
   or CSV), `ASK` as true or false, and the graph of `CONSTRUCT` and `DESCRIBE`
   in any RDF format.
+
+Diagrams are drawn in the browser by [PlantUML](https://plantuml.com)
+compiled to JavaScript with TeaVM ([`@plantuml/core`](https://www.npmjs.com/package/@plantuml/core)),
+loaded the first time a diagram is shown. **Show PlantUML source** shows the
+text of the diagram, and **Download SVG** saves the image.
 
 **Ctrl + Enter** runs the tab from any of its inputs. Changing the result
 format shows the last result again without running it again. Links can point

@@ -274,3 +274,40 @@ button.secondary:disabled { opacity: 0.5; cursor: default; }
 table.solutions td code { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
 table.solutions .term-note { color: var(--muted); font: 11px var(--mono); }
 #sparql-example { max-width: 18rem; }
+
+/* Schema conversion, below the validation of each schema language */
+.toolbar.schema-tools { margin-top: 1rem; }
+.result + .toolbar.schema-tools { margin-top: 1.25rem; }
+.toolbar.schema-tools + .result { margin-bottom: 1rem; }
+
+/* Diagrams drawn with PlantUML: always on white, as PlantUML draws them */
+.diagram { background: var(--surface); }
+.diagram-tools {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85em;
+}
+.link {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+}
+.link:hover { text-decoration: underline; }
+a.link:not([href]) { color: var(--muted); pointer-events: none; }
+.diagram-image { overflow: auto; padding: 0.75rem; max-height: 40rem; }
+.diagram-image img { display: block; max-width: 100%; height: auto; background: #fff; border-radius: 4px; padding: 0.5rem; }
+.diagram-status { margin: 0; color: var(--muted); font-size: 0.9em; }
+.diagram-status.error { color: var(--fail-text); }
+/* In the RDF converter the box has a fixed height: the diagram scrolls */
+.result.converted .diagram { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.result.converted .diagram[hidden] { display: none; }
+.result.converted .diagram-image { flex: 1; max-height: none; }
+.result.converted .output:not([hidden]) + .diagram { flex: 0 0 auto; }
