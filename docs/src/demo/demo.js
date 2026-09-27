@@ -2,8 +2,11 @@
 // querying (SPARQL) RDF data and property graphs with the @rudof/rudof npm
 // package (rudof compiled to WebAssembly), loaded from jsDelivr.
 
-// Any 0.3.x release. Update the range when a release changes the API.
-const RUDOF_VERSION = "0.3";
+// An exact version: jsDelivr caches what a range (like 0.3) points to, so a
+// range can keep serving an older release for days. The release workflow
+// (release.yml) updates it, and the site is deployed again once the release is
+// on npm (gh-pages.yml).
+const RUDOF_VERSION = "0.3.24";
 const RUDOF_MODULE = `https://cdn.jsdelivr.net/npm/@rudof/rudof@${RUDOF_VERSION}/web/rudof_wasm.js`;
 
 // PlantUML, compiled to JavaScript with TeaVM, draws the diagrams. It is

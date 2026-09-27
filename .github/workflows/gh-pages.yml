@@ -7,9 +7,19 @@ on:
     paths:
       - "docs/**"
       - .readthedocs.yml
+  # After a release is published on npm, so that the online demo, which loads
+  # the release named in docs/src/demo/demo.js, uses it. (The release commit
+  # itself is [skip ci], so it doesn't deploy.)
+  workflow_run:
+    workflows: ["npm"]
+    types:
+      - completed
+  workflow_dispatch:
 
 jobs:
   deploy:
+    # After the npm workflow, only when it succeeded
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write  # To push a branch
