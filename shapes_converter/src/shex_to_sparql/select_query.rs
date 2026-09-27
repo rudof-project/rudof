@@ -44,7 +44,7 @@ impl SelectQuery {
 impl Display for SelectQuery {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(base) = &self.base {
-            writeln!(f, "{base}")?
+            writeln!(f, "BASE <{}>", base.as_str())?
         };
         // TODO: Unify these 2 branches in one...it was giving an move error on prefixmap that I wanted to bypass quickly...
         if let Some(prefixmap) = &self.prefixmap {

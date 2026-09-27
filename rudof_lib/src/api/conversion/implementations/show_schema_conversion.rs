@@ -421,7 +421,6 @@ fn show_schema_conversion_shacl_to_shex<W: io::Write>(
         })?;
 
     let shex_schema = InputSpec::Str(converter.current_shex().to_string());
-    println!("Generated ShEx schema:\n{}", converter.current_shex());
     load_shex_schema(rudof, &shex_schema, Some(&ShExFormat::ShExJ), base, reader_mode)?;
 
     serialize_shex_schema(

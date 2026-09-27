@@ -149,6 +149,122 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     assert_eq!(err.name(), "RangeError", "{err}");
 }
 
+#[cfg(feature = "conversion")]
+#[test]
+fn convert_shacl_to_shex() {
+    let mut rudof = Session::new(None);
+    // sh:minCount/sh:maxCount are cardinalities, several components are
+    // combined with AND and sh:node is a reference to the shape.
+    let shacl_shapes = r#"
+prefix : <http://example.org/>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:PersonShape a sh:NodeShape ; sh:targetClass :Person ;
+  sh:property [ sh:path :name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path :knows ; sh:node :PersonShape ] ;
+  sh:property [ sh:path :pet ; sh:class :Animal ; sh:node :PetShape ; sh:maxCount 3 ] .
+:PetShape a sh:NodeShape ;
+  sh:property [ sh:path :name ; sh:datatype xsd:string ] .
+"#;
+    let shexc = rudof
+        .convert_schemas(shacl_shapes, "shacl", "shex", "turtle", "shexc", None, None, None)
+        .unwrap();
+    // The result is ShExC that can be read again
+    let mut other = Session::new(None);
+    other.read_shex(&shexc, None, None, None).unwrap();
+    let shexj = other.serialize_current_shex(Some("shexj"), None).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&shexj).unwrap();
+    let person = json["shapes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["id"] == "http://example.org/PersonShape")
+        .unwrap_or_else(|| panic!("{shexj}"));
+    let constraints = person["shapeExpr"]["expression"]["expressions"].as_array().unwrap();
+    let constraint = |p: &str| {
+        constraints
+            .iter()
+            .find(|tc| tc["predicate"] == format!("http://example.org/{p}"))
+            .unwrap_or_else(|| panic!("{p}: {shexj}"))
+    };
+    // ShExJ leaves out the default cardinality, exactly one
+    assert_eq!(
+        (constraint("name")["min"].as_i64(), constraint("name")["max"].as_i64()),
+        (None, None)
+    );
+    assert_eq!(
+        (constraint("knows")["min"].as_i64(), constraint("knows")["max"].as_i64()),
+        (Some(0), Some(-1))
+    );
+    assert_eq!(
+        constraint("knows")["valueExpr"],
+        "http://example.org/PersonShape",
+        "{shexj}"
+    );
+    assert_eq!(constraint("pet")["valueExpr"]["type"], "ShapeAnd", "{shexj}");
+    assert_eq!(constraint("pet")["max"].as_i64(), Some(3));
+
+    // Components that can't be converted yet are errors, not panics (which
+    // would abort the wasm module).
+    let err = rudof
+        .convert_schemas(
+            r#"prefix : <http://example.org/>
+prefix sh: <http://www.w3.org/ns/shacl#>
+:S a sh:NodeShape ; sh:property [ sh:path :code ; sh:pattern "^[A-Z]+$" ] ."#,
+            "shacl",
+            "shex",
+            "turtle",
+            "shexc",
+            None,
+            None,
+            None,
+        )
+        .unwrap_err();
+    assert!(err.to_string().contains("sh:pattern"), "{err}");
+
+    // SPARQL queries declare the base with BASE
+    let sparql = rudof
+        .convert_schemas(SHEX_SCHEMA, "shex", "sparql", "shexc", "internal", None, None, None)
+        .unwrap();
+    assert!(
+        !sparql.lines().next().unwrap_or_default().starts_with("http"),
+        "{sparql}"
+    );
+}
+
+#[test]
+fn shex_formats_round_trip() {
+    let mut rudof = Session::new(None);
+    rudof.read_shex(SHEX_SCHEMA, None, None, None).unwrap();
+    // ShExJ (also read as json and jsonld, since ShExJ is JSON-LD) and ShExR
+    // in any RDF format are read back as the same schema.
+    let shexj = rudof.serialize_current_shex(Some("shexj"), None).unwrap();
+    for (format, input_format) in [
+        ("shexj", "shexj"),
+        ("shexj", "json"),
+        ("shexj", "jsonld"),
+        ("turtle", "turtle"),
+        ("ntriples", "ntriples"),
+        ("rdfxml", "rdfxml"),
+    ] {
+        let serialized = rudof.serialize_current_shex(Some(format), None).unwrap();
+        let mut other = Session::new(None);
+        other
+            .read_shex(&serialized, Some(input_format), None, None)
+            .unwrap_or_else(|e| panic!("{format} read as {input_format}: {e}\n{serialized}"));
+        let again = other.serialize_current_shex(Some("shexc"), None).unwrap();
+        assert!(again.contains("Person"), "{format}: {again}");
+        if format == "shexj" {
+            assert_eq!(other.serialize_current_shex(Some("shexj"), None).unwrap(), shexj);
+        }
+    }
+    // Formats that are only written out can't be read: an error, not a panic
+    let err = rudof.read_shex("x", Some("plantuml"), None, None).unwrap_err();
+    assert!(err.to_string().contains("plantuml"), "{err}");
+    let uml = rudof.serialize_current_shex(Some("plantuml"), None).unwrap();
+    assert!(uml.starts_with("@startuml"), "{uml}");
+}
+
 #[cfg(feature = "comparison")]
 #[test]
 fn compare_schemas() {

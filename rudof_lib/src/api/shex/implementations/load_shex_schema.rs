@@ -67,7 +67,8 @@ pub fn load_shex_schema(
                 &reader_mode,
             )?;
         },
-        ShExFormat::ShExJ => {
+        // ShExJ is JSON-LD
+        ShExFormat::ShExJ | ShExFormat::Json | ShExFormat::JsonLd => {
             load_shex_schema_shexj(rudof, schema_reader, &schema.source_name(), base_schema, &reader_mode)?;
         },
         ShExFormat::Turtle
@@ -85,8 +86,19 @@ pub fn load_shex_schema(
                 &reader_mode,
             )?;
         },
-        _ => {
-            todo!("Implement loading for ShEx format '{}'", schema_format);
+        // Formats that are only written out (`binary` is loaded above)
+        ShExFormat::Internal
+        | ShExFormat::Simple
+        | ShExFormat::PlantUML
+        | ShExFormat::Svg
+        | ShExFormat::Png
+        | ShExFormat::Binary => {
+            return Err(ShExError::FailedParsingShExSchema {
+                source_name: schema.source_name(),
+                format: schema_format.to_string(),
+                error: "ShEx schemas can't be read in this format".to_string(),
+            }
+            .into());
         },
     }
 
