@@ -247,3 +247,30 @@ button.secondary:disabled { opacity: 0.5; cursor: default; }
 @media (max-width: 480px) {
   [role="tab"] { padding: 0.5rem 0.8rem; }
 }
+
+/* Second level of tabs (inside Data, Validate and Query): segmented buttons */
+.tabs.subtabs {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 1rem;
+  max-width: 100%;
+}
+.subtabs [role="tab"] {
+  border: none;
+  border-radius: 6px;
+  margin: 0;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.9em;
+}
+.subtabs [role="tab"][aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Solutions of SPARQL SELECT queries */
+table.solutions td code { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+table.solutions .term-note { color: var(--muted); font: 11px var(--mono); }
+#sparql-example { max-width: 18rem; }

@@ -1,4 +1,5 @@
-// rudof online demo: ShEx and SHACL validation with the @rudof/rudof npm
+// rudof online demo: converting, validating (ShEx, SHACL, PGSchema) and
+// querying (SPARQL) RDF data and property graphs with the @rudof/rudof npm
 // package (rudof compiled to WebAssembly), loaded from jsDelivr.
 
 // Any 0.3.x release. Update the range when a release changes the API.
@@ -9,23 +10,38 @@ const $ = (id) => document.getElementById(id);
 
 // ---------------------------------------------------------------------------
 // Tabs
+//
+// Two levels: the sections (Data, Validate, Query), and inside each one its
+// own tabs (RDF and Property graph, ShEx, SHACL and PGSchema, SPARQL). The URL
+// fragment names both, e.g. #validate/shacl.
 
-const tabs = [...document.querySelectorAll('[role="tab"]')];
+const tabName = (tab) => tab.id.replace("tab-", "");
+const tabsOf = (tablist) => [...tablist.querySelectorAll(':scope > [role="tab"]')];
+const sectionTabs = tabsOf(document.querySelector('.tabs:not(.subtabs)'));
+
+// The tab selected inside a section.
+function selectedSubtab(section) {
+  return tabsOf($(`panel-${tabName(section)}`).querySelector(".subtabs")).find(
+    (t) => t.getAttribute("aria-selected") === "true",
+  );
+}
 
 function selectTab(tab, focus = false) {
-  for (const t of tabs) {
+  for (const t of tabsOf(tab.parentElement)) {
     const selected = t === tab;
     t.setAttribute("aria-selected", String(selected));
     t.tabIndex = selected ? 0 : -1;
     $(t.getAttribute("aria-controls")).hidden = !selected;
   }
   if (focus) tab.focus();
-  history.replaceState(null, "", `#${tab.id.replace("tab-", "")}`);
+  const section = sectionTabs.find((t) => t.getAttribute("aria-selected") === "true");
+  history.replaceState(null, "", `#${tabName(section)}/${tabName(selectedSubtab(section))}`);
 }
 
-for (const tab of tabs) {
+for (const tab of document.querySelectorAll('[role="tab"]')) {
   tab.addEventListener("click", () => selectTab(tab));
   tab.addEventListener("keydown", (e) => {
+    const tabs = tabsOf(tab.parentElement);
     const i = tabs.indexOf(tab);
     const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
     if (next === undefined) return;
@@ -34,10 +50,18 @@ for (const tab of tabs) {
   });
 }
 
-// The URL fragment (#shex, #shacl, ...) selects a tab, on load and when it changes.
+// Earlier links named only the tab: #shex, #shacl, #pgschema, #rdf.
+const OLD_FRAGMENTS = { shex: "validate/shex", shacl: "validate/shacl", pgschema: "validate/pgschema", rdf: "data/rdf" };
+
+// The URL fragment selects the tabs, on load and when it changes.
 function selectTabFromHash() {
-  const tab = tabs.find((t) => `#${t.id.replace("tab-", "")}` === location.hash);
-  if (tab) selectTab(tab);
+  const fragment = location.hash.slice(1);
+  const [section, subtab] = (OLD_FRAGMENTS[fragment] ?? fragment).split("/");
+  const sectionTab = sectionTabs.find((t) => tabName(t) === section);
+  if (!sectionTab) return;
+  const sub = subtab && $(`tab-${subtab}`);
+  if (sub && $(`panel-${section}`).contains(sub)) selectTab(sub);
+  selectTab(sectionTab);
 }
 selectTabFromHash();
 window.addEventListener("hashchange", selectTabFromHash);
@@ -241,36 +265,216 @@ function serializeRdf() {
   return output;
 }
 
+// Property graph data, written back in YARS-PG or as JSON.
+function convertPg() {
+  const rudof = session("pg");
+  const start = performance.now();
+  rudof.resetAll();
+  rudof.readData($("pg-data").value, "pg");
+  let size = "";
+  try {
+    const graph = JSON.parse(rudof.serializeData("json"));
+    size = `${count(graph.nodes.length, "node")} and ${count(graph.edges.length, "edge")}, `;
+  } catch {
+    // rudof versions before 0.3.23 don't write property graphs as JSON.
+  }
+  const millis = performance.now() - start;
+  return { size, kind: "ok", millis, verdict: `${size}YARS-PG → ${label("pg-result-format")}` };
+}
+
+function serializePg() {
+  last.pg.verdict = `${last.pg.size}YARS-PG → ${label("pg-result-format")}`;
+  return session("pg").serializeData($("pg-result-format").value);
+}
+
+// SPARQL queries. The result formats depend on the kind of query: SELECT gives
+// a table of solutions, ASK true or false, CONSTRUCT and DESCRIBE a graph.
+const SPARQL_FORMATS = {
+  select: [["table", "Table"], ["json", "JSON"], ["csv", "CSV"]],
+  ask: [["text", "Text"]],
+  graph: [
+    ["turtle", "Turtle"],
+    ["ntriples", "N-Triples"],
+    ["rdfxml", "RDF/XML"],
+    ["jsonld", "JSON-LD"],
+    ["trig", "TriG"],
+    ["n3", "N3"],
+    ["nquads", "N-Quads"],
+  ],
+};
+
+const SPARQL_EXAMPLES = {
+  select: `PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT ?name ?age WHERE {
+  ?person a foaf:Person ;
+          foaf:name ?name .
+  OPTIONAL { ?person foaf:age ?age }
+}
+ORDER BY ?name`,
+  count: `PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT ?name (COUNT(?friend) AS ?friends) WHERE {
+  ?person foaf:name ?name .
+  OPTIONAL { ?person foaf:knows ?friend }
+}
+GROUP BY ?name
+ORDER BY DESC(?friends)`,
+  ask: `PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+ASK { ?person foaf:age ?age FILTER (?age < 18) }`,
+  construct: `PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX : <http://example.org/>
+
+CONSTRUCT { ?b :isKnownBy ?a } WHERE { ?a foaf:knows ?b }`,
+  describe: `DESCRIBE <http://example.org/carol>`,
+};
+
+$("sparql-example").addEventListener("change", (e) => {
+  if (!e.target.value) return;
+  $("sparql-query").value = SPARQL_EXAMPLES[e.target.value];
+  e.target.value = "";
+  $("sparql-query").focus();
+});
+
+function setSparqlFormats(kind) {
+  const select = $("sparql-result-format");
+  const formats = SPARQL_FORMATS[kind];
+  if ([...select.options].map((o) => o.value).join() === formats.map(([v]) => v).join()) return;
+  select.replaceChildren(...formats.map(([value, text]) => new Option(text, value)));
+}
+
+function runSparql() {
+  const rudof = session("sparql");
+  const start = performance.now();
+  rudof.resetAll();
+  rudof.readData($("sparql-data").value, $("sparql-data-format").value);
+  rudof.readQuery($("sparql-query").value);
+  const results = rudof.runQuery();
+  const millis = performance.now() - start;
+  const prefixes = dataPrefixes(rudof);
+  setSparqlFormats(results.kind);
+  let verdict;
+  if (results.kind === "select") verdict = count(results.rows.length, "result");
+  else if (results.kind === "ask") verdict = `ASK: ${results.boolean}`;
+  else verdict = count(results.graph.split("\n").filter((l) => l.trim()).length, "triple");
+  return { verdict, kind: "ok", millis, results, prefixes };
+}
+
+// The prefixes declared in the loaded data, as [alias, IRI] pairs, read from
+// its Turtle serialization.
+function dataPrefixes(rudof) {
+  return [...rudof.serializeData("turtle").matchAll(/^@prefix ([^:\s]*): <([^>]*)> \.$/gm)].map((m) => [m[1], m[2]]);
+}
+
+const XSD = "http://www.w3.org/2001/XMLSchema#";
+
+// An RDF term (as rudof writes it: <iri>, "literal"@lang, "literal"^^<type>,
+// _:blank) shown as a reader would write it: IRIs as prefixed names when a
+// prefix of the data matches, literals by their value with a note for a
+// language or an unusual datatype. The full term is the tooltip.
+function termCell(term, prefixes) {
+  const td = document.createElement("td");
+  if (term == null) return td;
+  const qualify = (iri) => {
+    for (const [alias, ns] of [...prefixes, ["xsd", XSD]]) {
+      if (iri.startsWith(ns) && /^[\w-]*$/.test(iri.slice(ns.length))) return `${alias}:${iri.slice(ns.length)}`;
+    }
+    return `<${iri}>`;
+  };
+  let text = term;
+  let note = "";
+  const iri = term.match(/^<(.*)>$/s);
+  const literal = term.match(/^"(.*)"(?:@([\w-]+)|\^\^<(.*)>)?$/s);
+  if (iri) {
+    text = qualify(iri[1]);
+  } else if (literal) {
+    text = literal[1].replace(/\\(["\\])/g, "$1").replace(/\\n/g, "\n");
+    const [, , lang, datatype] = literal;
+    const plain = ["string", "integer", "decimal", "double", "boolean"].map((t) => XSD + t);
+    if (lang) note = `@${lang}`;
+    else if (datatype && !plain.includes(datatype)) note = qualify(datatype);
+  }
+  const code = Object.assign(document.createElement("code"), { textContent: text, title: term });
+  td.append(code);
+  if (note) td.append(" ", Object.assign(document.createElement("span"), { className: "term-note", textContent: note }));
+  return td;
+}
+
+// Solutions of a SELECT query as a table; unbound values are left empty.
+function sparqlTable({ variables, rows }, prefixes) {
+  const el = (tag, props = {}, ...children) => {
+    const e = Object.assign(document.createElement(tag), props);
+    e.append(...children);
+    return e;
+  };
+  return el(
+    "table",
+    { className: "report solutions" },
+    el("thead", {}, el("tr", {}, ...variables.map((v) => el("th", {}, v)))),
+    el(
+      "tbody",
+      {},
+      ...rows.map((row) => el("tr", {}, ...row.map((value) => termCell(value, prefixes)))),
+    ),
+  );
+}
+
+function serializeSparql() {
+  const { results, prefixes } = last.sparql;
+  const format = $("sparql-result-format").value;
+  if (results.kind === "select") {
+    return format === "table" ? sparqlTable(results, prefixes) : session("sparql").serializeQueryResults(format);
+  }
+  if (results.kind === "ask") return String(results.boolean);
+  // The graph of CONSTRUCT and DESCRIBE, written with the prefixes of the data.
+  const declarations = prefixes.map(([alias, iri]) => `prefix ${alias}: <${iri}>\n`).join("");
+  const graph = session("sparql-graph");
+  graph.resetAll();
+  graph.readData(declarations + results.graph, "turtle");
+  return graph.serializeData(format);
+}
+
 const validators = {
   shex: { validate: validateShex, serialize: serializeShex },
   shacl: { validate: validateShacl, serialize: serializeShacl },
   pgschema: { validate: validatePgschema, serialize: serializePgschema },
   rdf: { validate: convertRdf, serialize: serializeRdf },
+  pg: { validate: convertPg, serialize: serializePg },
+  sparql: { validate: runSparql, serialize: serializeSparql },
 };
 
-// RDF tab: copy the result, or use it as the new input.
-function updateRdfButtons() {
-  const converted = Boolean(last.rdf) && !crashed;
-  $("rdf-copy").disabled = !converted;
-  $("rdf-use-as-input").disabled = !converted || $("rdf-result-format").value === "plantuml";
+// Data tabs: copy the result, or use it as the new input.
+const CONVERTERS = ["rdf", "pg"];
+
+function updateConvertButtons() {
+  for (const prefix of CONVERTERS) {
+    const converted = Boolean(last[prefix]) && !crashed;
+    const format = $(`${prefix}-result-format`).value;
+    $(`${prefix}-copy`).disabled = !converted;
+    // Only data in a format that can be read back
+    $(`${prefix}-use-as-input`).disabled = !converted || format === "plantuml" || (prefix === "pg" && format === "json");
+  }
 }
 
-$("rdf-copy").addEventListener("click", async () => {
-  const button = $("rdf-copy");
-  try {
-    await navigator.clipboard.writeText($("rdf-result").querySelector(".output").textContent);
-    button.textContent = "Copied";
-  } catch {
-    button.textContent = "Copy failed";
-  }
-  setTimeout(() => (button.textContent = "Copy"), 1500);
-});
-
-$("rdf-use-as-input").addEventListener("click", () => {
-  $("rdf-data").value = $("rdf-result").querySelector(".output").textContent;
-  $("rdf-data-format").value = $("rdf-result-format").value;
-  $("rdf-data").focus();
-});
+for (const prefix of CONVERTERS) {
+  const output = () => $(`${prefix}-result`).querySelector(".output").textContent;
+  $(`${prefix}-copy`).addEventListener("click", async (e) => {
+    const button = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(output());
+      button.textContent = "Copied";
+    } catch {
+      button.textContent = "Copy failed";
+    }
+    setTimeout(() => (button.textContent = "Copy"), 1500);
+  });
+  $(`${prefix}-use-as-input`).addEventListener("click", () => {
+    $(`${prefix}-data`).value = output();
+    if (prefix === "rdf") $("rdf-data-format").value = $("rdf-result-format").value;
+    $(`${prefix}-data`).focus();
+  });
+}
 
 // The last successful validation of each tab, so that changing the result
 // format serializes it again without validating again.
@@ -287,7 +491,7 @@ function run(prefix) {
     delete last[prefix];
     showError(prefix, e);
   }
-  updateRdfButtons();
+  updateConvertButtons();
 }
 
 function reformat(prefix) {
@@ -298,7 +502,7 @@ function reformat(prefix) {
   } catch (e) {
     showError(prefix, e);
   }
-  updateRdfButtons();
+  updateConvertButtons();
 }
 
 for (const prefix of Object.keys(validators)) {
