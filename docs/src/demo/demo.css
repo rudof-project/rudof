@@ -129,6 +129,7 @@ textarea {
   tab-size: 2;
 }
 textarea.short { min-height: 3.5rem; }
+textarea.medium { min-height: 7.5rem; }
 
 select {
   font: inherit;
@@ -191,4 +192,34 @@ footer {
   padding: 0 1rem;
   color: var(--muted);
   font-size: 0.9em;
+}
+
+.format-tag {
+  font-size: 0.8em;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+/* The PGSchema report as a table (the "Table" result format) */
+.table-output { overflow-x: auto; background: var(--surface); }
+table.report { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+table.report th, table.report td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.45rem 0.75rem;
+  border-top: 1px solid var(--border);
+}
+table.report th { color: var(--muted); font-weight: 600; border-top: none; }
+table.report th, table.report td.verdict-cell { white-space: nowrap; }
+table.report td.verdict-cell { font-weight: 600; }
+table.report tr.ok td.verdict-cell { color: var(--ok-text); }
+table.report tr.fail td.verdict-cell { color: var(--fail-text); }
+table.report .details {
+  font: 12px/1.4 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  min-width: 16rem;
 }

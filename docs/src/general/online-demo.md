@@ -1,7 +1,7 @@
 # Online demo
 
-The [online demo](../demo/index.html) validates RDF data with ShEx or SHACL in
-your browser. It runs `rudof` compiled to WebAssembly, so nothing you type is
+The [online demo](../demo/index.html) validates RDF data with ShEx or SHACL,
+and property graphs with PGSchema, in your browser. It runs `rudof` compiled to WebAssembly, so nothing you type is
 sent to a server.
 
 - **ShEx**: enter the RDF data, the ShEx schema and a shape map (for example
@@ -12,6 +12,11 @@ sent to a server.
   The validation report can be shown as a table, a one-line summary, or as RDF
   in several formats. The SPARQL engine runs the same validation through
   SPARQL queries.
+- **PGSchema**: enter a property graph (in [YARS-PG](https://github.com/lszeremeta/yarspg)
+  syntax), a PGSchema and a type map, which says which type each node or edge
+  should have (for example `n1: PersonType, e1: KnowsType`), and press
+  **Validate**. The result is a table with each node or edge, whether it
+  conforms and why, or the compact, JSON or CSV output of `rudof`.
 
 **Ctrl + Enter** validates from any input. Changing the result format shows
 the last result again without validating again.

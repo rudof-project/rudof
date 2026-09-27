@@ -24,7 +24,8 @@
 
   <main>
     <p class="intro">
-      Validate RDF data with <strong>ShEx</strong> or <strong>SHACL</strong>.
+      Validate RDF data with <strong>ShEx</strong> or <strong>SHACL</strong>,
+      and property graphs with <strong>PGSchema</strong>.
       Everything runs in your browser: rudof is compiled to WebAssembly, and
       nothing you type is sent anywhere.
       <span id="status" class="status loading" role="status">Loading rudof…</span>
@@ -33,6 +34,7 @@
     <div class="tabs" role="tablist" aria-label="Validation language">
       <button role="tab" id="tab-shex" aria-controls="panel-shex" aria-selected="true">ShEx</button>
       <button role="tab" id="tab-shacl" aria-controls="panel-shacl" aria-selected="false" tabindex="-1">SHACL</button>
+      <button role="tab" id="tab-pgschema" aria-controls="panel-pgschema" aria-selected="false" tabindex="-1">PGSchema</button>
     </div>
 
     <!-- ShEx -->
@@ -189,6 +191,91 @@ prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
       <div class="result" id="shacl-result" hidden>
         <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
         <pre class="output"></pre>
+      </div>
+    </section>
+
+    <!-- PGSchema -->
+    <section id="panel-pgschema" role="tabpanel" aria-labelledby="tab-pgschema" class="panel" hidden>
+      <div class="inputs two">
+        <div class="field">
+          <div class="field-head">
+            <label for="pgschema-data">Property graph</label>
+            <span class="format-tag" title="The only property graph format supported for now">YARS-PG</span>
+          </div>
+          <textarea id="pgschema-data" spellcheck="false">(n1 {Person} [
+    name: "Alice",
+    birthdate: DATE "2010-07-22"
+])
+(n2 {Person, Student} [
+    id: 234,
+    name: "Robert Smith",
+    aliases: ["Bob", "Robbie"],
+    email: "bob@mail.com"
+])
+(n3 {Course} [
+    name: "Algebra",
+    credits: 6
+])
+(n1) - (e1 {knows} [since: 2020 ]) -&gt; (n2)
+(n2) - (e2 {EnrolledIn} [start: 2024, end: 2025 ]) -&gt; (n3)</textarea>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="pgschema-schema">PGSchema</label>
+            <span class="format-tag">PGSchemaC</span>
+          </div>
+          <textarea id="pgschema-schema" spellcheck="false">CREATE NODE TYPE ( PersonType : Person {
+    name: STRING ||
+    ( givenName: STRING, familyName: STRING ),
+    OPTIONAL birthdate: DATE
+}) ;
+
+CREATE NODE TYPE ( StudentType : @PersonType &amp; Student {
+    id: INTEGER | STRING,
+    email: STRING CHECK REGEX "^[\w.-]+@[\w.-]+\.\w+$",
+    aliases: STRING *
+}) ;
+
+CREATE NODE TYPE ( CourseType: Course {
+    name: STRING,
+    credits: INTEGER CHECK (&gt; 3)
+});
+
+CREATE EDGE TYPE (:@PersonType)
+                 -[KnowsType : Knows { since: INTEGER }]-&gt;
+                 (:@PersonType);
+CREATE EDGE TYPE (:@StudentType)
+                 -[EnrolledInType : EnrolledIn { start: INTEGER, end: INTEGER }]-&gt;
+                 (:@CourseType)</textarea>
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-head">
+          <label for="pgschema-typemap">Type map</label>
+          <span class="hint">node or edge id <code>:</code> type, e.g. <code>n1: PersonType, e1: KnowsType</code></span>
+        </div>
+        <textarea id="pgschema-typemap" class="medium" spellcheck="false">n1: PersonType,
+n2: StudentType,
+n3: CourseType,
+e1: KnowsType,
+e2: EnrolledInType</textarea>
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="pgschema-validate" disabled>Validate</button>
+        <label class="inline">Result format
+          <select id="pgschema-result-format">
+            <option value="table">Table</option>
+            <option value="compact">Compact</option>
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+        </label>
+        <span class="shortcut">Ctrl + Enter</span>
+      </div>
+      <div class="result" id="pgschema-result" hidden>
+        <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+        <pre class="output"></pre>
+        <div class="table-output" hidden></div>
       </div>
     </section>
   </main>

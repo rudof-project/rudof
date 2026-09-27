@@ -46,7 +46,16 @@ function showResult(prefix, { verdict, kind, output, millis }) {
   box.dataset.kind = kind;
   box.querySelector(".verdict").textContent = verdict;
   box.querySelector(".timing").textContent = millis === undefined ? "" : `${millis.toFixed(0)} ms`;
-  box.querySelector(".output").textContent = plain(output);
+  // `output` is text, or an element (a table) built from the report.
+  const pre = box.querySelector(".output");
+  const table = box.querySelector(".table-output");
+  const isElement = output instanceof Element;
+  pre.hidden = isElement;
+  if (table) {
+    table.hidden = !isElement;
+    table.replaceChildren(...(isElement ? [output] : []));
+  }
+  if (!isElement) pre.textContent = plain(output);
 }
 
 let crashed = false;
@@ -79,8 +88,8 @@ function plain(text) {
   return text.replace(TERMINAL_ESCAPES, "");
 }
 
-function count(n, word) {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
+function count(n, word, plural = `${word}s`) {
+  return `${n} ${n === 1 ? word : plural}`;
 }
 
 function setStatus(kind, text) {
@@ -146,9 +155,61 @@ function serializeShacl() {
   return session("shacl").serializeShaclValidationResults($("shacl-result-format").value);
 }
 
+function validatePgschema() {
+  const rudof = session("pgschema");
+  const start = performance.now();
+  rudof.resetAll();
+  rudof.readData($("pgschema-data").value, "pg");
+  rudof.readPgschema($("pgschema-schema").value);
+  rudof.readTypemap($("pgschema-typemap").value);
+  const report = rudof.validatePgschema();
+  const millis = performance.now() - start;
+  const failed = report.entries.filter((e) => !e.conforms).length;
+  return {
+    verdict: report.conforms
+      ? `Conforms: ${count(report.entries.length, "node or edge", "nodes or edges")} validated`
+      : `Does not conform: ${failed} of ${count(report.entries.length, "node or edge", "nodes or edges")} failed`,
+    kind: report.conforms ? "ok" : "fail",
+    millis,
+    report,
+  };
+}
+
+// A table of the report: one row per node or edge of the type map.
+function pgschemaTable(report) {
+  const el = (tag, props = {}, ...children) => {
+    const e = Object.assign(document.createElement(tag), props);
+    e.append(...children);
+    return e;
+  };
+  const rows = report.entries.map((e) =>
+    el(
+      "tr",
+      { className: e.conforms ? "ok" : "fail" },
+      el("td", {}, el("code", {}, e.nodeId)),
+      el("td", {}, el("code", {}, e.typeName)),
+      el("td", { className: "verdict-cell" }, e.conforms ? "✓ conforms" : "✗ fails"),
+      el("td", {}, el("div", { className: "details" }, e.details)),
+    ),
+  );
+  return el(
+    "table",
+    { className: "report" },
+    el("thead", {}, el("tr", {}, ...["Id", "Type", "Result", "Details"].map((h) => el("th", {}, h)))),
+    el("tbody", {}, ...rows),
+  );
+}
+
+function serializePgschema() {
+  const format = $("pgschema-result-format").value;
+  if (format === "table") return pgschemaTable(last.pgschema.report);
+  return session("pgschema").serializePgschemaValidationResults(format);
+}
+
 const validators = {
   shex: { validate: validateShex, serialize: serializeShex },
   shacl: { validate: validateShacl, serialize: serializeShacl },
+  pgschema: { validate: validatePgschema, serialize: serializePgschema },
 };
 
 // The last successful validation of each tab, so that changing the result
