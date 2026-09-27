@@ -1,0 +1,5 @@
+PREFIX dir: <http://directory.example/>
+<tag:dir1> dir:entry
+  [ a dir:Patient ; dir:fullName "Ann" ; dir:recordNo "MRN-1" ] ,
+  [ a dir:Staff ; dir:fullName "Bob" ; dir:licenseNo "LIC-9" ] ,
+  [ a dir:Patient ; dir:fullName "Cy" ; dir:recordNo "MRN-2" ] .

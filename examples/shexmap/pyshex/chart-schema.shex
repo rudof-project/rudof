@@ -1,0 +1,15 @@
+# Patient-centric output: the readings hang off the chart, the other way round.
+PREFIX chart: <http://chart.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX v: <http://vars.example/>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Chart>
+
+<Chart> {
+  chart:patientName xsd:string %Map:{ v:name %} ;
+  chart:pulse {
+    chart:bpm xsd:integer %Map:{ v:bpm %} ;
+    chart:taken xsd:dateTime %Map:{ v:when %}
+  }*
+}

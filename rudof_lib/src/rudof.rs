@@ -47,6 +47,10 @@ use crate::{
             ResetShexSchemaBuilder, SerializeShapemapBuilder, SerializeShexSchemaBuilder,
             SerializeShexValidationResultsBuilder, ValidateShexBuilder,
         },
+        shexmap::{
+            ShExMapOperations,
+            builders::{ShexmapBindBuilder, ShexmapCheckBuilder, ShexmapMaterializeBuilder},
+        },
     },
     errors::{RudofError, ShExError},
     formats::{BackendSpec, InputSpec},
@@ -78,7 +82,7 @@ use shex_ast::ir::external_resolver::{
 };
 use shex_ast::ir::schema_ir::SchemaIR as ShExSchemaIR;
 use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap};
-use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
+use shex_ast::{Schema as ShExSchema, ir::map_state::MapState, shexmap::Bindings as ShExMapBindings};
 use shex_validation::Validator as ShExValidator;
 use sparql_service::ServiceDescription;
 use std::io;
@@ -206,6 +210,10 @@ pub struct Rudof {
     /// Current map state for ShEx validation used by Map Semantic Actions and materialize option
     pub(crate) map_state: Option<MapState>,
 
+    /// Current ShExMap bindings: what `shexmap_bind` collected from the loaded data, or what
+    /// `shexmap_load_bindings` read; what `shexmap_materialize` builds from
+    pub(crate) shexmap_bindings: Option<ShExMapBindings>,
+
     /// Current list of prefix map declarations. These prefix map declarations will be assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes to facilitate handling prefixes
     pub(crate) prefixes: Option<PrefixMap>,
 }
@@ -326,6 +334,49 @@ impl Rudof {
     /// - `writer`: output target for the serialized RDF graph.
     pub fn materialize<'a, W: io::Write>(&'a self, writer: &'a mut W) -> MaterializeBuilder<'a, W> {
         MaterializeBuilder::new(self, writer)
+    }
+
+    // ========================================================================
+    // ShExMap methods (map RDF between two ShEx schemas; see shex_ast::shexmap)
+    // ========================================================================
+
+    /// Returns a `ShexmapBindBuilder` to collect ShExMap bindings from the loaded RDF data
+    /// against the loaded ShEx schema, starting at a focus node.
+    pub fn shexmap_bind<'a>(&'a mut self, focus: &'a str) -> ShexmapBindBuilder<'a> {
+        ShexmapBindBuilder::new(self, focus)
+    }
+
+    /// Returns a `ShexmapMaterializeBuilder` to build an RDF graph conforming to the loaded ShEx
+    /// schema from the current ShExMap bindings, written to `writer`.
+    pub fn shexmap_materialize<'a, W: io::Write>(&'a mut self, writer: &'a mut W) -> ShexmapMaterializeBuilder<'a, W> {
+        ShexmapMaterializeBuilder::new(self, writer)
+    }
+
+    /// Returns a `ShexmapCheckBuilder` to check, before any data, that the loaded ShEx schema
+    /// (the output schema) can be materialized coherently from what `input_schema` binds.
+    pub fn shexmap_check<'a>(&'a self, input_schema: &'a ShExSchema) -> ShexmapCheckBuilder<'a> {
+        ShexmapCheckBuilder::new(self, input_schema)
+    }
+
+    /// Reads bindings JSON (shex.js's and PyShEx's format) and keeps it as the current
+    /// ShExMap bindings.
+    pub fn shexmap_load_bindings<R: io::Read>(&mut self, reader: R) -> Result<()> {
+        <Self as ShExMapOperations>::shexmap_load_bindings(self, reader)
+    }
+
+    /// Writes the current ShExMap bindings as JSON.
+    pub fn shexmap_serialize_bindings<W: io::Write>(&self, writer: &mut W, pretty: bool) -> Result<()> {
+        <Self as ShExMapOperations>::shexmap_serialize_bindings(self, writer, pretty)
+    }
+
+    /// Returns the current ShExMap bindings, if any.
+    pub fn shexmap_bindings(&self) -> Option<&ShExMapBindings> {
+        self.shexmap_bindings.as_ref()
+    }
+
+    /// Sets the current ShExMap bindings (for instance, bindings read from a file).
+    pub fn set_shexmap_bindings(&mut self, bindings: Option<ShExMapBindings>) {
+        self.shexmap_bindings = bindings;
     }
 
     /// Returns a `ResetDataBuilder` to clear loaded data from `Rudof`.

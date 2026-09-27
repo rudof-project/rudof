@@ -1,0 +1,2 @@
+PREFIX : <http://codes.example/>
+<tag:codes1> :primaryCode "primary" ; :otherCode "secondary" .

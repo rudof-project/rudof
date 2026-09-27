@@ -1,0 +1,17 @@
+PREFIX card: <http://card.example/ns#>
+
+# The same graph for both disjunct orderings (card-schema-phone-mbox and
+# card-schema-mbox-phone): pairing frame 0's :use with frame 2's :tel would
+# forfeit two unconsumed emails, so the thread that does loses to this one.
+<tag:card1> card:fullName "Ann" ;
+  card:mbox [
+    card:use "work" ;
+    card:val "ann@work.example"
+  ] , [
+    card:use "home" ;
+    card:val "ann@home.example"
+  ] ;
+  card:phone [
+    card:use "home" ;
+    card:val "+1.2.34.56.789"
+  ] .

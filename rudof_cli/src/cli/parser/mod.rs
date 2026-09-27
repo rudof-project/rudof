@@ -24,6 +24,7 @@ mod shell;
 mod shex;
 mod shex_check;
 mod shex_validate;
+mod shexmap;
 mod sparql;
 mod validate;
 
@@ -53,5 +54,6 @@ pub use shell::*;
 pub use shex::*;
 pub use shex_check::*;
 pub use shex_validate::*;
+pub use shexmap::*;
 pub use sparql::*;
 pub use validate::*;

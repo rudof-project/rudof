@@ -1,0 +1,15 @@
+# An under-constrained input schema: both components have the same shape, so a
+# reading's two components can be matched either way round.  Validation cannot tell
+# the difference -- both partitions conform -- but the bindings differ: bp:sys and
+# bp:dia swap, and so do the output's systolic and diastolic values.
+PREFIX : <http://vitals.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX bp: <http://shex.io/extensions/Map/#BP->
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Reading>
+
+<Reading> {
+  :component { :value xsd:integer %Map:{ bp:sys %} } ;
+  :component { :value xsd:integer %Map:{ bp:dia %} }
+}

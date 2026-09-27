@@ -1,0 +1,15 @@
+# The output mirrors the input's hierarchy with its own vocabulary.  An entry is
+# abstract, so each one must be materialized as a PatientEntry or a StaffEntry; the
+# threads try both and keep the one that uses the member's own bindings.
+PREFIX dir: <http://directory.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX v: <http://vars.example/>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Directory>
+
+<Directory> { dir:entry @<Entry>* }
+
+ABSTRACT <Entry> { dir:fullName xsd:string %Map:{ v:name %} }
+<PatientEntry> EXTENDS @<Entry> { a [dir:Patient] ; dir:recordNo xsd:string %Map:{ v:mrn %} }
+<StaffEntry> EXTENDS @<Entry> { a [dir:Staff] ; dir:licenseNo xsd:string %Map:{ v:license %} }

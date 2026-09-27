@@ -1,0 +1,14 @@
+# Input schema for the "ambiguous" example: one flat contact record where
+# both :email and :tel get bound, so both disjuncts of
+# card-flat-schema.shex's OneOf stay viable.
+PREFIX : <http://contact.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Person>
+
+<Person> {
+  :name xsd:string %Map:{ :name %} ;
+  :email xsd:string %Map:{ :email %} ;
+  :tel xsd:string ? %Map:{ :tel %}
+}

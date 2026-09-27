@@ -1,0 +1,17 @@
+# Output schema for the "ambiguous" example: with both :tel and :email
+# bound in the same frame, both OneOf disjuncts run to acceptance having
+# consumed equally much, so the materialization is genuinely ambiguous --
+# ThreadedMaterializer collects both accepts and the greedy tie-break picks
+# the first disjunct (card:phone).
+PREFIX : <http://contact.example/>
+PREFIX card: <http://card.example/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Card>
+
+<Card> {
+  card:fullName xsd:string %Map:{ :name %} ;
+  ( card:phone xsd:string %Map:{ :tel %} |
+    card:mbox xsd:string %Map:{ :email %} )
+}

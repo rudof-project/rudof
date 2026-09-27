@@ -1,0 +1,3 @@
+PREFIX : <http://vitals.example/>
+# listed diastolic first, so data order cannot be what decides
+<reading1> :component [ :code :diastolic ; :value 80 ], [ :code :systolic ; :value 120 ] .

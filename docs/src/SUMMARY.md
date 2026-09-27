@@ -41,6 +41,7 @@
 - [compare](./cli_usage/compare.md)
 - [generate](./cli_usage/generate.md)
 - [materialize](./cli_usage/materialize.md)
+- [shexmap](./cli_usage/shexmap.md)
 
 # How to
 

@@ -1,0 +1,45 @@
+[
+  {
+    "http://shex.io/extensions/Map/#BPDAM-name": {
+      "value": "Sue"
+    }
+  },
+  [
+    {
+      "@node": "tag:b0",
+      "http://shex.io/extensions/Map/#BPDAM-XXX": "tag:b0",
+      "http://shex.io/extensions/Map/#BPDAM-sysVal": {
+        "value": "110",
+        "type": "http://www.w3.org/2001/XMLSchema#float"
+      },
+      "http://shex.io/extensions/Map/#BPDAM-sysUnits": {
+        "value": "mmHg"
+      },
+      "http://shex.io/extensions/Map/#BPDAM-diaVal": {
+        "value": "70",
+        "type": "http://www.w3.org/2001/XMLSchema#float"
+      },
+      "http://shex.io/extensions/Map/#BPDAM-diaUnits": {
+        "value": "mmHg"
+      }
+    },
+    {
+      "@node": "tag:b1",
+      "http://shex.io/extensions/Map/#BPDAM-XXX": "tag:b1",
+      "http://shex.io/extensions/Map/#BPDAM-sysVal": {
+        "value": "111",
+        "type": "http://www.w3.org/2001/XMLSchema#float"
+      },
+      "http://shex.io/extensions/Map/#BPDAM-sysUnits": {
+        "value": "mmHg"
+      },
+      "http://shex.io/extensions/Map/#BPDAM-diaVal": {
+        "value": "71",
+        "type": "http://www.w3.org/2001/XMLSchema#float"
+      },
+      "http://shex.io/extensions/Map/#BPDAM-diaUnits": {
+        "value": "mmHg"
+      }
+    }
+  ]
+]
