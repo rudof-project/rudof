@@ -1,8 +1,24 @@
+#[cfg(feature = "dctap")]
+use crate::api::dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder};
+#[cfg(not(target_family = "wasm"))]
+use crate::api::generation::builders::GenerateDataBuilder;
+#[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
+use crate::api::pg_db::builders::{
+    ConnectPgDbBuilder, LoadPgDbBuilder, PgDbDdlBuilder, QueryCypherBuilder, ResetPgDbConnectionBuilder,
+};
+#[cfg(feature = "pgschema")]
+use crate::api::pgschema::builders::{
+    LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
+    ResetPgSchemaValidationBuilder, ResetTypemapBuilder, SerializePgSchemaBuilder,
+    SerializePgSchemaValidationResultsBuilder,
+};
+#[cfg(feature = "rdf-config")]
+use crate::api::rdf_config::builders::{LoadRdfConfigBuilder, ResetRdfConfigBuilder, SerializeRdfConfigBuilder};
+#[cfg(not(target_family = "wasm"))]
+use crate::formats::GenerationSchemaFormat;
 use crate::{
     RudofConfig,
     api::{
-        comparison::builders::ShowSchemaComparisonBuilder,
-        conversion::builders::ShowSchemaConversionBuilder,
         core::{
             CoreOperations,
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
@@ -12,18 +28,8 @@ use crate::{
             NodeNeighborhoodBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder, SerializeDataBuilder,
             SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
         },
-        dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder},
-        generation::builders::GenerateDataBuilder,
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
-        pg_db::builders::{
-            ConnectPgDbBuilder, LoadPgDbBuilder, PgDbDdlBuilder, QueryCypherBuilder, ResetPgDbConnectionBuilder,
-        },
-        pgschema::builders::{
-            LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
-            ResetPgSchemaValidationBuilder, ResetTypemapBuilder, SerializePgSchemaBuilder,
-            SerializePgSchemaValidationResultsBuilder,
-        },
         prefixes::builders::{
             AddPrefixBuilder, CopyPrefixBuilder, PrefixesBuilder, RemovePrefixBuilder, RenamePrefixBuilder,
         },
@@ -31,7 +37,6 @@ use crate::{
             LoadSparqlQueryBuilder, ResetQueryResultsBuilder, ResetSparqlQueryBuilder, RunQueryBuilder,
             SerializeQueryResultsBuilder, SerializeSparqlQueryBuilder,
         },
-        rdf_config::builders::{LoadRdfConfigBuilder, ResetRdfConfigBuilder, SerializeRdfConfigBuilder},
         shacl::builders::{
             LoadShaclShapesBuilder, ResetShaclBuilder, ResetShaclShapesBuilder, SerializeShaclShapesBuilder,
             SerializeShaclValidationResultsBuilder, ValidateShaclBuilder,
@@ -44,15 +49,25 @@ use crate::{
         },
     },
     errors::{RudofError, ShExError},
-    formats::{
-        BackendSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, GenerationSchemaFormat,
-        InputSpec, ResultConversionFormat, ResultConversionMode,
-    },
+    formats::{BackendSpec, InputSpec},
     types::{Data, QueryResult},
 };
+#[cfg(feature = "comparison")]
+use crate::{
+    api::comparison::builders::ShowSchemaComparisonBuilder,
+    formats::{ComparisonFormat, ComparisonMode},
+};
+#[cfg(feature = "conversion")]
+use crate::{
+    api::conversion::builders::ShowSchemaConversionBuilder,
+    formats::{ConversionFormat, ConversionMode, ResultConversionFormat, ResultConversionMode},
+};
+#[cfg(feature = "dctap")]
 use dctap::DCTap as DCTAP;
+#[cfg(feature = "pgschema")]
 use pgschema::{pgs::PropertyGraphSchema, type_map::TypeMap, validation_result::ValidationResult};
 use prefixmap::PrefixMap;
+#[cfg(feature = "rdf-config")]
 use rdf_config::RdfConfigModel;
 use rudof_rdf::rdf_core::query::SparqlQuery;
 use serde::Serialize;
@@ -67,7 +82,9 @@ use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
 use shex_validation::Validator as ShExValidator;
 use sparql_service::ServiceDescription;
 use std::io;
-use std::path::{Path, PathBuf};
+#[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
+use std::path::Path;
+use std::path::PathBuf;
 
 /// Typedef for `Result` returned by Rudof operations, where errors are boxed into `RudofError`.
 /// Allows easier error handling across library-specific subsystems.
@@ -155,12 +172,15 @@ pub struct Rudof {
     pub(crate) shex_validation_results: Option<ResultShapeMap>,
 
     /// Current PGSchema
+    #[cfg(feature = "pgschema")]
     pub(crate) pg_schema: Option<PropertyGraphSchema>,
 
     /// Current typemap
+    #[cfg(feature = "pgschema")]
     pub(crate) typemap: Option<TypeMap>,
 
     /// Current PGSchema validation results
+    #[cfg(feature = "pgschema")]
     pub(crate) pg_schema_validation_results: Option<ValidationResult>,
 
     /// Connection info for a property graph database, set by `connect_pg_db`
@@ -173,12 +193,14 @@ pub struct Rudof {
     pub(crate) query_results: Option<QueryResult>,
 
     /// Current DCTAP
+    #[cfg(feature = "dctap")]
     pub(crate) dctap: Option<DCTAP>,
 
     /// Current Service Description
     pub(crate) service_description: Option<ServiceDescription>,
 
     /// Current rdf_config model
+    #[cfg(feature = "rdf-config")]
     pub(crate) rdf_config: Option<RdfConfigModel>,
 
     /// Current map state for ShEx validation used by Map Semantic Actions and materialize option
@@ -378,6 +400,7 @@ impl Rudof {
             Data::RDFData(rdf) => Some(DataStats::Rdf {
                 triples: rdf.all_triples().map(Iterator::count).unwrap_or(0),
             }),
+            #[cfg(feature = "pgschema")]
             Data::PGData(pg) => Some(DataStats::Pg {
                 nodes: pg.node_count(),
                 edges: pg.edge_count(),
@@ -412,11 +435,13 @@ impl Rudof {
     }
 
     /// Returns the currently loaded DCTAP model, if any.
+    #[cfg(feature = "dctap")]
     pub fn dctap(&self) -> Option<&DCTAP> {
         self.dctap.as_ref()
     }
 
     /// Returns the currently loaded PGSchema, if any.
+    #[cfg(feature = "pgschema")]
     pub fn pg_schema(&self) -> Option<&PropertyGraphSchema> {
         self.pg_schema.as_ref()
     }
@@ -554,6 +579,7 @@ impl Rudof {
     }
 
     /// Returns the result of the most recent `validate_pgschema()` call, if any.
+    #[cfg(feature = "pgschema")]
     pub fn pgschema_validation_results(&self) -> Option<&ValidationResult> {
         self.pg_schema_validation_results.as_ref()
     }
@@ -674,6 +700,7 @@ impl Rudof {
     /// - `format1`/`format2`: formats for the inputs.
     /// - `mode1`/`mode2`: types for the comparison.
     /// - `writer`: output target for the comparison report.
+    #[cfg(feature = "comparison")]
     pub fn show_schema_comparison<'a, W: io::Write>(
         &'a mut self,
         schema1: &'a InputSpec,
@@ -698,6 +725,7 @@ impl Rudof {
     /// - `input_mode`/`output_mode`: types for the conversion
     /// - `input_format`/`output_format`: concrete format choices
     /// - `writer`: output target for the converted schema/result
+    #[cfg(feature = "conversion")]
     pub fn show_schema_conversion<'a, W: io::Write>(
         &'a mut self,
         schema: &'a InputSpec,
@@ -726,6 +754,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `dctap`: input specification for the DCTAP model to load.
+    #[cfg(feature = "dctap")]
     pub fn load_dctap<'a>(&'a mut self, dctap: &'a InputSpec) -> LoadDctapBuilder<'a> {
         LoadDctapBuilder::new(self, dctap)
     }
@@ -735,11 +764,13 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `writer`: output target for the serialized DCTAP model.
+    #[cfg(feature = "dctap")]
     pub fn serialize_dctap<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeDctapBuilder<'a, W> {
         SerializeDctapBuilder::new(self, writer)
     }
 
     /// Returns a `ResetDctapBuilder` to clear loaded DCTAP from state.
+    #[cfg(feature = "dctap")]
     pub fn reset_dctap<'a>(&'a mut self) -> ResetDctapBuilder<'a> {
         ResetDctapBuilder::new(self)
     }
@@ -750,18 +781,21 @@ impl Rudof {
 
     /// Returns a `LoadRdfConfigBuilder` to load RDF configuration from
     /// `rdf_config` (`InputSpec`).
+    #[cfg(feature = "rdf-config")]
     pub fn load_rdf_config<'a>(&'a mut self, rdf_config: &'a InputSpec) -> LoadRdfConfigBuilder<'a> {
         LoadRdfConfigBuilder::new(self, rdf_config)
     }
 
     /// Returns a `SerializeRdfConfigBuilder` that writes the loaded RDF
     /// configuration to `writer`.
+    #[cfg(feature = "rdf-config")]
     pub fn serialize_rdf_config<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeRdfConfigBuilder<'a, W> {
         SerializeRdfConfigBuilder::new(self, writer)
     }
 
     /// Returns a `ResetRdfConfigBuilder` to clear the loaded RDF
     /// configuration.
+    #[cfg(feature = "rdf-config")]
     pub fn reset_rdf_config<'a>(&'a mut self) -> ResetRdfConfigBuilder<'a> {
         ResetRdfConfigBuilder::new(self)
     }
@@ -774,6 +808,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `pg_schema`: input specification for the PGSchema to load.
+    #[cfg(feature = "pgschema")]
     pub fn load_pg_schema<'a>(&'a mut self, pg_schema: &'a InputSpec) -> LoadPgSchemaBuilder<'a> {
         LoadPgSchemaBuilder::new(self, pg_schema)
     }
@@ -783,11 +818,13 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `writer`: output target for the serialized PGSchema.
+    #[cfg(feature = "pgschema")]
     pub fn serialize_pg_schema<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializePgSchemaBuilder<'a, W> {
         SerializePgSchemaBuilder::new(self, writer)
     }
 
     /// Returns a `ResetPgSchemaBuilder` to clear the loaded PGSchema.
+    #[cfg(feature = "pgschema")]
     pub fn reset_pg_schema<'a>(&'a mut self) -> ResetPgSchemaBuilder<'a> {
         ResetPgSchemaBuilder::new(self)
     }
@@ -796,17 +833,20 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `typemap`: input specification for the typemap to load.
+    #[cfg(feature = "pgschema")]
     pub fn load_typemap<'a>(&'a mut self, typemap: &'a InputSpec) -> LoadTypemapBuilder<'a> {
         LoadTypemapBuilder::new(self, typemap)
     }
 
     /// Returns a `ResetTypemapBuilder` to clear the typemap.
+    #[cfg(feature = "pgschema")]
     pub fn reset_typemap<'a>(&'a mut self) -> ResetTypemapBuilder<'a> {
         ResetTypemapBuilder::new(self)
     }
 
     /// Returns a `PgSchemaValidationBuilder` to validate the currently
     /// loaded PGSchema and typemap.
+    #[cfg(feature = "pgschema")]
     pub fn validate_pgschema<'a>(&'a mut self) -> PgSchemaValidationBuilder<'a> {
         PgSchemaValidationBuilder::new(self)
     }
@@ -816,6 +856,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `writer`: output target for the serialized PGSchema validation results.
+    #[cfg(feature = "pgschema")]
     pub fn serialize_pgschema_validation_results<'a, W: io::Write>(
         &'a self,
         writer: &'a mut W,
@@ -825,6 +866,7 @@ impl Rudof {
 
     /// Returns a `ResetPgSchemaValidationBuilder` to clear PGSchema
     /// validation results.
+    #[cfg(feature = "pgschema")]
     pub fn reset_pg_schema_validation<'a>(&'a mut self) -> ResetPgSchemaValidationBuilder<'a> {
         ResetPgSchemaValidationBuilder::new(self)
     }
@@ -839,6 +881,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `path`: path to the database directory (not needed with `.with_in_memory(true)`).
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn connect_pg_db<'a>(&'a mut self, path: Option<&'a Path>) -> ConnectPgDbBuilder<'a> {
         ConnectPgDbBuilder::new(self, path)
     }
@@ -849,6 +892,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `data`: RDF data to derive the schema from.
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn pg_db_ddl<'a>(&'a self, data: &'a [InputSpec]) -> PgDbDdlBuilder<'a> {
         PgDbDdlBuilder::new(self, data)
     }
@@ -860,6 +904,7 @@ impl Rudof {
     /// # Parameters
     /// - `data`: RDF data to load.
     /// - `writer`: destination for progress output.
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn load_pg_db<'a, W: io::Write>(
         &'a mut self,
         data: &'a [InputSpec],
@@ -873,12 +918,14 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `query`: a file, a URL, `-` for stdin, or the Cypher query text itself.
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn query_cypher<'a>(&'a mut self, query: &'a InputSpec) -> QueryCypherBuilder<'a> {
         QueryCypherBuilder::new(self, query)
     }
 
     /// Returns a `ResetPgDbConnectionBuilder` to clear the stored property
     /// graph database connection info.
+    #[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
     pub fn reset_pg_db_connection<'a>(&'a mut self) -> ResetPgDbConnectionBuilder<'a> {
         ResetPgDbConnectionBuilder::new(self)
     }
@@ -901,6 +948,7 @@ impl Rudof {
     /// - `number_entities`: approximate number of target entities to generate. `None` defers to
     ///   the `entity_count` set by [`GenerateDataBuilder::with_config_file`], or the generator's
     ///   own default if neither is given.
+    #[cfg(not(target_family = "wasm"))]
     pub fn generate_data<'a>(
         &'a self,
         schema: &'a InputSpec,

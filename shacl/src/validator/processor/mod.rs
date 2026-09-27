@@ -1,4 +1,4 @@
-#[cfg(feature = "sparql")]
+#[cfg(all(feature = "sparql", not(target_family = "wasm")))]
 mod endpoint;
 mod graph;
 #[cfg(feature = "sparql")]
@@ -10,7 +10,7 @@ use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::report::{ValidationOutcome, ValidationReport};
-#[cfg(feature = "sparql")]
+#[cfg(all(feature = "sparql", not(target_family = "wasm")))]
 pub use endpoint::EndpointValidation;
 pub use graph::GraphValidation;
 use rayon::prelude::*;

@@ -12,9 +12,7 @@ pub mod model;
 pub mod render;
 pub mod style;
 
-#[cfg(not(target_family = "wasm"))]
-pub use engine::render_image_with_engine;
-pub use engine::{UnsupportedVizEngine, VizEngine, render_with_engine};
+pub use engine::{UnsupportedVizEngine, VizEngine, render_image_with_engine, render_with_engine};
 pub use model::{
     BoxId, ClassSkin, Connector, ConnectorKind, Diagram, DiagramBox, DiagramScope, Direction, LineType, Shape,
 };

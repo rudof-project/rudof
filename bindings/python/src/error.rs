@@ -102,7 +102,9 @@ impl From<Error> for PyErr {
             Error::Panicked(msg) => return InternalError::new_err(msg),
         };
         let msg = e.to_string();
-        let err = match e.as_ref() {
+        // TODO: Python only gets the flattened `msg`. `rudof_lib` errors store their cause as a `String`, so there is
+        // no deeper chain to keep.
+        match e.as_ref() {
             CoreError::Config(_) => ConfigError::new_err(msg),
             CoreError::InputSpec(_) => InputError::new_err(msg),
             CoreError::Data(_) => DataError::new_err(msg),
@@ -126,9 +128,6 @@ impl From<Error> for PyErr {
             CoreError::Prefixes(_) => PrefixesError::new_err(msg),
             CoreError::NotImplemented { .. } => UnsupportedOperationError::new_err(msg),
             CoreError::Generic { .. } => RudofError::new_err(msg),
-        };
-        // TODO: Python only gets the flattened `msg`. `rudof_lib` errors store their cause as a `String`, so there is
-        // no deeper chain to keep.
-        err
+        }
     }
 }

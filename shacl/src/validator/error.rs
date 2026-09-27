@@ -1,6 +1,6 @@
 use crate::error::{IRError, ShaclParserError};
 use rudof_rdf::rdf_core::{RDFError, Rdf};
-#[cfg(feature = "sparql")]
+#[cfg(all(feature = "sparql", not(target_family = "wasm")))]
 use rudof_rdf::rdf_impl::OxigraphEndpointError;
 use rudof_rdf::rdf_impl::OxigraphInMemoryError;
 #[cfg(feature = "sparql")]
@@ -28,7 +28,7 @@ pub enum ValidationError {
     #[error(transparent)]
     RDFError(#[from] Box<RDFError>),
 
-    #[cfg(feature = "sparql")]
+    #[cfg(all(feature = "sparql", not(target_family = "wasm")))]
     #[error(transparent)]
     OxigraphEndpointError(#[from] Box<OxigraphEndpointError>),
 
@@ -90,7 +90,7 @@ impl From<RDFError> for ValidationError {
     }
 }
 
-#[cfg(feature = "sparql")]
+#[cfg(all(feature = "sparql", not(target_family = "wasm")))]
 impl From<OxigraphEndpointError> for ValidationError {
     fn from(value: OxigraphEndpointError) -> Self {
         Self::OxigraphEndpointError(Box::new(value))

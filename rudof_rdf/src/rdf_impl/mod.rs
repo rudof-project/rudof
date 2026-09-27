@@ -4,9 +4,10 @@ mod qlever;
 
 mod backend;
 mod backend_error;
+mod endpoint_strategy;
 
 #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
-pub use oxigraph::{EndpointStrategy, OxigraphEndpoint, OxigraphEndpointError, SparqlVars};
+pub use oxigraph::{OxigraphEndpoint, OxigraphEndpointError, SparqlVars};
 pub use oxigraph::{OxigraphInMemory, OxigraphInMemoryError, ReaderMode};
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 pub use qlever::{
@@ -18,6 +19,7 @@ pub use qlever::{
 
 pub use backend::RdfBackend;
 pub use backend_error::RdfBackendError;
+pub use endpoint_strategy::EndpointStrategy;
 
 #[cfg(test)]
 mod tests {

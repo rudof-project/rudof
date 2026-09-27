@@ -340,7 +340,7 @@ rudof_viz = { version = "0.3.21", path = "./rudof_viz" }
 rudof_generate = { version = "0.3.21", path = "./rudof_generate" }
 rudof_lib = { version = "0.3.21", path = "./rudof_lib" }
 rudof_mcp = { version = "0.3.21", path = "./rudof_mcp" }
-rustemo = "0.9.1"
+rustemo = { version = "0.9.1", default-features = false }
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"
 rustyline = { version = "18.0", default-features = false, features = [
@@ -383,3 +383,11 @@ uuid = { version = "1.0", features = ["v4"] }
 walkdir = "2"
 yaml-rust2 = { version = "0.10" }
 zip = "2"
+
+# Release build optimized for size, used for the WebAssembly bindings
+# (bindings/wasm/build.sh). Native release builds are unaffected.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1

@@ -17,7 +17,9 @@ use shex_ast::{
 };
 use shex_validation::Validator as ShExValidator;
 use sparql_service::RdfData;
-use std::{env, io};
+#[cfg(not(target_family = "wasm"))]
+use std::env;
+use std::io;
 // use tracing::trace;
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
@@ -52,7 +54,10 @@ pub fn load_shex_schema(
 
     match schema_format {
         ShExFormat::ShExC => {
+            #[cfg(not(target_family = "wasm"))]
             let source_iri = source_iri(schema)?;
+            #[cfg(target_family = "wasm")]
+            let source_iri = source_iri(schema, &base_schema)?;
             load_shex_schema_shexc(
                 rudof,
                 schema_reader,
@@ -114,10 +119,12 @@ fn source_iri(schema: &InputSpec) -> Result<IriS> {
     Ok(iri)
 }
 
+/// There is no current directory on wasm, so the source name (e.g. `string`
+/// for a schema passed as a string) is resolved against the schema's base IRI.
 #[cfg(target_family = "wasm")]
-fn source_iri(schema: &InputSpec) -> Result<IriS> {
+fn source_iri(schema: &InputSpec, base: &IriS) -> Result<IriS> {
     let source_name = schema.source_name();
-    let iri = IriS::from_str(&source_name).map_err(|error| IriError::ParseError {
+    let iri = base.resolve_str(&source_name).map_err(|error| IriError::ParseError {
         iri: source_name.clone(),
         error: error.to_string(),
     })?;

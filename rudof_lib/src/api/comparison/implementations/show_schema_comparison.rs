@@ -7,7 +7,10 @@ use crate::{
 use rudof_iri::{IriS, MimeType};
 use shapes_comparator::{CoShaMo, CoShaMoConverter};
 use shex_ast::{Schema, ShExParser};
-use std::{env, io};
+#[cfg(not(target_family = "wasm"))]
+use std::env;
+use std::io;
+#[cfg(not(target_family = "wasm"))]
 use url::Url;
 
 #[allow(clippy::too_many_arguments)]
@@ -141,20 +144,38 @@ fn get_coshamo<R: io::Read>(
     }
 }
 
+/// The IRI of the schema document, used to resolve its relative IRIs and imports:
+/// `source_name` resolved against the current directory.
+#[cfg(not(target_family = "wasm"))]
+fn source_iri(source_name: &str, _base: &IriS) -> Result<IriS> {
+    let cwd = env::current_dir().map_err(|e| ComparisonError::CurrentDirError { error: format!("{e}") })?;
+    // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
+    // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
+    let url = Url::from_directory_path(&cwd).map_err(|_| ComparisonError::CurrentDirError {
+        error: "Failed to convert current directory to URL".into(),
+    })?;
+    let source_iri = IriS::from_str_base(source_name, Some(url.as_str())).map_err(|e| IriError::ParseError {
+        iri: source_name.to_string(),
+        error: e.to_string(),
+    })?;
+    Ok(source_iri)
+}
+
+/// There is no current directory on wasm, so `source_name` is resolved against
+/// the schema's base IRI instead.
+#[cfg(target_family = "wasm")]
+fn source_iri(source_name: &str, base: &IriS) -> Result<IriS> {
+    let source_iri = base.resolve_str(source_name).map_err(|e| IriError::ParseError {
+        iri: source_name.to_string(),
+        error: e.to_string(),
+    })?;
+    Ok(source_iri)
+}
+
 pub fn read_shex_only<R: io::Read>(reader: R, format: &ShExFormat, base: IriS, source_name: &str) -> Result<Schema> {
     match format {
         ShExFormat::ShExC => {
-            let cwd = env::current_dir().map_err(|e| ComparisonError::CurrentDirError { error: format!("{e}") })?;
-            // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
-            // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
-            let url = Url::from_directory_path(&cwd).map_err(|_| ComparisonError::CurrentDirError {
-                error: "Failed to convert current directory to URL".into(),
-            })?;
-            let source_iri =
-                IriS::from_str_base(source_name, Some(url.as_str())).map_err(|e| IriError::ParseError {
-                    iri: source_name.to_string(),
-                    error: e.to_string(),
-                })?;
+            let source_iri = source_iri(source_name, &base)?;
             let schema_json = ShExParser::from_reader(reader, Some(base), &source_iri).map_err(|e| {
                 ShExError::FailedParsingShExSchema {
                     error: e.to_string(),

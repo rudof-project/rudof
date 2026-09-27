@@ -77,3 +77,6 @@ proptest.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
+# `js` takes the current time (e.g. for SPARQL's NOW()) and randomness from
+# JavaScript: `std::time` panics on `wasm32-unknown-unknown`.
+oxigraph = { workspace = true, optional = true, features = ["js"] }

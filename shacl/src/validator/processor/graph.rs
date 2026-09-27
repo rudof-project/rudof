@@ -1,3 +1,4 @@
+#[cfg(any(not(target_family = "wasm"), feature = "sparql"))]
 use crate::error::ValidationError;
 use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
@@ -6,11 +7,13 @@ use crate::validator::engine::SparqlEngine;
 use crate::validator::engine::{Engine, NativeEngine};
 use crate::validator::processor::ShaclProcessor;
 use crate::validator::store::{Graph, Store};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::RDFFormat;
 #[cfg(not(feature = "sparql"))]
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 #[cfg(feature = "sparql")]
 use sparql_service::RdfData;
+#[cfg(not(target_family = "wasm"))]
 use std::path::Path;
 
 // TODO - move to validation::algorithm module

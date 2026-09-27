@@ -72,6 +72,24 @@ pub fn render_image_with_engine<W: Write>(
     }
 }
 
+/// Rendering images runs an external tool (`dot` or PlantUML), which is not
+/// possible on `wasm`: this always fails with
+/// [`RenderError::ExternalToolUnavailable`]. [`render_with_engine`] still
+/// produces the diagram's text, which can be rendered elsewhere.
+#[cfg(target_family = "wasm")]
+pub fn render_image_with_engine<W: Write>(
+    _diagram: &Diagram,
+    _format: crate::render::ImageFormat,
+    engine: VizEngine,
+    _plantuml_path: &std::path::Path,
+    _writer: &mut W,
+) -> Result<(), RenderError> {
+    Err(RenderError::ExternalToolUnavailable {
+        tool: engine.to_string(),
+        error: "external tools can't be run on wasm".to_string(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

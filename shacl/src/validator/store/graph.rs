@@ -1,9 +1,12 @@
+#[cfg(any(not(target_family = "wasm"), feature = "sparql"))]
 use crate::error::ValidationError;
 use crate::validator::store::Store;
-use rudof_rdf::rdf_core::RDFFormat;
-use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
+use rudof_rdf::rdf_impl::OxigraphInMemory;
+#[cfg(not(target_family = "wasm"))]
+use rudof_rdf::{rdf_core::RDFFormat, rdf_impl::ReaderMode};
 #[cfg(feature = "sparql")]
 use sparql_service::RdfData;
+#[cfg(not(target_family = "wasm"))]
 use std::path::Path;
 
 pub struct Graph {

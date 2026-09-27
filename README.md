@@ -115,12 +115,19 @@ For example:
 ```sh
 cargo run -- validate examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
+
 #### Troubleshooting
+
 If the example doesn’t work as expected, here are a few things you can try:
 - **Use the --release flag** to compile in release mode, which can resolve some build issues and improve performance:
 
 ```sh
-cargo run --release -- validate examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
+cargo build --release
+```
+
+which generates a binary in `target/release/rudof`. You can then run the example with:
+```
+target/release/rudof -- validate examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
 
 - **Run the command inside WSL** (Windows Subsystem for Linux). If you're using Windows, compiling the project in WSL can help resolve environment-related issues, as Rust tends to compile more reliably and efficiently in Linux-based systems.
@@ -291,6 +298,37 @@ In order to test all the sub-projects
 
 ```sh
 cargo test --all
+```
+
+### Requirements for the Python bindings tests
+
+`cargo test --all` also builds and runs the tests of the Python bindings (`pyrudof`),
+which link against the Python shared library (`libpython3.x`). This requires:
+
+- A Python 3.10+ interpreter available as `python3` (or pointed to by the `PYO3_PYTHON` environment variable).
+- The Python shared library, which is included by most Python distributions
+  (on Debian/Ubuntu, install the `python3-dev` package).
+
+If Python is installed outside the default library paths (e.g. Homebrew, pyenv or conda),
+the tests may fail with an error like:
+
+```
+error while loading shared libraries: libpython3.14.so.1.0: cannot open shared object file: No such file or directory
+```
+
+In that case, add the directory containing the Python library to the loader path before running the tests:
+
+```sh
+# Linux
+export LD_LIBRARY_PATH="$(python3 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$LD_LIBRARY_PATH"
+# macOS
+export DYLD_LIBRARY_PATH="$(python3 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))'):$DYLD_LIBRARY_PATH"
+```
+
+Alternatively, you can skip the Python bindings tests:
+
+```sh
+cargo test --workspace --exclude pyrudof
 ```
 
 Testing one specific subproject:

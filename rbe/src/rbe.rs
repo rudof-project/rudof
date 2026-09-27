@@ -111,21 +111,20 @@ where
             Rbe::Symbol { value, card } => {
                 let wa = bag.contains(value);
                 let n = Max::IntMax(card.min.value);
-                let int = Interval::new(card.max.div_up(&wa), n.div_down(&wa));
-                // trace!("Symbol {value} with cardinality {card} and bag {bag} has interval {int}");
-                int
+                // trace!("Symbol {value} with cardinality {card} and bag {bag}");
+                Interval::new(card.max.div_up(&wa), n.div_down(&wa))
             },
             Rbe::And { values } => {
-                let and = values
+                // trace!("And {self} with bag {bag}");
+                values
                     .iter()
-                    .fold(Interval::zero_any(), |acc, v| acc.intersection(&v.interval(bag)));
-                // trace!("And {self} with bag {bag} is {and}");
-                and
+                    .fold(Interval::zero_any(), |acc, v| acc.intersection(&v.interval(bag)))
             },
             Rbe::Or { values } => {
                 // Minkowski sum: every branch must have a valid scale factor.
                 // If any branch interval is empty the whole Or is unsatisfiable.
-                let or = values.iter().fold(Interval::zero_zero(), |acc, v| {
+                // trace!("Or {self} with bag {bag}");
+                values.iter().fold(Interval::zero_zero(), |acc, v| {
                     if acc.is_empty() {
                         acc
                     } else {
@@ -136,9 +135,7 @@ where
                             acc.addition(&iv)
                         }
                     }
-                });
-                // trace!("Or {self} with bag {bag} is {or}");
-                or
+                })
             },
             Rbe::Star { value } => {
                 if self.no_symbols_in_bag(bag) {
