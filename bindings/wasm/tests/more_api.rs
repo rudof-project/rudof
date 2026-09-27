@@ -263,8 +263,12 @@ fn shex_formats_round_trip() {
     // Formats that are only written out can't be read: an error, not a panic
     let err = rudof.read_shex("x", Some("plantuml"), None, None).unwrap_err();
     assert!(err.to_string().contains("plantuml"), "{err}");
-    let uml = rudof.serialize_current_shex(Some("plantuml"), None).unwrap();
-    assert!(uml.starts_with("@startuml"), "{uml}");
+    // UML diagrams need the `conversion` feature
+    #[cfg(feature = "conversion")]
+    {
+        let uml = rudof.serialize_current_shex(Some("plantuml"), None).unwrap();
+        assert!(uml.starts_with("@startuml"), "{uml}");
+    }
 }
 
 #[cfg(feature = "comparison")]
