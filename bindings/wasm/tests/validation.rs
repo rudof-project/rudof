@@ -324,6 +324,13 @@ fn session_sparql_queries() {
         QueryResults::Graph { graph } => assert!(graph.contains("Person"), "{graph}"),
         other => panic!("expected a graph, got {other:?}"),
     }
+
+    rudof.reset_query();
+    rudof.read_query("DESCRIBE <http://example.org/bob>", None).unwrap();
+    match rudof.run_query().unwrap() {
+        QueryResults::Graph { graph } => assert!(graph.contains("Bob"), "{graph}"),
+        other => panic!("expected a graph, got {other:?}"),
+    }
 }
 
 #[test]
