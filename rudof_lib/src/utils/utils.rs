@@ -71,6 +71,13 @@ pub fn get_base_iri(rudof: &mut Rudof, base_iri: Option<&str>) -> Result<IriS> {
     }
 }
 
+/// Whether tables and other text output use colors and hyperlinks (ANSI
+/// escape codes). There is no terminal on wasm, where the output is usually
+/// shown in a web page and the escape codes would appear as stray characters.
+pub fn terminal_colors() -> bool {
+    !cfg!(target_family = "wasm")
+}
+
 #[cfg(not(target_family = "wasm"))]
 const MAX_TERMINAL_WIDTH: usize = 100;
 const DEFAULT_TERMINAL_WIDTH: usize = 80;

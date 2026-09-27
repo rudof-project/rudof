@@ -273,6 +273,12 @@ CREATE NODE TYPE ( AdultStudentType: Student {
     assert_eq!(report.violations[0].type_name, "AdultStudentType");
     let json = rudof.serialize_pgschema_validation_results(Some("json")).unwrap();
     assert!(json.contains("n2"), "{json}");
+    let csv = rudof.serialize_pgschema_validation_results(Some("csv")).unwrap();
+    assert!(csv.contains("n2"), "{csv}");
+    // No terminal colors on wasm (see `session_shacl_workflow`)
+    if cfg!(target_family = "wasm") {
+        assert!(!csv.contains('\x1b'), "{csv:?}");
+    }
 
     rudof.reset_pgschema_validation();
     assert!(rudof.serialize_pgschema_validation_results(None).is_err());

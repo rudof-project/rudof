@@ -215,6 +215,15 @@ fn session_shacl_workflow() {
     assert!(shapes.contains("http://www.w3.org/ns/shacl#datatype"), "{shapes}");
     let results = rudof.serialize_shacl_validation_results(Some("turtle"), None).unwrap();
     assert!(results.contains("ValidationReport"), "{results}");
+    // Tables have no terminal colors or hyperlinks (ANSI escape codes) on wasm,
+    // where they would show up as stray characters in web pages.
+    for format in ["compact", "details"] {
+        let table = rudof.serialize_shacl_validation_results(Some(format), None).unwrap();
+        assert!(table.contains("Violation"), "{format}: {table}");
+        if cfg!(target_family = "wasm") {
+            assert!(!table.contains('\x1b'), "{format}: {table:?}");
+        }
+    }
     let results = rudof.serialize_shacl_validation_results(Some("minimal"), None).unwrap();
     assert!(results.contains("1 violations"), "{results}");
     // JSON is not implemented for SHACL results: an error, not a panic.
