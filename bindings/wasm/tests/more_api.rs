@@ -275,6 +275,11 @@ CREATE NODE TYPE ( AdultStudentType: Student {
     assert!(json.contains("n2"), "{json}");
     let csv = rudof.serialize_pgschema_validation_results(Some("csv")).unwrap();
     assert!(csv.contains("n2"), "{csv}");
+    // Not implemented: an error, not a panic (which would abort the wasm module)
+    let err = rudof
+        .serialize_pgschema_validation_results(Some("details"))
+        .unwrap_err();
+    assert!(err.to_string().contains("details"), "{err}");
     // No terminal colors on wasm (see `session_shacl_workflow`)
     if cfg!(target_family = "wasm") {
         assert!(!csv.contains('\x1b'), "{csv:?}");

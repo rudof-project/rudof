@@ -30,7 +30,11 @@ pub fn serialize_pgschema_validation_results<W: io::Write>(
                 .map_err(|e| PgSchemaError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultPgSchemaValidationFormat::Details => {
-            todo!("Implement details format for Property Graph schema validation results serialization");
+            return Err(PgSchemaError::FailedSerializingValidationResults {
+                format: "details".to_string(),
+                error: "not implemented yet".to_string(),
+            }
+            .into());
         },
     }
 
