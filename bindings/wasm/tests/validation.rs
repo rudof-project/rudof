@@ -355,3 +355,29 @@ fn session_errors_without_loaded_state() {
 fn session_version() {
     assert!(!Session::new(None).version().is_empty());
 }
+
+#[test]
+fn session_converts_between_rdf_formats() {
+    let mut rudof = Session::new(None);
+    rudof
+        .read_data(
+            r#"prefix : <http://example.org/>
+:alice :name "Alice"@en ; :age 23 ; :knows [ :name "Carol" ] ."#,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+    let ntriples = rudof.serialize_data(Some("ntriples")).unwrap();
+    assert_eq!(ntriples.lines().count(), 4, "{ntriples}");
+
+    // Every RDF format can be written and read back, with the same triples.
+    for format in ["turtle", "ntriples", "rdfxml", "jsonld", "trig", "n3", "nquads"] {
+        let serialized = rudof.serialize_data(Some(format)).unwrap();
+        let mut other = Session::new(None);
+        other.read_data(&serialized, Some(format), None, None, None).unwrap();
+        let again = other.serialize_data(Some("ntriples")).unwrap();
+        assert_eq!(again.lines().count(), 4, "{format}:\n{serialized}\n{again}");
+    }
+}

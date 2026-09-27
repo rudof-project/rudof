@@ -48,6 +48,23 @@ pub enum OxigraphInMemoryError {
     #[error("Error parsing Turtle data from {source_name}: {error}")]
     TurtleParseError { source_name: String, error: String },
 
+    /// Error parsing TriG RDF data.
+    ///
+    /// # Fields
+    /// - `source_name`: The name or path of the data source
+    /// - `error`: Detailed description of the parsing failure
+    #[error("Error parsing TriG data from {source_name}: {error}")]
+    TriGParseError { source_name: String, error: String },
+
+    /// Error parsing N3 data, or N3 data that can't be represented in RDF
+    /// (variables, statements inside formulas).
+    ///
+    /// # Fields
+    /// - `source_name`: The name or path of the data source
+    /// - `error`: Detailed description of the parsing failure
+    #[error("Error parsing N3 data from {source_name}: {error}")]
+    N3ParseError { source_name: String, error: String },
+
     /// Error parsing a base IRI.
     ///
     /// # Fields

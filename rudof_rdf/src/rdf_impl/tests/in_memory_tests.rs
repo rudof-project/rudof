@@ -349,3 +349,52 @@ fn test_add_triple_ref() {
     graph.add_triple_ref(&s, &p, &o).unwrap();
     assert_eq!(graph.len(), 1);
 }
+
+// TriG and N3
+
+#[test]
+fn test_parse_trig() {
+    let trig = r#"
+prefix : <http://example.org/>
+:x :p 1 .
+:g { :y :p 2 . :z :p <rel> }
+"#;
+    let graph =
+        OxigraphInMemory::from_str(trig, &RDFFormat::TriG, Some("http://base.org/"), &ReaderMode::Strict).unwrap();
+    // The triples of the named graph are merged into the graph, as with N-Quads
+    assert_eq!(graph.len(), 3);
+    let z: OxSubject = OxNamedNode::new_unchecked("http://example.org/z").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p");
+    let rel: OxTerm = OxNamedNode::new_unchecked("http://base.org/rel").into();
+    assert_eq!(graph.triples_matching(&z, &p, &rel).unwrap().count(), 1);
+    assert!(graph.prefixmap().find("").is_some(), "the prefixes are kept");
+
+    let err = OxigraphInMemory::from_str(":x :p", &RDFFormat::TriG, None, &ReaderMode::Strict).unwrap_err();
+    assert!(err.to_string().contains("TriG"), "{err}");
+}
+
+#[test]
+fn test_parse_n3() {
+    let n3 = r#"
+@prefix : <http://example.org/> .
+:x :p 1 ; :q [ :r "a" ] .
+"#;
+    let graph = OxigraphInMemory::from_str(n3, &RDFFormat::N3, None, &ReaderMode::Strict).unwrap();
+    assert_eq!(graph.len(), 3);
+    assert!(graph.prefixmap().find("").is_some(), "the prefixes are kept");
+}
+
+#[test]
+fn test_parse_n3_that_is_not_rdf() {
+    // Variables and formulas can't be represented in an RDF graph
+    for n3 in [
+        "@prefix : <http://example.org/> . ?x :p 1 .",
+        "@prefix : <http://example.org/> . :x :says { :y :p 1 } .",
+    ] {
+        let err = OxigraphInMemory::from_str(n3, &RDFFormat::N3, None, &ReaderMode::Strict).unwrap_err();
+        assert!(err.to_string().contains("N3"), "{n3}: {err}");
+        // In lax mode they are skipped
+        let graph = OxigraphInMemory::from_str(n3, &RDFFormat::N3, None, &ReaderMode::Lax).unwrap();
+        assert!(graph.len() <= 1, "{n3}: {}", graph.len());
+    }
+}
