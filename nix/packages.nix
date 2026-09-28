@@ -24,6 +24,8 @@
         installShellFiles
       ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
         autoPatchelfHook
+      ] ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+        (pkgs.darwin.cctools or pkgs.cctools)
       ];
       buildInputs = with pkgs; [
         openssl
