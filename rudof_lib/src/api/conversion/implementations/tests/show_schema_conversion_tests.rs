@@ -3,9 +3,8 @@ use crate::{
     api::conversion::implementations::show_schema_conversion::show_schema_conversion,
     formats::{ConversionFormat, ConversionMode, InputSpec, ResultConversionFormat, ResultConversionMode},
 };
-use prefixmap::PrefixMap;
-use rudof_iri::IriS;
-use shapes_converter::Tap2ShExConfig;
+#[cfg(feature = "dctap")]
+use {prefixmap::PrefixMap, rudof_iri::IriS, shapes_converter::Tap2ShExConfig};
 
 /// Helper: serialize conversion to string
 fn serialize_conversion_to_string(
@@ -186,6 +185,7 @@ ex:PersonShape a sh:NodeShape ;
     );
 }
 
+#[cfg(feature = "dctap")]
 #[test]
 fn test_convert_dctap_to_uml() {
     let tap_cfg = Tap2ShExConfig::new()

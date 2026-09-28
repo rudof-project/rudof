@@ -45,6 +45,15 @@ fn run_shell(input: &str) -> ShellOutput {
     let mut child = Command::new(env!("CARGO_BIN_EXE_rudof"))
         .arg("shell")
         .env("HOME", home.path())
+        // Stdout/stderr are always piped below, so `rudof`'s own TTY
+        // detection would already see a non-terminal and stay uncolored —
+        // except `FORCE_COLOR`/`CLICOLOR_FORCE` (the `supports-color`
+        // convention `output::color` honors) override that and force
+        // color on regardless of TTY. Clear them so a plain-text
+        // assertion here can't fail just because the environment this
+        // test happens to run in sets one of them.
+        .env_remove("FORCE_COLOR")
+        .env_remove("CLICOLOR_FORCE")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

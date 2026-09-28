@@ -170,4 +170,22 @@ mod tests {
         );
         assert_eq!(schema, expected)
     }
+
+    #[test]
+    fn test_node_constraint_annotations_and_sem_acts() {
+        let str = r#"
+ prefix e: <http://example.org/>
+ e:NC [1 2] // e:a 7 %e:Test{ print(n) %}
+ "#;
+        let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
+        // The trailing code declaration belongs to the node constraint, not
+        // to the schema's start actions.
+        assert!(schema.start_actions().is_none());
+        let nc = match schema.shapes().unwrap()[0].shape_expr.clone() {
+            ShapeExpr::NodeConstraint(nc) => nc,
+            other => panic!("expected a node constraint, found {other:?}"),
+        };
+        assert_eq!(nc.annotations().map(|anns| anns.len()), Some(1));
+        assert_eq!(nc.sem_acts().map(|sas| sas.len()), Some(1));
+    }
 }

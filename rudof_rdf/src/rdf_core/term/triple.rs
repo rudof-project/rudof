@@ -386,7 +386,16 @@ impl From<Object> for oxrdf::Term {
             Object::Iri(iri_s) => oxrdf::NamedNode::new_unchecked(iri_s.as_str()).into(),
             Object::BlankNode(bnode) => oxrdf::BlankNode::new_unchecked(bnode).into(),
             Object::Literal(literal) => oxrdf::Term::Literal(literal.into()),
-            Object::Triple { .. } => todo!(),
+            Object::Triple {
+                subject,
+                predicate,
+                object,
+            } => {
+                let subject: oxrdf::NamedOrBlankNode = (*subject).into();
+                let predicate = oxrdf::NamedNode::new_unchecked(predicate.as_str());
+                let object: oxrdf::Term = (*object).into();
+                oxrdf::Triple::new(subject, predicate, object).into()
+            },
         }
     }
 }
@@ -437,8 +446,18 @@ impl TryFrom<Object> for oxrdf::NamedOrBlankNode {
         match value {
             Object::Iri(iri_s) => Ok(oxrdf::NamedNode::new_unchecked(iri_s.as_str()).into()),
             Object::BlankNode(bnode) => Ok(oxrdf::BlankNode::new_unchecked(bnode).into()),
-            Object::Literal(_) => todo!(),
-            Object::Triple { .. } => todo!(),
+            Object::Literal(lit) => Err(RDFError::ExpectedIriOrBlankNodeFoundLiteral {
+                literal: lit.to_string(),
+            }),
+            Object::Triple {
+                subject,
+                predicate,
+                object,
+            } => Err(RDFError::ExpectedIriOrBlankNodeFoundTriple {
+                subject: subject.to_string(),
+                predicate: predicate.to_string(),
+                object: object.to_string(),
+            }),
         }
     }
 }
@@ -480,7 +499,11 @@ impl Display for Object {
             Object::Iri(iri) => write!(f, "{iri}"),
             Object::BlankNode(bnode) => write!(f, "_:{bnode}"),
             Object::Literal(lit) => write!(f, "{lit}"),
-            Object::Triple { .. } => todo!(),
+            Object::Triple {
+                subject,
+                predicate,
+                object,
+            } => write!(f, "<<{subject} {predicate} {object}>>"),
         }
     }
 }

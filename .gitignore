@@ -31,6 +31,9 @@ dist/
 tutorials
 bindings/python/temp/
 bindings/python/docs/_build/
+bindings/python/python/pyrudof/_pyrudof.*.so
+bindings/python/python/pyrudof/_pyrudof.*.pyd
+bindings/python/python/pyrudof/_pyrudof.*.dylib
 
 **/proptest-regressions
 
@@ -43,4 +46,3 @@ result
 
  .rudof-connection.toml
  history.txt
-

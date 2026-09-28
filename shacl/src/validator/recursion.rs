@@ -3,9 +3,8 @@
 //! validation.
 //!
 //! The [`RecursionSemantics`] type itself lives in [`crate::ir`] because
-//! schema compilation needs it on the `wasm` target too, where this
-//! (native-only) validator module isn't compiled. See that module for the
-//! semantics of each variant.
+//! schema compilation needs it too. See that module for the semantics of
+//! each variant.
 
 use crate::error::ValidationError;
 use crate::ir::{IRShape, RecursionSemantics};

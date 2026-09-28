@@ -3,7 +3,7 @@ use crate::{
     Result, Rudof,
     errors::ShaclError,
     formats::{ResultShaclValidationFormat, ShaclValidationSortByMode},
-    utils::terminal_width,
+    utils::{terminal_colors, terminal_width},
 };
 use rudof_rdf::{rdf_core::BuildRDF, rdf_impl::OxigraphInMemory};
 use shacl::types::Severity;
@@ -30,16 +30,20 @@ pub fn serialize_shacl_validation_results<W: io::Write>(
         },
         ResultShaclValidationFormat::Compact => {
             serialize_shacl_validation_results
-                .table(writer, Some(false), Some(true), Some(terminal_width()))
+                .table(writer, Some(false), Some(terminal_colors()), Some(terminal_width()))
                 .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultShaclValidationFormat::Details => {
             serialize_shacl_validation_results
-                .table(writer, Some(true), Some(true), Some(terminal_width()))
+                .table(writer, Some(true), Some(terminal_colors()), Some(terminal_width()))
                 .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultShaclValidationFormat::Json => {
-            todo!("Generation of JSON for SHACL validation report is not implemented yet")
+            return Err(ShaclError::FailedSerializingShaclValidationResults {
+                format: "json".to_string(),
+                error: "not implemented yet".to_string(),
+            }
+            .into());
         },
         _ => {
             serialize_shacl_validation_results_rdf(

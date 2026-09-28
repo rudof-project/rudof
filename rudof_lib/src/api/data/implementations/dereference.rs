@@ -1,16 +1,17 @@
-use crate::{
-    Result, Rudof,
-    errors::DataError,
-    formats::{DataFormat, DataReaderMode},
-    types::Data,
-};
+use crate::{Result, Rudof, errors::DataError, formats::DataReaderMode};
+#[cfg(not(target_family = "wasm"))]
+use crate::{formats::DataFormat, types::Data};
+#[cfg(not(target_family = "wasm"))]
 use reqwest::blocking::ClientBuilder;
+#[cfg(not(target_family = "wasm"))]
 use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderValue, USER_AGENT};
+#[cfg(not(target_family = "wasm"))]
 use sparql_service::RdfData;
 
 /// Accept header advertising every RDF serialization Rudof can parse, in
 /// order of preference, so a Linked Data server can content-negotiate a
 /// format we can actually read.
+#[cfg(not(target_family = "wasm"))]
 const RDF_ACCEPT: &str = "text/turtle, application/rdf+xml;q=0.9, application/ld+json;q=0.8, \
                           application/trig;q=0.7, application/n-quads;q=0.6, application/n-triples;q=0.5, \
                           text/n3;q=0.4, */*;q=0.1";
@@ -18,6 +19,7 @@ const RDF_ACCEPT: &str = "text/turtle, application/rdf+xml;q=0.9, application/ld
 /// Dereferences `uri` over HTTP(S), content-negotiating for an RDF
 /// serialization, following redirects, and merging the resulting triples
 /// into the current RDF data.
+#[cfg(not(target_family = "wasm"))]
 pub fn dereference(
     rudof: &mut Rudof,
     uri: &str,
@@ -107,4 +109,19 @@ pub fn dereference(
         })?;
 
     Ok(())
+}
+
+/// Dereferencing needs blocking HTTP requests, which are not available on wasm.
+#[cfg(target_family = "wasm")]
+pub fn dereference(
+    _rudof: &mut Rudof,
+    uri: &str,
+    _reader_mode: Option<&DataReaderMode>,
+    _merge: Option<bool>,
+) -> Result<()> {
+    Err(Box::new(DataError::DereferenceError {
+        uri: uri.to_string(),
+        error: "HTTP requests are not supported on wasm".to_string(),
+    })
+    .into())
 }

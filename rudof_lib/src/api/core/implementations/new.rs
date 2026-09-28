@@ -10,16 +10,21 @@ pub fn new(config: RudofConfig) -> Rudof {
         shex_schema: None,
         shex_schema_ir: None,
         shex_validation_results: None,
+        #[cfg(feature = "pgschema")]
         pg_schema: None,
+        #[cfg(feature = "pgschema")]
         pg_schema_validation_results: None,
         pg_db_connection: None,
         shapemap: None,
         sparql_query: None,
         query_results: None,
+        #[cfg(feature = "dctap")]
         dctap: None,
         service_description: None,
+        #[cfg(feature = "rdf-config")]
         rdf_config: None,
         shex_validator: None,
+        #[cfg(feature = "pgschema")]
         typemap: None,
         map_state: None,
         prefixes: None,

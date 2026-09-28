@@ -62,7 +62,7 @@ impl Shacl2ShEx {
             Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri.clone())),
             Object::BlankNode(bn) => Ok(ShapeExprLabel::bnode(BNode::new(bn))),
             Object::Literal(lit) => Err(Shacl2ShExError::RDFNode2LabelLiteral { literal: lit.clone() }),
-            Object::Triple { .. } => todo!(),
+            Object::Triple { .. } => Err(Shacl2ShExError::not_implemented("shapes identified by RDF triples")),
         }
     }
 
@@ -70,10 +70,12 @@ impl Shacl2ShEx {
         let mut exprs = Vec::new();
         for node in shape.property_shapes() {
             match schema.get_shape_from_idx(node) {
-                None => todo!(),
+                None => Err(Shacl2ShExError::not_implemented(
+                    "property shapes missing from the schema",
+                )),
                 Some(shape) => match shape {
                     IRShape::PropertyShape(ps) => {
-                        let tc = self.property_shape2triple_constraint(ps)?;
+                        let tc = self.property_shape2triple_constraint(ps, schema)?;
                         exprs.push(tc);
                         Ok(())
                     },
@@ -137,18 +139,18 @@ impl Shacl2ShEx {
                     Object::Literal(lit) => {
                         Err(Shacl2ShExError::UnexpectedLiteralForTargetClass { literal: lit.clone() })
                     },
-                    Object::Triple { .. } => todo!(),
+                    Object::Triple { .. } => Err(Shacl2ShExError::not_implemented("RDF triples as target classes")),
                 }?;
                 Ok(Some(value_set_value))
             },
             Target::SubjectsOf(_) => Ok(None),
             Target::ObjectsOf(_) => Ok(None),
             Target::ImplicitClass(_) => Ok(None),
-            Target::WrongNode(_) => todo!(),
-            Target::WrongClass(_) => todo!(),
-            Target::WrongSubjectsOf(_) => todo!(),
-            Target::WrongObjectsOf(_) => todo!(),
-            Target::WrongImplicitClass(_) => todo!(),
+            Target::WrongNode(_)
+            | Target::WrongClass(_)
+            | Target::WrongSubjectsOf(_)
+            | Target::WrongObjectsOf(_)
+            | Target::WrongImplicitClass(_) => Err(Shacl2ShExError::not_implemented("malformed targets")),
         }
     }
 
@@ -195,7 +197,7 @@ impl Shacl2ShEx {
                     sem_acts: sem_acts.clone(),
                     annotations: annotations.clone(),
                 },
-                _ => todo!(),
+                _ => TripleExpr::each_of(vec![te1.clone(), te2.clone()]),
             },
             tc @ TripleExpr::TripleConstraint {
                 id,
@@ -244,9 +246,9 @@ impl Shacl2ShEx {
                     sem_acts: sem_acts.clone(),
                     annotations: annotations.clone(),
                 },
-                _ => todo!(),
+                _ => TripleExpr::each_of(vec![te1.clone(), te2.clone()]),
             },
-            _ => todo!(),
+            _ => TripleExpr::each_of(vec![te1.clone(), te2.clone()]),
         }
     }
 
@@ -261,47 +263,65 @@ impl Shacl2ShEx {
         es
     }
 
-    pub fn property_shape2triple_constraint(&self, shape: &IRPropertyShape) -> Result<TripleExpr, Shacl2ShExError> {
+    pub fn property_shape2triple_constraint(
+        &self,
+        shape: &IRPropertyShape,
+        schema: &IRSchema,
+    ) -> Result<TripleExpr, Shacl2ShExError> {
         let predicate = self.shacl_path2predicate(shape.path())?;
         let negated = None;
         let inverse = None;
-        let se = self.components2shape_expr(shape.components())?;
-        let min = None;
-        let max = None;
-        Ok(TripleExpr::triple_constraint(negated, inverse, predicate, se, min, max))
-    }
-
-    pub fn components2shape_expr(&self, components: &Vec<IRComponent>) -> Result<Option<ShapeExpr>, Shacl2ShExError> {
-        let mut ses = Vec::new();
-        for c in components {
-            let se = self.component2shape_expr(c)?;
-            ses.push(se);
-        }
-        if ses.is_empty() {
-            Ok(None)
-        } else {
-            match ses.len() {
-                1 => {
-                    let se = &ses[0];
-                    Ok(Some(se.clone()))
-                },
-                _ => {
-                    // Err(Shacl2ShExError::not_implemented("Conversion of shapes with multiple components is not implemented yet: {components:?}"))}
-                    debug!("More than one component: {components:?}, taking only the first one");
-                    let se = &ses[0];
-                    Ok(Some(se.clone()))
-                },
+        let se = self.components2shape_expr(shape.components(), schema)?;
+        // sh:minCount and sh:maxCount are the cardinality of the triple
+        // constraint. Without them a SHACL property may have any number of
+        // values, i.e. `*` in ShEx (whose default is exactly one).
+        let mut min = 0;
+        let mut max = -1;
+        for component in shape.components() {
+            match component {
+                IRComponent::MinCount(c) => min = i32::try_from(c.min_count()).unwrap_or(i32::MAX),
+                IRComponent::MaxCount(c) => max = i32::try_from(c.max_count()).unwrap_or(-1),
+                _ => {},
             }
         }
+        Ok(TripleExpr::triple_constraint(
+            negated,
+            inverse,
+            predicate,
+            se,
+            Some(min),
+            Some(max),
+        ))
+    }
+
+    /// The constraints on the values of a property: all its components but
+    /// the cardinality (sh:minCount, sh:maxCount), combined with AND.
+    pub fn components2shape_expr(
+        &self,
+        components: &Vec<IRComponent>,
+        schema: &IRSchema,
+    ) -> Result<Option<ShapeExpr>, Shacl2ShExError> {
+        let mut ses = Vec::new();
+        for c in components {
+            if matches!(c, IRComponent::MinCount(_) | IRComponent::MaxCount(_)) {
+                continue;
+            }
+            ses.push(self.component2shape_expr(c, schema)?);
+        }
+        Ok(match ses.len() {
+            0 => None,
+            1 => ses.pop(),
+            _ => Some(ShapeExpr::and(ses)),
+        })
     }
 
     pub fn create_class_constraint(&self, cls: &Object) -> Result<ShapeExpr, Shacl2ShExError> {
         let rdf_type = IriRef::iri(IriS::rdf_type());
         let value = match cls {
             Object::Iri(iri) => ValueSetValue::iri(IriRef::iri(iri.clone())),
-            Object::BlankNode(_) => todo!(),
-            Object::Literal(_) => todo!(),
-            Object::Triple { .. } => todo!(),
+            Object::BlankNode(_) | Object::Literal(_) | Object::Triple { .. } => {
+                return Err(Shacl2ShExError::not_implemented("sh:class values that are not IRIs"));
+            },
         };
         let cls = NodeConstraint::new().with_values(vec![value]);
         let te = TripleExpr::triple_constraint(None, None, rdf_type, Some(ShapeExpr::node_constraint(cls)), None, None);
@@ -309,7 +329,11 @@ impl Shacl2ShEx {
         Ok(se)
     }
 
-    pub fn component2shape_expr(&self, component: &IRComponent) -> Result<ShapeExpr, Shacl2ShExError> {
+    pub fn component2shape_expr(
+        &self,
+        component: &IRComponent,
+        schema: &IRSchema,
+    ) -> Result<ShapeExpr, Shacl2ShExError> {
         match component {
             IRComponent::Class(cls) => {
                 // TODO: Converting Class components for {cls:?} doesn't match rdfs:subClassOf semantics of SHACL yet
@@ -319,43 +343,51 @@ impl Shacl2ShEx {
             IRComponent::Datatype(dt) => Ok(ShapeExpr::node_constraint(
                 NodeConstraint::new().with_datatype(dt.datatype().clone().into()),
             )),
-            IRComponent::NodeKind(_) => todo!(),
-            IRComponent::MinCount(_) => todo!(),
-            IRComponent::MaxCount(_) => todo!(),
-            IRComponent::MinExclusive(_) => todo!(),
-            IRComponent::MaxExclusive(_) => todo!(),
-            IRComponent::MinInclusive(_) => todo!(),
-            IRComponent::MaxInclusive(_) => todo!(),
-            IRComponent::MinLength(_) => todo!(),
-            IRComponent::MaxLength(_) => todo!(),
-            IRComponent::Pattern(_) => todo!(),
-            IRComponent::UniqueLang(_) => todo!(),
-            IRComponent::LanguageIn(_) => todo!(),
-            IRComponent::Equals(_) => todo!(),
-            IRComponent::Disjoint(_) => todo!(),
-            IRComponent::LessThan(_) => todo!(),
-            IRComponent::LessThanOrEquals(_) => todo!(),
+            IRComponent::NodeKind(_) => Err(Shacl2ShExError::not_implemented("sh:nodeKind")),
+            IRComponent::MinCount(_) => Err(Shacl2ShExError::not_implemented("sh:minCount")),
+            IRComponent::MaxCount(_) => Err(Shacl2ShExError::not_implemented("sh:maxCount")),
+            IRComponent::MinExclusive(_) => Err(Shacl2ShExError::not_implemented("sh:minExclusive")),
+            IRComponent::MaxExclusive(_) => Err(Shacl2ShExError::not_implemented("sh:maxExclusive")),
+            IRComponent::MinInclusive(_) => Err(Shacl2ShExError::not_implemented("sh:minInclusive")),
+            IRComponent::MaxInclusive(_) => Err(Shacl2ShExError::not_implemented("sh:maxInclusive")),
+            IRComponent::MinLength(_) => Err(Shacl2ShExError::not_implemented("sh:minLength")),
+            IRComponent::MaxLength(_) => Err(Shacl2ShExError::not_implemented("sh:maxLength")),
+            IRComponent::Pattern(_) => Err(Shacl2ShExError::not_implemented("sh:pattern")),
+            IRComponent::UniqueLang(_) => Err(Shacl2ShExError::not_implemented("sh:uniqueLang")),
+            IRComponent::LanguageIn(_) => Err(Shacl2ShExError::not_implemented("sh:languageIn")),
+            IRComponent::Equals(_) => Err(Shacl2ShExError::not_implemented("sh:equals")),
+            IRComponent::Disjoint(_) => Err(Shacl2ShExError::not_implemented("sh:disjoint")),
+            IRComponent::LessThan(_) => Err(Shacl2ShExError::not_implemented("sh:lessThan")),
+            IRComponent::LessThanOrEquals(_) => Err(Shacl2ShExError::not_implemented("sh:lessThanOrEquals")),
             IRComponent::Or(_) => {
                 debug!("Not implemented OR Shapes");
                 Ok(ShapeExpr::empty_shape())
             },
-            IRComponent::And(_) => todo!(),
-            IRComponent::Not(_) => todo!(),
-            IRComponent::Xone(_) => todo!(),
-            IRComponent::Closed(_) => todo!(),
-            IRComponent::Node(_) => todo!(),
-            IRComponent::HasValue(_) => todo!(),
-            IRComponent::In(_) => todo!(),
-            IRComponent::QualifiedValueShape(_) => todo!(),
-            IRComponent::Deactivated(_) => todo!(),
-            IRComponent::BasicSparql(_) => todo!(),
+            IRComponent::And(_) => Err(Shacl2ShExError::not_implemented("sh:and")),
+            IRComponent::Not(_) => Err(Shacl2ShExError::not_implemented("sh:not")),
+            IRComponent::Xone(_) => Err(Shacl2ShExError::not_implemented("sh:xone")),
+            IRComponent::Closed(_) => Err(Shacl2ShExError::not_implemented("sh:closed")),
+            // sh:node: a reference to the shape
+            IRComponent::Node(node) => match schema.get_shape_from_idx(node.shape()) {
+                Some(shape) => Ok(ShapeExpr::shape_ref(self.rdfnode2label(shape.id())?)),
+                None => Err(Shacl2ShExError::not_implemented(
+                    "sh:node with a shape missing from the schema",
+                )),
+            },
+            IRComponent::HasValue(_) => Err(Shacl2ShExError::not_implemented("sh:hasValue")),
+            IRComponent::In(_) => Err(Shacl2ShExError::not_implemented("sh:in")),
+            IRComponent::QualifiedValueShape(_) => Err(Shacl2ShExError::not_implemented("sh:qualifiedValueShape")),
+            IRComponent::Deactivated(_) => Err(Shacl2ShExError::not_implemented("sh:deactivated")),
+            IRComponent::BasicSparql(_) => Err(Shacl2ShExError::not_implemented("sh:sparql")),
         }
     }
 
     pub fn shacl_path2predicate(&self, path: &SHACLPath) -> Result<IriRef, Shacl2ShExError> {
         match path {
             SHACLPath::Predicate { pred } => Ok(IriRef::iri(pred.clone())),
-            _ => todo!(),
+            _ => Err(Shacl2ShExError::not_implemented(
+                "property paths other than a single predicate (sequence, alternative, inverse, ...)",
+            )),
         }
     }
 }

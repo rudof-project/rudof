@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>rudof online demo</title>
+  <meta name="description" content="Convert, validate (ShEx, SHACL, PGSchema) and query (SPARQL) RDF data and property graphs in your browser, with rudof compiled to WebAssembly.">
+  <link rel="icon" href="../assets/corp/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="demo.css">
+  <script type="module" src="demo.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a href="../index.html" class="logo"><img src="../assets/corp/logo.svg" alt="" width="40" height="32">rudof</a>
+      <span class="subtitle">online demo</span>
+    </div>
+    <nav class="links">
+      <a href="../index.html">Manual</a>
+      <a href="https://www.npmjs.com/package/@rudof/rudof">npm</a>
+      <a href="https://github.com/rudof-project/rudof">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="intro">
+      Convert RDF data and property graphs between formats, validate them with
+      <strong>ShEx</strong>, <strong>SHACL</strong> or <strong>PGSchema</strong>,
+      and query RDF data with <strong>SPARQL</strong>.
+      Everything runs in your browser: rudof is compiled to WebAssembly, and
+      nothing you type is sent anywhere.
+      <span id="status" class="status loading" role="status">Loading rudof…</span>
+    </p>
+
+    <div class="tabs" role="tablist" aria-label="Section">
+      <button role="tab" id="tab-data" aria-controls="panel-data" aria-selected="true">Data</button>
+      <button role="tab" id="tab-validate" aria-controls="panel-validate" aria-selected="false" tabindex="-1">Validate</button>
+      <button role="tab" id="tab-query" aria-controls="panel-query" aria-selected="false" tabindex="-1">Query</button>
+    </div>
+
+    <!-- Data: RDF or property graphs -->
+    <section id="panel-data" role="tabpanel" aria-labelledby="tab-data" class="section">
+      <div class="tabs subtabs" role="tablist" aria-label="Kind of data">
+        <button role="tab" id="tab-rdf" aria-controls="panel-rdf" aria-selected="true">RDF</button>
+        <button role="tab" id="tab-pg" aria-controls="panel-pg" aria-selected="false" tabindex="-1">Property graph</button>
+      </div>
+
+      <!-- RDF -->
+      <section id="panel-rdf" role="tabpanel" aria-labelledby="tab-rdf" class="panel">
+        <div class="inputs two">
+          <div class="field">
+            <div class="field-head">
+              <label for="rdf-data">RDF data</label>
+              <select id="rdf-data-format" aria-label="Input format">
+                <option value="turtle">Turtle</option>
+                <option value="ntriples">N-Triples</option>
+                <option value="rdfxml">RDF/XML</option>
+                <option value="jsonld">JSON-LD</option>
+                <option value="trig">TriG</option>
+                <option value="n3">N3</option>
+                <option value="nquads">N-Quads</option>
+              </select>
+            </div>
+            <textarea id="rdf-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:alice a foaf:Person ;
+       foaf:name "Alice"@en ;
+       foaf:birthday "1995-03-12"^^xsd:date ;
+       foaf:knows :bob, [ foaf:name "Carol" ] .
+
+:bob   a foaf:Person ;
+       foaf:name "Bob" .</textarea>
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <label for="rdf-result-format">Converted to</label>
+              <select id="rdf-result-format">
+                <option value="ntriples">N-Triples</option>
+                <option value="turtle">Turtle</option>
+                <option value="rdfxml">RDF/XML</option>
+                <option value="jsonld">JSON-LD</option>
+                <option value="trig">TriG</option>
+                <option value="n3">N3</option>
+                <option value="nquads">N-Quads</option>
+                <option value="plantuml">Diagram (PlantUML)</option>
+              </select>
+            </div>
+            <div class="result converted" id="rdf-result">
+              <div class="result-head"><span class="verdict">Press Convert</span><span class="timing"></span></div>
+              <pre class="output"></pre>
+              <div class="diagram" hidden>
+                <div class="diagram-tools">
+                  <button class="link" data-action="source">Show PlantUML source</button>
+                  <a class="link" data-action="download" download="rdf.svg">Download SVG</a>
+                </div>
+                <div class="diagram-image"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="rdf-validate" disabled>Convert</button>
+          <button class="secondary" id="rdf-copy" disabled>Copy</button>
+          <button class="secondary" id="rdf-use-as-input" disabled title="Replace the input with the converted data">Use as input</button>
+          <span class="shortcut">Ctrl + Enter</span>
+        </div>
+      </section>
+
+      <!-- Property graph data -->
+      <section id="panel-pg" role="tabpanel" aria-labelledby="tab-pg" class="panel" hidden>
+        <div class="inputs two">
+          <div class="field">
+            <div class="field-head">
+              <label for="pg-data">Property graph</label>
+              <span class="format-tag" title="The only property graph format supported for now">YARS-PG</span>
+            </div>
+            <textarea id="pg-data" spellcheck="false">(n1 {Person} [
+    name: "Alice",
+    birthdate: DATE "2010-07-22"
+])
+(n2 {Person, Student} [
+    id: 234,
+    name: "Robert Smith",
+    aliases: ["Bob", "Robbie"],
+    email: "bob@mail.com"
+])
+(n3 {Course} [
+    name: "Algebra",
+    credits: 6
+])
+(n1) - (e1 {knows} [since: 2020 ]) -&gt; (n2)
+(n2) - (e2 {EnrolledIn} [start: 2024, end: 2025 ]) -&gt; (n3)</textarea>
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <label for="pg-result-format">Converted to</label>
+              <select id="pg-result-format">
+                <option value="compact">YARS-PG</option>
+                <option value="json">JSON</option>
+              </select>
+            </div>
+            <div class="result converted" id="pg-result">
+              <div class="result-head"><span class="verdict">Press Convert</span><span class="timing"></span></div>
+              <pre class="output"></pre>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="pg-validate" disabled>Convert</button>
+          <button class="secondary" id="pg-copy" disabled>Copy</button>
+          <button class="secondary" id="pg-use-as-input" disabled title="Replace the input with the converted data">Use as input</button>
+          <span class="shortcut">Ctrl + Enter</span>
+        </div>
+      </section>
+    </section>
+
+    <!-- Validate: ShEx, SHACL or PGSchema -->
+    <section id="panel-validate" role="tabpanel" aria-labelledby="tab-validate" class="section" hidden>
+      <div class="tabs subtabs" role="tablist" aria-label="Schema language">
+        <button role="tab" id="tab-shex" aria-controls="panel-shex" aria-selected="true">ShEx</button>
+        <button role="tab" id="tab-shacl" aria-controls="panel-shacl" aria-selected="false" tabindex="-1">SHACL</button>
+        <button role="tab" id="tab-pgschema" aria-controls="panel-pgschema" aria-selected="false" tabindex="-1">PGSchema</button>
+      </div>
+
+      <!-- ShEx -->
+      <section id="panel-shex" role="tabpanel" aria-labelledby="tab-shex" class="panel">
+        <div class="inputs two">
+          <div class="field">
+            <div class="field-head">
+              <label for="shex-data">RDF data</label>
+              <select id="shex-data-format" aria-label="RDF data format">
+                <option value="turtle">Turtle</option>
+                <option value="ntriples">N-Triples</option>
+                <option value="rdfxml">RDF/XML</option>
+                <option value="jsonld">JSON-LD</option>
+                <option value="trig">TriG</option>
+                <option value="n3">N3</option>
+                <option value="nquads">N-Quads</option>
+              </select>
+            </div>
+            <textarea id="shex-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:alice :name "Alice" ;
+       :birthDate "1995-03-12"^^xsd:date ;
+       :knows :carol .
+
+:bob   :name "Robert", "Bob" ;
+       :birthDate "unknown" .
+
+:carol :name "Carol" .</textarea>
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <label for="shex-schema">ShEx schema</label>
+              <select id="shex-schema-format" aria-label="ShEx schema format">
+                <option value="shexc">ShExC</option>
+                <option value="shexj">ShExJ</option>
+                <option value="turtle">ShExR (Turtle)</option>
+              </select>
+            </div>
+            <textarea id="shex-schema" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:Person {
+  :name      xsd:string ;
+  :birthDate xsd:date ? ;
+  :knows     @:Person *
+}</textarea>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="shex-shapemap">Shape map</label>
+            <span class="hint">e.g. <code>:alice@:Person</code> or <code>{FOCUS :name _}@:Person</code></span>
+          </div>
+          <textarea id="shex-shapemap" class="short" spellcheck="false">:alice@:Person, :bob@:Person, :carol@:Person</textarea>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="shex-validate" disabled>Validate</button>
+          <label class="inline">Result format
+            <select id="shex-result-format">
+              <option value="compact">Compact</option>
+              <option value="details">Details</option>
+              <option value="json">JSON</option>
+              <option value="csv">CSV</option>
+            </select>
+          </label>
+          <span class="shortcut">Ctrl + Enter</span>
+        </div>
+        <div class="result" id="shex-result" hidden>
+          <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+          <pre class="output"></pre>
+        </div>
+        <div class="toolbar schema-tools">
+          <label class="inline">Convert the schema to
+            <select id="shex-schema-result-format">
+            <option value="shexc">ShExC</option>
+            <option value="shexj">ShExJ</option>
+            <option value="turtle">ShExR (Turtle)</option>
+            <option value="ntriples">ShExR (N-Triples)</option>
+            <option value="rdfxml">ShExR (RDF/XML)</option>
+            <option value="plantuml" selected>UML diagram</option>
+            <option value="sparql">SPARQL query</option>
+            </select>
+          </label>
+          <button class="secondary" id="shex-schema-validate" disabled>Convert schema</button>
+        </div>
+        <div class="result" id="shex-schema-result" hidden>
+          <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+          <pre class="output"></pre>
+          <div class="diagram" hidden>
+            <div class="diagram-tools">
+              <button class="link" data-action="source">Show PlantUML source</button>
+              <a class="link" data-action="download" download="shex.svg">Download SVG</a>
+            </div>
+            <div class="diagram-image"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SHACL -->
+      <section id="panel-shacl" role="tabpanel" aria-labelledby="tab-shacl" class="panel" hidden>
+        <div class="inputs two">
+          <div class="field">
+            <div class="field-head">
+              <label for="shacl-data">RDF data</label>
+              <select id="shacl-data-format" aria-label="RDF data format">
+                <option value="turtle">Turtle</option>
+                <option value="ntriples">N-Triples</option>
+                <option value="rdfxml">RDF/XML</option>
+                <option value="jsonld">JSON-LD</option>
+                <option value="trig">TriG</option>
+                <option value="n3">N3</option>
+                <option value="nquads">N-Quads</option>
+              </select>
+            </div>
+            <textarea id="shacl-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:alice a :Person ;
+       :name "Alice" ;
+       :birthDate "1995-03-12"^^xsd:date .
+
+:bob   a :Person ;
+       :name "Robert", "Bob" ;
+       :birthDate "unknown" .</textarea>
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <label for="shacl-shapes">Shapes graph</label>
+              <select id="shacl-shapes-format" aria-label="Shapes graph format">
+                <option value="turtle">Turtle</option>
+                <option value="ntriples">N-Triples</option>
+                <option value="rdfxml">RDF/XML</option>
+                <option value="jsonld">JSON-LD</option>
+                <option value="trig">TriG</option>
+                <option value="n3">N3</option>
+                <option value="nquads">N-Quads</option>
+              </select>
+            </div>
+            <textarea id="shacl-shapes" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix sh: &lt;http://www.w3.org/ns/shacl#&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+:PersonShape a sh:NodeShape ;
+  sh:targetClass :Person ;
+  sh:property [
+    sh:path :name ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:path :birthDate ;
+    sh:datatype xsd:date
+  ] .</textarea>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="shacl-validate" disabled>Validate</button>
+          <label class="inline">Result format
+            <select id="shacl-result-format">
+              <option value="compact">Compact</option>
+              <option value="details">Details</option>
+              <option value="minimal">Minimal</option>
+              <option value="turtle">Turtle</option>
+              <option value="ntriples">N-Triples</option>
+              <option value="rdfxml">RDF/XML</option>
+              <option value="trig">TriG</option>
+              <option value="n3">N3</option>
+              <option value="nquads">N-Quads</option>
+            </select>
+          </label>
+          <label class="inline">Engine
+            <select id="shacl-mode">
+              <option value="native">Native</option>
+              <option value="sparql">SPARQL</option>
+            </select>
+          </label>
+          <span class="shortcut">Ctrl + Enter</span>
+        </div>
+        <div class="result" id="shacl-result" hidden>
+          <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+          <pre class="output"></pre>
+        </div>
+        <div class="toolbar schema-tools">
+          <label class="inline">Convert the schema to
+            <select id="shacl-schema-result-format">
+            <option value="turtle">Turtle</option>
+            <option value="ntriples">N-Triples</option>
+            <option value="rdfxml">RDF/XML</option>
+            <option value="jsonld">JSON-LD</option>
+            <option value="trig">TriG</option>
+            <option value="n3">N3</option>
+            <option value="nquads">N-Quads</option>
+            <option value="shexc" selected>ShEx (ShExC)</option>
+            <option value="plantuml">UML diagram (via ShEx)</option>
+            </select>
+          </label>
+          <button class="secondary" id="shacl-schema-validate" disabled>Convert schema</button>
+        </div>
+        <div class="result" id="shacl-schema-result" hidden>
+          <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+          <pre class="output"></pre>
+          <div class="diagram" hidden>
+            <div class="diagram-tools">
+              <button class="link" data-action="source">Show PlantUML source</button>
+              <a class="link" data-action="download" download="shacl.svg">Download SVG</a>
+            </div>
+            <div class="diagram-image"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PGSchema -->
+      <section id="panel-pgschema" role="tabpanel" aria-labelledby="tab-pgschema" class="panel" hidden>
+        <div class="inputs two">
+          <div class="field">
+            <div class="field-head">
+              <label for="pgschema-data">Property graph</label>
+              <span class="format-tag" title="The only property graph format supported for now">YARS-PG</span>
+            </div>
+            <textarea id="pgschema-data" spellcheck="false">(n1 {Person} [
+    name: "Alice",
+    birthdate: DATE "2010-07-22"
+])
+(n2 {Person, Student} [
+    id: 234,
+    name: "Robert Smith",
+    aliases: ["Bob", "Robbie"],
+    email: "bob@mail.com"
+])
+(n3 {Course} [
+    name: "Algebra",
+    credits: 6
+])
+(n1) - (e1 {knows} [since: 2020 ]) -&gt; (n2)
+(n2) - (e2 {EnrolledIn} [start: 2024, end: 2025 ]) -&gt; (n3)</textarea>
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <label for="pgschema-schema">PGSchema</label>
+              <span class="format-tag">PGSchemaC</span>
+            </div>
+            <textarea id="pgschema-schema" spellcheck="false">CREATE NODE TYPE ( PersonType : Person {
+    name: STRING ||
+    ( givenName: STRING, familyName: STRING ),
+    OPTIONAL birthdate: DATE
+}) ;
+
+CREATE NODE TYPE ( StudentType : @PersonType &amp; Student {
+    id: INTEGER | STRING,
+    email: STRING CHECK REGEX "^[\w.-]+@[\w.-]+\.\w+$",
+    aliases: STRING *
+}) ;
+
+CREATE NODE TYPE ( CourseType: Course {
+    name: STRING,
+    credits: INTEGER CHECK (&gt; 3)
+});
+
+CREATE EDGE TYPE (:@PersonType)
+                 -[KnowsType : Knows { since: INTEGER }]-&gt;
+                 (:@PersonType);
+CREATE EDGE TYPE (:@StudentType)
+                 -[EnrolledInType : EnrolledIn { start: INTEGER, end: INTEGER }]-&gt;
+                 (:@CourseType)</textarea>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="pgschema-typemap">Type map</label>
+            <span class="hint">node or edge id <code>:</code> type, e.g. <code>n1: PersonType, e1: KnowsType</code></span>
+          </div>
+          <textarea id="pgschema-typemap" class="medium" spellcheck="false">n1: PersonType,
+n2: StudentType,
+n3: CourseType,
+e1: KnowsType,
+e2: EnrolledInType</textarea>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="pgschema-validate" disabled>Validate</button>
+          <label class="inline">Result format
+            <select id="pgschema-result-format">
+              <option value="table">Table</option>
+              <option value="compact">Compact</option>
+              <option value="json">JSON</option>
+              <option value="csv">CSV</option>
+            </select>
+          </label>
+          <span class="shortcut">Ctrl + Enter</span>
+        </div>
+        <div class="result" id="pgschema-result" hidden>
+          <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+          <pre class="output"></pre>
+          <div class="table-output" hidden></div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Query: SPARQL over RDF data (GQL or Cypher over property graphs later) -->
+    <section id="panel-query" role="tabpanel" aria-labelledby="tab-query" class="section" hidden>
+      <div class="tabs subtabs" role="tablist" aria-label="Query language">
+        <button role="tab" id="tab-sparql" aria-controls="panel-sparql" aria-selected="true">SPARQL</button>
+      </div>
+
+      <!-- SPARQL -->
+      <section id="panel-sparql" role="tabpanel" aria-labelledby="tab-sparql" class="panel">
+        <div class="inputs two">
+          <div class="field">
+            <div class="field-head">
+              <label for="sparql-data">RDF data</label>
+              <select id="sparql-data-format" aria-label="RDF data format">
+                <option value="turtle">Turtle</option>
+                <option value="ntriples">N-Triples</option>
+                <option value="rdfxml">RDF/XML</option>
+                <option value="jsonld">JSON-LD</option>
+                <option value="trig">TriG</option>
+                <option value="n3">N3</option>
+                <option value="nquads">N-Quads</option>
+              </select>
+            </div>
+            <textarea id="sparql-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
+prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+
+:alice a foaf:Person ;
+       foaf:name "Alice" ;
+       foaf:age 23 ;
+       foaf:knows :bob, :carol .
+
+:bob   a foaf:Person ;
+       foaf:name "Bob" ;
+       foaf:age 34 ;
+       foaf:knows :carol .
+
+:carol a foaf:Person ;
+       foaf:name "Carol" .</textarea>
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <label for="sparql-query">SPARQL query</label>
+              <select id="sparql-example" aria-label="Example queries">
+                <option value="">Examples…</option>
+                <option value="select">SELECT: names and ages</option>
+                <option value="count">SELECT: how many people each one knows</option>
+                <option value="ask">ASK: is anyone under 18?</option>
+                <option value="construct">CONSTRUCT: who is known by whom</option>
+                <option value="describe">DESCRIBE: Carol</option>
+              </select>
+            </div>
+            <textarea id="sparql-query" spellcheck="false">PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+
+SELECT ?name ?age WHERE {
+  ?person a foaf:Person ;
+          foaf:name ?name .
+  OPTIONAL { ?person foaf:age ?age }
+}
+ORDER BY ?name</textarea>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="sparql-validate" disabled>Run query</button>
+          <label class="inline">Result format
+            <select id="sparql-result-format">
+              <option value="table">Table</option>
+            </select>
+          </label>
+          <span class="shortcut">Ctrl + Enter</span>
+        </div>
+        <div class="result" id="sparql-result" hidden>
+          <div class="result-head"><span class="verdict"></span><span class="timing"></span></div>
+          <pre class="output"></pre>
+          <div class="table-output" hidden></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    Using the <a href="https://www.npmjs.com/package/@rudof/rudof"><code>@rudof/rudof</code></a>
+    npm package, which you can use in your own pages and in Node.js.
+  </footer>
+</body>
+</html>

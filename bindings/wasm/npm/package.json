@@ -1,0 +1,63 @@
+{
+  "name": "@rudof/rudof",
+  "version": "0.0.0",
+  "description": "Validate RDF data with ShEx and SHACL, and query it with SPARQL, in the browser and in Node.js",
+  "keywords": [
+    "rdf",
+    "shex",
+    "shacl",
+    "sparql",
+    "validation",
+    "linked-data",
+    "semantic-web",
+    "knowledge-graphs",
+    "webassembly"
+  ],
+  "homepage": "https://rudof-project.github.io/rudof",
+  "bugs": "https://github.com/rudof-project/rudof/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rudof-project/rudof.git",
+    "directory": "bindings/wasm"
+  },
+  "license": "MIT OR Apache-2.0",
+  "files": [
+    "web/",
+    "node/",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "main": "./node/rudof_wasm.js",
+  "module": "./web/rudof_wasm.js",
+  "browser": "./web/rudof_wasm.js",
+  "types": "./web/rudof_wasm.d.ts",
+  "exports": {
+    ".": {
+      "node": {
+        "types": "./node/rudof_wasm.d.ts",
+        "default": "./node/rudof_wasm.js"
+      },
+      "default": {
+        "types": "./web/rudof_wasm.d.ts",
+        "default": "./web/rudof_wasm.js"
+      }
+    },
+    "./web": {
+      "types": "./web/rudof_wasm.d.ts",
+      "default": "./web/rudof_wasm.js"
+    },
+    "./node": {
+      "types": "./node/rudof_wasm.d.ts",
+      "default": "./node/rudof_wasm.js"
+    },
+    "./rudof_wasm_bg.wasm": "./web/rudof_wasm_bg.wasm",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "./node/rudof_wasm.js",
+    "./web/rudof_wasm.js"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

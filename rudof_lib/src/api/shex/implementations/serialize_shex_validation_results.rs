@@ -54,7 +54,11 @@ pub fn serialize_shex_validation_results<W: io::Write>(
             writeln!(writer, "{str}").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
         },
         _ => {
-            todo!("Implement serialization for the specified format: {result_shex_validation_format:?}");
+            return Err(ShExError::FailedSerializingShExValidationResults {
+                format: result_shex_validation_format.to_string(),
+                error: "not implemented yet".to_string(),
+            }
+            .into());
         },
     }
 

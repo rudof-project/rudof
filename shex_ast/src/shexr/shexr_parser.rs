@@ -349,7 +349,11 @@ fn parse_shape<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<Shape, RDFError
 
 fn parse_triple_expr<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<TripleExpr, RDFError> {
     let node = rdf.get_focus().cloned().ok_or(RDFError::NoFocusNodeError)?;
-    let id = term_to_triple_expr_label::<RDF>(&node).ok();
+    // Triple expressions are nodes of the graph, usually blank nodes. Only
+    // IRIs are labels: blank nodes would become `$_:b3` labels in ShExC.
+    let id = term_to_triple_expr_label::<RDF>(&node)
+        .ok()
+        .filter(|label| matches!(label, TripleExprLabel::IriRef { .. }));
     let type_iri = current_type::<RDF>(rdf)?;
 
     match type_iri.as_deref() {
@@ -477,6 +481,12 @@ fn parse_node_constraint<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<NodeC
     if let Some(values) = read_list_property(rdf, ShexRVocab::sx_values(), parse_value_set_value)? {
         nc = nc.with_values(values);
     }
+
+    rdf.set_focus(&node);
+    let sem_acts = read_list_property(rdf, ShexRVocab::sx_sem_acts(), parse_sem_act)?;
+    rdf.set_focus(&node);
+    let annotations = read_list_property(rdf, ShexRVocab::sx_annotation_prop(), parse_annotation)?;
+    nc = nc.with_sem_acts(sem_acts).with_annotations(annotations);
 
     Ok(nc)
 }

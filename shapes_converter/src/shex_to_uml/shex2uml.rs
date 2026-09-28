@@ -52,7 +52,7 @@ impl ShEx2Uml {
     /// Renders this UML diagram to an image using the given [`VizEngine`].
     ///
     /// `plantuml_path` is only consulted when `engine` is `VizEngine::PlantUml`.
-    #[cfg(not(target_family = "wasm"))]
+    /// Always fails on `wasm`, where the external renderers can't be run.
     pub fn as_image<W: Write, P: AsRef<std::path::Path>>(
         &self,
         writer: &mut W,

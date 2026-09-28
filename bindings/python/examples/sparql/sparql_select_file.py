@@ -1,7 +1,23 @@
-from pyrudof import RDFFormat, Rudof, RudofConfig
+"""Load a SPARQL query from a file and run it."""
 
-rudof = Rudof(RudofConfig())
-rudof.read_data("person.ttl", RDFFormat.Turtle)
-rudof.read_query("person.sparql")
-rudof.run_query()
-results = rudof.serialize_query_results()
+from pathlib import Path
+
+from pyrudof import RDFFormat, Rudof
+
+HERE = Path(__file__).resolve().parent.parent
+
+
+def main() -> None:
+    with Rudof() as rudof:
+        rudof.read_data(HERE / "person.ttl", RDFFormat.Turtle)
+        rudof.read_query(HERE / "person.sparql")
+
+        results = rudof.run_query()
+
+        print(f"variables: {results.variables}")
+        for row in results.rows:
+            print(row)
+
+
+if __name__ == "__main__":
+    main()

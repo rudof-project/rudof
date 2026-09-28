@@ -80,7 +80,7 @@ fn test_show_node_info_basic_outgoing() {
         Some(&NodeInspectionMode::Outgoing),
         Some(1),
         Some(false),
-        Some(true),
+        Some(false),
         IriNormalizationMode::default(),
         &mut output,
     );
@@ -109,7 +109,7 @@ fn test_show_node_info_basic_incoming() {
         Some(&NodeInspectionMode::Incoming),
         Some(1),
         Some(false),
-        Some(true),
+        Some(false),
         IriNormalizationMode::default(),
         &mut output,
     );
@@ -166,7 +166,7 @@ fn test_show_node_info_with_predicate_filter() {
         Some(&NodeInspectionMode::Outgoing),
         Some(1),
         Some(false),
-        Some(true),
+        Some(false),
         IriNormalizationMode::default(),
         &mut output,
     );
@@ -197,7 +197,7 @@ fn test_show_node_info_multiple_predicates_filter() {
         Some(&NodeInspectionMode::Outgoing),
         Some(1),
         Some(false),
-        Some(true),
+        Some(false),
         IriNormalizationMode::default(),
         &mut output,
     );
@@ -350,11 +350,43 @@ fn test_show_node_info_without_colors() {
 
     assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
+    // No ANSI escape codes should leak in when colors are explicitly disabled.
+    assert!(!output_str.contains('\u{1b}'));
+    assert!(output_str.contains("foaf:name"));
 
     println!(
         "\n===== test_show_node_info_without_colors =====\n{}============================================",
         output_str
     );
+}
+
+// Colorization must depend only on the explicit `show_colors` flag, never on
+// ambient state such as whether the real process stdout happens to be a
+// terminal — the flag doesn't even reach a terminal here since output is
+// written into an in-memory buffer.
+#[test]
+fn test_show_node_info_with_colors_is_deterministic() {
+    let mut rudof = setup_test_rudof();
+    let mut output = Cursor::new(Vec::new());
+
+    let result = show_node_info(
+        &mut rudof,
+        "ex:alice",
+        None,
+        Some(&NodeInspectionMode::Outgoing),
+        Some(1),
+        Some(false),
+        Some(true),
+        IriNormalizationMode::default(),
+        &mut output,
+    );
+
+    assert!(result.is_ok());
+    let output_str = String::from_utf8(output.into_inner()).unwrap();
+    // The predicate is colorized, so it's split across separate escape
+    // sequences and no longer appears as one contiguous "foaf:name" run.
+    assert!(output_str.contains('\u{1b}'));
+    assert!(!output_str.contains("foaf:name"));
 }
 
 #[test]

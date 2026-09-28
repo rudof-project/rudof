@@ -2,7 +2,10 @@ use crate::{Result, Rudof, errors::ShExError, formats::ShExFormat, types::ShExSt
 use rudof_rdf::rdf_core::vocabs::{RdfVocabulary, ShexRVocab};
 use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
-use rudof_viz::{DiagramScope, ImageFormat, VizEngine};
+use rudof_viz::VizEngine;
+#[cfg(feature = "conversion")]
+use rudof_viz::{DiagramScope, ImageFormat};
+#[cfg(feature = "conversion")]
 use shapes_converter::ShEx2Uml;
 use shex_ast::ShExFormatter;
 use shex_ast::ShapeLabelIdx;
@@ -11,7 +14,9 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ShapeSelector;
 use shex_ast::shexr::shexr_builder::ShExRBuilder;
-use std::{io, time::Instant};
+use std::io;
+#[cfg(not(target_family = "wasm"))]
+use std::time::Instant;
 
 pub fn serialize_shex_schema<W: io::Write>(
     rudof: &Rudof,
@@ -25,6 +30,9 @@ pub fn serialize_shex_schema<W: io::Write>(
     viz_engine: Option<&VizEngine>,
     writer: &mut W,
 ) -> Result<()> {
+    // `Instant` is not available on wasm (calling it panics), where the elapsed
+    // time is not shown.
+    #[cfg(not(target_family = "wasm"))]
     let timer = Instant::now();
 
     let (shape_label, show_schema, show_statistics, show_dependencies, show_time, show_colors, shex_format) =
@@ -59,10 +67,13 @@ pub fn serialize_shex_schema<W: io::Write>(
         serialize_dependencies(rudof, writer)?;
     }
 
+    #[cfg(not(target_family = "wasm"))]
     if show_time {
         writeln!(writer, "elapsed: {:.05?} sec", timer.elapsed().as_secs_f64())
             .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
     }
+    #[cfg(target_family = "wasm")]
+    let _ = show_time;
 
     Ok(())
 }
@@ -250,53 +261,89 @@ fn serialize_schema(
             .into());
         },
         ShExFormat::PlantUML | ShExFormat::Svg | ShExFormat::Png => {
-            let shex_schema = require_shex_schema()?;
-            let mut converter = ShEx2Uml::new(rudof.config.shex2uml());
-            converter
-                .convert(shex_schema)
-                .map_err(|e| ShExError::FailedSerializingShExSchema {
-                    format: shex_format.to_string(),
-                    error: e.to_string(),
-                })?;
-            let scope = if shape_label.is_empty() {
-                DiagramScope::all()
-            } else {
-                DiagramScope::neighs(shape_label)
-            };
-            match shex_format {
-                ShExFormat::PlantUML => {
-                    converter
-                        .as_plantuml(writer, &scope)
-                        .map_err(|e| ShExError::FailedSerializingShExSchema {
-                            format: shex_format.to_string(),
-                            error: e.to_string(),
-                        })?;
-                },
-                ShExFormat::Svg | ShExFormat::Png => {
-                    let image_format = if matches!(shex_format, ShExFormat::Svg) {
-                        ImageFormat::Svg
-                    } else {
-                        ImageFormat::Png
-                    };
-                    converter
-                        .as_image(
-                            writer,
-                            image_format,
-                            &scope,
-                            viz_engine,
-                            rudof.config.shex2uml().plantuml_path(),
-                        )
-                        .map_err(|e| ShExError::FailedSerializingShExSchema {
-                            format: shex_format.to_string(),
-                            error: e.to_string(),
-                        })?;
-                },
-                _ => unreachable!(),
-            }
+            serialize_uml(
+                rudof,
+                require_shex_schema()?,
+                shex_format,
+                shape_label,
+                viz_engine,
+                writer,
+            )?;
         },
     }
 
     Ok(())
+}
+
+/// Serializes the schema as a PlantUML class diagram, or renders it as an image.
+#[cfg(feature = "conversion")]
+fn serialize_uml(
+    rudof: &Rudof,
+    shex_schema: &shex_ast::Schema,
+    shex_format: ShExFormat,
+    shape_label: &str,
+    viz_engine: VizEngine,
+    writer: &mut impl io::Write,
+) -> Result<()> {
+    let mut converter = ShEx2Uml::new(rudof.config.shex2uml());
+    converter
+        .convert(shex_schema)
+        .map_err(|e| ShExError::FailedSerializingShExSchema {
+            format: shex_format.to_string(),
+            error: e.to_string(),
+        })?;
+    let scope = if shape_label.is_empty() {
+        DiagramScope::all()
+    } else {
+        DiagramScope::neighs(shape_label)
+    };
+    match shex_format {
+        ShExFormat::PlantUML => {
+            converter
+                .as_plantuml(writer, &scope)
+                .map_err(|e| ShExError::FailedSerializingShExSchema {
+                    format: shex_format.to_string(),
+                    error: e.to_string(),
+                })?;
+        },
+        ShExFormat::Svg | ShExFormat::Png => {
+            let image_format = if matches!(shex_format, ShExFormat::Svg) {
+                ImageFormat::Svg
+            } else {
+                ImageFormat::Png
+            };
+            converter
+                .as_image(
+                    writer,
+                    image_format,
+                    &scope,
+                    viz_engine,
+                    rudof.config.shex2uml().plantuml_path(),
+                )
+                .map_err(|e| ShExError::FailedSerializingShExSchema {
+                    format: shex_format.to_string(),
+                    error: e.to_string(),
+                })?;
+        },
+        _ => unreachable!(),
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "conversion"))]
+fn serialize_uml(
+    _rudof: &Rudof,
+    _shex_schema: &shex_ast::Schema,
+    shex_format: ShExFormat,
+    _shape_label: &str,
+    _viz_engine: VizEngine,
+    _writer: &mut impl io::Write,
+) -> Result<()> {
+    Err(ShExError::FailedSerializingShExSchema {
+        format: shex_format.to_string(),
+        error: "UML diagrams need the `conversion` feature of rudof_lib".to_string(),
+    }
+    .into())
 }
 
 fn serialize_shape<W: io::Write>(rudof: &Rudof, shape_label: &str, writer: &mut W) -> Result<()> {

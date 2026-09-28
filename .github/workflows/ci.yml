@@ -44,6 +44,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run cargo check
         run: cargo check --workspace
+      # rudof_lib without its optional subsystems (see its Cargo features)
+      - name: Run cargo check on rudof_lib without optional features
+        run: cargo check -p rudof_lib --all-targets --no-default-features --features sparql
 
   check-wasm:
     name: Check wasm
@@ -58,6 +61,14 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run cargo check
         run: cargo check --workspace --target wasm32-unknown-unknown
+      # Feature unification turns `shacl/sparql` on in the workspace check above,
+      # so check the configurations used by the wasm bindings separately.
+      - name: Run cargo check on shacl without sparql
+        run: cargo check -p shacl --no-default-features --target wasm32-unknown-unknown
+      - name: Run cargo check on the wasm bindings
+        run: cargo check -p rudof_wasm --all-targets --target wasm32-unknown-unknown
+      - name: Run cargo check on the wasm bindings without optional features
+        run: cargo check -p rudof_wasm --all-targets --target wasm32-unknown-unknown --no-default-features
 
   rustfmt:
     name: Rustfmt
@@ -116,8 +127,41 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - name: Install wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli
+        # The CLI version must match the `wasm-bindgen` crate in Cargo.lock
+        run: cargo install wasm-bindgen-cli --locked --version "$(sed -n '/^name = "wasm-bindgen"$/{n;s/version = "\(.*\)"/\1/p}' Cargo.lock)"
       - name: Run cargo test
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
         run: cargo test --workspace --target wasm32-unknown-unknown --lib --tests
+
+  wasm-bindings:
+    name: Wasm bindings
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-bindgen-cli
+        # The CLI version must match the `wasm-bindgen` crate in Cargo.lock
+        run: cargo install wasm-bindgen-cli --locked --version "$(sed -n '/^name = "wasm-bindgen"$/{n;s/version = "\(.*\)"/\1/p}' Cargo.lock)"
+      - name: Run the validation tests on wasm
+        env:
+          CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+        run: cargo test -p rudof_wasm --target wasm32-unknown-unknown
+      - name: Run the validation tests on wasm without optional features
+        env:
+          CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+        run: cargo test -p rudof_wasm --target wasm32-unknown-unknown --no-default-features
+      - name: Build the npm package
+        run: bindings/wasm/build.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run the Node.js example
+        run: node bindings/wasm/examples/node.cjs
+      - name: Install and test the packed npm package
+        run: bindings/wasm/npm/smoke-test.sh

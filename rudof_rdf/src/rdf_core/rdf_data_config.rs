@@ -94,7 +94,7 @@ impl RdfDataConfig {
 
     /// Parses `toml_str` as an [`EndpointDescription`] and registers it under
     /// its own `name` field (returned on success), applying the same
-    /// prefix-display styling (`without_default_colors().with_hyperlink(true)`)
+    /// prefix-display styling (`with_default_colors().with_hyperlink(true)`)
     /// the built-in endpoints have always had — `PrefixMap`'s TOML
     /// (de)serialization only round-trips the prefix→IRI pairs themselves,
     /// not that styling, so every endpoint loaded this way (built-in or
@@ -108,7 +108,7 @@ impl RdfDataConfig {
             path_name: source.to_string(),
             error,
         })?;
-        endpoint.prefixmap = endpoint.prefixmap.without_default_colors().with_hyperlink(true);
+        endpoint.prefixmap = endpoint.prefixmap.with_default_colors().with_hyperlink(true);
         let name = endpoint.name().to_string();
         self.endpoints.insert(name.clone(), endpoint);
         Ok(name)
@@ -225,18 +225,20 @@ impl Default for RdfDataConfig {
     fn default() -> Self {
         let mut config = Self::new();
         for file in ENDPOINTS_DIR.files() {
-            let path = file.path().display().to_string();
+            let path = file.path();
+            if path.extension().and_then(|ext| ext.to_str()) != Some("toml") {
+                continue; // We ignore non-TOML files in the endpoints directory, just in case.
+            }
+            let path = path.display().to_string();
             let toml_str = file
                 .contents_utf8()
                 .unwrap_or_else(|| panic!("bundled endpoint file '{path}' is not valid UTF-8"));
-            // These are compile-time-embedded, maintainer-controlled files —
-            // a parse failure here is a build/CI-time bug (a bad edit to
-            // `rudof_rdf/endpoints/*.toml`), not something an end user can
-            // trigger at runtime, so panicking with a clear message beats
-            // threading a `Result` through `Default`.
             config
                 .register_endpoint_description(&path, toml_str)
-                .unwrap_or_else(|err| panic!("bundled endpoint file '{path}' failed to parse: {err}"));
+                .unwrap_or_else(|err| {
+                    tracing::info!("bundled endpoint file '{path}' failed to parse: {err}");
+                    err.to_string()
+                });
         }
         config
     }

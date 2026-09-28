@@ -14,10 +14,8 @@ categories = [
     "data-structures",
 ]
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
+[dependencies]
 anyhow.workspace = true
-clap.workspace = true
-clientele.workspace = true
 colored.workspace = true
 csv.workspace = true
 either.workspace = true
@@ -29,6 +27,11 @@ serde_json.workspace = true
 thiserror.workspace = true
 time.workspace = true
 tracing.workspace = true
+
+# Only used by the command line interface (`cli` module)
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+clap.workspace = true
+clientele.workspace = true
 
 [dev-dependencies]
 tracing-test.workspace = true

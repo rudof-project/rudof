@@ -23,6 +23,16 @@ pub fn serialize_data<W: io::Write>(
     }
 }
 
+#[cfg(not(feature = "pgschema"))]
+fn serialize_pg_data<W: io::Write>(
+    _rudof: &mut Rudof,
+    _result_data_format: ResultDataFormat,
+    _writer: &mut W,
+) -> Result<()> {
+    Err(Box::new(DataError::NoPgDataLoaded))?
+}
+
+#[cfg(feature = "pgschema")]
 fn serialize_pg_data<W: io::Write>(
     rudof: &mut Rudof,
     result_data_format: ResultDataFormat,
@@ -35,13 +45,20 @@ fn serialize_pg_data<W: io::Write>(
     }
 
     let graph = data.unwrap_pg_mut();
-
-    write!(writer, "{graph}").map_err(|e| {
+    let failed = |error: String| {
         Box::new(DataError::FailedSerializingData {
             format: result_data_format.to_string(),
-            error: e.to_string(),
+            error,
         })
-    })?;
+    };
+
+    // Property graphs are written as JSON with `json`, and otherwise in
+    // YARS-PG, the syntax they are read from (RDF formats don't apply).
+    let serialized = match result_data_format {
+        ResultDataFormat::Json => serde_json::to_string_pretty(&graph.to_json()).map_err(|e| failed(e.to_string()))?,
+        _ => graph.to_yarspg(),
+    };
+    writeln!(writer, "{serialized}").map_err(|e| failed(e.to_string()))?;
 
     Ok(())
 }
@@ -101,7 +118,7 @@ fn serialize_rdf_data<W: io::Write>(
                     result_data_format.try_into()?,
                     &DiagramScope::all(),
                     viz_engine,
-                    rudof.config.shex2uml().plantuml_path(),
+                    plantuml_path(rudof),
                 )
                 .map_err(|e| {
                     Box::new(DataError::FailedSerializingData {
@@ -183,6 +200,21 @@ fn write_json_scalar<W: io::Write>(writer: &mut W, text: &str, colorize: bool, c
     } else {
         write!(writer, "{text}")
     }
+}
+
+/// The PlantUML jar used to render diagrams, configured in the `shex2uml`
+/// section of the configuration.
+#[cfg(feature = "conversion")]
+fn plantuml_path(rudof: &Rudof) -> std::path::PathBuf {
+    rudof.config.shex2uml().plantuml_path().clone()
+}
+
+/// The PlantUML jar used to render diagrams. The `shex2uml` section of the
+/// configuration needs the `conversion` feature, so this is its default: the
+/// `PLANTUML` environment variable, or `plantuml.jar`.
+#[cfg(not(feature = "conversion"))]
+fn plantuml_path(_rudof: &Rudof) -> std::path::PathBuf {
+    std::env::var("PLANTUML").map_or_else(|_| "plantuml.jar".into(), Into::into)
 }
 
 #[cfg(test)]

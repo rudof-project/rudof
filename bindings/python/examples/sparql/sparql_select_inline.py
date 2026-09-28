@@ -1,9 +1,16 @@
-from pyrudof import RDFFormat, Rudof, RudofConfig
+"""Run an inline SPARQL SELECT query against loaded RDF data.
 
-rudof = Rudof(RudofConfig())
-rudof.read_data("person.ttl", RDFFormat.Turtle)
+``run_query`` returns a ``QueryResults`` object: the bindings are reachable as
+data, without re-parsing rudof's own serialized output.
+"""
 
-query = """
+from pathlib import Path
+
+from pyrudof import RDFFormat, Rudof
+
+HERE = Path(__file__).resolve().parent.parent
+
+QUERY = """
 PREFIX : <http://example.org/>
 
 SELECT ?person ?name
@@ -12,6 +19,19 @@ WHERE {
 }
 """
 
-rudof.read_query(query)
-rudof.run_query()
-results = rudof.serialize_query_results()
+
+def main() -> None:
+    with Rudof() as rudof:
+        rudof.read_data(HERE / "person.ttl", RDFFormat.Turtle)
+        rudof.read_query(QUERY)
+
+        results = rudof.run_query()
+
+        print(f"variables: {results.variables}")
+        print(f"rows: {len(results)}")
+        for row in results:
+            print(row)
+
+
+if __name__ == "__main__":
+    main()

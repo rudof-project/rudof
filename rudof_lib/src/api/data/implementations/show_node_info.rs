@@ -22,7 +22,7 @@ pub fn show_node_info<W: io::Write>(
     iri_mode: IriNormalizationMode,
     writer: &mut W,
 ) -> Result<()> {
-    let prefixmap = data_prefixmap(rudof, show_colors.unwrap_or(true))?;
+    let prefixmap = data_prefixmap(rudof, show_colors.unwrap_or(false))?;
     let neighborhood = node_neighborhood(rudof, node, predicates, mode, depth, iri_mode)?;
 
     let mut printer = TreePrinter::new(&prefixmap);
@@ -38,7 +38,7 @@ fn data_prefixmap(rudof: &Rudof, show_colors: bool) -> Result<PrefixMap> {
     };
     let prefixmap = rdf.prefixmap().unwrap_or_default();
     Ok(if show_colors {
-        prefixmap.without_default_colors()
+        prefixmap.with_default_colors()
     } else {
         prefixmap.without_colors()
     })

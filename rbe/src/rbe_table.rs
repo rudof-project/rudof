@@ -247,13 +247,12 @@ where
                     &Values::from(&values),
                 )))
             } else {
-                let result = Ok(MatchTableIter::Empty(EmptyIter::new(
+                //tracing::trace!("No candidates and the rbe is not nullable");
+                Ok(MatchTableIter::Empty(EmptyIter::new(
                     &self.rbe,
                     self,
                     &Values::from(&values),
-                )));
-                //tracing::trace!("Result of matches: {:?}", result);
-                result
+                )))
             }
         } else {
             /*tracing::trace!(

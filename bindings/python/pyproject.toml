@@ -1,6 +1,76 @@
 [build-system]
-requires = ["maturin>=1.0, <2.0"]
+requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
+[project]
+name = "pyrudof"
+description = "Semantic-less tool for the Semantic Web"
+readme = "README.md"
+license = { text = "MIT OR Apache-2.0" }
+requires-python = ">=3.10"
+dynamic = ["version", "authors"]
+keywords = [
+    "RDF",
+    "Semantic Web",
+    "Knowledge Graphs",
+    "Data Models",
+    "Data Validation",
+    "ShEx",
+    "SHACL",
+    "SPARQL",
+    "DCTAP",
+    "Property Graphs",
+    "PGSchema",
+]
+# classifiers list: https://pypi.org/classifiers/
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://rudof-project.github.io/rudof"
+Documentation = "https://rudof.readthedocs.io"
+Repository = "https://github.com/rudof-project/rudof"
+Changelog = "https://github.com/rudof-project/rudof/blob/master/CHANGELOG.md"
+
+[project.optional-dependencies]
+test = ["pytest~=8.0", "mypy~=1.0", 'tomli; python_version < "3.11"']
+docs = ["sphinx~=8.0", "sphinxawesome-theme", "sphinx-lint", 'tomli; python_version < "3.11"']
+dev = ["pyrudof[test,docs]", "maturin>=1.0,<2.0"]
+
 [tool.maturin]
-features = ["pyo3/extension-module", "pyo3/experimental-inspect"]
+features = ["pyo3/extension-module"]
+python-source = "python"
+module-name = "pyrudof._pyrudof"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["python/pyrudof", "examples", "tests"]
+mypy_path = "python"
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "pyrudof._pyrudof"
+disallow_any_generics = false
+
+[[tool.mypy.overrides]]
+module = "tomli"
+ignore_missing_imports = true

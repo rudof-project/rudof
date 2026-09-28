@@ -1,69 +1,77 @@
 """
-Registry of documented examples loaded from examples.toml and the .py source files.
+Registry of documented examples, loaded from ``examples.toml`` and the ``.py`` sources.
 """
 
-import tomllib
+import sys
 from pathlib import Path
-from typing import TypedDict, Optional, List
+from typing import Any, Optional, TypedDict
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 
 class ExampleFiles(TypedDict, total=False):
-    """Files associated with an example (relative to bindings/python/examples/)."""
+    """Files associated with an example, relative to ``bindings/python/examples/``."""
+
     schema: str
     data: str
     shapemap: Optional[str]
     query: Optional[str]
     config: Optional[str]
+    map_state: Optional[str]
 
 
 class Example(TypedDict):
     """Metadata for a single example."""
-    code: str              # Read from the .py file at load time
+
+    code: str
     files: ExampleFiles
     description: str
     category: str
     title: str
     source_file: str
     expected_output: list[str]
-    skip_test: bool        # True → document but do not run in test suite
+    skip_test: bool
 
 
-# ---------------------------------------------------------------------------
-# Locate the examples directory (works from bindings/python/tests/ and bindings/python/docs/)
-# ---------------------------------------------------------------------------
-_EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
-_MANIFEST_PATH = _EXAMPLES_DIR / "examples.toml"
+EXAMPLES_DIR = Path(__file__).resolve().parent
+_MANIFEST_PATH = EXAMPLES_DIR / "examples.toml"
 
 
-def _load_manifest() -> dict:
-    """Parse examples.toml and return the raw TOML dict."""
+def _load_manifest() -> dict[str, Any]:
+    """Parse ``examples.toml`` and return the raw TOML dict."""
     with open(_MANIFEST_PATH, "rb") as f:
-        return tomllib.load(f)
+        manifest: dict[str, Any] = tomllib.load(f)
+    return manifest
 
 
-def _validate_entry(entry: dict) -> None:
-    """Validate a single [[example]] entry from examples.toml."""
+def _validate_entry(entry: dict[str, Any]) -> None:
+    """Validate a single ``[[example]]`` entry from ``examples.toml``."""
     key = entry.get("key", "<missing-key>")
 
     source_file = entry.get("source_file")
     if not source_file:
         raise ValueError(f"Example '{key}' is missing required field 'source_file'")
 
-    source_path = _EXAMPLES_DIR / source_file
+    source_path = EXAMPLES_DIR / source_file
     if not source_path.exists():
         raise ValueError(f"Example '{key}' source_file not found: {source_file}")
 
     expected_output = entry.get("expected_output")
     if not isinstance(expected_output, list):
+        raise ValueError(f"Example '{key}' must define an 'expected_output' list")
+
+    if not entry.get("skip_test", False) and not expected_output:
         raise ValueError(
-            f"Example '{key}' must define a non-empty 'expected_output' list"
+            f"Example '{key}' has an empty 'expected_output': a runnable example "
+            f"must assert something beyond 'did not crash'"
         )
 
     for i, item in enumerate(expected_output):
         if not isinstance(item, str) or not item.strip():
-            raise ValueError(
-                f"Example '{key}' has invalid expected_output[{i}]: {item!r}"
-            )
+            raise ValueError(f"Example '{key}' has invalid expected_output[{i}]: {item!r}")
 
     files = entry.get("files", {})
     if not isinstance(files, dict):
@@ -72,19 +80,20 @@ def _validate_entry(entry: dict) -> None:
     for field_name, rel_path in files.items():
         if rel_path is None:
             continue
-        path = _EXAMPLES_DIR / rel_path
-        if not path.exists():
+        if not (EXAMPLES_DIR / rel_path).exists():
             raise ValueError(
                 f"Example '{key}' references missing file '{field_name}': {rel_path}"
             )
 
 
-def _build_catalog() -> tuple[dict[str, Example], dict, list[str]]:
-    """Build the examples catalog, categories info, and category order."""
+def _build_catalog() -> tuple[dict[str, Example], dict[str, Any], list[str]]:
+    """Build the examples catalog, the categories info, and the category order."""
     manifest = _load_manifest()
 
-    categories = manifest.get("categories", {})
-    category_order = manifest.get("category_order", {}).get("order", sorted(categories.keys()))
+    categories: dict[str, Any] = manifest.get("categories", {})
+    category_order: list[str] = manifest.get("category_order", {}).get(
+        "order", sorted(categories.keys())
+    )
 
     catalog: dict[str, Example] = {}
     for entry in manifest.get("example", []):
@@ -92,8 +101,7 @@ def _build_catalog() -> tuple[dict[str, Example], dict, list[str]]:
 
         key = entry["key"]
         source_file = entry["source_file"]
-        code_path = _EXAMPLES_DIR / source_file
-        code = code_path.read_text(encoding="utf-8")
+        code = (EXAMPLES_DIR / source_file).read_text(encoding="utf-8")
 
         catalog[key] = Example(
             code=code,
@@ -111,10 +119,6 @@ def _build_catalog() -> tuple[dict[str, Example], dict, list[str]]:
 
 EXAMPLES_CATALOG, CATEGORIES_INFO, CATEGORY_ORDER = _build_catalog()
 
-
-# ---------------------------------------------------------------------------
-# Helper functions
-# ---------------------------------------------------------------------------
 
 def get_examples_by_category(category: str) -> dict[str, Example]:
     """Get all examples of a specific category."""
@@ -145,16 +149,15 @@ def get_generate_examples() -> dict[str, Example]:
     return get_examples_by_category("generate")
 
 
-def get_all_categories() -> List[str]:
-    """Get category keys in the order defined in examples.toml."""
+def get_all_categories() -> list[str]:
+    """Get category keys in the order defined in ``examples.toml``."""
     return list(CATEGORY_ORDER)
 
 
-def get_category_info(category: str) -> dict:
-    """Return {title, description} for a category, with sensible defaults."""
+def get_category_info(category: str) -> dict[str, str]:
+    """Return ``{title, description}`` for a category, with sensible defaults."""
     info = CATEGORIES_INFO.get(category, {})
     return {
         "title": info.get("title", category.upper()),
         "description": info.get("description", ""),
     }
-

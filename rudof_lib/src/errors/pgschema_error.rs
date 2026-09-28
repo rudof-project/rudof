@@ -38,4 +38,8 @@ pub enum PgSchemaError {
     /// No Property Graph schema validation results available.
     #[error("No Property Graph schema validation results available")]
     NoValidationResultsAvailable,
+
+    /// Failed to serialize validation results to the specified format.
+    #[error("Failed to serialize Property Graph schema validation results to {format}: {error}")]
+    FailedSerializingValidationResults { format: String, error: String },
 }

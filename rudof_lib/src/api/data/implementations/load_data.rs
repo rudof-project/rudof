@@ -6,12 +6,15 @@ use crate::{
     types::Data,
     utils::{PrefixDirective, default_prefix_header, get_base_iri},
 };
+#[cfg(feature = "pgschema")]
 use pgschema::parser::pg_builder::PgBuilder;
 use prefixmap::PrefixMap;
 use regex::Regex;
 use rudof_iri::{IriS, MimeType};
 use rudof_rdf::rdf_core::BuildRDF;
-use rudof_rdf::rdf_impl::{EndpointStrategy, OxigraphEndpoint};
+use rudof_rdf::rdf_impl::EndpointStrategy;
+#[cfg(not(target_family = "wasm"))]
+use rudof_rdf::rdf_impl::OxigraphEndpoint;
 use sparql_service::RdfData;
 use std::io::Read;
 use std::{io, str::FromStr};
@@ -62,6 +65,15 @@ fn init_defaults(
     ))
 }
 
+#[cfg(not(feature = "pgschema"))]
+fn load_data_from_specs_pg(_rudof: &mut Rudof, _data: &[InputSpec], _merge: bool) -> Result<()> {
+    Err(Box::new(DataError::DataSourceSpec {
+        message: "Property graph data needs the `pgschema` feature of rudof_lib".to_string(),
+    })
+    .into())
+}
+
+#[cfg(feature = "pgschema")]
 fn load_data_from_specs_pg(rudof: &mut Rudof, data: &[InputSpec], merge: bool) -> Result<()> {
     for input_spec in data {
         let mut data_reader = input_spec
@@ -238,6 +250,7 @@ fn read_rdf_data<R: Read>(
     Ok(())
 }
 
+#[cfg(feature = "pgschema")]
 fn read_pg_data<R: io::Read>(rudof: &mut Rudof, data_reader: &mut R, source_name: &str, merge: bool) -> Result<()> {
     if !merge || rudof.data.is_none() || matches!(rudof.data, Some(ref data) if data.is_rdf()) {
         rudof.data = Some(Data::empty_pg());
@@ -266,6 +279,7 @@ fn read_pg_data<R: io::Read>(rudof: &mut Rudof, data_reader: &mut R, source_name
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn load_data_from_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint_strategy: EndpointStrategy) -> Result<()> {
     let rdf_data = init_rdf_data_with_config(rudof)?;
     rudof.data = Some(rdf_data);
@@ -277,6 +291,7 @@ fn load_data_from_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint_strat
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<OxigraphEndpoint> {
     let rdf_data = rudof.data.as_mut().unwrap().unwrap_rdf_mut();
 
@@ -316,6 +331,7 @@ fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<OxigraphEn
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn use_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint: OxigraphEndpoint) {
     rudof
         .data
@@ -325,7 +341,21 @@ fn use_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint: OxigraphEndpoin
         .use_endpoint(endpoint_str, endpoint);
 }
 
+#[cfg(target_family = "wasm")]
+fn load_data_from_endpoint(_rudof: &mut Rudof, endpoint_str: &str, _endpoint_strategy: EndpointStrategy) -> Result<()> {
+    Err(Box::new(DataError::DataSourceSpec {
+        message: format!("Cannot load data from endpoint '{endpoint_str}': SPARQL endpoints are not supported on wasm"),
+    })
+    .into())
+}
+
 fn init_rdf_data_with_config(rudof: &Rudof) -> Result<Data> {
+    // The SPARQL endpoints declared in the configuration can't be used on wasm.
+    #[cfg(target_family = "wasm")]
+    let _ = rudof;
+    #[cfg(target_family = "wasm")]
+    let rdf_data = RdfData::new();
+    #[cfg(not(target_family = "wasm"))]
     let rdf_data = RdfData::new()
         .with_rdf_data_config(rudof.config.rdf_data())
         .map_err(|error| {
@@ -455,6 +485,7 @@ pub fn load_data_via_qlever(
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn normalize_endpoint_id(value: &str) -> String {
     let trimmed = value.trim().trim_end_matches('/');
     let without_scheme = trimmed

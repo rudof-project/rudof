@@ -34,12 +34,13 @@ pub fn run_query(rudof: &mut Rudof, result_query_format: Option<&ResultQueryForm
 
             rudof.query_results = Some(QueryResult::Select(results));
         },
-        QueryType::Construct => {
+        // Both return a graph, which `query_construct` serializes.
+        QueryType::Construct | QueryType::Describe => {
             let results = data
                 .unwrap_rdf_mut()
                 .query_construct(&query.serialize(), &result_query_format.into())
                 .map_err(|error| QueryError::FailedExecutingQuery {
-                    query_type: "construct".to_string(),
+                    query_type: query_type.to_string(),
                     error: error.to_string(),
                 })?;
 
@@ -54,9 +55,6 @@ pub fn run_query(rudof: &mut Rudof, result_query_format: Option<&ResultQueryForm
             })?;
 
             rudof.query_results = Some(QueryResult::Ask(results));
-        },
-        QueryType::Describe => {
-            todo!("Implement DESCRIBE query execution")
         },
     }
 

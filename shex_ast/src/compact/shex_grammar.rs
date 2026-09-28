@@ -238,7 +238,7 @@ fn shape_atom<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
         move |i| {
             alt((
                 non_lit_opt_shape_or_ref(),
-                lit_node_constraint_shape_expr(),
+                lit_node_constraint_annotated_shape_expr(),
                 shape_opt_non_lit,
                 paren_shape_expr,
                 dot,
@@ -253,6 +253,10 @@ fn non_lit_opt_shape_or_ref<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr>
     map_error(
         move |i| {
             let (i, (non_lit, _, maybe_se)) = (non_lit_node_constraint, tws0, cut(opt(shape_or_ref()))).parse(i)?;
+            let (i, non_lit) = match maybe_se {
+                None => node_constraint_annotations_sem_acts(non_lit, i)?,
+                Some(_) => (i, non_lit),
+            };
             let nc = ShapeExpr::node_constraint(non_lit);
             let se_result = match maybe_se {
                 None => nc,
@@ -338,6 +342,28 @@ fn lit_node_constraint_shape_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Shap
         },
         || ShExParseError::LitNodeConstraint,
     )
+}
+
+/// `litNodeConstraint annotation* semanticActions`, used only at the
+/// (non-inline) `shapeAtom` level so that inside a triple constraint the
+/// trailing annotations and semantic actions still belong to the triple
+/// constraint.
+fn lit_node_constraint_annotated_shape_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
+    map_error(
+        move |i| {
+            let (i, nc) = lit_node_constraint()(i)?;
+            let (i, nc) = node_constraint_annotations_sem_acts(nc, i)?;
+            Ok((i, ShapeExpr::NodeConstraint(nc)))
+        },
+        || ShExParseError::LitNodeConstraint,
+    )
+}
+
+/// Parses the optional `annotation* semanticActions` that may follow a
+/// top-level node constraint and attaches them to it.
+fn node_constraint_annotations_sem_acts(nc: NodeConstraint, i: Span) -> IRes<NodeConstraint> {
+    let (i, (_, annotations, _, sem_actions)) = (tws0, annotations, tws0, semantic_actions).parse(i)?;
+    Ok((i, nc.with_annotations(Some(annotations)).with_sem_acts(sem_actions)))
 }
 
 fn paren_shape_expr(i: Span) -> IRes<ShapeExpr> {

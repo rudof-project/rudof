@@ -1,29 +1,21 @@
-Data Generation
-=====================================
+Data generation
+===============
 
 .. py:currentmodule:: pyrudof
 
-``pyrudof`` includes bindings for ``rudof_generate``, a module that generates
-synthetic RDF data from ShEx or SHACL schemas. This is useful for testing,
-benchmarking, and creating sample datasets.
+``pyrudof`` includes bindings for ``rudof_generate``, which produces synthetic RDF data
+from a ShEx or SHACL schema.
 
+The module offers:
 
-Overview
---------
+* **Schema-driven generation** — data that conforms to your ShEx or SHACL schemas.
+* **Reproducible results** — seed the generator for deterministic output.
+* **Parallel processing** — generate large datasets efficiently.
+* **Quality control** — from fast random filler to realistic correlated data.
+* **Flexible output** — Turtle and N-Triples, optionally compressed.
 
-The data generation module provides:
-
-* **Schema-driven generation**: Create data that conforms to your ShEx or SHACL schemas
-* **Reproducible results**: Use seeds for deterministic generation
-* **Parallel processing**: Generate large datasets efficiently
-* **Quality control**: Configure data quality from simple to complex
-* **Flexible output**: Support for Turtle and N-Triples formats
-
-
-Basic Usage
+Basic usage
 -----------
-
-The simplest way to generate data:
 
 .. code-block:: python
 
@@ -35,28 +27,36 @@ The simplest way to generate data:
     config.set_output_path("output.ttl")
     config.set_output_format(pyrudof.OutputFormat.Turtle)
 
-    # 2. Create generator
+    # 2. Create the generator
     generator = pyrudof.DataGenerator(config)
 
-    # 3. Load schema and generate
+    # 3. Load a schema and generate
     generator.run("schema.shex")
 
+Anything that goes wrong raises :class:`GenerateError`:
 
-Step-by-Step Generation
-~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: python
 
-You can also load schemas and generate data in separate steps:
+    from pyrudof import GenerateError
+
+    try:
+        generator.run("schema.shex")
+    except GenerateError as e:
+        print(f"generation failed: {e}")
+
+Step by step
+~~~~~~~~~~~~
+
+Loading and generating can also be separate steps:
 
 .. code-block:: python
 
     generator = pyrudof.DataGenerator(config)
 
-    # Load schema (choose one method)
+    # Load the schema (choose one)
     generator.load_shex_schema("schema.shex")
-    # OR
     generator.load_shacl_schema("shapes.ttl")
-    # OR auto-detect format
-    generator.load_schema_auto("schema_file")
+    generator.load_schema_auto("schema_file")   # detect the format
 
     # Then generate
     generator.generate()
@@ -64,9 +64,6 @@ You can also load schemas and generate data in separate steps:
 
 Configuration
 -------------
-
-Configuration from Python
-~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -82,7 +79,7 @@ Configuration from Python
 
     # Data quality
     config.set_data_quality(pyrudof.DataQuality.High)
-    config.set_locale("en")  # Use English locale for generated text
+    config.set_locale("en")
 
     # Cardinality handling
     config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
@@ -92,11 +89,15 @@ Configuration from Python
     config.set_batch_size(100)
     config.set_parallel_writing(True)
 
+A configuration can also be loaded from a file with
+:meth:`GeneratorConfig.from_toml_file` or :meth:`GeneratorConfig.from_json_file`, and
+written back out with :meth:`GeneratorConfig.to_toml_file`.
+:meth:`GeneratorConfig.validate` checks it before use, and :meth:`GeneratorConfig.show`
+renders it for logging.
 
-Reproducible Generation
+
+Reproducible generation
 -----------------------
-
-Use a seed for reproducible results:
 
 .. code-block:: python
 
@@ -107,54 +108,35 @@ Use a seed for reproducible results:
     generator = pyrudof.DataGenerator(config)
     generator.run("schema.shex")
 
-    # Running again with the same seed produces identical output
-
+    # Running again with the same seed produces identical output.
 
 .. note::
-   Setting a seed ensures that the same configuration always generates the same data,
-   which is essential for reproducible testing and benchmarking.
+   A seed makes the same configuration always generate the same data, which is what makes
+   generated data usable as a test fixture or a benchmark input.
 
 
-Cardinality Strategies
+Cardinality strategies
 ----------------------
 
-Control how cardinalities are handled when generating relationships:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 80
-
-   * - Strategy
-     - Description
-   * - ``Minimum``
-     - Generate the minimum number of relationships allowed
-   * - ``Maximum``
-     - Generate the maximum number of relationships allowed
-   * - ``Random``
-     - Generate a random number within the valid range
-   * - ``Balanced``
-     - Use a balanced distribution (default, recommended)
+:class:`CardinalityStrategy` controls how many relationships are produced when a shape
+allows a range:
 
 .. code-block:: python
 
+    # Minimum relationships: faster, smaller output
+    config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Minimum)
+
+    # Maximum relationships: slower, larger output, exercises edge cases
+    config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Maximum)
+
+    # Balanced distribution across the range (the default)
     config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
 
 
-Example with different strategies:
-
-.. code-block:: python
-
-    # Minimum relationships (faster, smaller output)
-    config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Minimum)
-
-    # Maximum relationships (slower, larger output, tests edge cases)
-    config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Maximum)
-
-
-Data Quality Levels
+Data quality levels
 -------------------
 
-Configure the realism and complexity of generated data:
+:class:`DataQuality` trades generation speed against realism:
 
 .. list-table::
    :header-rows: 1
@@ -162,7 +144,7 @@ Configure the realism and complexity of generated data:
 
    * - Level
      - Characteristics
-     - Use Case
+     - Use case
    * - ``Low``
      - Fast, simple random data
      - Quick testing, performance benchmarks
@@ -175,75 +157,63 @@ Configure the realism and complexity of generated data:
 
 .. code-block:: python
 
-    # High-quality data with correlations
     config.set_data_quality(pyrudof.DataQuality.High)
-    config.set_locale("es")  # Spanish locale
-
+    config.set_locale("es")
 
 .. tip::
-   Use ``DataQuality.Low`` for performance testing and ``DataQuality.High``
-   when you need realistic data for demonstrations or integration testing.
+   Use ``DataQuality.Low`` for performance testing and ``DataQuality.High`` when the data
+   has to look plausible to a person.
 
 
-Parallel Processing
+Parallel processing
 -------------------
-
-Enable parallel processing for faster generation of large datasets:
 
 .. code-block:: python
 
     config = pyrudof.GeneratorConfig()
     config.set_entity_count(10000)
 
-    # Enable parallelization
-    config.set_worker_threads(4)  # Use 4 CPU cores
-    config.set_batch_size(100)    # Process 100 entities per batch
-    config.set_parallel_shapes(True)   # Parallel shape processing
-    config.set_parallel_fields(True)   # Parallel field generation
-    config.set_parallel_writing(True)  # Parallel output writing
-    config.set_parallel_file_count(4)  # Write to 4 files simultaneously
+    config.set_worker_threads(4)       # use 4 CPU cores
+    config.set_batch_size(100)         # 100 entities per batch
+    config.set_parallel_shapes(True)   # parallel shape processing
+    config.set_parallel_fields(True)   # parallel field generation
+    config.set_parallel_writing(True)  # parallel output writing
+    config.set_parallel_file_count(4)  # write 4 files at once
 
     generator = pyrudof.DataGenerator(config)
     generator.run("large_schema.shex")
 
-
 .. warning::
-   Using parallel writing creates multiple output files. You'll need to merge them manually if you need a single file.
+   Parallel writing produces multiple output files. Merge them yourself if you need one.
+
+The generator runs on a process-wide async runtime shared by every
+:class:`DataGenerator`, rather than one runtime per instance, so creating several
+generators does not multiply the thread pools. Generation releases the GIL for its
+duration, so it does not block other Python threads.
 
 
-Output Formats
+Output formats
 --------------
-
-Supported output formats:
-
-* **Turtle** (``OutputFormat.Turtle``) - Human-readable, compact (default)
-* **N-Triples** (``OutputFormat.NTriples``) - Line-based, simple format
 
 .. code-block:: python
 
-    # Turtle format (default)
+    # Turtle: human-readable, compact (the default)
     config.set_output_format(pyrudof.OutputFormat.Turtle)
 
-    # N-Triples format (useful for streaming processing)
+    # N-Triples: line-based, good for streaming
     config.set_output_format(pyrudof.OutputFormat.NTriples)
 
-    # Enable compression
-    config.set_compress(True)  # Creates .ttl.gz or .nt.gz
-
-    # Generate statistics file
-    config.set_write_stats(True)  # Creates output.stats.json
+    config.set_compress(True)     # write .ttl.gz / .nt.gz
+    config.set_write_stats(True)  # write output.stats.json
 
 
-Advanced Example
-----------------
-
-Complete example with all features:
+A complete example
+------------------
 
 .. code-block:: python
 
     import pyrudof
 
-    # Create configuration
     config = pyrudof.GeneratorConfig()
 
     # Generation settings
@@ -265,10 +235,8 @@ Complete example with all features:
     config.set_parallel_shapes(True)
     config.set_parallel_fields(True)
 
-    # Validate configuration
     config.validate()
 
-    # Create generator and run
     generator = pyrudof.DataGenerator(config)
     generator.run_with_format("schema.shex", pyrudof.SchemaFormat.ShEx)
 
@@ -276,10 +244,10 @@ Complete example with all features:
     print(f"Configuration: {config.show()}")
 
 
-API Reference
+API reference
 -------------
 
-Generator Configuration
+Generator configuration
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: GeneratorConfig
@@ -287,7 +255,7 @@ Generator Configuration
    :undoc-members:
    :special-members: __init__
 
-Data Generator
+Data generator
 ~~~~~~~~~~~~~~
 
 .. autoclass:: DataGenerator
@@ -295,70 +263,25 @@ Data Generator
    :undoc-members:
    :special-members: __init__
 
-Formats
-^^^^^^^^^^^^^
-
-Schema Format
-^^^^^^^^^^^^^
+Enums
+~~~~~
 
 .. autoclass:: SchemaFormat
    :members:
    :undoc-members:
 
-   Schema formats supported by the generator:
-
-   * ``SchemaFormat.ShEx`` - Shape Expressions schema
-   * ``SchemaFormat.SHACL`` - SHACL (Shapes Constraint Language) schema
-
-Output Format
-^^^^^^^^^^^^^
-
 .. autoclass:: OutputFormat
    :members:
    :undoc-members:
-
-   RDF serialization formats for generated output:
-
-   * ``OutputFormat.Turtle`` - Turtle/Terse RDF Triple Language (.ttl) - Human-readable, compact (default)
-   * ``OutputFormat.NTriples`` - N-Triples (.nt) - Line-based, simple format for streaming
-
-Cardinality Strategy
-^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: CardinalityStrategy
    :members:
    :undoc-members:
 
-   Strategies for handling cardinalities when generating relationships:
-
-   * ``CardinalityStrategy.Minimum`` - Always use minimum cardinality (fastest, smallest output)
-   * ``CardinalityStrategy.Maximum`` - Always use maximum cardinality (slowest, largest output, tests edge cases)
-   * ``CardinalityStrategy.Random`` - Random value within valid range (unpredictable distribution)
-   * ``CardinalityStrategy.Balanced`` - Balanced distribution across range (default, recommended)
-
-Data Quality
-^^^^^^^^^^^^
-
 .. autoclass:: DataQuality
    :members:
    :undoc-members:
 
-   Data quality levels controlling realism and complexity:
-
-   * ``DataQuality.Low`` - Simple random data (fastest generation, minimal realism)
-   * ``DataQuality.Medium`` - Realistic patterns (moderate speed, good for demos)
-   * ``DataQuality.High`` - Complex realistic data with correlations (slower, production-like)
-
-Entity Distribution
-^^^^^^^^^^^^^^^^^^^
-
 .. autoclass:: EntityDistribution
    :members:
    :undoc-members:
-
-   Entity distribution strategies across shapes:
-
-   * ``EntityDistribution.Equal`` - Equal distribution of entities across all shapes
-
-   .. note::
-      Currently only ``Equal`` distribution is supported.

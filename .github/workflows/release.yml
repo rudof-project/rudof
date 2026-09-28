@@ -91,11 +91,18 @@ jobs:
           NEW="${{ steps.version.outputs.new }}"
           sed -i "s/version = \"[^\"]*\"/version = \"${NEW}\"/" nix/packages.nix
 
+      - name: Update the version used by the online demo
+        if: ${{ !inputs.prerelease }}
+        run: |
+          NEW="${{ steps.version.outputs.new }}"
+          sed -i "s/^const RUDOF_VERSION = \"[^\"]*\";/const RUDOF_VERSION = \"${NEW}\";/" docs/src/demo/demo.js
+          grep -q "^const RUDOF_VERSION = \"${NEW}\";" docs/src/demo/demo.js
+
       - name: Commit and push
         run: |
           git config user.name "rudof-bot[bot]"
           git config user.email "${{ secrets.RUDOF_BOT_ID }}+rudof-bot[bot]@users.noreply.github.com"
-          git add Cargo.toml nix/packages.nix
+          git add Cargo.toml nix/packages.nix docs/src/demo/demo.js
           git commit -m "chore: release ${{ steps.version.outputs.new }} [skip ci]"
           git push
 

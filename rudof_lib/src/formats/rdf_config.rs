@@ -1,4 +1,5 @@
 use crate::errors::RdfConfigError;
+#[cfg(feature = "rdf-config")]
 use rdf_config::RdfConfigFormat as RdfConfigFormatEnum;
 use std::fmt::Display;
 use std::str::FromStr;
@@ -79,6 +80,7 @@ impl Display for ResultRdfConfigFormat {
     }
 }
 
+#[cfg(feature = "rdf-config")]
 impl From<ResultRdfConfigFormat> for RdfConfigFormatEnum {
     fn from(format: ResultRdfConfigFormat) -> Self {
         match format {

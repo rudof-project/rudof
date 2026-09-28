@@ -1,4 +1,4 @@
-use crate::{Result, Rudof, errors::PgSchemaError, formats::ResultPgSchemaValidationFormat};
+use crate::{Result, Rudof, errors::PgSchemaError, formats::ResultPgSchemaValidationFormat, utils::terminal_colors};
 use std::io;
 
 pub fn serialize_pgschema_validation_results<W: io::Write>(
@@ -26,11 +26,15 @@ pub fn serialize_pgschema_validation_results<W: io::Write>(
         },
         ResultPgSchemaValidationFormat::Csv => {
             pgschema_validation_results
-                .as_csv(writer, show_colors.unwrap_or(true))
+                .as_csv(writer, show_colors.unwrap_or_else(terminal_colors))
                 .map_err(|e| PgSchemaError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultPgSchemaValidationFormat::Details => {
-            todo!("Implement details format for Property Graph schema validation results serialization");
+            return Err(PgSchemaError::FailedSerializingValidationResults {
+                format: "details".to_string(),
+                error: "not implemented yet".to_string(),
+            }
+            .into());
         },
     }
 

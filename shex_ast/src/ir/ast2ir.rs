@@ -394,15 +394,7 @@ impl AST2IR {
                 Ok(ShapeExpr::Shape(Box::new(shape)))
             },
             ast::ShapeExpr::NodeConstraint(nc) => {
-                let (cond, display) = Self::cnv_node_constraint(
-                    self,
-                    &nc.node_kind(),
-                    &nc.datatype(),
-                    &nc.xs_facet(),
-                    &nc.values(),
-                    &compiled_schema.prefixmap(),
-                    base,
-                )?;
+                let (cond, display) = self.cnv_node_constraint_with_sem_acts(nc, &compiled_schema.prefixmap(), base)?;
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(Box::new(node_constraint)))
             },
@@ -429,6 +421,32 @@ impl AST2IR {
             None => None,
         };
         node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set, prefixmap, base)
+    }
+
+    /// Compiles a node constraint and appends its semantic actions (if any)
+    /// as extra conditions, so they run only after the node constraint's own
+    /// checks have succeeded.
+    fn cnv_node_constraint_with_sem_acts(
+        &self,
+        nc: &ast::NodeConstraint,
+        prefixmap: &PrefixMap,
+        base: &Option<IriS>,
+    ) -> CResult<(Cond, String)> {
+        let (cond, display) = self.cnv_node_constraint(
+            &nc.node_kind(),
+            &nc.datatype(),
+            &nc.xs_facet(),
+            &nc.values(),
+            prefixmap,
+            base,
+        )?;
+        let actions = self.cnv_sem_actions(&nc.sem_acts(), prefixmap)?;
+        if actions.is_empty() {
+            return Ok((cond, display));
+        }
+        let mut conds = vec![cond];
+        conds.extend(self.sem_acts_to_conds(actions)?);
+        Ok((MatchCond::And(conds), display))
     }
 
     fn cnv_closed(closed: &Option<bool>) -> bool {
@@ -660,14 +678,9 @@ impl AST2IR {
         let mut sem_actions_conds = self.sem_acts_to_conds(actions)?;
         let (cond, display) = if let Some(se) = value_expr.as_deref() {
             match se {
-                ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
-                    &nc.node_kind(),
-                    &nc.datatype(),
-                    &nc.xs_facet(),
-                    &nc.values(),
-                    &compiled_schema.prefixmap(),
-                    base,
-                ),
+                ast::ShapeExpr::NodeConstraint(nc) => {
+                    self.cnv_node_constraint_with_sem_acts(nc, &compiled_schema.prefixmap(), base)
+                },
 
                 ast::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;

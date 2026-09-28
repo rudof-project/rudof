@@ -50,11 +50,11 @@ pub enum RudofError {
 
     /// Conversion errors.
     #[error("Conversion error: {0}")]
-    Conversion(#[from] ConversionError),
+    Conversion(#[from] Box<ConversionError>),
 
     /// Schema comparison errors.
     #[error("Schema comparison error: {0}")]
-    Comparison(#[from] ComparisonError),
+    Comparison(#[from] Box<ComparisonError>),
 
     /// RDF-config errors.
     #[error("RDF-config error: {0}")]
@@ -100,4 +100,16 @@ pub enum RudofError {
     /// A generic error with a message.
     #[error("Error: {error}")]
     Generic { error: String },
+}
+
+impl From<ConversionError> for RudofError {
+    fn from(error: ConversionError) -> Self {
+        Self::Conversion(Box::new(error))
+    }
+}
+
+impl From<ComparisonError> for RudofError {
+    fn from(error: ComparisonError) -> Self {
+        Self::Comparison(Box::new(error))
+    }
 }

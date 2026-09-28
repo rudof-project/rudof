@@ -1,8 +1,8 @@
-from pyrudof import RDFFormat, ReaderMode, Rudof, RudofConfig, ServiceDescriptionFormat
+"""Read and serialize a SPARQL service description."""
 
-rudof = Rudof(RudofConfig())
+from pyrudof import RDFFormat, ReaderMode, Rudof, ServiceDescriptionFormat
 
-service_ttl = """
+SERVICE_TTL = """
 @prefix sd: <http://www.w3.org/ns/sparql-service-description#> .
 @prefix : <http://example.org/> .
 
@@ -12,7 +12,17 @@ service_ttl = """
   sd:defaultDataset [ a sd:Dataset ] .
 """
 
-rudof.read_service_description(service_ttl, RDFFormat.Turtle, None, ReaderMode.Lax)
-as_json = rudof.serialize_service_description(ServiceDescriptionFormat.Json)
-as_internal = rudof.serialize_service_description(ServiceDescriptionFormat.Internal)
 
+def main() -> None:
+    with Rudof() as rudof:
+        rudof.read_service_description(SERVICE_TTL, RDFFormat.Turtle, None, ReaderMode.Lax)
+
+        as_internal = rudof.serialize_service_description(ServiceDescriptionFormat.Internal)
+        print(as_internal)
+
+        as_json = rudof.serialize_service_description(ServiceDescriptionFormat.Json)
+        print(f"json mentions the endpoint: {'example.org/sparql' in as_json}")
+
+
+if __name__ == "__main__":
+    main()

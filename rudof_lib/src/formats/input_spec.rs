@@ -2,7 +2,7 @@
 use crate::errors::InputSpecError;
 use crate::formats::UrlSpec;
 #[cfg(target_family = "wasm")]
-use crate::wasm_stubs::{Client, ClientBuilder, Response};
+use crate::utils::{Client, Response};
 use either::Either;
 use regex::Regex;
 #[cfg(not(target_family = "wasm"))]
@@ -17,6 +17,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
+#[cfg(not(target_family = "wasm"))]
 use url::Url;
 
 /// Specification for different input sources in Rudof.

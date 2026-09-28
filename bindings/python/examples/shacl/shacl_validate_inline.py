@@ -1,8 +1,12 @@
-from pyrudof import RDFFormat, ShaclFormat, ShaclValidationMode, Rudof, RudofConfig
+"""Validate inline RDF data against inline SHACL shapes.
 
-rudof = Rudof(RudofConfig())
+``:bob`` has no ``:name``, so the report does not conform and carries one
+violation describing exactly which constraint failed and where.
+"""
 
-shapes = """
+from pyrudof import RDFFormat, Rudof, ShaclFormat, ShaclValidationMode
+
+SHAPES = """
 PREFIX : <http://example.org/>
 PREFIX sh: <http://www.w3.org/ns/shacl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -16,13 +20,29 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
   ] .
 """
 
-data = """
+DATA = """
 PREFIX : <http://example.org/>
 
 :alice a :Person ;
   :name "Alice" .
+
+:bob a :Person .
 """
 
-rudof.read_shacl(shapes, ShaclFormat.Turtle)
-rudof.read_data(data, RDFFormat.Turtle)
-rudof.validate_shacl(ShaclValidationMode.Native)
+
+def main() -> None:
+    with Rudof() as rudof:
+        rudof.read_shacl(SHAPES, ShaclFormat.Turtle)
+        rudof.read_data(DATA, RDFFormat.Turtle)
+
+        report = rudof.validate_shacl(ShaclValidationMode.Native)
+
+        print(f"conforms: {report.conforms}")
+        print(f"violations: {len(report)}")
+        for entry in report:
+            print(f"{entry.severity} on {entry.focus_node} (path {entry.path})")
+            print(f"  {entry.message}")
+
+
+if __name__ == "__main__":
+    main()

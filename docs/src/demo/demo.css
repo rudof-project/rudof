@@ -1,0 +1,322 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --surface: #f6f7f9;
+  --border: #d8dce2;
+  --text: #1d2126;
+  --muted: #5b6470;
+  --accent: #1f6feb;
+  --accent-text: #ffffff;
+  --ok-bg: #e6f4ea;
+  --ok-text: #1a6b32;
+  --fail-bg: #fdecea;
+  --fail-text: #a4241a;
+  --warn-bg: #fff4e0;
+  --warn-text: #8a5300;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15181c;
+    --surface: #1d2126;
+    --border: #353b43;
+    --text: #e3e6ea;
+    --muted: #9aa3ae;
+    --accent: #4c8dff;
+    --accent-text: #0b0d10;
+    --ok-bg: #16311f;
+    --ok-text: #7fd699;
+    --fail-bg: #3a1a17;
+    --fail-text: #ff9a8f;
+    --warn-bg: #3a2c12;
+    --warn-text: #f0c070;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+a { color: var(--accent); }
+code { font-family: var(--mono); font-size: 0.9em; }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 0.5rem; }
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.logo img { height: 32px; width: auto; }
+.subtitle { color: var(--muted); }
+.links { display: flex; gap: 1rem; }
+.links a { text-decoration: none; }
+.links a:hover { text-decoration: underline; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+.intro { margin: 0.25rem 0 1rem; color: var(--muted); }
+
+.status {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.85em;
+}
+.status.loading { background: var(--warn-bg); color: var(--warn-text); }
+.status.ready { background: var(--ok-bg); color: var(--ok-text); }
+.status.error { background: var(--fail-bg); color: var(--fail-text); }
+
+.tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+[role="tab"] {
+  appearance: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+[role="tab"][aria-selected="true"] {
+  color: var(--text);
+  background: var(--bg);
+  border-color: var(--border);
+}
+[role="tab"]:focus-visible, button:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.inputs.two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+}
+.field { display: flex; flex-direction: column; margin-bottom: 1rem; min-width: 0; }
+.field-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.field-head label { font-weight: 600; }
+.hint { color: var(--muted); font-size: 0.85em; }
+
+textarea {
+  width: 100%;
+  min-height: 16rem;
+  resize: vertical;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: 13px/1.45 var(--mono);
+  tab-size: 2;
+}
+textarea.short { min-height: 3.5rem; }
+textarea.medium { min-height: 7.5rem; }
+
+select {
+  font: inherit;
+  font-size: 0.9em;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+}
+label.inline { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--muted); }
+
+button.primary {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.45rem 1.4rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+button.primary:disabled { opacity: 0.5; cursor: progress; }
+.shortcut { color: var(--muted); font-size: 0.8em; }
+
+.result { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.result-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+}
+.result[data-kind="ok"] .result-head { background: var(--ok-bg); color: var(--ok-text); }
+.result[data-kind="fail"] .result-head { background: var(--fail-bg); color: var(--fail-text); }
+.result[data-kind="error"] .result-head { background: var(--warn-bg); color: var(--warn-text); }
+.timing { font-weight: 400; opacity: 0.8; }
+.output {
+  margin: 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+  background: var(--surface);
+  /* Line height 1.2 keeps the box-drawing lines of the tables connected. */
+  font: 13px/1.2 var(--mono);
+  white-space: pre;
+}
+.result[data-kind="error"] .output { white-space: pre-wrap; }
+
+footer {
+  max-width: 1200px;
+  margin: 1rem auto 2rem;
+  padding: 0 1rem;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.format-tag {
+  font-size: 0.8em;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+/* The PGSchema report as a table (the "Table" result format) */
+.table-output { overflow-x: auto; background: var(--surface); }
+table.report { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+table.report th, table.report td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.45rem 0.75rem;
+  border-top: 1px solid var(--border);
+}
+table.report th { color: var(--muted); font-weight: 600; border-top: none; }
+table.report th, table.report td.verdict-cell { white-space: nowrap; }
+table.report td.verdict-cell { font-weight: 600; }
+table.report tr.ok td.verdict-cell { color: var(--ok-text); }
+table.report tr.fail td.verdict-cell { color: var(--fail-text); }
+table.report .details {
+  font: 12px/1.4 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  min-width: 16rem;
+}
+
+/* RDF tab: the converted data sits next to the input */
+.result.converted { display: flex; flex-direction: column; height: 16rem; }
+.result.converted:not([data-kind]) .result-head { color: var(--muted); font-weight: 400; }
+.result.converted .output { flex: 1; min-height: 0; overflow: auto; }
+
+button.secondary {
+  font: inherit;
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+button.secondary:disabled { opacity: 0.5; cursor: default; }
+
+/* Narrow screens: keep the four tabs on one line, and let long status
+   messages wrap. */
+.status { max-width: 100%; }
+.tabs { overflow-x: auto; scrollbar-width: none; }
+@media (max-width: 480px) {
+  [role="tab"] { padding: 0.5rem 0.8rem; }
+}
+
+/* Second level of tabs (inside Data, Validate and Query): segmented buttons */
+.tabs.subtabs {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 1rem;
+  max-width: 100%;
+}
+.subtabs [role="tab"] {
+  border: none;
+  border-radius: 6px;
+  margin: 0;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.9em;
+}
+.subtabs [role="tab"][aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Solutions of SPARQL SELECT queries */
+table.solutions td code { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+table.solutions .term-note { color: var(--muted); font: 11px var(--mono); }
+#sparql-example { max-width: 18rem; }
+
+/* Schema conversion, below the validation of each schema language */
+.toolbar.schema-tools { margin-top: 1rem; }
+.result + .toolbar.schema-tools { margin-top: 1.25rem; }
+.toolbar.schema-tools + .result { margin-bottom: 1rem; }
+
+/* Diagrams drawn with PlantUML: always on white, as PlantUML draws them */
+.diagram { background: var(--surface); }
+.diagram-tools {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85em;
+}
+.link {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+}
+.link:hover { text-decoration: underline; }
+a.link:not([href]) { color: var(--muted); pointer-events: none; }
+.diagram-image { overflow: auto; padding: 0.75rem; max-height: 40rem; }
+.diagram-image img { display: block; max-width: 100%; height: auto; background: #fff; border-radius: 4px; padding: 0.5rem; }
+.diagram-status { margin: 0; color: var(--muted); font-size: 0.9em; }
+.diagram-status.error { color: var(--fail-text); }
+/* In the RDF converter the box has a fixed height: the diagram scrolls */
+.result.converted .diagram { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.result.converted .diagram[hidden] { display: none; }
+.result.converted .diagram-image { flex: 1; max-height: none; }
+.result.converted .output:not([hidden]) + .diagram { flex: 0 0 auto; }

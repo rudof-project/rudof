@@ -1,8 +1,8 @@
-from pyrudof import RdfConfigFormat, ResultRdfConfigFormat, Rudof, RudofConfig
+"""Read an inline RDF-config YAML specification and serialize it back."""
 
-rudof = Rudof(RudofConfig())
+from pyrudof import RdfConfigFormat, ResultRdfConfigFormat, Rudof
 
-config = """
+CONFIG = """
 - Person ex:person1 ex:person2:
   - a: ex:Person
   - rdfs:label:
@@ -11,7 +11,12 @@ config = """
     - age_value: 32
 """
 
-rudof.read_rdf_config(config, RdfConfigFormat.Yaml)
-print(rudof.serialize_rdf_config(ResultRdfConfigFormat.Internal))
 
-rudof.reset_rdf_config()
+def main() -> None:
+    with Rudof() as rudof:
+        rudof.read_rdf_config(CONFIG, RdfConfigFormat.Yaml)
+        print(rudof.serialize_rdf_config(ResultRdfConfigFormat.Internal))
+
+
+if __name__ == "__main__":
+    main()

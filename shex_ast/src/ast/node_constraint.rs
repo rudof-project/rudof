@@ -9,7 +9,7 @@ use serde::{
 };
 
 use super::ValueSetValue;
-use crate::{NodeKind, NumericFacet, Pattern, StringFacet, XsFacet};
+use crate::{Annotation, NodeKind, NumericFacet, Pattern, SemAct, StringFacet, XsFacet};
 use serde::ser::SerializeMap;
 
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -25,6 +25,12 @@ pub struct NodeConstraint {
 
     // #[serde(default, skip_serializing_if = "Option::is_none")]
     values: Option<Vec<ValueSetValue>>,
+
+    // #[serde(default, rename = "semActs", skip_serializing_if = "Option::is_none")]
+    sem_acts: Option<Vec<SemAct>>,
+
+    // #[serde(default, skip_serializing_if = "Option::is_none")]
+    annotations: Option<Vec<Annotation>>,
 }
 
 impl NodeConstraint {
@@ -144,8 +150,31 @@ impl NodeConstraint {
         self
     }
 
+    pub fn with_sem_acts(mut self, sem_acts: Option<Vec<SemAct>>) -> Self {
+        self.sem_acts = sem_acts.filter(|sas| !sas.is_empty());
+        self
+    }
+
+    pub fn sem_acts(&self) -> Option<Vec<SemAct>> {
+        self.sem_acts.clone()
+    }
+
+    pub fn with_annotations(mut self, annotations: Option<Vec<Annotation>>) -> Self {
+        self.annotations = annotations.filter(|anns| !anns.is_empty());
+        self
+    }
+
+    pub fn annotations(&self) -> Option<Vec<Annotation>> {
+        self.annotations.clone()
+    }
+
     pub fn is_datatype(&self) -> bool {
-        self.datatype.is_some() && self.node_kind.is_none() && self.xs_facet.is_none() && self.values.is_none()
+        self.datatype.is_some()
+            && self.node_kind.is_none()
+            && self.xs_facet.is_none()
+            && self.values.is_none()
+            && self.sem_acts.is_none()
+            && self.annotations.is_none()
     }
 }
 
@@ -160,11 +189,15 @@ impl DerefIri for NodeConstraint {
     {
         let datatype = self.datatype().deref_iri(base, prefixmap)?;
         let values = self.values().deref_iri(base, prefixmap)?;
+        let sem_acts = self.sem_acts().deref_iri(base, prefixmap)?;
+        let annotations = self.annotations().deref_iri(base, prefixmap)?;
         Ok(NodeConstraint {
             node_kind: self.node_kind.clone(),
             datatype,
             xs_facet: self.xs_facet.clone(),
             values,
+            sem_acts,
+            annotations,
         })
     }
 }
@@ -179,6 +212,8 @@ impl Serialize for NodeConstraint {
             datatype,
             xs_facet,
             values,
+            sem_acts,
+            annotations,
         } = self;
 
         let mut map = serializer.serialize_map(None)?;
@@ -231,6 +266,12 @@ impl Serialize for NodeConstraint {
                 }
             },
         }
+        if let Some(sem_acts) = sem_acts {
+            map.serialize_entry("semActs", sem_acts)?;
+        }
+        if let Some(annotations) = annotations {
+            map.serialize_entry("annotations", annotations)?;
+        }
         map.end()
     }
 }
@@ -256,6 +297,8 @@ impl<'de> Deserialize<'de> for NodeConstraint {
             MaxExclusive,
             TotalDigits,
             FractionDigits,
+            SemActs,
+            Annotations,
         }
 
         impl<'de> Deserialize<'de> for Field {
@@ -292,6 +335,8 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                             "totaldigits" => Ok(Field::TotalDigits),
                             "fractiondigits" => Ok(Field::FractionDigits),
                             "values" => Ok(Field::Values),
+                            "semActs" => Ok(Field::SemActs),
+                            "annotations" => Ok(Field::Annotations),
                             _ => Err(de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -329,6 +374,8 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 let mut fractiondigits: Option<usize> = None;
                 let mut flags: Option<String> = None;
                 let mut values: Option<Vec<ValueSetValue>> = None;
+                let mut sem_acts: Option<Vec<SemAct>> = None;
+                let mut annotations: Option<Vec<Annotation>> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::NodeKind => {
@@ -436,6 +483,18 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                             }
                             flags = Some(map.next_value()?);
                         },
+                        Field::SemActs => {
+                            if sem_acts.is_some() {
+                                return Err(de::Error::duplicate_field("semActs"));
+                            }
+                            sem_acts = Some(map.next_value()?);
+                        },
+                        Field::Annotations => {
+                            if annotations.is_some() {
+                                return Err(de::Error::duplicate_field("annotations"));
+                            }
+                            annotations = Some(map.next_value()?);
+                        },
                     }
                 }
                 let mut nc = NodeConstraint::new();
@@ -482,6 +541,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 if let Some(fractiondigits) = fractiondigits {
                     nc = nc.with_fractiondigits(fractiondigits)
                 }
+                nc = nc.with_sem_acts(sem_acts).with_annotations(annotations);
                 Ok(nc)
             }
         }
@@ -502,6 +562,8 @@ impl<'de> Deserialize<'de> for NodeConstraint {
             "maxexclusive",
             "totaldigits",
             "fractiondigits",
+            "semActs",
+            "annotations",
         ];
         deserializer.deserialize_struct("NodeConstraint", FIELDS, NodeConstraintVisitor)
     }

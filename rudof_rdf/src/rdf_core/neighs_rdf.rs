@@ -339,6 +339,17 @@ pub trait NeighsRDF: Rdf {
                     let first_objects = self.objects_for_shacl_path(subject, first)?;
                     let mut all_objects = HashSet::new();
                     for obj in first_objects {
+                        // A term that cannot be a subject (a literal) has no outgoing
+                        // arcs, so it cannot continue the sequence. Skipping it is not
+                        // merely an optimisation: `objects_for` starts with
+                        // `term_as_subject(..)?`, so recursing here would abort the
+                        // WHOLE path evaluation and lose every other value too.
+                        // When `rest` is empty the recursion terminates without any
+                        // lookup, so the term is still a legitimate endpoint and is
+                        // kept.
+                        if !rest.is_empty() && Self::term_as_subject(&obj).is_err() {
+                            continue;
+                        }
                         let intermediate_objects =
                             self.objects_for_shacl_path(&obj, &SHACLPath::Sequence { paths: rest.to_vec() })?;
                         all_objects.extend(intermediate_objects);
@@ -360,7 +371,14 @@ pub trait NeighsRDF: Rdf {
                     let next_objects = self.objects_for_shacl_path(&current, path)?;
                     for obj in next_objects {
                         if all_objects.insert(obj.clone()) {
-                            to_process.push(obj);
+                            // The term stays in the result -- a literal is a valid
+                            // path endpoint -- but is only followed further if it can
+                            // be a subject. See the note in the Sequence branch: this
+                            // guard is what stops one literal aborting the entire
+                            // path evaluation.
+                            if Self::term_as_subject(&obj).is_ok() {
+                                to_process.push(obj);
+                            }
                         }
                     }
                 }
@@ -371,12 +389,19 @@ pub trait NeighsRDF: Rdf {
                 let first_objects = self.objects_for_shacl_path(subject, path)?;
                 all_objects.extend(first_objects.clone());
 
-                let mut to_process: Vec<Self::Term> = first_objects.into_iter().collect();
+                let mut to_process: Vec<Self::Term> = first_objects
+                    .into_iter()
+                    .filter(|t| Self::term_as_subject(t).is_ok())
+                    .collect();
                 while let Some(current) = to_process.pop() {
                     let next_objects = self.objects_for_shacl_path(&current, path)?;
                     for obj in next_objects {
                         if all_objects.insert(obj.clone()) {
-                            to_process.push(obj);
+                            // Kept in the result, followed only if it can be a
+                            // subject. See the Sequence branch.
+                            if Self::term_as_subject(&obj).is_ok() {
+                                to_process.push(obj);
+                            }
                         }
                     }
                 }

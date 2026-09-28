@@ -13,7 +13,9 @@ use crate::ir::semantic_action_context::SemanticActionContext;
 ///
 /// `msg` is either a quoted string literal (delimiters stripped, `\\` and `\"`
 /// unescaped) or one of the particles `s`, `p`, `o`, which are resolved to the
-/// subject, predicate, or object of the matching triple respectively.
+/// subject, predicate, or object of the matching triple respectively, or `n`,
+/// the node being checked (the focus node of a node constraint's semantic
+/// action).
 #[derive(Debug, Clone)]
 pub struct TestActionExtension {}
 
@@ -46,8 +48,8 @@ impl SemanticActionExtension for TestActionExtension {
         };
 
         // Pattern from the Test extension spec:
-        //   ^ *(fail|print) *\( *(?:("(?:[^\\"]|\\\\|\\")*")|([spo])) *\) *$
-        let re = regex!(r#"^ *(fail|print) *\( *(?:("(?:[^\\"]|\\\\|\\")*")|([spo])) *\) *$"#);
+        //   ^ *(fail|print) *\( *(?:("(?:[^\\"]|\\\\|\\")*")|([spon])) *\) *$
+        let re = regex!(r#"^ *(fail|print) *\( *(?:("(?:[^\\"]|\\\\|\\")*")|([spon])) *\) *$"#);
 
         let caps = re
             .captures(code)
@@ -63,13 +65,14 @@ impl SemanticActionExtension for TestActionExtension {
             let inner = &quoted.as_str()[1..quoted.as_str().len() - 1];
             inner.replace(r#"\\"#, r"\").replace(r#"\""#, "\"")
         } else {
-            // Particle: s, p, or o
+            // Particle: s, p, o or n
             let particle = &caps[3];
             let binding = match particle {
                 "s" => context.s().map(|o| o.to_string()),
                 "p" => context.p().map(|p| p.to_string()),
                 "o" => context.o().map(|o| o.to_string()),
-                _ => unreachable!("regex only matches s, p, or o"),
+                "n" => context.n().map(|n| n.to_string()),
+                _ => unreachable!("regex only matches s, p, o or n"),
             };
             /* TODO:
                The following code raises an error if the variable is not in the binding
@@ -156,6 +159,17 @@ mod tests {
             )
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::FailAction { message } if message == "http://example.org/bad"));
+    }
+
+    #[test]
+    fn fail_node() {
+        let err = ext()
+            .run_action(
+                Some("fail(n)"),
+                &SemanticActionContext::default().with_node(Node::iri(iri!("http://example.org/n"))),
+            )
+            .unwrap_err();
+        assert!(matches!(err, SemanticActionError::FailAction { message } if message == "http://example.org/n"));
     }
 
     /*#[test]

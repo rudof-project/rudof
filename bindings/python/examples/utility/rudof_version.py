@@ -1,6 +1,14 @@
-from pyrudof import Rudof, RudofConfig
+"""Read the version of the rudof core the session wraps."""
 
-rudof = Rudof(RudofConfig())
+from pyrudof import Rudof
 
-print(f"Version: {rudof.get_version()}")
 
+def main() -> None:
+    with Rudof() as rudof:
+        version = rudof.get_version()
+        print(f"Version: {version}")
+        print(f"non-empty: {bool(version)}")
+
+
+if __name__ == "__main__":
+    main()

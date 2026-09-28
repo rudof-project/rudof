@@ -1,53 +1,58 @@
-"""Materialize an RDF graph from an inline ShEx schema and inline MapState.
+"""Materialize an RDF graph from an inline ShEx schema and an inline MapState.
 
-The MapState is a dict that maps Map-extension IRI keys to RDF node values.
-IRI nodes are represented as ``{"Iri": "<iri-string>"}``.
+The MapState maps each Map-extension IRI declared by a semantic action to the
+concrete RDF node it stands for. IRI nodes are written ``{"Iri": "<iri>"}``.
 """
+
 import json
-import os
-import tempfile
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
+from pyrudof import ResultDataFormat, Rudof, ShExFormat
 
-rudof = Rudof(RudofConfig())
-
-# ShEx schema (ShExJ) with Map semantic actions on each triple constraint
-schema = json.dumps({
-    "@context": "http://www.w3.org/ns/shex.jsonld",
-    "type": "Schema",
-    "shapes": [{
-        "type": "ShapeDecl",
-        "id": "http://example.org/PersonShape",
-        "shapeExpr": {
-            "type": "Shape",
-            "expression": {
-                "type": "TripleConstraint",
-                "predicate": "http://example.org/name",
-                "semActs": [{
-                    "type": "SemAct",
-                    "name": "http://shex.io/extensions/Map/",
-                    "code": "<http://example.org/name>"
-                }]
+SCHEMA = json.dumps(
+    {
+        "@context": "http://www.w3.org/ns/shex.jsonld",
+        "type": "Schema",
+        "shapes": [
+            {
+                "type": "ShapeDecl",
+                "id": "http://example.org/PersonShape",
+                "shapeExpr": {
+                    "type": "Shape",
+                    "expression": {
+                        "type": "TripleConstraint",
+                        "predicate": "http://example.org/name",
+                        "semActs": [
+                            {
+                                "type": "SemAct",
+                                "name": "http://shex.io/extensions/Map/",
+                                "code": "<http://example.org/name>",
+                            }
+                        ],
+                    },
+                },
             }
-        }
-    }]
-})
+        ],
+    }
+)
 
-# MapState: maps each Map-extension IRI to its concrete RDF node value
-map_state = {
-    "http://example.org/name": {"Iri": "http://example.org/Alice"}
-}
+MAP_STATE = {"http://example.org/name": {"Iri": "http://example.org/Alice"}}
 
-rudof.read_shex(schema, ShExFormat.ShExJ)
 
-# read_map_state requires a file path, so write to a temporary file
-with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-    json.dump(map_state, tmp)
-    map_state_path = tmp.name
+def main() -> None:
+    with TemporaryDirectory() as tmpdir:
+        # read_map_state takes a path, so the state is written out first.
+        map_state_path = Path(tmpdir) / "map_state.json"
+        map_state_path.write_text(json.dumps(MAP_STATE), encoding="utf-8")
 
-try:
-    rudof.read_map_state(map_state_path)
-    result = rudof.materialize(ResultDataFormat.NTriples)
-    print(result)
-finally:
-    os.unlink(map_state_path)
+        with Rudof() as rudof:
+            rudof.read_shex(SCHEMA, ShExFormat.ShExJ)
+            rudof.read_map_state(map_state_path)
+
+            result = rudof.materialize(ResultDataFormat.NTriples)
+            print(result)
+
+
+if __name__ == "__main__":
+    main()

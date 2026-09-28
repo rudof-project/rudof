@@ -43,4 +43,8 @@ pub enum ShaclError {
     /// No SHACL validation results available.
     #[error("No SHACL validation results available")]
     NoShaclValidationResultsAvailable,
+
+    /// Failed to serialize SHACL validation results to the specified format.
+    #[error("Failed to serialize SHACL validation results to {format}: {error}")]
+    FailedSerializingShaclValidationResults { format: String, error: String },
 }

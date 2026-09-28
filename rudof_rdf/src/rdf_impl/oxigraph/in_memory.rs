@@ -15,7 +15,8 @@ use oxrdf::{
 };
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
-use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
+use oxttl::n3::{N3Quad, N3Term};
+use oxttl::{N3Parser, NQuadsParser, NTriplesParser, TriGParser, TurtleParser};
 use prefixmap::{PrefixMapError, prefix_map::*};
 use rudof_iri::IriS;
 use serde::{Serialize, ser::SerializeStruct};
@@ -148,10 +149,10 @@ impl OxigraphInMemory {
                 self.parse_rdfxml(reader, reader_mode)?;
             },
             RDFFormat::TriG => {
-                todo!();
+                self.parse_trig(reader, source_name, base, reader_mode)?;
             },
             RDFFormat::N3 => {
-                todo!();
+                self.parse_n3(reader, source_name, base, reader_mode)?;
             },
             RDFFormat::NQuads => {
                 self.parse_nquads(reader, reader_mode)?;
@@ -227,6 +228,129 @@ impl OxigraphInMemory {
         };
         self.merge_prefixes(prefixes.try_into()?);
 
+        Ok(())
+    }
+
+    /// Parses TriG data and merges it into the graph.
+    ///
+    /// The graph holds triples only, so the triples of named graphs are
+    /// merged into it as well, as with N-Quads.
+    ///
+    /// # Parameters
+    ///
+    /// * `reader` - Input stream containing TriG data
+    /// * `source_name` - Name used for error reporting
+    /// * `base` - Optional base IRI for resolving relative IRIs
+    /// * `reader_mode` - Controls error handling (strict or lax)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing fails in strict mode.
+    fn parse_trig<R: io::Read>(
+        &mut self,
+        reader: &mut R,
+        source_name: &str,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<(), OxigraphInMemoryError> {
+        let trig_parser = match base {
+            None => TriGParser::new().lenient(),
+            Some(iri) => TriGParser::new().lenient().with_base_iri(iri)?,
+        };
+        let error = |e: String| OxigraphInMemoryError::TriGParseError {
+            source_name: source_name.to_string(),
+            error: e,
+        };
+
+        let mut trig_reader = trig_parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
+
+        for quad_result in trig_reader.by_ref() {
+            let quad = match handle_parse_error(quad_result, reader_mode, error)? {
+                Some(q) => q,
+                None => continue,
+            };
+            let triple_ref = TripleRef::from(quad.as_ref());
+            if let Err(e) = validate_triple_iris(triple_ref) {
+                match handle_parse_error(Err::<(), _>(format!("Invalid IRI in triple: {e}")), reader_mode, error)? {
+                    Some(_) => unreachable!(),
+                    None => continue,
+                }
+            }
+            graph.insert(triple_ref);
+        }
+
+        let prefixes: HashMap<&str, &str> = trig_reader.prefixes().collect();
+        self.merge_base_and_prefixes(base, prefixes)
+    }
+
+    /// Parses N3 data and merges it into the graph.
+    ///
+    /// Only the N3 that is RDF can be represented: variables and statements
+    /// inside formulas (`{ ... }`) are errors (skipped in lax mode).
+    ///
+    /// # Parameters
+    ///
+    /// * `reader` - Input stream containing N3 data
+    /// * `source_name` - Name used for error reporting
+    /// * `base` - Optional base IRI for resolving relative IRIs
+    /// * `reader_mode` - Controls error handling (strict or lax)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing fails, or the data is not RDF, in strict mode.
+    fn parse_n3<R: io::Read>(
+        &mut self,
+        reader: &mut R,
+        source_name: &str,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<(), OxigraphInMemoryError> {
+        let n3_parser = match base {
+            None => N3Parser::new().lenient(),
+            Some(iri) => N3Parser::new().lenient().with_base_iri(iri)?,
+        };
+        let error = |e: String| OxigraphInMemoryError::N3ParseError {
+            source_name: source_name.to_string(),
+            error: e,
+        };
+
+        let mut n3_reader = n3_parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
+
+        for quad_result in n3_reader.by_ref() {
+            let quad = match handle_parse_error(quad_result, reader_mode, error)? {
+                Some(q) => q,
+                None => continue,
+            };
+            let triple = match handle_parse_error(n3_quad_to_triple(quad), reader_mode, error)? {
+                Some(t) => t,
+                None => continue,
+            };
+            if let Err(e) = validate_triple_iris(triple.as_ref()) {
+                match handle_parse_error(Err::<(), _>(format!("Invalid IRI in triple: {e}")), reader_mode, error)? {
+                    Some(_) => unreachable!(),
+                    None => continue,
+                }
+            }
+            graph.insert(triple.as_ref());
+        }
+
+        let prefixes: HashMap<&str, &str> = n3_reader.prefixes().collect();
+        self.merge_base_and_prefixes(base, prefixes)
+    }
+
+    /// Keeps `base` (if any) as the base IRI and adds the prefixes read from a
+    /// document, as `parse_turtle` does.
+    fn merge_base_and_prefixes(
+        &mut self,
+        base: Option<&str>,
+        prefixes: HashMap<&str, &str>,
+    ) -> Result<(), OxigraphInMemoryError> {
+        if let Some(b) = base {
+            self.base = Some(IriS::new_unchecked(b));
+        }
+        self.merge_prefixes(prefixes.try_into()?);
         Ok(())
     }
 
@@ -1166,6 +1290,35 @@ fn validate_triple_iris(triple: TripleRef) -> Result<(), String> {
         OxNamedNode::new(n.as_str()).map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+/// Converts an N3 statement to an RDF triple, when it is one: N3 variables,
+/// and statements inside formulas (quads with a graph name), are not RDF.
+fn n3_quad_to_triple(quad: N3Quad) -> Result<OxTriple, String> {
+    if !quad.graph_name.is_default_graph() {
+        return Err(format!(
+            "statements inside N3 formulas can't be represented in RDF: {} {} {}",
+            quad.subject, quad.predicate, quad.object
+        ));
+    }
+    let not_rdf = |term: &N3Term, position: &str| format!("{term} can't be the {position} of an RDF triple");
+    let subject = match quad.subject {
+        N3Term::NamedNode(n) => OxSubject::NamedNode(n),
+        N3Term::BlankNode(b) => OxSubject::BlankNode(b),
+        other => return Err(not_rdf(&other, "subject")),
+    };
+    let predicate = match quad.predicate {
+        N3Term::NamedNode(n) => n,
+        other => return Err(not_rdf(&other, "predicate")),
+    };
+    let object = match quad.object {
+        N3Term::NamedNode(n) => OxTerm::NamedNode(n),
+        N3Term::BlankNode(b) => OxTerm::BlankNode(b),
+        N3Term::Literal(l) => OxTerm::Literal(l),
+        N3Term::Triple(t) => OxTerm::Triple(t),
+        other => return Err(not_rdf(&other, "object")),
+    };
+    Ok(OxTriple::new(subject, predicate, object))
 }
 
 fn handle_parse_error<T, E: std::fmt::Display>(

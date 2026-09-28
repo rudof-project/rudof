@@ -1,4 +1,5 @@
 use crate::errors::DataError;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::config::OutputFormat;
 use rudof_iri::MimeType;
 use rudof_rdf::{rdf_core::RDFFormat, rdf_impl::ReaderMode};
@@ -123,6 +124,7 @@ impl From<RDFFormat> for DataFormat {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl From<DataFormat> for OutputFormat {
     fn from(value: DataFormat) -> Self {
         match value {

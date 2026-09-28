@@ -5,6 +5,15 @@ mod shex_statistics;
 
 pub(crate) use data::Data;
 pub use node_neighborhood::{NeighborArc, NodeNeighborhood};
-pub(crate) use query::QueryResult;
+pub use query::QueryResult;
 pub use rudof_rdf::rdf_core::ArcDirection;
 pub(crate) use shex_statistics::ShExStatistics;
+
+#[cfg(feature = "pgschema")]
+pub use pgschema::result_association::ResultAssociation as PgSchemaResultAssociation;
+#[cfg(feature = "pgschema")]
+pub use pgschema::validation_result::ValidationResult as PgSchemaValidationResult;
+pub use shacl::validator::report::{
+    ValidationReport as ShaclValidationReport, ValidationResult as ShaclValidationResult,
+};
+pub use shex_ast::shapemap::{ResultShapeMap, ValidationStatus as ShExValidationStatus};

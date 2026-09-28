@@ -17,6 +17,7 @@ use rust_decimal::Decimal;
 use std::{borrow::Cow, io, marker::PhantomData};
 use tracing::trace;
 
+use crate::compact::compact_printer::is_bare_numeric;
 use crate::pp_object_value;
 
 /// Struct that can be used to pretty print ShEx schemas
@@ -33,7 +34,9 @@ use crate::pp_object_value;
 ///
 /// let expected = "prefix ex: <http://example.org/>\nex:S {  }\n";
 ///
-/// assert_eq!(ShExFormatter::default().format_schema(&schema), expected);
+/// // `.without_colors()`: `ShExFormatter::default()` colorizes; this
+/// // example compares against plain text.
+/// assert_eq!(ShExFormatter::default().without_colors().format_schema(&schema), expected);
 /// ```
 #[derive(Debug, Clone)]
 pub struct ShExFormatter {
@@ -629,6 +632,9 @@ where
     fn pp_literal(&self, literal: &ConcreteLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
             ConcreteLiteral::StringLiteral { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
+            ConcreteLiteral::DatatypeLiteral { lexical_form, datatype } if is_bare_numeric(lexical_form, datatype) => {
+                self.doc.text(lexical_form.clone())
+            },
             ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }
             | ConcreteLiteral::WrongDatatypeLiteral {
                 lexical_form, datatype, ..
@@ -673,6 +679,8 @@ where
             .append(self.opt_pp(nc.datatype(), self.pp_datatype()))
             .append(self.opt_pp(nc.values(), self.pp_value_set()))
             .append(self.opt_pp(nc.xs_facet(), self.pp_xsfacets()))
+            .append(self.opt_pp1(&nc.annotations(), self.pp_annotations()))
+            .append(self.opt_pp1(&nc.sem_acts(), self.pp_actions()))
     }
 
     fn pp_node_kind(&self) -> impl Fn(&NodeKind, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
@@ -1160,5 +1168,27 @@ mod tests {
             s,
             "prefix : <http://example.org/>\nprefix schema: <https://schema.org/>\n"
         );
+    }
+    #[test]
+    fn numeric_literals_are_printed_bare_and_roundtrip() {
+        use crate::compact::ShExParser;
+        let src = "<http://a.example/S> { <http://a.example/p> [0 00 +1 -2 0.0 .5 1e0 0.0E-1] }";
+        let schema = ShExParser::parse(src, None, &iri!("http://default/")).unwrap();
+        let printed = ShExFormatter::default().without_colors().format_schema(&schema);
+        assert!(printed.contains("[ 0 00 +1 -2 0.0 .5 1e0 0.0E-1 ]"), "{printed}");
+        let reparsed = ShExParser::parse(&printed, None, &iri!("http://default/")).unwrap();
+        assert_eq!(schema, reparsed);
+    }
+
+    #[test]
+    fn numeric_datatype_literals_with_non_bare_lexical_form_are_quoted() {
+        use crate::compact::ShExParser;
+        let src = r#"<http://a.example/S> { <http://a.example/p> ["x"^^<http://www.w3.org/2001/XMLSchema#integer> " 1"^^<http://www.w3.org/2001/XMLSchema#integer>] }"#;
+        let schema = ShExParser::parse(src, None, &iri!("http://default/")).unwrap();
+        let printed = ShExFormatter::default().without_colors().format_schema(&schema);
+        assert!(printed.contains(r#""x"^^"#), "{printed}");
+        assert!(printed.contains(r#"" 1"^^"#), "{printed}");
+        let reparsed = ShExParser::parse(&printed, None, &iri!("http://default/")).unwrap();
+        assert_eq!(schema, reparsed);
     }
 }
