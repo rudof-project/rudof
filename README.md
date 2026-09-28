@@ -419,3 +419,6 @@ nix develop --command cargo test
 > ```shell
 > echo "use flake" > .envrc && direnv allow
 > ```
+
+The flake also exposes the `rudof` binary and NixOS/home-manager modules — see the
+[Nix installation docs](https://rudof-project.github.io/rudof/general/installation.html#nix) for usage.
