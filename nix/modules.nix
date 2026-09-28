@@ -96,7 +96,7 @@ in {
         rdf.base_iri = "http://default2/";
       };
     in {
-      checks = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+      checks = lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") { # Disabled for ARM since Github Runners doesn't provide kvm
         rudof-nixos-module = pkgs.testers.nixosTest {
           name = "rudof-nixos-module";
           nodes.machine = {

@@ -22,6 +22,7 @@
         cmakeMinimal
         python3
         installShellFiles
+      ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
         autoPatchelfHook
       ];
       buildInputs = with pkgs; [
