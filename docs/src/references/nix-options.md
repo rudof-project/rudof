@@ -116,7 +116,7 @@ open submodule of (TOML value)
   rdf = {
     base_iri = "http://new_base_iri/";
   };
-  version = "0.3.21";
+  version = "0.3.24";
 }
 ```
 
