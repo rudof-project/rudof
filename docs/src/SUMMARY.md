@@ -72,5 +72,6 @@
 # Reference
 
 - [Config](./references/config.md)
+- [Nix module options](./references/nix-options.md)
 - [Benchmarks](./references/benchmarks.md)
 - [FAQ](./references/faq.md)

@@ -1,13 +1,15 @@
-{pkgs, ...}: let
-  rudof = {
-    type = "app";
-    program = "${pkgs.rudof.rudof}/bin/rudof";
+{
+  perSystem = { self', lib, ... }: {
+    apps.default = self'.apps.rudof;
+
+    apps.rudof = {
+      type = "app";
+      program = lib.getExe self'.packages.rudof;
+    };
+
+    apps.rudof-generate = {
+      type = "app";
+      program = lib.getExe' self'.packages.rudof "rudof-generate";
+    };
   };
-  rudof-generate = {
-    type = "app";
-    program = "${pkgs.rudof.rudof-generate}/bin/rudof_generate";
-  };
-in {
-  default = rudof;
-  inherit rudof rudof-generate;
 }

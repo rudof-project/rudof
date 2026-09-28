@@ -18,7 +18,8 @@ chmod +x rudof
 
 #### Nix
 
-`rudof` ships a [`flake.nix`](https://github.com/rudof-project/rudof/blob/master/flake.nix) that exposes packages, a development shell, and an overlay so it can be consumed by other Nix projects without any extra work.
+`rudof` ships a [`flake.nix`](https://github.com/rudof-project/rudof/blob/master/flake.nix) that exposes a package, apps, a development shell, and NixOS/home-manager modules, so it can be consumed by other Nix projects without any extra work.
+It supports `x86_64-linux`, `aarch64-linux` and `aarch64-darwin`.
 
 ##### Prerequisites
 
@@ -54,14 +55,21 @@ To later upgrade to a newer version, run:
 nix profile upgrade '.*rudof.*'
 ```
 
-##### Available packages
+##### Available outputs
 
-The flake exposes the following packages:
+The flake exposes the following outputs:
 
-| Package          | Description               |
-|------------------|---------------------------|
-| `rudof`          | The main CLI binary       |
-| `rudof-generate` | Code-generation utilities |
+| Output                 | Description                                                                            |
+|------------------------|----------------------------------------------------------------------------------------|
+| `packages.default`     | Same as `packages.rudof`                                                               |
+| `packages.rudof`       | The main CLI binary                                                                    |
+| `apps.default`         | Same as `apps.rudof`                                                                   |
+| `apps.rudof`           | Runs the `rudof` binary                                                                |
+| `apps.rudof-generate`  | Runs the `rudof-generate` utility bundled in the `rudof` package                       |
+| `devShells.default`    | Development shell with the full Rust toolchain                                         |
+| `devShells.rudof`      | Development shell with the flake `packages.rudof` available                            |
+| `nixosModules.default` | NixOS module exposing `programs.rudof` ([See reference](../references/nix-options.md)) |
+| `homeModules.default`  | home-manager module exposing `programs.rudof` ([See reference](../references/nix-options.md)) |
 
 You can list all available outputs with:
 
@@ -71,8 +79,7 @@ nix flake show github:rudof-project/rudof
 
 ##### Using the flake as an input in your project
 
-The recommended way to consume `rudof` from another Nix project is by adding the flake as an input and applying the provided overlay.
-The overlay injects all `rudof` packages into `pkgs` so they can be referenced as `pkgs.rudof.*`.
+Add `rudof` as a flake input:
 
 ```nix
 {
@@ -81,39 +88,54 @@ The overlay injects all `rudof` packages into `pkgs` so they can be referenced a
     rudof.url = "github:rudof-project/rudof";
     rudof.inputs.nixpkgs.follows = "nixpkgs";
   };
-
-  outputs = { nixpkgs, rudof, ... }:
-    let
-      system = "your-system-architecture";
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [
-          rudof.overlays.default
-        ];
-      };
-    in
-    {
-      # Your outputs here
-    };
 }
 ```
 
-Once the overlay is applied you can reference `rudof` tools anywhere in your configuration:
+Reference the package for your system directly, for example in a `devShell`, a NixOS configuration, or anywhere else `pkgs`-like values are built:
 
 ```nix
-{ pkgs, ... }:
+{ inputs, system, ... }:
 {
-  environment.systemPackages = with pkgs.rudof; [
-    rudof
-    rudof-generate
-  ];
+  environment.systemPackages = [ inputs.rudof.packages.${system}.rudof ];
 }
 ```
 
-##### NixOS / home-manager module
+##### NixOS module
 
-> Support for a dedicated NixOS and home-manager module is planned.
+Import `nixosModules.default` and enable `programs.rudof`:
 
+```nix
+{
+  imports = [ rudof.nixosModules.default ];
+
+  programs.rudof = {
+    enable = true;
+    # package = <override the default rudof package>;
+    settings = {
+      # any rudof setting, e.g.:
+      # version = "0.0.0";
+    };
+    extraArgs = [ "--some-flag" ];
+  };
+}
+```
+
+##### home-manager module
+
+Same config, via `homeModules.default`:
+
+```nix
+{
+  imports = [ rudof.homeModules.default ];
+
+  programs.rudof = {
+    enable = true;
+    settings = {
+      # ...
+    };
+  };
+}
+```
 
 ### Windows
 

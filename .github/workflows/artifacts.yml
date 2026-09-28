@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
       - name: Install stable toolchain
@@ -56,7 +56,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: '13.3'
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
       - name: Install stable toolchain
@@ -104,7 +104,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
       # `lbug` (LadybugDB) unconditionally links against OpenSSL
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
       - name: Install stable toolchain
@@ -188,7 +188,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
       - name: Install stable toolchain
@@ -220,7 +220,7 @@ jobs:
       packages: write
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx

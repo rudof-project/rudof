@@ -32,7 +32,7 @@ jobs:
           app-id: ${{ secrets.RUDOF_BOT_ID }}
           private-key: ${{ secrets.RUDOF_BOT_PK }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-tags: true
@@ -85,11 +85,11 @@ jobs:
       - name: Verify version was updated
         run: grep '^version = "${{ steps.version.outputs.new }}"' Cargo.toml
 
-      - name: Update version in flake.nix
+      - name: Update nix version
         if: ${{ !inputs.prerelease }}
         run: |
           NEW="${{ steps.version.outputs.new }}"
-          sed -i "s/rudof_version = \"[^\"]*\"/rudof_version = \"${NEW}\"/" flake.nix
+          sed -i "s/version = \"[^\"]*\"/version = \"${NEW}\"/" nix/packages.nix
 
       - name: Update the version used by the online demo
         if: ${{ !inputs.prerelease }}
@@ -102,7 +102,7 @@ jobs:
         run: |
           git config user.name "rudof-bot[bot]"
           git config user.email "${{ secrets.RUDOF_BOT_ID }}+rudof-bot[bot]@users.noreply.github.com"
-          git add Cargo.toml flake.nix docs/src/demo/demo.js
+          git add Cargo.toml nix/packages.nix docs/src/demo/demo.js
           git commit -m "chore: release ${{ steps.version.outputs.new }} [skip ci]"
           git push
 

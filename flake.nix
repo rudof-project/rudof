@@ -1,45 +1,23 @@
+# DO-NOT-EDIT. This file was auto-generated using github:denful/flake-file.
+# Use `nix run .#write-flake` to regenerate it.
 {
-  description = "rudof - A RDF data shapes implementation in Rust";
+  description = "rudof - An RDF data shapes implementation in Rust";
+
+  outputs = inputs: import ./outputs.nix inputs;
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-    flake-utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-  };
-
-  # TODO - if we unify config files across crates, we could generate nix / home-manager
-  # TODO - modules to auto generate config files for users (#659)
-  outputs = {
-    self,
-    fenix,
-    crane,
-    nixpkgs,
-    flake-utils,
-    ...
-  } @ inputs:
-    flake-utils.lib.eachDefaultSystem (
-      system: let
-        lib = nixpkgs.lib;
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [
-            fenix.overlays.default
-            self.overlays.default
-          ];
-        };
-        common = import ./nix/common.nix {inherit pkgs inputs system lib rudof_version;};
-        rudof_version = "0.3.24";
-      in {
-        packages = import ./nix/packages.nix {inherit common;};
-        apps = import ./nix/apps.nix {inherit pkgs;};
-        devShells = import ./nix/devshells.nix {inherit pkgs common;};
-      }
-    )
-    // {
-      overlays = import ./nix/overlays.nix {inherit self;};
+    flake-file.url = "github:denful/flake-file";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
+    import-tree.url = "github:vic/import-tree";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  };
 }
