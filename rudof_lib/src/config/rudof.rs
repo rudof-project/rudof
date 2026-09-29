@@ -3,7 +3,7 @@ use crate::config::{CommonConfig, LoggingConfig};
 use dctap::TapConfig;
 use rudof_config::{ConfigError, TomlConfig};
 #[cfg(not(target_family = "wasm"))]
-use rudof_config::{find_config_files_from, merge_tables, read_toml_table, user_config_file};
+use rudof_config::{find_config_files_from, merge_tables, read_toml_table, system_config_file, user_config_file};
 use rudof_rdf::rdf_core::RdfDataConfig;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -106,11 +106,15 @@ impl RudofConfig {
     /// When no explicit file is given, sources are merged per-key, from lowest to
     /// highest precedence:
     /// 1. The built-in defaults ([`RudofConfig::default`]).
-    /// 2. The platform-specific user config file:
+    /// 2. The platform-specific system config file:
+    ///    - Linux: `/etc/rudof/config.toml`
+    ///    - Windows: `%ProgramData%\rudof\config.toml`
+    ///    - macOS: `/etc/rudof/config.toml`
+    /// 3. The platform-specific user config file:
     ///    - Linux: `~/.config/rudof/config.toml`
     ///    - Windows: `%LOCALAPPDATA%\rudof\config.toml`
     ///    - macOS: `~/Library/Application Support/rudof/config.toml`
-    /// 3. Every `rudof.toml` found by walking from the filesystem root down to the
+    /// 4. Every `rudof.toml` found by walking from the filesystem root down to the
     ///    current working directory.
     ///
     /// # Errors
@@ -125,6 +129,13 @@ impl RudofConfig {
         }
 
         let mut merged = toml::Table::new();
+
+        // Platform-specific system config directory
+        if let Some(path) = system_config_file("rudof", "config.toml")
+            && path.is_file()
+        {
+            merge_tables(&mut merged, read_toml_table(&path)?);
+        }
 
         // Platform-specific user config directory
         if let Some(path) = user_config_file("rudof", "config.toml")
