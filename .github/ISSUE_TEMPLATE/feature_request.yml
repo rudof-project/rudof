@@ -1,0 +1,77 @@
+name: Feature request
+description: A new capability, or an extension of an existing one
+type: Feature
+labels:
+  - status/needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you write the code: open this issue first and wait for a maintainer to agree on the
+        approach. It is much cheaper to change direction here than in review.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: >
+        What are you trying to do that rudof does not let you do today? Describe the situation,
+        not the solution — it helps to know what you are actually after.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like rudof to do
+      description: >
+        If it is a CLI change, show the command and its output. If it is a library change, show
+        the API you would like to call.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of rudof
+      multiple: true
+      options:
+        - RDF
+        - Property graphs
+        - ShEx
+        - SHACL
+        - PGSchema
+        - SPARQL
+        - DCTAP
+        - Library
+        - CLI
+        - Bindings
+        - MCP server
+        - Data generation
+        - Not sure
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: >
+        Including whether this can already be done some other way, and why that is not good
+        enough.
+
+  - type: input
+    id: spec
+    attributes:
+      label: Related specification
+      description: >
+        If this comes from ShEx, SHACL, RDF, SPARQL or another specification, link to the relevant
+        section.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and this is not a duplicate
+          required: true
+        - label: I would be willing to implement this myself
+          required: false

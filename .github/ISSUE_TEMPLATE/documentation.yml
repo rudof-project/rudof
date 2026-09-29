@@ -1,0 +1,44 @@
+name: Documentation
+description: Something in the manual, the README or the API docs is wrong, missing or unclear
+type: Documentation
+labels:
+  - status/needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Small fixes do not need an issue at all. Open a pull request directly and it will be reviewed as it is.
+
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The page URL, or the path of the file in the repository.
+      placeholder: "https://rudof-project.github.io/rudof/cli_usage/shex.html"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: What it should say instead
+      description: A rough draft is fine and very welcome.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      options:
+        - It is wrong or out of date
+        - It is missing entirely
+        - It is confusing or incomplete
+        - An example does not work
+    validations:
+      required: true

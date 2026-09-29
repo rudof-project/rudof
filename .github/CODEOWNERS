@@ -1,0 +1,37 @@
+# Who gets a review request for what.
+#
+# Being listed here means "you are a good person to ask about this", not that you
+# own the code. See GOVERNANCE.md.
+#
+# The last matching pattern wins, so a specific entry replaces the default owner
+# rather than adding to it. Add yourself to an area you work on regularly.
+
+# Default owner for anything not matched below
+*                       @labra @samuel-bustamante @algarfer
+
+# Areas with a clear primary reviewer
+/rudof_cli/             @samuel-bustamante @algarfer @labra
+/rudof_cli/src/shell/   @labra
+/rudof_lib/             @samuel-bustamante @algarfer @labra
+/rudof_mcp/             @samuel-bustamante
+/shacl/                 @algarfer @labra
+/shex_ast/              @samuel-bustamante @labra
+/shex_validation/       @samuel-bustamante @labra
+/rudof_rdf/             @samuel-bustamante @algarfer @labra
+/nix/                   @algarfer
+flake.nix               @algarfer
+/bindings/python/       @samuel-bustamante
+/bindings/wasm/         @labra
+/rudof_generate/        @DiegoMfer
+
+# Repository infrastructure
+/.github/               @samuel-bustamante @algarfer @labra
+
+# Policies: changes here need the project lead's approval
+/CONTRIBUTING.md         @labra
+/GOVERNANCE.md           @labra
+/CODE_OF_CONDUCT.md      @labra
+/SECURITY.md             @labra
+/.github/labels.yml      @labra
+/.github/ISSUE_TEMPLATE/ @labra
+/docs/src/contributing/  @labra

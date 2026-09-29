@@ -1,0 +1,123 @@
+name: Bug report
+description: Something behaves differently from what is documented or specified
+type: Bug
+labels:
+  - status/needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The more of the fields below you can fill in,
+        the sooner someone can reproduce the problem.
+
+        Questions about how to use rudof belong in
+        [Discussions](https://github.com/rudof-project/rudof/discussions), not here.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What rudof did, and how that differs from what it should have done.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce it
+      description: >
+        The smallest example that shows the problem, and the exact
+        command or code that you ran. Paste them inline rather than linking to a large file.
+      placeholder: |
+        rudof shex-validate -s schema.shex -d data.ttl -m shapemap.sm
+
+        schema.shex:
+        prefix : <http://example.org/>
+        :User { :name xsd:string }
+
+        data.ttl:
+        ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: rudof version
+      description: The output of `rudof --version`, or the version of the crate or package you use.
+      placeholder: "0.3.24"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Which interface
+      options:
+        - Command line (rudof)
+        - Interactive shell
+        - Rust library
+        - Python bindings
+        - WebAssembly / npm package
+        - MCP server
+        - Online demo
+        - Other or not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of rudof
+      description: Pick everything that seems involved. A maintainer will correct it if needed.
+      multiple: true
+      options:
+        - RDF
+        - Property graphs
+        - ShEx
+        - SHACL
+        - PGSchema
+        - SPARQL
+        - DCTAP
+        - Library
+        - CLI
+        - Bindings
+        - MCP server
+        - Nix
+        - Docker
+        - Data generation
+        - Not sure
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Ubuntu 24.04, macOS 15.1, Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or error message
+      description: >
+        Paste the full output. Running with `-vvv` or `RUST_LOG=debug` often shows more.
+        This is automatically formatted as code, no backticks needed.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and this is not a duplicate
+          required: true
+        - label: I reproduced this on the latest released version of rudof
+          required: false
