@@ -1,0 +1,223 @@
+# Label taxonomy for rudof — single source of truth.
+#
+# Documented in docs/src/contributing/labels.md; keep both in sync.
+# `from` records the previous name of a renamed label, so applying this file
+# preserves the label's existing assignments.
+#
+# Namespaces and their colours:
+#   area/      0e8a16  what part of rudof is affected (at least one per issue)
+#   platform/  1d76db  binding, OS or packaging target
+#   spec/      5319e7  specification version cutting across areas
+#   status/    fbca04  where the issue is in its lifecycle (at most one)
+#   priority/  reds    how urgent it is (at most one)
+# `help wanted` and `good first issue` stay unprefixed: GitHub matches those
+# exact names in its contributor discovery pages.
+
+# --- area ---------------------------------------------------------------
+
+- name: "area/shex"
+  color: "0e8a16"
+  description: "ShEx — Shape Expressions"
+  from: "shex"
+
+- name: "area/shacl"
+  color: "0e8a16"
+  description: "SHACL support and validation algorithm"
+  from: "shacl"
+
+- name: "area/rdf"
+  color: "0e8a16"
+  description: "RDF support: parsing, serialization, data model"
+  from: "rdf"
+
+- name: "area/sparql"
+  color: "0e8a16"
+  description: "SPARQL queries and results"
+  from: "sparql"
+
+- name: "area/dctap"
+  color: "0e8a16"
+  description: "DCTAP support"
+  from: "dctap"
+
+- name: "area/pg"
+  color: "0e8a16"
+  description: "Property graphs: the data model, parsing and serialization"
+  from: "LPG"
+
+- name: "area/pgschema"
+  color: "0e8a16"
+  description: "PG-Schema: schemas and property constraints over property graphs"
+  from: "pgschema"
+
+- name: "area/rdf-config"
+  color: "0e8a16"
+  description: "rdf-config files from DBCLS"
+  from: "rdf-config"
+
+- name: "area/generate"
+  color: "0e8a16"
+  description: "Synthetic RDF data generator"
+  from: "generate"
+
+- name: "area/cli"
+  color: "0e8a16"
+  description: "The rudof command line interface"
+  from: "cli"
+
+- name: "area/shell"
+  color: "0e8a16"
+  description: "The interactive rudof shell"
+  from: "shell"
+
+- name: "area/mcp"
+  color: "0e8a16"
+  description: "Model Context Protocol server"
+  from: "MCP"
+
+- name: "area/backend"
+  color: "0e8a16"
+  description: "Storage backends"
+  from: "backend"
+
+- name: "area/architecture"
+  color: "0e8a16"
+  description: "Crate layout, public APIs and cross-cutting design"
+  from: "architecture"
+
+- name: "area/docs"
+  color: "0e8a16"
+  description: "The manual, the README, doc comments and examples"
+  from: "documentation"
+
+- name: "area/tests"
+  color: "0e8a16"
+  description: "Test suites, test infrastructure and submodules"
+  from: "tests"
+
+- name: "area/ci"
+  color: "0e8a16"
+  description: "GitHub Actions workflows and CI infrastructure"
+  from: "github actions"
+
+- name: "area/release"
+  color: "0e8a16"
+  description: "Releases, packaging and distribution"
+  from: "releases"
+
+- name: "area/dependencies"
+  color: "0e8a16"
+  description: "Dependency updates and version alignment"
+  from: "dependencies"
+
+- name: "area/benchmarks"
+  color: "0e8a16"
+  description: "Benchmarks and performance measurement"
+  from: "benchmarks"
+
+# --- platform -----------------------------------------------------------
+
+- name: "platform/python"
+  color: "1d76db"
+  description: "Python bindings"
+  from: "python"
+
+- name: "platform/wasm"
+  color: "1d76db"
+  description: "WebAssembly bindings and the npm package"
+  from: "WebAssembly"
+
+- name: "platform/windows"
+  color: "1d76db"
+  description: "Windows-specific"
+  from: "windows"
+
+- name: "platform/linux"
+  color: "1d76db"
+  description: "Linux-specific"
+  from: "linux"
+
+- name: "platform/macos"
+  color: "1d76db"
+  description: "macOS-specific"
+
+- name: "platform/nix"
+  color: "1d76db"
+  description: "Nix flake, packages and modules"
+
+- name: "platform/docker"
+  color: "1d76db"
+  description: "Docker images"
+
+# --- spec ---------------------------------------------------------------
+
+- name: "spec/rdf-1.2"
+  color: "5319e7"
+  description: "RDF 1.2 support"
+  from: "RDF 1.2"
+
+- name: "spec/shacl-1.2"
+  color: "5319e7"
+  description: "SHACL 1.2 support"
+  from: "shacl_12"
+
+# --- status -------------------------------------------------------------
+
+- name: "status/needs-triage"
+  color: "fbca04"
+  description: "Not yet reviewed by a maintainer"
+
+- name: "status/needs-info"
+  color: "fbca04"
+  description: "Waiting for more information from the reporter"
+
+- name: "status/blocked"
+  color: "fbca04"
+  description: "Cannot progress until something else is resolved"
+
+- name: "status/pending-release"
+  color: "fbca04"
+  description: "Merged into master, waiting to be published in a release"
+
+- name: "status/duplicate"
+  color: "fbca04"
+  description: "Already tracked by another issue or pull request"
+  from: "duplicate"
+
+- name: "status/invalid"
+  color: "fbca04"
+  description: "Not an actionable report"
+  from: "invalid"
+
+- name: "status/wontfix"
+  color: "fbca04"
+  description: "Deliberately not going to be worked on"
+  from: "wontfix"
+
+# --- priority -----------------------------------------------------------
+
+- name: "priority/p0-critical"
+  color: "b60205"
+  description: "Data loss, security issue or master is broken — drop everything"
+
+- name: "priority/p1-high"
+  color: "d93f0b"
+  description: "Blocks users with no workaround — next release"
+
+- name: "priority/p2-medium"
+  color: "e99695"
+  description: "Should be done, has a workaround — scheduled when there is room"
+
+- name: "priority/p3-low"
+  color: "f9d0c4"
+  description: "Nice to have — no committed timeframe"
+
+# --- community ----------------------------------------------------------
+
+- name: "help wanted"
+  color: "008672"
+  description: "We need help from external people"
+
+- name: "good first issue"
+  color: "7057ff"
+  description: "Self-contained and well specified — a good entry point"
