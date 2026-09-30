@@ -1,0 +1,12 @@
+PREFIX : <http://dam.example/med#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+<tag:b0> :name "Walker, Alice";
+  :systolic [
+    :value "110"^^xsd:float;
+    :units "mmHg"
+  ];
+  :diastolic [
+    :value "70"^^xsd:float;
+    :units "mmHg"
+  ].

@@ -89,6 +89,10 @@ pub enum RudofError {
     #[error("Materialize error: {0}")]
     Materialize(#[from] MaterializeError),
 
+    /// ShExMap errors (binding, materializing by iteration scopes, schema-pair analysis).
+    #[error("ShExMap error: {0}")]
+    ShExMap(#[from] ShExMapError),
+
     /// Default prefix declarations errors.
     #[error("Prefixes error: {0}")]
     Prefixes(#[from] PrefixesError),

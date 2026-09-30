@@ -1,0 +1,19 @@
+PREFIX  : <http://dam.example/med#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX bp: <http://shex.io/extensions/Map/#BPDAM->
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<BPunitsDAM>
+
+<BPunitsDAM> {
+  :name . %Map:{ regex(/(?<bp:family>[a-zA-Z]+), (?<bp:given>[a-zA-Z]+)/) %};
+  :systolic {
+    :value xsd:float %Map:{ bp:sysVal %};
+    :units xsd:string %Map:{ bp:sysUnits %}
+  };
+  :diastolic {
+    :value xsd:float %Map:{ bp:diaVal %};
+    :units xsd:string %Map:{ bp:diaUnits %}
+  };
+  :someConstProp xsd:string? %Map:{ <http://abc.example/someConstant> %}
+}

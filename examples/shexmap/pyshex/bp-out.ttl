@@ -1,0 +1,2 @@
+PREFIX dam: <http://dam.example/med#>
+<tag:bp1> dam:systolic 120 ; dam:diastolic 80 .

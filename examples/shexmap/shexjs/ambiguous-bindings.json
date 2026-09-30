@@ -1,0 +1,11 @@
+{
+  "http://contact.example/name": {
+    "value": "Bob"
+  },
+  "http://contact.example/email": {
+    "value": "bob@mail.example"
+  },
+  "http://contact.example/tel": {
+    "value": "+16175551212"
+  }
+}

@@ -1,0 +1,10 @@
+PREFIX : <http://codes.example/>
+PREFIX v: <http://vars.example/>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Codes>
+
+<Codes> {
+  :primaryCode . %Map:{ v:primary %} ;
+  :otherCode . %Map:{ v:other %}
+}

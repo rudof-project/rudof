@@ -1,0 +1,33 @@
+PREFIX fhir: <http://hl7.org/fhir-rdf/>
+PREFIX sct: <http://snomed.info/sct/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+<tag:BPfhir123> a fhir:Observation;
+  fhir:subject [
+    fhir:givenName "Alice";
+    fhir:familyName "Walker"
+  ];
+  fhir:coding [
+    fhir:code sct:Blood_Pressure
+  ];
+  fhir:component [
+    a fhir:Observation;
+    fhir:coding [
+      fhir:code sct:Systolic_Blood_Pressure
+    ];
+    fhir:valueQuantity [
+      a fhir:Quantity;
+      fhir:value "110"^^xsd:float;
+      fhir:units "mmHg"
+    ]
+  ], [
+    a fhir:Observation;
+    fhir:coding [
+      fhir:code sct:Diastolic_Blood_Pressure
+    ];
+    fhir:valueQuantity [
+      a fhir:Quantity;
+      fhir:value "70"^^xsd:float;
+      fhir:units "mmHg"
+    ]
+  ].

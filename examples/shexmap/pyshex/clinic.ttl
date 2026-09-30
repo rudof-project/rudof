@@ -1,0 +1,5 @@
+PREFIX : <http://clinic.example/>
+<clinic1> :member <ann>, <bob>, <cy> .
+<ann> :name "Ann" ; :mrn "MRN-1" .
+<bob> :name "Bob" ; :license "LIC-9" .
+<cy> :name "Cy" ; :mrn "MRN-2" .

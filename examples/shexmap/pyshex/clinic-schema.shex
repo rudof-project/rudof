@@ -1,0 +1,15 @@
+# Members are Persons, but Person is abstract: every member is a Patient or a
+# Clinician, and EXTENDS shares its neighbourhood between the Person part (the name)
+# and the extension's own part (the record number or the licence).
+PREFIX : <http://clinic.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX v: <http://vars.example/>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Clinic>
+
+<Clinic> { :member @<Person>* }
+
+ABSTRACT <Person> { :name xsd:string %Map:{ v:name %} }
+<Patient> EXTENDS @<Person> { :mrn xsd:string %Map:{ v:mrn %} }
+<Clinician> EXTENDS @<Person> { :license xsd:string %Map:{ v:license %} }

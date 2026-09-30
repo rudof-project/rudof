@@ -1,0 +1,5 @@
+PREFIX chart: <http://chart.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+<tag:chart1> chart:patientName "Ann" ;
+  chart:pulse [ chart:bpm 72 ; chart:taken "2026-09-01T08:00:00"^^xsd:dateTime ] ,
+              [ chart:bpm 75 ; chart:taken "2026-09-02T08:00:00"^^xsd:dateTime ] .

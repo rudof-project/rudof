@@ -1,0 +1,42 @@
+PREFIX fhir: <http://hl7.org/fhir-rdf/>
+PREFIX sct: <http://snomed.info/sct/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX bp: <http://shex.io/extensions/Map/#BPDAM->
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<BPfhir>
+
+<collector> {
+  fhir:item @<BPfhir>*
+}
+
+<Patient> {
+  fhir:givenName xsd:string %Map:{ bp:given %};
+  fhir:familyName xsd:string %Map:{ bp:family %}
+}
+
+<BPfhir> {
+  a [fhir:Observation]?;
+  fhir:subject @<Patient>;
+  fhir:coding { fhir:code [sct:Blood_Pressure] };
+  fhir:component @<sysBP>;
+  fhir:component @<diaBP>
+}
+<sysBP> {
+  a [fhir:Observation]?;
+  fhir:coding { fhir:code [sct:Systolic_Blood_Pressure] };
+  fhir:valueQuantity {
+    a [fhir:Quantity]?;
+    fhir:value xsd:float %Map:{ bp:sysVal %};
+    fhir:units xsd:string %Map:{ bp:sysUnits %}
+  }
+}
+<diaBP> {
+  a [fhir:Observation]?;
+  fhir:coding { fhir:code [sct:Diastolic_Blood_Pressure] };
+  fhir:valueQuantity {
+    a [fhir:Quantity]?;
+    fhir:value xsd:float %Map:{ bp:diaVal %};
+    fhir:units xsd:string %Map:{ bp:diaUnits %}
+  }
+}

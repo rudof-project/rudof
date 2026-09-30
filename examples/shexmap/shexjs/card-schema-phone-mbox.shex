@@ -1,0 +1,33 @@
+# Demonstrates NFA-thread forking in ThreadedMaterializer (see
+# doc/threaded-materializer.md): the OneOf below forks one thread per
+# disjunct.  A disjunct whose Map variable has no binding dies with its
+# emitted triples ("splits" example: no :tel, so only the mbox thread
+# survives).  When both variables are bound, both threads remain viable
+# and the greedy scheduler accepts the first disjunct, so the
+# materialization is ambiguous ("ambiguous" example: phone wins, the
+# equally-viable mbox thread is never explored).
+
+PREFIX : <http://contact.example/>
+PREFIX card: <http://card.example/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Card>
+
+<Card> {
+  card:fullName xsd:string %Map:{ :name %} ;
+  ( card:phone @<Tel> |
+    card:mbox @<Email> )+
+# ( card:mbox @<Email> |
+#   card:phone @<Tel> )+
+}
+
+<Tel> {
+  card:use xsd:string %Map:{ :use %} ;
+  card:val xsd:string %Map:{ :tel %} 
+}
+
+<Email> {
+  card:use xsd:string %Map:{ :use %} ;
+  card:val xsd:string %Map:{ :email %}
+}

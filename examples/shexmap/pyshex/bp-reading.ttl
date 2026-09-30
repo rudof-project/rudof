@@ -1,0 +1,2 @@
+PREFIX : <http://vitals.example/>
+<reading1> :component [ :value 120 ], [ :value 80 ] .

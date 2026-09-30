@@ -1,0 +1,5 @@
+PREFIX : <http://contact.example/>
+
+<PersonY> :name "Bob" ;
+          :email "bob@mail.example" ;
+          :tel "+16175551212" .

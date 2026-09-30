@@ -28,3 +28,4 @@ pub mod query;
 pub mod rdf_config;
 pub mod shacl;
 pub mod shex;
+pub mod shexmap;

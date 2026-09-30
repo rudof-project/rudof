@@ -1,0 +1,7 @@
+# Back from the chart: the output schema's ^:subject makes each observation point at
+# the patient, recreating the original arrangement with fresh observation nodes.
+PREFIX : <http://ehr.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+<tag:pat1> :name "Ann" .
+[] :subject <tag:pat1> ; :code :heartRate ; :value 72 ; :at "2026-09-01T08:00:00"^^xsd:dateTime .
+[] :subject <tag:pat1> ; :code :heartRate ; :value 75 ; :at "2026-09-02T08:00:00"^^xsd:dateTime .
