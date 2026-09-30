@@ -1,0 +1,52 @@
+name: Task or refactor
+description: Internal work with no new user-visible behaviour — CI, dependencies, cleanups
+type: Task
+labels:
+  - status/needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for work that is not a bug, a feature or documentation: build and CI changes,
+        dependency updates, test infrastructure, and refactors.
+
+        A maintainer may re-type a pure refactor as `Refactor` during triage.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs doing
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: >
+        What is painful today, or what does this unblock? A refactor with no reason behind it is
+        hard to prioritise against everything else.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of rudof
+      multiple: true
+      options:
+        - Crate architecture
+        - CI and GitHub Actions
+        - Tests and test suites
+        - Dependencies
+        - Releases and packaging
+        - Benchmarks
+        - Not sure
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Does this change anything for users
+      description: >
+        A refactor should not. If it changes a public API, the CLI surface or an output format,
+        say so here — it may need to go into a minor release.

@@ -75,3 +75,11 @@
 - [Nix module options](./references/nix-options.md)
 - [Benchmarks](./references/benchmarks.md)
 - [FAQ](./references/faq.md)
+
+# Contributing
+
+- [Issue policy](./contributing/issues.md)
+- [Label reference](./contributing/labels.md)
+- [Development workflow](./contributing/workflow.md)
+- [Releases](./contributing/releases.md)
+- [Use of AI](./contributing/ai.md)

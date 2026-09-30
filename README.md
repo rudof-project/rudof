@@ -29,6 +29,7 @@ as well as Python bindings.
 - [Using rudof as Jupyter notebooks](https://rudof-project.github.io/tutorials)
 - [Installation](https://github.com/rudof-project/rudof?tab=readme-ov-file#installation)
 - [List of issues](https://github.com/rudof-project/rudof/issues)
+- [Contributing](./CONTRIBUTING.md)
 - [Discussion](https://github.com/rudof-project/rudof/discussions)
 - [FAQ](https://github.com/rudof-project/rudof/wiki/FAQ)
 - [How to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides)
@@ -413,6 +414,12 @@ at your option.
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ### Contribution
+
+Contributions are welcome. [CONTRIBUTING.md](./CONTRIBUTING.md) explains how to get set up and
+how work is organised — issues, branches, pull requests, releases and our
+[policy on the use of AI](https://rudof-project.github.io/rudof/contributing/ai.html).
+Participation is governed by our [Code of Conduct](./CODE_OF_CONDUCT.md), and
+[GOVERNANCE.md](./GOVERNANCE.md) describes who decides what.
 
 Unless you explicitly state otherwise,
 any contribution intentionally submitted for inclusion in the work by you,

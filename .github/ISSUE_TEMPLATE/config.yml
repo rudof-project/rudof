@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question about using rudof
+    url: https://github.com/rudof-project/rudof/discussions
+    about: Ask in Discussions. Questions are not tracked as issues.
+  - name: Frequently asked questions
+    url: https://github.com/rudof-project/rudof/wiki/FAQ
+    about: Your question may already be answered here.
+  - name: Documentation
+    url: https://rudof-project.github.io/rudof/
+    about: The rudof manual.
+  - name: Report a security vulnerability
+    url: https://github.com/rudof-project/rudof/security/advisories/new
+    about: Report it privately. Please do not open a public issue.
