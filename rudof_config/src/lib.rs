@@ -7,7 +7,7 @@ use thiserror::Error;
 #[cfg(not(target_family = "wasm"))]
 mod discovery;
 #[cfg(not(target_family = "wasm"))]
-pub use discovery::{find_config_files_from, merge_tables, read_toml_table, user_config_file};
+pub use discovery::{find_config_files_from, merge_tables, read_toml_table, system_config_file, user_config_file};
 
 /// Errors produced by configuration operations
 #[derive(Error, Debug)]

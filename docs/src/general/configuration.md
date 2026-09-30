@@ -14,13 +14,17 @@ highest precedence:
 
 1. **Built-in defaults** — every setting has a sensible default, so a config file only
    needs to mention what it wants to override.
-2. **User config file** — a per-user `config.toml` in the platform config directory:
+2. **System config file** - a system-wide `config.toml` in the platform config directory:
+   - Linux: `/etc/rudof/config.toml`
+   - Windows: `%ProgramData%\rudof\config.toml`
+   - macOS: `/etc/rudof/config.toml`
+3. **User config file** — a per-user `config.toml` in the platform config directory:
    - Linux: `~/.config/rudof/config.toml`
    - Windows: `%LOCALAPPDATA%\rudof\config.toml`
    - macOS: `~/Library/Application Support/rudof/config.toml`
-3. **Project `rudof.toml` files** — starting from the current working directory and
+4. **Project `rudof.toml` files** — starting from the current working directory and
    walking up to the filesystem root, every `rudof.toml` found is merged.
-4. **CLI flags** — options passed on the command line always take precedence.
+5. **CLI flags** — options passed on the command line always take precedence.
 
 Sources 1–3 are merged **per key** ("deep merge"): a file only overrides the keys it
 actually sets and inherits everything else from the layers below it.

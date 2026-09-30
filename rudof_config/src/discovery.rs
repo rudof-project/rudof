@@ -67,6 +67,29 @@ pub fn user_config_file(app_name: &str, file_name: &str) -> Option<PathBuf> {
     dirs::config_local_dir().map(|dir| dir.join(app_name).join(file_name))
 }
 
+fn system_config_path() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var_os("ProgramData").map(PathBuf::from)
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        Some(PathBuf::from("/etc"))
+    }
+}
+
+/// Returns the platform-specific system config file for an application
+///
+/// The path is `<config_dir>/<app_name>/<file_name>`, where `<config_dir>` is:
+/// - Linux: `/etc`
+/// - Windows: `%ProgramData%`
+/// - macOS: `/etc`
+///
+/// The returned path is not guaranteed to exist; callers should check.
+pub fn system_config_file(app_name: &str, file_name: &str) -> Option<PathBuf> {
+    system_config_path().map(|dir| dir.join(app_name).join(file_name))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
