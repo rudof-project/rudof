@@ -1,3 +1,5 @@
+#![allow(clippy::clone_on_copy)]
+
 use pyo3::prelude::*;
 use rudof_lib::formats::{BackendSpec, DdlDialect, PgSchemaFormat, ResultPgSchemaValidationFormat};
 

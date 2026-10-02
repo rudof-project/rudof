@@ -2,6 +2,7 @@ use crate::types::{MessageMap, NodeKind, Value};
 use itertools::Itertools;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
+use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
@@ -32,6 +33,7 @@ pub enum ASTComponent {
     Disjoint(IriRef),
     LessThan(IriRef),
     LessThanOrEquals(IriRef),
+    SubsetOf(SHACLPath),
     Or(Vec<Object>),
     And(Vec<Object>),
     Not(Object),
@@ -86,6 +88,7 @@ impl Display for ASTComponent {
             ASTComponent::Disjoint(iri) => write!(f, "disjoint({iri})"),
             ASTComponent::LessThan(iri) => write!(f, "lessThan({iri})"),
             ASTComponent::LessThanOrEquals(iri) => write!(f, "lessThanOrEquals({iri})"),
+            ASTComponent::SubsetOf(path) => write!(f, "subsetOf({path})"),
             ASTComponent::Or(obj) => {
                 let str = obj.iter().map(|s| s.to_string()).join(", ");
                 write!(f, "or[{str}]")
@@ -187,6 +190,7 @@ impl From<ASTComponent> for IriS {
             ASTComponent::Disjoint(_) => ShaclVocab::sh_disjoint(),
             ASTComponent::LessThan(_) => ShaclVocab::sh_less_than(),
             ASTComponent::LessThanOrEquals(_) => ShaclVocab::sh_less_than_or_equals(),
+            ASTComponent::SubsetOf(_) => ShaclVocab::sh_subset_of(),
             ASTComponent::Or(_) => ShaclVocab::sh_or(),
             ASTComponent::And(_) => ShaclVocab::sh_and(),
             ASTComponent::Not(_) => ShaclVocab::sh_not(),

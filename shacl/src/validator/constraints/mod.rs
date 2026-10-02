@@ -6,7 +6,7 @@ mod test;
 use crate::error::ValidationError;
 use crate::ir::components::{
     And, Datatype, Deactivated, HasValue, In, LanguageIn, MaxCount, MinCount, Node, Not, Or, QualifiedValueShape,
-    UniqueLang, Xone,
+    SubsetOf, UniqueLang, Xone,
 };
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
@@ -145,6 +145,7 @@ impl_validators_via_validate!(QualifiedValueShape);
 impl_validators_via_validate!(LanguageIn);
 impl_validators_via_validate!(UniqueLang);
 impl_validators_via_validate!(Datatype);
+impl_validators_via_validate!(SubsetOf);
 
 // TODO - move to crate::shacl_component
 pub(crate) struct ShaclComponent<'a, S> {
@@ -192,6 +193,7 @@ impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<
             IRComponent::Disjoint(inner) => inner,
             IRComponent::LessThan(inner) => inner,
             IRComponent::LessThanOrEquals(inner) => inner,
+            IRComponent::SubsetOf(inner) => inner,
             IRComponent::Or(inner) => inner,
             IRComponent::And(inner) => inner,
             IRComponent::Not(inner) => inner,
@@ -231,6 +233,7 @@ impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn Basic
             IRComponent::Disjoint(inner) => inner,
             IRComponent::LessThan(inner) => inner,
             IRComponent::LessThanOrEquals(inner) => inner,
+            IRComponent::SubsetOf(inner) => inner,
             IRComponent::Or(inner) => inner,
             IRComponent::And(inner) => inner,
             IRComponent::Not(inner) => inner,
