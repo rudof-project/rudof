@@ -169,9 +169,13 @@ impl IRComponent {
             IRComponent::NodeKind(nk) => {
                 let iri = match nk.node_kind() {
                     NodeKind::Iri => ShaclVocab::sh_iri_ref(),
-                    _ => unimplemented!(),
+                    NodeKind::Lit => ShaclVocab::sh_literal_ref(),
+                    NodeKind::BNode => ShaclVocab::sh_blank_node_ref(),
+                    NodeKind::BNodeOrIri => ShaclVocab::sh_blank_node_or_iri_ref(),
+                    NodeKind::BNodeOrLit => ShaclVocab::sh_blank_node_or_literal_ref(),
+                    NodeKind::IriOrLit => ShaclVocab::sh_iri_or_literal_ref(),
                 };
-                register_iri(iri, ShaclVocab::sh_datatype(), id, graph)
+                register_iri(iri, ShaclVocab::sh_node_kind(), id, graph)
             },
             IRComponent::MinCount(mc) => {
                 register_integer(mc.min_count() as isize, ShaclVocab::sh_min_count(), id, graph)
