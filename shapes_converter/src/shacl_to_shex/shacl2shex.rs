@@ -359,6 +359,7 @@ impl Shacl2ShEx {
             IRComponent::Disjoint(_) => Err(Shacl2ShExError::not_implemented("sh:disjoint")),
             IRComponent::LessThan(_) => Err(Shacl2ShExError::not_implemented("sh:lessThan")),
             IRComponent::LessThanOrEquals(_) => Err(Shacl2ShExError::not_implemented("sh:lessThanOrEquals")),
+            IRComponent::SubsetOf(_) => Err(Shacl2ShExError::not_implemented("sh:subsetOf")),
             IRComponent::Or(_) => {
                 debug!("Not implemented OR Shapes");
                 Ok(ShapeExpr::empty_shape())
