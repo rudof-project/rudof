@@ -39,9 +39,9 @@ impl Display for ValueConstraint {
             ValueConstraint::MinLength(n) => write!(f, "MinLength({n})")?,
             ValueConstraint::MaxLength(n) => write!(f, "MaxLength({n})")?,
             ValueConstraint::MinInclusive(n) => write!(f, "MinInclusive({n})")?,
-            ValueConstraint::MaxExclusive(n) => write!(f, "MaxInclusive({n})")?,
+            ValueConstraint::MaxExclusive(n) => write!(f, "MaxExclusive({n})")?,
             ValueConstraint::MinExclusive(n) => write!(f, "MinExclusive({n})")?,
-            ValueConstraint::MaxInclusive(n) => write!(f, "MaxExclusive({n})")?,
+            ValueConstraint::MaxInclusive(n) => write!(f, "MaxInclusive({n})")?,
         }
         Ok(())
     }
@@ -103,5 +103,30 @@ impl Display for Number {
             Number::Double(n) => write!(f, "{n}")?,
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_display_numeric_ranges() {
+        assert_eq!(
+            ValueConstraint::MinInclusive(Number::Int(1)).to_string(),
+            "MinInclusive(1)"
+        );
+        assert_eq!(
+            ValueConstraint::MinExclusive(Number::Int(1)).to_string(),
+            "MinExclusive(1)"
+        );
+        assert_eq!(
+            ValueConstraint::MaxInclusive(Number::Int(1)).to_string(),
+            "MaxInclusive(1)"
+        );
+        assert_eq!(
+            ValueConstraint::MaxExclusive(Number::Int(1)).to_string(),
+            "MaxExclusive(1)"
+        );
     }
 }

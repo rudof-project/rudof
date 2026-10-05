@@ -149,7 +149,8 @@ impl<'a> Iterator for StatementIterator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Shape, ShapeExpr, ShapeExprLabel};
+    use crate::ast::{Shape, ShapeExpr, ShapeExprLabel, XsFacet};
+    use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 
     use super::*;
     use rudof_iri::iri;
@@ -187,5 +188,73 @@ mod tests {
         };
         assert_eq!(nc.annotations().map(|anns| anns.len()), Some(1));
         assert_eq!(nc.sem_acts().map(|sas| sas.len()), Some(1));
+    }
+
+    fn node_constraint_facets(body: &str) -> Vec<XsFacet> {
+        let str =
+            format!("prefix : <http://example.org/>\nprefix xsd: <http://www.w3.org/2001/XMLSchema#>\n:S {body}\n");
+        let schema = ShExParser::parse(&str, None, &iri!("http://default/"))
+            .unwrap_or_else(|e| panic!("failed to parse `{body}`: {e}"));
+        match schema.shapes().unwrap()[0].shape_expr.clone() {
+            ShapeExpr::NodeConstraint(nc) => nc.xs_facet().unwrap_or_default(),
+            other => panic!("expected a node constraint, found {other:?}"),
+        }
+    }
+
+    // Regression test for https://github.com/rudof-project/rudof/issues/857
+    #[test]
+    fn test_chained_numeric_facets_case_insensitive() {
+        let expected = vec![
+            XsFacet::min_inclusive(NumericLiteral::integer(13)),
+            XsFacet::max_inclusive(NumericLiteral::integer(20)),
+        ];
+        assert_eq!(
+            node_constraint_facets("xsd:integer MININCLUSIVE 13 MAXINCLUSIVE 20"),
+            expected
+        );
+        assert_eq!(
+            node_constraint_facets("xsd:integer MinInclusive 13 MaxInclusive 20"),
+            expected
+        );
+        assert_eq!(
+            node_constraint_facets("xsd:integer minexclusive 1 maxexclusive 5"),
+            vec![
+                XsFacet::min_exclusive(NumericLiteral::integer(1)),
+                XsFacet::max_exclusive(NumericLiteral::integer(5)),
+            ]
+        );
+        assert_eq!(
+            node_constraint_facets("xsd:decimal TotalDigits 3 FractionDigits 2"),
+            vec![XsFacet::totaldigits(3), XsFacet::fractiondigits(2)]
+        );
+    }
+
+    #[test]
+    fn test_chained_string_facets() {
+        let expected = vec![XsFacet::min_length(3), XsFacet::max_length(5)];
+        assert_eq!(node_constraint_facets("xsd:string MINLENGTH 3 MAXLENGTH 5"), expected);
+        assert_eq!(node_constraint_facets("xsd:string MinLength 3 MaxLength 5"), expected);
+        assert_eq!(node_constraint_facets("LITERAL MINLENGTH 3 MAXLENGTH 5"), expected);
+        assert_eq!(node_constraint_facets("IRI MINLENGTH 3 MAXLENGTH 5"), expected);
+        assert_eq!(node_constraint_facets("MINLENGTH 3 MAXLENGTH 5"), expected);
+        assert_eq!(
+            node_constraint_facets("xsd:string /a/i LENGTH 2"),
+            vec![XsFacet::pattern_flags("a", "i"), XsFacet::length(2)]
+        );
+    }
+
+    #[test]
+    fn test_shape_qualifiers_case_insensitive() {
+        let str = r#"
+ prefix : <http://example.org/>
+ :S Closed Extra :p { :p . }
+ "#;
+        let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
+        let shape = match schema.shapes().unwrap()[0].shape_expr.clone() {
+            ShapeExpr::Shape(shape) => shape,
+            other => panic!("expected a shape, found {other:?}"),
+        };
+        assert_eq!(shape.closed, Some(true));
+        assert_eq!(shape.extra.map(|e| e.len()), Some(1));
     }
 }
