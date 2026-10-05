@@ -64,6 +64,7 @@ vocab_term!(ShaclVocab, SH_DISJOINT, "disjoint");
 vocab_term!(ShaclVocab, SH_EQUALS, "equals");
 vocab_term!(ShaclVocab, SH_LESS_THAN, "lessThan");
 vocab_term!(ShaclVocab, SH_LESS_THAN_OR_EQUALS, "lessThanOrEquals");
+vocab_term!(ShaclVocab, SH_SUBSET_OF, "subsetOf");
 
 // Non validating
 vocab_term!(ShaclVocab, SH_DESCRIPTION, "description");
@@ -189,6 +190,11 @@ vocab_term!(
     ShaclVocab,
     SH_LESS_THAN_OR_EQUALS_CONSTRAINT_COMPONENT,
     "LessThanOrEqualsConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_SUBSET_OF_CONSTRAINT_COMPONENT,
+    "SubsetOfConstraintComponent"
 );
 
 vocab_term!(ShaclVocab, SH_CLOSED_CONSTRAINT_COMPONENT, "ClosedConstraintComponent");

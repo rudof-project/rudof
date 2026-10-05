@@ -4,8 +4,8 @@ mod tests {
     use crate::rdf::ShaclParser;
     use crate::types::Target;
     use rudof_iri::iri;
-    use rudof_rdf::rdf_core::RDFFormat;
     use rudof_rdf::rdf_core::term::Object;
+    use rudof_rdf::rdf_core::{RDFFormat, SHACLPath};
     use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 
     #[test]
@@ -36,6 +36,60 @@ mod tests {
             },
             _ => unreachable!(),
         }
+    }
+
+    /// Parsing `sh:subsetOf` moves the focus node to the path it points to, and
+    /// the component parsers run in sequence over the same focus node. If the
+    /// focus is not restored, every component declared after `sh:subsetOf` is
+    /// parsed against the wrong node. The W3C test suite does not cover this.
+    #[test]
+    fn test_subset_of_keeps_the_focus_for_later_components() {
+        let shape = r#"
+            @prefix :    <http://example.org/> .
+            @prefix sh:  <http://www.w3.org/ns/shacl#> .
+
+            :TestShape a sh:NodeShape ;
+                sh:property :TestShape-property1 .
+
+            :TestShape-property1
+                sh:path :property1 ;
+                sh:subsetOf ( :property2 :property3 ) ;
+                sh:minCount 1 .
+        "#;
+
+        let shape_id = Object::iri(iri!("http://example.org/TestShape-property1"));
+        let graph = OxigraphInMemory::from_str(shape, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
+        let ast = ShaclParser::new(graph).parse().unwrap();
+        let shape = match ast.get_shape(&shape_id).unwrap() {
+            ASTShape::PropertyShape(ps) => ps,
+            _ => unreachable!(),
+        };
+
+        let subset_of = shape
+            .components()
+            .iter()
+            .find_map(|c| match c {
+                ASTComponent::SubsetOf(path) => Some(path),
+                _ => None,
+            })
+            .expect("sh:subsetOf component not parsed");
+        assert_eq!(
+            *subset_of,
+            SHACLPath::sequence(vec![
+                SHACLPath::iri(iri!("http://example.org/property2")),
+                SHACLPath::iri(iri!("http://example.org/property3")),
+            ])
+        );
+
+        // The component declared after sh:subsetOf must still be parsed
+        assert!(
+            shape
+                .components()
+                .iter()
+                .any(|c| matches!(c, ASTComponent::MinCount(1))),
+            "components parsed after sh:subsetOf were lost: {:?}",
+            shape.components()
+        );
     }
 
     #[test]

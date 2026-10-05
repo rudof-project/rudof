@@ -3,7 +3,7 @@ use crate::rdf::parsers::basic_sparql;
 use crate::rdf::parsers::{
     and, class, closed, datatype, deactivated, disjoint, equals, has_value, in_component, language_in, less_than,
     less_than_or_equals, max_count, max_exclusive, max_inclusive, max_length, min_count, min_exclusive, min_inclusive,
-    min_length, node, node_kind, not, or, pattern, qualified_value_shape, unique_lang, xone,
+    min_length, node, node_kind, not, or, pattern, qualified_value_shape, subset_of, unique_lang, xone,
 };
 use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
@@ -38,6 +38,7 @@ pub(crate) fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec
         Box::new(disjoint()),
         Box::new(less_than()),
         Box::new(less_than_or_equals()),
+        Box::new(subset_of()),
         // Logical constraint components
         Box::new(not()),
         Box::new(and()),

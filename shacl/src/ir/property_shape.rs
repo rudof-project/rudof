@@ -252,13 +252,12 @@ impl IRPropertyShape {
                 .map_err(IRError::add_triple::<RDF>)?;
         }
 
-        if let SHACLPath::Predicate { pred } = &self.path {
-            graph
-                .add_triple(id.clone(), ShaclVocab::sh_path(), pred.clone())
-                .map_err(IRError::add_triple::<RDF>)?;
-        } else {
-            unimplemented!()
-        }
+        let path = graph
+            .add_shacl_path(&self.path)
+            .map_err(|e| IRError::from_rdf_err::<RDF>("add path", e))?;
+        graph
+            .add_triple(id.clone(), ShaclVocab::sh_path(), path)
+            .map_err(IRError::add_triple::<RDF>)?;
 
         self.components
             .iter()
