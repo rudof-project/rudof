@@ -489,10 +489,13 @@ fn xs_facet<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
 
 /// `[28] stringFacet ::= stringLength INTEGER | REGEXP`
 fn string_facet(i: Span) -> IRes<XsFacet> {
-    alt((
-        string_length,
-        map(regexp, |p| XsFacet::StringFacet(StringFacet::Pattern(p))),
-    ))
+    preceded(
+        tws0,
+        alt((
+            string_length,
+            map(regexp, |p| XsFacet::StringFacet(StringFacet::Pattern(p))),
+        )),
+    )
     .parse(i)
 }
 
@@ -560,8 +563,8 @@ fn numeric_length_int<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
 
 fn numeric_length(i: Span) -> IRes<NumericLength> {
     alt((
-        map(token_tws("TOTALDIGITS"), |_| NumericLength::TotalDigits),
-        map(token_tws("FRACTIONDIGITS"), |_| NumericLength::FractionDigits),
+        map(token_tws_no_case("TOTALDIGITS"), |_| NumericLength::TotalDigits),
+        map(token_tws_no_case("FRACTIONDIGITS"), |_| NumericLength::FractionDigits),
     ))
     .parse(i)
 }
@@ -569,10 +572,10 @@ fn numeric_length(i: Span) -> IRes<NumericLength> {
 /// `[31] numericRange ::= "MININCLUSIVE" | "MINEXCLUSIVE" | "MAXINCLUSIVE" | "MAXEXCLUSIVE"`
 fn numeric_range(i: Span) -> IRes<NumericRange> {
     alt((
-        map(token_tws("MININCLUSIVE"), |_| NumericRange::MinInclusive),
-        map(token_tws("MAXINCLUSIVE"), |_| NumericRange::MaxInclusive),
-        map(token_tws("MINEXCLUSIVE"), |_| NumericRange::MinExclusive),
-        map(token_tws("MAXEXCLUSIVE"), |_| NumericRange::MaxExclusive),
+        map(token_tws_no_case("MININCLUSIVE"), |_| NumericRange::MinInclusive),
+        map(token_tws_no_case("MAXINCLUSIVE"), |_| NumericRange::MaxInclusive),
+        map(token_tws_no_case("MINEXCLUSIVE"), |_| NumericRange::MinExclusive),
+        map(token_tws_no_case("MAXEXCLUSIVE"), |_| NumericRange::MaxExclusive),
     ))
     .parse(i)
 }
@@ -694,7 +697,7 @@ fn extension<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
 fn closed<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
     map_error(
         move |i| {
-            let (i, _) = token_tws("CLOSED")(i)?;
+            let (i, _) = token_tws_no_case("CLOSED")(i)?;
             Ok((i, Qualifier::Closed))
         },
         || ShExParseError::ExpectedClosed,
@@ -705,7 +708,7 @@ fn closed<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
 fn extra_property_set<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
     map_error(
         move |i| {
-            let (i, (_, ps)) = (token_tws("EXTRA"), cut(many1((predicate, tws0)))).parse(i)?;
+            let (i, (_, ps)) = (token_tws_no_case("EXTRA"), cut(many1((predicate, tws0)))).parse(i)?;
             let ps = ps.into_iter().map(|(p, _)| p).collect();
             Ok((i, Qualifier::Extra(ps)))
         },

@@ -362,7 +362,7 @@ impl<R: io::Read> TapReader<R> {
                     "MAXLENGTH" => Ok(ValueConstraintType::MaxLength),
                     "MININCLUSIVE" => Ok(ValueConstraintType::MinInclusive),
                     "MINEXCLUSIVE" => Ok(ValueConstraintType::MinExclusive),
-                    "MAXINCLUSIVE" => Ok(ValueConstraintType::MinInclusive),
+                    "MAXINCLUSIVE" => Ok(ValueConstraintType::MaxInclusive),
                     "MAXEXCLUSIVE" => Ok(ValueConstraintType::MaxExclusive),
                     _ => {
                         trace!("UnexpectedValueConstraintType: {str}");
@@ -502,6 +502,30 @@ mod tests {
 
     use super::*;
     use tracing_test::traced_test;
+
+    #[test]
+    fn test_read_value_constraint_type() {
+        let data = "shapeId,propertyId,valueConstraint,valueConstraintType\n";
+        let tap_reader = TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
+        let pos = Position::new();
+        let cases = [
+            ("picklist", ValueConstraintType::PickList),
+            ("Pattern", ValueConstraintType::Pattern),
+            ("languageTag", ValueConstraintType::LanguageTag),
+            ("IRIstem", ValueConstraintType::IRIStem),
+            ("minLength", ValueConstraintType::MinLength),
+            ("maxLength", ValueConstraintType::MaxLength),
+            ("minInclusive", ValueConstraintType::MinInclusive),
+            ("minExclusive", ValueConstraintType::MinExclusive),
+            ("maxInclusive", ValueConstraintType::MaxInclusive),
+            ("maxExclusive", ValueConstraintType::MaxExclusive),
+        ];
+        for (str, expected) in cases {
+            let rcd = StringRecord::from(vec!["S", "p", "1", str]);
+            let found = tap_reader.read_value_constraint_type(&rcd, &pos).unwrap();
+            assert_eq!(found, expected, "valueConstraintType `{str}`");
+        }
+    }
 
     #[test]
     fn test_simple() {
