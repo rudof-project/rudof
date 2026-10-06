@@ -1,0 +1,40 @@
+name: Project board
+
+on:
+  issues:
+    types: [opened, reopened, closed]
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, converted_to_draft, closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: board-${{ github.event.issue.number || github.event.pull_request.number }}
+
+jobs:
+  move:
+    name: Move the issue to its column
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RUDOF_BOT_ID }}
+          private-key: ${{ secrets.RUDOF_BOT_PK }}
+
+      # pull_request_target checks out the base branch, never the pull request.
+      - uses: actions/checkout@v5
+
+      - run: python3 .github/scripts/board.py ${{ github.event_name == 'issues' && 'issue' || 'pull' }}
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN || steps.app-token.outputs.token }}
+          PROJECT_OWNER: rudof-project
+          PROJECT_NUMBER: "3"
+          EVENT_ACTION: ${{ github.event.action }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          STATE_REASON: ${{ github.event.issue.state_reason }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}

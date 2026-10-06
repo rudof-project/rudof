@@ -59,7 +59,10 @@ from the titles of the merged pull requests.
 **Description.** Fill in the template. It asks for:
 
 - the issue, referenced as `Refs #123`, **never** `Closes #123` or `Fixes #123`.
-  [Issue policy](./issues.md#lifecycle-and-closing).
+  [Issue policy](./issues.md#lifecycle-and-closing). `Refs #` is what moves the issue across the
+  board, and it is also why GitHub shows no linked pull request on the issue: to get the link
+  without the closing semantics, pick the issue in the *Development* field of the pull request
+  sidebar.
 - what changed and why, enough for a reviewer who has not read the issue
 - how it was verified
 - whether it breaks anything for users of the CLI, the library or the bindings

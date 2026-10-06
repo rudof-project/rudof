@@ -66,8 +66,8 @@ the project board.
 - The milestone for the next version is created when the previous one closes.
 - Issues get a milestone when work on them is actually scheduled, usually at triage or when
   someone picks them up.
-- Closing the milestone is the last step of publishing the release, and it is what closes the
-  issues inside it. See [Releases](./releases.md).
+- Publishing the release closes the issues it ships; closing the milestone is the last step of
+  publishing it. See [Releases](./releases.md).
 - If the release ships without an issue that was in its milestone, move the issue to the next
   milestone before closing — never close it as done.
 
@@ -95,8 +95,12 @@ Triage → Backlog → Ready → In progress → In review → Merged → Releas
 Besides the board there are views by priority, grouped by milestone, filtered by area, and the
 triage queue.
 
-Items move automatically: new issues land in `Triage`, merging the linked pull request moves them
-to `Merged`, and closing them moves them to `Released`.
+Items move on their own, driven by
+[`project-board.yml`](https://github.com/rudof-project/rudof/blob/master/.github/workflows/project-board.yml):
+new issues land in `Triage`, and the `Refs #` lines of a pull request move the issues they name to
+`In progress` while it is a draft, `In review` once it is ready for review, and `Merged` when it is
+merged. GitHub's own board automations are not used, because they key on the linked pull request
+that `Refs #` deliberately never creates.
 
 ## Lifecycle and closing
 
@@ -117,8 +121,10 @@ The full path of an issue:
 4. Pull request opened → `In review`.
 5. Pull request merged → `status/pending-release`, `Merged`, and the issue is assigned the
    milestone of the version it will ship in. **It stays open.**
-6. Release published → the milestone is closed, which closes the issue, and it moves to
-   `Released`.
+6. Release published →
+   [`project-release.yml`](https://github.com/rudof-project/rudof/blob/master/.github/workflows/project-release.yml)
+   closes every issue sitting in `Merged`, removes `status/pending-release` and moves it to
+   `Released`. A release candidate publishes nothing, so it leaves the column alone.
 
 Issues can also be closed without a release, as `status/duplicate`, `status/invalid` or
 `status/wontfix`. Always say why in a comment.
