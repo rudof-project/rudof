@@ -23,6 +23,8 @@ jobs:
         with:
           app-id: ${{ secrets.RUDOF_BOT_ID }}
           private-key: ${{ secrets.RUDOF_BOT_PK }}
+          permission-issues: write
+          permission-organization-projects: write
 
       # pull_request_target checks out the base branch, never the pull request.
       - uses: actions/checkout@v5
