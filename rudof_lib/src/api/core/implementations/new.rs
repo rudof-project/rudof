@@ -27,6 +27,7 @@ pub fn new(config: RudofConfig) -> Rudof {
         #[cfg(feature = "pgschema")]
         typemap: None,
         map_state: None,
+        shexmap_bindings: None,
         prefixes: None,
     }
 }

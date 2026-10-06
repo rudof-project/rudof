@@ -5,7 +5,8 @@ use crate::commands::{
     CompareCommand, CompletionCommand, ConfigCommand, ConnectCommand, ConvertCommand, DataCommand, DctapCommand,
     DdlCommand, GenerateCommand, LoadCommand, MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand,
     PgschemaValidateCommand, QueryCommand, RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand,
-    ShapemapCommand, ShexCheckCommand, ShexCommand, ShexValidateCommand, SparqlCommand, ValidateCommand,
+    ShapemapCommand, ShexCheckCommand, ShexCommand, ShexValidateCommand, ShexmapCommand, SparqlCommand,
+    ValidateCommand,
 };
 use crate::output::{ColorSupport, get_writer};
 use crate::shell::ShellCommand;
@@ -154,6 +155,7 @@ impl CommandFactory {
             CliCommand::Sparql(args) => Ok(Box::new(SparqlCommand::new(args))),
             CliCommand::Generate(args) => Ok(Box::new(GenerateCommand::new(args))),
             CliCommand::Materialize(args) => Ok(Box::new(MaterializeCommand::new(args))),
+            CliCommand::Shexmap(args) => Ok(Box::new(ShexmapCommand::new(args))),
             CliCommand::PgschemaValidate(args) => Ok(Box::new(PgschemaValidateCommand::new(args))),
             CliCommand::Completion(args) => Ok(Box::new(CompletionCommand::new(args))),
             CliCommand::Config(args) => Ok(Box::new(ConfigCommand::new(args))),
@@ -284,6 +286,11 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
         }),
         CliCommand::Materialize(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Shexmap(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,

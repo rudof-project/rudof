@@ -18,6 +18,7 @@ mod service_error;
 mod shacl_error;
 mod shapemap_error;
 mod shex_error;
+mod shexmap_error;
 mod validation_error;
 
 pub use comparison_error::ComparisonError;
@@ -40,6 +41,7 @@ pub use service_error::ServiceError;
 pub use shacl_error::ShaclError;
 pub use shapemap_error::ShapeMapError;
 pub use shex_error::ShExError;
+pub use shexmap_error::ShExMapError;
 pub use validation_error::ValidationError;
 
 // Reexport config error also

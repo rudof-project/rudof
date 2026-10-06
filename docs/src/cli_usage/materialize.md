@@ -1,5 +1,10 @@
 # materialize
 
+> For mappings with repeated or nested constraints, or to bind and materialize in one
+> step from an input graph, see [`shexmap`](./shexmap.md): it reads the input graph after
+> validation and keeps the structure of what each constraint matched, whereas the
+> `MapState` this command reads is a flat map of variables to single values.
+
 The `materialize` command generates an RDF graph from a ShEx schema that contains [Map semantic actions](https://shex.io/shex-semantics/index.html#semantic-actions) and a MapState file that binds the mapped variables to RDF nodes.
 
 A MapState is a JSON file that maps each variable IRI declared in a Map semantic action to an RDF node (IRI or literal).

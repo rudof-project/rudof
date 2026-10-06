@@ -1,0 +1,12 @@
+{
+  "http://a.example/Name": {
+    "value": "B.B. King"
+  },
+  "http://a.example/TicketUrl": "https://www.etix.com/ticket/1771656",
+  "http://a.example/LocationName": {
+    "value": "Lupo’s Heartbreak Hotel"
+  },
+  "http://a.example/LocationAddress": {
+    "value": "79 Washington St...."
+  }
+}

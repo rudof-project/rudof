@@ -1,0 +1,10 @@
+PREFIX : <http://a.example/>
+PREFIX schema: <http://schema.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+_:root schema:bandName "B.B. King";
+    schema:tix <https://www.etix.com/ticket/1771656>;
+    schema:venue _:b0.
+_:b0 schema:location "Lupo’s Heartbreak Hotel";
+    schema:address "79 Washington St....".

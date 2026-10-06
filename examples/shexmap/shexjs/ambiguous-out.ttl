@@ -1,0 +1,4 @@
+PREFIX card: <http://card.example/ns#>
+
+<tag:card2> card:fullName "Bob" ;
+            card:phone "+16175551212" .

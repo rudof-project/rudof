@@ -1,0 +1,5 @@
+PREFIX : <http://ehr.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+<pat1> :name "Ann" .
+<obs1> :subject <pat1> ; :code :heartRate ; :value 72 ; :at "2026-09-01T08:00:00"^^xsd:dateTime .
+<obs2> :subject <pat1> ; :code :heartRate ; :value 75 ; :at "2026-09-02T08:00:00"^^xsd:dateTime .

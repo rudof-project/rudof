@@ -13,6 +13,7 @@ pub mod pred;
 pub mod resolve_method;
 pub mod shapemap;
 pub mod shex_format;
+pub mod shexmap;
 pub mod shexr;
 
 use crate::ast::cond_kind::CondKind;

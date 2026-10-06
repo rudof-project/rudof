@@ -23,6 +23,7 @@ mod shapemap;
 mod shex;
 mod shex_check;
 mod shex_validate;
+mod shexmap;
 mod sparql;
 mod validate;
 
@@ -53,5 +54,6 @@ pub use shex::ShexCommand;
 pub use shex_check::ShexCheckCommand;
 pub use shex_validate::ShexValidateCommand;
 pub(crate) use shex_validate::print_external_resolvers;
+pub use shexmap::ShexmapCommand;
 pub use sparql::SparqlCommand;
 pub use validate::ValidateCommand;

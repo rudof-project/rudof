@@ -1,0 +1,138 @@
+[
+  {
+    "schemaLabel": "BP",
+    "plugins": [
+      "../doc/ShExMapPlugin.js"
+    ],
+    "schemaURL": "BPfhir-schema.shex",
+    "dataLabel": "simple",
+    "dataURL": "BPfhir-instance.ttl",
+    "queryMap": "<tag:BPfhir123>@START",
+    "outputSchemaURL": "BPdam-schema.shex",
+    "outputShapeMap": "<tag:b0>@<BPunitsDAM>",
+    "staticVars": {
+      "http://abc.example/someConstant": "\"123-456\""
+    },
+    "status": "conformant",
+    "expectedBindingsURL": "BP-simple-bindings.json",
+    "expectedOutputDataURL": "BP-simple-out.ttl"
+  },
+  {
+    "schemaLabel": "BP back",
+    "plugins": [
+      "../doc/ShExMapPlugin.js"
+    ],
+    "schemaURL": "BPdam-schema.shex",
+    "dataLabel": "simple",
+    "dataURL": "BPdam-instance.ttl",
+    "queryMap": "<tag:b0>@START",
+    "outputSchemaURL": "BPfhir-schema.shex",
+    "outputShapeMap": "<tag:BPfhir123>@<BPfhir>",
+    "staticVars": {
+      "http://abc.example/anotherConstant": "abc-def"
+    },
+    "status": "conformant",
+    "expectedBindingsURL": "BP-simple-bindings.json",
+    "expectedOutputDataURL": "BP-back-simple-out.ttl"
+  },
+  {
+    "schemaLabel": "BPPatient multi-bindings",
+    "plugins": [
+      "../doc/ShExMapPlugin.js"
+    ],
+    "schema": "PREFIX  : <http://dam.example/med#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX bp: <http://shex.io/extensions/Map/#BPDAM->\nPREFIX Map: <http://shex.io/extensions/Map/#>\n\nstart = @<PatientDAM>\n\n<PatientDAM> {\n  :name LITERAL %Map:{ bp:name %};\n  :vitals @<BPunitsDAM>* %Map:{ bp:XXX %}\n}\n\n<BPunitsDAM> {\n  :systolic {\n    :value xsd:float %Map:{ bp:sysVal %};\n    :units xsd:string %Map:{ bp:sysUnits %}\n  };\n  :diastolic {\n    :value xsd:float %Map:{ bp:diaVal %};\n    :units xsd:string %Map:{ bp:diaUnits %}\n  };\n  :someConstProp xsd:string? %Map:{ <http://abc.example/someConstant> %}\n}\n",
+    "dataLabel": "simple",
+    "data": "PREFIX med: <http://dam.example/med#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\n<PatientX>\n    med:name \"Sue\" ;\n    med:vitals <tag:b0>, <tag:b1> .\n\n<tag:b0>\n    med:systolic [\n      med:value \"110\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] ;\n    med:diastolic [\n      med:value \"70\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] .\n<tag:b1>\n    med:systolic [\n      med:value \"111\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] ;\n    med:diastolic [\n      med:value \"71\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] .\n",
+    "queryMap": "<PatientX>@START",
+    "outputSchema": "PREFIX fhir: <http://hl7.org/fhir-rdf/>\nPREFIX sct: <http://snomed.info/sct/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX bp: <http://shex.io/extensions/Map/#BPDAM->\nPREFIX Map: <http://shex.io/extensions/Map/#>\n\nstart = @<collector>\n\n<Patient> {\n  fhir:Patient.name LITERAL %Map:{ bp:name %};\n}\n\n<collector> {\n  fhir:item @<BPfhir>*\n}\n\n<BPfhir> {\n  a [fhir:Observation]?;\n  # fhir:subject @<Patient>;\n  fhir:coding { fhir:code [sct:Blood_Pressure] };\n  fhir:component @<sysBP>;\n  fhir:component @<diaBP>\n}\n<sysBP> {\n  a [fhir:Observation]?;\n  fhir:coding { fhir:code [sct:Systolic_Blood_Pressure] };\n  fhir:valueQuantity {\n    a [fhir:Quantity]?;\n    fhir:value xsd:float %Map:{ bp:sysVal %};\n    fhir:units xsd:string %Map:{ bp:sysUnits %}\n  }\n}\n<diaBP> {\n  a [fhir:Observation]?;\n  fhir:coding { fhir:code [sct:Diastolic_Blood_Pressure] };\n  fhir:valueQuantity {\n    a [fhir:Quantity]?;\n    fhir:value xsd:float %Map:{ bp:diaVal %};\n    fhir:units xsd:string %Map:{ bp:diaUnits %}\n  }\n}\n",
+    "outputShapeMap": "<tag:BPfhir123>@<collector>",
+    "staticVars": {
+      "http://abc.example/anotherConstant": "abc-def"
+    },
+    "status": "conformant",
+    "expectedBindingsURL": "BPPatient-multi-bindings-bindings.json",
+    "expectedOutputDataURL": "BPPatient-multi-bindings-out.ttl"
+  },
+  {
+    "schemaLabel": "BPPatient 2 levels",
+    "plugins": [
+      "../doc/ShExMapPlugin.js"
+    ],
+    "schema": "PREFIX  : <http://dam.example/med#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX bp: <http://shex.io/extensions/Map/#BPDAM->\nPREFIX Map: <http://shex.io/extensions/Map/#>\n\nstart = @<PatientDAM>\n\n<PatientDAM> {\n  :name LITERAL %Map:{ bp:name %};\n  :reports @<ReportsDAM>* %Map:{ bp:reports %}\n}\n\n<ReportsDAM> {\n  :reportNo LITERAL %Map:{ bp:reportNo %};\n  :results @<BPunitsDAM>* %Map:{ bp:bp %}\n}\n\n<BPunitsDAM> {\n  :systolic {\n    :value xsd:float %Map:{ bp:sysVal %};\n    :units xsd:string %Map:{ bp:sysUnits %}\n  };\n  :diastolic {\n    :value xsd:float %Map:{ bp:diaVal %};\n    :units xsd:string %Map:{ bp:diaUnits %}\n  };\n  :someConstProp xsd:string? %Map:{ <http://abc.example/someConstant> %}\n}\n",
+    "dataLabel": "simple",
+    "data": "BASE <http://my.data.example/medical/>\nPREFIX med: <http://dam.example/med#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\n<PatientX>\n    med:name \"Sue\" ;\n    med:reports <Report1>, <Report2> .\n\n<Report1>\n    med:reportNo \"one\" ;\n    med:results <Res00>, <Res01> .\n\n<Res00>\n    med:systolic [\n      med:value \"100\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] ;\n    med:diastolic [\n      med:value \"60\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] .\n<Res01>\n    med:systolic [\n      med:value \"101\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] ;\n    med:diastolic [\n      med:value \"61\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] .\n\n<Report2>\n    med:reportNo \"two\" ;\n    med:results <Res10>, <Res11> .\n\n<Res10>\n    med:systolic [\n      med:value \"110\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] ;\n    med:diastolic [\n      med:value \"70\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] .\n<Res11>\n    med:systolic [\n      med:value \"111\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] ;\n    med:diastolic [\n      med:value \"71\"^^xsd:float ;\n      med:units \"mmHg\"\n    ] .\n",
+    "queryMap": "<PatientX>@START",
+    "outputSchema": "PREFIX fhir: <http://hl7.org/fhir-rdf/>\nPREFIX sct: <http://snomed.info/sct/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX bp: <http://shex.io/extensions/Map/#BPDAM->\nPREFIX Map: <http://shex.io/extensions/Map/#>\n\nstart = @<collector>\n\n<Patient> {\n  fhir:Patient.name LITERAL %Map:{ bp:name %};\n}\n\n<collector> {\n  fhir:item @<BPreport>*\n}\n\n<BPreport> {\n  a [fhir:DiagnosticReport]?;\n  fhir:status [\"final\"];\n  fhir:subject @<Patient>;\n  fhir:coding { fhir:code [sct:Blood_Pressure] };\n  fhir:component @<sysBP>;\n  fhir:component @<diaBP>\n}\n<BPfhir> {\n  a [fhir:Observation]?;\n  fhir:subject @<Patient>;\n  fhir:coding { fhir:code [sct:Blood_Pressure] };\n  fhir:component @<sysBP>;\n  fhir:component @<diaBP>\n}\n<sysBP> {\n  a [fhir:Observation]?;\n  fhir:coding { fhir:code [sct:Systolic_Blood_Pressure] };\n  fhir:valueQuantity {\n    a [fhir:Quantity]?;\n    fhir:value xsd:float %Map:{ bp:sysVal %};\n    fhir:units xsd:string %Map:{ bp:sysUnits %}\n  }\n}\n<diaBP> {\n  a [fhir:Observation]?;\n  fhir:coding { fhir:code [sct:Diastolic_Blood_Pressure] };\n  fhir:valueQuantity {\n    a [fhir:Quantity]?;\n    fhir:value xsd:float %Map:{ bp:diaVal %};\n    fhir:units xsd:string %Map:{ bp:diaUnits %}\n  }\n}\n",
+    "outputShapeMap": "<tag:BPfhir123>@<collector>",
+    "staticVars": {},
+    "status": "conformant",
+    "expectedBindingsURL": "BPPatient-2-levels-bindings.json",
+    "expectedOutputDataURL": "BPPatient-2-levels-out.ttl"
+  },
+  {
+    "schemaLabel": "symmetric",
+    "plugins": [
+      "../doc/ShExMapPlugin.js"
+    ],
+    "schema": "PREFIX    : <http://a.example/>\nPREFIX schema: <http://schema.org/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX Map: <http://shex.io/extensions/Map/#>\n\nstart=@<Concert>\n\n<Concert> {\n  schema:bandName xsd:string %Map:{ :Name %} ;\n  schema:tix IRI %Map:{ :TicketUrl %} ;\n  schema:venue @<Venue>\n}\n<Venue> {\n  schema:location xsd:string %Map:{ :LocationName %} ;\n  schema:address  xsd:string %Map:{ :LocationAddress %}\n}\n",
+    "dataLabel": "BBKing",
+    "data": "PREFIX schema: <http://schema.org/>\n\n[] schema:bandName \"B.B. King\";\n  schema:tix <https://www.etix.com/ticket/1771656>;\n  schema:venue [\n    schema:location \"Lupo’s Heartbreak Hotel\";\n    schema:address \"79 Washington St....\"\n  ] .\n",
+    "queryMap": "_:b0@START",
+    "outputSchema": "PREFIX    : <http://a.example/>\nPREFIX schema: <http://schema.org/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX Map: <http://shex.io/extensions/Map/#>\n\nstart=@<Concert>\n\n<Concert> {\n  schema:bandName xsd:string %Map:{ :Name %} ;\n  schema:tix IRI %Map:{ :TicketUrl %} ;\n  schema:venue @<Venue>\n}\n<Venue> {\n  schema:location xsd:string %Map:{ :LocationName %} ;\n  schema:address  xsd:string %Map:{ :LocationAddress %}\n}\n",
+    "outputShapeMap": "_:root@<Concert>",
+    "staticVars": {},
+    "status": "conformant",
+    "expectedBindingsURL": "symmetric-bindings.json",
+    "expectedOutputDataURL": "symmetric-out.ttl"
+  },
+  {
+    "schemaLabel": "splits",
+    "plugins": [
+      "../doc/ShExMapPlugin.js"
+    ],
+    "threadedOnly": true,
+    "schemaURL": "contact-schema.shex",
+    "dataLabel": "Ann-phone-mbox",
+    "dataURL": "contact-Ann.ttl",
+    "queryMap": "<PersonX>@<Person>",
+    "outputSchemaURL": "card-schema-phone-mbox.shex",
+    "outputShapeMap": "<tag:card1>@<Card>",
+    "staticVars": {},
+    "status": "conformant",
+    "expectedBindingsURL": "splits-bindings.json",
+    "expectedOutputDataURL": "splits-out.ttl"
+  },
+  {
+    "schemaLabel": "splits",
+    "plugins": [
+      "../doc/ShExMapPlugin.js"
+    ],
+    "threadedOnly": true,
+    "schemaURL": "contact-schema.shex",
+    "dataLabel": "Ann-mbox-phone",
+    "dataURL": "contact-Ann.ttl",
+    "queryMap": "<PersonX>@<Person>",
+    "outputSchemaURL": "card-schema-mbox-phone.shex",
+    "outputShapeMap": "<tag:card1>@<Card>",
+    "staticVars": {},
+    "status": "conformant",
+    "expectedBindingsURL": "splits-bindings.json",
+    "expectedOutputDataURL": "splits-out.ttl"
+  },
+  {
+    "schemaLabel": "ambiguous",
+    "plugins": [
+      "../doc/ShExMapPlugin.js"
+    ],
+    "schemaURL": "contact-flat-schema.shex",
+    "dataLabel": "Bob",
+    "dataURL": "contact-Bob.ttl",
+    "queryMap": "<PersonY>@START",
+    "outputSchemaURL": "card-flat-schema.shex",
+    "outputShapeMap": "<tag:card2>@<Card>",
+    "staticVars": {},
+    "status": "conformant",
+    "expectedBindingsURL": "ambiguous-bindings.json",
+    "expectedOutputDataURL": "ambiguous-out.ttl"
+  }
+]

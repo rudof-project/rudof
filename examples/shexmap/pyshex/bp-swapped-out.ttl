@@ -1,0 +1,3 @@
+PREFIX dam: <http://dam.example/med#>
+# the other conformant reading of the ambiguous schema
+<tag:bp1> dam:systolic 80 ; dam:diastolic 120 .

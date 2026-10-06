@@ -1,0 +1,13 @@
+# The same reading, disambiguated: each component says which pressure it is, so only
+# one partition conforms and the bindings are determined.
+PREFIX : <http://vitals.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX bp: <http://shex.io/extensions/Map/#BP->
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Reading>
+
+<Reading> {
+  :component { :code [:systolic] ; :value xsd:integer %Map:{ bp:sys %} } ;
+  :component { :code [:diastolic] ; :value xsd:integer %Map:{ bp:dia %} }
+}

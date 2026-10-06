@@ -898,6 +898,29 @@ fn iri_ref2iri_s(iri_ref: &IriRef) -> IriS {
     }
 }
 
+/// Compiles one node constraint of the AST to the condition the validator evaluates, for
+/// callers that check a value against a value expression outside a compiled schema (the
+/// ShExMap module).  Semantic actions on the constraint are not included.
+pub(crate) fn compile_node_constraint(
+    nc: &ast::NodeConstraint,
+    prefixmap: &PrefixMap,
+    base: &Option<IriS>,
+) -> CResult<Cond> {
+    let value_set = match nc.values() {
+        Some(vs) => Some(create_value_set(&vs, prefixmap)?),
+        None => None,
+    };
+    let (cond, _) = node_constraint2match_cond(
+        &nc.node_kind(),
+        &nc.datatype(),
+        &nc.xs_facet(),
+        &value_set,
+        prefixmap,
+        base,
+    )?;
+    Ok(cond)
+}
+
 fn node_constraint2match_cond(
     node_kind: &Option<ast::NodeKind>,
     datatype: &Option<IriRef>,

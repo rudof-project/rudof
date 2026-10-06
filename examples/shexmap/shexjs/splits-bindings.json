@@ -1,0 +1,36 @@
+[
+  {
+    "http://contact.example/name": {
+      "value": "Ann"
+    }
+  },
+  [
+    {
+      "@node": "_:n3-22",
+      "http://contact.example/use": {
+        "value": "work"
+      },
+      "http://contact.example/email": {
+        "value": "ann@work.example"
+      }
+    },
+    {
+      "@node": "_:n3-23",
+      "http://contact.example/use": {
+        "value": "home"
+      },
+      "http://contact.example/email": {
+        "value": "ann@home.example"
+      }
+    },
+    {
+      "@node": "_:n3-24",
+      "http://contact.example/use": {
+        "value": "home"
+      },
+      "http://contact.example/tel": {
+        "value": "+1.2.34.56.789"
+      }
+    }
+  ]
+]

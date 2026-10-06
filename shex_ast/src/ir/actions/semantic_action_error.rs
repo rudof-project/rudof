@@ -22,4 +22,7 @@ pub enum SemanticActionError {
 
     #[error("No extension registered for IRI {iri}")]
     UnknownExtension { iri: String },
+
+    #[error("Map semact: {details}")]
+    MapFunctionFailed { details: String },
 }

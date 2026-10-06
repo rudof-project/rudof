@@ -1,0 +1,12 @@
+PREFIX : <http://contact.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+<Person> {
+  :name xsd:string %Map:{ :name %} ;
+  :contact {
+    :use ["work" "home" "secret"] %Map:{ :use %} ;
+    ( :email xsd:string %Map:{ :email %} 
+     | :tel xsd:string ? %Map:{ :tel %} )
+  }*
+}

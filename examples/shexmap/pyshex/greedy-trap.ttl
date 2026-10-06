@@ -1,0 +1,2 @@
+PREFIX : <http://codes.example/>
+<item1> :code "primary", "secondary" .

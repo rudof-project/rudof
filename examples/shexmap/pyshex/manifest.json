@@ -1,0 +1,69 @@
+[
+  {
+    "schemaLabel": "ambiguous BP",
+    "dataLabel": "reading",
+    "schemaURL": "bp-ambiguous-schema.shex",
+    "dataURL": "bp-reading.ttl",
+    "queryMap": "<reading1>@START",
+    "outputSchemaURL": "bp-dam-schema.shex",
+    "outputShapeMap": "<tag:bp1>@START",
+    "status": "conformant",
+    "expectedOutputDataURL": "bp-out.ttl",
+    "alternativeOutputDataURLs": ["bp-out.ttl", "bp-swapped-out.ttl"]
+  },
+  {
+    "schemaLabel": "coded BP",
+    "dataLabel": "reading",
+    "schemaURL": "bp-coded-schema.shex",
+    "dataURL": "bp-coded-reading.ttl",
+    "queryMap": "<reading1>@START",
+    "outputSchemaURL": "bp-dam-schema.shex",
+    "outputShapeMap": "<tag:bp1>@START",
+    "status": "conformant",
+    "expectedOutputDataURL": "bp-out.ttl"
+  },
+  {
+    "schemaLabel": "greedy trap",
+    "dataLabel": "item",
+    "schemaURL": "greedy-trap-schema.shex",
+    "dataURL": "greedy-trap.ttl",
+    "queryMap": "<item1>@START",
+    "outputSchemaURL": "codes-schema.shex",
+    "outputShapeMap": "<tag:codes1>@START",
+    "status": "conformant",
+    "expectedOutputDataURL": "greedy-trap-out.ttl"
+  },
+  {
+    "schemaLabel": "inverse in",
+    "dataLabel": "Ann's heart rate",
+    "schemaURL": "patient-obs-schema.shex",
+    "dataURL": "patient-obs.ttl",
+    "queryMap": "<pat1>@START",
+    "outputSchemaURL": "chart-schema.shex",
+    "outputShapeMap": "<tag:chart1>@START",
+    "status": "conformant",
+    "expectedOutputDataURL": "chart-out.ttl"
+  },
+  {
+    "schemaLabel": "inverse out",
+    "dataLabel": "Ann's chart",
+    "schemaURL": "chart-schema.shex",
+    "dataURL": "chart.ttl",
+    "queryMap": "<chart1>@START",
+    "outputSchemaURL": "patient-obs-schema.shex",
+    "outputShapeMap": "<tag:pat1>@START",
+    "status": "conformant",
+    "expectedOutputDataURL": "patient-obs-out.ttl"
+  },
+  {
+    "schemaLabel": "EXTENDS",
+    "dataLabel": "clinic",
+    "schemaURL": "clinic-schema.shex",
+    "dataURL": "clinic.ttl",
+    "queryMap": "<clinic1>@START",
+    "outputSchemaURL": "directory-schema.shex",
+    "outputShapeMap": "<tag:dir1>@START",
+    "status": "conformant",
+    "expectedOutputDataURL": "directory-out.ttl"
+  }
+]

@@ -1,0 +1,11 @@
+PREFIX dam: <http://dam.example/med#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX bp: <http://shex.io/extensions/Map/#BP->
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<BP>
+
+<BP> {
+  dam:systolic xsd:integer %Map:{ bp:sys %} ;
+  dam:diastolic xsd:integer %Map:{ bp:dia %}
+}

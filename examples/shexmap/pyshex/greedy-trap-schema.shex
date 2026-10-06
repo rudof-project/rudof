@@ -1,0 +1,14 @@
+# Two constraints on one predicate: the first accepts any value, the second only
+# "primary".  Assigning each triple to the first constraint it satisfies gives
+# "primary" to the wildcard and leaves nothing for the second, although the data
+# conforms: the only valid partition gives "secondary" to the wildcard.
+PREFIX : <http://codes.example/>
+PREFIX v: <http://vars.example/>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Coded>
+
+<Coded> {
+  :code . %Map:{ v:other %} ;
+  :code ["primary"] %Map:{ v:primary %}
+}

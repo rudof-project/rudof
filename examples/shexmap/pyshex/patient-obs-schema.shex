@@ -1,0 +1,20 @@
+# Observations point at their patient (obs :subject patient), but the mapping starts
+# from the patient: ^:subject follows those triples backwards, and each observation
+# found that way is one frame of bindings.
+PREFIX : <http://ehr.example/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX v: <http://vars.example/>
+PREFIX Map: <http://shex.io/extensions/Map/#>
+
+start = @<Patient>
+
+<Patient> {
+  :name xsd:string %Map:{ v:name %} ;
+  ^:subject @<HeartRate>*
+}
+
+<HeartRate> {
+  :code [:heartRate] ;
+  :value xsd:integer %Map:{ v:bpm %} ;
+  :at xsd:dateTime %Map:{ v:when %}
+}
