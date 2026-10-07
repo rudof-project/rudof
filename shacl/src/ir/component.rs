@@ -2,7 +2,7 @@ use crate::ast::{ASTComponent, ASTSchema};
 use crate::ir::components::{
     And, BasicSparql, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan,
     LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength,
-    Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, UniqueLang, Xone,
+    Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, SubsetOf, UniqueLang, Xone,
 };
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
@@ -40,6 +40,7 @@ pub enum IRComponent {
     Disjoint(Disjoint),
     LessThan(LessThan),
     LessThanOrEquals(LessThanOrEquals),
+    SubsetOf(SubsetOf),
     Or(Or),
     And(And),
     Not(Not),
@@ -82,6 +83,7 @@ impl IRComponent {
             ASTComponent::Equals(iri) => IRComponent::Equals(Equals::new(convert_iri_ref(iri)?)),
             ASTComponent::Disjoint(iri) => IRComponent::Disjoint(Disjoint::new(convert_iri_ref(iri)?)),
             ASTComponent::LessThan(iri) => IRComponent::LessThan(LessThan::new(convert_iri_ref(iri)?)),
+            ASTComponent::SubsetOf(path) => IRComponent::SubsetOf(SubsetOf::new(path)),
             ASTComponent::LessThanOrEquals(iri) => {
                 IRComponent::LessThanOrEquals(LessThanOrEquals::new(convert_iri_ref(iri)?))
             },
@@ -169,9 +171,13 @@ impl IRComponent {
             IRComponent::NodeKind(nk) => {
                 let iri = match nk.node_kind() {
                     NodeKind::Iri => ShaclVocab::sh_iri_ref(),
-                    _ => unimplemented!(),
+                    NodeKind::Lit => ShaclVocab::sh_literal_ref(),
+                    NodeKind::BNode => ShaclVocab::sh_blank_node_ref(),
+                    NodeKind::BNodeOrIri => ShaclVocab::sh_blank_node_or_iri_ref(),
+                    NodeKind::BNodeOrLit => ShaclVocab::sh_blank_node_or_literal_ref(),
+                    NodeKind::IriOrLit => ShaclVocab::sh_iri_or_literal_ref(),
                 };
-                register_iri(iri, ShaclVocab::sh_datatype(), id, graph)
+                register_iri(iri, ShaclVocab::sh_node_kind(), id, graph)
             },
             IRComponent::MinCount(mc) => {
                 register_integer(mc.min_count() as isize, ShaclVocab::sh_min_count(), id, graph)
@@ -211,6 +217,12 @@ impl IRComponent {
             IRComponent::Equals(eq) => register_iri(eq.iri(), ShaclVocab::sh_equals(), id, graph),
             IRComponent::Disjoint(d) => register_iri(d.iri(), ShaclVocab::sh_disjoint(), id, graph),
             IRComponent::LessThan(lt) => register_iri(lt.iri(), ShaclVocab::sh_less_than(), id, graph),
+            IRComponent::SubsetOf(s) => {
+                let path = graph
+                    .add_shacl_path(s.path())
+                    .map_err(|e| IRError::from_rdf_err::<RDF>("add subsetOf path", e))?;
+                register_term(&path, ShaclVocab::sh_subset_of(), id, graph)
+            },
             IRComponent::LessThanOrEquals(lte) => {
                 register_iri(lte.iri(), ShaclVocab::sh_less_than_or_equals(), id, graph)
             },
@@ -365,6 +377,7 @@ impl IRComponent {
             IRComponent::Disjoint(_) => {},
             IRComponent::LessThan(_) => {},
             IRComponent::LessThanOrEquals(_) => {},
+            IRComponent::SubsetOf(_) => {},
             IRComponent::Or(or) => {
                 for shape_idx in or.shapes() {
                     if let Some(shape) = ir.get_shape_from_idx(shape_idx) {
@@ -504,6 +517,7 @@ impl From<&IRComponent> for IriS {
             IRComponent::Disjoint(_) => ShaclVocab::sh_disjoint_constraint_component(),
             IRComponent::LessThan(_) => ShaclVocab::sh_less_than_constraint_component(),
             IRComponent::LessThanOrEquals(_) => ShaclVocab::sh_less_than_or_equals_constraint_component(),
+            IRComponent::SubsetOf(_) => ShaclVocab::sh_subset_of_constraint_component(),
             IRComponent::Or(_) => ShaclVocab::sh_or_constraint_component(),
             IRComponent::And(_) => ShaclVocab::sh_and_constraint_component(),
             IRComponent::Not(_) => ShaclVocab::sh_not_constraint_component(),
@@ -540,6 +554,7 @@ impl Display for IRComponent {
             IRComponent::Disjoint(p) => write!(f, " {p}"),
             IRComponent::LessThan(p) => write!(f, " {p}"),
             IRComponent::LessThanOrEquals(p) => write!(f, " {p}"),
+            IRComponent::SubsetOf(p) => write!(f, " {p}"),
             IRComponent::Or(or) => write!(f, " {or}"),
             IRComponent::And(and) => write!(f, " {and}"),
             IRComponent::Not(not) => write!(f, " {not}"),

@@ -25,6 +25,7 @@ mod not;
 mod or;
 mod pattern;
 mod qualified_value_shape;
+mod subset_of;
 mod unique_lang;
 mod xone;
 
@@ -55,5 +56,6 @@ pub use not::Not;
 pub use or::Or;
 pub use pattern::Pattern;
 pub use qualified_value_shape::QualifiedValueShape;
+pub use subset_of::SubsetOf;
 pub use unique_lang::UniqueLang;
 pub use xone::Xone;

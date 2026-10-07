@@ -1,3 +1,5 @@
+#![allow(clippy::clone_on_copy)]
+
 use pyo3::prelude::*;
 use rudof_generate::SchemaFormat;
 use rudof_generate::config::{CardinalityStrategy, DataQuality, EntityDistribution, OutputFormat};

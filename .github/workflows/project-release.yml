@@ -1,0 +1,33 @@
+name: Project board release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  released:
+    name: Close the issues of the release
+    # A release candidate ships nothing: its issues stay in Merged.
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RUDOF_BOT_ID }}
+          private-key: ${{ secrets.RUDOF_BOT_PK }}
+          permission-issues: write
+          permission-organization-projects: write
+
+      - uses: actions/checkout@v5
+
+      - run: python3 .github/scripts/board.py release
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN || steps.app-token.outputs.token }}
+          PROJECT_OWNER: rudof-project
+          PROJECT_NUMBER: "3"
+          RELEASE_TAG: ${{ github.event.release.tag_name }}

@@ -10,8 +10,8 @@ one version, and every dependency is version-aligned: a crate published as `0.3.
 ## Milestones and releases
 
 A milestone is the contents of a release, named exactly as the version it will ship as. It is what
-turns a set of merged pull requests into a published version, and closing it is what closes the
-issues it contains — see [Issue policy](./issues.md#lifecycle-and-closing).
+turns a set of merged pull requests into a published version; publishing the release is what closes
+the issues it contains — see [Issue policy](./issues.md#lifecycle-and-closing).
 
 There is no perpetual milestone: if an issue is not committed to a specific version, it has no
 milestone and lives in the project backlog.
@@ -49,7 +49,9 @@ Releases are cut by maintainers with release rights (see
 4. **Check the downstream workflows.** Publishing the release triggers `publish.yml` (crates.io),
    `npm.yml` (the `@rudof/rudof` package) and `artifacts.yml` (binaries). All three must succeed
    before the release is announced.
-5. **Close the milestone.** This closes its issues; they move to `Released` on the board.
+5. **Close the milestone.** Publishing the release already closed its issues, dropped their
+   `status/pending-release` and moved them to `Released`; closing the milestone records that the
+   version is done.
 6. **Create the next milestone** for the version that follows.
 
 For a release candidate, stop after step 4: the milestone stays open, and the issues stay in

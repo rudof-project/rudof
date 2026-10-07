@@ -18,7 +18,7 @@ pub(crate) use cardinality::{max_count, min_count};
 pub(crate) use logical::{and, not, or, xone};
 pub(crate) use non_shape::{deactivated, severity};
 pub(crate) use other::{closed, has_value, in_component};
-pub(crate) use property_pair::{disjoint, equals, less_than, less_than_or_equals};
+pub(crate) use property_pair::{disjoint, equals, less_than, less_than_or_equals, subset_of};
 pub(crate) use shape_based::{node, property, qualified_value_shape, reifier_shape};
 pub(crate) use shape_type::{node_shape, path, property_shape};
 pub(crate) use sparql::basic_sparql;
