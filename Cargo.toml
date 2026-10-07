@@ -257,7 +257,8 @@ calamine = { version = "0.31" }
 chrono = { version = "0.4", features = ["serde"] }
 criterion = { version = "0.5", features = ["html_reports"] }
 clap = { version = "4.5", features = ["derive"] }
-clap_complete_command.version = "0.6.1"
+clap_complete = { version = "4.5" }
+clap_complete_nushell = { version = "4.5" }
 clientele = { version = "0.3.8", default-features = false, features = [
     "dotenv",
     "subcommands",
