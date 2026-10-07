@@ -1,6 +1,5 @@
 mod base;
 mod compare;
-mod completion;
 mod config;
 mod connect;
 mod convert;
@@ -29,7 +28,6 @@ mod validate;
 pub(crate) use base::extract_common;
 pub use base::{Command, CommandContext, CommandFactory};
 pub use compare::CompareCommand;
-pub use completion::CompletionCommand;
 pub use config::ConfigCommand;
 pub use connect::ConnectCommand;
 pub use convert::ConvertCommand;
