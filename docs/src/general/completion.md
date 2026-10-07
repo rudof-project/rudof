@@ -1,8 +1,8 @@
-# completion
+# Completion Scripts
 
 ## Overview
 
-The `completion` command generates shell completion scripts for `rudof`, enabling tab completion for commands, subcommands, options, and arguments in your preferred shell.
+Shell completion scripts enables tab completion for commands, subcommands, options, and arguments in your preferred shell.
 
 Once installed, shell completion allows you to:
 
@@ -14,7 +14,7 @@ Once installed, shell completion allows you to:
 
 ## Supported Shells
 
-The `completion` command supports completion script generation for the following shells:
+Completion scripts are generated for the following shells:
 
 - **Bash** - The Bourne Again SHell, default on most Linux distributions
 - **Zsh** - Z shell, default on macOS (10.15+) and popular among advanced users
@@ -23,54 +23,38 @@ The `completion` command supports completion script generation for the following
 - **Elvish** - A modern shell with a unique approach to scripting
 - **Nushell** - A modern shell with structured data pipelines
 
-## Command Syntax
+## Getting the scripts
+
+### From a release (recommended)
+
+Every [GitHub release](https://github.com/rudof-project/rudof/releases) ships a
+`rudof_completions.zip` asset containing the completion script for each shell
+above. Download the archive matching the release you installed, pick
+the file for your shell, and skip to [Installation Instructions](#installation-instructions)
+below.
+
+### Via the Nix module
+
+If you use the `programs.rudof` NixOS/home-manager module (see the
+[Nix module options reference](../references/nix-options.md)), completions
+are installed automatically alongside the package — nothing extra to do.
+
+### Generating them yourself
+
+The scripts are produced from `rudof`'s real argument parser by a small
+helper binary in the `rudof_cli` crate, `rudof-completions`, rather than by a
+runtime `rudof` subcommand. From a checkout:
 
 ```bash
-rudof completion <SHELL> [OPTIONS]
-```
-
-### Arguments
-
-- `<SHELL>` - The shell for which to generate the completion script
-  - Required argument
-  - Possible values: `bash`, `elvish`, `fish`, `nushell`, `powershell`, `zsh`
-  - Case-insensitive
-
-### Options
-
-- `-o, --output-file <FILE>` - Write completion script to a file instead of stdout
-- `--force-overwrite` - Overwrite the output file if it already exists
-
-## Basic Usage
-
-### Save to a file
-
-You can save the completion script to a file for later installation:
-
-```bash
-# Save bash completion to a file
-rudof completion bash -o rudof-completion.bash
-
-# Save zsh completion to a file
-rudof completion zsh -o _rudof
-
-# Save fish completion to a file
-rudof completion fish -o rudof.fish
-
-# Save PowerShell completion to a file
-rudof completion powershell -o rudof-completion.ps1
-
-# Save Nushell completion to a file
-rudof completion nushell -o rudof-completion.nu
+cargo run --release --bin rudof-completions -- <SHELL>
 ```
 
 ## Installation Instructions
 
-After generating the completion script, you need to install it in the appropriate location for your shell. The installation process varies by shell.
+After obtaining the completion script, you need to install it in the appropriate location for your shell. The installation process varies by shell.
 
 > **Note**: For detailed information about completion systems, refer to the official documentation:
 > - [Bash Programmable Completion](https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion.html)
 > - [Zsh Completion System](https://zsh.sourceforge.io/Doc/Release/Completion-System.html)
 > - [Fish Shell Completions](https://fishshell.com/docs/current/completions.html)
 > - [PowerShell Tab Completion](https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/tab-completion)
-
