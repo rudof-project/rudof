@@ -1,8 +1,8 @@
 use crate::cli::parser::{
-    CompareArgs, ConfigArgs, ConnectArgs, ConvertArgs, DCTapArgs, DataArgs, DdlArgs, GenerateArgs,
-    LoadArgs, MaterializeArgs, McpArgs, NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs,
-    ServiceArgs, ShaclArgs, ShaclValidateArgs, ShapemapArgs, ShellArgs, ShexArgs, ShexCheckArgs, ShexValidateArgs,
-    SparqlArgs, ValidateArgs,
+    CompareArgs, ConfigArgs, ConnectArgs, ConvertArgs, DCTapArgs, DataArgs, DdlArgs, GenerateArgs, LoadArgs,
+    MaterializeArgs, McpArgs, NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs,
+    ShaclArgs, ShaclValidateArgs, ShapemapArgs, ShellArgs, ShexArgs, ShexCheckArgs, ShexValidateArgs, SparqlArgs,
+    ValidateArgs,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;

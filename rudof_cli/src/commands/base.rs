@@ -2,8 +2,8 @@ use crate::cli::parser::{
     Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsNoBackend, CommonArgsOutputForceOverWrite,
 };
 use crate::commands::{
-    CompareCommand, ConfigCommand, ConnectCommand, ConvertCommand, DataCommand, DctapCommand,
-    DdlCommand, GenerateCommand, LoadCommand, MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand,
+    CompareCommand, ConfigCommand, ConnectCommand, ConvertCommand, DataCommand, DctapCommand, DdlCommand,
+    GenerateCommand, LoadCommand, MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand,
     PgschemaValidateCommand, QueryCommand, RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand,
     ShapemapCommand, ShexCheckCommand, ShexCommand, ShexValidateCommand, SparqlCommand, ValidateCommand,
 };
