@@ -13,6 +13,10 @@ repository.workspace = true
 path = "src/main.rs"
 name = "rudof"
 
+[[bin]]
+path = "src/generator/completions.rs"
+name = "rudof-completions"
+
 [features]
 default = []
 # Surface the `--backend qlever` flag and wire the QLever Docker backend through rudof_lib.
