@@ -2,8 +2,8 @@ use crate::cli::parser::{
     Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsNoBackend, CommonArgsOutputForceOverWrite,
 };
 use crate::commands::{
-    CompareCommand, CompletionCommand, ConfigCommand, ConnectCommand, ConvertCommand, DataCommand, DctapCommand,
-    DdlCommand, GenerateCommand, LoadCommand, MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand,
+    CompareCommand, ConfigCommand, ConnectCommand, ConvertCommand, DataCommand, DctapCommand, DdlCommand,
+    GenerateCommand, LoadCommand, MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand,
     PgschemaValidateCommand, QueryCommand, RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand,
     ShapemapCommand, ShexCheckCommand, ShexCommand, ShexValidateCommand, SparqlCommand, ValidateCommand,
 };
@@ -155,7 +155,6 @@ impl CommandFactory {
             CliCommand::Generate(args) => Ok(Box::new(GenerateCommand::new(args))),
             CliCommand::Materialize(args) => Ok(Box::new(MaterializeCommand::new(args))),
             CliCommand::PgschemaValidate(args) => Ok(Box::new(PgschemaValidateCommand::new(args))),
-            CliCommand::Completion(args) => Ok(Box::new(CompletionCommand::new(args))),
             CliCommand::Config(args) => Ok(Box::new(ConfigCommand::new(args))),
             CliCommand::Shell(args) => Ok(Box::new(ShellCommand::new(args))),
             CliCommand::Connect(args) => Ok(Box::new(ConnectCommand::new(args))),
@@ -289,10 +288,6 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
         }),
         CliCommand::PgschemaValidate(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
-            output: a.common.output.clone(),
-            force_overwrite: a.common.force_overwrite,
-        }),
-        CliCommand::Completion(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),

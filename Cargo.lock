@@ -681,22 +681,11 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "4.6.10"
+version = "4.6.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78ab9a1a7094014a0d0813f8e7c5a0058ad8fe6cf7475b9151364259f5a35d0f"
+checksum = "037e2a1a92236d0aff7e845093f64661d6df4c02c9fcc61a60e9e1d736fa392f"
 dependencies = [
  "clap",
-]
-
-[[package]]
-name = "clap_complete_command"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da8e198c052315686d36371e8a3c5778b7852fc75cc313e4e11eeb7a644a1b62"
-dependencies = [
- "clap",
- "clap_complete",
- "clap_complete_nushell",
 ]
 
 [[package]]
@@ -4265,7 +4254,8 @@ version = "0.3.24"
 dependencies = [
  "anyhow",
  "clap",
- "clap_complete_command",
+ "clap_complete",
+ "clap_complete_nushell",
  "clientele",
  "ctrlc",
  "dctap",

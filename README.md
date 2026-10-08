@@ -249,7 +249,6 @@ Commands:
   generate           Generate synthetic RDF data from ShEx or SHACL schemas
   materialize        Materialize an RDF graph from a ShEx schema and Map semantic-action state
   pgschema-validate  Validate Property Graph data using PGSchema
-  completion         Generates a shell completion script for the specified shell
   config             Dump the effective configuration rudof is using as TOML
   help               Print this message or the help of the given subcommand(s)
 

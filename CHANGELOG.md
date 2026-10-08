@@ -43,6 +43,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 - Parameter `--predicates` now accepts a comma-separated list of predicates.
 - `mcp`'s `--allowed-network` now also accepts a comma-separated list, in addition to repeating the flag.
+- Removed `completion` command
 ### Removed
 
 ## 0.3.19

@@ -39,6 +39,41 @@ jobs:
           files: |
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
 
+  completions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Use Rust cache
+        uses: Swatinem/rust-cache@v2
+      - name: Build the completions generator
+        run: cargo build --release --bin rudof-completions
+      - name: Generate the shell completion scripts
+        run: |
+          mkdir -p completions
+          ./target/release/rudof-completions bash > completions/rudof.bash
+          ./target/release/rudof-completions zsh > completions/_rudof
+          ./target/release/rudof-completions fish > completions/rudof.fish
+          ./target/release/rudof-completions elvish > completions/rudof.elv
+          ./target/release/rudof-completions nushell > completions/rudof.nu
+          ./target/release/rudof-completions powershell > completions/_rudof.ps1
+      - name: Bundle the completion scripts into a zip
+        run: |
+          cd completions
+          zip -r ../${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_completions.zip .
+      - name: Upload the generated Artifact for it to be stored in its corresponding release (completions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ vars.BINARY_NAME }}_completions
+          path: completions/
+      - name: Upload the generated completion scripts to their corresponding release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_completions.zip
+
   mac:
     runs-on: ${{ matrix.vm }}
     strategy:

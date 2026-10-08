@@ -52,7 +52,7 @@ The `main.rs` orchestrates the complete command lifecycle:
 The CLI relies on the following external crates:
 
 - **`clap`**: Command-line argument parsing with derive macros
-- **`clap_complete_command`**: Shell completion generation
+- **`clap_complete`** / **`clap_complete_nushell`**: Shell completion generation
 - **`tokio`**: Async runtime for concurrent operations
 - **`anyhow`** / **`thiserror`**: Error handling
 - **`tracing`** / **`tracing-subscriber`**: Structured logging

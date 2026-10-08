@@ -56,12 +56,12 @@
         postInstall = ''
           echo "Generating shell completion scripts"
 
-          ./target/release/rudof completion bash > rudof.bash
-          ./target/release/rudof completion zsh > _rudof
-          ./target/release/rudof completion fish > rudof.fish
-          ./target/release/rudof completion elvish > rudof.elvish
-          ./target/release/rudof completion nushell > rudof.nu
-          ./target/release/rudof completion powershell > rudof.ps1
+          ./target/release/rudof-completions bash > rudof.bash
+          ./target/release/rudof-completions zsh > _rudof
+          ./target/release/rudof-completions fish > rudof.fish
+          ./target/release/rudof-completions elvish > rudof.elv
+          ./target/release/rudof-completions nushell > rudof.nu
+          ./target/release/rudof-completions powershell > _rudof.ps1
 
           installShellCompletion --bash rudof.bash
           installShellCompletion --zsh _rudof
@@ -72,9 +72,11 @@
             $out/share/elvish/lib \
             $out/share/nushell/vendor/autoload
 
-          cp rudof.ps1 $out/share/powershell/completions/rudof.ps1
-          cp rudof.elvish $out/share/elvish/lib/rudof.elv
+          cp _rudof.ps1 $out/share/powershell/completions/rudof.ps1
+          cp rudof.elv $out/share/elvish/lib/rudof.elv
           cp rudof.nu $out/share/nushell/vendor/autoload/rudof.nu
+
+          rm -f $out/bin/rudof-completions
         '';
       });
     rudofClippy = craneLib.cargoClippy (workspace
