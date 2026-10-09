@@ -43,8 +43,8 @@ Labels say *where* the issue belongs and *how urgent* it is. The full catalogue 
 
 ## Triage
 
-Maintainers triage the incoming queue (the `status/needs-triage` view of the project board).
-Triaging an issue means:
+Maintainers triage the incoming queue of issues carrying `status/needs-triage`. Triaging an issue
+means:
 
 1. Confirm it is reproducible and not a duplicate. If it duplicates another issue, link the
    original, apply `status/duplicate` and close.
@@ -60,8 +60,8 @@ If information is missing, ask and apply `status/needs-info`.
 
 One milestone per released version, named exactly as the version: `0.3.25`, `0.4.0`.
 
-A milestone means *committed to this release*, not *would be nice by then*. The backlog lives in
-the project board.
+A milestone means *committed to this release*, not *would be nice by then*. Everything triaged
+without a milestone is the backlog.
 
 - The milestone for the next version is created when the previous one closes.
 - Issues get a milestone when work on them is actually scheduled, usually at triage or when
@@ -70,37 +70,6 @@ the project board.
   publishing it. See [Releases](./releases.md).
 - If the release ships without an issue that was in its milestone, move the issue to the next
   milestone before closing — never close it as done.
-
-## The project board
-
-All issues live in a single [project](https://github.com/orgs/rudof-project/projects), which
-provides several views over the same set rather than splitting the backlog across boards.
-
-The board follows a kanban flow:
-
-```text
-Triage → Backlog → Ready → In progress → In review → Merged → Released
-```
-
-| Column | Means |
-| --- | --- |
-| `Triage` | Just arrived, carries `status/needs-triage` |
-| `Backlog` | Triaged and accepted, not scheduled |
-| `Ready` | Specified well enough that someone can start today |
-| `In progress` | Someone is working on it; the issue is assigned and a branch exists |
-| `In review` | A pull request is open |
-| `Merged` | Merged into `master`, carries `status/pending-release` |
-| `Released` | Published; the issue is closed |
-
-Besides the board there are views by priority, grouped by milestone, filtered by area, and the
-triage queue.
-
-Items move on their own, driven by
-[`project-board.yml`](https://github.com/rudof-project/rudof/blob/master/.github/workflows/project-board.yml):
-new issues land in `Triage`, and the `Refs #` lines of a pull request move the issues they name to
-`In progress` while it is a draft, `In review` once it is ready for review, and `Merged` when it is
-merged. GitHub's own board automations are not used, because they key on the linked pull request
-that `Refs #` deliberately never creates.
 
 ## Lifecycle and closing
 
@@ -114,17 +83,18 @@ This has one practical consequence for every contributor:
 
 The full path of an issue:
 
-1. Opened → `status/needs-triage`, lands in `Triage`.
-2. Triaged → type, `area/*` and maybe `priority/*`; moves to `Backlog` or `Ready`.
-3. Picked up → assigned, moved to `In progress`, a branch is created following the
+1. Opened → `status/needs-triage`.
+2. Triaged → type, `area/*` and maybe `priority/*`; `status/needs-triage` is removed.
+3. Picked up → assigned, and a branch is created following the
    [development workflow](./workflow.md).
-4. Pull request opened → `In review`.
-5. Pull request merged → `status/pending-release`, `Merged`, and the issue is assigned the
-   milestone of the version it will ship in. **It stays open.**
-6. Release published →
-   [`project-release.yml`](https://github.com/rudof-project/rudof/blob/master/.github/workflows/project-release.yml)
-   closes every issue sitting in `Merged`, removes `status/pending-release` and moves it to
-   `Released`. A release candidate publishes nothing, so it leaves the column alone.
+4. Pull request opened, referencing the issue as `Refs #`.
+5. Pull request merged → `status/pending-release`, and the issue is assigned the milestone of the
+   version it will ship in. **It stays open.**
+6. Release published → the issues it ships are closed automatically and lose
+   `status/pending-release`. A release candidate publishes nothing, so it closes nothing.
+
+Maintainers also track triage and scheduling on an internal board. Its policy lives in the
+`rudof-project/weso_rudof` repository, readable by members of the organization.
 
 Issues can also be closed without a release, as `status/duplicate`, `status/invalid` or
 `status/wontfix`. Always say why in a comment.
