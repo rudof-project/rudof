@@ -124,7 +124,7 @@ const results = rudof.runQuery();         // { kind: "select", variables, rows }
 | Area | Methods |
 |------|---------|
 | Session | `new Rudof(config?)`, `updateConfig(config)`, `getVersion()` |
-| RDF data | `readData(data, format?, base?, readerMode?, merge?)`, `serializeData(format?)`, `dereference(uri, readerMode?, merge?)`, `listEndpoints()` |
+| RDF data | `readData(data, format?, base?, readerMode?, merge?)`, `serializeData(format?)`, `addTriple(subject, predicate, object, strictIris?)`, `removeTriple(subject, predicate, object, strictIris?)`, `triples(subject?, predicate?, object?, strictIris?, limit?)`, `dereference(uri, readerMode?, merge?)`, `listEndpoints()` |
 | Nodes | `nodeInfo(nodeSelector, predicates?, mode?, showColors?, depth?)`, `nodeNeighborhood(nodeSelector, predicates?, mode?, depth?, strictIris?, limit?)` |
 | ShEx | `readShex(schema, format?, base?, readerMode?)`, `checkShex(schema, format?, base?)`, `serializeCurrentShex(format?, shapeLabel?)`, `readShapemap(shapemap, format?, baseNodes?, baseShapes?)`, `serializeShapemap(format?)`, `validateShex()`, `serializeShexValidationResults(format?, sortMode?)`, `materialize(format?, node?)`, `addExternalResolver(spec)`, `clearExternalResolvers()`, `Rudof.listExternalResolvers()` |
 | SHACL | `readShacl(shapes?, format?, base?, readerMode?)` (without `shapes`, they are taken from the data), `serializeShacl(format?)`, `validateShacl(mode?)`, `serializeShaclValidationResults(format?, sortMode?)` |

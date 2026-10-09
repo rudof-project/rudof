@@ -110,6 +110,15 @@ fn more_reports_are_plain_objects() {
     assert_eq!(get(&arc, "direction"), "outgoing");
     assert_eq!(get(&arc, "isLast"), JsValue::TRUE);
 
+    rudof.add_triple(":alice", ":knows", ":bob", None).unwrap();
+    let triples = rudof
+        .triples(Some(":alice".to_string()), Some(":knows".to_string()), None, None, None)
+        .unwrap();
+    assert_eq!(get(&triples, "truncated"), JsValue::FALSE);
+    let triple = array(&get(&triples, "triples")).get(0);
+    assert_eq!(get(&triple, "subject"), "http://example.org/alice");
+    assert_eq!(get(&triple, "object"), "http://example.org/bob");
+
     #[cfg(feature = "pgschema")]
     pgschema_report_is_a_plain_object();
 }
