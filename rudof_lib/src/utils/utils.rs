@@ -18,7 +18,7 @@ use url::Url;
 /// Normalizes a node/shape IRI string for `ShapeMapParser` according to `mode`.
 ///
 /// - `Lax`: wraps strings that look like bare absolute IRIs (contain `://`, no leading `<`, `_`,
-///   or `{`) in angle brackets. Heuristic — see [`IriNormalizationMode`] docs for edge cases.
+///   `{` or `"`) in angle brackets. Heuristic — see [`IriNormalizationMode`] docs for edge cases.
 /// - `Strict`: returns the trimmed string unchanged; bare IRIs will produce a parser error.
 pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
     let trimmed = s.trim();
@@ -28,6 +28,7 @@ pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
             let is_bare_iri = !trimmed.starts_with('<')
                 && !trimmed.starts_with('_')
                 && !trimmed.starts_with('{')
+                && !trimmed.starts_with('"')
                 && trimmed.contains("://");
             if is_bare_iri {
                 format!("<{}>", trimmed)
@@ -168,4 +169,35 @@ fn parse_iri_ref(iri: &str) -> Result<IriRef> {
         })
         .into()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::formats::IriNormalizationMode::{Lax, Strict};
+
+    #[test]
+    fn test_normalize_iri_str_wraps_only_bare_iris() {
+        assert_eq!(normalize_iri_str("http://example.org/a", Lax), "<http://example.org/a>");
+        assert_eq!(
+            normalize_iri_str("http://example.org/a", Strict),
+            "http://example.org/a"
+        );
+        assert_eq!(
+            normalize_iri_str("<http://example.org/a>", Lax),
+            "<http://example.org/a>"
+        );
+        assert_eq!(normalize_iri_str(":a", Lax), ":a");
+        assert_eq!(normalize_iri_str("_:b1", Lax), "_:b1");
+    }
+
+    #[test]
+    fn test_normalize_iri_str_leaves_literals_alone() {
+        // A literal is not a bare IRI, however much of one its datatype looks like.
+        assert_eq!(
+            normalize_iri_str("\"23\"^^<http://www.w3.org/2001/XMLSchema#integer>", Lax),
+            "\"23\"^^<http://www.w3.org/2001/XMLSchema#integer>"
+        );
+        assert_eq!(normalize_iri_str("\"Alice\"", Lax), "\"Alice\"");
+    }
 }
