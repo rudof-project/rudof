@@ -1,21 +1,27 @@
+mod add_triple;
 mod dereference;
 mod list_endpoints;
 mod load_data;
 mod load_service_description;
 mod node_neighborhood;
+mod remove_triple;
 mod reset_data;
 mod reset_service_description;
 mod serialize_data;
 mod serialize_service_description;
 mod show_node_info;
+mod triples;
 
+pub use add_triple::AddTripleBuilder;
 pub use dereference::DereferenceBuilder;
 pub use list_endpoints::ListEndpointsBuilder;
 pub use load_data::LoadDataBuilder;
 pub use load_service_description::LoadServiceDescriptionBuilder;
 pub use node_neighborhood::NodeNeighborhoodBuilder;
+pub use remove_triple::RemoveTripleBuilder;
 pub use reset_data::ResetDataBuilder;
 pub use reset_service_description::ResetServiceDescriptionBuilder;
 pub use serialize_data::SerializeDataBuilder;
 pub use serialize_service_description::SerializeServiceDescriptionBuilder;
 pub use show_node_info::ShowNodeInfoBuilder;
+pub use triples::TriplesBuilder;

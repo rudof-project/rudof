@@ -1,14 +1,14 @@
 use crate::{
     Result, Rudof,
     api::data::implementations::{
-        dereference, list_endpoints, load_data, load_service_description, node_neighborhood, reset_data,
-        reset_service_description, serialize_data, serialize_service_description, show_node_info,
+        add_triple, dereference, list_endpoints, load_data, load_service_description, node_neighborhood, remove_triple,
+        reset_data, reset_service_description, serialize_data, serialize_service_description, show_node_info, triples,
     },
     formats::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
         ResultServiceFormat,
     },
-    types::NodeNeighborhood,
+    types::{NodeNeighborhood, Triples},
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
 use rudof_viz::VizEngine;
@@ -155,6 +155,88 @@ pub trait DataOperations {
         iri_mode: IriNormalizationMode,
     ) -> Result<NodeNeighborhood<'a>>;
 
+    /// Adds a triple to the current RDF data.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The subject, as an IRI (`<http://example.org/alice>`, `ex:alice`)
+    ///   or a blank node (`_:b1`)
+    /// * `predicate` - The predicate, as an angle-bracketed IRI or a prefixed name
+    /// * `object` - The object, as an IRI, a blank node or a literal (`"Alice"`,
+    ///   `"Alice"@en`, `23`, `"23"^^xsd:integer`)
+    /// * `iri_mode` - IRI normalization mode to apply when parsing the terms
+    ///
+    /// Prefixed names are resolved against the prefixes of the loaded data,
+    /// supplemented by the session's default prefixes. Adding a triple the data
+    /// already contains changes nothing, an RDF graph being a set of triples.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no RDF data is loaded, or if a term cannot be parsed or
+    /// its prefix resolved.
+    ///
+    /// Also if the data cannot be modified: only the in-memory graph can be. A SPARQL
+    /// endpoint and the QLever backend are read-only, and so is data federated with
+    /// SPARQL endpoints — the local graph of such a session is deliberately not
+    /// written to instead, since [`triples`](Self::triples) reads it and the
+    /// endpoints' as one.
+    fn add_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        iri_mode: IriNormalizationMode,
+    ) -> Result<()>;
+
+    /// Removes a triple from the current RDF data.
+    ///
+    /// # Arguments
+    ///
+    /// As [`add_triple`](Self::add_triple).
+    ///
+    /// # Errors
+    ///
+    /// As [`add_triple`](Self::add_triple).
+    fn remove_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        iri_mode: IriNormalizationMode,
+    ) -> Result<()>;
+
+    /// Returns an iterator over the triples of the current RDF data matching a
+    /// pattern.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - The subject to match, as in [`add_triple`](Self::add_triple);
+    ///   `None` matches any subject
+    /// * `predicate` - The predicate to match; `None` matches any predicate
+    /// * `object` - The object to match; `None` matches any object
+    /// * `iri_mode` - IRI normalization mode to apply when parsing the terms
+    ///
+    /// All three `None` walks the whole graph. The iterator borrows the data, which
+    /// therefore cannot be modified while its triples are being walked.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no RDF data is loaded, or if a term of the pattern cannot
+    /// be parsed or its prefix resolved.
+    ///
+    /// # Note
+    ///
+    /// The triples are retrieved before the iterator is returned, and a pattern with
+    /// a SPARQL endpoint or the QLever backend as the data retrieves them from there:
+    /// an unconstrained pattern then pulls the whole remote graph.
+    fn triples<'a>(
+        &'a self,
+        subject: Option<&str>,
+        predicate: Option<&str>,
+        object: Option<&str>,
+        iri_mode: IriNormalizationMode,
+    ) -> Result<Triples<'a>>;
+
     /// Lists the registered SPARQL endpoints.
     ///
     /// Returns:
@@ -275,6 +357,36 @@ impl DataOperations for Rudof {
         iri_mode: IriNormalizationMode,
     ) -> Result<NodeNeighborhood<'a>> {
         node_neighborhood(self, node, predicates, mode, depth, iri_mode)
+    }
+
+    fn add_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        iri_mode: IriNormalizationMode,
+    ) -> Result<()> {
+        add_triple(self, subject, predicate, object, iri_mode)
+    }
+
+    fn remove_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        iri_mode: IriNormalizationMode,
+    ) -> Result<()> {
+        remove_triple(self, subject, predicate, object, iri_mode)
+    }
+
+    fn triples<'a>(
+        &'a self,
+        subject: Option<&str>,
+        predicate: Option<&str>,
+        object: Option<&str>,
+        iri_mode: IriNormalizationMode,
+    ) -> Result<Triples<'a>> {
+        triples(self, subject, predicate, object, iri_mode)
     }
 
     fn list_endpoints(&mut self) -> Result<Vec<(String, String)>> {

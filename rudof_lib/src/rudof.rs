@@ -24,9 +24,9 @@ use crate::{
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
         },
         data::builders::{
-            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder,
-            NodeNeighborhoodBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder, SerializeDataBuilder,
-            SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
+            AddTripleBuilder, DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder,
+            NodeNeighborhoodBuilder, RemoveTripleBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder,
+            SerializeDataBuilder, SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder, TriplesBuilder,
         },
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
@@ -378,6 +378,42 @@ impl Rudof {
     /// - `node`: the IRI or ID of the node to inspect.
     pub fn node_neighborhood<'a>(&'a self, node: &'a str) -> NodeNeighborhoodBuilder<'a> {
         NodeNeighborhoodBuilder::new(self, node)
+    }
+
+    /// Returns an `AddTripleBuilder` that adds a triple to the loaded data.
+    ///
+    /// The terms are written as text, in the syntax the rest of the API accepts:
+    /// `<http://example.org/alice>`, `ex:alice`, `_:b1`, `"Alice"`, `"Alice"@en`,
+    /// `23`, `"23"^^xsd:integer`.
+    ///
+    /// # Parameters
+    /// - `subject`: an IRI or a blank node.
+    /// - `predicate`: an IRI.
+    /// - `object`: an IRI, a blank node or a literal.
+    pub fn add_triple<'a>(&'a mut self, subject: &'a str, predicate: &'a str, object: &'a str) -> AddTripleBuilder<'a> {
+        AddTripleBuilder::new(self, subject, predicate, object)
+    }
+
+    /// Returns a `RemoveTripleBuilder` that removes a triple from the loaded data.
+    ///
+    /// # Parameters
+    /// As [`add_triple`](Self::add_triple).
+    pub fn remove_triple<'a>(
+        &'a mut self,
+        subject: &'a str,
+        predicate: &'a str,
+        object: &'a str,
+    ) -> RemoveTripleBuilder<'a> {
+        RemoveTripleBuilder::new(self, subject, predicate, object)
+    }
+
+    /// Returns a `TriplesBuilder` that iterates over the triples of the loaded data
+    /// matching a pattern.
+    ///
+    /// Every position left unset matches any term, so the builder with none of them
+    /// set walks the whole graph.
+    pub fn triples<'a>(&'a self) -> TriplesBuilder<'a> {
+        TriplesBuilder::new(self)
     }
 
     /// Returns a `ListEndpointsBuilder` that enumerates known endpoints.
