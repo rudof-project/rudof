@@ -72,9 +72,9 @@ jobs:
         # Trusted publishing needs npm 11.5.1 or later
         run: npm install -g npm@latest
       - name: Publish
-        env:
-          # Only needed until trusted publishing is configured on npmjs.com
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Authenticates with trusted publishing (OIDC): npm exchanges the GitHub
+        # id-token for a short-lived publish token, so no NPM_TOKEN secret is needed.
+        # The trusted publisher is configured on npmjs.com for this workflow file.
         run: |
           # A path without ./ is read by npm 11+ as a GitHub shorthand (user/repo)
           tarball="$(ls ./dist/*.tgz)"
