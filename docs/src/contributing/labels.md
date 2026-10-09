@@ -73,7 +73,7 @@ At most one at a time; they are mutually exclusive by construction.
 | `status/needs-triage` | Not yet reviewed by a maintainer | The issue templates, automatically |
 | `status/needs-info` | Waiting for the reporter | Triager |
 | `status/blocked` | Cannot progress until something else resolves | Assignee |
-| `status/pending-release` | Merged into `master`, not yet published | Whoever merges the pull request |
+| `status/pending-release` | Merged into `master`, not yet published | Automatically, when the pull request merges |
 | `status/duplicate` | Already tracked elsewhere — link the original | Triager, before closing |
 | `status/invalid` | Not an actionable report | Triager, before closing |
 | `status/wontfix` | Deliberately not going to be done — say why | Maintainer, before closing |

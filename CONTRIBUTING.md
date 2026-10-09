@@ -7,7 +7,7 @@ This page gets you started. The policies it links to explain how the project is 
 
 | If you want to know | Read |
 | --- | --- |
-| How work is organised: types, labels, priorities, milestones, the board | [Issue policy](https://rudof-project.github.io/rudof/contributing/issues.html) |
+| How work is organised: types, labels, priorities, milestones | [Issue policy](https://rudof-project.github.io/rudof/contributing/issues.html) |
 | Which label to put on something | [Label reference](https://rudof-project.github.io/rudof/contributing/labels.html) |
 | How to name branches, write commits and get a pull request merged | [Development workflow](https://rudof-project.github.io/rudof/contributing/workflow.html) |
 | When your change will actually ship | [Releases](https://rudof-project.github.io/rudof/contributing/releases.html) |
