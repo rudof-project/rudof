@@ -4,7 +4,7 @@ use crate::validator::engine::Engine;
 use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct List {
@@ -22,7 +22,7 @@ impl List {
 }
 
 impl List {
-    pub fn evaluate<Rdf: FocusRDF>(
+    pub fn evaluate<Rdf: FocusRDF + Debug>(
         &self,
         _: &mut Rdf,
         _: &HashMap<String, Rdf::Term>,

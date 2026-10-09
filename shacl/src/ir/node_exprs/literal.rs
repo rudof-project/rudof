@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct Literal {
@@ -23,7 +23,7 @@ impl Literal {
 }
 
 impl Literal {
-    pub fn evaluate<Rdf: FocusRDF>(
+    pub fn evaluate<Rdf: FocusRDF + Debug>(
         &self,
         _: &mut Rdf,
         _: &HashMap<String, Rdf::Term>,
