@@ -428,3 +428,44 @@ fn test_adding_a_triple_invalidates_the_sparql_store() {
     graph.remove_triple(x, new, five).unwrap();
     assert_eq!(matches(&mut graph), 0, "the query must not see the removed triple");
 }
+
+#[test]
+fn test_triples_matching_with_any_or() {
+    use crate::rdf_core::AnyOr;
+
+    let graph = graph_from_str(DUMMY_GRAPH);
+    let x: AnyOr<OxSubject> = AnyOr::new(Some(OxNamedNode::new_unchecked("http://example.org/x").into()));
+    let p = AnyOr::new(Some(OxNamedNode::new_unchecked("http://example.org/p")));
+    let one: AnyOr<OxTerm> = AnyOr::new(Some(OxLiteral::from(1).into()));
+
+    // A value in every position matches exactly the one triple, and a wildcard in a
+    // position widens the pattern there, just as `Any` does.
+    assert_eq!(graph.triples_matching(&x, &p, &one).unwrap().count(), 1);
+    assert_eq!(graph.triples_matching(&x, &p, &AnyOr::any()).unwrap().count(), 1);
+    assert_eq!(
+        graph
+            .triples_matching(&x, &AnyOr::any(), &AnyOr::any())
+            .unwrap()
+            .count(),
+        2
+    );
+    assert_eq!(
+        graph
+            .triples_matching(&AnyOr::any(), &p, &AnyOr::any())
+            .unwrap()
+            .count(),
+        2
+    );
+    assert_eq!(
+        graph
+            .triples_matching(&AnyOr::<OxSubject>::any(), &AnyOr::any(), &AnyOr::<OxTerm>::any())
+            .unwrap()
+            .count(),
+        graph.len(),
+        "every position a wildcard walks the whole graph"
+    );
+
+    // And a value that is not in the graph matches nothing.
+    let absent = AnyOr::new(Some(OxNamedNode::new_unchecked("http://example.org/absent")));
+    assert_eq!(graph.triples_matching(&x, &absent, &AnyOr::any()).unwrap().count(), 0);
+}
