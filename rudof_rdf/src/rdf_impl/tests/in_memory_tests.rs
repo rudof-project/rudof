@@ -398,3 +398,33 @@ fn test_parse_n3_that_is_not_rdf() {
         assert!(graph.len() <= 1, "{n3}: {}", graph.len());
     }
 }
+
+// The store that answers SPARQL queries is built from the graph on demand, so a
+// mutation after it has been built has to drop it; otherwise every later query is
+// answered from the triples the graph held back then.
+#[cfg(feature = "sparql")]
+#[test]
+fn test_adding_a_triple_invalidates_the_sparql_store() {
+    use crate::rdf_core::query::QueryRDF;
+
+    let mut graph = graph_from_str(DUMMY_GRAPH);
+    let matches = |graph: &mut OxigraphInMemory| {
+        graph.ensure_store().unwrap();
+        graph
+            .query_select("SELECT ?o WHERE { <http://example.org/x> <http://example.org/new> ?o }")
+            .unwrap()
+            .iter()
+            .count()
+    };
+
+    assert_eq!(matches(&mut graph), 0);
+
+    let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let new = OxNamedNode::new_unchecked("http://example.org/new");
+    let five: OxTerm = OxLiteral::from(5).into();
+    graph.add_triple(x.clone(), new.clone(), five.clone()).unwrap();
+    assert_eq!(matches(&mut graph), 1, "the query must see the added triple");
+
+    graph.remove_triple(x, new, five).unwrap();
+    assert_eq!(matches(&mut graph), 0, "the query must not see the removed triple");
+}

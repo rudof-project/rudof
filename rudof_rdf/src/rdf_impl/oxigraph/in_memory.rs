@@ -110,6 +110,20 @@ impl OxigraphInMemory {
         self.graph.is_empty()
     }
 
+    /// Mutable access to the graph, for every operation that changes it.
+    ///
+    /// Also drops the SPARQL store [`ensure_store`](Self::ensure_store) built from the
+    /// graph, which would otherwise keep answering queries from the triples the graph
+    /// held when it was built. The next query rebuilds it. Every mutation goes through
+    /// here so none can forget to.
+    fn graph_mut(&mut self) -> &mut Graph {
+        #[cfg(feature = "sparql")]
+        {
+            self.store = None;
+        }
+        Arc::make_mut(&mut self.graph)
+    }
+
     pub fn set_default_base_prefixes(&mut self, default_base: Option<IriS>) {
         self.base = default_base;
     }
@@ -193,7 +207,7 @@ impl OxigraphInMemory {
         };
 
         let mut turtle_reader = turtle_parser.for_reader(reader);
-        let graph = Arc::make_mut(&mut self.graph);
+        let graph = self.graph_mut();
 
         for triple_result in turtle_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| {
@@ -263,7 +277,7 @@ impl OxigraphInMemory {
         };
 
         let mut trig_reader = trig_parser.for_reader(reader);
-        let graph = Arc::make_mut(&mut self.graph);
+        let graph = self.graph_mut();
 
         for quad_result in trig_reader.by_ref() {
             let quad = match handle_parse_error(quad_result, reader_mode, error)? {
@@ -316,7 +330,7 @@ impl OxigraphInMemory {
         };
 
         let mut n3_reader = n3_parser.for_reader(reader);
-        let graph = Arc::make_mut(&mut self.graph);
+        let graph = self.graph_mut();
 
         for quad_result in n3_reader.by_ref() {
             let quad = match handle_parse_error(quad_result, reader_mode, error)? {
@@ -371,7 +385,7 @@ impl OxigraphInMemory {
     ) -> Result<(), OxigraphInMemoryError> {
         let parser = NTriplesParser::new();
         let mut nt_reader = parser.for_reader(reader);
-        let graph = Arc::make_mut(&mut self.graph);
+        let graph = self.graph_mut();
 
         for triple_result in nt_reader.by_ref() {
             let triple =
@@ -405,7 +419,7 @@ impl OxigraphInMemory {
     ) -> Result<(), OxigraphInMemoryError> {
         let parser = RdfXmlParser::new();
         let mut xml_reader = parser.for_reader(reader);
-        let graph = Arc::make_mut(&mut self.graph);
+        let graph = self.graph_mut();
 
         for triple_result in xml_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::RDFXMLError {
@@ -439,7 +453,7 @@ impl OxigraphInMemory {
     ) -> Result<(), OxigraphInMemoryError> {
         let parser = NQuadsParser::new();
         let mut nq_reader = parser.for_reader(reader);
-        let graph = Arc::make_mut(&mut self.graph);
+        let graph = self.graph_mut();
 
         for triple_result in nq_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NQuadsError {
@@ -472,7 +486,7 @@ impl OxigraphInMemory {
     ) -> Result<(), OxigraphInMemoryError> {
         let parser = JsonLdParser::new();
         let mut jsonld_reader = parser.for_reader(reader);
-        let graph = Arc::make_mut(&mut self.graph);
+        let graph = self.graph_mut();
 
         for triple_result in jsonld_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::JsonLDError {
@@ -608,7 +622,7 @@ impl OxigraphInMemory {
         O: Into<TermRef<'a>>,
     {
         let triple = TripleRef::new(subj.into(), pred.into(), obj.into());
-        Arc::make_mut(&mut self.graph).insert(triple);
+        self.graph_mut().insert(triple);
         Ok(())
     }
 }
@@ -1119,7 +1133,7 @@ impl BuildRDF for OxigraphInMemory {
         O: Into<Self::Term>,
     {
         let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
-        Arc::make_mut(&mut self.graph).insert(&triple);
+        self.graph_mut().insert(&triple);
         Ok(())
     }
 
@@ -1137,7 +1151,7 @@ impl BuildRDF for OxigraphInMemory {
         O: Into<Self::Term>,
     {
         let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
-        Arc::make_mut(&mut self.graph).remove(&triple);
+        self.graph_mut().remove(&triple);
         Ok(())
     }
 
@@ -1155,7 +1169,7 @@ impl BuildRDF for OxigraphInMemory {
         T: Into<Self::Term>,
     {
         let triple = OxTriple::new(node.into(), rdf_type(), type_.into());
-        Arc::make_mut(&mut self.graph).insert(&triple);
+        self.graph_mut().insert(&triple);
         Ok(())
     }
 
