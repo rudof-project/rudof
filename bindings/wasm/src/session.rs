@@ -10,7 +10,7 @@ use crate::error::{Error, Result};
 #[cfg(feature = "pgschema")]
 use crate::reports::PgSchemaValidationReport;
 use crate::reports::{
-    ExternalResolver, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationReport, ShaclValidationReport,
+    ExternalResolver, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationReport, ShaclValidationReport, Triples,
 };
 #[cfg(feature = "comparison")]
 use rudof_lib::formats::{ComparisonFormat, ComparisonMode};
@@ -522,6 +522,80 @@ impl Session {
         }
         Ok(NodeNeighborhood {
             arcs: arcs.iter().map(Into::into).collect(),
+            truncated,
+        })
+    }
+
+    /// Adds a triple to the loaded RDF data. The terms are written as text:
+    /// `<http://example.org/alice>`, `ex:alice`, `_:b1`, `"Alice"`, `"Alice"@en`,
+    /// `23`, `"23"^^xsd:integer`.
+    pub fn add_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        strict_iris: Option<bool>,
+    ) -> Result<()> {
+        let mut b = self.rudof.add_triple(subject, predicate, object);
+        if strict_iris.unwrap_or(false) {
+            b = b.with_iri_mode(IriNormalizationMode::Strict);
+        }
+        Ok(b.execute()?)
+    }
+
+    /// Removes a triple from the loaded RDF data, written as in `add_triple`.
+    pub fn remove_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        strict_iris: Option<bool>,
+    ) -> Result<()> {
+        let mut b = self.rudof.remove_triple(subject, predicate, object);
+        if strict_iris.unwrap_or(false) {
+            b = b.with_iri_mode(IriNormalizationMode::Strict);
+        }
+        Ok(b.execute()?)
+    }
+
+    /// The triples of the loaded RDF data matching a pattern. Every position left
+    /// out matches any term, so no pattern at all walks the whole graph. With
+    /// `limit`, at most that many triples are returned.
+    pub fn triples(
+        &self,
+        subject: Option<&str>,
+        predicate: Option<&str>,
+        object: Option<&str>,
+        strict_iris: Option<bool>,
+        limit: Option<usize>,
+    ) -> Result<Triples> {
+        let mut b = self.rudof.triples();
+        if let Some(s) = subject {
+            b = b.with_subject(s);
+        }
+        if let Some(p) = predicate {
+            b = b.with_predicate(p);
+        }
+        if let Some(o) = object {
+            b = b.with_object(o);
+        }
+        if strict_iris.unwrap_or(false) {
+            b = b.with_iri_mode(IriNormalizationMode::Strict);
+        }
+        let triples = b.execute()?;
+        // One triple past `limit`, to tell whether the result was truncated.
+        let mut triples = match limit {
+            Some(limit) => triples
+                .take(limit.saturating_add(1))
+                .collect::<std::result::Result<Vec<_>, _>>(),
+            None => triples.collect(),
+        }?;
+        let truncated = limit.is_some_and(|limit| triples.len() > limit);
+        if let Some(limit) = limit {
+            triples.truncate(limit);
+        }
+        Ok(Triples {
+            triples: triples.iter().map(Into::into).collect(),
             truncated,
         })
     }

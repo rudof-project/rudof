@@ -33,6 +33,9 @@ RDF data
 
 .. automethod:: Rudof.read_data
 .. automethod:: Rudof.serialize_data
+.. automethod:: Rudof.add_triple
+.. automethod:: Rudof.remove_triple
+.. automethod:: Rudof.triples
 .. automethod:: Rudof.dereference
 
 ShEx
@@ -327,6 +330,19 @@ Node neighborhood
 .. autoclass:: ArcDirection
    :members:
    :undoc-members:
+
+Triples
+~~~~~~~
+
+.. autoclass:: Triple
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __repr__
+
+.. autoclass:: TripleIterator
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __next__
 
 
 Formats

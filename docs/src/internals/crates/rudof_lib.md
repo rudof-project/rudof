@@ -172,7 +172,46 @@ for arc in neighborhood {
 // http://example.org/alice <-- http://example.org/knows <-- http://example.org/dave
 ```
 
-#### 2.3 Property Graph Data
+#### 2.3 Triples
+
+`add_triple`, `remove_triple` and `triples` work on the loaded graph one triple at a time, which is what building a graph programmatically (or applying the triples a validation report says are missing) takes, without serializing the graph, editing the text and reading it back.
+
+Terms are given in the textual form the rest of the API accepts, so callers do not build RDF terms by hand: `<http://example.org/alice>`, a prefixed name (`ex:alice`), a blank node label (`_:b1`) or a literal (`"Alice"`, `"Alice"@en`, `23`, `"23"^^xsd:integer`). Prefixed names are resolved against the prefixes of the loaded data, filled in with the session's default prefixes for the aliases the data does not declare itself; an alias neither of them declares is an error rather than an unresolved term.
+
+`triples` takes a pattern: every position left unset matches any term, so a builder with none of them set walks the whole graph. Like `node_neighborhood` it borrows the loaded data, which therefore cannot be modified while the triples are being walked, and yields one `Result<Triple>` per match.
+
+Only the in-memory graph can be modified. A SPARQL endpoint and the QLever backend are read-only, and so is data federated with SPARQL endpoints: the local graph of such a session is deliberately not written to instead, since `triples` reads it and the endpoints' as one. `triples` itself works on all of them, but an unconstrained pattern against a remote backend pulls its whole graph.
+
+```rust
+use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::formats::InputSpec;
+use std::str::FromStr;
+
+let mut rudof = Rudof::new(RudofConfig::default());
+let rdf_data_input = vec![InputSpec::from_str(
+    r#"
+        prefix ex: <http://example.org/>
+        ex:alice ex:name "Alice" .
+    "#
+).unwrap()];
+
+rudof.load_data().with_data(&rdf_data_input).execute().unwrap();
+
+// Change the graph in place
+rudof.add_triple("ex:alice", "ex:knows", "ex:bob").execute().unwrap();
+rudof.add_triple("ex:bob", "ex:name", "\"Bob\"").execute().unwrap();
+rudof.remove_triple("ex:alice", "ex:name", "\"Alice\"").execute().unwrap();
+
+// Walk the triples matching a pattern (here: everything ex:bob is the subject of)
+for triple in rudof.triples().with_subject("ex:bob").execute().unwrap() {
+    println!("{}", triple.unwrap());
+}
+
+// Prints:
+// http://example.org/bob <http://example.org/name> "Bob" .
+```
+
+#### 2.4 Property Graph Data
 
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
@@ -198,7 +237,7 @@ rudof.load_data()
 rudof.serialize_data(&mut std::io::stdout()).execute().unwrap();
 ```
 
-#### 2.4 SPARQL Endpoint
+#### 2.5 SPARQL Endpoint
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
 
@@ -218,7 +257,7 @@ rudof.load_data()
     .unwrap();
 ```
 
-#### 2.5 Service Description
+#### 2.6 Service Description
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
 use rudof_lib::formats::{

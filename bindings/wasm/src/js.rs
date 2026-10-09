@@ -89,6 +89,21 @@ export interface NeighborArc {
   isLast: boolean;
 }
 
+/** The triples matching a pattern. */
+export interface Triples {
+  triples: Triple[];
+  /** `true` if more triples matched than the requested limit. */
+  truncated: boolean;
+}
+
+export interface Triple {
+  /** An IRI or a blank node. */
+  subject: string;
+  predicate: string;
+  /** An IRI, a blank node or a literal. */
+  object: string;
+}
+
 /** The result of `checkShex`. */
 export interface ShExCheck {
   valid: boolean;
@@ -538,6 +553,53 @@ impl JsRudof {
             predicates.as_deref(),
             mode.as_deref(),
             depth,
+            strict_iris,
+            limit,
+        )?)
+    }
+
+    /// Adds a triple to the loaded RDF data. The terms are written as text:
+    /// `<http://example.org/alice>`, `ex:alice`, `_:b1`, `"Alice"`, `"Alice"@en`,
+    /// `23`, `"23"^^xsd:integer`.
+    #[wasm_bindgen(js_name = addTriple)]
+    pub fn add_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+    ) -> Result<(), JsValue> {
+        Ok(self.session.add_triple(subject, predicate, object, strict_iris)?)
+    }
+
+    /// Removes a triple from the loaded RDF data, written as in `addTriple`.
+    #[wasm_bindgen(js_name = removeTriple)]
+    pub fn remove_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+    ) -> Result<(), JsValue> {
+        Ok(self.session.remove_triple(subject, predicate, object, strict_iris)?)
+    }
+
+    /// The triples of the loaded RDF data matching a pattern. Every position left
+    /// out (or `undefined`) matches any term, so no pattern at all walks the whole
+    /// graph. With `limit`, at most that many triples are returned.
+    #[wasm_bindgen(unchecked_return_type = "Triples")]
+    pub fn triples(
+        &self,
+        subject: Option<String>,
+        predicate: Option<String>,
+        object: Option<String>,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+        limit: Option<usize>,
+    ) -> Result<JsValue, JsValue> {
+        to_js(&self.session.triples(
+            subject.as_deref(),
+            predicate.as_deref(),
+            object.as_deref(),
             strict_iris,
             limit,
         )?)

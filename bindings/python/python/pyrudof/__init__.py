@@ -53,6 +53,8 @@ from ._pyrudof import (
     NeighborArc,
     NeighborArcIterator,
     ArcDirection,
+    Triple,
+    TripleIterator,
     # --- formats: data ---
     RDFFormat,
     ResultDataFormat,
@@ -148,6 +150,8 @@ __all__ = [
     "NeighborArc",
     "NeighborArcIterator",
     "ArcDirection",
+    "Triple",
+    "TripleIterator",
     # Formats: data.
     "RDFFormat",
     "ResultDataFormat",

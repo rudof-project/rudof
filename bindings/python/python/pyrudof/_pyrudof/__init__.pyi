@@ -79,6 +79,8 @@ __all__ = [
     "ShapeMapFormat",
     "ShapesGraphSource",
     "ShexValidationSortMode",
+    "Triple",
+    "TripleIterator",
     "UnsupportedOperationError",
     "ValidationError",
 ]
@@ -756,6 +758,71 @@ class Rudof:
         
         Raises:
             DataError: If serialization fails.
+        """
+    def add_triple(self, subject: builtins.str, predicate: builtins.str, object: builtins.str, strict_iris: typing.Optional[builtins.bool] = None) -> None:
+        r"""
+        Adds a triple to the loaded RDF data.
+        
+        Args:
+            subject (str): The subject, as an IRI (``"<http://example.org/alice>"``,
+                ``"ex:alice"``) or a blank node (``"_:b1"``).
+            predicate (str): The predicate, as an angle-bracketed IRI or a prefixed name.
+            object (str): The object, as an IRI, a blank node or a literal (``'"Alice"'``,
+                ``'"Alice"@en'``, ``"23"``, ``'"23"^^xsd:integer'``).
+            strict_iris (bool, optional): Require angle-bracketed IRIs instead of
+                auto-wrapping bare ones. Defaults to ``False``.
+        
+        Prefixed names are resolved against the prefixes of the loaded data, supplemented
+        by the session's default prefixes (see :meth:`add_prefix`). Adding a triple the
+        data already contains changes nothing, an RDF graph being a set of triples.
+        
+        Raises:
+            DataError: If no RDF data is loaded, if a term cannot be parsed or its prefix
+                resolved, or if the data cannot be modified (only the in-memory graph
+                can be, not a SPARQL endpoint, the QLever backend, or data federated with
+                SPARQL endpoints).
+        """
+    def remove_triple(self, subject: builtins.str, predicate: builtins.str, object: builtins.str, strict_iris: typing.Optional[builtins.bool] = None) -> None:
+        r"""
+        Removes a triple from the loaded RDF data.
+        
+        Args:
+            As :meth:`add_triple`.
+        
+        Removing a triple the data does not contain changes nothing.
+        
+        Raises:
+            DataError: As :meth:`add_triple`.
+        """
+    def triples(self, subject: typing.Optional[builtins.str] = None, predicate: typing.Optional[builtins.str] = None, object: typing.Optional[builtins.str] = None, strict_iris: typing.Optional[builtins.bool] = None, limit: typing.Optional[builtins.int] = None) -> TripleIterator:
+        r"""
+        Returns an iterator over the triples of the loaded RDF data matching a pattern.
+        
+        Args:
+            subject (str, optional): The subject to match, as in :meth:`add_triple`.
+                Omitted or ``None`` matches any subject.
+            predicate (str, optional): The predicate to match; ``None`` matches any.
+            object (str, optional): The object to match; ``None`` matches any.
+            strict_iris (bool, optional): As in :meth:`add_triple`. Defaults to ``False``.
+            limit (int, optional): Stop after this many triples. Unbounded when omitted.
+        
+        Omitting all three positions walks the whole graph.
+        
+        Returns:
+            TripleIterator: The matching triples, each unpacking into ``(subject,
+            predicate, object)``.
+        
+        Raises:
+            DataError: If no RDF data is loaded, or if a term of the pattern cannot be
+                parsed or its prefix resolved.
+        
+        Note:
+            The triples are materialized before this returns, so an unconstrained pattern
+            allocates the whole graph and breaking out of the loop early saves nothing.
+            Pass ``limit`` to bound the work and check
+            :attr:`TripleIterator.truncated` to learn whether it cut the result short.
+            With a SPARQL endpoint or the QLever backend as the data, an unconstrained
+            pattern pulls the whole remote graph.
         """
     def dereference(self, uri: builtins.str, reader_mode: typing.Optional[ReaderMode] = None, merge: typing.Optional[builtins.bool] = None) -> None:
         r"""
@@ -1693,6 +1760,63 @@ class ShapeMapError(RudofError):
     A ShapeMap could not be parsed or serialized.
     """
     ...
+
+@typing.final
+class Triple:
+    r"""
+    A triple of the loaded RDF data.
+    
+    Unpacks into its three terms, so ``for s, p, o in rudof.triples()`` works as well as
+    reading :attr:`subject`, :attr:`predicate` and :attr:`object`.
+    """
+    @property
+    def subject(self) -> builtins.str:
+        r"""
+        The subject of the triple, an IRI or a blank node.
+        
+        Raises:
+            InternalError: If the term has no string rendering yet.
+        """
+    @property
+    def predicate(self) -> builtins.str:
+        r"""
+        The predicate IRI.
+        """
+    @property
+    def object(self) -> builtins.str:
+        r"""
+        The object of the triple, an IRI, a blank node or a literal.
+        
+        Raises:
+            InternalError: As :attr:`subject`.
+        """
+    def __iter__(self) -> typing.Iterator[builtins.str]:
+        r"""
+        The three terms, so that a triple can be unpacked like a tuple.
+        """
+    def __len__(self) -> builtins.int: ...
+    def __repr__(self) -> builtins.str: ...
+
+@typing.final
+class TripleIterator:
+    r"""
+    Iterator over the triples of the loaded RDF data matching a pattern.
+    
+    The triples are collected by :meth:`Rudof.triples` before this object exists, so
+    ``__length_hint__`` is exact rather than a hint.
+    """
+    @property
+    def truncated(self) -> builtins.bool:
+        r"""
+        ``True`` when a ``limit`` cut the result short, so more triples match the pattern
+        than this iterator will yield. Always ``False`` when no ``limit`` was given.
+        """
+    def __iter__(self) -> TripleIterator: ...
+    def __next__(self) -> Triple: ...
+    def __length_hint__(self) -> builtins.int:
+        r"""
+        The number of triples still to be yielded. Exact, not an estimate.
+        """
 
 class UnsupportedOperationError(RudofError):
     r"""

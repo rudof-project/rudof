@@ -24,7 +24,7 @@ pub use build_rdf::BuildRDF;
 pub use endpoint_description::EndpointDescription;
 pub use errors::RDFError;
 pub use focus_rdf::FocusRDF;
-pub use matcher::{Any, Matcher};
+pub use matcher::{Any, AnyOr, Matcher};
 pub use neighs_iterator::{ArcDirection, Neigh, NeighArc, NeighsIterator};
 pub use neighs_rdf::NeighsRDF;
 pub use rdf::Rdf;

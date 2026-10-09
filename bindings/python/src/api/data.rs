@@ -1,13 +1,13 @@
 use crate::{
     api::PyRudof,
     error::Result,
-    formats::{PyRDFFormat, PyReaderMode, PyResultDataFormat},
+    formats::{PyRDFFormat, PyReaderMode, PyResultDataFormat, PyTriples},
     guard,
     input::InputArg,
     output,
 };
 use pyo3::prelude::*;
-use rudof_lib::formats::{DataFormat, DataReaderMode, ResultDataFormat};
+use rudof_lib::formats::{DataFormat, DataReaderMode, IriNormalizationMode, ResultDataFormat};
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
 #[pymethods]
@@ -94,6 +94,147 @@ impl PyRudof {
             }
             s.execute()
         })
+    }
+
+    /// Adds a triple to the loaded RDF data.
+    ///
+    /// Args:
+    ///     subject (str): The subject, as an IRI (``"<http://example.org/alice>"``,
+    ///         ``"ex:alice"``) or a blank node (``"_:b1"``).
+    ///     predicate (str): The predicate, as an angle-bracketed IRI or a prefixed name.
+    ///     object (str): The object, as an IRI, a blank node or a literal (``'"Alice"'``,
+    ///         ``'"Alice"@en'``, ``"23"``, ``'"23"^^xsd:integer'``).
+    ///     strict_iris (bool, optional): Require angle-bracketed IRIs instead of
+    ///         auto-wrapping bare ones. Defaults to ``False``.
+    ///
+    /// Prefixed names are resolved against the prefixes of the loaded data, supplemented
+    /// by the session's default prefixes (see :meth:`add_prefix`). Adding a triple the
+    /// data already contains changes nothing, an RDF graph being a set of triples.
+    ///
+    /// Raises:
+    ///     DataError: If no RDF data is loaded, if a term cannot be parsed or its prefix
+    ///         resolved, or if the data cannot be modified (only the in-memory graph
+    ///         can be, not a SPARQL endpoint, the QLever backend, or data federated with
+    ///         SPARQL endpoints).
+    #[pyo3(signature = (subject, predicate, object, strict_iris = None))]
+    fn add_triple(
+        &mut self,
+        py: Python<'_>,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        strict_iris: Option<bool>,
+    ) -> Result<()> {
+        let (subject, predicate, object) = (subject.to_owned(), predicate.to_owned(), object.to_owned());
+
+        guard::detached(py, move || {
+            let mut b = self.inner.add_triple(&subject, &predicate, &object);
+            if strict_iris.unwrap_or(false) {
+                b = b.with_iri_mode(IriNormalizationMode::Strict);
+            }
+            b.execute()
+        })?;
+        Ok(())
+    }
+
+    /// Removes a triple from the loaded RDF data.
+    ///
+    /// Args:
+    ///     As :meth:`add_triple`.
+    ///
+    /// Removing a triple the data does not contain changes nothing.
+    ///
+    /// Raises:
+    ///     DataError: As :meth:`add_triple`.
+    #[pyo3(signature = (subject, predicate, object, strict_iris = None))]
+    fn remove_triple(
+        &mut self,
+        py: Python<'_>,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        strict_iris: Option<bool>,
+    ) -> Result<()> {
+        let (subject, predicate, object) = (subject.to_owned(), predicate.to_owned(), object.to_owned());
+
+        guard::detached(py, move || {
+            let mut b = self.inner.remove_triple(&subject, &predicate, &object);
+            if strict_iris.unwrap_or(false) {
+                b = b.with_iri_mode(IriNormalizationMode::Strict);
+            }
+            b.execute()
+        })?;
+        Ok(())
+    }
+
+    /// Returns an iterator over the triples of the loaded RDF data matching a pattern.
+    ///
+    /// Args:
+    ///     subject (str, optional): The subject to match, as in :meth:`add_triple`.
+    ///         Omitted or ``None`` matches any subject.
+    ///     predicate (str, optional): The predicate to match; ``None`` matches any.
+    ///     object (str, optional): The object to match; ``None`` matches any.
+    ///     strict_iris (bool, optional): As in :meth:`add_triple`. Defaults to ``False``.
+    ///     limit (int, optional): Stop after this many triples. Unbounded when omitted.
+    ///
+    /// Omitting all three positions walks the whole graph.
+    ///
+    /// Returns:
+    ///     TripleIterator: The matching triples, each unpacking into ``(subject,
+    ///     predicate, object)``.
+    ///
+    /// Raises:
+    ///     DataError: If no RDF data is loaded, or if a term of the pattern cannot be
+    ///         parsed or its prefix resolved.
+    ///
+    /// Note:
+    ///     The triples are materialized before this returns, so an unconstrained pattern
+    ///     allocates the whole graph and breaking out of the loop early saves nothing.
+    ///     Pass ``limit`` to bound the work and check
+    ///     :attr:`TripleIterator.truncated` to learn whether it cut the result short.
+    ///     With a SPARQL endpoint or the QLever backend as the data, an unconstrained
+    ///     pattern pulls the whole remote graph.
+    #[pyo3(signature = (subject = None, predicate = None, object = None, strict_iris = None,
+                        limit = None))]
+    fn triples(
+        &self,
+        py: Python<'_>,
+        subject: Option<&str>,
+        predicate: Option<&str>,
+        object: Option<&str>,
+        strict_iris: Option<bool>,
+        limit: Option<usize>,
+    ) -> Result<PyTriples> {
+        let subject = subject.map(str::to_owned);
+        let predicate = predicate.map(str::to_owned);
+        let object = object.map(str::to_owned);
+
+        let triples = guard::detached(py, move || {
+            let mut b = self.inner.triples();
+            if let Some(s) = &subject {
+                b = b.with_subject(s);
+            }
+            if let Some(p) = &predicate {
+                b = b.with_predicate(p);
+            }
+            if let Some(o) = &object {
+                b = b.with_object(o);
+            }
+            if strict_iris.unwrap_or(false) {
+                b = b.with_iri_mode(IriNormalizationMode::Strict);
+            }
+            let triples = b.execute()?;
+            match limit {
+                // One triple past `limit`, so the iterator can report `truncated`
+                // without needing a second pass over the data.
+                Some(limit) => triples
+                    .take(limit.saturating_add(1))
+                    .collect::<std::result::Result<Vec<_>, _>>(),
+                None => triples.collect(),
+            }
+        })?;
+
+        Ok(PyTriples::new(triples, limit))
     }
 
     /// Dereferences an IRI and adds the retrieved triples to the current graph.
