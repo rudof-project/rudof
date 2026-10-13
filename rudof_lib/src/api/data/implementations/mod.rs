@@ -15,6 +15,7 @@ mod rollback_staging;
 mod serialize_data;
 mod serialize_service_description;
 mod show_node_info;
+mod staging;
 mod staging_depth;
 mod triples;
 
@@ -40,6 +41,7 @@ pub use serialize_data::serialize_data;
 pub(crate) use serialize_data::write_pretty_json;
 pub use serialize_service_description::serialize_service_description;
 pub use show_node_info::show_node_info;
+pub use staging::staging;
 pub use staging_depth::staging_depth;
 pub use triples::triples;
 
@@ -49,5 +51,6 @@ mod tests {
     mod load_service_description_tests;
     mod node_neighborhood_tests;
     mod show_node_info_tests;
+    mod staging_tests;
     mod triple_tests;
 }
