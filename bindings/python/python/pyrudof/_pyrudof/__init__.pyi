@@ -800,7 +800,7 @@ class Rudof:
         Adds several triples to the loaded RDF data in one operation.
         
         Args:
-            triples (Sequence[tuple[str, str, str]]): The triples to add, each one a
+            triples (Sequence[tuple]): The triples to add, each one a
                 ``(subject, predicate, object)`` tuple whose terms are written as in
                 :meth:`add_triple`.
             strict_iris (bool, optional): As in :meth:`add_triple`. Defaults to ``False``.
