@@ -1,8 +1,9 @@
 use crate::{
     Result, Rudof,
+    api::data::staging::journal_added,
     errors::DataError,
     formats::IriNormalizationMode,
-    utils::{check_data_is_mutable, parse_triples, rdf_data, rdf_data_mut},
+    utils::{check_data_is_mutable, parse_triples, rdf_data, rdf_data_mut_unjournaled},
 };
 use oxrdf::Triple as OxTriple;
 use rudof_rdf::rdf_core::{AnyOr, BuildRDF, NeighsRDF};
@@ -11,7 +12,8 @@ use rudof_rdf::rdf_core::{AnyOr, BuildRDF, NeighsRDF};
 pub fn add_triples(rudof: &mut Rudof, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()> {
     check_data_is_mutable(rdf_data(rudof)?)?;
     let triples = parse_triples(rudof, triples, iri_mode)?;
-    apply_additions(rudof, triples)?;
+    let added = apply_additions(rudof, triples)?;
+    journal_added(rudof, added);
     Ok(())
 }
 
@@ -22,7 +24,7 @@ pub fn add_triples(rudof: &mut Rudof, triples: &[(&str, &str, &str)], iri_mode: 
 /// A triple the data already holds is left alone instead of being inserted again: an
 /// RDF graph is a set.
 pub(crate) fn apply_additions(rudof: &mut Rudof, triples: Vec<OxTriple>) -> Result<Vec<OxTriple>> {
-    let rdf = rdf_data_mut(rudof)?;
+    let rdf = rdf_data_mut_unjournaled(rudof)?;
     let mut added = Vec::new();
 
     for triple in triples {

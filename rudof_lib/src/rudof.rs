@@ -51,7 +51,7 @@ use crate::{
     },
     errors::{RudofError, ShExError},
     formats::{BackendSpec, InputSpec},
-    types::{Data, QueryResult},
+    types::{Data, QueryResult, StagingFrame},
 };
 #[cfg(feature = "comparison")]
 use crate::{
@@ -206,6 +206,10 @@ pub struct Rudof {
 
     /// Current map state for ShEx validation used by Map Semantic Actions and materialize option
     pub(crate) map_state: Option<MapState>,
+
+    /// Open staging frames, innermost last. Empty when nothing is staged: every
+    /// change to `data` is then applied for good, as it was before staging existed.
+    pub(crate) staging: Vec<StagingFrame>,
 
     /// Current list of prefix map declarations. These prefix map declarations will be assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes to facilitate handling prefixes
     pub(crate) prefixes: Option<PrefixMap>,

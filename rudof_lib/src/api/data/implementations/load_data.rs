@@ -1,6 +1,7 @@
 use crate::errors::{InputSpecError, RudofError};
 use crate::{
     Result, Rudof,
+    api::data::staging::journal_snapshot,
     errors::DataError,
     formats::{DataFormat, DataReaderMode, InputSpec},
     types::Data,
@@ -31,6 +32,8 @@ pub fn load_data(
     prefixes: Option<&[InputSpec]>,
     endpoint_strategy: EndpointStrategy,
 ) -> Result<()> {
+    journal_snapshot(rudof);
+
     let (data_format, reader_mode, base, merge) = init_defaults(rudof, data_format, reader_mode, base, merge)?;
     match (data, endpoint) {
         (Some(_data), Some(_endpoint)) => Err(Box::new(DataError::DataSourceSpec {
@@ -382,6 +385,9 @@ pub fn load_data_via_qlever(
     use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
     use rudof_rdf::rdf_impl::{QleverGraphContainer, qlever_runtime};
     use sparql_service::RdfData;
+
+    // As in `load_data`: the graph is replaced wholesale, so an open frame snapshots.
+    journal_snapshot(rudof);
 
     // Pg is the only non-RDF DataFormat; reject it before we try anything.
     if matches!(data_format, Some(DataFormat::Pg)) {

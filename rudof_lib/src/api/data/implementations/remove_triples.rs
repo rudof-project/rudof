@@ -1,8 +1,9 @@
 use crate::{
     Result, Rudof,
+    api::data::staging::journal_removed,
     errors::DataError,
     formats::IriNormalizationMode,
-    utils::{check_data_is_mutable, parse_triples, rdf_data, rdf_data_mut},
+    utils::{check_data_is_mutable, parse_triples, rdf_data, rdf_data_mut_unjournaled},
 };
 use oxrdf::Triple as OxTriple;
 use rudof_rdf::rdf_core::{AnyOr, BuildRDF, NeighsRDF};
@@ -11,7 +12,8 @@ use rudof_rdf::rdf_core::{AnyOr, BuildRDF, NeighsRDF};
 pub fn remove_triples(rudof: &mut Rudof, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()> {
     check_data_is_mutable(rdf_data(rudof)?)?;
     let triples = parse_triples(rudof, triples, iri_mode)?;
-    apply_removals(rudof, triples)?;
+    let removed = apply_removals(rudof, triples)?;
+    journal_removed(rudof, removed);
     Ok(())
 }
 
@@ -21,7 +23,7 @@ pub fn remove_triples(rudof: &mut Rudof, triples: &[(&str, &str, &str)], iri_mod
 /// A triple the data does not hold is left alone instead of being removed, as in
 /// [`apply_additions`](super::apply_additions).
 pub(crate) fn apply_removals(rudof: &mut Rudof, triples: Vec<OxTriple>) -> Result<Vec<OxTriple>> {
-    let rdf = rdf_data_mut(rudof)?;
+    let rdf = rdf_data_mut_unjournaled(rudof)?;
     let mut removed = Vec::new();
 
     for triple in triples {

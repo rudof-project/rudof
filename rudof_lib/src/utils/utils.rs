@@ -196,12 +196,18 @@ pub fn rdf_data(rudof: &Rudof) -> Result<&RdfData> {
     }
 }
 
-/// The RDF data loaded in the session, to modify.
+/// The RDF data loaded in the session, to modify **without recording the change in
+/// the staging journal**.
+///
+/// Only the data operations that journal around their own writes may call this: see
+/// [`staging`](crate::api::data::staging). A write that reaches the data through here
+/// with nothing journaling it cannot be undone by `rollback_staging`, which is what
+/// the name is here to make anyone adding a caller notice.
 ///
 /// # Errors
 ///
 /// As [`rdf_data`].
-pub fn rdf_data_mut(rudof: &mut Rudof) -> Result<&mut RdfData> {
+pub fn rdf_data_mut_unjournaled(rudof: &mut Rudof) -> Result<&mut RdfData> {
     match rudof.data.as_mut() {
         Some(Data::RDFData(rdf)) => Ok(rdf),
         _ => Err(Box::new(DataError::NoRdfDataLoaded).into()),
