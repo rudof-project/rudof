@@ -79,6 +79,7 @@ __all__ = [
     "ShapeMapFormat",
     "ShapesGraphSource",
     "ShexValidationSortMode",
+    "Staging",
     "Triple",
     "TripleIterator",
     "UnsupportedOperationError",
@@ -793,6 +794,94 @@ class Rudof:
         
         Raises:
             DataError: As :meth:`add_triple`.
+        """
+    def add_triples(self, triples: typing.Sequence[tuple[builtins.str, builtins.str, builtins.str]], strict_iris: typing.Optional[builtins.bool] = None) -> None:
+        r"""
+        Adds several triples to the loaded RDF data in one operation.
+        
+        Args:
+            triples (Sequence[tuple[str, str, str]]): The triples to add, each one a
+                ``(subject, predicate, object)`` tuple whose terms are written as in
+                :meth:`add_triple`.
+            strict_iris (bool, optional): As in :meth:`add_triple`. Defaults to ``False``.
+        
+        Every triple is parsed before any of them is added, so a batch holding a term
+        that cannot be parsed changes nothing at all. This is the operation to stage a
+        delta with (see :meth:`staging`).
+        
+        Raises:
+            DataError: As :meth:`add_triple`, for the first triple that cannot be parsed.
+        """
+    def remove_triples(self, triples: typing.Sequence[tuple[builtins.str, builtins.str, builtins.str]], strict_iris: typing.Optional[builtins.bool] = None) -> None:
+        r"""
+        Removes several triples from the loaded RDF data in one operation.
+        
+        Args:
+            As :meth:`add_triples`.
+        
+        Raises:
+            DataError: As :meth:`add_triples`.
+        """
+    def staging(self) -> Staging:
+        r"""
+        Opens a staging frame over the loaded RDF data, as a context manager.
+        
+        Returns:
+            Staging: The frame, which opens on entering the ``with`` block, commits on
+            leaving it normally and rolls back on leaving it through an exception.
+        
+        Nothing is staged until the block is entered, so the returned object has no
+        effect of its own. Only the data is staged: see :meth:`begin_staging`.
+        """
+    def begin_staging(self) -> builtins.int:
+        r"""
+        Opens a staging frame over the loaded RDF data by hand.
+        
+        Returns:
+            int: The new staging depth. Frames nest, and the innermost one is the one
+            :meth:`commit_staging` and :meth:`rollback_staging` close.
+        
+        Prefer :meth:`staging`, which closes the frame on its own even when the block
+        is left through an exception.
+        
+        What is staged is the loaded **data**, and nothing else. Schemas, shapemaps,
+        prefixes and configuration are session state: a schema loaded inside a frame
+        stays loaded after a rollback, including one read out of the data graph itself.
+        What a rollback clears is the state computed from the data it discards: the
+        validation results, the query results and the loaded query.
+        
+        Raises:
+            DataError: If no RDF data is loaded, or if it cannot be modified (only the
+                in-memory graph can be) — checked when the frame is opened rather than
+                at the first write.
+        """
+    def commit_staging(self) -> None:
+        r"""
+        Keeps what the innermost open staging frame staged, closing it.
+        
+        A frame nested in another hands its changes over to the enclosing frame, so
+        rolling that one back still undoes them.
+        
+        Raises:
+            DataError: If no staging frame is open.
+        """
+    def rollback_staging(self) -> None:
+        r"""
+        Discards what the innermost open staging frame staged, closing it and putting
+        the loaded data back as it was when the frame was opened.
+        
+        See :meth:`begin_staging` for what is put back and what is cleared.
+        
+        Raises:
+            DataError: If no staging frame is open, or if the data could not be put
+                back, in which case the frame is closed all the same.
+        """
+    def staging_depth(self) -> builtins.int:
+        r"""
+        How many staging frames are open.
+        
+        Returns:
+            int: The staging depth, zero when nothing is staged.
         """
     def triples(self, subject: typing.Optional[builtins.str] = None, predicate: typing.Optional[builtins.str] = None, object: typing.Optional[builtins.str] = None, strict_iris: typing.Optional[builtins.bool] = None, limit: typing.Optional[builtins.int] = None) -> TripleIterator:
         r"""
@@ -1760,6 +1849,47 @@ class ShapeMapError(RudofError):
     A ShapeMap could not be parsed or serialized.
     """
     ...
+
+@typing.final
+class Staging:
+    r"""
+    A staging frame over the loaded RDF data, used as a context manager.
+    
+    Returned by :meth:`Rudof.staging`. Entering the ``with`` block opens the frame;
+    leaving it normally keeps what was staged, and leaving it through an exception
+    discards it.
+    
+    Only the data is staged. Schemas, shapemaps and prefixes are session state and are
+    left alone by both outcomes; what a rollback also clears is the state computed from
+    the discarded data: the validation results, the query results and the loaded query.
+    A report returned by :meth:`Rudof.validate_shacl` is a copy, so one held by the
+    caller survives the rollback.
+    """
+    def __enter__(self) -> Rudof:
+        r"""
+        Opens the staging frame.
+        
+        Returns:
+            Rudof: The session the frame was opened on, so ``as`` can name it.
+        
+        Raises:
+            DataError: If no RDF data is loaded, if it cannot be modified, or if this
+                object has already been used as a context manager.
+        """
+    def __exit__(self, exc_type: typing.Optional[typing.Any] = None, _exc_value: typing.Optional[typing.Any] = None, _traceback: typing.Optional[typing.Any] = None) -> builtins.bool:
+        r"""
+        Closes the staging frame: commits when the block is left normally, rolls back
+        when it is left through an exception.
+        
+        Frames opened inside the block and left open are closed the same way. A
+        :meth:`Rudof.reset_all` inside the block leaves nothing to close, and this
+        does nothing.
+        
+        Raises:
+            DataError: If the frame cannot be closed. The exception that caused the
+                rollback, if any, is kept as the context of this one.
+        """
+    def __repr__(self) -> builtins.str: ...
 
 @typing.final
 class Triple:

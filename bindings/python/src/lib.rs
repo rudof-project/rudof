@@ -16,7 +16,7 @@ mod output;
 #[pymodule]
 pub mod _pyrudof {
     #[pymodule_export]
-    pub use crate::api::PyRudof;
+    pub use crate::api::{PyRudof, PyStaging};
 
     #[pymodule_export]
     pub use crate::config::PyRudofConfig;

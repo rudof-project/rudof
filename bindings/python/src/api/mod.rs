@@ -13,5 +13,7 @@ pub mod session;
 pub mod shacl;
 pub mod shapemap;
 pub mod shex;
+pub mod staging;
 
 pub use session::PyRudof;
+pub use staging::PyStaging;
