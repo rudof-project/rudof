@@ -1,8 +1,9 @@
 use crate::{
     Result, Rudof,
     api::data::implementations::{
-        add_triple, dereference, list_endpoints, load_data, load_service_description, node_neighborhood, remove_triple,
-        reset_data, reset_service_description, serialize_data, serialize_service_description, show_node_info, triples,
+        add_triple, add_triples, dereference, list_endpoints, load_data, load_service_description, node_neighborhood,
+        remove_triple, remove_triples, reset_data, reset_service_description, serialize_data,
+        serialize_service_description, show_node_info, triples,
     },
     formats::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
@@ -205,6 +206,33 @@ pub trait DataOperations {
         iri_mode: IriNormalizationMode,
     ) -> Result<()>;
 
+    /// Adds several triples to the current RDF data in one operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `triples` - The triples to add, each one written as in
+    ///   [`add_triple`](Self::add_triple)
+    /// * `iri_mode` - As [`add_triple`](Self::add_triple)
+    ///
+    /// Every triple is parsed before any of them is added, so a batch holding a triple
+    /// that cannot be parsed changes nothing at all.
+    ///
+    /// # Errors
+    ///
+    /// As [`add_triple`](Self::add_triple), for the first triple that cannot be parsed.
+    fn add_triples(&mut self, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()>;
+
+    /// Removes several triples from the current RDF data in one operation.
+    ///
+    /// # Arguments
+    ///
+    /// As [`add_triples`](Self::add_triples).
+    ///
+    /// # Errors
+    ///
+    /// As [`add_triples`](Self::add_triples).
+    fn remove_triples(&mut self, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()>;
+
     /// Returns an iterator over the triples of the current RDF data matching a
     /// pattern.
     ///
@@ -377,6 +405,14 @@ impl DataOperations for Rudof {
         iri_mode: IriNormalizationMode,
     ) -> Result<()> {
         remove_triple(self, subject, predicate, object, iri_mode)
+    }
+
+    fn add_triples(&mut self, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()> {
+        add_triples(self, triples, iri_mode)
+    }
+
+    fn remove_triples(&mut self, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()> {
+        remove_triples(self, triples, iri_mode)
     }
 
     fn triples<'a>(

@@ -161,6 +161,66 @@ fn test_remove_triple() {
 }
 
 #[test]
+fn test_add_and_remove_triples_in_batches() {
+    let mut rudof = session();
+
+    rudof
+        .add_triples(&[
+            (":carol", ":name", "\"Carol\""),
+            (":carol", ":knows", ":alice"),
+            // Already in the data: a no-op, as for the single-triple operation.
+            (":bob", ":name", "\"Bob\""),
+        ])
+        .execute()
+        .unwrap();
+    assert_eq!(all(&rudof).len(), 6);
+
+    rudof
+        .remove_triples(&[
+            (":carol", ":name", "\"Carol\""),
+            (":alice", ":age", "23"),
+            // Not in the data: a no-op.
+            (":dave", ":name", "\"Dave\""),
+        ])
+        .execute()
+        .unwrap();
+    assert_eq!(all(&rudof).len(), 4);
+    assert!(triples(&rudof, Some(":carol"), Some(":name"), None).is_empty());
+    assert_eq!(triples(&rudof, Some(":carol"), Some(":knows"), None).len(), 1);
+    assert!(triples(&rudof, Some(":alice"), Some(":age"), None).is_empty());
+
+    // An empty batch is allowed and changes nothing.
+    rudof.add_triples(&[]).execute().unwrap();
+    rudof.remove_triples(&[]).execute().unwrap();
+    assert_eq!(all(&rudof).len(), 4);
+}
+
+#[test]
+fn test_a_batch_with_an_unparsable_triple_changes_nothing() {
+    let mut rudof = session();
+
+    // The bad triple is in the middle of the batch, and the ones before it are not
+    // applied either: every triple is parsed before any of them is written.
+    let err = rudof
+        .add_triples(&[
+            (":carol", ":name", "\"Carol\""),
+            ("\"Carol\"", ":name", "\"Carol\""),
+            (":dave", ":name", "\"Dave\""),
+        ])
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("cannot be the subject"), "{err}");
+    assert_eq!(all(&rudof).len(), 4);
+
+    let err = rudof
+        .remove_triples(&[(":alice", ":name", "\"Alice\""), (":bob", "\"name\"", "\"Bob\"")])
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("Iri ref"), "{err}");
+    assert_eq!(all(&rudof).len(), 4);
+}
+
+#[test]
 fn test_add_and_remove_a_triple_with_the_session_prefixes() {
     let mut rudof = Rudof::new(RudofConfig::default());
     rudof.add_prefix("ex", "http://example.org/").execute().unwrap();

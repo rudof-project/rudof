@@ -1,10 +1,12 @@
 mod add_triple;
+mod add_triples;
 mod dereference;
 mod list_endpoints;
 mod load_data;
 mod load_service_description;
 mod node_neighborhood;
 mod remove_triple;
+mod remove_triples;
 mod reset_data;
 mod reset_service_description;
 mod serialize_data;
@@ -13,6 +15,7 @@ mod show_node_info;
 mod triples;
 
 pub use add_triple::add_triple;
+pub use add_triples::add_triples;
 pub use dereference::dereference;
 pub use list_endpoints::list_endpoints;
 pub use load_data::load_data;
@@ -21,6 +24,7 @@ pub use load_data::load_data_via_qlever;
 pub use load_service_description::load_service_description;
 pub use node_neighborhood::node_neighborhood;
 pub use remove_triple::remove_triple;
+pub use remove_triples::remove_triples;
 pub use reset_data::reset_data;
 pub use reset_service_description::reset_service_description;
 pub use serialize_data::serialize_data;

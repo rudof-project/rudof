@@ -24,9 +24,10 @@ use crate::{
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
         },
         data::builders::{
-            AddTripleBuilder, DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder,
-            NodeNeighborhoodBuilder, RemoveTripleBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder,
-            SerializeDataBuilder, SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder, TriplesBuilder,
+            AddTripleBuilder, AddTriplesBuilder, DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder,
+            LoadServiceDescriptionBuilder, NodeNeighborhoodBuilder, RemoveTripleBuilder, RemoveTriplesBuilder,
+            ResetDataBuilder, ResetServiceDescriptionBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder,
+            ShowNodeInfoBuilder, TriplesBuilder,
         },
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
@@ -405,6 +406,25 @@ impl Rudof {
         object: &'a str,
     ) -> RemoveTripleBuilder<'a> {
         RemoveTripleBuilder::new(self, subject, predicate, object)
+    }
+
+    /// Returns an `AddTriplesBuilder` that adds several triples to the loaded data in
+    /// one operation.
+    ///
+    /// The terms of each triple are written as in [`add_triple`](Self::add_triple).
+    /// Every triple is parsed before any of them is added, so a batch holding a triple
+    /// that cannot be parsed changes nothing.
+    pub fn add_triples<'a>(&'a mut self, triples: &'a [(&'a str, &'a str, &'a str)]) -> AddTriplesBuilder<'a> {
+        AddTriplesBuilder::new(self, triples)
+    }
+
+    /// Returns a `RemoveTriplesBuilder` that removes several triples from the loaded
+    /// data in one operation.
+    ///
+    /// # Parameters
+    /// As [`add_triples`](Self::add_triples).
+    pub fn remove_triples<'a>(&'a mut self, triples: &'a [(&'a str, &'a str, &'a str)]) -> RemoveTriplesBuilder<'a> {
+        RemoveTriplesBuilder::new(self, triples)
     }
 
     /// Returns a `TriplesBuilder` that iterates over the triples of the loaded data

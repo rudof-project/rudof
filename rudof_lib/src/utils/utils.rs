@@ -6,6 +6,7 @@ use crate::{
 };
 #[cfg(not(target_family = "wasm"))]
 use crossterm::terminal;
+use oxrdf::Triple as OxTriple;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, query::SparqlQuery, term::Object, term::literal::ConcreteLiteral};
@@ -22,9 +23,6 @@ pub type RdfTerm = <RdfData as Rdf>::Term;
 
 /// A term of the loaded RDF data in subject position: an IRI or a blank node.
 pub type RdfSubject = <RdfData as Rdf>::Subject;
-
-/// A term of the loaded RDF data in predicate position: an IRI.
-pub type RdfIri = <RdfData as Rdf>::IRI;
 
 /// Normalizes a node/shape IRI string for `ShapeMapParser` according to `mode`.
 ///
@@ -243,27 +241,34 @@ pub fn check_data_is_mutable(rdf: &RdfData) -> Result<()> {
     Ok(())
 }
 
-/// Parses the three terms of a triple written as text, as [`parse_term`] does,
-/// resolving prefixed names against the prefixes of the loaded data and the session
-/// (see [`resolution_prefixmap`]).
+/// Parses the triples of a batch written as text, resolving prefixed names against the
+/// prefixes of the loaded data and the session (see [`resolution_prefixmap`]) as
+/// [`parse_term`] does.
+///
+/// Every triple is parsed before any of them is applied by the caller, so a batch
+/// holding a triple that cannot be parsed changes nothing.
 ///
 /// # Errors
 ///
-/// Returns an error if no RDF data is loaded, or if a term cannot be parsed: the
-/// subject must be an IRI or a blank node and the predicate an IRI.
-pub fn parse_triple(
+/// Returns an error if no RDF data is loaded, or, for the first triple that cannot be
+/// parsed, if one of its terms cannot be: the subject must be an IRI or a blank node
+/// and the predicate an IRI.
+pub fn parse_triples(
     rudof: &Rudof,
-    subject: &str,
-    predicate: &str,
-    object: &str,
+    triples: &[(&str, &str, &str)],
     iri_mode: IriNormalizationMode,
-) -> Result<(RdfSubject, RdfIri, RdfTerm)> {
+) -> Result<Vec<OxTriple>> {
     let prefixmap = resolution_prefixmap(rudof, rdf_data(rudof)?);
-    Ok((
-        parse_subject(subject, &prefixmap, iri_mode)?,
-        parse_predicate_iri(predicate, &prefixmap)?.into(),
-        parse_term(object, &prefixmap, iri_mode)?,
-    ))
+    triples
+        .iter()
+        .map(|(subject, predicate, object)| {
+            Ok(OxTriple::new(
+                parse_subject(subject, &prefixmap, iri_mode)?,
+                parse_predicate_iri(predicate, &prefixmap)?,
+                parse_term(object, &prefixmap, iri_mode)?,
+            ))
+        })
+        .collect()
 }
 
 /// The prefix map that resolves prefixed names in terms given as text: the prefixes
