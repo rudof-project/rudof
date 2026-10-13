@@ -204,7 +204,7 @@ All `[rdf.qlever]` fields are optional (an empty `[rdf.qlever]` section is enoug
 
 ### Limitations
 
-- **Read-only:** `add_triple`, `remove_triple`, and `add_bnode` return errors.
+- **Read-only:** `add_triple`, `remove_triple`, `add_triples`, `remove_triples` and `add_bnode` return errors, and so does opening a staging frame over the loaded data (`begin_staging`/`staging`), which needs a graph it can change.
 - **File paths only:** remote URLs and stdin are not accepted as inputs; mixed input sets produce an error.
 - **`--data-format pg` is rejected:** the property-graph format is incompatible with QLever's indexer.
 - **Strict Turtle syntax:** QLever's index builder rejects SPARQL-style prefix declarations (`prefix : <…>` without `@` and without a trailing `.`) even though oxigraph accepts them. Use Turtle-conformant `@prefix : <…> .` declarations (or run files through a normalizer) before passing them to `--backend qlever`.
