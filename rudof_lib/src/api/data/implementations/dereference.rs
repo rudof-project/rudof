@@ -1,6 +1,6 @@
-use crate::{Result, Rudof, api::data::staging::journal_snapshot, errors::DataError, formats::DataReaderMode};
+use crate::{Result, Rudof, errors::DataError, formats::DataReaderMode};
 #[cfg(not(target_family = "wasm"))]
-use crate::{formats::DataFormat, types::Data};
+use crate::{api::data::staging::journal_snapshot, formats::DataFormat, types::Data};
 #[cfg(not(target_family = "wasm"))]
 use reqwest::blocking::ClientBuilder;
 #[cfg(not(target_family = "wasm"))]
