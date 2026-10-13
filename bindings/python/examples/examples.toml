@@ -275,6 +275,19 @@ expected_output = [
 ]
 
 [[example]]
+key = "staging"
+source_file = "rdf_data/staging.py"
+title = "Staging"
+description = "Stage triples, validate them, and keep or discard them with `staging()`"
+category = "rdf"
+expected_output = [
+    "bob kept: True",
+    "second name kept: False",
+    "staging depth: 0",
+    "conforms after the rollback: True",
+]
+
+[[example]]
 key = "list_endpoints"
 source_file = "rdf_data/list_endpoints.py"
 title = "List Endpoints"
