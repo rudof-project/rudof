@@ -24,10 +24,11 @@ use crate::{
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
         },
         data::builders::{
-            AddTripleBuilder, AddTriplesBuilder, DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder,
-            LoadServiceDescriptionBuilder, NodeNeighborhoodBuilder, RemoveTripleBuilder, RemoveTriplesBuilder,
-            ResetDataBuilder, ResetServiceDescriptionBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder,
-            ShowNodeInfoBuilder, TriplesBuilder,
+            AddTripleBuilder, AddTriplesBuilder, BeginStagingBuilder, CommitStagingBuilder, DereferenceBuilder,
+            ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, NodeNeighborhoodBuilder,
+            RemoveTripleBuilder, RemoveTriplesBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder,
+            RollbackStagingBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
+            StagingDepthBuilder, TriplesBuilder,
         },
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
@@ -429,6 +430,36 @@ impl Rudof {
     /// As [`add_triples`](Self::add_triples).
     pub fn remove_triples<'a>(&'a mut self, triples: &'a [(&'a str, &'a str, &'a str)]) -> RemoveTriplesBuilder<'a> {
         RemoveTriplesBuilder::new(self, triples)
+    }
+
+    /// Returns a `BeginStagingBuilder` that opens a staging frame over the loaded
+    /// data, so that the changes made from then on can be kept or discarded.
+    ///
+    /// Only the data is staged: the loaded schemas and the rest of the session are
+    /// left alone by a commit and by a rollback alike. See
+    /// [`DataOperations::begin_staging`](crate::api::data::DataOperations::begin_staging).
+    ///
+    /// Prefer [`staging`](Self::staging), which closes the frame on its own, to
+    /// calling this and `commit_staging`/`rollback_staging` by hand.
+    pub fn begin_staging<'a>(&'a mut self) -> BeginStagingBuilder<'a> {
+        BeginStagingBuilder::new(self)
+    }
+
+    /// Returns a `CommitStagingBuilder` that keeps what the innermost open staging
+    /// frame staged, closing it.
+    pub fn commit_staging<'a>(&'a mut self) -> CommitStagingBuilder<'a> {
+        CommitStagingBuilder::new(self)
+    }
+
+    /// Returns a `RollbackStagingBuilder` that discards what the innermost open
+    /// staging frame staged, closing it and putting the loaded data back.
+    pub fn rollback_staging<'a>(&'a mut self) -> RollbackStagingBuilder<'a> {
+        RollbackStagingBuilder::new(self)
+    }
+
+    /// Returns a `StagingDepthBuilder` that reports how many staging frames are open.
+    pub fn staging_depth<'a>(&'a self) -> StagingDepthBuilder<'a> {
+        StagingDepthBuilder::new(self)
     }
 
     /// Returns a `TriplesBuilder` that iterates over the triples of the loaded data

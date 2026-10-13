@@ -8,6 +8,7 @@
 
 use crate::{
     Rudof,
+    api::query::implementations::reset_query_results,
     types::{StagingFrame, UndoEntry},
 };
 use oxrdf::Triple as OxTriple;
@@ -44,6 +45,22 @@ pub(crate) fn journal_snapshot(rudof: &mut Rudof) {
     if let Some(frame) = current_frame(rudof) {
         frame.capture(snapshot);
     }
+}
+
+/// Clears the session state that describes the data a rolled-back frame has just
+/// thrown away: the validation and query results, and the query that produced them.
+///
+/// The loaded schemas are deliberately left alone, staging being about the data
+/// alone.
+pub(crate) fn reset_derived_state(rudof: &mut Rudof) {
+    rudof.shacl_validation_results = None;
+    rudof.shex_validation_results = None;
+    rudof.map_state = None;
+    #[cfg(feature = "pgschema")]
+    {
+        rudof.pg_schema_validation_results = None;
+    }
+    reset_query_results(rudof);
 }
 
 fn record(rudof: &mut Rudof, entry: UndoEntry) {

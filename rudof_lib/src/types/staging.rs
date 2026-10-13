@@ -20,6 +20,15 @@ impl UndoEntry {
             UndoEntry::Added(triples) | UndoEntry::Removed(triples) => triples.is_empty(),
         }
     }
+
+    /// The triples to undo, and whether undoing the command means removing them
+    /// rather than adding them back.
+    pub(crate) fn into_parts(self) -> (Vec<OxTriple>, bool) {
+        match self {
+            UndoEntry::Added(triples) => (triples, true),
+            UndoEntry::Removed(triples) => (triples, false),
+        }
+    }
 }
 
 /// One open staging frame: what it takes to put the loaded data back as it was when
@@ -62,6 +71,34 @@ impl StagingFrame {
     pub(crate) fn capture(&mut self, data: Option<Data>) {
         if !self.has_snapshot() {
             self.snapshot = Some(data);
+        }
+    }
+
+    /// What this frame restores, if anything, and the inverses to apply afterwards,
+    /// in the order they have to be applied in.
+    ///
+    /// The snapshot was taken after every command the entries invert had been
+    /// applied, so it still holds their effects: undoing them in reverse order on top
+    /// of the restored data walks back to the state the frame was opened in.
+    pub(crate) fn into_undo(self) -> (Option<Option<Data>>, impl Iterator<Item = UndoEntry>) {
+        (self.snapshot, self.undo.into_iter().rev())
+    }
+
+    /// Takes over the work of a committed child frame, so that rolling this one back
+    /// still undoes it.
+    ///
+    /// A snapshot of this frame already restores everything the child did, so there
+    /// is nothing to take over then. Otherwise the child's inverses are appended
+    /// before its snapshot is adopted, keeping the invariant [`into_undo`] rests on.
+    ///
+    /// [`into_undo`]: StagingFrame::into_undo
+    pub(crate) fn absorb(&mut self, child: StagingFrame) {
+        if self.has_snapshot() {
+            return;
+        }
+        self.undo.extend(child.undo);
+        if let Some(snapshot) = child.snapshot {
+            self.snapshot = Some(snapshot);
         }
     }
 }
