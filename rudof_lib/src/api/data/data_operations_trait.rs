@@ -245,7 +245,7 @@ pub trait DataOperations {
     ///
     /// The loaded **data**, and nothing else. Loaded schemas, shapemaps, prefixes and
     /// configuration are session state. What a rollback does clear is the state computed
-    /// *from* the data it discards: the SHACL, ShEx and property-graph validation results,
+    /// *from* the data it discards: the SHACL and ShEx validation results,
     /// the query results and the loaded SPARQL query.
     ///
     /// # Cost

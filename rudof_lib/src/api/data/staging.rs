@@ -56,10 +56,6 @@ pub(crate) fn reset_derived_state(rudof: &mut Rudof) {
     rudof.shacl_validation_results = None;
     rudof.shex_validation_results = None;
     rudof.map_state = None;
-    #[cfg(feature = "pgschema")]
-    {
-        rudof.pg_schema_validation_results = None;
-    }
     reset_query_results(rudof);
 }
 
