@@ -27,6 +27,7 @@ pub fn new(config: RudofConfig) -> Rudof {
         #[cfg(feature = "pgschema")]
         typemap: None,
         map_state: None,
+        staging: Vec::new(),
         prefixes: None,
     }
 }

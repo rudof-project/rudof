@@ -1,6 +1,6 @@
 use crate::{Result, Rudof, errors::DataError, formats::DataReaderMode};
 #[cfg(not(target_family = "wasm"))]
-use crate::{formats::DataFormat, types::Data};
+use crate::{api::data::staging::journal_snapshot, formats::DataFormat, types::Data};
 #[cfg(not(target_family = "wasm"))]
 use reqwest::blocking::ClientBuilder;
 #[cfg(not(target_family = "wasm"))]
@@ -26,6 +26,10 @@ pub fn dereference(
     reader_mode: Option<&DataReaderMode>,
     merge: Option<bool>,
 ) -> Result<()> {
+    // As in `load_data`: the triples are merged into (or replace) the whole graph,
+    // so an open staging frame falls back to a snapshot taken before any of it.
+    journal_snapshot(rudof);
+
     let reader_mode = reader_mode.copied().unwrap_or_default();
     let merge = merge.unwrap_or(true);
 

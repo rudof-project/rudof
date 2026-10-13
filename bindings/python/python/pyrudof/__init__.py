@@ -38,6 +38,7 @@ from ._pyrudof import (
     # --- session ---
     Rudof,
     RudofConfig,
+    Staging,
     # --- results ---
     ShExValidationReport,
     ShExValidationEntry,
@@ -135,6 +136,7 @@ __all__ = [
     # Session.
     "Rudof",
     "RudofConfig",
+    "Staging",
     # Results.
     "ShExValidationReport",
     "ShExValidationEntry",

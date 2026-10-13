@@ -1,5 +1,5 @@
 use crate::{
-    api::PyRudof,
+    api::{PyRudof, staging::PyStaging},
     error::Result,
     formats::{PyRDFFormat, PyReaderMode, PyResultDataFormat, PyTriples},
     guard,
@@ -167,6 +167,129 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Adds several triples to the loaded RDF data in one operation.
+    ///
+    /// Args:
+    ///     triples (Sequence[tuple]): The triples to add, each one a
+    ///         ``(subject, predicate, object)`` tuple whose terms are written as in
+    ///         :meth:`add_triple`.
+    ///     strict_iris (bool, optional): As in :meth:`add_triple`. Defaults to ``False``.
+    ///
+    /// Every triple is parsed before any of them is added, so a batch holding a term
+    /// that cannot be parsed changes nothing at all. This is the operation to stage a
+    /// delta with (see :meth:`staging`).
+    ///
+    /// Raises:
+    ///     DataError: As :meth:`add_triple`, for the first triple that cannot be parsed.
+    #[pyo3(signature = (triples, strict_iris = None))]
+    fn add_triples(
+        &mut self,
+        py: Python<'_>,
+        triples: Vec<(String, String, String)>,
+        strict_iris: Option<bool>,
+    ) -> Result<()> {
+        guard::detached(py, move || {
+            let triples = borrowed(&triples);
+            let mut b = self.inner.add_triples(&triples);
+            if strict_iris.unwrap_or(false) {
+                b = b.with_iri_mode(IriNormalizationMode::Strict);
+            }
+            b.execute()
+        })?;
+        Ok(())
+    }
+
+    /// Removes several triples from the loaded RDF data in one operation.
+    ///
+    /// Args:
+    ///     As :meth:`add_triples`.
+    ///
+    /// Raises:
+    ///     DataError: As :meth:`add_triples`.
+    #[pyo3(signature = (triples, strict_iris = None))]
+    fn remove_triples(
+        &mut self,
+        py: Python<'_>,
+        triples: Vec<(String, String, String)>,
+        strict_iris: Option<bool>,
+    ) -> Result<()> {
+        guard::detached(py, move || {
+            let triples = borrowed(&triples);
+            let mut b = self.inner.remove_triples(&triples);
+            if strict_iris.unwrap_or(false) {
+                b = b.with_iri_mode(IriNormalizationMode::Strict);
+            }
+            b.execute()
+        })?;
+        Ok(())
+    }
+
+    /// Opens a staging frame over the loaded RDF data, as a context manager.
+    ///
+    /// Returns:
+    ///     Staging: The frame, which opens on entering the ``with`` block, commits on
+    ///     leaving it normally and rolls back on leaving it through an exception.
+    ///
+    /// Nothing is staged until the block is entered, so the returned object has no
+    /// effect of its own. Only the data is staged: see :meth:`begin_staging`.
+    fn staging(slf: Py<Self>) -> PyStaging {
+        PyStaging::new(slf)
+    }
+
+    /// Opens a staging frame over the loaded RDF data by hand.
+    ///
+    /// Returns:
+    ///     int: The new staging depth. Frames nest, and the innermost one is the one
+    ///     :meth:`commit_staging` and :meth:`rollback_staging` close.
+    ///
+    /// Prefer :meth:`staging`, which closes the frame on its own even when the block
+    /// is left through an exception.
+    ///
+    /// What is staged is the loaded **data**, and nothing else. Schemas, shapemaps,
+    /// prefixes and configuration are session state: a schema loaded inside a frame
+    /// stays loaded after a rollback, including one read out of the data graph itself.
+    /// What a rollback clears is the state computed from the data it discards: the
+    /// validation results, the query results and the loaded query.
+    ///
+    /// Raises:
+    ///     DataError: If no RDF data is loaded, or if it cannot be modified (only the
+    ///         in-memory graph can be) — checked when the frame is opened rather than
+    ///         at the first write.
+    fn begin_staging(&mut self, py: Python<'_>) -> Result<usize> {
+        guard::detached(py, move || self.inner.begin_staging().execute())
+    }
+
+    /// Keeps what the innermost open staging frame staged, closing it.
+    ///
+    /// A frame nested in another hands its changes over to the enclosing frame, so
+    /// rolling that one back still undoes them.
+    ///
+    /// Raises:
+    ///     DataError: If no staging frame is open.
+    fn commit_staging(&mut self, py: Python<'_>) -> Result<()> {
+        guard::detached(py, move || self.inner.commit_staging().execute())
+    }
+
+    /// Discards what the innermost open staging frame staged, closing it and putting
+    /// the loaded data back as it was when the frame was opened.
+    ///
+    /// See :meth:`begin_staging` for what is put back and what is cleared.
+    ///
+    /// Raises:
+    ///     DataError: If no staging frame is open, or if the data could not be put
+    ///         back, in which case the frame is closed all the same.
+    fn rollback_staging(&mut self, py: Python<'_>) -> Result<()> {
+        guard::detached(py, move || self.inner.rollback_staging().execute())
+    }
+
+    /// How many staging frames are open.
+    ///
+    /// Returns:
+    ///     int: The staging depth, zero when nothing is staged.
+    fn staging_depth(&self) -> usize {
+        self.inner.staging_depth().execute()
+    }
+
     /// Returns an iterator over the triples of the loaded RDF data matching a pattern.
     ///
     /// Args:
@@ -270,4 +393,12 @@ impl PyRudof {
         })?;
         Ok(())
     }
+}
+
+/// The triples of a batch as the slice of string slices `rudof_lib` takes.
+fn borrowed(triples: &[(String, String, String)]) -> Vec<(&str, &str, &str)> {
+    triples
+        .iter()
+        .map(|(subject, predicate, object)| (subject.as_str(), predicate.as_str(), object.as_str()))
+        .collect()
 }

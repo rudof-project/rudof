@@ -558,6 +558,60 @@ impl Session {
         Ok(b.execute()?)
     }
 
+    /// Adds several triples to the loaded RDF data in one operation, each one
+    /// written as in `add_triple`. Every triple is parsed before any of them is
+    /// added, so a batch holding a term that cannot be parsed changes nothing.
+    pub fn add_triples(&mut self, triples: &[(String, String, String)], strict_iris: Option<bool>) -> Result<()> {
+        let triples = borrowed(triples);
+        let mut b = self.rudof.add_triples(&triples);
+        if strict_iris.unwrap_or(false) {
+            b = b.with_iri_mode(IriNormalizationMode::Strict);
+        }
+        Ok(b.execute()?)
+    }
+
+    /// Removes several triples from the loaded RDF data in one operation, written as
+    /// in `add_triples`.
+    pub fn remove_triples(&mut self, triples: &[(String, String, String)], strict_iris: Option<bool>) -> Result<()> {
+        let triples = borrowed(triples);
+        let mut b = self.rudof.remove_triples(&triples);
+        if strict_iris.unwrap_or(false) {
+            b = b.with_iri_mode(IriNormalizationMode::Strict);
+        }
+        Ok(b.execute()?)
+    }
+
+    /// Opens a staging frame over the loaded RDF data, returning the new staging
+    /// depth, so that the changes made from now on can be kept with `commit_staging`
+    /// or discarded with `rollback_staging`. Frames nest, and the innermost one is
+    /// the one a commit or a rollback closes.
+    ///
+    /// What is staged is the loaded data, and nothing else: a schema loaded inside a
+    /// frame stays loaded after a rollback, including one read out of the data graph
+    /// itself. What a rollback clears is the state computed from the data it
+    /// discards: the validation results, the query results and the loaded query.
+    pub fn begin_staging(&mut self) -> Result<usize> {
+        Ok(self.rudof.begin_staging().execute()?)
+    }
+
+    /// Keeps what the innermost open staging frame staged, closing it. A frame nested
+    /// in another hands its changes over to the enclosing frame, so rolling that one
+    /// back still undoes them.
+    pub fn commit_staging(&mut self) -> Result<()> {
+        Ok(self.rudof.commit_staging().execute()?)
+    }
+
+    /// Discards what the innermost open staging frame staged, closing it and putting
+    /// the loaded data back as it was when the frame was opened.
+    pub fn rollback_staging(&mut self) -> Result<()> {
+        Ok(self.rudof.rollback_staging().execute()?)
+    }
+
+    /// How many staging frames are open, zero when nothing is staged.
+    pub fn staging_depth(&self) -> usize {
+        self.rudof.staging_depth().execute()
+    }
+
     /// The triples of the loaded RDF data matching a pattern. Every position left
     /// out matches any term, so no pattern at all walks the whole graph. With
     /// `limit`, at most that many triples are returned.
@@ -931,4 +985,12 @@ where
     let mut buffer = Vec::new();
     serialize(&mut buffer)?;
     String::from_utf8(buffer).map_err(|e| Error::new("RudofError", format!("Output is not valid UTF-8: {e}")))
+}
+
+/// The triples of a batch as the slice of string slices `rudof_lib` takes.
+fn borrowed(triples: &[(String, String, String)]) -> Vec<(&str, &str, &str)> {
+    triples
+        .iter()
+        .map(|(subject, predicate, object)| (subject.as_str(), predicate.as_str(), object.as_str()))
+        .collect()
 }

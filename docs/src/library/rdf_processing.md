@@ -40,3 +40,9 @@ graph.add_triple(alice, knows, bob).unwrap();
 
 assert_eq!(graph.len(), 1);
 ```
+
+## Staging changes to the loaded data
+
+The traits above change a graph for good. A [`Rudof`](https://docs.rs/rudof_lib/latest/rudof_lib/struct.Rudof.html) session can also change the data it holds *provisionally*: `rudof.staging()` opens a frame over the loaded data, and the guard it returns rolls the frame back when it is dropped unless `commit()` was called, so a delta can be staged, validated or queried, and then kept or discarded without reloading the graph.
+
+Rolling back costs what was staged rather than the size of the graph, and only the **data** is staged: loaded schemas and shapemaps are session state and survive a rollback, while the validation results, the query results and the loaded SPARQL query (all computed from the data being discarded) are cleared by it. See [`rudof_lib` §2.4 Staging](../internals/crates/rudof_lib.md#24-staging) for the mechanism, the batch operations `add_triples`/`remove_triples`, and a worked example.

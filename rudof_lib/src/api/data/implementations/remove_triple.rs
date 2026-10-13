@@ -1,10 +1,4 @@
-use crate::{
-    Result, Rudof,
-    errors::DataError,
-    formats::IriNormalizationMode,
-    utils::{check_data_is_mutable, parse_triple, rdf_data, rdf_data_mut},
-};
-use rudof_rdf::rdf_core::BuildRDF;
+use crate::{Result, Rudof, api::data::implementations::remove_triples, formats::IriNormalizationMode};
 
 /// Removes a triple from the current RDF data.
 pub fn remove_triple(
@@ -14,16 +8,5 @@ pub fn remove_triple(
     object: &str,
     iri_mode: IriNormalizationMode,
 ) -> Result<()> {
-    check_data_is_mutable(rdf_data(rudof)?)?;
-    let (subject, predicate, object) = parse_triple(rudof, subject, predicate, object, iri_mode)?;
-
-    rdf_data_mut(rudof)?
-        .remove_triple(subject, predicate, object)
-        .map_err(|error| {
-            Box::new(DataError::FailedTripleUpdate {
-                operation: "remove".to_string(),
-                error: error.to_string(),
-            })
-        })?;
-    Ok(())
+    remove_triples(rudof, &[(subject, predicate, object)], iri_mode)
 }

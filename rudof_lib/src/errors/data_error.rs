@@ -155,4 +155,14 @@ pub enum DataError {
     /// Dereferencing a URI returned a non-success HTTP status.
     #[error("Dereferencing '{uri}' failed with HTTP status {status}")]
     DereferenceHttpStatus { uri: String, status: String },
+
+    /// A staging frame was closed, or asked about, while none was open.
+    #[error("No staging frame is open: {operation} needs a matching begin_staging")]
+    NoStagingFrame { operation: String },
+
+    /// A staging frame could not be rolled back, leaving the data part-way.
+    #[error(
+        "Failed to roll back a staging frame: {error}. The loaded data may be left inconsistent; reset_data and load it again"
+    )]
+    FailedStagingRollback { error: String },
 }

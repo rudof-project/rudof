@@ -1,14 +1,16 @@
 use crate::{
     Result, Rudof,
     api::data::implementations::{
-        add_triple, dereference, list_endpoints, load_data, load_service_description, node_neighborhood, remove_triple,
-        reset_data, reset_service_description, serialize_data, serialize_service_description, show_node_info, triples,
+        add_triple, add_triples, begin_staging, commit_staging, dereference, list_endpoints, load_data,
+        load_service_description, node_neighborhood, remove_triple, remove_triples, reset_data,
+        reset_service_description, rollback_staging, serialize_data, serialize_service_description, show_node_info,
+        staging, staging_depth, triples,
     },
     formats::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
         ResultServiceFormat,
     },
-    types::{NodeNeighborhood, Triples},
+    types::{NodeNeighborhood, StagingGuard, Triples},
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
 use rudof_viz::VizEngine;
@@ -205,6 +207,100 @@ pub trait DataOperations {
         iri_mode: IriNormalizationMode,
     ) -> Result<()>;
 
+    /// Adds several triples to the current RDF data in one operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `triples` - The triples to add, each one written as in
+    ///   [`add_triple`](Self::add_triple)
+    /// * `iri_mode` - As [`add_triple`](Self::add_triple)
+    ///
+    /// Every triple is parsed before any of them is added, so a batch holding a triple
+    /// that cannot be parsed changes nothing at all.
+    ///
+    /// # Errors
+    ///
+    /// As [`add_triple`](Self::add_triple), for the first triple that cannot be parsed.
+    fn add_triples(&mut self, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()>;
+
+    /// Removes several triples from the current RDF data in one operation.
+    ///
+    /// # Arguments
+    ///
+    /// As [`add_triples`](Self::add_triples).
+    ///
+    /// # Errors
+    ///
+    /// As [`add_triples`](Self::add_triples).
+    fn remove_triples(&mut self, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()>;
+
+    /// Opens a staging frame over the loaded RDF data, so that the changes made from
+    /// now on can be kept with [`commit_staging`](Self::commit_staging) or discarded
+    /// with [`rollback_staging`](Self::rollback_staging).
+    ///
+    /// Returns the new staging depth: frames nest, and the innermost one is the one a
+    /// commit or a rollback closes.
+    ///
+    /// # What is staged, and what is not
+    ///
+    /// The loaded **data**, and nothing else. Loaded schemas, shapemaps, prefixes and
+    /// configuration are session state. What a rollback does clear is the state computed
+    /// *from* the data it discards: the SHACL and ShEx validation results,
+    /// the query results and the loaded SPARQL query.
+    ///
+    /// # Cost
+    ///
+    /// Rolling back costs what was staged, not the size of the graph: each triple
+    /// added or removed in the frame is remembered so it can be undone. A command
+    /// that cannot be undone triple by triple ([`load_data`](Self::load_data),
+    /// `dereference`, [`reset_data`](Self::reset_data)) instead makes the frame
+    /// remember the data as a whole.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no RDF data is loaded, or if the loaded data cannot be
+    /// modified, as [`add_triple`](Self::add_triple) does.
+    fn begin_staging(&mut self) -> Result<usize>;
+
+    /// Keeps the changes staged in the innermost open frame, closing it.
+    ///
+    /// A frame nested in another hands its changes over to the enclosing frame, so
+    /// rolling that one back still undoes them. Committing the outermost frame makes
+    /// them final.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DataError::NoStagingFrame`](crate::errors::DataError::NoStagingFrame)
+    /// if no frame is open.
+    fn commit_staging(&mut self) -> Result<()>;
+
+    /// Discards the changes staged in the innermost open frame, closing it and
+    /// putting the loaded data back as it was when the frame was opened.
+    ///
+    /// See [`begin_staging`](Self::begin_staging) for what is put back and what is
+    /// cleared.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DataError::NoStagingFrame`](crate::errors::DataError::NoStagingFrame)
+    /// if no frame is open, or
+    /// [`DataError::FailedStagingRollback`](crate::errors::DataError::FailedStagingRollback)
+    /// if the data could not be put back, in which case the frame is closed all the
+    /// same and the data may be left part-way.
+    fn rollback_staging(&mut self) -> Result<()>;
+
+    /// How many staging frames are open, zero when nothing is staged.
+    fn staging_depth(&self) -> usize;
+
+    /// Opens a staging frame as [`begin_staging`](Self::begin_staging) does, and
+    /// returns a guard that closes it: dropping the guard rolls the frame back unless
+    /// it was committed.
+    ///
+    /// # Errors
+    ///
+    /// As [`begin_staging`](Self::begin_staging).
+    fn staging(&mut self) -> Result<StagingGuard<'_>>;
+
     /// Returns an iterator over the triples of the current RDF data matching a
     /// pattern.
     ///
@@ -377,6 +473,34 @@ impl DataOperations for Rudof {
         iri_mode: IriNormalizationMode,
     ) -> Result<()> {
         remove_triple(self, subject, predicate, object, iri_mode)
+    }
+
+    fn add_triples(&mut self, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()> {
+        add_triples(self, triples, iri_mode)
+    }
+
+    fn remove_triples(&mut self, triples: &[(&str, &str, &str)], iri_mode: IriNormalizationMode) -> Result<()> {
+        remove_triples(self, triples, iri_mode)
+    }
+
+    fn begin_staging(&mut self) -> Result<usize> {
+        begin_staging(self)
+    }
+
+    fn commit_staging(&mut self) -> Result<()> {
+        commit_staging(self)
+    }
+
+    fn rollback_staging(&mut self) -> Result<()> {
+        rollback_staging(self)
+    }
+
+    fn staging_depth(&self) -> usize {
+        staging_depth(self)
+    }
+
+    fn staging(&mut self) -> Result<StagingGuard<'_>> {
+        staging(self)
     }
 
     fn triples<'a>(
