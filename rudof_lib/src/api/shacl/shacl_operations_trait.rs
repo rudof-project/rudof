@@ -20,6 +20,12 @@ pub trait ShaclOperations {
     /// If `schema` is `None`, the method treats the currently loaded RDF data graph
     /// as the SHACL shapes graph.
     ///
+    /// Either way the compiled schema is session state, not staged state: it stays
+    /// loaded across
+    /// [`begin_staging`](crate::api::data::DataOperations::begin_staging),
+    /// a commit and a rollback alike. With the shapes in the data graph that means a
+    /// schema read here can outlive the very triples it was read from.
+    ///
     /// # Arguments
     ///
     /// * `schema` - Optional input specification defining the schema source
