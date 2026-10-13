@@ -28,7 +28,7 @@ use crate::{
             ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, NodeNeighborhoodBuilder,
             RemoveTripleBuilder, RemoveTriplesBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder,
             RollbackStagingBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
-            StagingDepthBuilder, TriplesBuilder,
+            StagingBuilder, StagingDepthBuilder, TriplesBuilder,
         },
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
@@ -455,6 +455,13 @@ impl Rudof {
     /// staging frame staged, closing it and putting the loaded data back.
     pub fn rollback_staging<'a>(&'a mut self) -> RollbackStagingBuilder<'a> {
         RollbackStagingBuilder::new(self)
+    }
+
+    /// Returns a `StagingBuilder` that opens a staging frame over the loaded data and
+    /// hands back the guard that closes it: dropping the guard rolls the frame back
+    /// unless it was committed.
+    pub fn staging<'a>(&'a mut self) -> StagingBuilder<'a> {
+        StagingBuilder::new(self)
     }
 
     /// Returns a `StagingDepthBuilder` that reports how many staging frames are open.

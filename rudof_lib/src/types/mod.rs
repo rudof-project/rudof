@@ -3,6 +3,7 @@ mod node_neighborhood;
 mod query;
 mod shex_statistics;
 mod staging;
+mod staging_guard;
 mod triple;
 
 pub(crate) use data::Data;
@@ -11,6 +12,7 @@ pub use query::QueryResult;
 pub use rudof_rdf::rdf_core::ArcDirection;
 pub(crate) use shex_statistics::ShExStatistics;
 pub(crate) use staging::{StagingFrame, UndoEntry};
+pub use staging_guard::StagingGuard;
 pub use triple::{Triple, Triples};
 
 #[cfg(feature = "pgschema")]

@@ -15,6 +15,7 @@ mod rollback_staging;
 mod serialize_data;
 mod serialize_service_description;
 mod show_node_info;
+mod staging;
 mod staging_depth;
 mod triples;
 
@@ -35,5 +36,6 @@ pub use rollback_staging::RollbackStagingBuilder;
 pub use serialize_data::SerializeDataBuilder;
 pub use serialize_service_description::SerializeServiceDescriptionBuilder;
 pub use show_node_info::ShowNodeInfoBuilder;
+pub use staging::StagingBuilder;
 pub use staging_depth::StagingDepthBuilder;
 pub use triples::TriplesBuilder;

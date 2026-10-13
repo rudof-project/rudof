@@ -4,13 +4,13 @@ use crate::{
         add_triple, add_triples, begin_staging, commit_staging, dereference, list_endpoints, load_data,
         load_service_description, node_neighborhood, remove_triple, remove_triples, reset_data,
         reset_service_description, rollback_staging, serialize_data, serialize_service_description, show_node_info,
-        staging_depth, triples,
+        staging, staging_depth, triples,
     },
     formats::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
         ResultServiceFormat,
     },
-    types::{NodeNeighborhood, Triples},
+    types::{NodeNeighborhood, StagingGuard, Triples},
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
 use rudof_viz::VizEngine;
@@ -292,6 +292,15 @@ pub trait DataOperations {
     /// How many staging frames are open, zero when nothing is staged.
     fn staging_depth(&self) -> usize;
 
+    /// Opens a staging frame as [`begin_staging`](Self::begin_staging) does, and
+    /// returns a guard that closes it: dropping the guard rolls the frame back unless
+    /// it was committed.
+    ///
+    /// # Errors
+    ///
+    /// As [`begin_staging`](Self::begin_staging).
+    fn staging(&mut self) -> Result<StagingGuard<'_>>;
+
     /// Returns an iterator over the triples of the current RDF data matching a
     /// pattern.
     ///
@@ -488,6 +497,10 @@ impl DataOperations for Rudof {
 
     fn staging_depth(&self) -> usize {
         staging_depth(self)
+    }
+
+    fn staging(&mut self) -> Result<StagingGuard<'_>> {
+        staging(self)
     }
 
     fn triples<'a>(
