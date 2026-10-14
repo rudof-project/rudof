@@ -13,6 +13,7 @@ use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
+use crate::ir::node_expr::IRNodeExpr;
 
 #[derive(Debug, Clone)]
 pub struct IRNodeShape {
@@ -21,7 +22,7 @@ pub struct IRNodeShape {
     targets: Vec<IRTarget>,
     property_shapes: Vec<ShapeLabelIdx>,
     closed_info: ClosedInfo,
-    deactivated: bool,
+    deactivated: Option<IRNodeExpr>,
 
     message: Option<MessageMap>,
     severity: Option<Severity>,
@@ -44,7 +45,7 @@ impl IRNodeShape {
             targets: Vec::new(),
             property_shapes: Vec::new(),
             closed_info: ClosedInfo::No,
-            deactivated: false,
+            deactivated: None,
             message: None,
             severity: None,
             name: None,
@@ -73,7 +74,7 @@ impl IRNodeShape {
         self
     }
 
-    pub fn with_deactivated(mut self, deactivated: bool) -> Self {
+    pub fn with_deactivated(mut self, deactivated: Option<IRNodeExpr>) -> Self {
         self.deactivated = deactivated;
         self
     }
@@ -107,8 +108,8 @@ impl IRNodeShape {
         &self.id
     }
 
-    pub fn deactivated(&self) -> bool {
-        self.deactivated
+    pub fn deactivated(&self) -> Option<&IRNodeExpr> {
+        self.deactivated.as_ref()
     }
 
     pub fn severity(&self) -> &Severity {
@@ -169,12 +170,22 @@ impl IRNodeShape {
 
         let closed_info = shape.get_closed_info(ast)?;
 
+        let deactivated = shape.is_deactivated()
+            .map(|ns| IRNodeExpr::compile(ns, ast, ir))
+            .transpose()?;
+
+        let compiled_targets = shape
+            .targets()
+            .iter()
+            .map(|target| IRTarget::compile(target, ast, ir))
+            .collect::<Result<Vec<_>, _>>()?;
+
         let compiled_node_shape = IRNodeShape::new(shape.id().clone())
             .with_components(compiled_components)
-            .with_targets(shape.targets().to_owned())
+            .with_targets(compiled_targets)
             .with_property_shapes(compiled_prop_shapes)
             .with_closed_info(closed_info)
-            .with_deactivated(shape.is_deactivated())
+            .with_deactivated(deactivated)
             .with_severity(shape.severity().cloned())
             .with_name(shape.name().cloned())
             .with_description(shape.description().cloned())
@@ -283,8 +294,8 @@ impl Display for IRNodeShape {
             writeln!(f, " description: {description}")?;
         }
 
-        if self.deactivated() {
-            writeln!(f, " Deactivated: {}", self.deactivated())?;
+        if let Some(deactivated) = self.deactivated() {
+            writeln!(f, " Deactivated: {}", deactivated)?;
         }
         if self.severity() != &Severity::Violation {
             writeln!(f, " Severity: {}", self.severity())?;

@@ -1,5 +1,5 @@
 use crate::ast::{ASTSchema, ASTShape};
-use crate::ir::ReifierInfo;
+use crate::ir::{IRNodeExpr, ReifierInfo};
 use crate::ir::component::IRComponent;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
@@ -30,7 +30,7 @@ impl IRShape {
         Self::PropertyShape(Box::new(ps))
     }
 
-    pub fn deactivated(&self) -> bool {
+    pub fn deactivated(&self) -> Option<&IRNodeExpr> {
         match self {
             IRShape::NodeShape(ns) => ns.deactivated(),
             IRShape::PropertyShape(ps) => ps.deactivated(),
