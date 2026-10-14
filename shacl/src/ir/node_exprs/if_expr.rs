@@ -1,6 +1,6 @@
 use crate::error::IRError;
 use crate::ir::IRSchema;
-use crate::ir::node_expr;
+use crate::ir::node_expr_is_true;
 use crate::ir::node_expr::IRNodeExpr;
 use crate::validator::engine::Engine;
 use rudof_rdf::rdf_core::NeighsRDF;
@@ -61,7 +61,7 @@ impl IfExpression {
 
         let if_result = self.if_condition.evaluate(store, focus, scope, runner, ir)?;
 
-        if node_expr::is_true::<Rdf>(&if_result) {
+        if node_expr_is_true::<Rdf>(&if_result) {
             match &self.then {
                 Some(expr) => expr.evaluate(store, focus, scope, runner, ir),
                 None => Ok(Vec::new()),

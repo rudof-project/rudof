@@ -28,6 +28,8 @@ pub use order_value::OrderValue;
 pub use property_shape::IRPropertyShape;
 pub use recursion::RecursionSemantics;
 pub use reifier_info::ReifierInfo;
+use rudof_rdf::rdf_core::NeighsRDF;
+use rudof_rdf::rdf_core::term::literal::Literal;
 pub use schema::IRSchema;
 pub use shape::IRShape;
 pub use shape_label_idx::ShapeLabelIdx;
@@ -48,4 +50,15 @@ fn convert_value(value: Value) -> Result<Object, IRError> {
     };
 
     Ok(out)
+}
+
+/// Whether a node expression's output nodes are exactly `( true )`
+pub(crate) fn node_expr_is_true<Rdf: NeighsRDF>(values: &[Rdf::Term]) -> bool {
+    match values {
+        [value] => Rdf::term_as_literal(value)
+            .ok()
+            .and_then(|lit| lit.to_bool())
+            .unwrap_or(false),
+        _ => false,
+    }
 }
