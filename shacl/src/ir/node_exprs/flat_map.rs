@@ -2,7 +2,7 @@ use crate::error::IRError;
 use crate::ir::IRSchema;
 use crate::ir::node_expr::IRNodeExpr;
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -35,32 +35,22 @@ impl FlatMap {
 }
 
 impl FlatMap {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
         let nodes = match self.nodes.as_ref() {
-            Some(nodes) => nodes.evaluate(focus_graph, scope, runner, ir)?,
-            None => focus_graph
-                .get_focus()
-                .cloned()
-                .map(|term| vec![term])
-                .unwrap_or_default(),
+            Some(nodes) => nodes.evaluate(store, focus, scope, runner, ir)?,
+            None => vec![focus.clone()],
         };
 
-        let original_focus = focus_graph.get_focus().cloned();
-
         let mut out = Vec::new();
-        for term in nodes {
-            focus_graph.set_focus(&term);
-            out.extend(self.flat_map.evaluate(focus_graph, scope, runner, ir)?);
-        }
-
-        if let Some(original_focus) = &original_focus {
-            focus_graph.set_focus(original_focus);
+        for node in nodes {
+            out.extend(self.flat_map.evaluate(store, &node, scope, runner, ir)?);
         }
 
         Ok(out)

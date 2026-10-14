@@ -3,7 +3,7 @@ use crate::ir::IRSchema;
 use crate::ir::node_expr::IRNodeExpr;
 use crate::validator::engine::Engine;
 use itertools::Itertools;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 
@@ -23,9 +23,10 @@ impl Intersection {
 }
 
 impl Intersection {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
@@ -36,9 +37,9 @@ impl Intersection {
             return Ok(Vec::new());
         };
 
-        let first = first.evaluate(focus_graph, scope, runner, ir)?;
+        let first = first.evaluate(store, focus, scope, runner, ir)?;
         let rest = exprs
-            .map(|expr| Ok(expr.evaluate(focus_graph, scope, runner, ir)?.into_iter().collect()))
+            .map(|expr| Ok(expr.evaluate(store, focus, scope, runner, ir)?.into_iter().collect()))
             .collect::<Result<Vec<HashSet<Rdf::Term>>, IRError>>()?;
 
         let out = first

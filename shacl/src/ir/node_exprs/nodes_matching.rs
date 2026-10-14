@@ -2,7 +2,7 @@ use crate::error::IRError;
 use crate::ir::{IRSchema, ShapeLabelIdx};
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::FocusNodes;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use rudof_rdf::rdf_core::term::Triple;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
@@ -23,15 +23,16 @@ impl NodesMatching {
 }
 
 impl NodesMatching {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        _focus: &Rdf::Term,
         _scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
         let mut all_nodes: HashSet<Rdf::Term> = HashSet::new();
-        for triple in focus_graph
+        for triple in store
             .triples()
             .map_err(|e| IRError::from_rdf_err::<Rdf>("enumerate triples", e))?
         {
@@ -41,7 +42,7 @@ impl NodesMatching {
 
         let targets = FocusNodes::from_iter(all_nodes);
         let shape = ir.get_shape_from_idx_e(&self.shape)?;
-        let outcome = shape.validate(focus_graph, runner, Some(&targets), None, ir)?;
+        let outcome = shape.validate(store, runner, Some(&targets), None, ir)?;
 
         let non_conforming: HashSet<Rdf::Term> = outcome
             .violations()

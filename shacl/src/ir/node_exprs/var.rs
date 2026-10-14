@@ -2,7 +2,7 @@ use crate::error::IRError;
 use crate::ir::IRSchema;
 use crate::ir::node_expr_eval_error::NodeExprEvalError;
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::{FocusRDF, RDFError};
+use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -22,9 +22,10 @@ impl Var {
 }
 
 impl Var {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        _: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         _: &mut dyn Engine<Rdf>,
         _: &IRSchema,
@@ -33,10 +34,7 @@ impl Var {
             return Err(NodeExprEvalError::EmptyVar(self.clone()).into());
         }
         if self.var == "focusNode" {
-            return match focus_graph.get_focus() {
-                None => Err(RDFError::NoFocusNodeError.into()),
-                Some(fnode) => Ok(vec![fnode.clone()]),
-            };
+            return Ok(vec![focus.clone()]);
         }
 
         Ok(match scope.get(&self.var) {

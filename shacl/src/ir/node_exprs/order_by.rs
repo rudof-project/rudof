@@ -2,7 +2,7 @@ use crate::error::IRError;
 use crate::ir::IRSchema;
 use crate::ir::node_expr::IRNodeExpr;
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use rudof_rdf::rdf_core::term::Object;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -43,32 +43,27 @@ impl OrderBy {
 }
 
 impl OrderBy {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
         let desc = self.desc.unwrap_or(false);
 
-        let nodes = self.nodes.evaluate(focus_graph, scope, runner, ir)?;
-        let original_focus = focus_graph.get_focus().cloned();
+        let nodes = self.nodes.evaluate(store, focus, scope, runner, ir)?;
 
         let mut keyed: Vec<(Rdf::Term, Option<Object>)> = Vec::with_capacity(nodes.len());
         for node in nodes {
-            focus_graph.set_focus(&node);
             let key = self
                 .order_by
-                .evaluate(focus_graph, scope, runner, ir)?
+                .evaluate(store, &node, scope, runner, ir)?
                 .into_iter()
                 .next()
                 .and_then(|k| k.try_into().ok());
             keyed.push((node, key));
-        }
-
-        if let Some(original_focus) = &original_focus {
-            focus_graph.set_focus(original_focus);
         }
 
         keyed.sort_by(|(_, a), (_, b)| Self::compare_keys(a, b));

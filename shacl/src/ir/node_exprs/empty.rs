@@ -1,7 +1,7 @@
 use crate::error::IRError;
 use crate::ir::IRSchema;
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -15,9 +15,10 @@ impl Empty {
 }
 
 impl Empty {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        _: &mut Rdf,
+        _: &Rdf,
+        _: &Rdf::Term,
         _: &HashMap<String, Rdf::Term>,
         _: &mut dyn Engine<Rdf>,
         _: &IRSchema,

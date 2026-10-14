@@ -3,7 +3,7 @@ use crate::ir::node_expr::IRNodeExpr;
 use crate::ir::{IRSchema, ShapeLabelIdx};
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::FocusNodes;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -31,19 +31,20 @@ impl FindFirst {
 }
 
 impl FindFirst {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
-        let nodes = self.nodes.evaluate(focus_graph, scope, runner, ir)?;
+        let nodes = self.nodes.evaluate(store, focus, scope, runner, ir)?;
         let find_first = ir.get_shape_from_idx_e(&self.find_first)?;
 
         for node in nodes {
             let target = FocusNodes::single(node.clone());
-            let outcome = find_first.validate(focus_graph, runner, Some(&target), None, ir)?;
+            let outcome = find_first.validate(store, runner, Some(&target), None, ir)?;
 
             if outcome.conforms() {
                 return Ok(vec![node]);

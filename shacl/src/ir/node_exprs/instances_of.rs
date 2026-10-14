@@ -2,7 +2,7 @@ use crate::error::IRError;
 use crate::ir::IRSchema;
 use crate::validator::engine::Engine;
 use rudof_iri::IriS;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -22,16 +22,17 @@ impl InstancesOf {
 }
 
 impl InstancesOf {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        _: &Rdf::Term,
         _: &HashMap<String, Rdf::Term>,
         _: &mut dyn Engine<Rdf>,
         _: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
         let cls: Rdf::Term = self.iri.clone().into();
 
-        let instances = focus_graph
+        let instances = store
             .shacl_instances_of(&cls)
             .map_err(|e| IRError::from_rdf_err::<Rdf>("compute SHACL instances", e))?;
 

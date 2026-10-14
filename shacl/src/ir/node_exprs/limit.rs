@@ -2,7 +2,7 @@ use crate::error::IRError;
 use crate::ir::IRSchema;
 use crate::ir::node_expr::IRNodeExpr;
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -30,16 +30,17 @@ impl Limit {
 }
 
 impl Limit {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
         let out = self
             .nodes
-            .evaluate(focus_graph, scope, runner, ir)?
+            .evaluate(store, focus, scope, runner, ir)?
             .into_iter()
             .take(self.limit)
             .collect();

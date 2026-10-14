@@ -3,7 +3,7 @@ use crate::ir::IRSchema;
 use crate::ir::node_expr::IRNodeExpr;
 use crate::ir::node_expr_eval_error::NodeExprEvalError;
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral};
 use rust_decimal::Decimal;
@@ -27,14 +27,15 @@ impl Sum {
 }
 
 impl Sum {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
-        let terms = self.sum.evaluate(focus_graph, scope, runner, ir)?;
+        let terms = self.sum.evaluate(store, focus, scope, runner, ir)?;
 
         let mut rank = 0u8;
         let mut total = Decimal::ZERO;

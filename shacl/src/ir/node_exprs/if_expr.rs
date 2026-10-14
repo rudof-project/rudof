@@ -1,9 +1,9 @@
 use crate::error::IRError;
 use crate::ir::IRSchema;
+use crate::ir::node_expr;
 use crate::ir::node_expr::IRNodeExpr;
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::FocusRDF;
-use rudof_rdf::rdf_core::term::literal::Literal;
+use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -47,9 +47,10 @@ impl IfExpression {
 }
 
 impl IfExpression {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
@@ -58,22 +59,16 @@ impl IfExpression {
             return Err(IRError::IfNodeExprBodyErr(self.clone()));
         }
 
-        let if_result = self.if_condition.evaluate(focus_graph, scope, runner, ir)?;
+        let if_result = self.if_condition.evaluate(store, focus, scope, runner, ir)?;
 
-        let is_true = if_result.len() == 1
-            && Rdf::term_as_literal(&if_result[0])
-                .ok()
-                .and_then(|lit| lit.to_bool())
-                .unwrap_or(false);
-
-        if is_true {
+        if node_expr::is_true::<Rdf>(&if_result) {
             match &self.then {
-                Some(expr) => expr.evaluate(focus_graph, scope, runner, ir),
+                Some(expr) => expr.evaluate(store, focus, scope, runner, ir),
                 None => Ok(Vec::new()),
             }
         } else {
             match &self.else_expr {
-                Some(expr) => expr.evaluate(focus_graph, scope, runner, ir),
+                Some(expr) => expr.evaluate(store, focus, scope, runner, ir),
                 None => Ok(Vec::new()),
             }
         }

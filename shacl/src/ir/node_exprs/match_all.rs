@@ -3,7 +3,7 @@ use crate::ir::node_expr::IRNodeExpr;
 use crate::ir::{IRSchema, ShapeLabelIdx};
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::FocusNodes;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::NeighsRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use std::collections::HashMap;
@@ -35,21 +35,22 @@ impl MatchAll {
 }
 
 impl MatchAll {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
         let nodes = match &self.nodes {
-            Some(nodes) => nodes.evaluate(focus_graph, scope, runner, ir)?,
-            None => focus_graph.get_focus().cloned().map(|n| vec![n]).unwrap_or_default(),
+            Some(nodes) => nodes.evaluate(store, focus, scope, runner, ir)?,
+            None => vec![focus.clone()],
         };
 
         let targets = FocusNodes::from_iter(nodes);
         let match_all = ir.get_shape_from_idx_e(&self.match_all)?;
-        let outcome = match_all.validate(focus_graph, runner, Some(&targets), None, ir)?;
+        let outcome = match_all.validate(store, runner, Some(&targets), None, ir)?;
 
         Ok(vec![Rdf::object_as_term(&Object::Literal(
             ConcreteLiteral::BooleanLiteral(outcome.conforms()),

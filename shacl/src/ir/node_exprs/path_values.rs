@@ -3,7 +3,7 @@ use crate::ir::IRSchema;
 use crate::ir::node_expr::IRNodeExpr;
 use crate::ir::node_expr_eval_error::NodeExprEvalError;
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::{FocusRDF, SHACLPath};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -36,20 +36,17 @@ impl PathValues {
 }
 
 impl PathValues {
-    pub fn evaluate<Rdf: FocusRDF + Debug>(
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
-        focus_graph: &mut Rdf,
+        store: &Rdf,
+        focus: &Rdf::Term,
         scope: &HashMap<String, Rdf::Term>,
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
         let nodes = match &self.focus_nodes {
-            None => focus_graph
-                .get_focus()
-                .cloned()
-                .map(|fnode| vec![fnode])
-                .unwrap_or_default(),
-            Some(fnode) => fnode.evaluate(focus_graph, scope, runner, ir)?,
+            None => vec![focus.clone()],
+            Some(fnode) => fnode.evaluate(store, focus, scope, runner, ir)?,
         };
 
         let focus_node = match nodes.len() {
@@ -58,7 +55,7 @@ impl PathValues {
             n => return Err(NodeExprEvalError::MultipleFocusNodes(self.to_string(), n).into()),
         };
 
-        let values = focus_graph.objects_for_shacl_path(&focus_node, &self.path)?;
+        let values = store.objects_for_shacl_path(&focus_node, &self.path)?;
 
         Ok(values.into_iter().collect())
     }
