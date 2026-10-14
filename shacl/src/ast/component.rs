@@ -8,8 +8,8 @@ use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
+use crate::ast::node_expr::ASTNodeExpr;
 
-// TODO - For node expr only derive Debug (maybe)
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ASTComponent {
     Class(Object),
@@ -52,7 +52,7 @@ pub enum ASTComponent {
         disjoint: Option<bool>,
         siblings: Vec<Object>,
     },
-    Deactivated(bool), // TODO - Replace with node expr
+    Deactivated(ASTNodeExpr),
     BasicSparql {
         select: String,
         message: Option<MessageMap>,

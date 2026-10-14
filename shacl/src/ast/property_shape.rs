@@ -9,6 +9,7 @@ use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
+use crate::ast::node_expr::ASTNodeExpr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ASTPropertyShape {
@@ -20,7 +21,6 @@ pub struct ASTPropertyShape {
     reifier_info: Option<ReifierInfo>,
     closed: bool,
     // ignored_properties: Vec<IriRef>,
-    deactivated: bool,
     message: Option<MessageMap>,
     severity: Option<Severity>,
     name: Option<MessageMap>,
@@ -44,7 +44,6 @@ impl ASTPropertyShape {
             targets: Vec::new(),
             property_shapes: Vec::new(),
             closed: false,
-            deactivated: false,
             message: None,
             severity: None,
             name: None,
@@ -157,8 +156,13 @@ impl ASTPropertyShape {
         &self.closed
     }
 
-    pub fn is_deactivated(&self) -> bool {
-        self.deactivated
+    pub fn is_deactivated(&self) -> Option<&ASTNodeExpr> {
+        for component in &self.components {
+            if let ASTComponent::Deactivated(ne) = component {
+                return Some(ne)
+            }
+        }
+        None
     }
 
     pub fn severity(&self) -> Option<&Severity> {

@@ -6,6 +6,7 @@ use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
+use crate::ast::node_expr::ASTNodeExpr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ASTNodeShape {
@@ -95,14 +96,13 @@ impl ASTNodeShape {
         self.message.as_ref()
     }
 
-    pub fn is_deactivated(&self) -> bool {
-        // TODO - Adapt for node expr since the expr needs to be computed
+    pub fn is_deactivated(&self) -> Option<&ASTNodeExpr> {
         for component in &self.components {
-            if let ASTComponent::Deactivated(true) = component {
-                return true;
+            if let ASTComponent::Deactivated(expr) = component {
+                return Some(expr);
             }
         }
-        false
+        None
     }
 
     fn closed_component(&self) -> (bool, HashSet<IriS>) {
