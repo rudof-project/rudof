@@ -256,6 +256,15 @@ pub trait DataOperations {
     /// `dereference`, [`reset_data`](Self::reset_data)) instead makes the frame
     /// remember the data as a whole.
     ///
+    /// Remembering it is cheap to do and not cheap to keep: the graph is shared with
+    /// the frame rather than copied, and the next write to it copies it once, so a
+    /// load inside a frame leaves the graph resident twice until the frame closes.
+    /// One frame pays that once however many such commands it runs, but nested frames
+    /// pay it once each. A large graph is therefore better staged as triple deltas
+    /// with [`add_triples`](Self::add_triples) /
+    /// [`remove_triples`](Self::remove_triples), with the loads left outside the
+    /// frame.
+    ///
     /// # Errors
     ///
     /// Returns an error if no RDF data is loaded, or if the loaded data cannot be
