@@ -19,11 +19,13 @@ mod reifier_info;
 mod schema;
 mod shape;
 mod shape_label_idx;
+mod node_expr;
 pub mod node_exprs;
 mod target;
 mod test;
 
 pub use component::IRComponent;
+pub use node_expr::IRNodeExpr;
 pub use node_shape::IRNodeShape;
 pub use order_value::OrderValue;
 pub use property_shape::IRPropertyShape;
