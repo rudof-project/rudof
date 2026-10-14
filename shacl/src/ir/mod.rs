@@ -19,6 +19,7 @@ mod reifier_info;
 mod schema;
 mod shape;
 mod shape_label_idx;
+pub mod node_exprs;
 mod target;
 mod test;
 
