@@ -7,6 +7,9 @@ use rudof_rdf::rdf_core::utils::RDFRegexError;
 use rudof_rdf::rdf_core::{RDFError, Rdf, SHACLPath};
 use rudof_rdf::rdf_impl::OxigraphInMemoryError;
 use thiserror::Error;
+use crate::ir::error::NodeExprEvalError;
+use crate::ir::node_exprs::IfExpression;
+use crate::validator::error::ValidationError;
 
 #[derive(Error, Debug)]
 pub enum IRError {
@@ -44,6 +47,15 @@ pub enum IRError {
 
     #[error("Dependency graph has negative cycles (non-stratified): {cycles:?}")]
     DependencyGraphHasNegativeCycles { cycles: Vec<Vec<Object>> },
+
+    #[error("The IfExpression ({0}) is invalid, missing shnex:then or shnex:else")]
+    IfNodeExprBodyErr(IfExpression),
+
+    #[error(transparent)]
+    NodeExprEvalError(#[from] Box<NodeExprEvalError>),
+
+    #[error(transparent)]
+    ValidationError(#[from] Box<ValidationError>),
 }
 
 impl IRError {
@@ -92,5 +104,17 @@ impl From<RDFRegexError> for IRError {
 impl From<RDFError> for IRError {
     fn from(value: RDFError) -> Self {
         Self::RDFError(Box::new(value))
+    }
+}
+
+impl From<NodeExprEvalError> for IRError {
+    fn from(value: NodeExprEvalError) -> Self {
+        Self::NodeExprEvalError(Box::new(value))
+    }
+}
+
+impl From<ValidationError> for IRError {
+    fn from(value: ValidationError) -> Self {
+        Self::ValidationError(Box::new(value))
     }
 }
