@@ -1,6 +1,7 @@
 use crate::ast::error::ASTError;
 use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
-use crate::types::{ClosedInfo, MessageMap, Severity, Target};
+use crate::ast::ASTTarget;
+use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
@@ -10,7 +11,7 @@ use std::fmt::{Display, Formatter};
 pub struct ASTNodeShape {
     id: Object,
     components: Vec<ASTComponent>,
-    targets: Vec<Target>,
+    targets: Vec<ASTTarget>,
     property_shapes: Vec<Object>,
     // closed: bool,
     // ignored_properties: Vec<IriRef>,
@@ -37,7 +38,7 @@ impl ASTNodeShape {
         }
     }
 
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<ASTTarget>) -> Self {
         self.targets = targets;
         self
     }
@@ -74,7 +75,7 @@ impl ASTNodeShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<ASTTarget> {
         &self.targets
     }
 

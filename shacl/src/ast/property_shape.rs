@@ -2,7 +2,8 @@ use crate::ast::error::ASTError;
 use crate::ast::reifier_info::ReifierInfo;
 use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
 use crate::ir::OrderValue;
-use crate::types::{ClosedInfo, MessageMap, Severity, Target};
+use crate::ast::ASTTarget;
+use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::Object;
@@ -14,7 +15,7 @@ pub struct ASTPropertyShape {
     id: Object,
     path: SHACLPath,
     components: Vec<ASTComponent>,
-    targets: Vec<Target>,
+    targets: Vec<ASTTarget>,
     property_shapes: Vec<Object>,
     reifier_info: Option<ReifierInfo>,
     closed: bool,
@@ -91,7 +92,7 @@ impl ASTPropertyShape {
         self
     }
 
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<ASTTarget>) -> Self {
         self.targets = targets;
         self
     }
@@ -168,7 +169,7 @@ impl ASTPropertyShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<ASTTarget> {
         &self.targets
     }
 
