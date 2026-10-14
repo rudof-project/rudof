@@ -3,10 +3,10 @@ use rudof_rdf::rdf_core::term::Object;
 use std::fmt::{Display, Formatter};
 
 /// Represents target declarations
-#[derive(Debug, Clone, PartialEq)]
 ///
 /// Now Target::Node depends on the compilation stage.
 /// You can check both [`ASTTarget`](crate::ast::ASTTarget) and [`IRTarget`](crate::ir::IRTarget)
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Target<E> {
     Node(E),
     Class(Object),

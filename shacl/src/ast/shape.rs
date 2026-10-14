@@ -3,7 +3,7 @@ use crate::ast::property_shape::ASTPropertyShape;
 use rudof_rdf::rdf_core::term::Object;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 pub enum ASTShape {
     NodeShape(Box<ASTNodeShape>),
     PropertyShape(Box<ASTPropertyShape>),

@@ -6,8 +6,8 @@ use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use std::fmt::{Display, Formatter};
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum NodeExpr {
+#[derive(Debug, Clone, PartialEq, Eq)]
     // Constants
     Iri(IriRef),
     Literal(ConcreteLiteral),

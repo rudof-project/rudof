@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use rust_decimal::Decimal;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OrderValue {
     Integer(i128),
     Decimal(Decimal),

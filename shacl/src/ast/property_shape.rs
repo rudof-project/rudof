@@ -10,7 +10,7 @@ use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ASTPropertyShape {
     id: Object,
     path: SHACLPath,
