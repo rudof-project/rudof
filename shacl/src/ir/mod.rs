@@ -2,7 +2,7 @@
 //! Represents SHACL Internal representation which is used for validation
 
 use crate::ir::error::IRError;
-use crate::types::Value;
+use crate::types::{Target, Value};
 use prefixmap::IriRef;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
@@ -19,6 +19,7 @@ mod reifier_info;
 mod schema;
 mod shape;
 mod shape_label_idx;
+mod target;
 mod test;
 
 pub use component::IRComponent;
@@ -30,6 +31,9 @@ pub use reifier_info::ReifierInfo;
 pub use schema::IRSchema;
 pub use shape::IRShape;
 pub use shape_label_idx::ShapeLabelIdx;
+
+/// A target declaration in the IR. Related [`Target`](Target)
+pub type IRTarget = Target<IRNodeExpr>;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, IRError> {
     let iri = iri_ref.get_iri()?;

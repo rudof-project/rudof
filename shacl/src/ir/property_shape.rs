@@ -6,7 +6,8 @@ use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::ir::{OrderValue, ReifierInfo};
-use crate::types::{ClosedInfo, MessageMap, Severity, Target};
+use crate::ir::IRTarget;
+use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral};
@@ -20,7 +21,7 @@ pub struct IRPropertyShape {
     id: Object,
     path: SHACLPath,
     components: Vec<IRComponent>,
-    targets: Vec<Target>,
+    targets: Vec<IRTarget>,
     property_shapes: Vec<ShapeLabelIdx>,
     closed_info: ClosedInfo,
     deactivated: bool,
@@ -62,7 +63,7 @@ impl IRPropertyShape {
         self.components = components;
         self
     }
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<IRTarget>) -> Self {
         self.targets = targets;
         self
     }
@@ -141,7 +142,7 @@ impl IRPropertyShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<IRTarget> {
         &self.targets
     }
 

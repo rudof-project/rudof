@@ -5,7 +5,8 @@ use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::types::{ClosedInfo, MessageMap, Severity, Target};
+use crate::ir::IRTarget;
+use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
@@ -17,7 +18,7 @@ use std::fmt::{Display, Formatter};
 pub struct IRNodeShape {
     id: Object,
     components: Vec<IRComponent>,
-    targets: Vec<Target>,
+    targets: Vec<IRTarget>,
     property_shapes: Vec<ShapeLabelIdx>,
     closed_info: ClosedInfo,
     deactivated: bool,
@@ -57,7 +58,7 @@ impl IRNodeShape {
         self
     }
 
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<IRTarget>) -> Self {
         self.targets = targets;
         self
     }
@@ -125,7 +126,7 @@ impl IRNodeShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<IRTarget> {
         &self.targets
     }
 
