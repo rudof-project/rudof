@@ -22,6 +22,7 @@ use rudof_rdf::rdf_core::term::Object;
 pub use schema::ASTSchema;
 pub use shape::ASTShape;
 use std::collections::HashSet;
+pub use node_expr::ASTNodeExpr;
 
 /// A target declaration in the AST. Related [`Target`](Target)
 pub type ASTTarget = Target<ASTNodeExpr>;
