@@ -6,6 +6,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - Staging of the loaded RDF data ([#865](https://github.com/rudof-project/rudof/issues/865)): `begin_staging`, `commit_staging`, `rollback_staging`, `staging_depth` and the `staging()` guard, which rolls its frame back when dropped. Only the data is staged; a rollback also clears the validation results, the query results and the loaded query. In Python as `with rudof.staging():`, in JavaScript as `beginStaging`/`commitStaging`/`rollbackStaging`/`stagingDepth`.
 - `add_triples` and `remove_triples`, applying a batch of triples in one operation: nothing is written unless every triple parses. Also in Python and as `addTriples`/`removeTriples` in JavaScript.
 ### Fixed
+- A term given as text was neither resolved against a base IRI nor checked to be an absolute IRI ([#877](https://github.com/rudof-project/rudof/issues/877)), so `add_triple("<alice>", ":b", ":c")` stored the relative IRI `alice` (in the subject, the predicate, the object or the datatype of a literal) and serializing the data wrote out what is not valid RDF on its own. A relative IRI is now resolved against the session's base IRI, the one `load_data` already resolves the documents it reads against (`base_iri` in the configuration, or the current directory), and an IRI that cannot be made absolute is an error instead of reaching the graph. This covers `add_triple`, `remove_triple`, `triples` and their batch forms, and the node and predicates of `rudof node` / `node_neighborhood`.
 ### Changed
 ### Removed
 
