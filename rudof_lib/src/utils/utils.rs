@@ -453,6 +453,14 @@ mod tests {
         Object::Iri(IriS::new_unchecked("http://example.org/alice")).into()
     }
 
+    fn base() -> IriS {
+        IriS::new_unchecked("http://example.org/")
+    }
+
+    fn term_with_base(text: &str) -> RdfTerm {
+        parse_term(text, Some(&base()), &prefixmap(), Lax).unwrap()
+    }
+
     #[test]
     fn test_parse_term_iris() {
         assert_eq!(term("<http://example.org/alice>"), alice());
@@ -511,6 +519,49 @@ mod tests {
                 "{text} parsed as a term"
             );
         }
+    }
+
+    #[test]
+    fn test_parse_term_resolves_a_relative_iri_against_the_base() {
+        // The three positions of a triple, and the datatype of a literal.
+        assert_eq!(term_with_base("<alice>"), alice());
+        assert_eq!(
+            parse_subject("<alice>", Some(&base()), &prefixmap(), Lax)
+                .unwrap()
+                .to_string(),
+            "<http://example.org/alice>"
+        );
+        assert_eq!(
+            parse_predicate_iri("<name>", Some(&base()), &prefixmap()).unwrap(),
+            IriS::new_unchecked("http://example.org/name")
+        );
+        assert_eq!(
+            term_with_base("\"23\"^^<integer>"),
+            term("\"23\"^^<http://example.org/integer>")
+        );
+
+        // An absolute IRI resolves to itself, whatever the base, and a prefixed name is
+        // resolved by the prefix map rather than against the base.
+        assert_eq!(
+            term_with_base("<http://other.example/a>"),
+            term("<http://other.example/a>")
+        );
+        assert_eq!(term_with_base("ex:alice"), alice());
+    }
+
+    #[test]
+    fn test_parse_term_rejects_an_iri_that_cannot_be_made_absolute() {
+        // With no base (wasm with none configured) a relative IRI cannot be resolved,
+        // and goes nowhere near the data: `load_data` refuses the same input.
+        for text in ["<alice>", "\"23\"^^<integer>"] {
+            let err = parse_term(text, None, &prefixmap(), Lax).unwrap_err();
+            assert!(
+                err.to_string().contains("alice") || err.to_string().contains("integer"),
+                "{err}"
+            );
+        }
+        assert!(parse_subject("<alice>", None, &prefixmap(), Lax).is_err());
+        assert!(parse_predicate_iri("<name>", None, &prefixmap()).is_err());
     }
 
     #[test]
