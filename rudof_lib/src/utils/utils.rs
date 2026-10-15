@@ -48,7 +48,7 @@ pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
     }
 }
 
-pub fn get_base_iri(rudof: &mut Rudof, base_iri: Option<&str>) -> Result<IriS> {
+pub fn get_base_iri(rudof: &Rudof, base_iri: Option<&str>) -> Result<IriS> {
     if let Some(base_iri) = base_iri {
         let base_iri = IriS::from_str(base_iri).map_err(|error| IriError::ParseError {
             iri: base_iri.to_string(),
