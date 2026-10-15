@@ -5,6 +5,8 @@ use crate::{
     types::{Data, NodeNeighborhood},
     utils::{convert_predicate_strings_to_iris, parse_node_selector, session_base_iri},
 };
+use prefixmap::DerefIri;
+use rudof_rdf::rdf_core::Rdf;
 use sparql_service::RdfData;
 
 /// Returns a lazy iterator over the neighborhood of every node matched by `node`
@@ -21,12 +23,20 @@ pub fn node_neighborhood<'a>(
     };
     let rdf: &'a RdfData = rdf;
 
-    let node_selector = parse_node_selector(node, iri_mode)?;
+    let base = session_base_iri(rudof)?;
+
+    let node_selector = parse_node_selector(node, iri_mode)?
+        .deref_iri(base.as_ref(), Some(&rdf.prefixmap().unwrap_or_default()))
+        .map_err(|e| {
+            Box::new(DataError::FailedTermResolution {
+                term: node.trim().to_string(),
+                error: e.to_string(),
+            })
+        })?;
     let roots = node_selector
         .nodes(rdf)
         .map_err(|e| Box::new(DataError::FailedArcRetrieval { error: e.to_string() }))?;
 
-    let base = session_base_iri(rudof)?;
     let predicates = convert_predicate_strings_to_iris(predicates.unwrap_or_default(), base.as_ref(), rdf)?;
     let directions = mode.copied().unwrap_or_default().directions();
 
