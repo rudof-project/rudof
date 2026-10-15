@@ -234,4 +234,82 @@ mod tests {
             .unwrap();
         assert_eq!(parsed_shapemap, expected)
     }
+
+    // The three single-term entry points parse the whole of their input: what they cannot
+    // use is an error, not a term truncated to the part they can.
+
+    #[test]
+    fn test_parse_node_selector_takes_the_whole_input() {
+        for str in [
+            ":a",
+            "<http://example.org/a>",
+            "_:b1",
+            "\"Alice\"",
+            "\"Alice\"@en",
+            "23",
+            "\"23\"^^xsd:integer",
+            "{FOCUS a :Person}",
+            "  :a  ",
+            ":a # a comment\n",
+        ] {
+            assert!(
+                ShapeMapParser::parse_node_selector(str).is_ok(),
+                "{str} is not parsed as a node selector"
+            );
+        }
+    }
+
+    #[test]
+    fn test_parse_node_selector_rejects_trailing_input() {
+        for (str, rest) in [
+            (":a basura", "basura"),
+            (":a @ :S {", "@ :S {"),
+            ("\"Hola\"@es--rtl", "--rtl"),
+            ("\"lit\" and trailing garbage", "and trailing garbage"),
+            ("{FOCUS a :Person} :a", ":a"),
+            // `pname_ns` takes `http:`, and `//example.org/a` cannot start a local name.
+            ("http://example.org/a", "//example.org/a"),
+        ] {
+            let err = ShapeMapParser::parse_node_selector(str).unwrap_err();
+            assert!(
+                err.to_string().contains(&format!("Unexpected trailing input: {rest}")),
+                "{str}: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_parse_shape_selector_takes_the_whole_input() {
+        for str in [":S", "<http://example.org/S>", "START", "start", "  :S  "] {
+            assert!(
+                ShapeMapParser::parse_shape_selector(str).is_ok(),
+                "{str} is not parsed as a shape selector"
+            );
+        }
+
+        let err = ShapeMapParser::parse_shape_selector(":S basura").unwrap_err();
+        assert!(err.to_string().contains("Unexpected trailing input: basura"), "{err}");
+    }
+
+    #[test]
+    fn test_parse_iri_ref_takes_the_whole_input() {
+        for str in [":p", "ex:p", "<http://example.org/p>", "  ex:p  "] {
+            assert!(
+                ShapeMapParser::parse_iri_ref(str).is_ok(),
+                "{str} is not parsed as an IRI reference"
+            );
+        }
+
+        for (str, rest) in [
+            ("ex:p basura", "basura"),
+            ("<http://example.org/p> ex:q", "ex:q"),
+            ("http://example.org/p", "//example.org/p"),
+        ] {
+            let err = ShapeMapParser::parse_iri_ref(str).unwrap_err();
+            assert!(
+                err.to_string().contains(&format!("Unexpected trailing input: {rest}")),
+                "{str}: {err}"
+            );
+        }
+    }
 }
