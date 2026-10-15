@@ -77,6 +77,32 @@ rudof data user.ttl simple.ttl -r rdfxml -o output.rdf
 
 This merges multiple files given to the *same* `data` call. Inside `rudof shell`, where separate `data` calls can chain across a session, a second `data FILE` instead *replaces* the currently loaded data by default — add `--merge` to merge instead. See [shell](./shell.md#loading-data-again-replace-or-merge).
 
+## Reader mode
+
+`--reader-mode` says how much the parser checks what it reads. It applies to every command that
+reads RDF data, not just `data`.
+
+In `strict` mode, the default, every term is validated. The first error stops
+the whole document.
+
+```sh
+$ cat langstring.ttl
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+ex:a ex:b "x"^^rdf:langString .
+
+$ rudof data langstring.ttl
+Error: ... Parser error at line 3 between columns 16 and 30: The datatype of a literal without a language tag must not be rdf:langString
+```
+
+In `lax` mode the document is assumed to be valid, which skips those checks and makes parsing
+faster, and what cannot be read at all is skipped instead of stopping the document. It is best
+effort.
+
+```sh
+rudof data --reader-mode lax langstring.ttl
+```
+
 ## RDF visualization
 
 It is possible to generate a visual representation of simple RDF graphs by using the `--result-format` option and selecting a visual format like `svg` or `png`.
