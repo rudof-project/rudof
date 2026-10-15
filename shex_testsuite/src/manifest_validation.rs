@@ -248,12 +248,16 @@ impl ValidationEntry {
         let folder_iri_str = format!("{}/", path_iri.as_str());
         let base_str = Some(folder_iri_str.as_str());
 
+        // Lax: the suite's own data carries language tags that are not well-formed
+        // BCP 47 (`"septante"@fr-be-fbcl`, `"ab"@en-fr-jura`: a four-letter variant
+        // subtag), which strict mode refuses. What those entries test is language
+        // range matching, so the tags are read as written.
         let graph = OxigraphInMemory::parse_data(
             &self.action.data,
             &RDFFormat::Turtle,
             folder,
             base_str,
-            &ReaderMode::Strict,
+            &ReaderMode::Lax,
         )
         .map_err(|e| Box::new(ManifestError::SRDFError(e)))?;
         trace!("Data obtained from: {}", self.action.data);
