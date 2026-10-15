@@ -1,10 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use crate::ast::{ASTComponent, ASTNodeShape, ASTShape};
+    use crate::ast::{ASTComponent, ASTNodeExpr, ASTNodeShape, ASTShape};
     use crate::rdf::ShaclParser;
     use crate::types::Target;
     use rudof_iri::iri;
     use rudof_rdf::rdf_core::term::Object;
+    use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
     use rudof_rdf::rdf_core::{RDFFormat, SHACLPath};
     use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 
@@ -111,5 +112,92 @@ mod tests {
 
         let expected_shape = ASTShape::node_shape(expected_node_shape);
         assert_eq!(*shape, expected_shape);
+    }
+
+    fn node_shape_of(shape: &str, id: &str) -> ASTNodeShape {
+        let graph = OxigraphInMemory::from_str(shape, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
+        let ast = ShaclParser::new(graph).parse().unwrap();
+
+        match ast.get_shape(&Object::iri(iri!(id))).unwrap() {
+            ASTShape::NodeShape(ns) => (**ns).clone(),
+            _ => unreachable!(),
+        }
+    }
+
+    /// A plain boolean for `sh:deactivated` is the literal expression case of a
+    /// node expression.
+    #[test]
+    fn test_deactivated_boolean_is_a_literal_expression() {
+        let shape = r#"
+            @prefix :    <http://example.org/> .
+            @prefix sh:  <http://www.w3.org/ns/shacl#> .
+
+            :TestShape a sh:NodeShape ;
+                sh:deactivated true .
+        "#;
+
+        let shape = node_shape_of(shape, "http://example.org/TestShape");
+
+        match shape.components().first().unwrap() {
+            ASTComponent::Deactivated(ASTNodeExpr::Literal(ConcreteLiteral::BooleanLiteral(value))) => {
+                assert!(*value)
+            },
+            other => panic!("expected a literal expression, got {other}"),
+        }
+    }
+
+    /// A composite node expression is recognized by the `shnex:` property its
+    /// blank node is the subject of, recursively.
+    #[test]
+    fn test_deactivated_nested_node_expression() {
+        let shape = r#"
+            @prefix :      <http://example.org/> .
+            @prefix sh:    <http://www.w3.org/ns/shacl#> .
+            @prefix shnex: <http://www.w3.org/ns/shacl-node-expr#> .
+
+            :TestShape a sh:NodeShape ;
+                sh:deactivated [ shnex:exists [ shnex:pathValues :property1 ] ] .
+        "#;
+
+        let shape = node_shape_of(shape, "http://example.org/TestShape");
+
+        match shape.components().first().unwrap() {
+            ASTComponent::Deactivated(ASTNodeExpr::Exists(exists)) => match exists.as_ref() {
+                ASTNodeExpr::PathValues { path, focus_node } => {
+                    assert_eq!(*path, SHACLPath::iri(iri!("http://example.org/property1")));
+                    assert!(focus_node.is_none());
+                },
+                other => panic!("expected a path values expression, got {other}"),
+            },
+            other => panic!("expected an exists expression, got {other}"),
+        }
+    }
+
+    /// Parsing a node expression walks the focus node through the expression
+    /// tree. If it is not restored, every component declared after
+    /// `sh:deactivated` is parsed against the wrong node — the same hazard as
+    /// `test_subset_of_keeps_the_focus_for_later_components`.
+    #[test]
+    fn test_deactivated_keeps_the_focus_for_later_components() {
+        let shape = r#"
+            @prefix :      <http://example.org/> .
+            @prefix sh:    <http://www.w3.org/ns/shacl#> .
+            @prefix shnex: <http://www.w3.org/ns/shacl-node-expr#> .
+
+            :TestShape a sh:NodeShape ;
+                sh:deactivated [ shnex:exists [ shnex:pathValues :property1 ] ] ;
+                sh:minCount 1 .
+        "#;
+
+        let shape = node_shape_of(shape, "http://example.org/TestShape");
+
+        assert!(
+            shape
+                .components()
+                .iter()
+                .any(|c| matches!(c, ASTComponent::MinCount(1))),
+            "components parsed after sh:deactivated were lost: {:?}",
+            shape.components()
+        );
     }
 }
