@@ -401,6 +401,48 @@ fn test_parse_n3_that_is_not_rdf() {
     }
 }
 
+#[test]
+fn test_strict_mode_validates_the_terms_it_reads() {
+    const RDF: &str = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#>";
+    for (format, data) in [
+        // rdf:langString as the datatype of a literal with no language tag
+        (
+            RDFFormat::Turtle,
+            format!("prefix : <http://example.org/> prefix rdf: {RDF} :x :p \"a\"^^rdf:langString ."),
+        ),
+        // A language tag that is not well-formed BCP 47: a subtag of more than eight characters
+        (
+            RDFFormat::Turtle,
+            "prefix : <http://example.org/> :x :p \"a\"@abcdefghijkl .".to_string(),
+        ),
+        (
+            RDFFormat::TriG,
+            format!("prefix : <http://example.org/> prefix rdf: {RDF} :g {{ :x :p \"a\"^^rdf:langString }}"),
+        ),
+        (
+            RDFFormat::N3,
+            "@prefix : <http://example.org/> . :x :p \"a\"@abcdefghijkl .".to_string(),
+        ),
+    ] {
+        let err = OxigraphInMemory::from_str(&data, &format, None, &ReaderMode::Strict).unwrap_err();
+        assert!(err.to_string().contains(&format.to_string()), "{data}: {err}");
+        // Lax mode stays lenient, so the term is read as it is: it is best effort
+        let graph = OxigraphInMemory::from_str(&data, &format, None, &ReaderMode::Lax).unwrap();
+        assert_eq!(graph.len(), 1, "{data}");
+    }
+}
+
+#[test]
+fn test_strict_mode_reads_rdf_12_terms() {
+    let turtle = r#"
+@base <http://example.org/> .
+prefix : <http://example.org/>
+<x> :p "Shalom"@he--rtl .
+<y> :q <<( <x> :p "a" )>> .
+"#;
+    let graph = OxigraphInMemory::from_str(turtle, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+    assert_eq!(graph.len(), 2);
+}
 // RDF/XML
 
 // RDF/XML is parsed with oxrdfxml directly, not through oxrdfio, so the RDF 1.2

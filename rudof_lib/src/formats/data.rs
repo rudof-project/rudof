@@ -33,15 +33,16 @@ pub enum DataFormat {
     Pg,
 }
 
-/// Data parser mode for error handling during data reading.
+/// Data parser mode for validation and error handling during data reading.
 ///
-/// Determines how Rudof handles errors and malformed data when parsing input data.
-/// This controls the parser's tolerance level for syntactic issues.
+/// Determines how much Rudof validates the data it reads, and what it does with
+/// an error: see [`ReaderMode`], which this is the public name of.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub enum DataReaderMode {
-    /// Lenient parsing mode that attempts error recovery.
+    /// Lenient parsing mode: assumes the document is valid, which skips
+    /// validations and recovers from an error by skipping what it could not read.
     Lax,
-    /// Strict parsing mode that fails on any error (default).
+    /// Strict parsing mode that validates every term and fails on any error (default).
     #[default]
     Strict,
 }
