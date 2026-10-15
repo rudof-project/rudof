@@ -139,7 +139,7 @@ impl OxigraphInMemory {
     /// * `source_name` - Name used for error reporting
     /// * `format` - RDF serialization format
     /// * `base` - Optional base IRI for resolving relative IRIs
-    /// * `reader_mode` - Controls error handling (strict or lax)
+    /// * `reader_mode` - Controls validation and error handling (strict or lax)
     ///
     /// # Errors
     ///
@@ -189,11 +189,11 @@ impl OxigraphInMemory {
     /// * `reader` - Input stream containing Turtle data
     /// * `source_name` - Name used for error reporting
     /// * `base` - Optional base IRI for resolving relative IRIs
-    /// * `reader_mode` - Controls error handling (strict or lax)
+    /// * `reader_mode` - Controls validation and error handling (strict or lax)
     ///
     /// # Errors
     ///
-    /// Returns an error if parsing fails in strict mode.
+    /// Returns an error if parsing fails, or a term is not valid, in strict mode.
     fn parse_turtle<R: io::Read>(
         &mut self,
         reader: &mut R,
@@ -261,11 +261,11 @@ impl OxigraphInMemory {
     /// * `reader` - Input stream containing TriG data
     /// * `source_name` - Name used for error reporting
     /// * `base` - Optional base IRI for resolving relative IRIs
-    /// * `reader_mode` - Controls error handling (strict or lax)
+    /// * `reader_mode` - Controls validation and error handling (strict or lax)
     ///
     /// # Errors
     ///
-    /// Returns an error if parsing fails in strict mode.
+    /// Returns an error if parsing fails, or a term is not valid, in strict mode.
     fn parse_trig<R: io::Read>(
         &mut self,
         reader: &mut R,
@@ -320,11 +320,12 @@ impl OxigraphInMemory {
     /// * `reader` - Input stream containing N3 data
     /// * `source_name` - Name used for error reporting
     /// * `base` - Optional base IRI for resolving relative IRIs
-    /// * `reader_mode` - Controls error handling (strict or lax)
+    /// * `reader_mode` - Controls validation and error handling (strict or lax)
     ///
     /// # Errors
     ///
-    /// Returns an error if parsing fails, or the data is not RDF, in strict mode.
+    /// Returns an error if parsing fails, a term is not valid, or the data is not
+    /// RDF, in strict mode.
     fn parse_n3<R: io::Read>(
         &mut self,
         reader: &mut R,
@@ -1372,19 +1373,26 @@ fn handle_parse_error<T, E: std::fmt::Display>(
 
 /// Reader mode when parsing RDF data files.
 ///
-/// Controls how parsing errors are handled during RDF data ingestion.
+/// Controls how much the parser validates, and what it does with an error.
 ///
 /// # Variants
 ///
-/// * `Strict` - Stops when there is an error
-/// * `Lax` - Emits a warning and continues processing
+/// * `Strict` - Validates every term and stops when there is an error
+/// * `Lax` - Assumes the document is valid and continues processing after an error
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
 pub enum ReaderMode {
-    /// Stops when there is an error.
+    /// Validates every term and stops when there is an error.
+    ///
+    /// The validations are the parser's own.
     #[default]
     Strict,
 
-    /// Emits a warning and continues processing.
+    /// Assumes the document is valid, which skips those validations, and
+    /// continues processing after an error.
+    ///
+    /// Best effort: parsing is faster, an ill-formed term is read as it is
+    /// written, and what cannot be read at all is skipped instead of stopping
+    /// the whole document.
     Lax,
 }
 
