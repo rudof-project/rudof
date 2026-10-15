@@ -30,7 +30,7 @@ impl Var {
         _: &mut dyn Engine<Rdf>,
         _: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
-        if self.var.len() == 0 {
+        if self.var.is_empty() {
             return Err(NodeExprEvalError::EmptyVar(self.clone()).into());
         }
         if self.var == "focusNode" {
