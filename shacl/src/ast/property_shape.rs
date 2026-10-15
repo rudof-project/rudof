@@ -31,8 +31,8 @@ pub struct ASTPropertyShape {
     // annotations: Vec<(IriRef, RDFNode)>
 
     // TODO - For node expr
-    // default_value: Option<NodeExpr<RDF>>, // ONLY WHEN PATH IS PREDICATE PATH
-    // values: Option<NodeExpr<RDF>> // ONLY WHEN PATH IS PREDICATE PATH
+    default_value: Option<ASTNodeExpr>, // ONLY WHEN PATH IS PREDICATE PATH
+    values: Option<ASTNodeExpr> // ONLY WHEN PATH IS PREDICATE PATH
 }
 
 impl ASTPropertyShape {
@@ -51,9 +51,8 @@ impl ASTPropertyShape {
             order: None,
             group: None,
             reifier_info: None,
-            // TODO - For NodeExpr, do not delete
-            // default_value: None,
-            // values: None,
+            default_value: None,
+            values: None,
         }
     }
 
