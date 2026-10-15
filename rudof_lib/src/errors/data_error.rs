@@ -114,6 +114,11 @@ pub enum DataError {
     #[error("Failed resolving prefix '{prefix}': {error}")]
     FailedPrefixResolution { prefix: String, error: String },
 
+    /// Failed to resolve the IRIs a term given as text contains: its own, its datatype,
+    /// or those of a triple pattern, against the base IRI and the prefix map.
+    #[error("Failed resolving the IRIs of '{term}': {error}")]
+    FailedTermResolution { term: String, error: String },
+
     /// Failed to retrieve arcs for a node.
     #[error("Failed retrieving arcs for node: {error}")]
     FailedArcRetrieval { error: String },

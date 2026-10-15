@@ -82,3 +82,27 @@ fn test_node_neighborhood_incoming_outgoing_depth_1() {
 
     assert!(neighborhood.next().is_none());
 }
+
+#[test]
+fn test_node_neighborhood_resolves_relative_iris_against_the_base() {
+    let config = RudofConfig::from_str("base_iri = \"http://example.org/\"\n").unwrap();
+    let mut rudof = Rudof::new(config);
+    let data = InputSpec::from_str(GRAPH).unwrap();
+    rudof.load_data().with_data(&[data]).execute().unwrap();
+
+    // The node and the predicates: a relative IRI used to be looked up as it was
+    // written, which matches nothing in a graph whose IRIs are absolute.
+    let arcs: Vec<NeighborArc> = rudof
+        .node_neighborhood("<a>")
+        .with_predicates(&["<p>".to_string()])
+        .with_mode(&NodeInspectionMode::Outgoing)
+        .execute()
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+
+    assert_eq!(arcs.len(), 1);
+    assert_eq!(arcs[0].node, node("a"));
+    assert_eq!(arcs[0].predicate, iri("p"));
+    assert_eq!(arcs[0].neighbor, node("b"));
+}

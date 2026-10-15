@@ -237,6 +237,77 @@ fn test_add_and_remove_a_triple_with_the_session_prefixes() {
     assert!(triples(&rudof, Some(":carol"), None, None).is_empty());
 }
 
+/// A session whose configured base IRI is the one the data uses, so a relative IRI
+/// written in a term denotes the same node as the data's `:` prefix.
+fn session_with_base() -> Rudof {
+    let config = RudofConfig::from_str("base_iri = \"http://example.org/\"\n").unwrap();
+    let mut rudof = Rudof::new(config);
+    let data = InputSpec::from_str(GRAPH).unwrap();
+    rudof.load_data().with_data(&[data]).execute().unwrap();
+    rudof
+}
+
+#[test]
+fn test_a_relative_iri_is_resolved_against_the_base() {
+    let mut rudof = session_with_base();
+
+    // Every position of the triple: the relative IRIs used to reach the graph as they
+    // were written, and serializing wrote out something that is not valid RDF.
+    rudof.add_triple("<carol>", "<name>", "\"Carol\"").execute().unwrap();
+    rudof.add_triple("<carol>", "<knows>", "<alice>").execute().unwrap();
+
+    assert_eq!(
+        triples(&rudof, Some("<carol>"), None, None),
+        vec![
+            Triple {
+                subject: node("carol"),
+                predicate: iri("knows"),
+                object: node("alice"),
+            },
+            Triple {
+                subject: node("carol"),
+                predicate: iri("name"),
+                object: literal("Carol"),
+            },
+        ]
+    );
+
+    // So the resolved term denotes the node the data's prefix does, and the data that
+    // comes out carries absolute IRIs only.
+    assert_eq!(
+        triples(&rudof, Some(":carol"), None, None),
+        triples(&rudof, Some("<carol>"), None, None)
+    );
+    let mut turtle = Vec::new();
+    rudof.serialize_data(&mut turtle).execute().unwrap();
+    let turtle = String::from_utf8(turtle).unwrap();
+    assert!(turtle.contains(":carol"), "{turtle}");
+    assert!(!turtle.contains("<carol>"), "{turtle}");
+
+    // And a removal written the same way removes what was added.
+    rudof.remove_triple("<carol>", "<name>", "\"Carol\"").execute().unwrap();
+    assert_eq!(triples(&rudof, Some(":carol"), Some(":name"), None).len(), 0);
+}
+
+#[test]
+fn test_a_relative_datatype_is_resolved_against_the_base() {
+    let mut rudof = session_with_base();
+    rudof
+        .add_triple("<carol>", "<age>", "\"23\"^^<integer>")
+        .execute()
+        .unwrap();
+
+    assert_eq!(
+        triples(&rudof, Some("<carol>"), None, None),
+        triples(
+            &rudof,
+            Some(":carol"),
+            None,
+            Some("\"23\"^^<http://example.org/integer>")
+        )
+    );
+}
+
 #[test]
 fn test_triple_operations_need_rdf_data() {
     let mut rudof = Rudof::new(RudofConfig::default());
