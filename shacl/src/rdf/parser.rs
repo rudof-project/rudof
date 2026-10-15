@@ -1,6 +1,7 @@
-use crate::ast::{ASTSchema, ASTShape};
+use crate::ast::{ASTNodeExpr, ASTSchema, ASTShape};
 use crate::rdf::State;
 use crate::rdf::error::ShaclParserError;
+use crate::rdf::parsers::node_expr::node_expr_from_term;
 use crate::rdf::parsers::{node_shape, property_shape};
 use itertools::Itertools;
 use rudof_rdf::rdf_core::parser::RDFParse;
@@ -8,7 +9,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ListParser, Suc
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::Triple;
-use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclVocab};
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclNodeExprVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{Any, FocusRDF, Matcher};
 use std::collections::{HashMap, HashSet};
 
@@ -41,6 +42,13 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         Ok(
             ASTSchema::new().with_prefixmap(pm).with_shapes(self.shapes.clone()), // TODO - Maybe avoid the shapes clone
         )
+    }
+
+    /// Parses a node expression from `term`.
+    pub fn parse_node_expr(&mut self, term: &RDF::Term) -> Result<ASTNodeExpr, ShaclParserError> {
+        let expr = node_expr_from_term(term, self.rdf_parser.rdf_mut())?;
+
+        Ok(expr)
     }
 
     /// Shapes candidates are defined in Appendix A of SHACL spec (Syntax rules)
@@ -118,6 +126,12 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         })?;
         // elements of `sh:reifierShape` list
         let sh_reifier_shape_values = self.objects_with_predicate(&ShaclVocab::sh_reifier_shape().into())?;
+        // SHACL 1.2 node expressions
+        let shnex_nodes_matching_values =
+            self.objects_with_predicate(&ShaclNodeExprVocab::shnex_nodes_matching().into())?;
+        let shnex_filter_shape_values = self.objects_with_predicate(&ShaclNodeExprVocab::shnex_filter_shape().into())?;
+        let shnex_find_first_values = self.objects_with_predicate(&ShaclNodeExprVocab::shnex_find_first().into())?;
+        let shnex_match_all_values = self.objects_with_predicate(&ShaclNodeExprVocab::shnex_match_all().into())?;
 
         node_shapes_instances.extend(property_shapes_instances);
         node_shapes_instances.extend(shape_instances);
@@ -133,6 +147,10 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         node_shapes_instances.extend(sh_node_values);
         node_shapes_instances.extend(sh_xone_values);
         node_shapes_instances.extend(sh_reifier_shape_values);
+        node_shapes_instances.extend(shnex_nodes_matching_values);
+        node_shapes_instances.extend(shnex_filter_shape_values);
+        node_shapes_instances.extend(shnex_find_first_values);
+        node_shapes_instances.extend(shnex_match_all_values);
 
         Ok(node_shapes_instances
             .into_iter()
