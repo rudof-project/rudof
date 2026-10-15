@@ -9,7 +9,7 @@ use crossterm::terminal;
 use oxrdf::Triple as OxTriple;
 use prefixmap::{DerefIri, IriRef, PrefixMap};
 use rudof_iri::IriS;
-use rudof_rdf::rdf_core::{NeighsRDF, Rdf, query::SparqlQuery, term::Object};
+use rudof_rdf::rdf_core::{NeighsRDF, Rdf, query::SparqlQuery, term::Object, term::literal::ConcreteLiteral};
 use shex_ast::{ObjectValue, ShapeMapParser, shapemap::NodeSelector};
 use sparql_service::RdfData;
 #[cfg(not(target_family = "wasm"))]
@@ -368,7 +368,19 @@ pub fn parse_term(
             })?;
             Object::Iri(absolute_iri(iri)?)
         },
-        NodeSelector::Node(ObjectValue::Literal(literal)) => Object::Literal(literal),
+        NodeSelector::Node(ObjectValue::Literal(literal)) => {
+            // The datatype of a literal is an IRI that reaches the graph as well.
+            if let ConcreteLiteral::DatatypeLiteral { datatype, .. } = &literal {
+                let datatype = datatype.get_iri().map_err(|e| {
+                    Box::new(DataError::FailedTermResolution {
+                        term: term.trim().to_string(),
+                        error: e.to_string(),
+                    })
+                })?;
+                absolute_iri(datatype)?;
+            }
+            Object::Literal(literal)
+        },
         NodeSelector::BNode(label) => Object::BlankNode(label),
         _ => {
             return Err(Box::new(DataError::NotATerm {
@@ -424,7 +436,7 @@ fn parse_iri_ref(iri: &str) -> Result<IriRef> {
 mod tests {
     use super::*;
     use crate::formats::IriNormalizationMode::{Lax, Strict};
-    use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
+    use rudof_rdf::rdf_core::term::literal::Lang;
 
     fn prefixmap() -> PrefixMap {
         let mut pm = PrefixMap::new();
