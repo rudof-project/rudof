@@ -434,10 +434,13 @@ mod tests {
 
     #[test]
     fn test_parse_term_rejects_what_is_not_a_term() {
-        // A prefix nothing declares, and selectors that denote a set of nodes rather
-        // than one term.
+        // A prefix nothing declares, text the parser cannot use,
+        // and selectors that denote a set of nodes
+        // rather than one term.
         for text in [
             "other:alice",
+            "ex:alice basura",
+            "\"Hola\"@es--rtl",
             "{FOCUS ex:p ex:alice}",
             "SPARQL 'SELECT ?x WHERE { ?x ?p ?o }'",
         ] {
