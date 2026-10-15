@@ -300,7 +300,7 @@ oxiri = { version = "0.3.1" }
 oxjsonld = { version = "0.2.5", features = ["rdf-12"] }
 oxrdf = { version = "0.3.3", features = ["oxsdatatypes", "rdf-12"] }
 oxrdfio = { version = "0.2.5", features = ["rdf-12"] }
-oxrdfxml = { version = "0.2.3" }
+oxrdfxml = { version = "0.2.3", features = ["rdf-12"] }
 oxsdatatypes = "0.2.2"
 oxttl = { version = "0.2.3", features = ["rdf-12"] }
 paste = "1.0.15"

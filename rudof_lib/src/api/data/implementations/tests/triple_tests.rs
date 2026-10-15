@@ -332,20 +332,20 @@ fn test_triple_operations_reject_terms_that_are_not_terms() {
     let err = rudof.add_triple(":a", "\"name\"", ":b").execute().unwrap_err();
     assert!(err.to_string().contains("Iri ref"), "{err}");
     // A bare IRI is not accepted as a predicate even in the lax mode, which relaxes
-    // the subject and the object only: it is read as the prefixed name it looks like.
+    // the subject and the object only: it is read as a prefixed name, whose local part
+    // cannot hold the rest of the IRI.
     let err = rudof
         .add_triple(":a", "http://example.org/name", ":b")
         .execute()
         .unwrap_err();
-    assert!(err.to_string().contains("prefix 'http'"), "{err}");
+    assert!(err.to_string().contains("Unexpected trailing input"), "{err}");
 
     // An undeclared prefix is an error rather than an unresolved term.
     let err = rudof.add_triple("other:a", ":p", ":b").execute().unwrap_err();
     assert!(err.to_string().contains("other"), "{err}");
 
     // A bare IRI is accepted in the default lax mode, which wraps it in angle
-    // brackets. In the strict one it is read as the prefixed name it looks like, and
-    // its "prefix" resolves to nothing.
+    // brackets. In the strict one it is read as a prefixed name and rejected.
     rudof
         .add_triple("http://example.org/carol", ":name", "\"Carol\"")
         .execute()
@@ -355,7 +355,7 @@ fn test_triple_operations_reject_terms_that_are_not_terms() {
         .with_iri_mode(IriNormalizationMode::Strict)
         .execute()
         .unwrap_err();
-    assert!(err.to_string().contains("Alias 'http' not found"), "{err}");
+    assert!(err.to_string().contains("Unexpected trailing input"), "{err}");
 
     // A selector that picks nodes out of the data is not a term.
     let err = rudof
@@ -364,6 +364,45 @@ fn test_triple_operations_reject_terms_that_are_not_terms() {
         .execute()
         .unwrap_err();
     assert!(err.to_string().contains("is not a term"), "{err}");
+}
+
+#[test]
+fn test_triple_operations_reject_terms_with_trailing_input() {
+    let mut rudof = session();
+
+    let err = rudof
+        .add_triple(":carol", ":greeting", "\"Hola\"@es--rtl")
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("Unexpected trailing input: --rtl"), "{err}");
+    let err = rudof
+        .add_triple(":carol", ":name", "\"Carol\" and trailing garbage")
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("Unexpected trailing input"), "{err}");
+
+    let err = rudof
+        .add_triple(":carol basura", ":name", "\"Carol\"")
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("Unexpected trailing input: basura"), "{err}");
+    let err = rudof
+        .add_triple(":carol", ":name basura", "\"Carol\"")
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("Unexpected trailing input: basura"), "{err}");
+
+    let err = rudof
+        .remove_triple(":alice", ":name", "\"Alice\"@es--rtl")
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("Unexpected trailing input: --rtl"), "{err}");
+
+    let err = rudof.triples().with_object("\"Alice\" basura").execute().unwrap_err();
+    assert!(err.to_string().contains("Unexpected trailing input: basura"), "{err}");
+
+    // Nothing of this changed the data.
+    assert_eq!(all(&rudof).len(), 4);
 }
 
 #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
