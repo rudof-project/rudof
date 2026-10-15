@@ -56,6 +56,9 @@ pub enum ParseError {
     #[error("Expected further input: {0}")]
     MissingInput(String),
 
+    #[error("Unexpected trailing input: {0}")]
+    TrailingInput(String),
+
     #[error(r#"Expected "{0}""#)]
     ExpectedToken(String),
 

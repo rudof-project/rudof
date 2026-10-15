@@ -11,10 +11,12 @@ use crate::rdf_core::{
 };
 use crate::rdf_impl::{OxigraphInMemory, ReaderMode};
 use crate::rdf_parser;
+use oxrdf::BaseDirection;
 use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
 use oxrdf::NamedOrBlankNode as OxSubject;
 use oxrdf::Term as OxTerm;
+use oxrdf::Triple as OxTriple;
 use rudof_iri::IriS;
 use std::collections::HashSet;
 
@@ -440,6 +442,51 @@ prefix : <http://example.org/>
 "#;
     let graph = OxigraphInMemory::from_str(turtle, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
     assert_eq!(graph.len(), 2);
+}
+// RDF/XML
+
+// RDF/XML is parsed with oxrdfxml directly, not through oxrdfio, so the RDF 1.2
+// constructs are read only while that crate has its `rdf-12` feature on.
+#[test]
+fn test_parse_rdfxml_rdf12_terms() {
+    // Without rdf:version="1.2" both constructs are silently ignored, as RDF/XML 1.2 asks
+    let rdfxml = r#"<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:its="http://www.w3.org/2005/11/its"
+         xmlns="http://example.org/"
+         rdf:version="1.2">
+  <rdf:Description rdf:about="http://example.org/x">
+    <p xml:lang="he" its:dir="rtl">Shalom</p>
+    <q rdf:parseType="Triple">
+      <rdf:Description rdf:about="http://example.org/s">
+        <r rdf:resource="http://example.org/o"/>
+      </rdf:Description>
+    </q>
+  </rdf:Description>
+</rdf:RDF>
+"#;
+    let graph = OxigraphInMemory::from_str(rdfxml, &RDFFormat::Rdfxml, None, &ReaderMode::Strict).unwrap();
+    assert_eq!(graph.len(), 2, "the triple term is one term, not a reification");
+
+    let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p");
+    let shalom: OxTerm = OxLiteral::new_directional_language_tagged_literal("Shalom", "he", BaseDirection::Rtl)
+        .unwrap()
+        .into();
+    assert_eq!(graph.triples_matching(&x, &p, &shalom).unwrap().count(), 1, "its:dir");
+
+    let q = OxNamedNode::new_unchecked("http://example.org/q");
+    let triple_term: OxTerm = OxTriple::new(
+        OxNamedNode::new_unchecked("http://example.org/s"),
+        OxNamedNode::new_unchecked("http://example.org/r"),
+        OxNamedNode::new_unchecked("http://example.org/o"),
+    )
+    .into();
+    assert_eq!(
+        graph.triples_matching(&x, &q, &triple_term).unwrap().count(),
+        1,
+        "rdf:parseType=\"Triple\""
+    );
 }
 
 // The store that answers SPARQL queries is built from the graph on demand, so a
