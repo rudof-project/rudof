@@ -1,3 +1,4 @@
+use crate::LocatedParseError;
 use crate::ParseError;
 use crate::Span;
 use crate::compact::shapemap_grammar::ShapeMapStatement;
@@ -9,6 +10,8 @@ use crate::shapemap::ShapeSelector;
 use crate::shapemap::query_shape_map::QueryShapeMap;
 use crate::tws0;
 use nom::Err;
+use nom::Parser;
+use nom::sequence::delimited;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
@@ -75,7 +78,7 @@ impl ShapeMapParser<'_> {
 
     pub fn parse_shape_selector(str: &str) -> Result<ShapeSelector> {
         let span = Span::new(str);
-        let (_, ss) = shape_spec()(span).map_err(|e| match e {
+        let ss = parse_whole(span, shape_spec()).map_err(|e| match e {
             Err::Incomplete(s) => ParseError::Custom {
                 msg: format!("Incomplete input: needed {s:?}"),
             },
@@ -87,7 +90,7 @@ impl ShapeMapParser<'_> {
 
     pub fn parse_node_selector(str: &str) -> Result<NodeSelector> {
         let span = Span::new(str);
-        let (_, ns) = node_selector()(span).map_err(|e| match e {
+        let ns = parse_whole(span, node_selector()).map_err(|e| match e {
             Err::Incomplete(s) => ParseError::Custom {
                 msg: format!("Incomplete input parsing node selector {str}: needed {s:?}"),
             },
@@ -105,7 +108,7 @@ impl ShapeMapParser<'_> {
 
     pub fn parse_iri_ref(str: &str) -> Result<IriRef> {
         let span = Span::new(str);
-        let (_, iri_ref) = iri(span).map_err(|e| match e {
+        let iri_ref = parse_whole(span, iri).map_err(|e| match e {
             Err::Incomplete(s) => ParseError::Custom {
                 msg: format!("Incomplete input: needed {s:?}"),
             },
@@ -113,6 +116,25 @@ impl ShapeMapParser<'_> {
             Err::Failure(f) => ParseError::NomError { err: Box::new(f) },
         })?;
         Ok(iri_ref)
+    }
+}
+
+/// Runs `parser` over the whole of `span`, with whitespace and comments allowed around it.
+///
+/// Input the parser does not use is an error: a term rudof only partly understands must not be
+/// truncated to the part it does, which is a different, valid term. The whole-shapemap grammar
+/// already requires the same (`shapemap_grammar::shapemap_statement`).
+fn parse_whole<'a, T>(
+    span: Span<'a>,
+    parser: impl Parser<Span<'a>, Output = T, Error = LocatedParseError>,
+) -> std::result::Result<T, Err<LocatedParseError>> {
+    let (rest, value) = delimited(tws0, parser, tws0).parse(span)?;
+    if rest.is_empty() {
+        Ok(value)
+    } else {
+        Err(Err::Error(
+            ParseError::TrailingInput(rest.fragment().to_string()).at(rest),
+        ))
     }
 }
 
