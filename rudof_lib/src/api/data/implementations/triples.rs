@@ -23,7 +23,7 @@ pub fn triples<'a>(
         .map(|subject| parse_subject(subject, base.as_ref(), &prefixmap, iri_mode))
         .transpose()?;
     let predicate = predicate
-        .map(|predicate| parse_predicate_iri(predicate, &prefixmap))
+        .map(|predicate| parse_predicate_iri(predicate, base.as_ref(), &prefixmap))
         .transpose()?
         .map(Into::into);
     let object = object

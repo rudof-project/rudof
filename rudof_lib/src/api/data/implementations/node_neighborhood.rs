@@ -3,7 +3,7 @@ use crate::{
     errors::DataError,
     formats::{IriNormalizationMode, NodeInspectionMode},
     types::{Data, NodeNeighborhood},
-    utils::{convert_predicate_strings_to_iris, parse_node_selector},
+    utils::{convert_predicate_strings_to_iris, parse_node_selector, session_base_iri},
 };
 use sparql_service::RdfData;
 
@@ -26,7 +26,8 @@ pub fn node_neighborhood<'a>(
         .nodes(rdf)
         .map_err(|e| Box::new(DataError::FailedArcRetrieval { error: e.to_string() }))?;
 
-    let predicates = convert_predicate_strings_to_iris(predicates.unwrap_or_default(), rdf)?;
+    let base = session_base_iri(rudof)?;
+    let predicates = convert_predicate_strings_to_iris(predicates.unwrap_or_default(), base.as_ref(), rdf)?;
     let directions = mode.copied().unwrap_or_default().directions();
 
     Ok(NodeNeighborhood::new(

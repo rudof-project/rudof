@@ -164,44 +164,65 @@ pub fn parse_node_selector(node: &str, iri_mode: IriNormalizationMode) -> Result
     })
 }
 
-/// Converts predicate strings to IRI objects
-pub fn convert_predicate_strings_to_iris<S>(predicates: &[String], rdf: &S) -> Result<Vec<S::IRI>>
+/// Converts predicate strings to IRI objects, resolving a relative one against `base`
+pub fn convert_predicate_strings_to_iris<S>(predicates: &[String], base: Option<&IriS>, rdf: &S) -> Result<Vec<S::IRI>>
 where
     S: NeighsRDF,
 {
     predicates
         .iter()
         .map(|pred_str| {
-            let iri = resolve_iri_str(pred_str, |prefix, local| rdf.resolve_prefix_local(prefix, local))?;
+            let iri = resolve_iri_str(pred_str, base, |prefix, local| rdf.resolve_prefix_local(prefix, local))?;
             Ok(iri.into())
         })
         .collect()
 }
 
 /// Parses a predicate (an angle-bracketed IRI or a prefixed name) and resolves it
-/// against `prefixmap`.
+/// against `prefixmap`, and a relative one against `base`.
 ///
 /// The single-predicate counterpart of [`convert_predicate_strings_to_iris`], for the
 /// callers that resolve against a prefix map rather than the loaded data (see
 /// [`resolution_prefixmap`]). A bare IRI is not accepted, as there too.
-pub fn parse_predicate_iri(predicate: &str, prefixmap: &PrefixMap) -> Result<IriS> {
-    resolve_iri_str(predicate, |prefix, local| prefixmap.resolve_prefix_local(prefix, local))
+pub fn parse_predicate_iri(predicate: &str, base: Option<&IriS>, prefixmap: &PrefixMap) -> Result<IriS> {
+    resolve_iri_str(predicate, base, |prefix, local| {
+        prefixmap.resolve_prefix_local(prefix, local)
+    })
 }
 
-/// Parses an IRI reference and resolves a prefixed one with `resolve`.
-fn resolve_iri_str<F>(iri: &str, resolve: F) -> Result<IriS>
+/// Parses an IRI reference, resolves a prefixed one with `resolve` and a relative one
+/// against `base`, and checks that the IRI it ends up with is absolute.
+fn resolve_iri_str<F>(iri: &str, base: Option<&IriS>, resolve: F) -> Result<IriS>
 where
     F: FnOnce(&str, &str) -> std::result::Result<IriS, prefixmap::error::PrefixMapError>,
 {
     match parse_iri_ref(iri)? {
-        IriRef::Iri(iri) => Ok(iri),
-        IriRef::Prefixed { prefix, local } => resolve(prefix.as_str(), local.as_str()).map_err(|e| {
-            Box::new(DataError::FailedPrefixResolution {
-                prefix: prefix.to_string(),
-                error: e.to_string(),
-            })
+        IriRef::Iri(iri) => resolve_absolute_iri(&iri, base),
+        IriRef::Prefixed { prefix, local } => {
+            let iri = resolve(prefix.as_str(), local.as_str()).map_err(|e| {
+                Box::new(DataError::FailedPrefixResolution {
+                    prefix: prefix.to_string(),
+                    error: e.to_string(),
+                })
+            })?;
+            absolute_iri(&iri)
+        },
+    }
+}
+
+/// Resolves `iri` against `base` when there is one, and checks that what comes out is
+/// an absolute IRI. [`parse_term`] gets both from `DerefIri` and [`absolute_iri`].
+fn resolve_absolute_iri(iri: &IriS, base: Option<&IriS>) -> Result<IriS> {
+    match base {
+        Some(base) => base.resolve_str(iri.as_str()).map_err(|error| {
+            IriError::ResolveError {
+                base: base.to_string(),
+                relative: iri.to_string(),
+                error: error.to_string(),
+            }
             .into()
         }),
+        None => absolute_iri(iri),
     }
 }
 
@@ -295,7 +316,7 @@ pub fn parse_triples(
         .map(|(subject, predicate, object)| {
             Ok(OxTriple::new(
                 parse_subject(subject, base.as_ref(), &prefixmap, iri_mode)?,
-                parse_predicate_iri(predicate, &prefixmap)?,
+                parse_predicate_iri(predicate, base.as_ref(), &prefixmap)?,
                 parse_term(object, base.as_ref(), &prefixmap, iri_mode)?,
             ))
         })
@@ -546,15 +567,15 @@ mod tests {
     fn test_parse_predicate_iri() {
         let pm = prefixmap();
         assert_eq!(
-            parse_predicate_iri("ex:name", &pm).unwrap(),
+            parse_predicate_iri("ex:name", None, &pm).unwrap(),
             IriS::new_unchecked("http://example.org/name")
         );
         assert_eq!(
-            parse_predicate_iri("<http://example.org/name>", &pm).unwrap(),
+            parse_predicate_iri("<http://example.org/name>", None, &pm).unwrap(),
             IriS::new_unchecked("http://example.org/name")
         );
         // As for the predicates of `node_neighborhood`, a bare IRI is not accepted.
-        assert!(parse_predicate_iri("http://example.org/name", &pm).is_err());
-        assert!(parse_predicate_iri("other:name", &pm).is_err());
+        assert!(parse_predicate_iri("http://example.org/name", None, &pm).is_err());
+        assert!(parse_predicate_iri("other:name", None, &pm).is_err());
     }
 }
