@@ -53,7 +53,11 @@ pub trait Engine<S: NeighsRDF>: Send {
         let targets_iter: Vec<_> = targets
             .iter()
             .flat_map(|target| match target {
-                Target::Node(n) => self.target_node(store, n),
+                // TODO - Try to figure how to compute all types of node expressions
+                Target::Node(e) => match e.as_constant() {
+                    Some(node) => self.target_node(store, &node),
+                    None => Err(ValidationError::TargetNodeExprNotConstant(e.to_string())),
+                },
                 Target::Class(c) => self.target_class(store, c),
                 Target::SubjectsOf(p) => self.target_subject_of(store, p),
                 Target::ObjectsOf(p) => self.target_object_of(store, p),
