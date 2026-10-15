@@ -6,6 +6,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - Staging of the loaded RDF data ([#865](https://github.com/rudof-project/rudof/issues/865)): `begin_staging`, `commit_staging`, `rollback_staging`, `staging_depth` and the `staging()` guard, which rolls its frame back when dropped. Only the data is staged; a rollback also clears the validation results, the query results and the loaded query. In Python as `with rudof.staging():`, in JavaScript as `beginStaging`/`commitStaging`/`rollbackStaging`/`stagingDepth`.
 - `add_triples` and `remove_triples`, applying a batch of triples in one operation: nothing is written unless every triple parses. Also in Python and as `addTriples`/`removeTriples` in JavaScript.
 ### Fixed
+- A node, a term, a shape label or a predicate given as text was truncated to the part the parser understood, and the rest of the input dropped ([#874](https://github.com/rudof-project/rudof/issues/874)): `rudof node -n 'ex:alice basura'` inspected `ex:alice`, `add_triple` stored a term nobody asked for, `remove_triple` reported success and removed nothing (or the wrong triple), `triples` answered a different query, and `"Hola"@es--rtl` became `"Hola"@es`. Input that is not fully used is now a parse error naming the text that could not be used, as a whole shapemap already was. Whitespace and comments around the term are still accepted.
 ### Changed
 ### Removed
 
