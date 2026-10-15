@@ -6,6 +6,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - Staging of the loaded RDF data ([#865](https://github.com/rudof-project/rudof/issues/865)): `begin_staging`, `commit_staging`, `rollback_staging`, `staging_depth` and the `staging()` guard, which rolls its frame back when dropped. Only the data is staged; a rollback also clears the validation results, the query results and the loaded query. In Python as `with rudof.staging():`, in JavaScript as `beginStaging`/`commitStaging`/`rollbackStaging`/`stagingDepth`.
 - `add_triples` and `remove_triples`, applying a batch of triples in one operation: nothing is written unless every triple parses. Also in Python and as `addTriples`/`removeTriples` in JavaScript.
 ### Fixed
+- The Turtle, TriG and N3 parsers were built as lenient whatever the reader mode was ([#878](https://github.com/rudof-project/rudof/issues/878)), so `--reader-mode strict` validated none of what the parser itself checks and ill-formed terms reached the graph: a literal with no language tag whose datatype is `rdf:langString`, a language tag that is not well-formed BCP 47, or an IRI that is not valid once resolved against the base. Strict mode, the default, now validates every term and stops at the first error. Lax mode stays lenient: it is best effort, so an ill-formed term is still read as it is written.
 ### Changed
 ### Removed
 
