@@ -7,9 +7,9 @@ use crate::{
 #[cfg(not(target_family = "wasm"))]
 use crossterm::terminal;
 use oxrdf::Triple as OxTriple;
-use prefixmap::{IriRef, PrefixMap};
+use prefixmap::{DerefIri, IriRef, PrefixMap};
 use rudof_iri::IriS;
-use rudof_rdf::rdf_core::{NeighsRDF, Rdf, query::SparqlQuery, term::Object, term::literal::ConcreteLiteral};
+use rudof_rdf::rdf_core::{NeighsRDF, Rdf, query::SparqlQuery, term::Object};
 use shex_ast::{ObjectValue, ShapeMapParser, shapemap::NodeSelector};
 use sparql_service::RdfData;
 #[cfg(not(target_family = "wasm"))]
@@ -309,7 +309,15 @@ pub fn parse_term(term: &str, prefixmap: &PrefixMap, iri_mode: IriNormalizationM
             Object::Iri(iri.into_owned())
         },
         NodeSelector::Node(ObjectValue::Literal(literal)) => {
-            Object::Literal(resolve_literal_datatype(literal, prefixmap)?)
+            // A datatype left as a prefixed name (`"23"^^xsd:integer`) would be dropped
+            // when the literal becomes a term, storing a string instead of an integer.
+            let literal = literal.deref_iri(None, Some(prefixmap)).map_err(|e| {
+                Box::new(DataError::FailedTermResolution {
+                    term: term.trim().to_string(),
+                    error: e.to_string(),
+                })
+            })?;
+            Object::Literal(literal)
         },
         NodeSelector::BNode(label) => Object::BlankNode(label),
         _ => {
@@ -320,27 +328,6 @@ pub fn parse_term(term: &str, prefixmap: &PrefixMap, iri_mode: IriNormalizationM
         },
     };
     Ok(object.into())
-}
-
-/// Resolves the datatype of a literal written with a prefixed one
-/// (`"23"^^xsd:integer`) against `prefixmap`.
-fn resolve_literal_datatype(literal: ConcreteLiteral, prefixmap: &PrefixMap) -> Result<ConcreteLiteral> {
-    let ConcreteLiteral::DatatypeLiteral { lexical_form, datatype } = &literal else {
-        return Ok(literal);
-    };
-    let IriRef::Prefixed { prefix, local } = datatype else {
-        return Ok(literal);
-    };
-    let datatype = prefixmap.resolve_prefix_local(prefix, local).map_err(|e| {
-        Box::new(DataError::FailedPrefixResolution {
-            prefix: prefix.to_string(),
-            error: e.to_string(),
-        })
-    })?;
-    Ok(ConcreteLiteral::DatatypeLiteral {
-        lexical_form: lexical_form.clone(),
-        datatype: IriRef::Iri(datatype),
-    })
 }
 
 /// Parses a term written as text, as [`parse_term`] does, and takes it as a subject.
@@ -371,7 +358,7 @@ fn parse_iri_ref(iri: &str) -> Result<IriRef> {
 mod tests {
     use super::*;
     use crate::formats::IriNormalizationMode::{Lax, Strict};
-    use rudof_rdf::rdf_core::term::literal::Lang;
+    use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 
     fn prefixmap() -> PrefixMap {
         let mut pm = PrefixMap::new();
