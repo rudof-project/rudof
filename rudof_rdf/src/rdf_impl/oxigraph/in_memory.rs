@@ -201,9 +201,15 @@ impl OxigraphInMemory {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), OxigraphInMemoryError> {
+        let parser = TurtleParser::new();
+        let parser = if reader_mode.is_strict() {
+            parser
+        } else {
+            parser.lenient()
+        };
         let turtle_parser = match base {
-            None => TurtleParser::new().lenient(),
-            Some(iri) => TurtleParser::new().lenient().with_base_iri(iri)?,
+            None => parser,
+            Some(iri) => parser.with_base_iri(iri)?,
         };
 
         let mut turtle_reader = turtle_parser.for_reader(reader);
@@ -267,9 +273,15 @@ impl OxigraphInMemory {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), OxigraphInMemoryError> {
+        let parser = TriGParser::new();
+        let parser = if reader_mode.is_strict() {
+            parser
+        } else {
+            parser.lenient()
+        };
         let trig_parser = match base {
-            None => TriGParser::new().lenient(),
-            Some(iri) => TriGParser::new().lenient().with_base_iri(iri)?,
+            None => parser,
+            Some(iri) => parser.with_base_iri(iri)?,
         };
         let error = |e: String| OxigraphInMemoryError::TriGParseError {
             source_name: source_name.to_string(),
@@ -320,9 +332,15 @@ impl OxigraphInMemory {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), OxigraphInMemoryError> {
+        let parser = N3Parser::new();
+        let parser = if reader_mode.is_strict() {
+            parser
+        } else {
+            parser.lenient()
+        };
         let n3_parser = match base {
-            None => N3Parser::new().lenient(),
-            Some(iri) => N3Parser::new().lenient().with_base_iri(iri)?,
+            None => parser,
+            Some(iri) => parser.with_base_iri(iri)?,
         };
         let error = |e: String| OxigraphInMemoryError::N3ParseError {
             source_name: source_name.to_string(),
