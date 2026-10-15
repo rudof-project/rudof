@@ -3,7 +3,7 @@ use crate::{
     errors::DataError,
     formats::IriNormalizationMode,
     types::Triples,
-    utils::{parse_predicate_iri, parse_subject, parse_term, rdf_data, resolution_prefixmap},
+    utils::{parse_predicate_iri, parse_subject, parse_term, rdf_data, resolution_prefixmap, session_base_iri},
 };
 use rudof_rdf::rdf_core::{AnyOr, NeighsRDF};
 
@@ -17,16 +17,17 @@ pub fn triples<'a>(
 ) -> Result<Triples<'a>> {
     let rdf = rdf_data(rudof)?;
     let prefixmap = resolution_prefixmap(rudof, rdf);
+    let base = session_base_iri(rudof)?;
 
     let subject = subject
-        .map(|subject| parse_subject(subject, &prefixmap, iri_mode))
+        .map(|subject| parse_subject(subject, base.as_ref(), &prefixmap, iri_mode))
         .transpose()?;
     let predicate = predicate
         .map(|predicate| parse_predicate_iri(predicate, &prefixmap))
         .transpose()?
         .map(Into::into);
     let object = object
-        .map(|object| parse_term(object, &prefixmap, iri_mode))
+        .map(|object| parse_term(object, base.as_ref(), &prefixmap, iri_mode))
         .transpose()?;
 
     let triples = rdf

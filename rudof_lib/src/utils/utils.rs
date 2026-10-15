@@ -48,6 +48,13 @@ pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
     }
 }
 
+/// The base IRI `base_iri` names, or the session's one when it is `None`.
+///
+/// # Errors
+///
+/// Returns [`IriError::WasmNotSupported`] when the session has no base IRI, which can
+/// only happen on wasm: see [`session_base_iri`], the same thing for the callers that
+/// can work without one.
 pub fn get_base_iri(rudof: &Rudof, base_iri: Option<&str>) -> Result<IriS> {
     if let Some(base_iri) = base_iri {
         let base_iri = IriS::from_str(base_iri).map_err(|error| IriError::ParseError {
@@ -55,29 +62,44 @@ pub fn get_base_iri(rudof: &Rudof, base_iri: Option<&str>) -> Result<IriS> {
             error: error.to_string(),
         })?;
 
-        Ok(base_iri.clone())
-    } else if let Some(base_iri) = rudof.config.shex().base() {
-        Ok(base_iri.clone())
-    } else {
-        // There is no current directory to default to on wasm.
-        #[cfg(target_family = "wasm")]
-        return Err(IriError::WasmNotSupported {
+        return Ok(base_iri);
+    }
+
+    session_base_iri(rudof)?.ok_or_else(|| {
+        IriError::WasmNotSupported {
             operation: "defaulting the base IRI to the current directory (provide a base IRI)".to_string(),
         }
-        .into());
-        #[cfg(not(target_family = "wasm"))]
-        {
-            let cwd = env::current_dir().map_err(|e| IriError::PathConversionError {
-                path: ".".to_string(),
-                error: format!("Error resolving base IRI. Failed to get current directory: {e}"),
-            })?;
+        .into()
+    })
+}
 
-            let url = Url::from_directory_path(&cwd).map_err(|_| IriError::PathConversionError {
-                path: cwd.to_string_lossy().to_string(),
-                error: "Error resolving base IRI. Cannot convert current directory to a file URL".to_string(),
-            })?;
-            Ok(url.into())
-        }
+/// The base IRI of the session: the configured one (`base_iri`, which
+/// [`RudofConfig::resolve`](crate::RudofConfig) copies into each section), and failing
+/// that the current directory, as a document read with no base of its own is read
+/// relative to where it is.
+///
+/// `None` only where there is no current directory to fall back to (wasm with no base
+/// configured) and then a relative IRI cannot be resolved at all.
+pub(crate) fn session_base_iri(rudof: &Rudof) -> Result<Option<IriS>> {
+    if let Some(base_iri) = rudof.config.shex().base() {
+        return Ok(Some(base_iri.clone()));
+    }
+
+    // There is no current directory to default to on wasm.
+    #[cfg(target_family = "wasm")]
+    return Ok(None);
+    #[cfg(not(target_family = "wasm"))]
+    {
+        let cwd = env::current_dir().map_err(|e| IriError::PathConversionError {
+            path: ".".to_string(),
+            error: format!("Error resolving base IRI. Failed to get current directory: {e}"),
+        })?;
+
+        let url = Url::from_directory_path(&cwd).map_err(|_| IriError::PathConversionError {
+            path: cwd.to_string_lossy().to_string(),
+            error: "Error resolving base IRI. Cannot convert current directory to a file URL".to_string(),
+        })?;
+        Ok(Some(url.into()))
     }
 }
 
@@ -248,7 +270,8 @@ pub fn check_data_is_mutable(rdf: &RdfData) -> Result<()> {
 }
 
 /// Parses the triples of a batch written as text, resolving prefixed names against the
-/// prefixes of the loaded data and the session (see [`resolution_prefixmap`]) as
+/// prefixes of the loaded data and the session (see [`resolution_prefixmap`]) and
+/// relative IRIs against the session's base IRI (see [`session_base_iri`]), as
 /// [`parse_term`] does.
 ///
 /// Every triple is parsed before any of them is applied by the caller, so a batch
@@ -258,20 +281,22 @@ pub fn check_data_is_mutable(rdf: &RdfData) -> Result<()> {
 ///
 /// Returns an error if no RDF data is loaded, or, for the first triple that cannot be
 /// parsed, if one of its terms cannot be: the subject must be an IRI or a blank node
-/// and the predicate an IRI.
+/// and the predicate an IRI, and an IRI that cannot be made absolute is refused rather
+/// than stored as it is.
 pub fn parse_triples(
     rudof: &Rudof,
     triples: &[(&str, &str, &str)],
     iri_mode: IriNormalizationMode,
 ) -> Result<Vec<OxTriple>> {
     let prefixmap = resolution_prefixmap(rudof, rdf_data(rudof)?);
+    let base = session_base_iri(rudof)?;
     triples
         .iter()
         .map(|(subject, predicate, object)| {
             Ok(OxTriple::new(
-                parse_subject(subject, &prefixmap, iri_mode)?,
+                parse_subject(subject, base.as_ref(), &prefixmap, iri_mode)?,
                 parse_predicate_iri(predicate, &prefixmap)?,
-                parse_term(object, &prefixmap, iri_mode)?,
+                parse_term(object, base.as_ref(), &prefixmap, iri_mode)?,
             ))
         })
         .collect()
@@ -290,35 +315,39 @@ pub fn resolution_prefixmap(rudof: &Rudof, rdf: &RdfData) -> PrefixMap {
     prefixmap
 }
 
-/// Parses a term written as text into an RDF term, resolving
-/// prefixed names against `prefixmap`.
+/// Parses a term written as text into an RDF term, resolving prefixed names against
+/// `prefixmap` and relative IRIs against `base`.
 ///
 /// Terms are parsed with the same parser as node selectors, so the syntax is the one
 /// the rest of the API accepts, but only a single concrete node is a term: a triple
 /// pattern or a SPARQL query selects nodes from the data instead of denoting one, and
 /// is rejected.
-pub fn parse_term(term: &str, prefixmap: &PrefixMap, iri_mode: IriNormalizationMode) -> Result<RdfTerm> {
-    let object = match parse_node_selector(term, iri_mode)? {
+pub fn parse_term(
+    term: &str,
+    base: Option<&IriS>,
+    prefixmap: &PrefixMap,
+    iri_mode: IriNormalizationMode,
+) -> Result<RdfTerm> {
+    let selector = parse_node_selector(term, iri_mode)?
+        .deref_iri(base, Some(prefixmap))
+        .map_err(|e| {
+            Box::new(DataError::FailedTermResolution {
+                term: term.trim().to_string(),
+                error: e.to_string(),
+            })
+        })?;
+
+    let object = match selector {
         NodeSelector::Node(ObjectValue::IriRef(iri_ref)) => {
-            let iri = iri_ref.get_iri_prefixmap(prefixmap).map_err(|e| {
-                Box::new(DataError::FailedPrefixResolution {
-                    prefix: iri_ref.to_string(),
-                    error: e.to_string(),
-                })
-            })?;
-            Object::Iri(iri.into_owned())
-        },
-        NodeSelector::Node(ObjectValue::Literal(literal)) => {
-            // A datatype left as a prefixed name (`"23"^^xsd:integer`) would be dropped
-            // when the literal becomes a term, storing a string instead of an integer.
-            let literal = literal.deref_iri(None, Some(prefixmap)).map_err(|e| {
+            let iri = iri_ref.get_iri().map_err(|e| {
                 Box::new(DataError::FailedTermResolution {
                     term: term.trim().to_string(),
                     error: e.to_string(),
                 })
             })?;
-            Object::Literal(literal)
+            Object::Iri(absolute_iri(iri)?)
         },
+        NodeSelector::Node(ObjectValue::Literal(literal)) => Object::Literal(literal),
         NodeSelector::BNode(label) => Object::BlankNode(label),
         _ => {
             return Err(Box::new(DataError::NotATerm {
@@ -330,11 +359,27 @@ pub fn parse_term(term: &str, prefixmap: &PrefixMap, iri_mode: IriNormalizationM
     Ok(object.into())
 }
 
+/// Checks that `iri`, already resolved against the base IRI, is an absolute IRI.
+fn absolute_iri(iri: &IriS) -> Result<IriS> {
+    IriS::new(iri.as_str()).map_err(|error| {
+        IriError::ParseError {
+            iri: iri.to_string(),
+            error: error.to_string(),
+        }
+        .into()
+    })
+}
+
 /// Parses a term written as text, as [`parse_term`] does, and takes it as a subject.
 ///
 /// A literal cannot be a subject, and is rejected.
-pub fn parse_subject(subject: &str, prefixmap: &PrefixMap, iri_mode: IriNormalizationMode) -> Result<RdfSubject> {
-    let term = parse_term(subject, prefixmap, iri_mode)?;
+pub fn parse_subject(
+    subject: &str,
+    base: Option<&IriS>,
+    prefixmap: &PrefixMap,
+    iri_mode: IriNormalizationMode,
+) -> Result<RdfSubject> {
+    let term = parse_term(subject, base, prefixmap, iri_mode)?;
     RdfData::term_as_subject(&term).map_err(|_| {
         Box::new(DataError::NotASubject {
             term: subject.trim().to_string(),
@@ -368,7 +413,7 @@ mod tests {
     }
 
     fn term(text: &str) -> RdfTerm {
-        parse_term(text, &prefixmap(), Lax).unwrap()
+        parse_term(text, None, &prefixmap(), Lax).unwrap()
     }
 
     fn alice() -> RdfTerm {
@@ -381,7 +426,7 @@ mod tests {
         assert_eq!(term("ex:alice"), alice());
         // A bare IRI is accepted in the lax mode, and not in the strict one.
         assert_eq!(term("http://example.org/alice"), alice());
-        assert!(parse_term("http://example.org/alice", &prefixmap(), Strict).is_err());
+        assert!(parse_term("http://example.org/alice", None, &prefixmap(), Strict).is_err());
     }
 
     #[test]
@@ -415,7 +460,7 @@ mod tests {
         assert_ne!(typed, term("\"23\""));
 
         // And an alias nothing declares is an error, not a silently untyped literal.
-        let err = parse_term("\"23\"^^other:integer", &prefixmap(), Lax).unwrap_err();
+        let err = parse_term("\"23\"^^other:integer", None, &prefixmap(), Lax).unwrap_err();
         assert!(err.to_string().contains("other"), "{err}");
     }
 
@@ -428,18 +473,21 @@ mod tests {
             "{FOCUS ex:p ex:alice}",
             "SPARQL 'SELECT ?x WHERE { ?x ?p ?o }'",
         ] {
-            assert!(parse_term(text, &prefixmap(), Lax).is_err(), "{text} parsed as a term");
+            assert!(
+                parse_term(text, None, &prefixmap(), Lax).is_err(),
+                "{text} parsed as a term"
+            );
         }
     }
 
     #[test]
     fn test_parse_subject() {
         assert_eq!(
-            parse_subject("ex:alice", &prefixmap(), Lax).unwrap().to_string(),
+            parse_subject("ex:alice", None, &prefixmap(), Lax).unwrap().to_string(),
             "<http://example.org/alice>"
         );
-        assert!(parse_subject("_:b1", &prefixmap(), Lax).is_ok());
-        let err = parse_subject("\"Alice\"", &prefixmap(), Lax).unwrap_err();
+        assert!(parse_subject("_:b1", None, &prefixmap(), Lax).is_ok());
+        let err = parse_subject("\"Alice\"", None, &prefixmap(), Lax).unwrap_err();
         assert!(err.to_string().contains("cannot be the subject"), "{err}");
     }
 

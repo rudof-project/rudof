@@ -284,7 +284,7 @@ fn test_triple_operations_reject_terms_that_are_not_terms() {
         .with_iri_mode(IriNormalizationMode::Strict)
         .execute()
         .unwrap_err();
-    assert!(err.to_string().contains("resolving prefix 'http"), "{err}");
+    assert!(err.to_string().contains("Alias 'http' not found"), "{err}");
 
     // A selector that picks nodes out of the data is not a term.
     let err = rudof
