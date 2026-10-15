@@ -1,6 +1,7 @@
 mod cardinality;
 mod components;
 mod logical;
+pub(crate) mod node_expr;
 mod non_shape;
 mod other;
 mod property_pair;
