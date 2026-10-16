@@ -12,7 +12,9 @@ mod schema;
 mod shape;
 
 use crate::error::ASTError;
+use crate::types::Target;
 pub use component::ASTComponent;
+pub use node_expr::ASTNodeExpr;
 pub use node_shape::ASTNodeShape;
 pub use property_shape::ASTPropertyShape;
 pub use reifier_info::ReifierInfo;
@@ -21,6 +23,9 @@ use rudof_rdf::rdf_core::term::Object;
 pub use schema::ASTSchema;
 pub use shape::ASTShape;
 use std::collections::HashSet;
+
+/// A target declaration in the AST. Related [`Target`](Target)
+pub type ASTTarget = Target<ASTNodeExpr>;
 
 pub fn defined_properties_for(properties: &[Object], ast: &ASTSchema) -> Result<HashSet<IriS>, ASTError> {
     let mut defined_properties = HashSet::new();

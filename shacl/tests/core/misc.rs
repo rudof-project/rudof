@@ -1,43 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use crate::common::TestSuiteError;
-    use crate::test;
-    use shacl::validator::ShaclValidationMode;
-
-    const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/misc/";
-
-    #[test]
-    fn deactivated_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "deactivated-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn deactivated_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "deactivated-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn message_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "message-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn severity_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "severity-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn severity_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "severity-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
+    suite_tests! {
+        crate::common::runner::validate_runner,
+        "tests/data-shapes/data-shapes-test-suite/tests/core/misc/",
+        deactivated_001 => "deactivated-001",
+        deactivated_002 => "deactivated-002",
+        message_001 => "message-001",
+        severity_001 => "severity-001",
+        severity_002 => "severity-002",
     }
 }

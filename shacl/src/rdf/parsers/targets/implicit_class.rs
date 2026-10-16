@@ -1,17 +1,18 @@
+use crate::ast::ASTTarget;
 use crate::types::Target;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{FocusParser, InstancesParser};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::{RdfsVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 
-pub(crate) fn targets_implicit_class<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>> {
+pub(crate) fn targets_implicit_class<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTTarget>> {
     InstancesParser::new(RdfsVocab::rdfs_class())
         .and(InstancesParser::new(ShaclVocab::sh_property_shape()))
         .and(InstancesParser::new(ShaclVocab::sh_node_shape()))
         .and(FocusParser::new())
         .flat_map(
             move |(((class, property_shapes), node_shapes), focus): (_, RDF::Term)| {
-                let result: Result<Vec<Target>, RDFError> = class
+                let result: Result<Vec<ASTTarget>, RDFError> = class
                     .into_iter()
                     .filter(|t: &RDF::Subject| property_shapes.contains(t) || node_shapes.contains(t))
                     .map(Into::into)

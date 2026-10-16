@@ -1,3 +1,4 @@
+use crate::ast::node_expr::ASTNodeExpr;
 use crate::types::{MessageMap, NodeKind, Value};
 use itertools::Itertools;
 use prefixmap::{IriRef, PrefixMap};
@@ -9,7 +10,6 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
-// TODO - For node expr only derive Debug (maybe)
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ASTComponent {
     Class(Object),
@@ -52,7 +52,7 @@ pub enum ASTComponent {
         disjoint: Option<bool>,
         siblings: Vec<Object>,
     },
-    Deactivated(bool), // TODO - Replace with node expr
+    Deactivated(ASTNodeExpr),
     BasicSparql {
         select: String,
         message: Option<MessageMap>,
