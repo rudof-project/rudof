@@ -96,7 +96,7 @@
       });
   in {
     _module.args.utils.env = ''
-      export LD_LIBRARY_PATH=${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.openssl.out}/lib:$LD_LIBRARY_PATH
+      export LD_LIBRARY_PATH=${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.openssl.out}/lib:${pkgs.python3}/lib:$LD_LIBRARY_PATH
       export OPENSSL_ROOT_DIR=${pkgs.openssl.dev}
       export OPENSSL_LIB_DIR=${pkgs.openssl.out}/lib
       export OPENSSL_INCLUDE_DIR=${pkgs.openssl.dev}/include
