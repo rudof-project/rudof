@@ -1,288 +1,47 @@
 #[cfg(test)]
 mod tests {
-    use crate::common::TestSuiteError;
-    use crate::test;
-    use shacl::validator::ShaclValidationMode;
-
-    const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/property/";
-
-    #[test]
-    fn and_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "and-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn class_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "class-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn datatype_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "datatype-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn datatype_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "datatype-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn datatype_003() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "datatype-003");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn datatype_ill_formed() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "datatype-ill-formed");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn disjoint_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "disjoint-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn equals_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "equals-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn has_value_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "hasValue-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn in_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "in-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn language_in_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "languageIn-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn less_than_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "lessThan-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn less_than_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "lessThan-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn less_than_or_equals_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "lessThanOrEquals-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn max_count_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "maxCount-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn max_count_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "maxCount-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn max_exclusive_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "maxExclusive-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn max_inclusive_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "maxInclusive-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn max_length_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "maxLength-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn min_count_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "minCount-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn min_count_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "minCount-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn min_exclusive_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "minExclusive-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn min_exclusive_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "minExclusive-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn min_length_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "minLength-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn node_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "node-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn node_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "node-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn node_kind_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "nodeKind-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn not_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "not-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn or_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "or-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn or_datatypes_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "or-datatypes-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn pattern_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "pattern-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn pattern_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "pattern-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn property_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "property-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn qualified_min_count_disjoint_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "qualifiedMinCountDisjoint-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn qualified_value_shape_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "qualifiedValueShape-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn qualified_value_shapes_disjoint_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "qualifiedValueShapesDisjoint-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn unique_lang_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "uniqueLang-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn unique_lang_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "uniqueLang-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn unique_lang_002_data() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "uniqueLang-002-data");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn unique_lang_002_shapes() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "uniqueLang-002-shapes");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
+    suite_tests! {
+        crate::common::runner::validate_runner,
+        "tests/data-shapes/data-shapes-test-suite/tests/core/property/",
+        and_001 => "and-001",
+        class_001 => "class-001",
+        datatype_001 => "datatype-001",
+        datatype_002 => "datatype-002",
+        datatype_003 => "datatype-003",
+        datatype_ill_formed => "datatype-ill-formed",
+        disjoint_001 => "disjoint-001",
+        equals_001 => "equals-001",
+        has_value_001 => "hasValue-001",
+        in_001 => "in-001",
+        language_in_001 => "languageIn-001",
+        less_than_001 => "lessThan-001",
+        less_than_002 => "lessThan-002",
+        less_than_or_equals_001 => "lessThanOrEquals-001",
+        max_count_001 => "maxCount-001",
+        max_count_002 => "maxCount-002",
+        max_exclusive_001 => "maxExclusive-001",
+        max_inclusive_001 => "maxInclusive-001",
+        max_length_001 => "maxLength-001",
+        min_count_001 => "minCount-001",
+        min_count_002 => "minCount-002",
+        min_exclusive_001 => "minExclusive-001",
+        min_exclusive_002 => "minExclusive-002",
+        min_length_001 => "minLength-001",
+        node_001 => "node-001",
+        node_002 => "node-002",
+        node_kind_001 => "nodeKind-001",
+        not_001 => "not-001",
+        or_001 => "or-001",
+        or_datatypes_001 => "or-datatypes-001",
+        pattern_001 => "pattern-001",
+        pattern_002 => "pattern-002",
+        property_001 => "property-001",
+        qualified_min_count_disjoint_001 => "qualifiedMinCountDisjoint-001",
+        qualified_value_shape_001 => "qualifiedValueShape-001",
+        qualified_value_shapes_disjoint_001 => "qualifiedValueShapesDisjoint-001",
+        unique_lang_001 => "uniqueLang-001",
+        unique_lang_002 => "uniqueLang-002",
+        unique_lang_002_data => "uniqueLang-002-data",
+        unique_lang_002_shapes => "uniqueLang-002-shapes",
     }
 }

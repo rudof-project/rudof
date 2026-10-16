@@ -24,6 +24,8 @@ vocab_term!(ShaclNodeExprVocab, SHNEX_REMOVE, "remove");
 vocab_term!(ShaclNodeExprVocab, SHNEX_FILTER_SHAPE, "filterShape");
 vocab_term!(ShaclNodeExprVocab, SHNEX_LIMIT, "limit");
 vocab_term!(ShaclNodeExprVocab, SHNEX_OFFSET, "offset");
+vocab_term!(ShaclNodeExprVocab, SHNEX_ORDER_BY, "orderBy");
+vocab_term!(ShaclNodeExprVocab, SHNEX_DESC, "desc");
 
 // Advanced Sequence Operations
 vocab_term!(ShaclNodeExprVocab, SHNEX_FLAT_MAP, "flatMap");

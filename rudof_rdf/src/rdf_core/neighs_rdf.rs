@@ -1,4 +1,4 @@
-use crate::rdf_core::vocabs::RdfVocab;
+use crate::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use crate::rdf_core::{
     Any, Matcher, RDFError, Rdf, SHACLPath,
     term::{Object, Triple},
@@ -241,10 +241,12 @@ pub trait NeighsRDF: Rdf {
         Ok(results)
     }
 
-    /// Returns all subjects that are instances of the specified class.
+    /// Returns all subjects that are SHACL instances of the specified class.
     ///
-    /// This method queries for subjects that have `rdf:type` relationships
-    /// pointing to the given class term.
+    /// A node is a SHACL instance of a class `C` when it matches
+    /// `?node rdf:type/rdfs:subClassOf* C`, so this returns the direct
+    /// `rdf:type` instances of `cls` *and* the instances of every one of its
+    /// transitive `rdfs:subClassOf` subclasses.
     ///
     /// # Arguments
     ///
@@ -254,10 +256,33 @@ pub trait NeighsRDF: Rdf {
         O: Matcher<Self::Term>,
     {
         let rdf_type: Self::IRI = RdfVocab::rdf_type().into();
-        let subjects: HashSet<_> = self
+        let rdfs_subclass_of: Self::IRI = RdfsVocab::rdfs_subclass_of_str().into();
+
+        let mut subjects: HashSet<_> = self
             .triples_matching(&Any, &rdf_type, cls)?
             .map(Triple::into_subject)
             .collect();
+
+        let mut pending: Vec<Self::Term> = self
+            .triples_matching(&Any, &rdfs_subclass_of, cls)?
+            .map(|triple| Self::subject_as_term(&triple.into_subject()))
+            .collect();
+        let mut seen: HashSet<Self::Term> = pending.iter().cloned().collect();
+
+        while let Some(subclass) = pending.pop() {
+            subjects.extend(
+                self.triples_matching(&Any, &rdf_type, &subclass)?
+                    .map(Triple::into_subject),
+            );
+
+            for triple in self.triples_matching(&Any, &rdfs_subclass_of, &subclass)? {
+                let subclass = Self::subject_as_term(&triple.into_subject());
+                if seen.insert(subclass.clone()) {
+                    pending.push(subclass);
+                }
+            }
+        }
+
         Ok(subjects.into_iter())
     }
 
