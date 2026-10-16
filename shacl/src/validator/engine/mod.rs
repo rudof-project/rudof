@@ -5,7 +5,7 @@ mod sparql;
 mod validate;
 mod value_nodes_ops;
 
-use crate::ir::{IRComponent, IRPropertyShape, IRSchema, IRShape, ShapeLabelIdx};
+use crate::ir::{IRComponent, IRPropertyShape, IRSchema, IRShape, IRTarget, ShapeLabelIdx};
 use crate::types::Target;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
@@ -49,11 +49,15 @@ pub trait Engine<S: NeighsRDF>: Send {
         shapes_graph: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError>;
 
-    fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<FocusNodes<S>, ValidationError> {
+    fn focus_nodes(&self, store: &S, targets: &[IRTarget]) -> Result<FocusNodes<S>, ValidationError> {
         let targets_iter: Vec<_> = targets
             .iter()
             .flat_map(|target| match target {
-                Target::Node(n) => self.target_node(store, n),
+                // TODO - Try to figure how to compute all types of node expressions
+                Target::Node(e) => match e.as_constant() {
+                    Some(node) => self.target_node(store, &node),
+                    None => Err(ValidationError::TargetNodeExprNotConstant(e.to_string())),
+                },
                 Target::Class(c) => self.target_class(store, c),
                 Target::SubjectsOf(p) => self.target_subject_of(store, p),
                 Target::ObjectsOf(p) => self.target_object_of(store, p),

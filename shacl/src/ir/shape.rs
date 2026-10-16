@@ -1,5 +1,5 @@
 use crate::ast::{ASTSchema, ASTShape};
-use crate::ir::ReifierInfo;
+use crate::ir::IRTarget;
 use crate::ir::component::IRComponent;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
@@ -7,7 +7,8 @@ use crate::ir::node_shape::IRNodeShape;
 use crate::ir::property_shape::IRPropertyShape;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::types::{MessageMap, Severity, Target};
+use crate::ir::{IRNodeExpr, ReifierInfo};
+use crate::types::{MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{BuildRDF, SHACLPath};
@@ -29,7 +30,7 @@ impl IRShape {
         Self::PropertyShape(Box::new(ps))
     }
 
-    pub fn deactivated(&self) -> bool {
+    pub fn deactivated(&self) -> Option<&IRNodeExpr> {
         match self {
             IRShape::NodeShape(ns) => ns.deactivated(),
             IRShape::PropertyShape(ps) => ps.deactivated(),
@@ -64,7 +65,7 @@ impl IRShape {
         }
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<IRTarget> {
         match self {
             IRShape::NodeShape(ns) => ns.targets(),
             IRShape::PropertyShape(ps) => ps.targets(),

@@ -1,11 +1,13 @@
 use crate::ast::{ASTNodeShape, ASTSchema};
+use crate::ir::IRTarget;
 use crate::ir::component::IRComponent;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
+use crate::ir::node_expr::IRNodeExpr;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::types::{ClosedInfo, MessageMap, Severity, Target};
+use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
@@ -17,10 +19,10 @@ use std::fmt::{Display, Formatter};
 pub struct IRNodeShape {
     id: Object,
     components: Vec<IRComponent>,
-    targets: Vec<Target>,
+    targets: Vec<IRTarget>,
     property_shapes: Vec<ShapeLabelIdx>,
     closed_info: ClosedInfo,
-    deactivated: bool,
+    deactivated: Option<IRNodeExpr>,
 
     message: Option<MessageMap>,
     severity: Option<Severity>,
@@ -43,7 +45,7 @@ impl IRNodeShape {
             targets: Vec::new(),
             property_shapes: Vec::new(),
             closed_info: ClosedInfo::No,
-            deactivated: false,
+            deactivated: None,
             message: None,
             severity: None,
             name: None,
@@ -57,7 +59,7 @@ impl IRNodeShape {
         self
     }
 
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<IRTarget>) -> Self {
         self.targets = targets;
         self
     }
@@ -72,7 +74,7 @@ impl IRNodeShape {
         self
     }
 
-    pub fn with_deactivated(mut self, deactivated: bool) -> Self {
+    pub fn with_deactivated(mut self, deactivated: Option<IRNodeExpr>) -> Self {
         self.deactivated = deactivated;
         self
     }
@@ -106,8 +108,8 @@ impl IRNodeShape {
         &self.id
     }
 
-    pub fn deactivated(&self) -> bool {
-        self.deactivated
+    pub fn deactivated(&self) -> Option<&IRNodeExpr> {
+        self.deactivated.as_ref()
     }
 
     pub fn severity(&self) -> &Severity {
@@ -125,7 +127,7 @@ impl IRNodeShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<IRTarget> {
         &self.targets
     }
 
@@ -168,12 +170,23 @@ impl IRNodeShape {
 
         let closed_info = shape.get_closed_info(ast)?;
 
+        let deactivated = shape
+            .is_deactivated()
+            .map(|ns| IRNodeExpr::compile(ns, ast, ir))
+            .transpose()?;
+
+        let compiled_targets = shape
+            .targets()
+            .iter()
+            .map(|target| IRTarget::compile(target, ast, ir))
+            .collect::<Result<Vec<_>, _>>()?;
+
         let compiled_node_shape = IRNodeShape::new(shape.id().clone())
             .with_components(compiled_components)
-            .with_targets(shape.targets().to_owned())
+            .with_targets(compiled_targets)
             .with_property_shapes(compiled_prop_shapes)
             .with_closed_info(closed_info)
-            .with_deactivated(shape.is_deactivated())
+            .with_deactivated(deactivated)
             .with_severity(shape.severity().cloned())
             .with_name(shape.name().cloned())
             .with_description(shape.description().cloned())
@@ -282,8 +295,8 @@ impl Display for IRNodeShape {
             writeln!(f, " description: {description}")?;
         }
 
-        if self.deactivated() {
-            writeln!(f, " Deactivated: {}", self.deactivated())?;
+        if let Some(deactivated) = self.deactivated() {
+            writeln!(f, " Deactivated: {}", deactivated)?;
         }
         if self.severity() != &Severity::Violation {
             writeln!(f, " Severity: {}", self.severity())?;

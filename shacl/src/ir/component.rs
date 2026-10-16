@@ -6,6 +6,7 @@ use crate::ir::components::{
 };
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
+use crate::ir::node_expr::IRNodeExpr;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
@@ -138,7 +139,7 @@ impl IRComponent {
                 ))
             },
             ASTComponent::Deactivated(d) => {
-                // TODO - Change for node expr
+                let d = IRNodeExpr::compile(&d, ast, ir)?;
                 IRComponent::Deactivated(Deactivated::new(d))
             },
             ASTComponent::BasicSparql {
@@ -306,8 +307,13 @@ impl IRComponent {
                     .try_for_each(|iri| register_iri(iri, ShaclVocab::sh_ignored_properties(), id, graph))
             },
             IRComponent::Deactivated(deactivated) => {
-                // TODO - Adapt for node expression
-                register_boolean(deactivated.is_deactivated(), ShaclVocab::sh_deactivated(), id, graph)
+                // TODO - Add full Node Expr serialization
+                if let IRNodeExpr::Literal(lit) = deactivated.is_deactivated()
+                    && let ConcreteLiteral::BooleanLiteral(flag) = lit.literal()
+                {
+                    return register_boolean(*flag, ShaclVocab::sh_deactivated(), id, graph);
+                }
+                Ok(())
             },
             IRComponent::BasicSparql(sparql) => {
                 // Create a blank node to hold the constraint properties

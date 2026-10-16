@@ -54,6 +54,10 @@ pub enum ValidationError {
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBNode,
 
+    // TODO - Drop after supporting all types of node expressions on Target Nodes
+    #[error("TargetNode node expressions that are not a constant IRI or literal are not supported yet: {0}")]
+    TargetNodeExprNotConstant(String),
+
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,
 }

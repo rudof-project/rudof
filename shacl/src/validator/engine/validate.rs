@@ -1,5 +1,5 @@
 use crate::error::ValidationError;
-use crate::ir::{IRSchema, IRShape, ReifierInfo};
+use crate::ir::{IRSchema, IRShape, ReifierInfo, node_expr_is_true};
 use crate::types::MessageMap;
 use crate::validator::engine::Engine;
 use crate::validator::engine::focus_nodes_ops::FocusNodesOps;
@@ -34,16 +34,17 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         source_shape: Option<&IRShape>,
         shapes_graph: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
-        // Skips validation if shape is deactivated
-        if self.deactivated() {
-            return Ok(ValidationOutcome::new());
-        }
-
         // Get focus nodes
         let focus_nodes = match targets {
             None => &self.focus_nodes(store, runner),
             Some(targets) => targets,
         };
+
+        // Skips validation if the shape is deactivated.
+        let focus_nodes = &get_active_focus_nodes(self, store, runner, focus_nodes, shapes_graph)?;
+        if focus_nodes.is_empty() {
+            return Ok(ValidationOutcome::new());
+        }
 
         // Resolve the ShapeLabelIdx for the current shape (used for memoization)
         let idx = shapes_graph.get_idx(self.id());
@@ -249,6 +250,30 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         cached_outcome.extend(new_outcome);
         Ok(cached_outcome)
     }
+}
+
+/// Removes the focus nodes the shape is deactivated for.
+fn get_active_focus_nodes<RDF: NeighsRDF + Debug>(
+    shape: &IRShape,
+    store: &RDF,
+    runner: &mut dyn Engine<RDF>,
+    focus_nodes: &FocusNodes<RDF>,
+    shapes_graph: &IRSchema,
+) -> Result<FocusNodes<RDF>, ValidationError> {
+    let Some(deactivated) = shape.deactivated() else {
+        return Ok(focus_nodes.clone());
+    };
+
+    let scope = HashMap::new();
+    let mut active = Vec::new();
+    for node in focus_nodes.iter() {
+        let values = deactivated.evaluate(store, node, &scope, runner, shapes_graph)?;
+        if !node_expr_is_true::<RDF>(&values) {
+            active.push(node.clone());
+        }
+    }
+
+    Ok(FocusNodes::from_iter(active))
 }
 
 /// Validates the reifier(s) of each of `focus_nodes`' relevant triples,

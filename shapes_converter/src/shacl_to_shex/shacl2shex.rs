@@ -3,8 +3,8 @@ use prefixmap::IriRef;
 use rudof_iri::IriS;
 use rudof_iri::iri;
 use rudof_rdf::rdf_core::{SHACLPath, term::Object};
+use shacl::ir::IRTarget;
 use shacl::ir::{IRComponent, IRNodeShape, IRPropertyShape, IRSchema, IRShape};
-use shacl::types::Target;
 use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel, TripleExpr,
     TripleExprWrapper, ValueSetValue,
@@ -109,7 +109,7 @@ impl Shacl2ShEx {
     /// Collect targetClass declarations and add a rdf:type constraint for each
     pub fn convert_target_decls(
         &self,
-        targets: &Vec<Target>,
+        targets: &Vec<IRTarget>,
         schema: &IRSchema,
     ) -> Result<Option<TripleExpr>, Shacl2ShExError> {
         let mut values = Vec::new();
@@ -125,12 +125,12 @@ impl Shacl2ShEx {
 
     pub fn target2value_set_value(
         &self,
-        target: &Target,
+        target: &IRTarget,
         _schema: &IRSchema,
     ) -> Result<Option<ValueSetValue>, Shacl2ShExError> {
         match target {
-            Target::Node(_) => Ok(None),
-            Target::Class(cls) => {
+            IRTarget::Node(_) => Ok(None),
+            IRTarget::Class(cls) => {
                 let value_set_value = match cls {
                     Object::Iri(iri) => Ok(ValueSetValue::iri(IriRef::iri(iri.clone()))),
                     Object::BlankNode(bn) => {
@@ -143,14 +143,14 @@ impl Shacl2ShEx {
                 }?;
                 Ok(Some(value_set_value))
             },
-            Target::SubjectsOf(_) => Ok(None),
-            Target::ObjectsOf(_) => Ok(None),
-            Target::ImplicitClass(_) => Ok(None),
-            Target::WrongNode(_)
-            | Target::WrongClass(_)
-            | Target::WrongSubjectsOf(_)
-            | Target::WrongObjectsOf(_)
-            | Target::WrongImplicitClass(_) => Err(Shacl2ShExError::not_implemented("malformed targets")),
+            IRTarget::SubjectsOf(_) => Ok(None),
+            IRTarget::ObjectsOf(_) => Ok(None),
+            IRTarget::ImplicitClass(_) => Ok(None),
+            IRTarget::WrongNode(_)
+            | IRTarget::WrongClass(_)
+            | IRTarget::WrongSubjectsOf(_)
+            | IRTarget::WrongObjectsOf(_)
+            | IRTarget::WrongImplicitClass(_) => Err(Shacl2ShExError::not_implemented("malformed targets")),
         }
     }
 
