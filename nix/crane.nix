@@ -8,7 +8,7 @@
       self'.packages.toolchain).overrideScope (_: _: {
         # lbug vendors Apache Thrift C++ sources that rely on implicit
         # <cstdint> includes, which newer GCC/libstdc++ no longer provides.
-        stdenvSelector = p: p.gcc13Stdenv;
+        stdenvSelector = p: if p.stdenv.hostPlatform.isLinux then p.gcc13Stdenv else p.stdenv;
       });
   };
 }
