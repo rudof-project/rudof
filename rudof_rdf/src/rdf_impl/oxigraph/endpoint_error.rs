@@ -29,6 +29,29 @@ pub enum OxigraphEndpointError {
     #[error("HTTP Request error: {e:?}")]
     HTTPRequestError { e: reqwest::Error },
 
+    /// The endpoint answered an HTTP request with a non-success status.
+    ///
+    /// # Fields
+    /// - `url`: The URL of the request
+    /// - `status`: The HTTP status code
+    /// - `body`: The start of the response body, which often explains the
+    ///   error (e.g. a SPARQL syntax error)
+    #[error("HTTP request to {url} failed with status {status}: {body}")]
+    HTTPStatusError { url: String, status: u16, body: String },
+
+    /// A request made with JavaScript's `fetch` (on wasm) failed without an
+    /// HTTP response: a network error, a CORS rejection or a timeout.
+    #[error("HTTP request failed: {message}")]
+    FetchError { message: String },
+
+    /// On wasm, waiting for an HTTP response needs JSPI: it is only possible
+    /// inside a call that returns a JavaScript `Promise`.
+    #[error(
+        "Cannot wait for a response from a remote SPARQL endpoint in a synchronous call: \
+         on wasm, endpoints can only be used from the asynchronous (Promise-returning) API"
+    )]
+    NotSuspendable,
+
     /// Error parsing a URL for the SPARQL endpoint.
     ///
     /// # Fields

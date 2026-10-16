@@ -50,6 +50,14 @@ fi
 sed -i.bak 's|`${__dirname}/rudof_wasm_bg.wasm`|`${__dirname}/../web/rudof_wasm_bg.wasm`|' "$node_js"
 rm "$node_js.bak" pkg/node/rudof_wasm_bg.wasm pkg/node/rudof_wasm_bg.wasm.d.ts
 
+# wasm-bindgen declares the methods of `#[wasm_bindgen(jspi)]` exports (the
+# `endpoints` feature) as `async` in the `.d.ts` files, which TypeScript
+# rejects in declarations (TS1040); their `Promise` return type says enough.
+for dts in pkg/web/rudof_wasm.d.ts pkg/node/rudof_wasm.d.ts; do
+    sed -i.bak -E 's/^([[:space:]]+)async ([A-Za-z_$][A-Za-z0-9_$]*\()/\1\2/' "$dts"
+    rm "$dts.bak"
+done
+
 if command -v wasm-opt > /dev/null; then
     wasm-opt -Oz --enable-bulk-memory --enable-nontrapping-float-to-int \
         -o pkg/web/rudof_wasm_bg.wasm pkg/web/rudof_wasm_bg.wasm

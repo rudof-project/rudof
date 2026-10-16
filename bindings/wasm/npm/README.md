@@ -97,7 +97,10 @@ has a summary of them.
 
 Everything is passed as strings: reading files, fetching or dereferencing
 IRIs, ShEx `IMPORT`s, remote SPARQL endpoints, rendering images and property
-graph databases are not available. Fetch remote documents yourself (e.g. with
+graph databases are not available. (Remote SPARQL endpoints are available in
+builds with the `endpoints` feature, which need a runtime with WebAssembly
+JSPI: see the
+[repository](https://github.com/rudof-project/rudof/tree/master/bindings/wasm#remote-sparql-endpoints).) Fetch remote documents yourself (e.g. with
 `fetch`) and pass their text in. SPARQL over the loaded data (queries,
 SHACL-SPARQL constraints, ShapeMap query selectors) runs on an embedded
 Oxigraph store.

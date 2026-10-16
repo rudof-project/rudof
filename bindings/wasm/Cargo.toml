@@ -29,11 +29,18 @@ conversion = ["rudof_lib/conversion"]
 dctap = ["rudof_lib/dctap"]
 pgschema = ["rudof_lib/pgschema"]
 rdf-config = ["rudof_lib/rdf-config"]
+# Remote SPARQL endpoints (validation and queries against them), through
+# JavaScript's `fetch`. Waiting for the responses relies on JSPI (WebAssembly
+# JavaScript Promise Integration), so a module built with this feature only
+# loads in runtimes with JSPI and exnref (e.g. Chrome 137+, Node.js 25+).
+# Not a default feature for that reason.
+endpoints = ["rudof_lib/jspi", "dep:rudof_rdf", "rudof_rdf/jspi"]
 
 [dependencies]
 # A path dependency, because workspace inheritance can't switch off default
 # features.
 rudof_lib = { path = "../../rudof_lib", default-features = false, features = ["sparql"] }
+rudof_rdf = { path = "../../rudof_rdf", default-features = false, optional = true }
 serde.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]

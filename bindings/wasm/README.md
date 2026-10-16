@@ -10,9 +10,11 @@ with its usage. This file is about developing the bindings.
 
 All inputs are passed as strings, so anything that needs the filesystem, the
 network or native tools is not supported: reading files, dereferencing IRIs,
-ShEx `IMPORT`s, remote SPARQL endpoints and rendering images. SPARQL queries
-over the data itself (SPARQL queries, SHACL-SPARQL constraints, the SPARQL
-SHACL engine, ShapeMap query selectors) run on Oxigraph's embedded store.
+ShEx `IMPORT`s and rendering images. SPARQL queries over the data itself
+(SPARQL queries, SHACL-SPARQL constraints, the SPARQL SHACL engine, ShapeMap
+query selectors) run on Oxigraph's embedded store. Remote SPARQL endpoints are
+available in builds with the `endpoints` feature, which relies on JSPI (see
+[Remote SPARQL endpoints](#remote-sparql-endpoints)).
 
 ## Building
 
@@ -69,6 +71,10 @@ smaller `.wasm`:
 | `dctap` | `readDctap`, `serializeDctap`, `resetDctap` |
 | `pgschema` | `readPgschema`, `serializePgschema`, `readTypemap`, `validatePgschema`, `serializePgschemaValidationResults` and their resets, and property graph data (`readData(data, "pg")`) |
 | `rdf-config` | `readRdfConfig`, `serializeRdfConfig`, `resetRdfConfig` |
+
+`endpoints` is a further feature, off by default because the `.wasm` it
+produces only loads in runtimes with JSPI: see
+[Remote SPARQL endpoints](#remote-sparql-endpoints).
 
 `RUDOF_WASM_FEATURES` selects the features that `build.sh` builds with:
 
@@ -142,10 +148,11 @@ Everything in the Python bindings is available, except what needs files or
 native libraries: `read_map_state`, `compile_shex_to_file` and
 `read_shex_precompiled` (which take file paths), property graph databases
 (`connect_pg_db`, `pg_db_ddl`, `load_pg_db`, `query_cypher`) and data
-generation. `dereference` and `listEndpoints` are there for completeness, but
-there is no network access on wasm: `dereference` throws a `DataError`, and
-`listEndpoints` returns `[]`. Conversions that render images or write HTML to a
-folder fail too.
+generation. `dereference` is there for completeness, but throws a `DataError`:
+it needs blocking network access. `listEndpoints` returns `[]` unless the
+module is built with the `endpoints` feature (see
+[Remote SPARQL endpoints](#remote-sparql-endpoints)). Conversions that render
+images or write HTML to a folder fail too.
 
 Inputs are strings. Formats and modes are strings too, with the names used by
 the command line interface: e.g. `turtle`, `ntriples`, `rdfxml`, `trig`, `n3`,
@@ -196,9 +203,73 @@ error category, matching the Python exception classes (`DataError`,
 `ShExError`, `ShaclError`, `QueryError`, ...), or `RangeError` for an unknown
 format or mode.
 
+## Remote SPARQL endpoints
+
+With the `endpoints` feature, ShEx and SHACL validation, SPARQL queries and
+`nodeInfo` can work on the data of a remote SPARQL endpoint, as with
+`rudof --endpoint` on the command line:
+
+```js
+const rudof = new Rudof();
+rudof.useEndpoint("https://query.wikidata.org/sparql"); // or a known name, e.g. "wikidata"
+rudof.readShex(schema);
+rudof.readShapemap("<http://www.wikidata.org/entity/Q80>@<Human>");
+const report = await rudof.validateShexAsync();
+
+rudof.readQuery("SELECT ?p ?o WHERE { <http://www.wikidata.org/entity/Q80> ?p ?o } LIMIT 10");
+const results = await rudof.runQueryAsync();
+```
+
+| Method | |
+|--------|-|
+| `useEndpoint(endpoint, strategy?)` | Uses the endpoint (a URL or the name of a known endpoint) as the data, replacing the current data. `strategy` is `sparql` (the default, SPARQL queries) or `dereference` (fetches each node's IRI as Turtle). No request is made yet |
+| `validateShexAsync()`, `validateShaclAsync(mode?)`, `runQueryAsync()`, `nodeInfoAsync(nodeSelector, predicates?, mode?, showColors?, depth?)` | Like `validateShex`, `validateShacl`, `runQuery` and `nodeInfo`, but return a `Promise`, and can wait for the endpoint |
+| `setFetch(fetch)` (a function of the module) | Sets the function used for the HTTP requests, with the signature of `fetch` (`null` restores the global `fetch`) |
+
+The validators are synchronous code, while wasm can only reach the network
+through JavaScript's asynchronous `fetch`. The `...Async` methods bridge the two
+with [JSPI](https://github.com/WebAssembly/js-promise-integration) (JavaScript
+Promise Integration, `#[wasm_bindgen(jspi)]`): while one waits for an HTTP
+response, the WebAssembly stack is suspended and the JavaScript event loop
+keeps running, so the page stays responsive. In `rudof_rdf` (its `jspi`
+feature), the endpoint client is the native one, with its caching, rate
+limiting and retries; only the requests (`fetch` instead of `reqwest`), the
+timers (`setTimeout`) and the wait for the responses (JSPI instead of a tokio
+runtime) differ.
+
+Things to know:
+
+- **Runtimes.** A module built with `endpoints` needs JSPI and exnref, and does
+  not load at all without them: Chrome/Edge 137+ and Node.js 25+ have both
+  enabled by default, while Firefox and Safari don't ship JSPI yet. That is why
+  the feature is not part of the default build (nor of the npm package):
+  `RUDOF_WASM_FEATURES="comparison,conversion,dctap,pgschema,rdf-config,endpoints" ./build.sh`
+  builds a package with it. A module built without it is byte for byte the
+  same as before the feature existed.
+- **Synchronous methods.** `validateShex`, `runQuery`, etc. keep working on data
+  loaded with `readData`. On endpoint data, they throw an error saying to use
+  the asynchronous methods when they would need to wait for a response
+  (answers already cached by an earlier asynchronous call can be reused).
+- **One call at a time per session.** While an `...Async` call is pending, its
+  `Rudof` object is in use and its other methods throw; use several `Rudof`
+  objects to work concurrently.
+- **CORS.** In browsers, the endpoint must allow cross-origin requests (Wikidata
+  and most public endpoints do). Otherwise, `setFetch` can route the requests
+  through a proxy. Browsers don't let pages set the `User-Agent`; Wikimedia asks
+  browser clients to identify themselves with `Api-User-Agent` instead, which
+  `setFetch` can add:
+
+  ```js
+  setFetch((url, init) =>
+    fetch(url, { ...init, headers: { ...init.headers, "Api-User-Agent": "my-app/1.0 (me@example.org)" } }));
+  ```
+- **Size.** The feature adds about 0.7 MB (4.5%) to the `.wasm` before `wasm-opt`.
+
 ## Examples
 
 - Node.js: `node examples/node.cjs`
+- Node.js, with a remote endpoint (Wikidata): `node examples/endpoint.cjs`, with
+  a package built with the `endpoints` feature and Node.js 25+.
 - Browser: serve this directory over HTTP (e.g. `python3 -m http.server`) and
   open `examples/index.html`.
 

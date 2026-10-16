@@ -4,7 +4,8 @@
 //!
 //! Formats and modes are passed as strings (e.g. `"turtle"`), parsed with the
 //! `FromStr` implementations of `rudof_lib::formats`. Inputs are strings: files,
-//! URLs and SPARQL endpoints are not available on `wasm`.
+//! URLs are not available on `wasm`, and SPARQL endpoints only with the
+//! `endpoints` feature.
 
 use crate::error::{Error, Result};
 #[cfg(feature = "pgschema")]
@@ -448,8 +449,28 @@ impl Session {
         Ok(b.execute()?)
     }
 
+    /// Uses a remote SPARQL endpoint as the RDF data, replacing the current
+    /// data: `endpoint` is the URL of the endpoint, or the name of one of the
+    /// [known endpoints](Self::list_endpoints) (e.g. `wikidata`). No request
+    /// is made until the data is used (validation, queries, ...).
+    ///
+    /// `strategy` selects how nodes are looked up: `sparql` (the default)
+    /// queries the endpoint, `dereference` fetches each node's IRI as Turtle.
+    ///
+    /// On `wasm`, the data can then only be used from the asynchronous
+    /// (JSPI) API: waiting for HTTP responses needs it.
+    #[cfg(feature = "endpoints")]
+    pub fn use_endpoint(&mut self, endpoint: &str, strategy: Option<&str>) -> Result<()> {
+        let strategy: Option<rudof_rdf::rdf_impl::EndpointStrategy> = parse(strategy, "endpoint strategy")?;
+        let mut b = self.rudof.load_data().with_endpoint(endpoint);
+        if let Some(s) = strategy {
+            b = b.with_endpoint_strategy(s);
+        }
+        Ok(b.execute()?)
+    }
+
     /// The known SPARQL endpoints, as `(name, url)` pairs. Always empty on
-    /// `wasm`, where SPARQL endpoints are not available.
+    /// `wasm` without the `endpoints` feature.
     pub fn list_endpoints(&mut self) -> Result<Vec<(String, String)>> {
         Ok(self.rudof.list_endpoints().execute()?)
     }

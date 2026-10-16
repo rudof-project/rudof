@@ -69,6 +69,8 @@ jobs:
         run: cargo check -p rudof_wasm --all-targets --target wasm32-unknown-unknown
       - name: Run cargo check on the wasm bindings without optional features
         run: cargo check -p rudof_wasm --all-targets --target wasm32-unknown-unknown --no-default-features
+      - name: Run cargo check on the wasm bindings with remote SPARQL endpoints
+        run: cargo check -p rudof_wasm --all-targets --target wasm32-unknown-unknown --features endpoints
 
   rustfmt:
     name: Rustfmt
@@ -165,3 +167,13 @@ jobs:
         run: node bindings/wasm/examples/node.cjs
       - name: Install and test the packed npm package
         run: bindings/wasm/npm/smoke-test.sh
+      # Remote SPARQL endpoints rely on JSPI, which needs Node.js 25+.
+      - name: Build the npm package with remote SPARQL endpoints
+        env:
+          RUDOF_WASM_FEATURES: comparison,conversion,dctap,pgschema,rdf-config,endpoints
+        run: bindings/wasm/build.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - name: Test remote SPARQL endpoints
+        run: node bindings/wasm/tests/endpoints.cjs
