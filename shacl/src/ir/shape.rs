@@ -1,5 +1,5 @@
 use crate::ast::{ASTSchema, ASTShape};
-use crate::ir::{IRNodeExpr, ReifierInfo};
+use crate::ir::IRTarget;
 use crate::ir::component::IRComponent;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
@@ -7,7 +7,7 @@ use crate::ir::node_shape::IRNodeShape;
 use crate::ir::property_shape::IRPropertyShape;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::ir::IRTarget;
+use crate::ir::{IRNodeExpr, ReifierInfo};
 use crate::types::{MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;

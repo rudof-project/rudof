@@ -1,6 +1,6 @@
-use oxrdf::NamedOrBlankNode;
-use crate::common::manifest::ManifestGraph;
 use crate::common::TestSuiteError;
+use crate::common::manifest::ManifestGraph;
+use oxrdf::NamedOrBlankNode;
 
 /// A manifest entry
 pub(crate) trait ManifestEntry: Sized {

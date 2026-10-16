@@ -1,16 +1,4 @@
 use crate::ast::ASTNodeExpr;
-use prefixmap::IriRef;
-use rudof_iri::IriS;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ListParser, NeighborhoodParser, ShaclPathParser, ValuesPropertyParser};
-use rudof_rdf::rdf_core::parser::rdf_node_parser::utils::{
-    term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, term_to_string,
-};
-use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclNodeExprVocab};
-use rudof_rdf::rdf_core::{FocusRDF, RDFError, Rdf};
-use std::collections::{HashMap, HashSet};
-use std::marker::PhantomData;
 use crate::rdf::parsers::node_expr::concat::concat;
 use crate::rdf::parsers::node_expr::count::count;
 use crate::rdf::parsers::node_expr::distinct::distinct;
@@ -27,7 +15,6 @@ use crate::rdf::parsers::node_expr::list::list;
 use crate::rdf::parsers::node_expr::match_all::match_all;
 use crate::rdf::parsers::node_expr::max::max;
 use crate::rdf::parsers::node_expr::min::min;
-use crate::rdf::parsers::node_expr::{to_object, Neighs};
 use crate::rdf::parsers::node_expr::nodes_matching::nodes_matching;
 use crate::rdf::parsers::node_expr::offset::offset;
 use crate::rdf::parsers::node_expr::order_by::order_by;
@@ -35,6 +22,14 @@ use crate::rdf::parsers::node_expr::path_values::path_values;
 use crate::rdf::parsers::node_expr::remove::remove;
 use crate::rdf::parsers::node_expr::sum::sum;
 use crate::rdf::parsers::node_expr::var::var;
+use crate::rdf::parsers::node_expr::{Neighs, to_object};
+use prefixmap::IriRef;
+use rudof_iri::IriS;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{NeighborhoodParser, ValuesPropertyParser};
+use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::{FocusRDF, RDFError};
+use std::marker::PhantomData;
 
 /// Parses every value of `property` on the focus node as a node expression.
 #[derive(Debug, Clone)]
@@ -62,10 +57,7 @@ where
         let focus = rdf.get_focus().cloned();
         let values = ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?;
 
-        let exprs = values
-            .iter()
-            .map(|value| node_expr_from_term(value, rdf))
-            .collect();
+        let exprs = values.iter().map(|value| node_expr_from_term(value, rdf)).collect();
 
         if let Some(focus) = &focus {
             rdf.set_focus(focus);
@@ -76,10 +68,7 @@ where
 }
 
 /// Parses `term` as a node expression, recursing into nested expressions.
-pub(crate) fn node_expr_from_term<RDF: FocusRDF>(
-    term: &RDF::Term,
-    rdf: &mut RDF,
-) -> Result<ASTNodeExpr, RDFError> {
+pub(crate) fn node_expr_from_term<RDF: FocusRDF>(term: &RDF::Term, rdf: &mut RDF) -> Result<ASTNodeExpr, RDFError> {
     match to_object::<RDF>(term)? {
         Object::Iri(iri) => Ok(ASTNodeExpr::Iri(IriRef::iri(iri))),
         Object::Literal(lit) => Ok(ASTNodeExpr::Literal(lit)),
@@ -94,23 +83,36 @@ fn blank_node_expr<RDF: FocusRDF>(term: &RDF::Term, rdf: &mut RDF) -> Result<AST
 
     let neighs: Neighs<RDF> = NeighborhoodParser::new().parse_focused(rdf)?;
     let expr_fns = [
-        empty, var, path_values,
-        exists, if_expresion, distinct,
-        intersection, concat, remove,
-        limit, offset, order_by,
-        flat_map, count, min,
-        max, sum, instances_of,
+        empty,
+        var,
+        path_values,
+        exists,
+        if_expresion,
+        distinct,
+        intersection,
+        concat,
+        remove,
+        limit,
+        offset,
+        order_by,
+        flat_map,
+        count,
+        min,
+        max,
+        sum,
+        instances_of,
         nodes_matching,
         list,
         // TODO - These three take a shape, and parsing an inline shape from here would
         // TODO - make the shape parser and this parser mutually recursive.
         filter_shape,
-        find_first, match_all
+        find_first,
+        match_all,
     ];
 
     for fun in expr_fns {
         if let Some(expr) = fun(&neighs, rdf, term)? {
-            return Ok(expr)
+            return Ok(expr);
         }
     }
 

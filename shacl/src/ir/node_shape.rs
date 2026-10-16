@@ -1,11 +1,12 @@
 use crate::ast::{ASTNodeShape, ASTSchema};
+use crate::ir::IRTarget;
 use crate::ir::component::IRComponent;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
+use crate::ir::node_expr::IRNodeExpr;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::ir::IRTarget;
 use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
@@ -13,7 +14,6 @@ use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
-use crate::ir::node_expr::IRNodeExpr;
 
 #[derive(Debug, Clone)]
 pub struct IRNodeShape {
@@ -170,7 +170,8 @@ impl IRNodeShape {
 
         let closed_info = shape.get_closed_info(ast)?;
 
-        let deactivated = shape.is_deactivated()
+        let deactivated = shape
+            .is_deactivated()
             .map(|ns| IRNodeExpr::compile(ns, ast, ir))
             .transpose()?;
 

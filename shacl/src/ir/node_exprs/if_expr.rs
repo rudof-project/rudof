@@ -1,7 +1,7 @@
 use crate::error::IRError;
 use crate::ir::IRSchema;
-use crate::ir::node_expr_is_true;
 use crate::ir::node_expr::IRNodeExpr;
+use crate::ir::node_expr_is_true;
 use crate::validator::engine::Engine;
 use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::HashMap;

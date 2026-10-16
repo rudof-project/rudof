@@ -129,7 +129,8 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         // SHACL 1.2 node expressions
         let shnex_nodes_matching_values =
             self.objects_with_predicate(&ShaclNodeExprVocab::shnex_nodes_matching().into())?;
-        let shnex_filter_shape_values = self.objects_with_predicate(&ShaclNodeExprVocab::shnex_filter_shape().into())?;
+        let shnex_filter_shape_values =
+            self.objects_with_predicate(&ShaclNodeExprVocab::shnex_filter_shape().into())?;
         let shnex_find_first_values = self.objects_with_predicate(&ShaclNodeExprVocab::shnex_find_first().into())?;
         let shnex_match_all_values = self.objects_with_predicate(&ShaclNodeExprVocab::shnex_match_all().into())?;
 

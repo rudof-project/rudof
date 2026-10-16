@@ -3,8 +3,8 @@ use prefixmap::IriRef;
 use rudof_iri::IriS;
 use rudof_iri::iri;
 use rudof_rdf::rdf_core::{SHACLPath, term::Object};
-use shacl::ir::{IRComponent, IRNodeShape, IRPropertyShape, IRSchema, IRShape};
 use shacl::ir::IRTarget;
+use shacl::ir::{IRComponent, IRNodeShape, IRPropertyShape, IRSchema, IRShape};
 use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel, TripleExpr,
     TripleExprWrapper, ValueSetValue,

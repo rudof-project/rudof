@@ -1,6 +1,6 @@
+use crate::common::TestSuiteError;
 use std::marker::PhantomData;
 use std::path::Path;
-use crate::common::TestSuiteError;
 
 mod entry;
 mod graph;

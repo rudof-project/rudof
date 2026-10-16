@@ -1,15 +1,15 @@
-use std::collections::HashMap;
+use crate::common::TestSuiteError;
+use crate::common::manifest::{Manifest, ManifestEntry, ManifestGraph};
 use oxrdf::{NamedNode, NamedOrBlankNode, Term};
-use rudof_rdf::rdf_core::{Any, NeighsRDF};
 use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::vocabs::{RdfsVocab, ShaclTestVocab, TestManifestVocab};
+use rudof_rdf::rdf_core::{Any, NeighsRDF};
 use shacl::ast::ASTNodeExpr;
 use shacl::ir::{IRNodeExpr, IRSchema};
 use shacl::rdf::ShaclParser;
-use shacl::validator::engine::NativeEngine;
 use shacl::validator::RecursionSemantics;
-use crate::common::manifest::{Manifest, ManifestEntry, ManifestGraph};
-use crate::common::TestSuiteError;
+use shacl::validator::engine::NativeEngine;
+use std::collections::HashMap;
 
 /// A manifest for `sht:EvalNodeExpr` tests
 pub(crate) type NodeExprManifest = Manifest<NodeExprTest>;
@@ -50,14 +50,19 @@ impl ManifestEntry for NodeExprTest {
                 scope.insert(name.to_string(), triple.obj().clone());
             }
         }
-        
+
         let expected = match manifest.value(&entry, &TestManifestVocab::mf_result().into())? {
             None => Vec::new(),
             Some(res) => manifest.list(res)?,
         };
 
         Ok(Self {
-            label, node_expr, fnode, scope, ignore_order, expected
+            label,
+            node_expr,
+            fnode,
+            scope,
+            ignore_order,
+            expected,
         })
     }
 }

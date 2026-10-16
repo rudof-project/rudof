@@ -11,6 +11,8 @@ mod component;
 pub mod components;
 pub mod dg;
 pub(crate) mod error;
+mod node_expr;
+pub mod node_exprs;
 mod node_shape;
 mod order_value;
 mod property_shape;
@@ -19,8 +21,6 @@ mod reifier_info;
 mod schema;
 mod shape;
 mod shape_label_idx;
-mod node_expr;
-pub mod node_exprs;
 mod target;
 mod test;
 

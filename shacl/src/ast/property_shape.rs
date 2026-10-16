@@ -1,15 +1,15 @@
+use crate::ast::ASTTarget;
 use crate::ast::error::ASTError;
+use crate::ast::node_expr::ASTNodeExpr;
 use crate::ast::reifier_info::ReifierInfo;
 use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
 use crate::ir::OrderValue;
-use crate::ast::ASTTarget;
 use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-use crate::ast::node_expr::ASTNodeExpr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ASTPropertyShape {
@@ -32,7 +32,7 @@ pub struct ASTPropertyShape {
 
     // TODO - For node expr
     default_value: Option<ASTNodeExpr>, // ONLY WHEN PATH IS PREDICATE PATH
-    values: Option<ASTNodeExpr> // ONLY WHEN PATH IS PREDICATE PATH
+    values: Option<ASTNodeExpr>,        // ONLY WHEN PATH IS PREDICATE PATH
 }
 
 impl ASTPropertyShape {
@@ -158,7 +158,7 @@ impl ASTPropertyShape {
     pub fn is_deactivated(&self) -> Option<&ASTNodeExpr> {
         for component in &self.components {
             if let ASTComponent::Deactivated(ne) = component {
-                return Some(ne)
+                return Some(ne);
             }
         }
         None

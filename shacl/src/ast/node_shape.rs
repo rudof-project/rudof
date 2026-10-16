@@ -1,12 +1,12 @@
-use crate::ast::error::ASTError;
-use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
 use crate::ast::ASTTarget;
+use crate::ast::error::ASTError;
+use crate::ast::node_expr::ASTNodeExpr;
+use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
 use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-use crate::ast::node_expr::ASTNodeExpr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ASTNodeShape {

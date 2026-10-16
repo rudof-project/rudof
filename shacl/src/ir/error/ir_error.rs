@@ -1,15 +1,15 @@
 use crate::ast::error::ASTError;
 use crate::ir::ShapeLabelIdx;
+use crate::ir::error::NodeExprEvalError;
+use crate::ir::node_exprs::IfExpression;
 use crate::rdf::error::ShaclParserError;
+use crate::validator::error::ValidationError;
 use prefixmap::IriRefError;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::utils::RDFRegexError;
 use rudof_rdf::rdf_core::{RDFError, Rdf, SHACLPath};
 use rudof_rdf::rdf_impl::OxigraphInMemoryError;
 use thiserror::Error;
-use crate::ir::error::NodeExprEvalError;
-use crate::ir::node_exprs::IfExpression;
-use crate::validator::error::ValidationError;
 
 #[derive(Error, Debug)]
 pub enum IRError {

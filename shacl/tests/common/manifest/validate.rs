@@ -1,14 +1,14 @@
-use std::path::Path;
+use crate::common::TestSuiteError;
+use crate::common::manifest::{Manifest, ManifestEntry, ManifestGraph};
 use oxrdf::NamedOrBlankNode;
-use rudof_rdf::rdf_core::{RDFFormat, Rdf};
 use rudof_rdf::rdf_core::vocabs::{ShaclTestVocab, TestManifestVocab};
+use rudof_rdf::rdf_core::{RDFFormat, Rdf};
 use shacl::ast::ASTSchema;
 use shacl::rdf::ShaclParser;
 use shacl::validator::report::ValidationReport;
 use shacl::validator::store::{Graph, Store};
 use sparql_service::RdfData;
-use crate::common::manifest::{Manifest, ManifestEntry, ManifestGraph};
-use crate::common::TestSuiteError;
+use std::path::Path;
 
 /// A manifest for `sht:Validate` tests
 pub(crate) type ValidateManifest = Manifest<TestInstance<RdfData>>;
@@ -54,7 +54,6 @@ impl ManifestEntry for TestInstance<RdfData> {
             .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
 
         Ok(Self::new(data.store().clone(), schema, report))
-
     }
 }
 
@@ -63,8 +62,5 @@ fn graph_path(term: String) -> String {
     let mut chars = term.chars();
     chars.next();
     chars.next_back();
-    chars
-        .as_str()
-        .to_string()
-        .replace("file:/", "")
+    chars.as_str().to_string().replace("file:/", "")
 }

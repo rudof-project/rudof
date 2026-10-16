@@ -1,13 +1,16 @@
+use crate::ast::{ASTNodeExpr, ASTSchema};
+use crate::error::IRError;
+use crate::ir::node_exprs::{
+    Concat, Count, Distinct, Empty, Exists, Filter, FindFirst, FlatMap, IfExpression, InstancesOf, Intersection, Iri,
+    Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove, Sum, Var,
+};
+use crate::ir::{IRSchema, convert_iri_ref};
+use crate::validator::engine::Engine;
+use rudof_rdf::rdf_core::NeighsRDF;
+use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
-use rudof_rdf::rdf_core::NeighsRDF;
-use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
-use crate::ast::{ASTNodeExpr, ASTSchema};
-use crate::error::IRError;
-use crate::ir::{convert_iri_ref, IRSchema};
-use crate::ir::node_exprs::{Concat, Count, Distinct, Empty, Exists, Filter, FindFirst, FlatMap, IfExpression, InstancesOf, Intersection, Iri, Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove, Sum, Var};
-use crate::validator::engine::Engine;
 
 #[derive(Debug, Clone)]
 pub enum IRNodeExpr {
@@ -60,19 +63,22 @@ impl IRNodeExpr {
             ASTNodeExpr::PathValues { path, focus_node } => {
                 let fnode = if let Some(fnode) = focus_node {
                     Some(IRNodeExpr::compile(fnode.deref(), ast, ir)?)
-                } else { None };
+                } else {
+                    None
+                };
                 Self::PathValues(PathValues::new(path).with_focus_node(fnode))
             },
             ASTNodeExpr::Exists(exists) => {
                 let e = IRNodeExpr::compile(exists.deref(), ast, ir)?;
                 Self::Exists(Exists::new(e))
             },
-            ASTNodeExpr::IfExpression { if_condition, then, else_expression } => {
+            ASTNodeExpr::IfExpression {
+                if_condition,
+                then,
+                else_expression,
+            } => {
                 let i = IRNodeExpr::compile(if_condition.deref(), ast, ir)?;
-                let t = then
-                    .as_deref()
-                    .map(|t| IRNodeExpr::compile(t, ast, ir))
-                    .transpose()?;
+                let t = then.as_deref().map(|t| IRNodeExpr::compile(t, ast, ir)).transpose()?;
                 let e = else_expression
                     .as_deref()
                     .map(|e| IRNodeExpr::compile(e, ast, ir))
@@ -89,14 +95,14 @@ impl IRNodeExpr {
                     .map(|e| IRNodeExpr::compile(e, ast, ir))
                     .collect::<Result<Vec<_>, _>>()?;
                 Self::Intersection(Intersection::new(v))
-            }
+            },
             ASTNodeExpr::Concat(concat) => {
                 let v = concat
                     .iter()
                     .map(|e| IRNodeExpr::compile(e, ast, ir))
                     .collect::<Result<Vec<_>, _>>()?;
                 Self::Concat(Concat::new(v))
-            }
+            },
             ASTNodeExpr::Remove { nodes, remove } => {
                 let r = IRNodeExpr::compile(remove.deref(), ast, ir)?;
                 let n = IRNodeExpr::compile(nodes.deref(), ast, ir)?;
@@ -106,52 +112,51 @@ impl IRNodeExpr {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
                 let f = ir.register_shape(filter_shape.id(), Some(&filter_shape), ast)?;
                 Self::Filter(Filter::new(f, n))
-            }
+            },
             ASTNodeExpr::Limit { nodes, limit } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
                 Self::Limit(Limit::new(limit, n))
-            }
+            },
             ASTNodeExpr::Offset { nodes, offset } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
                 Self::Offset(Offset::new(offset, n))
-            }
+            },
             ASTNodeExpr::OrderBy { nodes, order_by, desc } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
                 let o = IRNodeExpr::compile(order_by.as_ref(), ast, ir)?;
-                Self::OrderBy(OrderBy::new(o, n)
-                    .with_desc(desc))
-            }
+                Self::OrderBy(OrderBy::new(o, n).with_desc(desc))
+            },
             ASTNodeExpr::FlatMap { nodes, flat_map } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
                 let f = IRNodeExpr::compile(flat_map.as_ref(), ast, ir)?;
                 Self::FlatMap(FlatMap::new(f).with_nodes(Some(n)))
-            }
+            },
             ASTNodeExpr::FindFirst { nodes, find_first } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
                 let f = ir.register_shape(find_first.id(), Some(&find_first), ast)?;
                 Self::FindFirst(FindFirst::new(f, n))
-            }
+            },
             ASTNodeExpr::MatchAll { nodes, match_all } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
                 let m = ir.register_shape(match_all.id(), Some(&match_all), ast)?;
                 Self::MatchAll(MatchAll::new(m).with_nodes(Some(n)))
-            }
+            },
             ASTNodeExpr::Count(count) => {
                 let c = IRNodeExpr::compile(count.as_ref(), ast, ir)?;
                 Self::Count(Count::new(c))
-            }
+            },
             ASTNodeExpr::Min(min) => {
                 let m = IRNodeExpr::compile(min.as_ref(), ast, ir)?;
                 Self::Min(Min::new(m))
-            }
+            },
             ASTNodeExpr::Max(max) => {
                 let m = IRNodeExpr::compile(max.as_ref(), ast, ir)?;
                 Self::Max(Max::new(m))
-            }
+            },
             ASTNodeExpr::Sum(sum) => {
                 let s = IRNodeExpr::compile(sum.as_ref(), ast, ir)?;
                 Self::Sum(Sum::new(s))
-            }
+            },
             ASTNodeExpr::InstancesOf(instances) => Self::InstancesOf(InstancesOf::new(convert_iri_ref(instances)?)),
             ASTNodeExpr::NodesMatching(node) => {
                 let id = match node {
@@ -160,7 +165,7 @@ impl IRNodeExpr {
                 };
                 let idx = ir.register_shape(&id, None, ast)?;
                 Self::NodesMatching(NodesMatching::new(idx))
-            }
+            },
         };
 
         Ok(result)
@@ -175,7 +180,14 @@ impl IRNodeExpr {
         }
     }
 
-    pub fn evaluate<Rdf: NeighsRDF + Debug>(&self, store: &Rdf, focus: &Rdf::Term, scope: &HashMap<String, Rdf::Term>, runner: &mut dyn Engine<Rdf>, ir: &IRSchema) -> Result<Vec<Rdf::Term>, IRError> {
+    pub fn evaluate<Rdf: NeighsRDF + Debug>(
+        &self,
+        store: &Rdf,
+        focus: &Rdf::Term,
+        scope: &HashMap<String, Rdf::Term>,
+        runner: &mut dyn Engine<Rdf>,
+        ir: &IRSchema,
+    ) -> Result<Vec<Rdf::Term>, IRError> {
         match self {
             IRNodeExpr::Iri(i) => i.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::Literal(l) => l.evaluate(store, focus, scope, runner, ir),

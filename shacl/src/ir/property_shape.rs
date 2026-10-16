@@ -1,4 +1,5 @@
 use crate::ast::{ASTPropertyShape, ASTSchema};
+use crate::ir::IRTarget;
 use crate::ir::component::IRComponent;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
@@ -6,7 +7,6 @@ use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::ir::{IRNodeExpr, OrderValue, ReifierInfo};
-use crate::ir::IRTarget;
 use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
@@ -191,7 +191,8 @@ impl IRPropertyShape {
             .map(|target| IRTarget::compile(target, ast, ir))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let deactivated = shape.is_deactivated()
+        let deactivated = shape
+            .is_deactivated()
             .map(|ne| IRNodeExpr::compile(ne, ast, ir))
             .transpose()?;
 
@@ -279,9 +280,9 @@ impl IRPropertyShape {
             .try_for_each(|target| target.register(&self.id, graph))
             .map_err(|e| IRError::from_rdf_err::<RDF>("add target to graph", e))?;
 
-        if let Some(deactivated) = self.deactivated() &&
-            let Some(lit) = deactivated.as_constant() {
-
+        if let Some(deactivated) = self.deactivated()
+            && let Some(lit) = deactivated.as_constant()
+        {
             graph
                 .add_triple(id.clone(), ShaclVocab::sh_deactivated(), lit)
                 .map_err(IRError::add_triple::<RDF>)?;

@@ -61,25 +61,16 @@ impl ManifestGraph {
             .next())
     }
 
-    pub fn required_value(
-        &self,
-        subject: &NamedOrBlankNode,
-        property: &NamedNode,
-    ) -> Result<Term, TestSuiteError> {
-        self.value(subject, property)?.ok_or_else(|| {
-            TestSuiteError::Validation(format!("{subject} has no {property}"))
-        })
+    pub fn required_value(&self, subject: &NamedOrBlankNode, property: &NamedNode) -> Result<Term, TestSuiteError> {
+        self.value(subject, property)?
+            .ok_or_else(|| TestSuiteError::Validation(format!("{subject} has no {property}")))
     }
 
     pub fn list(&self, head: Term) -> Result<Vec<Term>, TestSuiteError> {
         let mut members = Vec::new();
         let mut current = head;
 
-        loop {
-            let Ok(subject) = TryInto::<NamedOrBlankNode>::try_into(current.clone()) else {
-                break;
-            };
-
+        while let Ok(subject) = TryInto::<NamedOrBlankNode>::try_into(current.clone()) {
             let rdf_first: NamedNode = RdfVocab::rdf_first().into();
             match self.value(&subject, &rdf_first)? {
                 None => break,

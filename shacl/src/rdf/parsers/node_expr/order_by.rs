@@ -1,10 +1,14 @@
-use rudof_rdf::rdf_core::{FocusRDF, RDFError};
+use crate::ast::ASTNodeExpr;
+use crate::rdf::parsers::node_expr::{Neighs, node_expr_from_term, required_nodes, single};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::utils::term_to_bool;
 use rudof_rdf::rdf_core::vocabs::ShaclNodeExprVocab;
-use crate::ast::ASTNodeExpr;
-use crate::rdf::parsers::node_expr::{single, Neighs, required_nodes, node_expr_from_term};
+use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 
-pub(crate) fn order_by<RDF: FocusRDF>(neighs: &Neighs<RDF>, rdf: &mut RDF, _: &RDF::Term) -> Result<Option<ASTNodeExpr>, RDFError> {
+pub(crate) fn order_by<RDF: FocusRDF>(
+    neighs: &Neighs<RDF>,
+    rdf: &mut RDF,
+    _: &RDF::Term,
+) -> Result<Option<ASTNodeExpr>, RDFError> {
     single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_order_by())?
         .map(|term| {
             let desc = desc::<RDF>(neighs)?;

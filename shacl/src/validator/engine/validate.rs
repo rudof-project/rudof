@@ -1,5 +1,5 @@
 use crate::error::ValidationError;
-use crate::ir::{node_expr_is_true, IRSchema, IRShape, ReifierInfo};
+use crate::ir::{IRSchema, IRShape, ReifierInfo, node_expr_is_true};
 use crate::types::MessageMap;
 use crate::validator::engine::Engine;
 use crate::validator::engine::focus_nodes_ops::FocusNodesOps;

@@ -126,7 +126,9 @@ impl Display for ASTNodeExpr {
             ASTNodeExpr::OrderBy { order_by, nodes, desc } => {
                 let d = if let Some(desc) = desc {
                     &format!(", desc={desc}")
-                } else { "" };
+                } else {
+                    ""
+                };
                 write!(f, "orderBy({order_by} in {nodes}{d})")
             },
             ASTNodeExpr::FlatMap { flat_map, nodes } => write!(f, "flatMap({flat_map} in {nodes})"),

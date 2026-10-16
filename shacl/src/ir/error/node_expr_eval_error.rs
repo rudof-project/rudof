@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::ir::node_exprs::{IfExpression, Var};
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum NodeExprEvalError {

@@ -647,11 +647,9 @@ impl ConcreteLiteral {
     pub fn numeric_value(&self) -> Option<NumericLiteral> {
         match self {
             Self::NumericLiteral(nl) => Some(nl.clone()),
-            Self::DatatypeLiteral { lexical_form, datatype } => {
-                match check_literal_datatype(lexical_form, datatype) {
-                    Ok(Self::NumericLiteral(nl)) => Some(nl),
-                    _ => None,
-                }
+            Self::DatatypeLiteral { lexical_form, datatype } => match check_literal_datatype(lexical_form, datatype) {
+                Ok(Self::NumericLiteral(nl)) => Some(nl),
+                _ => None,
             },
             _ => None,
         }

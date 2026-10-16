@@ -1,6 +1,6 @@
-use std::path::Path;
-use crate::common::manifest::NodeExprManifest;
 use crate::common::TestSuiteError;
+use crate::common::manifest::NodeExprManifest;
+use std::path::Path;
 
 /// Runs every `sht:EvalNodeExpr` entry of a node expression test manifest
 pub(crate) fn node_expr_runner(path: String) -> Result<(), TestSuiteError> {
@@ -11,15 +11,8 @@ pub(crate) fn node_expr_runner(path: String) -> Result<(), TestSuiteError> {
         let actual = manifest.evaluate(&test)?;
 
         let equals = if test.ignore_order {
-          let mut actual = actual
-              .iter()
-              .map(|t| t.to_string())
-              .collect::<Vec<_>>();
-          let mut expected = test
-              .expected
-              .iter()
-              .map(|t| t.to_string())
-              .collect::<Vec<_>>();
+            let mut actual = actual.iter().map(|t| t.to_string()).collect::<Vec<_>>();
+            let mut expected = test.expected.iter().map(|t| t.to_string()).collect::<Vec<_>>();
             actual.sort();
             expected.sort();
             actual == expected
@@ -34,7 +27,6 @@ pub(crate) fn node_expr_runner(path: String) -> Result<(), TestSuiteError> {
             return Err(TestSuiteError::NotEquals);
         }
     }
-    
-    Ok(())
 
+    Ok(())
 }

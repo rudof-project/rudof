@@ -1,40 +1,39 @@
-mod expr;
-mod var;
-mod path_values;
-mod exists;
-mod empty;
-mod distinct;
-mod intersection;
 mod concat;
-mod remove;
+mod count;
+mod distinct;
+mod empty;
+mod exists;
+mod expr;
+mod filter_shape;
+mod find_first;
+mod flat_map;
+mod if_expression;
+mod instances_of;
+mod intersection;
 mod limit;
+mod list;
+mod match_all;
+mod max;
+mod min;
+mod nodes_matching;
 mod offset;
 mod order_by;
-mod flat_map;
-mod count;
-mod min;
-mod max;
+mod path_values;
+mod remove;
 mod sum;
-mod instances_of;
-mod nodes_matching;
-mod if_expression;
-mod find_first;
-mod filter_shape;
-mod match_all;
-mod list;
+mod var;
 
+pub(crate) use expr::{NodeExprsPropertyParser, node_expr_from_term};
 use std::collections::{HashMap, HashSet};
-pub(crate) use expr::{node_expr_from_term, NodeExprsPropertyParser};
-
 
 use crate::ast::ASTNodeExpr;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ListParser, ValuesPropertyParser};
-use rudof_rdf::rdf_core::{FocusRDF, RDFError, Rdf};
 use rudof_iri::IriS;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ListParser;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::utils::term_to_int;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclNodeExprVocab;
+use rudof_rdf::rdf_core::{FocusRDF, RDFError, Rdf};
 
 /// The outgoing arcs of the blank node a node expression is written on.
 type Neighs<RDF> = HashMap<<RDF as Rdf>::IRI, HashSet<<RDF as Rdf>::Term>>;
@@ -67,18 +66,11 @@ fn expr_list<RDF: FocusRDF>(head: &RDF::Term, rdf: &mut RDF) -> Result<Vec<ASTNo
     rdf.set_focus(head);
     let members = ListParser::new().parse_focused(rdf)?;
 
-    members
-        .iter()
-        .map(|member| node_expr_from_term(member, rdf))
-        .collect()
+    members.iter().map(|member| node_expr_from_term(member, rdf)).collect()
 }
 
 /// Parses `shnex:nodes`, which these expressions require.
-fn required_nodes<RDF: FocusRDF>(
-    neighs: &Neighs<RDF>,
-    rdf: &mut RDF,
-    kind: &str,
-) -> Result<ASTNodeExpr, RDFError> {
+fn required_nodes<RDF: FocusRDF>(neighs: &Neighs<RDF>, rdf: &mut RDF, kind: &str) -> Result<ASTNodeExpr, RDFError> {
     optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_nodes(), rdf)?.ok_or_else(|| RDFError::DefaultError {
         msg: format!("{kind} requires shnex:nodes"),
     })
@@ -99,7 +91,7 @@ fn values<'a, RDF: FocusRDF>(neighs: &'a Neighs<RDF>, property: &IriS) -> Option
 }
 
 fn to_object<RDF: FocusRDF>(term: &RDF::Term) -> Result<Object, RDFError> {
-    term.clone().try_into().map_err(|_| RDFError::FailedTermToObjectError {
-        term: term.to_string(),
-    })
+    term.clone()
+        .try_into()
+        .map_err(|_| RDFError::FailedTermToObjectError { term: term.to_string() })
 }

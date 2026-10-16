@@ -36,7 +36,7 @@ impl InstancesOf {
             .shacl_instances_of(&cls)
             .map_err(|e| IRError::from_rdf_err::<Rdf>("compute SHACL instances", e))?;
 
-        Ok(instances.map(|subj| Rdf::Term::from(subj)).collect())
+        Ok(instances.map(Rdf::Term::from).collect())
     }
 }
 

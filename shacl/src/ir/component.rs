@@ -6,6 +6,7 @@ use crate::ir::components::{
 };
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
+use crate::ir::node_expr::IRNodeExpr;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
@@ -19,7 +20,6 @@ use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
-use crate::ir::node_expr::IRNodeExpr;
 
 #[derive(Debug, Clone)]
 pub enum IRComponent {
@@ -308,9 +308,10 @@ impl IRComponent {
             },
             IRComponent::Deactivated(deactivated) => {
                 // TODO - Add full Node Expr serialization
-                if let IRNodeExpr::Literal(lit) = deactivated.is_deactivated() &&
-                   let ConcreteLiteral::BooleanLiteral(flag) = lit.literal() {
-                    return register_boolean(*flag, ShaclVocab::sh_deactivated(), id, graph)
+                if let IRNodeExpr::Literal(lit) = deactivated.is_deactivated()
+                    && let ConcreteLiteral::BooleanLiteral(flag) = lit.literal()
+                {
+                    return register_boolean(*flag, ShaclVocab::sh_deactivated(), id, graph);
                 }
                 Ok(())
             },

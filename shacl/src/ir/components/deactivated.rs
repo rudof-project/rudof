@@ -1,5 +1,5 @@
-use std::fmt::{Display, Formatter};
 use crate::ir::node_expr::IRNodeExpr;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct Deactivated {

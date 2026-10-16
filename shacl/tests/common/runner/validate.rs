@@ -1,9 +1,9 @@
-use std::path::Path;
+use crate::common::TestSuiteError;
+use crate::common::manifest::ValidateManifest;
 use shacl::error::IRError;
 use shacl::validator::processor::{DataValidation, ShaclProcessor};
 use shacl::validator::{ShaclConfig, ShaclValidationMode};
-use crate::common::manifest::ValidateManifest;
-use crate::common::TestSuiteError;
+use std::path::Path;
 
 /// Runs a `sht:Validate` manifest with both [`Native`](ShaclValidationMode::Native) and
 /// [`Sparql`](ShaclValidationMode::Sparql)

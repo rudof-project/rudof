@@ -1,3 +1,4 @@
+use crate::ast::node_expr::ASTNodeExpr;
 use crate::types::{MessageMap, NodeKind, Value};
 use itertools::Itertools;
 use prefixmap::{IriRef, PrefixMap};
@@ -8,7 +9,6 @@ use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-use crate::ast::node_expr::ASTNodeExpr;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ASTComponent {
