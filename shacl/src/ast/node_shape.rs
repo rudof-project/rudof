@@ -1,16 +1,18 @@
+use crate::ast::ASTTarget;
 use crate::ast::error::ASTError;
+use crate::ast::node_expr::ASTNodeExpr;
 use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
-use crate::types::{ClosedInfo, MessageMap, Severity, Target};
+use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ASTNodeShape {
     id: Object,
     components: Vec<ASTComponent>,
-    targets: Vec<Target>,
+    targets: Vec<ASTTarget>,
     property_shapes: Vec<Object>,
     // closed: bool,
     // ignored_properties: Vec<IriRef>,
@@ -37,7 +39,7 @@ impl ASTNodeShape {
         }
     }
 
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<ASTTarget>) -> Self {
         self.targets = targets;
         self
     }
@@ -74,7 +76,7 @@ impl ASTNodeShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<ASTTarget> {
         &self.targets
     }
 
@@ -94,14 +96,13 @@ impl ASTNodeShape {
         self.message.as_ref()
     }
 
-    pub fn is_deactivated(&self) -> bool {
-        // TODO - Adapt for node expr since the expr needs to be computed
+    pub fn is_deactivated(&self) -> Option<&ASTNodeExpr> {
         for component in &self.components {
-            if let ASTComponent::Deactivated(true) = component {
-                return true;
+            if let ASTComponent::Deactivated(expr) = component {
+                return Some(expr);
             }
         }
-        false
+        None
     }
 
     fn closed_component(&self) -> (bool, HashSet<IriS>) {

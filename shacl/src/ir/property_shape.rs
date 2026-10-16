@@ -1,12 +1,13 @@
 use crate::ast::{ASTPropertyShape, ASTSchema};
+use crate::ir::IRTarget;
 use crate::ir::component::IRComponent;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::ir::{OrderValue, ReifierInfo};
-use crate::types::{ClosedInfo, MessageMap, Severity, Target};
+use crate::ir::{IRNodeExpr, OrderValue, ReifierInfo};
+use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral};
@@ -20,10 +21,10 @@ pub struct IRPropertyShape {
     id: Object,
     path: SHACLPath,
     components: Vec<IRComponent>,
-    targets: Vec<Target>,
+    targets: Vec<IRTarget>,
     property_shapes: Vec<ShapeLabelIdx>,
     closed_info: ClosedInfo,
-    deactivated: bool,
+    deactivated: Option<IRNodeExpr>,
     message: Option<MessageMap>,
     severity: Option<Severity>,
 
@@ -47,7 +48,7 @@ impl IRPropertyShape {
             targets: Vec::new(),
             property_shapes: Vec::new(),
             closed_info,
-            deactivated: false,
+            deactivated: None,
             message: None,
             severity: None,
             reifier_info: None,
@@ -62,7 +63,7 @@ impl IRPropertyShape {
         self.components = components;
         self
     }
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<IRTarget>) -> Self {
         self.targets = targets;
         self
     }
@@ -70,7 +71,7 @@ impl IRPropertyShape {
         self.property_shapes = property_shapes;
         self
     }
-    pub fn with_deactivated(mut self, deactivated: bool) -> Self {
+    pub fn with_deactivated(mut self, deactivated: Option<IRNodeExpr>) -> Self {
         self.deactivated = deactivated;
         self
     }
@@ -126,8 +127,8 @@ impl IRPropertyShape {
         &self.path
     }
 
-    pub fn deactivated(&self) -> bool {
-        self.deactivated
+    pub fn deactivated(&self) -> Option<&IRNodeExpr> {
+        self.deactivated.as_ref()
     }
 
     pub fn severity(&self) -> &Severity {
@@ -141,7 +142,7 @@ impl IRPropertyShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<IRTarget> {
         &self.targets
     }
 
@@ -184,11 +185,22 @@ impl IRPropertyShape {
 
         let reifier_info = ReifierInfo::get_reifier_info(shape, ast, ir)?;
 
+        let compiled_targets = shape
+            .targets()
+            .iter()
+            .map(|target| IRTarget::compile(target, ast, ir))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let deactivated = shape
+            .is_deactivated()
+            .map(|ne| IRNodeExpr::compile(ne, ast, ir))
+            .transpose()?;
+
         let compiled_prop_shape = IRPropertyShape::new(shape.id().clone(), shape.path().to_owned(), closed_info)
             .with_components(compiled_components)
-            .with_targets(shape.targets().to_owned())
+            .with_targets(compiled_targets)
             .with_property_shapes(compiled_prop_shapes)
-            .with_deactivated(shape.is_deactivated())
+            .with_deactivated(deactivated)
             .with_severity(shape.severity().cloned())
             .with_reifier_info(reifier_info)
             .with_name(shape.name().cloned())
@@ -268,9 +280,9 @@ impl IRPropertyShape {
             .try_for_each(|target| target.register(&self.id, graph))
             .map_err(|e| IRError::from_rdf_err::<RDF>("add target to graph", e))?;
 
-        if self.deactivated {
-            let lit: RDF::Literal = "true".to_string().into();
-
+        if let Some(deactivated) = self.deactivated()
+            && let Some(lit) = deactivated.as_constant()
+        {
             graph
                 .add_triple(id.clone(), ShaclVocab::sh_deactivated(), lit)
                 .map_err(IRError::add_triple::<RDF>)?;
@@ -341,8 +353,8 @@ impl Display for IRPropertyShape {
             writeln!(f, " order: {order}")?;
         }
 
-        if self.deactivated() {
-            writeln!(f, " Deactivated: {}", self.deactivated())?;
+        if let Some(deactivated) = self.deactivated() {
+            writeln!(f, " Deactivated: {}", deactivated)?;
         }
         if self.severity() != &Severity::Violation {
             writeln!(f, " Severity: {}", self.severity())?;

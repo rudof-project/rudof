@@ -1,36 +1,11 @@
 #[cfg(all(test, feature = "sparql"))]
 mod tests {
-    use crate::common::TestSuiteError;
-    use crate::test;
-    use shacl::validator::ShaclValidationMode;
-
-    const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/sparql/node/";
-
-    #[test]
-    fn prefixes_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "prefixes-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn sparql_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "sparql-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn sparql_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "sparql-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn sparql_003() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "sparql-003");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
+    suite_tests! {
+        crate::common::runner::validate_runner,
+        "tests/data-shapes/data-shapes-test-suite/tests/sparql/node/",
+        prefixes_001 => "prefixes-001",
+        sparql_001 => "sparql-001",
+        sparql_002 => "sparql-002",
+        sparql_003 => "sparql-003",
     }
 }

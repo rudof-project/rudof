@@ -1,25 +1,26 @@
+use crate::ast::ASTTarget;
 use crate::ast::error::ASTError;
+use crate::ast::node_expr::ASTNodeExpr;
 use crate::ast::reifier_info::ReifierInfo;
 use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
 use crate::ir::OrderValue;
-use crate::types::{ClosedInfo, MessageMap, Severity, Target};
+use crate::types::{ClosedInfo, MessageMap, Severity};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ASTPropertyShape {
     id: Object,
     path: SHACLPath,
     components: Vec<ASTComponent>,
-    targets: Vec<Target>,
+    targets: Vec<ASTTarget>,
     property_shapes: Vec<Object>,
     reifier_info: Option<ReifierInfo>,
     closed: bool,
     // ignored_properties: Vec<IriRef>,
-    deactivated: bool,
     message: Option<MessageMap>,
     severity: Option<Severity>,
     name: Option<MessageMap>,
@@ -30,8 +31,8 @@ pub struct ASTPropertyShape {
     // annotations: Vec<(IriRef, RDFNode)>
 
     // TODO - For node expr
-    // default_value: Option<NodeExpr<RDF>>, // ONLY WHEN PATH IS PREDICATE PATH
-    // values: Option<NodeExpr<RDF>> // ONLY WHEN PATH IS PREDICATE PATH
+    default_value: Option<ASTNodeExpr>, // ONLY WHEN PATH IS PREDICATE PATH
+    values: Option<ASTNodeExpr>,        // ONLY WHEN PATH IS PREDICATE PATH
 }
 
 impl ASTPropertyShape {
@@ -43,7 +44,6 @@ impl ASTPropertyShape {
             targets: Vec::new(),
             property_shapes: Vec::new(),
             closed: false,
-            deactivated: false,
             message: None,
             severity: None,
             name: None,
@@ -51,9 +51,8 @@ impl ASTPropertyShape {
             order: None,
             group: None,
             reifier_info: None,
-            // TODO - For NodeExpr, do not delete
-            // default_value: None,
-            // values: None,
+            default_value: None,
+            values: None,
         }
     }
 
@@ -91,7 +90,7 @@ impl ASTPropertyShape {
         self
     }
 
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<ASTTarget>) -> Self {
         self.targets = targets;
         self
     }
@@ -156,8 +155,13 @@ impl ASTPropertyShape {
         &self.closed
     }
 
-    pub fn is_deactivated(&self) -> bool {
-        self.deactivated
+    pub fn is_deactivated(&self) -> Option<&ASTNodeExpr> {
+        for component in &self.components {
+            if let ASTComponent::Deactivated(ne) = component {
+                return Some(ne);
+            }
+        }
+        None
     }
 
     pub fn severity(&self) -> Option<&Severity> {
@@ -168,7 +172,7 @@ impl ASTPropertyShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<ASTTarget> {
         &self.targets
     }
 

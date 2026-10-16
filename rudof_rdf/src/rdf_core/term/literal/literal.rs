@@ -39,7 +39,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
         let datatype = self.datatype();
         let iri = datatype.get_iri().ok()?;
 
-        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#boolean" {
+        if iri.as_str() != XsdVocab::XSD_BOOLEAN {
             return None;
         }
 
@@ -62,19 +62,19 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
         let iri = datatype.get_iri().ok()?;
 
         match iri.as_str() {
-            "http://www.w3.org/2001/XMLSchema#integer"
-            | "http://www.w3.org/2001/XMLSchema#long"
-            | "http://www.w3.org/2001/XMLSchema#int"
-            | "http://www.w3.org/2001/XMLSchema#short"
-            | "http://www.w3.org/2001/XMLSchema#byte"
-            | "http://www.w3.org/2001/XMLSchema#unsignedLong"
-            | "http://www.w3.org/2001/XMLSchema#unsignedInt"
-            | "http://www.w3.org/2001/XMLSchema#unsignedShort"
-            | "http://www.w3.org/2001/XMLSchema#unsignedByte"
-            | "http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
-            | "http://www.w3.org/2001/XMLSchema#positiveInteger"
-            | "http://www.w3.org/2001/XMLSchema#nonPositiveInteger"
-            | "http://www.w3.org/2001/XMLSchema#negativeInteger" => self.lexical_form().parse().ok(),
+            XsdVocab::XSD_INTEGER
+            | XsdVocab::XSD_LONG
+            | XsdVocab::XSD_INT
+            | XsdVocab::XSD_SHORT
+            | XsdVocab::XSD_BYTE
+            | XsdVocab::XSD_UNSIGNED_LONG
+            | XsdVocab::XSD_UNSIGNED_INT
+            | XsdVocab::XSD_UNSIGNED_SHORT
+            | XsdVocab::XSD_UNSIGNED_BYTE
+            | XsdVocab::XSD_NON_NEGATIVE_INTEGER
+            | XsdVocab::XSD_POSITIVE_INTEGER
+            | XsdVocab::XSD_NON_POSITIVE_INTEGER
+            | XsdVocab::XSD_NEGATIVE_INTEGER => self.lexical_form().parse().ok(),
             _ => None,
         }
     }
@@ -87,7 +87,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
         let datatype = self.datatype();
         let iri = datatype.get_iri().ok()?;
 
-        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#dateTime" {
+        if iri.as_str() != XsdVocab::XSD_DATE_TIME {
             return None;
         }
 
@@ -102,7 +102,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
         let datatype = self.datatype();
         let iri = datatype.get_iri().ok()?;
 
-        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#double" {
+        if iri.as_str() != XsdVocab::XSD_DOUBLE {
             return None;
         }
 
@@ -117,7 +117,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
         let datatype = self.datatype();
         let iri = datatype.get_iri().ok()?;
 
-        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#decimal" {
+        if iri.as_str() != XsdVocab::XSD_DECIMAL {
             return None;
         }
 
@@ -314,11 +314,11 @@ impl ConcreteLiteral {
     ///
     /// ```
     /// use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
-    /// use rudof_iri::IriS;
     /// use prefixmap::IriRef;
+    /// use rudof_rdf::rdf_core::vocabs::XsdVocab;
     ///
     /// // Create a datatype literal with an integer value
-    /// let dt_iri = IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer"));
+    /// let dt_iri = IriRef::iri(XsdVocab::xsd_integer());
     /// let lit = ConcreteLiteral::lit_datatype("42", &dt_iri);
     ///
     /// // Validate the literal
@@ -647,6 +647,10 @@ impl ConcreteLiteral {
     pub fn numeric_value(&self) -> Option<NumericLiteral> {
         match self {
             Self::NumericLiteral(nl) => Some(nl.clone()),
+            Self::DatatypeLiteral { lexical_form, datatype } => match check_literal_datatype(lexical_form, datatype) {
+                Ok(Self::NumericLiteral(nl)) => Some(nl),
+                _ => None,
+            },
             _ => None,
         }
     }

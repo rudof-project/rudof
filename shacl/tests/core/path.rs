@@ -1,127 +1,24 @@
 #[cfg(test)]
 mod tests {
-    use crate::common::TestSuiteError;
-    use crate::test;
-    use shacl::validator::ShaclValidationMode;
-
-    const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/path/";
-
-    #[test]
-    fn path_alternative_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-alternative-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_complex_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-complex-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_complex_002_data() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-complex-002-data");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_complex_002_shapes() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-complex-002-shapes");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_complex_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-complex-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_inverse_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-inverse-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_one_or_more_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-oneOrMore-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_sequence_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-sequence-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_sequence_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-sequence-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_sequence_duplicate_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-sequence-duplicate-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_strange_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-strange-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_strange_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-strange-002");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_unused_001_data() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-unused-001-data");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_unused_001_shapes() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-unused-001-shapes");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_unused_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-unused-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_zero_or_more_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-zeroOrMore-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
-    }
-
-    #[test]
-    fn path_zero_or_one_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "path-zeroOrOne-001");
-        test(path.clone(), ShaclValidationMode::Native)?;
-        test(path, ShaclValidationMode::Sparql)
+    suite_tests! {
+        crate::common::runner::validate_runner,
+        "tests/data-shapes/data-shapes-test-suite/tests/core/path/",
+        path_alternative_001 => "path-alternative-001",
+        path_complex_001 => "path-complex-001",
+        path_complex_002_data => "path-complex-002-data",
+        path_complex_002_shapes => "path-complex-002-shapes",
+        path_complex_002 => "path-complex-002",
+        path_inverse_001 => "path-inverse-001",
+        path_one_or_more_001 => "path-oneOrMore-001",
+        path_sequence_001 => "path-sequence-001",
+        path_sequence_002 => "path-sequence-002",
+        path_sequence_duplicate_001 => "path-sequence-duplicate-001",
+        path_strange_001 => "path-strange-001",
+        path_strange_002 => "path-strange-002",
+        path_unused_001_data => "path-unused-001-data",
+        path_unused_001_shapes => "path-unused-001-shapes",
+        path_unused_001 => "path-unused-001",
+        path_zero_or_more_001 => "path-zeroOrMore-001",
+        path_zero_or_one_001 => "path-zeroOrOne-001",
     }
 }
