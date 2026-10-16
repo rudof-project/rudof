@@ -33,7 +33,30 @@ RDF data
 
 .. automethod:: Rudof.read_data
 .. automethod:: Rudof.serialize_data
+.. automethod:: Rudof.add_triple
+.. automethod:: Rudof.remove_triple
+.. automethod:: Rudof.add_triples
+.. automethod:: Rudof.remove_triples
+.. automethod:: Rudof.triples
 .. automethod:: Rudof.dereference
+
+Staging
+~~~~~~~
+
+Changes to the loaded data can be made provisional: staged, checked, and then kept or
+discarded. Only the data is staged — the schemas and the rest of the session are left
+alone either way.
+
+.. automethod:: Rudof.staging
+.. automethod:: Rudof.begin_staging
+.. automethod:: Rudof.commit_staging
+.. automethod:: Rudof.rollback_staging
+.. automethod:: Rudof.staging_depth
+
+.. autoclass:: Staging
+   :members:
+   :undoc-members:
+   :special-members: __enter__, __exit__, __repr__
 
 ShEx
 ~~~~
@@ -327,6 +350,19 @@ Node neighborhood
 .. autoclass:: ArcDirection
    :members:
    :undoc-members:
+
+Triples
+~~~~~~~
+
+.. autoclass:: Triple
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __repr__
+
+.. autoclass:: TripleIterator
+   :members:
+   :undoc-members:
+   :special-members: __iter__, __next__
 
 
 Formats

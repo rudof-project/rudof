@@ -9,6 +9,7 @@ pub mod service;
 pub mod shacl;
 pub mod shapemap;
 pub mod shex;
+pub mod triple;
 
 pub use conversion::*;
 pub use data::*;
@@ -21,3 +22,4 @@ pub use service::*;
 pub use shacl::*;
 pub use shapemap::*;
 pub use shex::*;
+pub use triple::*;

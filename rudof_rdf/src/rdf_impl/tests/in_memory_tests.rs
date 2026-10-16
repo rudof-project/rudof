@@ -11,10 +11,12 @@ use crate::rdf_core::{
 };
 use crate::rdf_impl::{OxigraphInMemory, ReaderMode};
 use crate::rdf_parser;
+use oxrdf::BaseDirection;
 use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
 use oxrdf::NamedOrBlankNode as OxSubject;
 use oxrdf::Term as OxTerm;
+use oxrdf::Triple as OxTriple;
 use rudof_iri::IriS;
 use std::collections::HashSet;
 
@@ -397,4 +399,163 @@ fn test_parse_n3_that_is_not_rdf() {
         let graph = OxigraphInMemory::from_str(n3, &RDFFormat::N3, None, &ReaderMode::Lax).unwrap();
         assert!(graph.len() <= 1, "{n3}: {}", graph.len());
     }
+}
+
+#[test]
+fn test_strict_mode_validates_the_terms_it_reads() {
+    const RDF: &str = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#>";
+    for (format, data) in [
+        // rdf:langString as the datatype of a literal with no language tag
+        (
+            RDFFormat::Turtle,
+            format!("prefix : <http://example.org/> prefix rdf: {RDF} :x :p \"a\"^^rdf:langString ."),
+        ),
+        // A language tag that is not well-formed BCP 47: a subtag of more than eight characters
+        (
+            RDFFormat::Turtle,
+            "prefix : <http://example.org/> :x :p \"a\"@abcdefghijkl .".to_string(),
+        ),
+        (
+            RDFFormat::TriG,
+            format!("prefix : <http://example.org/> prefix rdf: {RDF} :g {{ :x :p \"a\"^^rdf:langString }}"),
+        ),
+        (
+            RDFFormat::N3,
+            "@prefix : <http://example.org/> . :x :p \"a\"@abcdefghijkl .".to_string(),
+        ),
+    ] {
+        let err = OxigraphInMemory::from_str(&data, &format, None, &ReaderMode::Strict).unwrap_err();
+        assert!(err.to_string().contains(&format.to_string()), "{data}: {err}");
+        // Lax mode stays lenient, so the term is read as it is: it is best effort
+        let graph = OxigraphInMemory::from_str(&data, &format, None, &ReaderMode::Lax).unwrap();
+        assert_eq!(graph.len(), 1, "{data}");
+    }
+}
+
+#[test]
+fn test_strict_mode_reads_rdf_12_terms() {
+    let turtle = r#"
+@base <http://example.org/> .
+prefix : <http://example.org/>
+<x> :p "Shalom"@he--rtl .
+<y> :q <<( <x> :p "a" )>> .
+"#;
+    let graph = OxigraphInMemory::from_str(turtle, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+    assert_eq!(graph.len(), 2);
+}
+// RDF/XML
+
+// RDF/XML is parsed with oxrdfxml directly, not through oxrdfio, so the RDF 1.2
+// constructs are read only while that crate has its `rdf-12` feature on.
+#[test]
+fn test_parse_rdfxml_rdf12_terms() {
+    // Without rdf:version="1.2" both constructs are silently ignored, as RDF/XML 1.2 asks
+    let rdfxml = r#"<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:its="http://www.w3.org/2005/11/its"
+         xmlns="http://example.org/"
+         rdf:version="1.2">
+  <rdf:Description rdf:about="http://example.org/x">
+    <p xml:lang="he" its:dir="rtl">Shalom</p>
+    <q rdf:parseType="Triple">
+      <rdf:Description rdf:about="http://example.org/s">
+        <r rdf:resource="http://example.org/o"/>
+      </rdf:Description>
+    </q>
+  </rdf:Description>
+</rdf:RDF>
+"#;
+    let graph = OxigraphInMemory::from_str(rdfxml, &RDFFormat::Rdfxml, None, &ReaderMode::Strict).unwrap();
+    assert_eq!(graph.len(), 2, "the triple term is one term, not a reification");
+
+    let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p");
+    let shalom: OxTerm = OxLiteral::new_directional_language_tagged_literal("Shalom", "he", BaseDirection::Rtl)
+        .unwrap()
+        .into();
+    assert_eq!(graph.triples_matching(&x, &p, &shalom).unwrap().count(), 1, "its:dir");
+
+    let q = OxNamedNode::new_unchecked("http://example.org/q");
+    let triple_term: OxTerm = OxTriple::new(
+        OxNamedNode::new_unchecked("http://example.org/s"),
+        OxNamedNode::new_unchecked("http://example.org/r"),
+        OxNamedNode::new_unchecked("http://example.org/o"),
+    )
+    .into();
+    assert_eq!(
+        graph.triples_matching(&x, &q, &triple_term).unwrap().count(),
+        1,
+        "rdf:parseType=\"Triple\""
+    );
+}
+
+// The store that answers SPARQL queries is built from the graph on demand, so a
+// mutation after it has been built has to drop it; otherwise every later query is
+// answered from the triples the graph held back then.
+#[cfg(feature = "sparql")]
+#[test]
+fn test_adding_a_triple_invalidates_the_sparql_store() {
+    use crate::rdf_core::query::QueryRDF;
+
+    let mut graph = graph_from_str(DUMMY_GRAPH);
+    let matches = |graph: &mut OxigraphInMemory| {
+        graph.ensure_store().unwrap();
+        graph
+            .query_select("SELECT ?o WHERE { <http://example.org/x> <http://example.org/new> ?o }")
+            .unwrap()
+            .iter()
+            .count()
+    };
+
+    assert_eq!(matches(&mut graph), 0);
+
+    let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let new = OxNamedNode::new_unchecked("http://example.org/new");
+    let five: OxTerm = OxLiteral::from(5).into();
+    graph.add_triple(x.clone(), new.clone(), five.clone()).unwrap();
+    assert_eq!(matches(&mut graph), 1, "the query must see the added triple");
+
+    graph.remove_triple(x, new, five).unwrap();
+    assert_eq!(matches(&mut graph), 0, "the query must not see the removed triple");
+}
+
+#[test]
+fn test_triples_matching_with_any_or() {
+    use crate::rdf_core::AnyOr;
+
+    let graph = graph_from_str(DUMMY_GRAPH);
+    let x: AnyOr<OxSubject> = AnyOr::new(Some(OxNamedNode::new_unchecked("http://example.org/x").into()));
+    let p = AnyOr::new(Some(OxNamedNode::new_unchecked("http://example.org/p")));
+    let one: AnyOr<OxTerm> = AnyOr::new(Some(OxLiteral::from(1).into()));
+
+    // A value in every position matches exactly the one triple, and a wildcard in a
+    // position widens the pattern there, just as `Any` does.
+    assert_eq!(graph.triples_matching(&x, &p, &one).unwrap().count(), 1);
+    assert_eq!(graph.triples_matching(&x, &p, &AnyOr::any()).unwrap().count(), 1);
+    assert_eq!(
+        graph
+            .triples_matching(&x, &AnyOr::any(), &AnyOr::any())
+            .unwrap()
+            .count(),
+        2
+    );
+    assert_eq!(
+        graph
+            .triples_matching(&AnyOr::any(), &p, &AnyOr::any())
+            .unwrap()
+            .count(),
+        2
+    );
+    assert_eq!(
+        graph
+            .triples_matching(&AnyOr::<OxSubject>::any(), &AnyOr::any(), &AnyOr::<OxTerm>::any())
+            .unwrap()
+            .count(),
+        graph.len(),
+        "every position a wildcard walks the whole graph"
+    );
+
+    // And a value that is not in the graph matches nothing.
+    let absent = AnyOr::new(Some(OxNamedNode::new_unchecked("http://example.org/absent")));
+    assert_eq!(graph.triples_matching(&x, &absent, &AnyOr::any()).unwrap().count(), 0);
 }

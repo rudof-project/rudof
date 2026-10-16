@@ -28,4 +28,5 @@ pub fn reset_all(rudof: &mut Rudof) {
         rudof.rdf_config = None;
     }
     rudof.map_state = None;
+    rudof.staging.clear();
 }

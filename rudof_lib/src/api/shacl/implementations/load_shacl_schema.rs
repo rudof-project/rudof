@@ -1,5 +1,6 @@
 use crate::{
     Result, Rudof,
+    api::data::implementations::staging_depth,
     errors::{DataError, ShaclError},
     formats::{DataReaderMode, InputSpec, ShaclFormat},
     utils::{PrefixDirective, default_prefix_header, get_base_iri},
@@ -115,6 +116,14 @@ fn read_shacl_schema(
 }
 
 fn extract_shacl_shapes_from_data(rudof: &mut Rudof) -> Result<()> {
+    let depth = staging_depth(rudof);
+    if depth > 0 {
+        tracing::warn!(
+            "reading the SHACL shapes out of the loaded data with {depth} staging frame(s) open: \
+             the shapes stay loaded even if the triples they come from are rolled back"
+        );
+    }
+
     let recursion_semantics = rudof.config().execute().shacl().recursion_semantics();
 
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;

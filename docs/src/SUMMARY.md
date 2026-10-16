@@ -5,10 +5,10 @@
 - [Getting started](./general/getting-started.md)
 - [Online demo](./general/online-demo.md)
 - [Configuration](./general/configuration.md)
+- [Completion Scripts](./general/completion.md)
 
 # rudof CLI commands
 
-- [completion](./cli_usage/completion.md)
 - [config](./cli_usage/config.md)
 - [shell](./cli_usage/shell.md)
 - [mcp](./cli_usage/mcp.md)

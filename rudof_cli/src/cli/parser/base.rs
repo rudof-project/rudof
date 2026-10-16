@@ -1,8 +1,8 @@
 use crate::cli::parser::{
-    CompareArgs, CompletionArgs, ConfigArgs, ConnectArgs, ConvertArgs, DCTapArgs, DataArgs, DdlArgs, GenerateArgs,
-    LoadArgs, MaterializeArgs, McpArgs, NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs,
-    ServiceArgs, ShaclArgs, ShaclValidateArgs, ShapemapArgs, ShellArgs, ShexArgs, ShexCheckArgs, ShexValidateArgs,
-    SparqlArgs, ValidateArgs,
+    CompareArgs, ConfigArgs, ConnectArgs, ConvertArgs, DCTapArgs, DataArgs, DdlArgs, GenerateArgs, LoadArgs,
+    MaterializeArgs, McpArgs, NodeArgs, PgschemaArgs, PgschemaValidateArgs, QueryArgs, RdfConfigArgs, ServiceArgs,
+    ShaclArgs, ShaclValidateArgs, ShapemapArgs, ShellArgs, ShexArgs, ShexCheckArgs, ShexValidateArgs, SparqlArgs,
+    ValidateArgs,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
@@ -73,8 +73,6 @@ pub enum Command {
     Materialize(MaterializeArgs),
     /// Validate Property Graph data using PGSchema
     PgschemaValidate(PgschemaValidateArgs),
-    /// Generates a shell completion script for the specified shell
-    Completion(CompletionArgs),
     /// Dump the effective configuration rudof is using as TOML
     Config(ConfigArgs),
     /// Start an interactive shell (REPL) session

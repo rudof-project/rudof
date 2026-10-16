@@ -172,7 +172,96 @@ for arc in neighborhood {
 // http://example.org/alice <-- http://example.org/knows <-- http://example.org/dave
 ```
 
-#### 2.3 Property Graph Data
+#### 2.3 Triples
+
+`add_triple`, `remove_triple` and `triples` work on the loaded graph one triple at a time, which is what building a graph programmatically (or applying the triples a validation report says are missing) takes, without serializing the graph, editing the text and reading it back.
+
+Terms are given in the textual form the rest of the API accepts, so callers do not build RDF terms by hand: `<http://example.org/alice>`, a prefixed name (`ex:alice`), a blank node label (`_:b1`) or a literal (`"Alice"`, `"Alice"@en`, `23`, `"23"^^xsd:integer`). Prefixed names are resolved against the prefixes of the loaded data, filled in with the session's default prefixes for the aliases the data does not declare itself; an alias neither of them declares is an error rather than an unresolved term.
+
+A relative IRI (`<alice>`, and the datatype of `"23"^^<integer>`) is resolved against the session's base IRI, the one `load_data` reads a document relative to: `base_iri` in the configuration, and failing that the current directory. An IRI that cannot be made absolute (a relative one where there is no base to resolve it against, as on WebAssembly with none configured) is an error, rather than being stored as it was written and serialized afterwards as something that is not valid RDF on its own. The node and the predicates of `node_neighborhood` are resolved the same way.
+
+`triples` takes a pattern: every position left unset matches any term, so a builder with none of them set walks the whole graph. Like `node_neighborhood` it borrows the loaded data, which therefore cannot be modified while the triples are being walked, and yields one `Result<Triple>` per match.
+
+Only the in-memory graph can be modified. A SPARQL endpoint and the QLever backend are read-only, and so is data federated with SPARQL endpoints: the local graph of such a session is deliberately not written to instead, since `triples` reads it and the endpoints' as one. `triples` itself works on all of them, but an unconstrained pattern against a remote backend pulls its whole graph.
+
+```rust
+use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::formats::InputSpec;
+use std::str::FromStr;
+
+let mut rudof = Rudof::new(RudofConfig::default());
+let rdf_data_input = vec![InputSpec::from_str(
+    r#"
+        prefix ex: <http://example.org/>
+        ex:alice ex:name "Alice" .
+    "#
+).unwrap()];
+
+rudof.load_data().with_data(&rdf_data_input).execute().unwrap();
+
+// Change the graph in place
+rudof.add_triple("ex:alice", "ex:knows", "ex:bob").execute().unwrap();
+rudof.add_triple("ex:bob", "ex:name", "\"Bob\"").execute().unwrap();
+rudof.remove_triple("ex:alice", "ex:name", "\"Alice\"").execute().unwrap();
+
+// Walk the triples matching a pattern (here: everything ex:bob is the subject of)
+for triple in rudof.triples().with_subject("ex:bob").execute().unwrap() {
+    println!("{}", triple.unwrap());
+}
+
+// Prints:
+// http://example.org/bob <http://example.org/name> "Bob" .
+```
+
+#### 2.4 Staging
+
+`begin_staging`, `commit_staging`, `rollback_staging` and `staging_depth` make a group of changes to the loaded data provisional: stage them, check whether they hold (validate, query), and then keep them or put the graph back as it was. `staging()` wraps the same thing in a guard that rolls the frame back when it is dropped, so a change cannot be left half-applied by an early return or an error, and `add_triples`/`remove_triples` apply a whole delta in one operation (every triple is parsed before any is written), so a batch with an unparsable term changes nothing.
+
+Rolling back costs what was staged, not the size of the graph. Each triple-level change is journaled with its exact inverse (a change the graph did not actually make journals nothing, so the inverse is exact). A change that cannot be inverted triple by triple, namely `load_data`, `dereference` and `reset_data`, instead makes the frame take a copy-on-write snapshot of the session data before it runs. Frames nest; committing a nested frame hands its journal (and its snapshot) to the enclosing one, so an outer rollback still undoes the inner work.
+
+**The snapshot is cheap to take and not cheap to keep.** The in-memory backend holds its graph behind an `Arc`, so `journal_snapshot` clones a handle; the copy of the triples is paid afterwards, by the first write that finds the handle shared and goes through `Arc::make_mut`. The cost is therefore one copy of the graph per frame that snapshots, not one per command: a second `load_data` in the same frame finds the snapshot already taken (`StagingFrame::has_snapshot`) and clones nothing, and the write that follows it has the graph to itself again. `reset_data` pays no copy at all, replacing the data rather than writing the graph, so its frame merely keeps the old graph alive. Nested frames each take their own, which is the one pattern that multiplies resident memory: two nested frames that have both loaded hold three versions of the graph at once. Hence the advice for a large graph: stage triple deltas, keep `load_data` and `dereference` outside the frame, and do not nest frames that load.
+
+**Every write to the data must be journaled.** The journal helpers live in `api::data::staging` and are no-ops when nothing is staged, so the operations that change the data call them unconditionally: `journal_added`/`journal_removed` after a triple-level write, `journal_snapshot` *before* a non-invertible one. The raw accessor is called `utils::rdf_data_mut_unjournaled` to say so at every call site: a write that reaches the data through it with nothing journaling around it is a write `rollback_staging` cannot undo. `reset_all` is the one exception, and drops the open frames instead.
+
+**Only the data is staged.** The loaded schemas, shapemaps, prefixes and configuration are session state: a ShEx or SHACL schema loaded inside a frame is still loaded after a rollback. That holds for a SHACL schema read out of the data graph as well (`load_shacl_schema` with no source), which is the one case where the asymmetry shows: with the shapes in the data, the shape triples are data and a staged change to them is rolled back in the graph, while the schema compiled from them is not. Doing that with a frame open logs a warning saying so.
+
+What a rollback does clear is the state computed from the data it discards: the SHACL and ShEx validation results, the query results and the loaded SPARQL query.
+
+Staging needs data that can be modified, and says so when the frame is opened rather than at the first write: a SPARQL endpoint, the QLever backend and endpoint-federated data are refused with `DataError::ReadOnlyData`, as are property graphs and an empty session with `DataError::NoRdfDataLoaded`. Closing a frame that is not open is `DataError::NoStagingFrame`.
+
+```rust
+use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::formats::InputSpec;
+use std::str::FromStr;
+
+let mut rudof = Rudof::new(RudofConfig::default());
+let rdf_data_input = vec![InputSpec::from_str(
+    r#"
+        prefix ex: <http://example.org/>
+        ex:alice ex:name "Alice" .
+    "#
+).unwrap()];
+rudof.load_data().with_data(&rdf_data_input).execute().unwrap();
+
+// The guard holds the frame open and derefs to the session.
+let mut tx = rudof.staging().execute().unwrap();
+tx.add_triples(&[("ex:bob", "ex:name", "\"Bob\""), ("ex:alice", "ex:knows", "ex:bob")])
+    .execute()
+    .unwrap();
+
+// Check whatever has to hold, reading the results before the frame is closed.
+let staged = tx.triples().execute().unwrap().count();
+if staged == 3 {
+    tx.commit().unwrap();
+} else {
+    tx.rollback().unwrap();
+}
+// Dropping the guard without either rolls the frame back.
+
+assert_eq!(rudof.triples().execute().unwrap().count(), 3);
+```
+
+#### 2.5 Property Graph Data
 
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
@@ -198,7 +287,7 @@ rudof.load_data()
 rudof.serialize_data(&mut std::io::stdout()).execute().unwrap();
 ```
 
-#### 2.4 SPARQL Endpoint
+#### 2.6 SPARQL Endpoint
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
 
@@ -218,7 +307,7 @@ rudof.load_data()
     .unwrap();
 ```
 
-#### 2.5 Service Description
+#### 2.7 Service Description
 ```rust
 use rudof_lib::{Rudof, RudofConfig};
 use rudof_lib::formats::{

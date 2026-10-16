@@ -24,9 +24,11 @@ use crate::{
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
         },
         data::builders::{
-            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder,
-            NodeNeighborhoodBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder, SerializeDataBuilder,
-            SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
+            AddTripleBuilder, AddTriplesBuilder, BeginStagingBuilder, CommitStagingBuilder, DereferenceBuilder,
+            ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, NodeNeighborhoodBuilder,
+            RemoveTripleBuilder, RemoveTriplesBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder,
+            RollbackStagingBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
+            StagingBuilder, StagingDepthBuilder, TriplesBuilder,
         },
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
@@ -50,7 +52,7 @@ use crate::{
     },
     errors::{RudofError, ShExError},
     formats::{BackendSpec, InputSpec},
-    types::{Data, QueryResult},
+    types::{Data, QueryResult, StagingFrame},
 };
 #[cfg(feature = "comparison")]
 use crate::{
@@ -205,6 +207,10 @@ pub struct Rudof {
 
     /// Current map state for ShEx validation used by Map Semantic Actions and materialize option
     pub(crate) map_state: Option<MapState>,
+
+    /// Open staging frames, innermost last. Empty when nothing is staged: every
+    /// change to `data` is then applied for good, as it was before staging existed.
+    pub(crate) staging: Vec<StagingFrame>,
 
     /// Current list of prefix map declarations. These prefix map declarations will be assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes to facilitate handling prefixes
     pub(crate) prefixes: Option<PrefixMap>,
@@ -378,6 +384,98 @@ impl Rudof {
     /// - `node`: the IRI or ID of the node to inspect.
     pub fn node_neighborhood<'a>(&'a self, node: &'a str) -> NodeNeighborhoodBuilder<'a> {
         NodeNeighborhoodBuilder::new(self, node)
+    }
+
+    /// Returns an `AddTripleBuilder` that adds a triple to the loaded data.
+    ///
+    /// The terms are written as text, in the syntax the rest of the API accepts:
+    /// `<http://example.org/alice>`, `ex:alice`, `_:b1`, `"Alice"`, `"Alice"@en`,
+    /// `23`, `"23"^^xsd:integer`.
+    ///
+    /// # Parameters
+    /// - `subject`: an IRI or a blank node.
+    /// - `predicate`: an IRI.
+    /// - `object`: an IRI, a blank node or a literal.
+    pub fn add_triple<'a>(&'a mut self, subject: &'a str, predicate: &'a str, object: &'a str) -> AddTripleBuilder<'a> {
+        AddTripleBuilder::new(self, subject, predicate, object)
+    }
+
+    /// Returns a `RemoveTripleBuilder` that removes a triple from the loaded data.
+    ///
+    /// # Parameters
+    /// As [`add_triple`](Self::add_triple).
+    pub fn remove_triple<'a>(
+        &'a mut self,
+        subject: &'a str,
+        predicate: &'a str,
+        object: &'a str,
+    ) -> RemoveTripleBuilder<'a> {
+        RemoveTripleBuilder::new(self, subject, predicate, object)
+    }
+
+    /// Returns an `AddTriplesBuilder` that adds several triples to the loaded data in
+    /// one operation.
+    ///
+    /// The terms of each triple are written as in [`add_triple`](Self::add_triple).
+    /// Every triple is parsed before any of them is added, so a batch holding a triple
+    /// that cannot be parsed changes nothing.
+    pub fn add_triples<'a>(&'a mut self, triples: &'a [(&'a str, &'a str, &'a str)]) -> AddTriplesBuilder<'a> {
+        AddTriplesBuilder::new(self, triples)
+    }
+
+    /// Returns a `RemoveTriplesBuilder` that removes several triples from the loaded
+    /// data in one operation.
+    ///
+    /// # Parameters
+    /// As [`add_triples`](Self::add_triples).
+    pub fn remove_triples<'a>(&'a mut self, triples: &'a [(&'a str, &'a str, &'a str)]) -> RemoveTriplesBuilder<'a> {
+        RemoveTriplesBuilder::new(self, triples)
+    }
+
+    /// Returns a `BeginStagingBuilder` that opens a staging frame over the loaded
+    /// data, so that the changes made from then on can be kept or discarded.
+    ///
+    /// Only the data is staged: the loaded schemas and the rest of the session are
+    /// left alone by a commit and by a rollback alike. See
+    /// [`DataOperations::begin_staging`](crate::api::data::DataOperations::begin_staging).
+    ///
+    /// Prefer [`staging`](Self::staging), which closes the frame on its own, to
+    /// calling this and `commit_staging`/`rollback_staging` by hand.
+    pub fn begin_staging<'a>(&'a mut self) -> BeginStagingBuilder<'a> {
+        BeginStagingBuilder::new(self)
+    }
+
+    /// Returns a `CommitStagingBuilder` that keeps what the innermost open staging
+    /// frame staged, closing it.
+    pub fn commit_staging<'a>(&'a mut self) -> CommitStagingBuilder<'a> {
+        CommitStagingBuilder::new(self)
+    }
+
+    /// Returns a `RollbackStagingBuilder` that discards what the innermost open
+    /// staging frame staged, closing it and putting the loaded data back.
+    pub fn rollback_staging<'a>(&'a mut self) -> RollbackStagingBuilder<'a> {
+        RollbackStagingBuilder::new(self)
+    }
+
+    /// Returns a `StagingBuilder` that opens a staging frame over the loaded data and
+    /// hands back the guard that closes it: dropping the guard rolls the frame back
+    /// unless it was committed.
+    pub fn staging<'a>(&'a mut self) -> StagingBuilder<'a> {
+        StagingBuilder::new(self)
+    }
+
+    /// Returns a `StagingDepthBuilder` that reports how many staging frames are open.
+    pub fn staging_depth<'a>(&'a self) -> StagingDepthBuilder<'a> {
+        StagingDepthBuilder::new(self)
+    }
+
+    /// Returns a `TriplesBuilder` that iterates over the triples of the loaded data
+    /// matching a pattern.
+    ///
+    /// Every position left unset matches any term, so the builder with none of them
+    /// set walks the whole graph.
+    pub fn triples<'a>(&'a self) -> TriplesBuilder<'a> {
+        TriplesBuilder::new(self)
     }
 
     /// Returns a `ListEndpointsBuilder` that enumerates known endpoints.

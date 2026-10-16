@@ -38,6 +38,7 @@ from ._pyrudof import (
     # --- session ---
     Rudof,
     RudofConfig,
+    Staging,
     # --- results ---
     ShExValidationReport,
     ShExValidationEntry,
@@ -53,6 +54,8 @@ from ._pyrudof import (
     NeighborArc,
     NeighborArcIterator,
     ArcDirection,
+    Triple,
+    TripleIterator,
     # --- formats: data ---
     RDFFormat,
     ResultDataFormat,
@@ -133,6 +136,7 @@ __all__ = [
     # Session.
     "Rudof",
     "RudofConfig",
+    "Staging",
     # Results.
     "ShExValidationReport",
     "ShExValidationEntry",
@@ -148,6 +152,8 @@ __all__ = [
     "NeighborArc",
     "NeighborArcIterator",
     "ArcDirection",
+    "Triple",
+    "TripleIterator",
     # Formats: data.
     "RDFFormat",
     "ResultDataFormat",

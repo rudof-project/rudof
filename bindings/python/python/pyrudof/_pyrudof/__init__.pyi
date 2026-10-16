@@ -79,6 +79,9 @@ __all__ = [
     "ShapeMapFormat",
     "ShapesGraphSource",
     "ShexValidationSortMode",
+    "Staging",
+    "Triple",
+    "TripleIterator",
     "UnsupportedOperationError",
     "ValidationError",
 ]
@@ -756,6 +759,159 @@ class Rudof:
         
         Raises:
             DataError: If serialization fails.
+        """
+    def add_triple(self, subject: builtins.str, predicate: builtins.str, object: builtins.str, strict_iris: typing.Optional[builtins.bool] = None) -> None:
+        r"""
+        Adds a triple to the loaded RDF data.
+        
+        Args:
+            subject (str): The subject, as an IRI (``"<http://example.org/alice>"``,
+                ``"ex:alice"``) or a blank node (``"_:b1"``).
+            predicate (str): The predicate, as an angle-bracketed IRI or a prefixed name.
+            object (str): The object, as an IRI, a blank node or a literal (``'"Alice"'``,
+                ``'"Alice"@en'``, ``"23"``, ``'"23"^^xsd:integer'``).
+            strict_iris (bool, optional): Require angle-bracketed IRIs instead of
+                auto-wrapping bare ones. Defaults to ``False``.
+        
+        Prefixed names are resolved against the prefixes of the loaded data, supplemented
+        by the session's default prefixes (see :meth:`add_prefix`). Adding a triple the
+        data already contains changes nothing, an RDF graph being a set of triples.
+        
+        Raises:
+            DataError: If no RDF data is loaded, if a term cannot be parsed or its prefix
+                resolved, or if the data cannot be modified (only the in-memory graph
+                can be, not a SPARQL endpoint, the QLever backend, or data federated with
+                SPARQL endpoints).
+        """
+    def remove_triple(self, subject: builtins.str, predicate: builtins.str, object: builtins.str, strict_iris: typing.Optional[builtins.bool] = None) -> None:
+        r"""
+        Removes a triple from the loaded RDF data.
+        
+        Args:
+            As :meth:`add_triple`.
+        
+        Removing a triple the data does not contain changes nothing.
+        
+        Raises:
+            DataError: As :meth:`add_triple`.
+        """
+    def add_triples(self, triples: typing.Sequence[tuple[builtins.str, builtins.str, builtins.str]], strict_iris: typing.Optional[builtins.bool] = None) -> None:
+        r"""
+        Adds several triples to the loaded RDF data in one operation.
+        
+        Args:
+            triples (Sequence[tuple]): The triples to add, each one a
+                ``(subject, predicate, object)`` tuple whose terms are written as in
+                :meth:`add_triple`.
+            strict_iris (bool, optional): As in :meth:`add_triple`. Defaults to ``False``.
+        
+        Every triple is parsed before any of them is added, so a batch holding a term
+        that cannot be parsed changes nothing at all. This is the operation to stage a
+        delta with (see :meth:`staging`).
+        
+        Raises:
+            DataError: As :meth:`add_triple`, for the first triple that cannot be parsed.
+        """
+    def remove_triples(self, triples: typing.Sequence[tuple[builtins.str, builtins.str, builtins.str]], strict_iris: typing.Optional[builtins.bool] = None) -> None:
+        r"""
+        Removes several triples from the loaded RDF data in one operation.
+        
+        Args:
+            As :meth:`add_triples`.
+        
+        Raises:
+            DataError: As :meth:`add_triples`.
+        """
+    def staging(self) -> Staging:
+        r"""
+        Opens a staging frame over the loaded RDF data, as a context manager.
+        
+        Returns:
+            Staging: The frame, which opens on entering the ``with`` block, commits on
+            leaving it normally and rolls back on leaving it through an exception.
+        
+        Nothing is staged until the block is entered, so the returned object has no
+        effect of its own. Only the data is staged: see :meth:`begin_staging`.
+        """
+    def begin_staging(self) -> builtins.int:
+        r"""
+        Opens a staging frame over the loaded RDF data by hand.
+        
+        Returns:
+            int: The new staging depth. Frames nest, and the innermost one is the one
+            :meth:`commit_staging` and :meth:`rollback_staging` close.
+        
+        Prefer :meth:`staging`, which closes the frame on its own even when the block
+        is left through an exception.
+        
+        What is staged is the loaded **data**, and nothing else. Schemas, shapemaps,
+        prefixes and configuration are session state: a schema loaded inside a frame
+        stays loaded after a rollback, including one read out of the data graph itself.
+        What a rollback clears is the state computed from the data it discards: the
+        validation results, the query results and the loaded query.
+        
+        Raises:
+            DataError: If no RDF data is loaded, or if it cannot be modified (only the
+                in-memory graph can be) — checked when the frame is opened rather than
+                at the first write.
+        """
+    def commit_staging(self) -> None:
+        r"""
+        Keeps what the innermost open staging frame staged, closing it.
+        
+        A frame nested in another hands its changes over to the enclosing frame, so
+        rolling that one back still undoes them.
+        
+        Raises:
+            DataError: If no staging frame is open.
+        """
+    def rollback_staging(self) -> None:
+        r"""
+        Discards what the innermost open staging frame staged, closing it and putting
+        the loaded data back as it was when the frame was opened.
+        
+        See :meth:`begin_staging` for what is put back and what is cleared.
+        
+        Raises:
+            DataError: If no staging frame is open, or if the data could not be put
+                back, in which case the frame is closed all the same.
+        """
+    def staging_depth(self) -> builtins.int:
+        r"""
+        How many staging frames are open.
+        
+        Returns:
+            int: The staging depth, zero when nothing is staged.
+        """
+    def triples(self, subject: typing.Optional[builtins.str] = None, predicate: typing.Optional[builtins.str] = None, object: typing.Optional[builtins.str] = None, strict_iris: typing.Optional[builtins.bool] = None, limit: typing.Optional[builtins.int] = None) -> TripleIterator:
+        r"""
+        Returns an iterator over the triples of the loaded RDF data matching a pattern.
+        
+        Args:
+            subject (str, optional): The subject to match, as in :meth:`add_triple`.
+                Omitted or ``None`` matches any subject.
+            predicate (str, optional): The predicate to match; ``None`` matches any.
+            object (str, optional): The object to match; ``None`` matches any.
+            strict_iris (bool, optional): As in :meth:`add_triple`. Defaults to ``False``.
+            limit (int, optional): Stop after this many triples. Unbounded when omitted.
+        
+        Omitting all three positions walks the whole graph.
+        
+        Returns:
+            TripleIterator: The matching triples, each unpacking into ``(subject,
+            predicate, object)``.
+        
+        Raises:
+            DataError: If no RDF data is loaded, or if a term of the pattern cannot be
+                parsed or its prefix resolved.
+        
+        Note:
+            The triples are materialized before this returns, so an unconstrained pattern
+            allocates the whole graph and breaking out of the loop early saves nothing.
+            Pass ``limit`` to bound the work and check
+            :attr:`TripleIterator.truncated` to learn whether it cut the result short.
+            With a SPARQL endpoint or the QLever backend as the data, an unconstrained
+            pattern pulls the whole remote graph.
         """
     def dereference(self, uri: builtins.str, reader_mode: typing.Optional[ReaderMode] = None, merge: typing.Optional[builtins.bool] = None) -> None:
         r"""
@@ -1693,6 +1849,104 @@ class ShapeMapError(RudofError):
     A ShapeMap could not be parsed or serialized.
     """
     ...
+
+@typing.final
+class Staging:
+    r"""
+    A staging frame over the loaded RDF data, used as a context manager.
+    
+    Returned by :meth:`Rudof.staging`. Entering the ``with`` block opens the frame;
+    leaving it normally keeps what was staged, and leaving it through an exception
+    discards it.
+    
+    Only the data is staged. Schemas, shapemaps and prefixes are session state and are
+    left alone by both outcomes; what a rollback also clears is the state computed from
+    the discarded data: the validation results, the query results and the loaded query.
+    A report returned by :meth:`Rudof.validate_shacl` is a copy, so one held by the
+    caller survives the rollback.
+    """
+    def __enter__(self) -> Rudof:
+        r"""
+        Opens the staging frame.
+        
+        Returns:
+            Rudof: The session the frame was opened on, so ``as`` can name it.
+        
+        Raises:
+            DataError: If no RDF data is loaded, if it cannot be modified, or if this
+                object has already been used as a context manager.
+        """
+    def __exit__(self, exc_type: typing.Optional[typing.Any] = None, _exc_value: typing.Optional[typing.Any] = None, _traceback: typing.Optional[typing.Any] = None) -> builtins.bool:
+        r"""
+        Closes the staging frame: commits when the block is left normally, rolls back
+        when it is left through an exception.
+        
+        Frames opened inside the block and left open are closed the same way. A
+        :meth:`Rudof.reset_all` inside the block leaves nothing to close, and this
+        does nothing.
+        
+        Raises:
+            DataError: If the frame cannot be closed. The exception that caused the
+                rollback, if any, is kept as the context of this one.
+        """
+    def __repr__(self) -> builtins.str: ...
+
+@typing.final
+class Triple:
+    r"""
+    A triple of the loaded RDF data.
+    
+    Unpacks into its three terms, so ``for s, p, o in rudof.triples()`` works as well as
+    reading :attr:`subject`, :attr:`predicate` and :attr:`object`.
+    """
+    @property
+    def subject(self) -> builtins.str:
+        r"""
+        The subject of the triple, an IRI or a blank node.
+        
+        Raises:
+            InternalError: If the term has no string rendering yet.
+        """
+    @property
+    def predicate(self) -> builtins.str:
+        r"""
+        The predicate IRI.
+        """
+    @property
+    def object(self) -> builtins.str:
+        r"""
+        The object of the triple, an IRI, a blank node or a literal.
+        
+        Raises:
+            InternalError: As :attr:`subject`.
+        """
+    def __iter__(self) -> typing.Iterator[builtins.str]:
+        r"""
+        The three terms, so that a triple can be unpacked like a tuple.
+        """
+    def __len__(self) -> builtins.int: ...
+    def __repr__(self) -> builtins.str: ...
+
+@typing.final
+class TripleIterator:
+    r"""
+    Iterator over the triples of the loaded RDF data matching a pattern.
+    
+    The triples are collected by :meth:`Rudof.triples` before this object exists, so
+    ``__length_hint__`` is exact rather than a hint.
+    """
+    @property
+    def truncated(self) -> builtins.bool:
+        r"""
+        ``True`` when a ``limit`` cut the result short, so more triples match the pattern
+        than this iterator will yield. Always ``False`` when no ``limit`` was given.
+        """
+    def __iter__(self) -> TripleIterator: ...
+    def __next__(self) -> Triple: ...
+    def __length_hint__(self) -> builtins.int:
+        r"""
+        The number of triples still to be yielded. Exact, not an estimate.
+        """
 
 class UnsupportedOperationError(RudofError):
     r"""

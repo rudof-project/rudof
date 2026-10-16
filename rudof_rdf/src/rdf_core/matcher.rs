@@ -31,3 +31,39 @@ impl<T> PartialEq<T> for Any {
         true
     }
 }
+
+/// A matcher for one value, or for any value: the `Option` form of [`Any`].
+///
+/// `Matcher` is a trait, so a triple pattern whose positions are only known at run
+/// time (each one either a value or a wildcard) cannot pick between [`Any`] and a
+/// concrete term without a branch per position. `AnyOr` carries that choice as data
+/// instead, so such a pattern is one `triples_matching` call.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AnyOr<T>(Option<T>);
+
+impl<T> AnyOr<T> {
+    /// Matches `value`, or any value if it is `None`.
+    pub fn new(value: Option<T>) -> Self {
+        AnyOr(value)
+    }
+
+    /// Matches any value, like [`Any`].
+    pub fn any() -> Self {
+        AnyOr(None)
+    }
+}
+
+impl<T: PartialEq> Matcher<T> for AnyOr<T> {
+    /// The value to match, or `None` when matching any.
+    fn value(&self) -> Option<&T> {
+        self.0.as_ref()
+    }
+}
+
+impl<T: PartialEq> PartialEq<T> for AnyOr<T> {
+    /// Equal to `other` if that is the value being matched, and to anything when
+    /// matching any value.
+    fn eq(&self, other: &T) -> bool {
+        self.0.as_ref().is_none_or(|value| value == other)
+    }
+}

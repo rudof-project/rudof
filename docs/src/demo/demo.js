@@ -6,7 +6,7 @@
 // range can keep serving an older release for days. The release workflow
 // (release.yml) updates it, and the site is deployed again once the release is
 // on npm (gh-pages.yml).
-const RUDOF_VERSION = "0.3.24";
+const RUDOF_VERSION = "0.3.25";
 const RUDOF_MODULE = `https://cdn.jsdelivr.net/npm/@rudof/rudof@${RUDOF_VERSION}/web/rudof_wasm.js`;
 
 // PlantUML, compiled to JavaScript with TeaVM, draws the diagrams. It is

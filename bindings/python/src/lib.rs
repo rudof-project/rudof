@@ -16,7 +16,7 @@ mod output;
 #[pymodule]
 pub mod _pyrudof {
     #[pymodule_export]
-    pub use crate::api::PyRudof;
+    pub use crate::api::{PyRudof, PyStaging};
 
     #[pymodule_export]
     pub use crate::config::PyRudofConfig;
@@ -36,7 +36,8 @@ pub mod _pyrudof {
         PyReaderMode, PyResultConversionFormat, PyResultConversionMode, PyResultDCTapFormat, PyResultDataFormat,
         PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat, PyResultShaclValidationFormat,
         PyResultShexValidationFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFormat, PyShaclValidationMode,
-        PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource, PyShexValidationSortMode,
+        PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource, PyShexValidationSortMode, PyTriple,
+        PyTriples,
     };
 
     #[pymodule_export]

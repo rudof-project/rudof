@@ -89,6 +89,21 @@ export interface NeighborArc {
   isLast: boolean;
 }
 
+/** The triples matching a pattern. */
+export interface Triples {
+  triples: Triple[];
+  /** `true` if more triples matched than the requested limit. */
+  truncated: boolean;
+}
+
+export interface Triple {
+  /** An IRI or a blank node. */
+  subject: string;
+  predicate: string;
+  /** An IRI, a blank node or a literal. */
+  object: string;
+}
+
 /** The result of `checkShex`. */
 export interface ShExCheck {
   valid: boolean;
@@ -114,6 +129,18 @@ impl From<Error> for JsValue {
         js_error.set_name(error.name());
         js_error.into()
     }
+}
+
+/// Reads a batch of triples passed as an array of `[subject, predicate, object]`
+/// arrays.
+fn from_js_triples(triples: JsValue) -> Result<Vec<(String, String, String)>, JsValue> {
+    serde_wasm_bindgen::from_value(triples).map_err(|e| {
+        Error::new(
+            "DataError",
+            format!("Expected an array of [subject, predicate, object] triples: {e}"),
+        )
+        .into()
+    })
 }
 
 /// Converts a report to a plain object (`null` for missing values, arrays for
@@ -538,6 +565,112 @@ impl JsRudof {
             predicates.as_deref(),
             mode.as_deref(),
             depth,
+            strict_iris,
+            limit,
+        )?)
+    }
+
+    /// Adds a triple to the loaded RDF data. The terms are written as text:
+    /// `<http://example.org/alice>`, `ex:alice`, `_:b1`, `"Alice"`, `"Alice"@en`,
+    /// `23`, `"23"^^xsd:integer`.
+    #[wasm_bindgen(js_name = addTriple)]
+    pub fn add_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+    ) -> Result<(), JsValue> {
+        Ok(self.session.add_triple(subject, predicate, object, strict_iris)?)
+    }
+
+    /// Removes a triple from the loaded RDF data, written as in `addTriple`.
+    #[wasm_bindgen(js_name = removeTriple)]
+    pub fn remove_triple(
+        &mut self,
+        subject: &str,
+        predicate: &str,
+        object: &str,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+    ) -> Result<(), JsValue> {
+        Ok(self.session.remove_triple(subject, predicate, object, strict_iris)?)
+    }
+
+    /// Adds several triples to the loaded RDF data in one operation, passed as an
+    /// array of `[subject, predicate, object]` arrays whose terms are written as in
+    /// `addTriple`. Every triple is parsed before any of them is added, so a batch
+    /// holding a term that cannot be parsed changes nothing.
+    #[wasm_bindgen(js_name = addTriples)]
+    pub fn add_triples(
+        &mut self,
+        #[wasm_bindgen(unchecked_param_type = "[string, string, string][]")] triples: JsValue,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+    ) -> Result<(), JsValue> {
+        Ok(self.session.add_triples(&from_js_triples(triples)?, strict_iris)?)
+    }
+
+    /// Removes several triples from the loaded RDF data in one operation, passed as
+    /// in `addTriples`.
+    #[wasm_bindgen(js_name = removeTriples)]
+    pub fn remove_triples(
+        &mut self,
+        #[wasm_bindgen(unchecked_param_type = "[string, string, string][]")] triples: JsValue,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+    ) -> Result<(), JsValue> {
+        Ok(self.session.remove_triples(&from_js_triples(triples)?, strict_iris)?)
+    }
+
+    /// Opens a staging frame over the loaded RDF data, returning the new staging
+    /// depth, so the changes made from now on can be kept with `commitStaging` or
+    /// discarded with `rollbackStaging`. Frames nest, and the innermost one is the
+    /// one a commit or a rollback closes.
+    ///
+    /// What is staged is the loaded data, and nothing else: a schema loaded inside a
+    /// frame stays loaded after a rollback, including one read out of the data graph
+    /// itself. What a rollback clears is the state computed from the data it
+    /// discards: the validation results, the query results and the loaded query.
+    #[wasm_bindgen(js_name = beginStaging)]
+    pub fn begin_staging(&mut self) -> Result<usize, JsValue> {
+        Ok(self.session.begin_staging()?)
+    }
+
+    /// Keeps what the innermost open staging frame staged, closing it. A frame nested
+    /// in another hands its changes over to the enclosing frame, so rolling that one
+    /// back still undoes them.
+    #[wasm_bindgen(js_name = commitStaging)]
+    pub fn commit_staging(&mut self) -> Result<(), JsValue> {
+        Ok(self.session.commit_staging()?)
+    }
+
+    /// Discards what the innermost open staging frame staged, closing it and putting
+    /// the loaded data back as it was when the frame was opened.
+    #[wasm_bindgen(js_name = rollbackStaging)]
+    pub fn rollback_staging(&mut self) -> Result<(), JsValue> {
+        Ok(self.session.rollback_staging()?)
+    }
+
+    /// How many staging frames are open, zero when nothing is staged.
+    #[wasm_bindgen(js_name = stagingDepth)]
+    pub fn staging_depth(&self) -> usize {
+        self.session.staging_depth()
+    }
+
+    /// The triples of the loaded RDF data matching a pattern. Every position left
+    /// out (or `undefined`) matches any term, so no pattern at all walks the whole
+    /// graph. With `limit`, at most that many triples are returned.
+    #[wasm_bindgen(unchecked_return_type = "Triples")]
+    pub fn triples(
+        &self,
+        subject: Option<String>,
+        predicate: Option<String>,
+        object: Option<String>,
+        #[wasm_bindgen(js_name = "strictIris")] strict_iris: Option<bool>,
+        limit: Option<usize>,
+    ) -> Result<JsValue, JsValue> {
+        to_js(&self.session.triples(
+            subject.as_deref(),
+            predicate.as_deref(),
+            object.as_deref(),
             strict_iris,
             limit,
         )?)

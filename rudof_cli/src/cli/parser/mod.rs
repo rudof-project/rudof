@@ -1,6 +1,5 @@
 mod base;
 mod compare;
-mod completion;
 mod config;
 mod connect;
 mod convert;
@@ -29,7 +28,6 @@ mod validate;
 
 pub use base::*;
 pub use compare::*;
-pub use completion::*;
 pub use config::*;
 pub use connect::*;
 pub use convert::*;

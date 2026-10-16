@@ -47,7 +47,9 @@ working on that area.
   doubt, ask in the issue rather than in the pull request.
 - **Disagreements** are settled by discussion. If that fails, the project lead decides.
 - **Changes to these policies** (this file, `CONTRIBUTING.md`, the pages under
-  `docs/src/contributing/`, the issue templates and `.github/labels.yml`) can be debated in the corresponding discussion and are handled as pull requests like any other.
+  `docs/src/contributing/`, the issue templates and `.github/labels.yml`) can be debated in the
+  corresponding discussion and are handled as pull requests like any other. The policy for the
+  internal board is not here: it lives in `rudof-project/weso_rudof`.
 
 Nobody merges their own pull request, with one exception: a maintainer may self-merge a trivial
 change and should say so in the pull request.

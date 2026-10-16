@@ -4,7 +4,7 @@
 
 use rudof_lib::types::{
     ArcDirection, NeighborArc as CoreNeighborArc, QueryResult, ResultShapeMap, ShExValidationStatus,
-    ShaclValidationReport as CoreShaclReport,
+    ShaclValidationReport as CoreShaclReport, Triple as CoreTriple,
 };
 #[cfg(feature = "pgschema")]
 use rudof_lib::types::{PgSchemaResultAssociation, PgSchemaValidationResult};
@@ -309,4 +309,34 @@ pub struct ExternalResolver {
     pub description: String,
     /// The syntax of the spec string that configures it.
     pub spec_syntax: String,
+}
+
+/// The triples matching a pattern, as returned by `triples`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Triples {
+    pub triples: Vec<Triple>,
+    /// `true` if more triples matched than the requested limit.
+    pub truncated: bool,
+}
+
+/// A triple of the loaded RDF data.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Triple {
+    /// An IRI or a blank node.
+    pub subject: String,
+    pub predicate: String,
+    /// An IRI, a blank node or a literal.
+    pub object: String,
+}
+
+impl From<&CoreTriple> for Triple {
+    fn from(triple: &CoreTriple) -> Self {
+        Triple {
+            subject: triple.subject.to_string(),
+            predicate: triple.predicate.to_string(),
+            object: triple.object.to_string(),
+        }
+    }
 }

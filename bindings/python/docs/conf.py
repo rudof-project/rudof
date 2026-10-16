@@ -70,6 +70,7 @@ napoleon_attr_annotations = True
 napoleon_type_aliases = {
     "str | os.PathLike": ":py:class:`str` | :py:class:`os.PathLike`",
     "list[str]": ":py:class:`list`\\[:py:class:`str`]",
+    "Sequence[tuple]": ":py:class:`~collections.abc.Sequence`\\[:py:class:`tuple`]",
 }
 
 # -- Autosummary configuration -----------------------------------------------

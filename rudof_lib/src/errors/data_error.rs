@@ -114,9 +114,36 @@ pub enum DataError {
     #[error("Failed resolving prefix '{prefix}': {error}")]
     FailedPrefixResolution { prefix: String, error: String },
 
+    /// Failed to resolve the IRIs a term given as text contains: its own, its datatype,
+    /// or those of a triple pattern, against the base IRI and the prefix map.
+    #[error("Failed resolving the IRIs of '{term}': {error}")]
+    FailedTermResolution { term: String, error: String },
+
     /// Failed to retrieve arcs for a node.
     #[error("Failed retrieving arcs for node: {error}")]
     FailedArcRetrieval { error: String },
+
+    /// A term was expected, but the text denotes a set of nodes of the data.
+    #[error(
+        "'{term}' is not a term: a term is an IRI ('<http://example.org/alice>', 'ex:alice'), a blank node ('_:b1') or a literal ('\"Alice\"', '\"Alice\"@en', '23'), not a triple pattern or a SPARQL query"
+    )]
+    NotATerm { term: String },
+
+    /// A literal was given where a subject is required.
+    #[error("'{term}' cannot be the subject of a triple: a subject is an IRI or a blank node, not a literal")]
+    NotASubject { term: String },
+
+    /// The loaded RDF data cannot be modified.
+    #[error("The loaded RDF data cannot be modified: {reason}")]
+    ReadOnlyData { reason: String },
+
+    /// Failed to add or remove a triple.
+    #[error("Failed to {operation} the triple: {error}")]
+    FailedTripleUpdate { operation: String, error: String },
+
+    /// Failed to retrieve the triples matching a pattern.
+    #[error("Failed retrieving triples: {error}")]
+    FailedTripleRetrieval { error: String },
 
     /// Failed to qualify a node or term for display.
     #[error("Failed qualifying node or term: {error}")]
@@ -133,4 +160,14 @@ pub enum DataError {
     /// Dereferencing a URI returned a non-success HTTP status.
     #[error("Dereferencing '{uri}' failed with HTTP status {status}")]
     DereferenceHttpStatus { uri: String, status: String },
+
+    /// A staging frame was closed, or asked about, while none was open.
+    #[error("No staging frame is open: {operation} needs a matching begin_staging")]
+    NoStagingFrame { operation: String },
+
+    /// A staging frame could not be rolled back, leaving the data part-way.
+    #[error(
+        "Failed to roll back a staging frame: {error}. The loaded data may be left inconsistent; reset_data and load it again"
+    )]
+    FailedStagingRollback { error: String },
 }

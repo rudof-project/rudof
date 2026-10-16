@@ -130,6 +130,182 @@ Inspect a node as a rendered tree and as an iterator of neighbour arcs, bounded 
 - **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
 
 
+Triples
+^^^^^^^
+
+Walk the loaded data triple by triple with a pattern, and add and remove triples in place
+
+**Source**: `rdf_data/triples.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_data/triples.py>`_
+
+**Python code:**
+
+.. code-block:: python
+
+    """Walk the loaded RDF data triple by triple, and change it.
+
+    ``triples`` matches a pattern: every position left out matches anything, so no
+    arguments at all walks the whole graph. ``add_triple`` and ``remove_triple`` change the
+    graph in place, which is what building a graph programmatically (or applying what a
+    validation report says is missing) takes, with no serialize-edit-reload round trip.
+
+    Terms are written as text, in the syntax the rest of the API accepts: ``<IRI>``,
+    ``ex:alice``, ``_:b1``, ``"Alice"``, ``"Alice"@en``, ``23``, ``"23"^^xsd:integer``.
+    """
+
+    from pathlib import Path
+
+    from pyrudof import RDFFormat, ResultDataFormat, Rudof
+
+    HERE = Path(__file__).resolve().parent.parent
+
+
+    def main() -> None:
+        with Rudof() as rudof:
+            rudof.read_data(HERE / "person.ttl", RDFFormat.Turtle)
+            # A prefixed name is resolved against the prefixes of the data, and then the
+            # session's. `person.ttl` declares `:`, so `xsd:` has to come from here.
+            rudof.add_prefix("xsd", "http://www.w3.org/2001/XMLSchema#")
+
+            # No pattern walks the whole graph. A triple unpacks into its three terms.
+            for subject, predicate, obj in rudof.triples():
+                print(f"{subject} {predicate} {obj}")
+
+            # A pattern narrows it, in any combination of positions.
+            names = list(rudof.triples(predicate=":name"))
+            print(f"names: {[triple.object for triple in names]}")
+            print(f"alice's triples: {len(list(rudof.triples(subject=':alice')))}")
+
+            # Build on the graph without going through its serialization.
+            rudof.add_triple(":alice", ":knows", ":bob")
+            rudof.add_triple(":bob", ":name", '"Bob"')
+            rudof.add_triple(":bob", ":age", '"19"^^xsd:integer')
+            print(f"bob's triples: {len(list(rudof.triples(subject=':bob')))}")
+
+            # The additions are in the graph itself, so every other operation sees them.
+            turtle = rudof.serialize_data(ResultDataFormat.Turtle)
+            print(f"serialized has bob: {'bob' in turtle}")
+
+            # Removing a triple that is not there is not an error, so a removal needs no
+            # existence check first.
+            rudof.remove_triple(":bob", ":name", '"Bob"')
+            rudof.remove_triple(":carol", ":name", '"Carol"')
+            print(f"bob's triples after the removal: {len(list(rudof.triples(subject=':bob')))}")
+
+            # `limit` caps the triples collected, and `truncated` says whether it cut the
+            # result short, which is how you tell "that was all of them" from "there is
+            # more where that came from".
+            capped = rudof.triples(limit=2)
+            print(f"showing {len(list(capped))} triples, more available: {capped.truncated}")
+            whole = rudof.triples(limit=100)
+            print(f"showing {len(list(whole))} triples, more available: {whole.truncated}")
+
+
+    if __name__ == "__main__":
+        main()
+
+**Referenced files:**
+
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
+
+
+Staging
+^^^^^^^
+
+Stage triples, validate them, and keep or discard them with `staging()`
+
+**Source**: `rdf_data/staging.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_data/staging.py>`_
+
+**Python code:**
+
+.. code-block:: python
+
+    """Stage triples, check whether they hold, and keep or discard them.
+
+    ``staging()`` is a context manager over the loaded data: leaving its block normally
+    keeps what was staged, leaving it through an exception puts the data back as it was.
+    So "add these triples only if the graph still validates" is one block, with no copy of
+    the graph and no reload.
+
+    Rolling back costs what was staged, not the size of the graph. Only the **data** is
+    staged: the shapes stay loaded either way, and a report already in hand is a copy, so
+    it can still be read after the rollback. What a rollback does clear is what was
+    computed from the data it threw away (the validation results, the query results and
+    the loaded query).
+    """
+
+    from pyrudof import RDFFormat, Rudof, ShaclFormat, ShaclValidationMode
+
+    SHAPES = """
+    PREFIX : <http://example.org/>
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+    :PersonShape a sh:NodeShape ;
+      sh:targetClass :Person ;
+      sh:property [
+        sh:path :name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1
+      ] .
+    """
+
+    DATA = """
+    PREFIX : <http://example.org/>
+
+    :alice a :Person ;
+      :name "Alice" .
+    """
+
+
+    class ShapesViolated(Exception):
+        """Raised to leave a staging block through an exception, rolling it back."""
+
+
+    def stage(rudof: Rudof, delta: list[tuple[str, str, str]]) -> bool:
+        """Adds `delta` if the data still conforms, and discards it if it does not."""
+        try:
+            with rudof.staging():
+                rudof.add_triples(delta)
+                report = rudof.validate_shacl(ShaclValidationMode.Native)
+                if not report.conforms:
+                    raise ShapesViolated(f"{len(report)} violation(s)")
+            return True
+        except ShapesViolated:
+            return False
+
+
+    def main() -> None:
+        with Rudof() as rudof:
+            rudof.read_shacl(SHAPES, ShaclFormat.Turtle)
+            rudof.read_data(DATA, RDFFormat.Turtle)
+            print(f"triples: {len(list(rudof.triples()))}")
+
+            # A delta that conforms: the block is left normally, so it is committed.
+            delta = [
+                (":bob", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", ":Person"),
+                (":bob", ":name", '"Bob"'),
+            ]
+            kept = stage(rudof, delta)
+            print(f"bob kept: {kept}")
+            print(f"triples: {len(list(rudof.triples()))}")
+
+            # A delta that does not: a second `:name` breaks `sh:maxCount 1`, the
+            # exception leaves the block, and the data goes back to what it was.
+            kept = stage(rudof, [(":bob", ":name", '"Roberto"')])
+            print(f"second name kept: {kept}")
+            print(f"triples: {len(list(rudof.triples()))}")
+            print(f"staging depth: {rudof.staging_depth()}")
+
+            # The shapes are session state, not staged state: still loaded, still usable.
+            report = rudof.validate_shacl(ShaclValidationMode.Native)
+            print(f"conforms after the rollback: {report.conforms}")
+
+
+    if __name__ == "__main__":
+        main()
+
+
 List Endpoints
 ^^^^^^^^^^^^^^
 

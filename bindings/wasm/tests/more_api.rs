@@ -40,6 +40,88 @@ fn node_info() {
 }
 
 #[test]
+fn triples() {
+    let mut rudof = session_with_data();
+
+    // No pattern walks the whole graph; each position narrows it.
+    let all = rudof.triples(None, None, None, None, None).unwrap();
+    assert_eq!(all.triples.len(), 5, "{all:?}");
+    assert!(!all.truncated);
+    let alices = rudof.triples(Some(":alice"), None, None, None, None).unwrap();
+    assert_eq!(alices.triples.len(), 3, "{alices:?}");
+    let names = rudof.triples(None, Some(":name"), None, None, None).unwrap();
+    assert_eq!(names.triples.len(), 2, "{names:?}");
+    let alice_name = rudof.triples(Some(":alice"), Some(":name"), None, None, None).unwrap();
+    assert_eq!(alice_name.triples.len(), 1, "{alice_name:?}");
+    assert_eq!(alice_name.triples[0].subject, "http://example.org/alice");
+    assert_eq!(alice_name.triples[0].predicate, "http://example.org/name");
+    assert_eq!(alice_name.triples[0].object, "\"Alice\"");
+
+    // A pattern nothing matches is empty, not an error.
+    let none = rudof.triples(Some(":carol"), None, None, None, None).unwrap();
+    assert!(none.triples.is_empty());
+
+    let limited = rudof.triples(None, None, None, None, Some(2)).unwrap();
+    assert_eq!(limited.triples.len(), 2);
+    assert!(limited.truncated);
+
+    // The graph can be changed in place, and the change is visible at once.
+    rudof.add_triple(":carol", ":name", "\"Carol\"", None).unwrap();
+    assert_eq!(
+        rudof
+            .triples(Some(":carol"), None, None, None, None)
+            .unwrap()
+            .triples
+            .len(),
+        1
+    );
+    rudof.remove_triple(":carol", ":name", "\"Carol\"", None).unwrap();
+    assert!(
+        rudof
+            .triples(Some(":carol"), None, None, None, None)
+            .unwrap()
+            .triples
+            .is_empty()
+    );
+
+    // A literal cannot be the subject of a triple.
+    let err = rudof.add_triple("\"Carol\"", ":name", ":carol", None).unwrap_err();
+    assert!(err.to_string().contains("cannot be the subject"), "{err}");
+}
+
+#[test]
+fn staging() {
+    let mut rudof = session_with_data();
+    let count = |rudof: &Session| rudof.triples(None, None, None, None, None).unwrap().triples.len();
+    let before = count(&rudof);
+
+    let delta = [
+        (":carol".to_string(), ":name".to_string(), "\"Carol\"".to_string()),
+        (":carol".to_string(), ":knows".to_string(), ":alice".to_string()),
+    ];
+
+    // Staged, then discarded: the data goes back to what it was.
+    assert_eq!(rudof.begin_staging().unwrap(), 1);
+    rudof.add_triples(&delta, None).unwrap();
+    assert_eq!(count(&rudof), before + 2);
+    rudof.rollback_staging().unwrap();
+    assert_eq!(count(&rudof), before);
+    assert_eq!(rudof.staging_depth(), 0);
+
+    // Staged, then kept.
+    rudof.begin_staging().unwrap();
+    rudof.add_triples(&delta, None).unwrap();
+    rudof.remove_triples(&delta[1..], None).unwrap();
+    rudof.commit_staging().unwrap();
+    assert_eq!(count(&rudof), before + 1);
+    assert_eq!(rudof.staging_depth(), 0);
+
+    // Closing a frame that is not open is an error, not a panic.
+    let err = rudof.commit_staging().unwrap_err();
+    assert!(err.to_string().contains("No staging frame is open"), "{err}");
+}
+
+#[test]
 fn node_neighborhood() {
     let rudof = session_with_data();
     let neighborhood = rudof.node_neighborhood(":alice", None, None, None, None, None).unwrap();
