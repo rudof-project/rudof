@@ -1,7 +1,15 @@
 # CHANGE LOG
 This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.com/).
 
+<!-- Skeleton of the next release. Uncomment the sections used.
 ## [Unreleased]
+### Added
+### Fixed
+### Changed
+### Removed
+-->
+
+## 0.3.26
 ### Added
 - Staging of the loaded RDF data ([#865](https://github.com/rudof-project/rudof/issues/865)): `begin_staging`, `commit_staging`, `rollback_staging`, `staging_depth` and the `staging()` guard, which rolls its frame back when dropped. Only the data is staged; a rollback also clears the validation results, the query results and the loaded query. In Python as `with rudof.staging():`, in JavaScript as `beginStaging`/`commitStaging`/`rollbackStaging`/`stagingDepth`.
 - `add_triples` and `remove_triples`, applying a batch of triples in one operation: nothing is written unless every triple parses. Also in Python and as `addTriples`/`removeTriples` in JavaScript.
@@ -21,7 +29,6 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `shacl::types::Target` is now generic, as `sh:targetNode` holds a node expression: `ASTTarget` in the AST, `IRTarget` in the IR.
 - The SHACL test harness parses each kind of manifest (`sht:Validate`, `sht:EvalNodeExpr`) with its own entry type and runner, and the test cases of a directory are declared with the new `suite_tests!` macro instead of one handwritten function each.
 - `OxigraphEndpoint` makes its HTTP requests through a small platform layer (`reqwest` and tokio natively, `fetch` and JSPI on wasm). A request answered with an error status now fails with `OxigraphEndpointError::HTTPStatusError`, which carries the start of the response body (e.g. the endpoint's explanation of a SPARQL syntax error), instead of `HTTPRequestError`.
-### Removed
 
 ## 0.3.25
 ### Added
