@@ -1,6 +1,8 @@
+#[macro_use]
+mod macros;
+
 mod error;
-mod manifest;
-mod test_instance;
+pub(crate) mod manifest;
+pub(crate) mod runner;
 
 pub(crate) use error::TestSuiteError;
-pub(crate) use manifest::Manifest;
