@@ -13,6 +13,8 @@ repository.workspace = true
 default = ["sparql"]
 sparql = ["dep:oxigraph", "dep:sparesults", "rudof_rdf/sparql"]
 qlever = ["sparql", "rudof_rdf/qlever"]
+# Remote SPARQL endpoints on wasm (see the `jspi` feature of rudof_rdf).
+jspi = ["sparql", "rudof_rdf/jspi"]
 
 [dependencies]
 colored.workspace = true

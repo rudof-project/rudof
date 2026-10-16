@@ -9,7 +9,7 @@ use oxrdf::{
 use prefixmap::{PrefixMap, PrefixMapError};
 use rudof_iri::IriS;
 
-#[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+#[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 use super::OxigraphEndpoint;
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 use super::QleverGraphContainer;
@@ -22,7 +22,7 @@ use crate::rdf_core::{BlankNodeMode, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDF
 #[derive(Debug, Clone)]
 pub enum RdfBackend {
     InMemory(OxigraphInMemory),
-    #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+    #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
     Endpoint(OxigraphEndpoint),
     #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
     Qlever(QleverGraphContainer),
@@ -38,7 +38,7 @@ impl RdfBackend {
     pub fn as_in_memory(&self) -> Option<&OxigraphInMemory> {
         match self {
             RdfBackend::InMemory(g) => Some(g),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => None,
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(_) => None,
@@ -49,7 +49,7 @@ impl RdfBackend {
     pub fn as_in_memory_mut(&mut self) -> Option<&mut OxigraphInMemory> {
         match self {
             RdfBackend::InMemory(g) => Some(g),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => None,
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(_) => None,
@@ -60,7 +60,7 @@ impl RdfBackend {
     pub fn is_read_only(&self) -> bool {
         match self {
             RdfBackend::InMemory(_) => false,
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => true,
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(_) => true,
@@ -71,7 +71,7 @@ impl RdfBackend {
     pub fn variant_name(&self) -> &'static str {
         match self {
             RdfBackend::InMemory(_) => "in-memory",
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => "sparql-endpoint",
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(_) => "qlever",
@@ -97,7 +97,7 @@ impl Rdf for RdfBackend {
     fn prefixmap(&self) -> Option<PrefixMap> {
         match self {
             RdfBackend::InMemory(b) => <OxigraphInMemory as Rdf>::prefixmap(b),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => <OxigraphEndpoint as Rdf>::prefixmap(b),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => <QleverGraphContainer as Rdf>::prefixmap(b),
@@ -107,7 +107,7 @@ impl Rdf for RdfBackend {
     fn qualify_iri(&self, node: &Self::IRI) -> String {
         match self {
             RdfBackend::InMemory(b) => b.qualify_iri(node),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => b.qualify_iri(node),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.qualify_iri(node),
@@ -117,7 +117,7 @@ impl Rdf for RdfBackend {
     fn qualify_subject(&self, subj: &Self::Subject) -> String {
         match self {
             RdfBackend::InMemory(b) => b.qualify_subject(subj),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => b.qualify_subject(subj),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.qualify_subject(subj),
@@ -127,7 +127,7 @@ impl Rdf for RdfBackend {
     fn qualify_term(&self, term: &Self::Term) -> String {
         match self {
             RdfBackend::InMemory(b) => b.qualify_term(term),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => b.qualify_term(term),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.qualify_term(term),
@@ -137,7 +137,7 @@ impl Rdf for RdfBackend {
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
         match self {
             RdfBackend::InMemory(b) => b.resolve_prefix_local(prefix, local),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => b.resolve_prefix_local(prefix, local),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.resolve_prefix_local(prefix, local),
@@ -149,7 +149,7 @@ impl NeighsRDF for RdfBackend {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         let iter: Box<dyn Iterator<Item = OxTriple> + '_> = match self {
             RdfBackend::InMemory(b) => Box::new(b.triples()?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => Box::new(b.triples()?),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => {
@@ -173,7 +173,7 @@ impl NeighsRDF for RdfBackend {
     {
         let iter: Box<dyn Iterator<Item = OxTriple> + '_> = match self {
             RdfBackend::InMemory(b) => Box::new(b.triples_matching(subject, predicate, object)?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => Box::new(b.triples_matching(subject, predicate, object)?),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => {
@@ -195,7 +195,7 @@ impl NeighsRDF for RdfBackend {
         ),
         Self::Err,
     > {
-        #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+        #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
         if let RdfBackend::Endpoint(b) = self {
             return b.outgoing_arcs_from_list(subject, preds).map_err(Into::into);
         }
@@ -231,7 +231,7 @@ impl QueryRDF for RdfBackend {
                 let pm = b.prefixmap().clone();
                 (s.iter().map(|x| x.convert(|t| t.clone())).collect(), pm)
             },
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => {
                 let s = b.query_select(query_str)?;
                 let pm = b.prefixmap().clone();
@@ -253,7 +253,7 @@ impl QueryRDF for RdfBackend {
     {
         match self {
             RdfBackend::InMemory(b) => Ok(b.query_construct(query_str, format)?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => Ok(b.query_construct(query_str, format)?),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => Ok(b.query_construct(query_str, format)?),
@@ -263,7 +263,7 @@ impl QueryRDF for RdfBackend {
     fn query_ask(&self, query_str: &str) -> Result<bool, Self::Err> {
         match self {
             RdfBackend::InMemory(b) => Ok(b.query_ask(query_str)?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => Ok(b.query_ask(query_str)?),
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => Ok(b.query_ask(query_str)?),
@@ -275,7 +275,7 @@ impl FocusRDF for RdfBackend {
     fn set_focus(&mut self, focus: &Self::Term) {
         match self {
             RdfBackend::InMemory(b) => b.set_focus(focus),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => {},
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.set_focus(focus),
@@ -285,7 +285,7 @@ impl FocusRDF for RdfBackend {
     fn get_focus(&self) -> Option<&Self::Term> {
         match self {
             RdfBackend::InMemory(b) => b.get_focus(),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => None,
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.get_focus(),
@@ -301,7 +301,7 @@ impl BuildRDF for RdfBackend {
     fn add_base(&mut self, base: &Option<IriS>) {
         match self {
             RdfBackend::InMemory(b) => b.add_base(base),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => {},
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.add_base(base),
@@ -311,7 +311,7 @@ impl BuildRDF for RdfBackend {
     fn add_prefix(&mut self, alias: &str, iri: &IriS) {
         match self {
             RdfBackend::InMemory(b) => b.add_prefix(alias, iri),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => {},
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.add_prefix(alias, iri),
@@ -321,7 +321,7 @@ impl BuildRDF for RdfBackend {
     fn set_prefix_map(&mut self, prefix_map: PrefixMap) {
         match self {
             RdfBackend::InMemory(b) => b.set_prefix_map(prefix_map),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => {},
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.set_prefix_map(prefix_map),
@@ -331,7 +331,7 @@ impl BuildRDF for RdfBackend {
     fn merge_prefixes(&mut self, prefix_map: PrefixMap) {
         match self {
             RdfBackend::InMemory(b) => b.merge_prefixes(prefix_map),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => {},
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => b.merge_prefixes(prefix_map),
@@ -341,7 +341,7 @@ impl BuildRDF for RdfBackend {
     fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
         match self {
             RdfBackend::InMemory(b) => Ok(b.add_bnode()?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => Err(RdfBackendError::ReadOnly {
                 op: "add_bnode",
                 backend: self.variant_name(),
@@ -362,7 +362,7 @@ impl BuildRDF for RdfBackend {
     {
         match self {
             RdfBackend::InMemory(b) => Ok(b.add_triple(subj, pred, obj)?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => Err(RdfBackendError::ReadOnly {
                 op: "add_triple",
                 backend: "sparql-endpoint",
@@ -383,7 +383,7 @@ impl BuildRDF for RdfBackend {
     {
         match self {
             RdfBackend::InMemory(b) => Ok(b.remove_triple(subj, pred, obj)?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => Err(RdfBackendError::ReadOnly {
                 op: "remove_triple",
                 backend: "sparql-endpoint",
@@ -403,7 +403,7 @@ impl BuildRDF for RdfBackend {
     {
         match self {
             RdfBackend::InMemory(b) => Ok(b.add_type(node, type_)?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => Err(RdfBackendError::ReadOnly {
                 op: "add_type",
                 backend: "sparql-endpoint",
@@ -419,7 +419,7 @@ impl BuildRDF for RdfBackend {
     fn serialize<W: io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err> {
         match self {
             RdfBackend::InMemory(b) => Ok(BuildRDF::serialize(b, format, writer)?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => Err(RdfBackendError::ReadOnly {
                 op: "serialize",
                 backend: "sparql-endpoint",
@@ -437,7 +437,7 @@ impl BuildRDF for RdfBackend {
     ) -> Result<(), Self::Err> {
         match self {
             RdfBackend::InMemory(b) => Ok(BuildRDF::serialize_with_blank_node_mode(b, format, mode, writer)?),
-            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(_) => Err(RdfBackendError::ReadOnly {
                 op: "serialize",
                 backend: "sparql-endpoint",

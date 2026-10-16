@@ -4,7 +4,7 @@
 
 use thiserror::Error;
 
-#[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+#[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 use super::OxigraphEndpointError;
 use super::OxigraphInMemoryError;
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
@@ -15,7 +15,7 @@ pub enum RdfBackendError {
     #[error(transparent)]
     InMemory(#[from] Box<OxigraphInMemoryError>),
 
-    #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+    #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
     #[error(transparent)]
     Endpoint(#[from] Box<OxigraphEndpointError>),
 
@@ -33,7 +33,7 @@ impl From<OxigraphInMemoryError> for RdfBackendError {
     }
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+#[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 impl From<OxigraphEndpointError> for RdfBackendError {
     fn from(e: OxigraphEndpointError) -> Self {
         RdfBackendError::Endpoint(Box::new(e))

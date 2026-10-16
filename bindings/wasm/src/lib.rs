@@ -11,8 +11,9 @@
 //!
 //! Inputs are passed as strings: anything that needs a filesystem, network
 //! access or native tools (reading files, fetching URLs, dereferencing IRIs,
-//! ShEx `IMPORT`s, remote SPARQL endpoints, rendering images) is not available
-//! on `wasm`.
+//! ShEx `IMPORT`s, rendering images) is not available on `wasm`. Remote SPARQL
+//! endpoints are, with the `endpoints` feature, through an asynchronous API
+//! that relies on JSPI (see `js_endpoints`).
 
 mod error;
 mod reports;
@@ -20,6 +21,8 @@ mod session;
 
 #[cfg(target_family = "wasm")]
 pub mod js;
+#[cfg(all(target_family = "wasm", feature = "endpoints"))]
+pub mod js_endpoints;
 
 pub use error::{Error, Result};
 pub use reports::{

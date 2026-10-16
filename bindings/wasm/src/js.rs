@@ -145,7 +145,7 @@ fn from_js_triples(triples: JsValue) -> Result<Vec<(String, String, String)>, Js
 
 /// Converts a report to a plain object (`null` for missing values, arrays for
 /// lists and tuples).
-fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
+pub(crate) fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
     value
         .serialize(&serde_wasm_bindgen::Serializer::json_compatible())
         .map_err(|e| Error::new("RudofError", e.to_string()).into())
@@ -188,7 +188,7 @@ impl Default for JsRudofConfig {
 /// until a `reset*` method clears them.
 #[wasm_bindgen(js_name = Rudof)]
 pub struct JsRudof {
-    session: Session,
+    pub(crate) session: Session,
 }
 
 #[wasm_bindgen(js_class = Rudof)]
@@ -520,8 +520,8 @@ impl JsRudof {
         Ok(self.session.dereference(uri, reader_mode.as_deref(), merge)?)
     }
 
-    /// The known SPARQL endpoints, as `[name, url]` pairs. Always empty on
-    /// wasm, where SPARQL endpoints are not available.
+    /// The known SPARQL endpoints, as `[name, url]` pairs. Always empty in
+    /// builds without the `endpoints` feature.
     #[wasm_bindgen(js_name = listEndpoints, unchecked_return_type = "[string, string][]")]
     pub fn list_endpoints(&mut self) -> Result<JsValue, JsValue> {
         to_js(&self.session.list_endpoints()?)

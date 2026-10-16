@@ -37,6 +37,10 @@ rdf-config = ["dep:rdf_config"]
 # Pull in the QLever Docker backend (sparql_service/qlever + rudof_rdf/qlever).
 qlever = ["sparql_service/qlever", "rudof_rdf/qlever", "dep:tokio"]
 sparql = [ "shacl/sparql", "sparql_service/sparql", "rudof_rdf/sparql" ]
+# Remote SPARQL endpoints on wasm, through JavaScript's `fetch` and JSPI (see
+# the `jspi` feature of rudof_rdf). No effect on native builds, which always
+# support endpoints.
+jspi = [ "sparql", "sparql_service/jspi", "rudof_rdf/jspi" ]
 
 [dependencies]
 tokio = { workspace = true, optional = true }

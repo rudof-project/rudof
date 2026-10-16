@@ -1,3 +1,4 @@
+use super::http::{self, HttpClient, Instant, SendError};
 use crate::{
     cancellation,
     rdf_core::{
@@ -13,7 +14,6 @@ use oxrdf::{
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
-use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
 use rudof_iri::IriS;
 use serde::{Serialize, ser::SerializeStruct};
 use sparesults::{
@@ -21,7 +21,6 @@ use sparesults::{
 };
 use std::collections::HashMap;
 use std::{collections::HashSet, fmt::Display, hash::Hash, str::FromStr, sync::Arc};
-use tokio::sync::RwLock;
 use tracing::{debug, trace, warn};
 use url::Url;
 
@@ -61,14 +60,15 @@ pub struct OxigraphEndpoint {
     prefixmap: Arc<PrefixMap>,
 
     /// HTTP client configured for SELECT queries (expects JSON results).
-    client: Arc<reqwest::Client>,
+    client: HttpClient,
 
     /// Cache of HTTP clients for CONSTRUCT queries
-    construct_clients: Arc<RwLock<HashMap<QueryResultFormat, Arc<reqwest::Client>>>>,
+    construct_clients: Arc<std::sync::RwLock<HashMap<QueryResultFormat, HttpClient>>>,
 
-    /// Proactive rate limiter: records when the last request was dispatched.
-    /// Shared across all clones so concurrent callers coordinate on one endpoint.
-    last_request_at: Arc<tokio::sync::Mutex<std::time::Instant>>,
+    /// Proactive rate limiter: the earliest time the next request may be
+    /// dispatched (`None` before the first request). Shared across all clones
+    /// so concurrent callers coordinate on one endpoint.
+    next_request_at: Arc<std::sync::Mutex<Option<Instant>>>,
 
     /// Per-subject predicate cache: subject → (predicate → objects).
     ///
@@ -114,7 +114,7 @@ pub struct OxigraphEndpoint {
 
     /// HTTP client used only by [`EndpointStrategy::Dereference`]: sends
     /// `Accept: text/turtle` instead of the SPARQL-results JSON `client` uses.
-    dereference_client: Arc<reqwest::Client>,
+    dereference_client: HttpClient,
 
     /// Cache for [`EndpointStrategy::Dereference`]: subject → (predicate → objects),
     /// accumulated from every entity document fetched so far.
@@ -206,24 +206,20 @@ impl OxigraphEndpoint {
     /// let endpoint = OxigraphEndpoint::new(&iri, &prefixmap);
     /// ```
     pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<OxigraphEndpoint> {
-        let client = Arc::new(sparql_client()?);
-        let dereference_client = Arc::new(dereference_client()?);
-        // Initialise to 1.1 s in the past so the first request fires immediately.
-        let initial = std::time::Instant::now()
-            .checked_sub(std::time::Duration::from_millis(1100))
-            .unwrap_or_else(std::time::Instant::now);
         Ok(OxigraphEndpoint {
             endpoint_iri: iri.clone(),
             prefixmap: Arc::new(prefixmap.clone()),
-            client,
-            construct_clients: Arc::new(RwLock::new(HashMap::new())),
-            last_request_at: Arc::new(tokio::sync::Mutex::new(initial)),
+            client: HttpClient::new(SPARQL_RESULTS_JSON)?,
+            construct_clients: Arc::new(std::sync::RwLock::new(HashMap::new())),
+            next_request_at: Arc::new(std::sync::Mutex::new(None)),
             triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
             incoming_triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
             request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             rate_limit_ms: Arc::new(std::sync::atomic::AtomicU64::new(INITIAL_RATE_LIMIT_MS)),
             strategy: EndpointStrategy::default(),
-            dereference_client,
+            // `Accept: text/turtle`: Wikibase entity IRIs content-negotiate a
+            // full RDF description of the entity from this.
+            dereference_client: HttpClient::new("text/turtle")?,
             dereference_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
             dereferenced_subjects: Arc::new(std::sync::RwLock::new(HashSet::new())),
         })
@@ -242,24 +238,29 @@ impl OxigraphEndpoint {
     }
 
     /// Waits until at least [`Self::rate_limit_ms`]'s current value has elapsed
-    /// since the previous request, then stamps `last_request_at` with the
-    /// current time.
+    /// since the previous request.
     ///
-    /// Holding the `tokio::sync::Mutex` across the `sleep` serialises callers:
-    /// each one waits its turn, so bursts cannot exceed the current rate
-    /// regardless of how many async tasks are running against the same
-    /// endpoint.
-    async fn enforce_rate_limit(&self) {
+    /// Each caller reserves the next free slot in `next_request_at` before
+    /// sleeping until it, which serialises callers: each one waits its turn, so
+    /// bursts cannot exceed the current rate regardless of how many async tasks
+    /// are running against the same endpoint.
+    async fn enforce_rate_limit(&self) -> Result<()> {
         let min_interval =
             std::time::Duration::from_millis(self.rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed));
-        let mut last = self.last_request_at.lock().await;
-        let elapsed = last.elapsed();
-        if elapsed < min_interval {
-            let wait = min_interval - elapsed;
+        let wait = {
+            let mut next = self.next_request_at.lock().unwrap();
+            let now = Instant::now();
+            let slot = match *next {
+                Some(next) if next > now => next,
+                _ => now,
+            };
+            *next = Some(slot + min_interval);
+            slot.saturating_duration_since(now)
+        };
+        if !wait.is_zero() {
             trace!(endpoint = %self.endpoint_iri, wait_ms = wait.as_millis(), "rate-limit: waiting before next request");
-            tokio::time::sleep(wait).await;
+            http::sleep(wait).await?;
         }
-        *last = std::time::Instant::now();
 
         // At ~1 req/s this can run for minutes against a highly-connected node
         // (e.g. a Wikidata item with thousands of statements) with nothing on
@@ -271,6 +272,7 @@ impl OxigraphEndpoint {
         if count == 1 || count.is_multiple_of(PROGRESS_EVERY) {
             debug!(endpoint = %self.endpoint_iri, requests_sent = count, "Querying remote SPARQL endpoint...");
         }
+        Ok(())
     }
 
     /// Returns a reference to the endpoint IRI.
@@ -389,7 +391,7 @@ impl OxigraphEndpoint {
         if cancellation::is_cancelled() {
             return Err(OxigraphEndpointError::Cancelled);
         }
-        self.enforce_rate_limit().await;
+        self.enforce_rate_limit().await?;
         let solutions =
             make_sparql_query_select_async(query, &self.client, &self.endpoint_iri, &self.rate_limit_ms).await?;
 
@@ -456,28 +458,19 @@ impl OxigraphEndpoint {
         if cancellation::is_cancelled() {
             return Err(OxigraphEndpointError::Cancelled);
         }
-        self.enforce_rate_limit().await;
-        let client = self.get_construct_client(format).await?;
+        self.enforce_rate_limit().await?;
+        let client = self.get_construct_client(format)?;
         make_sparql_query_construct_async(query, &client, &self.endpoint_iri, format, &self.rate_limit_ms).await
     }
 
     /// Retrieves or creates an HTTP client for the given `[[QueryResultFormat]]`
-    async fn get_construct_client(&self, format: &QueryResultFormat) -> Result<Arc<reqwest::Client>> {
-        {
-            let map = self.construct_clients.read().await;
-            if let Some(client) = map.get(format) {
-                return Ok(client.clone());
-            }
+    fn get_construct_client(&self, format: &QueryResultFormat) -> Result<HttpClient> {
+        if let Some(client) = self.construct_clients.read().unwrap().get(format) {
+            return Ok(client.clone());
         }
-        let mut headers = HeaderMap::new();
-        headers.insert(ACCEPT, HeaderValue::from_static(format.mime_type()));
-        headers.insert(USER_AGENT, HeaderValue::from_static(RUDOF_USER_AGENT));
-
-        let client = reqwest::Client::builder().default_headers(headers).build()?;
-        let client = Arc::new(client);
-
-        let mut map = self.construct_clients.write().await;
-        Ok(map.entry(format.clone()).or_insert_with(|| client.clone()).clone())
+        let client = HttpClient::new(format.mime_type())?;
+        let mut map = self.construct_clients.write().unwrap();
+        Ok(map.entry(format.clone()).or_insert(client).clone())
     }
 
     /// Executes a SPARQL ASK query asynchronously.
@@ -524,12 +517,12 @@ impl OxigraphEndpoint {
         if cancellation::is_cancelled() {
             return Err(OxigraphEndpointError::Cancelled);
         }
-        self.enforce_rate_limit().await;
+        self.enforce_rate_limit().await?;
         make_sparql_query_ask_async(query, &self.client, &self.endpoint_iri, &self.rate_limit_ms).await
     }
 
     /// Dereferences `subject`'s IRI over HTTP (`Accept: text/turtle`, following
-    /// redirects — see [`dereference_client`]), parses the response as Turtle,
+    /// redirects), parses the response as Turtle,
     /// and merges every triple it contains into `dereference_cache` (not just
     /// ones about `subject` — a Wikibase entity's document nests its
     /// statement/qualifier/reference structure, plus label-only stubs for
@@ -592,7 +585,7 @@ impl OxigraphEndpoint {
         if cancellation::is_cancelled() {
             return Err(OxigraphEndpointError::Cancelled);
         }
-        self.enforce_rate_limit().await;
+        self.enforce_rate_limit().await?;
 
         let url = Url::parse(iri.as_str())?;
         let body = match http_get_with_retry(&self.dereference_client, &url, &self.rate_limit_ms).await {
@@ -632,7 +625,9 @@ impl OxigraphEndpoint {
     ) -> Result<(HashMap<OxNamedNode, HashSet<OxTerm>>, Vec<OxNamedNode>)> {
         let already_fetched = self.dereferenced_subjects.read().unwrap().contains(subject);
         if !already_fetched {
-            SPARQL_RUNTIME.block_on(self.dereference_subject(subject))?;
+            let this = self.clone();
+            let subject = subject.clone();
+            http::block_on(async move { this.dereference_subject(&subject).await })?;
         }
 
         let cache = self.dereference_cache.read().unwrap();
@@ -717,26 +712,7 @@ impl FromStr for OxigraphEndpoint {
         if let Some(iri_str) = RE_IRI.captures(s) {
             // Parse IRI from angle brackets
             let iri_s = IriS::from_str(&iri_str[1])?;
-            let client = Arc::new(sparql_client()?);
-            let dereference_client = Arc::new(dereference_client()?);
-            let initial = std::time::Instant::now()
-                .checked_sub(std::time::Duration::from_millis(1100))
-                .unwrap_or_else(std::time::Instant::now);
-            Ok(OxigraphEndpoint {
-                endpoint_iri: iri_s,
-                prefixmap: Arc::new(PrefixMap::new()),
-                client,
-                construct_clients: Arc::new(RwLock::new(HashMap::new())),
-                last_request_at: Arc::new(tokio::sync::Mutex::new(initial)),
-                triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
-                incoming_triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
-                request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
-                rate_limit_ms: Arc::new(std::sync::atomic::AtomicU64::new(INITIAL_RATE_LIMIT_MS)),
-                strategy: EndpointStrategy::default(),
-                dereference_client,
-                dereference_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
-                dereferenced_subjects: Arc::new(std::sync::RwLock::new(HashSet::new())),
-            })
+            OxigraphEndpoint::new(&iri_s, &PrefixMap::new())
         } else {
             // Try to match predefined endpoint names
             match s.to_lowercase().as_str() {
@@ -866,9 +842,8 @@ impl AsyncRDF for OxigraphEndpoint {
     }
 }
 
-// NeighsRDF is only available on non-WASM platforms because it requires
-// synchronous iteration, which is not possible in WASM environments
-#[cfg(not(target_family = "wasm"))]
+// The synchronous lookups wait for the HTTP requests with `http::block_on`:
+// natively on a shared tokio runtime, on wasm by suspending with JSPI.
 impl NeighsRDF for OxigraphEndpoint {
     /// Returns an iterator over all triples in the endpoint.
     ///
@@ -1195,40 +1170,32 @@ impl NeighsRDF for OxigraphEndpoint {
     }
 }
 
-// Shared tokio runtime used by the blocking SPARQL methods.
-#[cfg(not(target_family = "wasm"))]
-static SPARQL_RUNTIME: once_cell::sync::Lazy<tokio::runtime::Runtime> = once_cell::sync::Lazy::new(|| {
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .thread_name("rudof-sparql")
-        .build()
-        .expect("failed to build shared tokio runtime for SPARQL queries")
-});
-
-// QueryRDF is only available on non-WASM platforms.
-// On native platforms, these sync methods bridge to the async implementations
-// through a shared tokio runtime (see `SPARQL_RUNTIME`).
-#[cfg(not(target_family = "wasm"))]
+// These sync methods bridge to the async implementations with
+// `http::block_on`: natively through a shared tokio runtime, on wasm by
+// suspending with JSPI.
 impl QueryRDF for OxigraphEndpoint {
     /// Executes a SPARQL CONSTRUCT query synchronously.
     ///
     /// This is a blocking wrapper around `query_construct_async`.
     fn query_construct(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
-        SPARQL_RUNTIME.block_on(self.query_construct_async(query, format))
+        let (this, query, format) = (self.clone(), query.to_string(), format.clone());
+        http::block_on(async move { this.query_construct_async(&query, &format).await })
     }
 
     /// Executes a SPARQL SELECT query synchronously.
     ///
     /// This is a blocking wrapper around `query_select_async`.
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        SPARQL_RUNTIME.block_on(self.query_select_async(query))
+        let (this, query) = (self.clone(), query.to_string());
+        http::block_on(async move { this.query_select_async(&query).await })
     }
 
     /// Executes a SPARQL ASK query synchronously.
     ///
     /// This is a blocking wrapper around `query_ask_async`.
     fn query_ask(&self, query: &str) -> Result<bool> {
-        SPARQL_RUNTIME.block_on(self.query_ask_async(query))
+        let (this, query) = (self.clone(), query.to_string());
+        http::block_on(async move { this.query_ask_async(&query).await })
     }
 }
 
@@ -1244,62 +1211,8 @@ fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<OxigraphEndpoint> {
     QuerySolution::new(vars, vals)
 }
 
-/// User-Agent sent with every HTTP request this module makes (SPARQL or
-/// dereferencing), e.g. `rudof/0.3.11 (https://github.com/rudof-project/rudof)`.
-///
-/// Public endpoints like Wikidata's bucket clients by (User-Agent, IP) for
-/// throttling purposes, and per Wikimedia's User-Agent policy
-/// (<https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy>)
-/// a generic or missing User-Agent gets routed into a more restrictive tier
-/// meant to deter anonymous scraping — a plain `"rudof"` (the previous
-/// value here) qualifies as generic. Identifying the tool and a way to
-/// reach its maintainers, as this does, is what the policy asks for and
-/// avoids that penalty.
-const RUDOF_USER_AGENT: &str = concat!(
-    "rudof/",
-    env!("CARGO_PKG_VERSION"),
-    " (https://github.com/rudof-project/rudof)"
-);
-
-/// Creates an HTTP client configured for SPARQL SELECT queries.
-///
-/// Sets the Accept header to `application/sparql-results+json` and
-/// includes a custom User-Agent.
-///
-/// # Errors
-///
-/// Returns an error if the client builder fails (e.g., TLS initialization fails).
-fn sparql_client() -> Result<reqwest::Client> {
-    use reqwest::header::{self, ACCEPT, USER_AGENT};
-
-    let mut headers = header::HeaderMap::new();
-    headers.insert(
-        ACCEPT,
-        header::HeaderValue::from_static("application/sparql-results+json"),
-    );
-    headers.insert(USER_AGENT, header::HeaderValue::from_static(RUDOF_USER_AGENT));
-
-    let client = reqwest::Client::builder().default_headers(headers).build()?;
-    Ok(client)
-}
-
-/// Creates an HTTP client configured for [`EndpointStrategy::Dereference`]: sends
-/// `Accept: text/turtle` (Wikibase entity IRIs content-negotiate a full RDF
-/// description of the entity from this) plus the same User-Agent as `sparql_client`.
-///
-/// # Errors
-///
-/// Returns an error if the client builder fails (e.g., TLS initialization fails).
-fn dereference_client() -> Result<reqwest::Client> {
-    use reqwest::header::{self, ACCEPT, USER_AGENT};
-
-    let mut headers = header::HeaderMap::new();
-    headers.insert(ACCEPT, header::HeaderValue::from_static("text/turtle"));
-    headers.insert(USER_AGENT, header::HeaderValue::from_static(RUDOF_USER_AGENT));
-
-    let client = reqwest::Client::builder().default_headers(headers).build()?;
-    Ok(client)
-}
+/// `Accept` header of SELECT and ASK queries.
+const SPARQL_RESULTS_JSON: &str = "application/sparql-results+json";
 
 /// Predicates Wikibase's RDF exporter attaches to a referenced-but-not-fetched
 /// entity's label-only "stub" (its `rdf:type` plus label/description
@@ -1336,14 +1249,6 @@ fn parse_turtle_lenient(body: &str, base: &str) -> std::result::Result<Vec<OxTri
         .collect())
 }
 
-/// Per-request timeout applied to every SPARQL HTTP request. Without this, a stalled
-/// connection or a slow response from a remote endpoint (e.g. a heavily-linked node
-/// pulling in a huge result set) blocks the calling thread indefinitely, since neither
-/// `reqwest`'s client nor the blocking `SPARQL_RUNTIME` bridge impose a deadline on
-/// their own. Set via `RequestBuilder::timeout` (rather than on the `Client`/builder)
-/// because it works uniformly on both native and WASM targets.
-const SPARQL_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
-
 /// Starting value for `OxigraphEndpoint::rate_limit_ms` — the minimum gap enforced
 /// between requests before the server has ever throttled us. Wikidata doesn't publish
 /// an exact requests-per-second budget, so this is a conservative guess (< 1 req/s);
@@ -1359,14 +1264,35 @@ const MAX_RATE_LIMIT_MS: u64 = 10_000;
 /// transient upstream-gateway errors (502/503/504) that public SPARQL endpoints like
 /// Wikidata's — fronted by a load balancer in front of a backend that can be briefly
 /// overloaded — routinely return for an otherwise well-formed query.
-fn is_retryable_status(status: reqwest::StatusCode) -> bool {
+fn is_retryable_status(status: u16) -> bool {
     matches!(
         status,
-        reqwest::StatusCode::TOO_MANY_REQUESTS
-            | reqwest::StatusCode::BAD_GATEWAY
-            | reqwest::StatusCode::SERVICE_UNAVAILABLE
-            | reqwest::StatusCode::GATEWAY_TIMEOUT
+        TOO_MANY_REQUESTS | BAD_GATEWAY | SERVICE_UNAVAILABLE | GATEWAY_TIMEOUT
     )
+}
+
+const TOO_MANY_REQUESTS: u16 = 429;
+const BAD_GATEWAY: u16 = 502;
+const SERVICE_UNAVAILABLE: u16 = 503;
+const GATEWAY_TIMEOUT: u16 = 504;
+
+/// How much of an error response's body [`OxigraphEndpointError::HTTPStatusError`] keeps.
+const MAX_ERROR_BODY_CHARS: usize = 1000;
+
+fn http_status_error(url: &Url, status: u16, body: &str) -> OxigraphEndpointError {
+    let body = body.trim();
+    let mut body = match body.char_indices().nth(MAX_ERROR_BODY_CHARS) {
+        Some((end, _)) => format!("{}…", &body[..end]),
+        None => body.to_string(),
+    };
+    if body.is_empty() {
+        body.push_str("(empty body)");
+    }
+    OxigraphEndpointError::HTTPStatusError {
+        url: url.to_string(),
+        status,
+        body,
+    }
 }
 
 /// Upper bound honoured on a server-supplied `Retry-After` value. Wikidata's own
@@ -1374,7 +1300,7 @@ fn is_retryable_status(status: reqwest::StatusCode) -> bool {
 /// ordinary 429 (a client that keeps ignoring 429s escalates to a 24 h *ban*, but
 /// that comes back as 403, not a 429 with an enormous `Retry-After`) — this just
 /// guards against a malformed or unusually large header value stalling silently
-/// for longer than that. `cancellable_sleep` still lets Ctrl-C cut any wait short.
+/// for longer than that. `http::sleep` still lets Ctrl-C cut any wait short (natively).
 const MAX_HONOURED_RETRY_AFTER_SECS: u64 = 300;
 
 /// Sends an HTTP GET request (a SPARQL query, or an entity dereference under
@@ -1393,7 +1319,7 @@ const MAX_HONOURED_RETRY_AFTER_SECS: u64 = 300;
 /// per Wikidata's throttling policy, a client that doesn't ease up after a 429 risks
 /// escalating to a much longer ban.
 async fn http_get_with_retry(
-    client: &reqwest::Client,
+    client: &HttpClient,
     url: &Url,
     rate_limit_ms: &std::sync::atomic::AtomicU64,
 ) -> Result<String> {
@@ -1407,32 +1333,24 @@ async fn http_get_with_retry(
             return Err(OxigraphEndpointError::Cancelled);
         }
         trace!(url = %url, retry, "HTTP GET attempt");
-        // Raced against `cancellation::cancelled()` so Ctrl-C in the shell (see
-        // `rudof_cli`'s signal handler) aborts an in-flight request instead of
-        // waiting out the full `SPARQL_REQUEST_TIMEOUT`.
-        let sent = tokio::select! {
-            biased;
-            _ = cancellation::cancelled() => return Err(OxigraphEndpointError::Cancelled),
-            sent = client.get(url.as_str()).timeout(SPARQL_REQUEST_TIMEOUT).send() => sent,
-        };
-        let response = match sent {
+        let response = match client.get(url).await {
             Ok(response) => response,
             // No HTTP response at all (timed out, connection reset/refused): the
             // request never reached `is_retryable_status` below, so it needs its
             // own retry path with the same exponential backoff.
-            Err(err) if (err.is_timeout() || err.is_connect()) && retry < MAX_RETRIES => {
+            Err(SendError::Transient(err)) if retry < MAX_RETRIES => {
                 let delay_secs = (1u64 << retry).min(5);
                 warn!(url = %url, error = %err, delay_secs, retry, "HTTP request failed: retrying after delay");
-                cancellable_sleep(tokio::time::Duration::from_secs(delay_secs)).await?;
+                http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
                 continue;
             },
-            Err(err) => return Err(err.into()),
+            Err(SendError::Transient(err) | SendError::Fatal(err)) => return Err(err),
         };
-        let status = response.status();
-        trace!(url = %url, status = %status, "HTTP response");
+        let status = response.status;
+        trace!(url = %url, status, "HTTP response");
 
         if is_retryable_status(status) {
-            if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+            if status == TOO_MANY_REQUESTS {
                 // The server just told us to slow down; make every future request
                 // through this endpoint wait longer too, not just this retry.
                 let current = rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed);
@@ -1452,8 +1370,8 @@ async fn http_get_with_retry(
             }
 
             if retry == MAX_RETRIES {
-                warn!(url = %url, %status, "HTTP request failed: max retries reached, giving up");
-                return Err(response.error_for_status().unwrap_err().into());
+                warn!(url = %url, status, "HTTP request failed: max retries reached, giving up");
+                return Err(http_status_error(url, status, &response.body));
             }
             // Honour Retry-After in full when present — Wikidata's throttling policy
             // is explicit that clients should wait out the full duration it names,
@@ -1462,38 +1380,29 @@ async fn http_get_with_retry(
             // absent, e.g. for 502/503/504 blips that aren't rate-limit responses)
             // is our own guess, so that one stays capped at 5 s.
             let delay_secs = match response
-                .headers()
-                .get("Retry-After")
-                .and_then(|v| v.to_str().ok())
-                .and_then(|s| s.parse::<u64>().ok())
+                .retry_after
+                .as_deref()
+                .and_then(|s| s.trim().parse::<u64>().ok())
             {
                 Some(secs) => secs.min(MAX_HONOURED_RETRY_AFTER_SECS),
                 None => (1u64 << retry).min(5),
             };
-            warn!(url = %url, %status, delay_secs, retry, "HTTP request failed: retrying after delay");
-            cancellable_sleep(tokio::time::Duration::from_secs(delay_secs)).await?;
+            warn!(url = %url, status, delay_secs, retry, "HTTP request failed: retrying after delay");
+            http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
             continue;
         }
 
-        return response.error_for_status()?.text().await.map_err(Into::into);
+        if !(200..300).contains(&status) {
+            return Err(http_status_error(url, status, &response.body));
+        }
+        return Ok(response.body);
     }
     unreachable!()
 }
 
-/// Sleeps for `duration`, unless cancellation is requested first (e.g.
-/// Ctrl-C in the shell), in which case this returns early with
-/// [`OxigraphEndpointError::Cancelled`] instead of waiting out the delay.
-async fn cancellable_sleep(duration: std::time::Duration) -> Result<()> {
-    tokio::select! {
-        biased;
-        _ = cancellation::cancelled() => Err(OxigraphEndpointError::Cancelled),
-        _ = tokio::time::sleep(duration) => Ok(()),
-    }
-}
-
 async fn make_sparql_query_select_async(
     query_str: &str,
-    client: &reqwest::Client,
+    client: &HttpClient,
     endpoint_iri: &IriS,
     rate_limit_ms: &std::sync::atomic::AtomicU64,
 ) -> Result<Vec<OxQuerySolution>> {
@@ -1504,7 +1413,7 @@ async fn make_sparql_query_select_async(
 
 async fn make_sparql_query_construct_async(
     query: &str,
-    client: &reqwest::Client,
+    client: &HttpClient,
     endpoint_iri: &IriS,
     _format: &QueryResultFormat,
     rate_limit_ms: &std::sync::atomic::AtomicU64,
@@ -1515,7 +1424,7 @@ async fn make_sparql_query_construct_async(
 
 async fn make_sparql_query_ask_async(
     query: &str,
-    client: &reqwest::Client,
+    client: &HttpClient,
     endpoint_iri: &IriS,
     rate_limit_ms: &std::sync::atomic::AtomicU64,
 ) -> Result<bool> {

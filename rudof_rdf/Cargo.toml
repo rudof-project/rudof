@@ -27,6 +27,11 @@ qlever = [
     "dep:tokio-util",
 ]
 qlever-docker-tests = ["qlever"]
+# Remote SPARQL endpoints on wasm: requests go through JavaScript's `fetch`,
+# and the synchronous endpoint API suspends on its promises with JSPI
+# (WebAssembly JS Promise Integration). Only has an effect on wasm, where it
+# needs a runtime with JSPI and exnref. Without it, endpoints are native only.
+jspi = ["sparql", "dep:js-sys", "dep:wasm-bindgen"]
 
 [dependencies]
 colored.workspace = true
@@ -80,3 +85,5 @@ getrandom = { version = "0.3", features = ["wasm_js"] }
 # `js` takes the current time (e.g. for SPARQL's NOW()) and randomness from
 # JavaScript: `std::time` panics on `wasm32-unknown-unknown`.
 oxigraph = { workspace = true, optional = true, features = ["js"] }
+js-sys = { version = "0.3.105", optional = true }
+wasm-bindgen = { version = "0.2.128", optional = true }

@@ -3,7 +3,7 @@ use std::io;
 use oxigraph::sparql::{QueryEvaluationError, SparqlSyntaxError};
 use thiserror::Error;
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
 use rudof_rdf::rdf_impl::OxigraphEndpointError;
 use rudof_rdf::{rdf_core::RDFFormat, rdf_impl::RdfBackendError};
 
@@ -19,14 +19,14 @@ pub enum RdfDataError {
         endpoint: String,
     },
 
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
     #[error(transparent)]
     SRDFSparqlError {
         #[from]
         err: OxigraphEndpointError,
     },
 
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
     #[error("Failed to create SPARQL endpoint {name} with {url}: {err}")]
     SRDFSparqlFromEndpointDescriptionError {
         name: String,

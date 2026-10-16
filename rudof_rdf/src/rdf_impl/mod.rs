@@ -1,4 +1,4 @@
-mod oxigraph;
+pub(crate) mod oxigraph;
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 mod qlever;
 
@@ -6,7 +6,7 @@ mod backend;
 mod backend_error;
 mod endpoint_strategy;
 
-#[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+#[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub use oxigraph::{OxigraphEndpoint, OxigraphEndpointError, SparqlVars};
 pub use oxigraph::{OxigraphInMemory, OxigraphInMemoryError, ReaderMode};
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
