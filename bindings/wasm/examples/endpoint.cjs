@@ -1,15 +1,11 @@
 // Validates and queries data from a remote SPARQL endpoint (Wikidata), from Node.js.
 //
-// Needs a package built with the `endpoints` feature, which relies on
-// WebAssembly JSPI (Node.js 25+):
-//   RUDOF_WASM_FEATURES="comparison,conversion,dctap,pgschema,rdf-config,endpoints" ./build.sh
+// Uses the build with the `endpoints` feature in pkg/endpoints (in the npm
+// package, `require("@rudof/rudof/endpoints")`), which relies on WebAssembly
+// JSPI (Node.js 25+):
+//   ./build.sh
 //   node examples/endpoint.cjs
-const { Rudof, setFetch } = require("../pkg");
-
-if (typeof Rudof.prototype.validateShexAsync !== "function") {
-  console.error("This package was built without the `endpoints` feature (see the README).");
-  process.exit(1);
-}
+const { Rudof, setFetch } = require("../pkg/endpoints/node/rudof_wasm.js");
 
 // Wikimedia asks clients to identify themselves. Natively, rudof sends a
 // User-Agent; from JavaScript, `setFetch` can add headers to its requests.

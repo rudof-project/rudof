@@ -9,6 +9,10 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
+## [Unreleased]
+### Added
+- The `@rudof/rudof` npm package also ships a build with remote SPARQL endpoints, in `endpoints/`: `import "@rudof/rudof/endpoints"` (or `@rudof/rudof/endpoints/web`, `@rudof/rudof/endpoints/node`) loads it in runtimes with JSPI, while the main build is unchanged. `bindings/wasm/build.sh` builds it in `pkg/endpoints/`.
+
 ## 0.3.26
 ### Added
 - Staging of the loaded RDF data ([#865](https://github.com/rudof-project/rudof/issues/865)): `begin_staging`, `commit_staging`, `rollback_staging`, `staging_depth` and the `staging()` guard, which rolls its frame back when dropped. Only the data is staged; a rollback also clears the validation results, the query results and the loaded query. In Python as `with rudof.staging():`, in JavaScript as `beginStaging`/`commitStaging`/`rollbackStaging`/`stagingDepth`.

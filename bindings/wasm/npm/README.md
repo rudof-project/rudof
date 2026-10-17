@@ -93,14 +93,40 @@ TypeScript declarations list every method, and the
 [repository](https://github.com/rudof-project/rudof/tree/master/bindings/wasm)
 has a summary of them.
 
+## Remote SPARQL endpoints
+
+`@rudof/rudof/endpoints` is a separate build of the package that can also
+validate and query the data of a remote SPARQL endpoint, with asynchronous
+methods. It relies on WebAssembly JSPI (JavaScript Promise Integration), so it
+only loads in runtimes that support it, e.g. Chrome/Edge 137+ and Node.js 25+
+(not Firefox or Safari yet):
+
+```js
+import { Rudof } from "@rudof/rudof/endpoints"; // in browsers, `await init()` first, as above
+
+const rudof = new Rudof();
+rudof.useEndpoint("https://query.wikidata.org/sparql"); // or a known name, e.g. "wikidata"
+rudof.readShex(schema);
+rudof.readShapemap("<http://www.wikidata.org/entity/Q80>@<Human>");
+const report = await rudof.validateShexAsync();
+
+rudof.readQuery("SELECT ?p ?o WHERE { <http://www.wikidata.org/entity/Q80> ?p ?o } LIMIT 10");
+const results = await rudof.runQueryAsync();
+```
+
+`validateShaclAsync` and `nodeInfoAsync` work in the same way, and `setFetch`
+replaces the function used for the HTTP requests (e.g. to add headers or go
+through a proxy). Everything else is as in the main build; its `.wasm` file is
+exported as `@rudof/rudof/endpoints/rudof_wasm_bg.wasm`. See the
+[repository](https://github.com/rudof-project/rudof/tree/master/bindings/wasm#remote-sparql-endpoints)
+for the details.
+
 ## Limitations
 
 Everything is passed as strings: reading files, fetching or dereferencing
-IRIs, ShEx `IMPORT`s, remote SPARQL endpoints, rendering images and property
-graph databases are not available. (Remote SPARQL endpoints are available in
-builds with the `endpoints` feature, which need a runtime with WebAssembly
-JSPI: see the
-[repository](https://github.com/rudof-project/rudof/tree/master/bindings/wasm#remote-sparql-endpoints).) Fetch remote documents yourself (e.g. with
+IRIs, ShEx `IMPORT`s, rendering images and property graph databases are not
+available, and remote SPARQL endpoints only in `@rudof/rudof/endpoints` (see
+above). Fetch remote documents yourself (e.g. with
 `fetch`) and pass their text in. SPARQL over the loaded data (queries,
 SHACL-SPARQL constraints, ShapeMap query selectors) runs on an embedded
 Oxigraph store.
