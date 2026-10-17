@@ -13,7 +13,8 @@ network or native tools is not supported: reading files, dereferencing IRIs,
 ShEx `IMPORT`s and rendering images. SPARQL queries over the data itself
 (SPARQL queries, SHACL-SPARQL constraints, the SPARQL SHACL engine, ShapeMap
 query selectors) run on Oxigraph's embedded store. Remote SPARQL endpoints are
-available in builds with the `endpoints` feature, which relies on JSPI (see
+available in builds with the `endpoints` feature, which relies on JSPI, and
+which the npm package ships as `@rudof/rudof/endpoints` (see
 [Remote SPARQL endpoints](#remote-sparql-endpoints)).
 
 ## Building
@@ -34,10 +35,14 @@ cargo install wasm-bindgen-cli --locked --version <version of wasm-bindgen in Ca
 - `pkg/web/`: an ES module for browsers and bundlers (`wasm-bindgen --target web`)
 - `pkg/node/`: a CommonJS module for Node.js (`wasm-bindgen --target nodejs`),
   which loads the same `.wasm` file as `pkg/web/`
+- `pkg/endpoints/`: the same two modules (`web/` and `node/`), built with every
+  feature and the `endpoints` feature (see
+  [Remote SPARQL endpoints](#remote-sparql-endpoints))
 
 `import "@rudof/rudof"` and `require("@rudof/rudof")` pick `node/` in Node.js and `web/`
 everywhere else (`exports` in `package.json`); `@rudof/rudof/web` and `@rudof/rudof/node`
-select one explicitly.
+select one explicitly. `@rudof/rudof/endpoints`, `@rudof/rudof/endpoints/web` and
+`@rudof/rudof/endpoints/node` do the same with `endpoints/`.
 
 `build.sh` builds with the `wasm-release` profile of the workspace, which
 optimizes for size (`opt-level = "z"`, LTO, one codegen unit). If `wasm-opt`
@@ -76,7 +81,8 @@ smaller `.wasm`:
 produces only loads in runtimes with JSPI: see
 [Remote SPARQL endpoints](#remote-sparql-endpoints).
 
-`RUDOF_WASM_FEATURES` selects the features that `build.sh` builds with:
+`RUDOF_WASM_FEATURES` selects the features that `build.sh` builds `pkg/web/`
+and `pkg/node/` with (`pkg/endpoints/` always has every feature):
 
 ```sh
 RUDOF_WASM_FEATURES="" ./build.sh                 # none: data, ShEx, SHACL, SPARQL
@@ -242,10 +248,10 @@ Things to know:
 - **Runtimes.** A module built with `endpoints` needs JSPI and exnref, and does
   not load at all without them: Chrome/Edge 137+ and Node.js 25+ have both
   enabled by default, while Firefox and Safari don't ship JSPI yet. That is why
-  the feature is not part of the default build (nor of the npm package):
-  `RUDOF_WASM_FEATURES="comparison,conversion,dctap,pgschema,rdf-config,endpoints" ./build.sh`
-  builds a package with it. A module built without it is byte for byte the
-  same as before the feature existed.
+  the feature is not part of the default build: the npm package ships it as a
+  separate build, in `endpoints/` (`@rudof/rudof/endpoints`), which `build.sh`
+  builds with every other feature too. A module built without it is byte for
+  byte the same as before the feature existed.
 - **Synchronous methods.** `validateShex`, `runQuery`, etc. keep working on data
   loaded with `readData`. On endpoint data, they throw an error saying to use
   the asynchronous methods when they would need to wait for a response
@@ -269,7 +275,7 @@ Things to know:
 
 - Node.js: `node examples/node.cjs`
 - Node.js, with a remote endpoint (Wikidata): `node examples/endpoint.cjs`, with
-  a package built with the `endpoints` feature and Node.js 25+.
+  Node.js 25+ (it uses `pkg/endpoints/`).
 - Browser: serve this directory over HTTP (e.g. `python3 -m http.server`) and
   open `examples/index.html`.
 

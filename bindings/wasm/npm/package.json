@@ -24,6 +24,7 @@
   "files": [
     "web/",
     "node/",
+    "endpoints/",
     "LICENSE-MIT",
     "LICENSE-APACHE"
   ],
@@ -51,11 +52,32 @@
       "default": "./node/rudof_wasm.js"
     },
     "./rudof_wasm_bg.wasm": "./web/rudof_wasm_bg.wasm",
+    "./endpoints": {
+      "node": {
+        "types": "./endpoints/node/rudof_wasm.d.ts",
+        "default": "./endpoints/node/rudof_wasm.js"
+      },
+      "default": {
+        "types": "./endpoints/web/rudof_wasm.d.ts",
+        "default": "./endpoints/web/rudof_wasm.js"
+      }
+    },
+    "./endpoints/web": {
+      "types": "./endpoints/web/rudof_wasm.d.ts",
+      "default": "./endpoints/web/rudof_wasm.js"
+    },
+    "./endpoints/node": {
+      "types": "./endpoints/node/rudof_wasm.d.ts",
+      "default": "./endpoints/node/rudof_wasm.js"
+    },
+    "./endpoints/rudof_wasm_bg.wasm": "./endpoints/web/rudof_wasm_bg.wasm",
     "./package.json": "./package.json"
   },
   "sideEffects": [
     "./node/rudof_wasm.js",
-    "./web/rudof_wasm.js"
+    "./web/rudof_wasm.js",
+    "./endpoints/node/rudof_wasm.js",
+    "./endpoints/web/rudof_wasm.js"
   ],
   "engines": {
     "node": ">=18"

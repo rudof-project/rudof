@@ -68,8 +68,22 @@ check("web", validateShex(data, shex, shapemap), validateShacl(data, shacl));
 EOF
 node web.mjs
 
+# The endpoints build (remote SPARQL endpoints) only loads in runtimes with
+# JSPI, e.g. Node.js 25+; tests/endpoints.cjs tests the endpoints themselves.
+cat > endpoints.cjs <<'EOF'
+const { validateShex, validateShacl, Rudof } = require("@rudof/rudof/endpoints");
+const { data, shex, shapemap, shacl, check } = require("./data.js");
+check("endpoints", validateShex(data, shex, shapemap), validateShacl(data, shacl));
+if (typeof Rudof.prototype.validateShexAsync !== "function") throw new Error("validateShexAsync");
+EOF
+if node -e 'process.exit(typeof WebAssembly.Suspending === "function" ? 0 : 1)'; then
+    node endpoints.cjs
+else
+    echo "endpoints: skipped, Node.js $(node --version) has no JSPI" >&2
+fi
+
 # TypeScript declarations are where package.json says
-for f in node/rudof_wasm.d.ts web/rudof_wasm.d.ts; do
+for f in node/rudof_wasm.d.ts web/rudof_wasm.d.ts endpoints/node/rudof_wasm.d.ts endpoints/web/rudof_wasm.d.ts; do
     test -f "node_modules/@rudof/rudof/$f" || { echo "missing $f" >&2; exit 1; }
 done
 

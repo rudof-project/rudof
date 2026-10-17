@@ -1,13 +1,14 @@
 // Tests the remote SPARQL endpoint API (the `endpoints` feature) against a
 // local SPARQL endpoint, served by another `Rudof` session over HTTP.
 //
-// Needs a package built with the feature, and a runtime with JSPI (Node.js 25+):
-//   RUDOF_WASM_FEATURES="comparison,conversion,dctap,pgschema,rdf-config,endpoints" ./build.sh
+// Uses the build with the feature in pkg/endpoints, and needs a runtime with
+// JSPI (Node.js 25+):
+//   ./build.sh
 //   node tests/endpoints.cjs
 "use strict";
 const assert = require("node:assert/strict");
 const http = require("node:http");
-const { Rudof, setFetch } = require("../pkg");
+const { Rudof, setFetch } = require("../pkg/endpoints/node/rudof_wasm.js");
 
 const EX = "http://example.org/";
 const DATA = `prefix : <${EX}>

@@ -46,6 +46,15 @@ jobs:
           mkdir dist
           mv "$tarball" dist/
           ls -l dist
+      # The endpoints/ build (remote SPARQL endpoints) relies on JSPI, which
+      # needs Node.js 25+.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - name: Test remote SPARQL endpoints
+        run: node bindings/wasm/tests/endpoints.cjs
+      - name: Install and test the packed npm package with JSPI
+        run: bindings/wasm/npm/smoke-test.sh
       - uses: actions/upload-artifact@v4
         with:
           name: npm-package
