@@ -42,6 +42,7 @@ vocab_term!(ShaclVocab, SH_VALIDATION_REPORT, "ValidationReport");
 vocab_term!(ShaclVocab, SH_VALIDATION_RESULT, "ValidationResult");
 vocab_term!(ShaclVocab, SH_CONFORMS, "conforms");
 vocab_term!(ShaclVocab, SH_DEACTIVATED, "deactivated");
+vocab_term!(ShaclVocab, SH_DETAIL, "detail");
 vocab_term!(ShaclVocab, SH_FOCUS_NODE, "focusNode");
 vocab_term!(ShaclVocab, SH_MESSAGE, "message");
 vocab_term!(ShaclVocab, SH_RESULT, "result");

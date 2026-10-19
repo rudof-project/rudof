@@ -31,13 +31,16 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let mut conforms = false;
+                let mut details = Vec::new();
                 for idx in self.shapes().iter() {
                     let or_shape = shapes_graph.get_shape_from_idx_e(idx)?;
-                    let inner_results = or_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    if inner_results?.conforms() {
+                    let inner_results =
+                        or_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;
+                    if inner_results.conforms() {
                         conforms = true;
                         break;
                     }
+                    details.extend_from_slice(inner_results.violations());
                 }
                 let node_obj = S::term_as_object(node).ok();
                 if conforms {
@@ -52,7 +55,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj)
-                        .with_source(Some(shape.id().clone()));
+                        .with_source(Some(shape.id().clone()))
+                        .with_details(details);
                     outcome.push_violation(vr);
                 }
             }

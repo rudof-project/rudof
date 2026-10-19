@@ -23,11 +23,13 @@ fn test(path: String, mode: ShaclValidationMode) -> Result<(), TestSuiteError> {
             .try_into()
             .map_err(|e: IRError| TestSuiteError::TestShapesCompilation(e.to_string()))?;
 
+        // The test suite compares reports without nested results (`sh:detail`).
         let report = validator
             .validate(&test_shapes, &mode, &ShaclConfig::default())
-            .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
+            .map_err(|e| TestSuiteError::Validation(e.to_string()))?
+            .without_details();
 
-        if report != test.report {
+        if report != test.report.clone().without_details() {
             println!("❌ Test failed");
             println!("Expected report:\n{:#?}", test.report.results());
             println!("Actual report:\n{:#?}", report.results());

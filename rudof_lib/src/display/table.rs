@@ -1,7 +1,7 @@
 use crate::display::Color;
 use colored::{ColoredString, Colorize};
 use prefixmap::PrefixMap;
-use shacl::validator::report::ValidationReport;
+use shacl::validator::report::{ValidationReport, ValidationResult};
 use std::io::{Error, Write};
 use tabled::builder::Builder;
 use tabled::settings::object::Segment;
@@ -73,13 +73,17 @@ impl Table for ValidationReport {
             let mut record = vec![severity, node, component, path, value, source];
 
             if detailed {
-                let details = result
+                let mut details = result
                     .message()
                     .iter()
                     .fold(String::new(), |acc, (lang, msg)| match lang {
                         None => format!("{}- {}\n", acc, msg),
                         Some(lang) => format!("{}- {}: {}\n", acc, lang, msg),
                     });
+                if !result.details().is_empty() {
+                    details.push_str("Caused by (sh:detail):\n");
+                    write_nested_results(&mut details, result.details(), self.nodes_prefixmap(), 1);
+                }
                 record.push(details);
             }
             builder.push_record(record);
@@ -121,5 +125,29 @@ impl Table for ValidationReport {
             .with(Modify::new(Segment::all()).with(Width::wrap(terminal_width)))
             .to_string();
         write!(writer, "{table}")
+    }
+}
+
+/// Appends one line per nested (`sh:detail`) result, indented by `depth`,
+/// followed by that result's own nested results.
+fn write_nested_results(out: &mut String, results: &[ValidationResult], pm: &PrefixMap, depth: usize) {
+    let indent = "  ".repeat(depth);
+    for result in results {
+        out.push_str(&format!(
+            "{indent}- {} {}",
+            pm.show(result.focus_node()),
+            pm.show(result.constraint_component())
+        ));
+        if let Some(path) = result.path() {
+            out.push_str(&format!(" path: {}", pm.show(&Some(path))));
+        }
+        if let Some(value) = result.value() {
+            out.push_str(&format!(" value: {}", pm.show(value)));
+        }
+        if let Some(source) = result.source() {
+            out.push_str(&format!(" shape: {}", pm.show(source)));
+        }
+        out.push('\n');
+        write_nested_results(out, result.details(), pm, depth + 1);
     }
 }

@@ -12,6 +12,9 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ## [Unreleased]
 ### Changed
 - The SHACL recursion semantics are renamed after the fixed point they compute: `cautious` is now `lfp` (least fixed point, still the default) and `brave` is now `gfp` (greatest fixed point), in `--recursion-semantics`, `[shacl].recursion_semantics` and `RecursionSemantics` (`RecursionSemantics::Lfp`/`RecursionSemantics::Gfp`). The old names are still accepted as aliases on the command line and in config files.
+- A SHACL validation result for `sh:node`, `sh:and`, `sh:or` or `sh:xone` now carries, as `sh:detail`, the nested results that caused it ([#897](https://github.com/rudof-project/rudof/issues/897)), so a report shows why a value failed the referenced shape and which of that shape's constraints it violated. `sh:sourceShape` is unchanged: as the SHACL specification requires, it is the shape that declares the failed constraint (e.g. the property shape holding `sh:node`), not the referenced shape. The `sh:node` result message names the referenced shape by its identifier instead of printing the whole shape. The `details` table output lists the nested results, and `ValidationResult::details()` returns them. See [Which shape caused a violation](docs/src/cli_usage/shacl_validate.md#which-shape-caused-a-violation).
+
+## 0.3.27
 ### Added
 - The `@rudof/rudof` npm package also ships a build with remote SPARQL endpoints, in `endpoints/`: `import "@rudof/rudof/endpoints"` (or `@rudof/rudof/endpoints/web`, `@rudof/rudof/endpoints/node`) loads it in runtimes with JSPI, while the main build is unchanged. `bindings/wasm/build.sh` builds it in `pkg/endpoints/`.
 ### Fixed

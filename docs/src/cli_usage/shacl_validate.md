@@ -128,6 +128,50 @@ It has no effect without `--with-evidences`, and never affects violations.
 
 These keys can be set persistently in `rudof.toml` — see [`[shacl]`](../references/config.md#shacl--shacl-validation) in the config reference.
 
+## Which shape caused a violation
+
+Each validation result names, in `sh:sourceShape`, the shape whose constraint failed. That
+is the shape that declares the constraint, not the shape it refers to: if a property shape
+of `:S` says `sh:node :T` and a value doesn't conform to `:T`, the result's source shape is
+that property shape (a blank node, unless you give it an IRI), as the SHACL specification
+requires.
+
+To see *why* the value doesn't conform to `:T`, the results that made it fail are attached
+to the result as `sh:detail`, each with its own focus node and source shape. rudof does this
+for `sh:node`, `sh:and`, `sh:or` and `sh:xone`. For example, with these shapes:
+
+```turtle
+:S a sh:NodeShape ;
+   sh:targetNode :a ;
+   sh:property [ sh:path :p ; sh:node :T ] .
+
+:T a sh:NodeShape ;
+   sh:property [ sh:path :p ; sh:hasValue :c ] .
+```
+
+and the data `:a :p :b . :b :p :a .`, the report (`-r turtle`) contains:
+
+```turtle
+[ a sh:ValidationResult ;
+  sh:focusNode :a ;
+  sh:resultPath :p ;
+  sh:value :b ;
+  sh:sourceConstraintComponent sh:NodeConstraintComponent ;
+  sh:sourceShape _:b2 ;                 # the property shape of :S
+  sh:detail [
+    a sh:ValidationResult ;
+    sh:focusNode :b ;
+    sh:resultPath :p ;
+    sh:sourceConstraintComponent sh:HasValueConstraintComponent ;
+    sh:sourceShape _:b4                 # the property shape of :T
+  ]
+] .
+```
+
+In the default `-r details` table, the nested results are listed under "Caused by
+(sh:detail)" in the Details column. Nested results can themselves have details, for chains
+of `sh:node` references.
+
 ## Recursive shapes
 
 A shape may reference itself, directly or through other shapes — for example, a `Person`
