@@ -1,5 +1,5 @@
 use crate::rdf_core::{
-    Any, BuildRDF, NeighsRDF, RDFError, RDFFormat,
+    Any, BuildRDF, NeighsRDF, RDFError, RDFFormat, Rdf,
     parser::rdf_node_parser::{
         ParserExt, RDFNodeParse,
         constructors::{
@@ -8,6 +8,10 @@ use crate::rdf_core::{
         },
     },
     term::Triple,
+    term::{
+        Object,
+        literal::{BaseDirection as RdfBaseDirection, ConcreteLiteral, Lang},
+    },
 };
 use crate::rdf_impl::{OxigraphInMemory, ReaderMode};
 use crate::rdf_parser;
@@ -442,6 +446,24 @@ prefix : <http://example.org/>
 "#;
     let graph = OxigraphInMemory::from_str(turtle, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
     assert_eq!(graph.len(), 2);
+
+    let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p");
+    let shalom = graph
+        .triples_matching(&x, &p, &Any)
+        .unwrap()
+        .next()
+        .unwrap()
+        .obj()
+        .clone();
+    assert_eq!(
+        OxigraphInMemory::term_as_object(&shalom).unwrap(),
+        Object::Literal(ConcreteLiteral::dir_lang_str(
+            "Shalom",
+            Lang::new("he").unwrap(),
+            RdfBaseDirection::Rtl
+        ))
+    );
 }
 // RDF/XML
 
