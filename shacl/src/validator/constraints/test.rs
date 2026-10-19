@@ -257,19 +257,19 @@ prefix : <http://example.org/>
     }
 
     #[test]
-    fn cautious_mode_rejects_an_ungrounded_cycle() {
+    fn lfp_mode_rejects_an_ungrounded_cycle() {
         // Least fixpoint: nothing in the cycle can be justified without
         // assuming itself, so it's assumed non-conformant.
-        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
         let report = validate_with_config(MUTUAL_CYCLE_GRAPH, &config);
         assert!(!report.conforms());
     }
 
     #[test]
-    fn brave_mode_accepts_a_self_consistent_cycle() {
+    fn gfp_mode_accepts_a_self_consistent_cycle() {
         // Greatest fixpoint: the assignment "everyone in the cycle conforms"
         // is self-consistent, so it's accepted.
-        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Brave);
+        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Gfp);
         let report = validate_with_config(MUTUAL_CYCLE_GRAPH, &config);
         assert!(report.conforms());
     }
@@ -294,13 +294,13 @@ prefix : <http://example.org/>
 :n2 a :ListNode ; :next :n3 .
 :n3 a :ListNode .
 "#;
-        let cautious_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
-        let cautious = validate_with_config(graph, &cautious_config);
-        assert!(cautious.conforms(), "{:?}", cautious.results());
+        let lfp_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
+        let lfp = validate_with_config(graph, &lfp_config);
+        assert!(lfp.conforms(), "{:?}", lfp.results());
 
-        let brave_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Brave);
-        let brave = validate_with_config(graph, &brave_config);
-        assert!(brave.conforms(), "{:?}", brave.results());
+        let gfp_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Gfp);
+        let gfp = validate_with_config(graph, &gfp_config);
+        assert!(gfp.conforms(), "{:?}", gfp.results());
     }
 
     /// A terminating chain and a separate pure cycle against the same
@@ -310,7 +310,7 @@ prefix : <http://example.org/>
     /// multiple independent `:targetClass` instances together made sibling
     /// targets falsely look like ancestors of each other, cutting the chain
     /// nodes as if they were cyclic. Every chain node must conform; every
-    /// cycle node must not (cautious/LFP).
+    /// cycle node must not (LFP).
     ///
     /// Lengths are kept modest deliberately: this recursive-descent
     /// validator's call-stack depth scales with recursion depth regardless
@@ -346,7 +346,7 @@ prefix : <http://example.org/>
             ));
         }
 
-        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
+        let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
         let report = validate_with_config(&graph, &config);
         assert!(
             report
@@ -381,7 +381,7 @@ prefix : <http://example.org/>
 
     #[test]
     fn stratified_negation_compiles_under_both_recursion_semantics() {
-        for semantics in [RecursionSemantics::Cautious, RecursionSemantics::Brave] {
+        for semantics in [RecursionSemantics::Lfp, RecursionSemantics::Gfp] {
             let rdf =
                 RdfData::from_str(STRATIFIED_NEGATION_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
             let schema = ShaclParser::new(rdf).parse().unwrap();
@@ -396,10 +396,10 @@ prefix : <http://example.org/>
     #[test]
     fn stratified_negation_rejects_the_negated_node_independently_of_the_recursion_semantics() {
         // The `sh:not` check doesn't depend on the cycle at all, so it gives
-        // the same answer for `:robot` under both cautious and brave: the
+        // the same answer for `:robot` under both LFP and GFP: the
         // negation fails regardless of how the *unrelated* recursive part
         // (which `:robot` also happens to sit in) is resolved.
-        for semantics in [RecursionSemantics::Cautious, RecursionSemantics::Brave] {
+        for semantics in [RecursionSemantics::Lfp, RecursionSemantics::Gfp] {
             let config = ShaclConfig::default().with_recursion_semantics(semantics);
             let report = validate_with_config(STRATIFIED_NEGATION_GRAPH, &config);
             assert!(
@@ -416,28 +416,26 @@ prefix : <http://example.org/>
     #[test]
     fn stratified_negation_agrees_with_recursion_semantics_for_the_cycle_itself() {
         // `:human`'s conformance hinges purely on the self-cycle (it isn't a
-        // robot, so `sh:not` never fires for it) — cautious/brave disagree
+        // robot, so `sh:not` never fires for it) — LFP/GFP disagree
         // on it exactly as they would without the negation present at all.
-        let cautious_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Cautious);
-        let cautious = validate_with_config(STRATIFIED_NEGATION_GRAPH, &cautious_config);
+        let lfp_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
+        let lfp = validate_with_config(STRATIFIED_NEGATION_GRAPH, &lfp_config);
         assert!(
-            cautious
-                .results()
+            lfp.results()
                 .iter()
                 .any(|r| r.focus_node().to_string().contains("human")),
-            "expected :human to be rejected under cautious: {:?}",
-            cautious.results()
+            "expected :human to be rejected under lfp: {:?}",
+            lfp.results()
         );
 
-        let brave_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Brave);
-        let brave = validate_with_config(STRATIFIED_NEGATION_GRAPH, &brave_config);
+        let gfp_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Gfp);
+        let gfp = validate_with_config(STRATIFIED_NEGATION_GRAPH, &gfp_config);
         assert!(
-            brave
-                .results()
+            gfp.results()
                 .iter()
                 .all(|r| !r.focus_node().to_string().contains("human")),
-            "expected :human to conform under brave: {:?}",
-            brave.results()
+            "expected :human to conform under gfp: {:?}",
+            gfp.results()
         );
     }
 
@@ -447,7 +445,7 @@ prefix : <http://example.org/>
 
         let rdf = RdfData::from_str(STRATIFIED_NEGATION_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let schema = ShaclParser::new(rdf).parse().unwrap();
-        let schema_ir = IRSchema::compile_with_recursion(&schema, RecursionSemantics::Brave).unwrap();
+        let schema_ir = IRSchema::compile_with_recursion(&schema, RecursionSemantics::Gfp).unwrap();
 
         let kinds = schema_ir.recursion_kinds();
         let person_kind = kinds
@@ -468,7 +466,7 @@ prefix : <http://example.org/>
     /// recursive (via `:friendShape`) and entirely unrelated to
     /// `:PersonShape`'s own cycle. There is no order in which both
     /// fixpoints can be soundly resolved, so this is rejected outright —
-    /// under every recursion semantics, including `brave`.
+    /// under every recursion semantics, including `gfp`.
     const NON_STRATIFIED_NEGATION_GRAPH: &str = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
@@ -486,7 +484,7 @@ prefix : <http://example.org/>
 
     #[test]
     fn negation_of_an_unrelated_recursive_shape_is_rejected_under_every_semantics() {
-        for semantics in [RecursionSemantics::Cautious, RecursionSemantics::Brave] {
+        for semantics in [RecursionSemantics::Lfp, RecursionSemantics::Gfp] {
             let rdf = RdfData::from_str(
                 NON_STRATIFIED_NEGATION_GRAPH,
                 &RDFFormat::Turtle,

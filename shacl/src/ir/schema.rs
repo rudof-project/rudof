@@ -281,7 +281,7 @@ impl IRSchema {
                     return Err(IRError::DependencyGraphHasNegativeCycles { cycles });
                 }
                 warn!(
-                    "Recursive shapes are disabled (recursion_semantics = none): rejecting the cyclic schema. Set recursion_semantics to \"cautious\" or \"brave\" to allow it."
+                    "Recursive shapes are disabled (recursion_semantics = none): rejecting the cyclic schema. Set recursion_semantics to \"lfp\" or \"gfp\" to allow it."
                 );
                 return Err(IRError::DependencyGraphHasCycles { cycles });
             }

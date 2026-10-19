@@ -52,13 +52,13 @@ macro_rules! cli_wrapper {
     (
         $cli:ident,
         $core:ident,
-        { $($variant:ident),* $(,)? }
+        { $( $(#[$meta:meta])* $variant:ident ),* $(,)? }
     ) => {
         /// CLI wrapper enum with clap::ValueEnum support.
         #[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
         #[clap(rename_all = "lower")]
         pub enum $cli {
-            $( $variant ),*
+            $( $(#[$meta])* $variant ),*
         }
 
         /// Convert CLI enum to core library type.

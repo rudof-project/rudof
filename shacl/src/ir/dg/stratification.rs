@@ -23,13 +23,13 @@ pub enum ShapeRecursionKind {
     NonRecursive,
     /// Part of a cycle built only from monotonic constraints — no negation
     /// is involved in getting back to itself. Supported under both
-    /// `cautious` (least fixed point) and `brave` (greatest fixed point)
+    /// `lfp` (least fixed point) and `gfp` (greatest fixed point)
     /// recursion semantics.
     Positive,
     /// Part of a cycle that also involves a negating constraint, but every
     /// such constraint targets a shape that is itself free of recursion
     /// (directly or transitively) — the classical stratification
-    /// condition. Supported under both `cautious` and `brave`.
+    /// condition. Supported under both `lfp` and `gfp`.
     Stratified,
     /// Part of a cycle where a negating constraint reaches back into a
     /// cycle — its own, or a different recursive shape's. There is no
@@ -165,7 +165,7 @@ impl DependencyGraph {
     }
 
     /// Whether every recursive shape in the graph is safe to validate under
-    /// the current cautious/brave semantics — i.e. none of them is
+    /// the current LFP/GFP semantics — i.e. none of them is
     /// [`ShapeRecursionKind::NonStratified`].
     pub fn is_stratified(&self) -> bool {
         !self

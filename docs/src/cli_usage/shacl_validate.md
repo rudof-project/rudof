@@ -137,16 +137,16 @@ needs a rule for what happens when validation comes back around to a node it's a
 the middle of checking. `--recursion-semantics` picks that rule:
 
 ```sh
-rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantics cautious
-rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantics brave
+rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantics lfp
+rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantics gfp
 rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantics none
 ```
 
-- `cautious` (the default) assumes a node caught in a cycle does **not** conform unless
+- `lfp` (least fixed point, the default) assumes a node caught in a cycle does **not** conform unless
   that can be shown without relying on the cycle. A cycle with no independent way to
   ground it — like `:alice`/`:bob` above, if nothing else establishes either of them as a
   `Person` — ends up **not** conforming.
-- `brave` assumes a node caught in a cycle **does** conform, as long as that assumption
+- `gfp` (greatest fixed point) assumes a node caught in a cycle **does** conform, as long as that assumption
   doesn't contradict anything else in the shape. The same cycle then **conforms**.
 - `none` rejects the shapes graph outright, as soon as it's loaded, before any data is
   even checked:
@@ -159,10 +159,13 @@ rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantic
 A shape with no cycles in it validates identically under all three, so there's no harm in
 leaving `--recursion-semantics` unset unless you actually have a recursive shape.
 
+`cautious` and `brave`, the names these modes had up to 0.3.26, are still accepted as
+aliases of `lfp` and `gfp`.
+
 ### Recursion and negation
 
 A cycle built only from monotonic constraints (`sh:and`, `sh:or`, `sh:node`, `sh:property`,
-`sh:minCount`, `sh:closed`, and similar) is always safe under `cautious`/`brave`. A cycle
+`sh:minCount`, `sh:closed`, and similar) is always safe under `lfp`/`gfp`. A cycle
 that also carries a negating constraint (`sh:not`, `sh:xone`, `sh:qualifiedMaxCount`,
 `sh:qualifiedValueShapesDisjoint`) needs one more condition, *stratification*: every negating
 constraint in the cycle must target a shape that doesn't itself depend on any recursion —
@@ -179,11 +182,11 @@ the cycle it's negated from, so there's no ordering problem. A schema like this:
     sh:property [ sh:path :isRobot ; sh:hasValue true ] .
 ```
 
-compiles and validates normally under both `cautious` and `brave`: `sh:not :RobotShape` is
+compiles and validates normally under both `lfp` and `gfp`: `sh:not :RobotShape` is
 checked exactly as it would be outside any cycle, and the recursive `:knows` property is
 still resolved per the chosen semantics.
 
-What's still rejected, under every `--recursion-semantics` value including `brave`, is a
+What's still rejected, under every `--recursion-semantics` value including `gfp`, is a
 negating constraint that reaches back into a cycle — its own, or a different recursive
 shape's. There's no order left to evaluate it in: whichever fixpoint gets picked for the
 negated shape, the negation's own meaning stops being simple to define. Use `rudof shacl -s

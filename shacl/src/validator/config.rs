@@ -31,7 +31,7 @@ pub struct ShaclConfig {
 
     /// Whether a shapes graph with a cyclic shape reference is accepted
     /// and, if so, how the cycle is resolved during validation (default:
-    /// `cautious`/LFP). See [`RecursionSemantics`].
+    /// `lfp`/LFP). See [`RecursionSemantics`].
     #[serde(rename = "recursion_semantics")]
     pub(crate) recursion_semantics: RecursionSemantics,
 }
@@ -126,19 +126,19 @@ mod tests {
         assert!(c.store_errors());
         assert!(!c.store_evidences());
         assert!(!c.evidence_shapes_only());
-        assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Cautious);
+        assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Lfp);
     }
 
     #[test]
     fn builder_sets_recursion_semantics() {
-        let c = ShaclConfig::default().with_recursion_semantics(crate::validator::RecursionSemantics::Brave);
-        assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Brave);
+        let c = ShaclConfig::default().with_recursion_semantics(crate::validator::RecursionSemantics::Gfp);
+        assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Gfp);
     }
 
     #[test]
     fn toml_configures_recursion_semantics() {
-        let c: ShaclConfig = toml::from_str(r#"recursion_semantics = "brave""#).unwrap();
-        assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Brave);
+        let c: ShaclConfig = toml::from_str(r#"recursion_semantics = "gfp""#).unwrap();
+        assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Gfp);
     }
 
     #[test]

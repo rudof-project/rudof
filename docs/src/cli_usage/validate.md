@@ -63,7 +63,7 @@ Options:
           SHACL only, with --with-evidences: keep only the per-shape summary evidence, dropping the finer per-constraint-component evidence (default: keep everything)
       --recursion-semantics <MODE>
           SHACL only: whether to accept a recursive (cyclic) shape reference, and how to resolve it
-          [possible values: none, cautious, brave]
+          [possible values: none, lfp, gfp]
   -c, --config-file <FILE>
           Config file name
   -o, --output-file <FILE>

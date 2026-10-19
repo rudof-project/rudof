@@ -514,12 +514,12 @@ mod tests {
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
-        let line = "shacl-validate --recursion-semantics ca";
+        let line = "shacl-validate --recursion-semantics lf";
         let (start, candidates) = helper.complete(line, line.len(), &ctx).unwrap();
 
         assert_eq!(start, "shacl-validate --recursion-semantics ".len());
         let replacements: Vec<&str> = candidates.iter().map(|c| c.replacement.as_str()).collect();
-        assert_eq!(replacements, vec!["cautious"]);
+        assert_eq!(replacements, vec!["lfp"]);
     }
 
     #[test]

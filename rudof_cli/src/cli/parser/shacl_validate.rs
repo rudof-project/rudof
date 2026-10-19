@@ -124,8 +124,8 @@ pub struct ShaclValidateArgs {
         ignore_case = true,
         value_enum,
         help = "Whether to accept a shapes graph with a recursive (cyclic) shape reference, and \
-                how to resolve it: `cautious` (default) accepts it and assumes a node caught in \
-                the cycle does NOT conform unless proven otherwise; `brave` accepts it and \
+                how to resolve it: `lfp` (least fixed point, default) accepts it and assumes a node caught in \
+                the cycle does NOT conform unless proven otherwise; `gfp` (greatest fixed point) accepts it and \
                 assumes such a node DOES conform as long as that's self-consistent; `none` \
                 rejects it outright"
     )]
