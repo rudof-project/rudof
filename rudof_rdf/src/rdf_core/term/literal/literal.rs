@@ -229,7 +229,8 @@ impl ConcreteLiteral {
     /// into the provided formatter.
     ///
     /// The output follows RDF/Turtle-style literal syntax:
-    /// - String literals are quoted, with an optional language tag
+    /// - String literals are quoted, with an optional language tag and, after it, an
+    ///   optional base direction (`"Shalom"@he--rtl`)
     /// - Numeric and boolean literals are written as-is
     /// - Datatype literals are written using `^^` and qualified IRIs
     /// - Datatypes are shortened using the provided prefix map when possible
@@ -247,10 +248,17 @@ impl ConcreteLiteral {
     /// Returns any formatting error encountered while writing to the formatter.
     pub fn display_qualified<W: fmt::Write>(&self, f: &mut W, prefixmap: &PrefixMap) -> fmt::Result {
         match self {
-            Self::StringLiteral { lexical_form, lang, .. } => {
+            Self::StringLiteral {
+                lexical_form,
+                lang,
+                direction,
+            } => {
                 write!(f, "\"{lexical_form}\"")?;
                 if let Some(lang) = lang {
                     write!(f, "@{lang}")?;
+                }
+                if let Some(direction) = direction {
+                    write!(f, "--{direction}")?;
                 }
                 Ok(())
             },
