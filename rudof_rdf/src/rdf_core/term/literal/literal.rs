@@ -169,7 +169,10 @@ pub enum ConcreteLiteral {
     StringLiteral {
         lexical_form: String,
         lang: Option<Lang>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
+        // `default` so a document written before the field existed still deserializes, but
+        // never `skip_serializing_if`: the cache is postcard, which is not self-describing,
+        // so a field the serializer omits is one the deserializer still waits for.
+        #[serde(default)]
         direction: Option<BaseDirection>,
     },
 
