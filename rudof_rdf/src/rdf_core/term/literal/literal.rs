@@ -1,6 +1,6 @@
 use crate::rdf_core::{
     RDFError,
-    term::literal::{Lang, NumericLiteral, XsdDateTime},
+    term::literal::{BaseDirection, Lang, NumericLiteral, XsdDateTime},
 };
 use rust_decimal::Decimal;
 use std::{
@@ -161,8 +161,17 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
 #[allow(clippy::enum_variant_names)]
 pub enum ConcreteLiteral {
-    /// A plain string literal, optionally with a language tag.
-    StringLiteral { lexical_form: String, lang: Option<Lang> },
+    /// A plain string literal, optionally with a language tag and, with one, a base
+    /// direction.
+    ///
+    /// `direction` is only ever set together with `lang`: a base direction without a
+    /// language tag is not a term RDF 1.2 defines, and nothing constructs one.
+    StringLiteral {
+        lexical_form: String,
+        lang: Option<Lang>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        direction: Option<BaseDirection>,
+    },
 
     /// A literal with an explicit datatype IRI.
     DatatypeLiteral { lexical_form: String, datatype: IriRef },
@@ -238,7 +247,7 @@ impl ConcreteLiteral {
     /// Returns any formatting error encountered while writing to the formatter.
     pub fn display_qualified<W: fmt::Write>(&self, f: &mut W, prefixmap: &PrefixMap) -> fmt::Result {
         match self {
-            Self::StringLiteral { lexical_form, lang } => {
+            Self::StringLiteral { lexical_form, lang, .. } => {
                 write!(f, "\"{lexical_form}\"")?;
                 if let Some(lang) = lang {
                     write!(f, "@{lang}")?;
@@ -373,12 +382,17 @@ impl ConcreteLiteral {
     pub fn match_literal(&self, literal_expected: &Self) -> bool {
         match (self, literal_expected) {
             (
-                Self::StringLiteral { lexical_form, lang },
+                Self::StringLiteral {
+                    lexical_form,
+                    lang,
+                    direction,
+                },
                 Self::StringLiteral {
                     lexical_form: expected_lexical_form,
                     lang: expected_lang,
+                    direction: expected_direction,
                 },
-            ) => lexical_form == expected_lexical_form && lang == expected_lang,
+            ) => lexical_form == expected_lexical_form && lang == expected_lang && direction == expected_direction,
             (
                 Self::DatatypeLiteral { lexical_form, datatype },
                 Self::DatatypeLiteral {
@@ -573,6 +587,7 @@ impl ConcreteLiteral {
         Self::StringLiteral {
             lexical_form: lexical_form.to_owned(),
             lang: None,
+            direction: None,
         }
     }
 
@@ -585,6 +600,21 @@ impl ConcreteLiteral {
         Self::StringLiteral {
             lexical_form: lexical_form.to_owned(),
             lang: Some(lang),
+            direction: None,
+        }
+    }
+
+    /// Creates a directional language-tagged string.
+    ///
+    /// # Parameters
+    /// - `lexical_form`: The text content of the literal.
+    /// - `lang`: The language of the literal, e.g., `"he"` for Hebrew.
+    /// - `direction`: The initial text direction of the lexical form.
+    pub fn dir_lang_str(lexical_form: &str, lang: Lang, direction: BaseDirection) -> Self {
+        Self::StringLiteral {
+            lexical_form: lexical_form.to_owned(),
+            lang: Some(lang),
+            direction: Some(direction),
         }
     }
 }
@@ -595,6 +625,15 @@ impl ConcreteLiteral {
     pub fn lang(&self) -> Option<Lang> {
         match self {
             Self::StringLiteral { lang, .. } => lang.clone(),
+            _ => None,
+        }
+    }
+
+    /// Returns the base direction of the literal, if it is a directional
+    /// language-tagged string.
+    pub fn direction(&self) -> Option<BaseDirection> {
+        match self {
+            Self::StringLiteral { direction, .. } => *direction,
             _ => None,
         }
     }
@@ -919,6 +958,7 @@ impl Default for ConcreteLiteral {
         Self::StringLiteral {
             lexical_form: String::default(),
             lang: None,
+            direction: None,
         }
     }
 }
@@ -1115,7 +1155,7 @@ impl From<ConcreteLiteral> for oxrdf::Literal {
         }
 
         match value {
-            ConcreteLiteral::StringLiteral { lexical_form, lang } => match lang {
+            ConcreteLiteral::StringLiteral { lexical_form, lang, .. } => match lang {
                 Some(l) => oxrdf::Literal::new_language_tagged_literal_unchecked(lexical_form, l.to_string()),
                 None => lexical_form.into(),
             },
