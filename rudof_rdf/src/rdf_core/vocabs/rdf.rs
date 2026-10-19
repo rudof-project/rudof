@@ -11,6 +11,7 @@ impl RdfVocabulary for RdfVocab {
 vocab_term!(RdfVocab, RDF_REIFIES, "reifies");
 vocab_term!(RdfVocab, RDF_TYPE, "type");
 vocab_term!(RdfVocab, RDF_LANG_STRING, "langString");
+vocab_term!(RdfVocab, RDF_DIR_LANG_STRING, "dirLangString");
 vocab_term!(RdfVocab, RDF_FIRST, "first");
 vocab_term!(RdfVocab, RDF_REST, "rest");
 vocab_term!(RdfVocab, RDF_NIL, "nil");

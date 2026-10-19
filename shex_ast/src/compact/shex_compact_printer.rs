@@ -631,7 +631,8 @@ where
 
     fn pp_literal(&self, literal: &ConcreteLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            ConcreteLiteral::StringLiteral { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
+            // A base direction is dropped: ShExC has no syntax for one.
+            ConcreteLiteral::StringLiteral { lexical_form, lang, .. } => self.pp_string_literal(lexical_form, lang),
             ConcreteLiteral::DatatypeLiteral { lexical_form, datatype } if is_bare_numeric(lexical_form, datatype) => {
                 self.doc.text(lexical_form.clone())
             },

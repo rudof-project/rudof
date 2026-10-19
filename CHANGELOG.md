@@ -12,6 +12,8 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ## [Unreleased]
 ### Added
 - The `@rudof/rudof` npm package also ships a build with remote SPARQL endpoints, in `endpoints/`: `import "@rudof/rudof/endpoints"` (or `@rudof/rudof/endpoints/web`, `@rudof/rudof/endpoints/node`) loads it in runtimes with JSPI, while the main build is unchanged. `bindings/wasm/build.sh` builds it in `pkg/endpoints/`.
+### Fixed
+- The base direction of a directional language-tagged string was dropped on the way into the abstract term model ([#875](https://github.com/rudof-project/rudof/issues/875)), so everything reading the loaded data through it (`triples`, `node_neighborhood`, `rudof node`) reported `"Shalom"@he--rtl` as `"Shalom"@he`: a term that is not in the data. The data itself was always faithful, as the store, `load_data` and `serialize_data` all keep the direction. [RDF 1.2](https://www.w3.org/TR/rdf12-concepts/#section-Graph-Literal) makes the base direction a component of the literal, so `ConcreteLiteral::StringLiteral` now holds one, `datatype()` returns `rdf:dirLangString` for it, and the two terms stop comparing and hashing as equal.
 
 ## 0.3.26
 ### Added

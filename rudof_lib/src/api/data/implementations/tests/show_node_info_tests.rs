@@ -440,3 +440,34 @@ fn test_show_node_info_default_values() {
         output_str
     );
 }
+
+#[test]
+fn test_show_node_info_keeps_the_base_direction() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let rdf_data = InputSpec::str(
+        r#"
+            @prefix ex: <http://example.org/> .
+            ex:alice ex:greetingHe "Shalom"@he--rtl ;
+                     ex:plainLang  "Hola"@es .
+        "#,
+    );
+    rudof.load_data().with_data(&[rdf_data]).execute().unwrap();
+
+    let mut output = Cursor::new(Vec::new());
+    show_node_info(
+        &mut rudof,
+        "ex:alice",
+        None,
+        Some(&NodeInspectionMode::Outgoing),
+        Some(1),
+        Some(false),
+        Some(false),
+        IriNormalizationMode::default(),
+        &mut output,
+    )
+    .unwrap();
+
+    let output_str = String::from_utf8(output.into_inner()).unwrap();
+    assert!(output_str.contains("\"Shalom\"@he--rtl"), "{output_str}");
+    assert!(output_str.contains("\"Hola\"@es"), "{output_str}");
+}

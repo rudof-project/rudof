@@ -155,7 +155,7 @@ impl Serialize for ObjectValue {
             },
 
             ObjectValue::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
-            ObjectValue::Literal(ConcreteLiteral::StringLiteral { lexical_form, lang }) => {
+            ObjectValue::Literal(ConcreteLiteral::StringLiteral { lexical_form, lang, .. }) => {
                 let mut map = serializer.serialize_map(Some(3))?;
                 if let Some(lan) = lang {
                     map.serialize_entry("language", &Some(lan))?;
@@ -353,10 +353,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                                 let lang = Lang::new(&lang).map_err(|e| {
                                     de::Error::custom(format!("Invalid language tag {lang} in object value: {e}"))
                                 })?;
-                                Ok(ObjectValue::Literal(ConcreteLiteral::StringLiteral {
-                                    lexical_form: v,
-                                    lang: Some(lang),
-                                }))
+                                Ok(ObjectValue::Literal(ConcreteLiteral::lang_str(&v, lang)))
                             },
                             None => Ok(ObjectValue::datatype_literal(&v, &iri)),
                         },
@@ -368,15 +365,9 @@ impl<'de> Deserialize<'de> for ObjectValue {
                                 let language = Lang::new(&language).map_err(|e| {
                                     de::Error::custom(format!("Invalid language tag {language} in object value: {e}"))
                                 })?;
-                                Ok(ObjectValue::Literal(ConcreteLiteral::StringLiteral {
-                                    lexical_form,
-                                    lang: Some(language),
-                                }))
+                                Ok(ObjectValue::Literal(ConcreteLiteral::lang_str(&lexical_form, language)))
                             },
-                            None => Ok(ObjectValue::Literal(ConcreteLiteral::StringLiteral {
-                                lexical_form,
-                                lang: None,
-                            })),
+                            None => Ok(ObjectValue::Literal(ConcreteLiteral::str(&lexical_form))),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },

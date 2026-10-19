@@ -55,6 +55,7 @@ impl ValueSetValue {
         let ov = ObjectValue::Literal(ConcreteLiteral::StringLiteral {
             lexical_form: value.to_string(),
             lang,
+            direction: None,
         });
         ValueSetValue::ObjectValue(ov)
     }
@@ -730,10 +731,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     de::Error::custom(format!("Can't parse language tag {lang} for literal: Error {e}"))
                                 })?;
                                 Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                    ConcreteLiteral::StringLiteral {
-                                        lexical_form: v,
-                                        lang: Some(lang),
-                                    },
+                                    ConcreteLiteral::lang_str(&v, lang),
                                 )))
                             },
                             None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
@@ -749,18 +747,12 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     ))
                                 })?;
                                 Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                    ConcreteLiteral::StringLiteral {
-                                        lexical_form,
-                                        lang: Some(lang),
-                                    },
+                                    ConcreteLiteral::lang_str(&lexical_form, lang),
                                 )))
                             },
-                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                ConcreteLiteral::StringLiteral {
-                                    lexical_form,
-                                    lang: None,
-                                },
-                            ))),
+                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(ConcreteLiteral::str(
+                                &lexical_form,
+                            )))),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },

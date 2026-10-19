@@ -15,7 +15,8 @@ pub(crate) fn pp_object_value<'a, A>(
         ObjectValue::IriRef(i) => pp_iri_ref(i, doc, prefixmap),
         ObjectValue::Literal(ConcreteLiteral::NumericLiteral(num)) => pp_numeric_literal(num, doc),
         ObjectValue::Literal(ConcreteLiteral::BooleanLiteral(b)) => doc.text(if *b { "true" } else { "false" }),
-        ObjectValue::Literal(ConcreteLiteral::StringLiteral { lexical_form, lang }) => {
+        // A base direction is dropped: ShExC has no syntax for one.
+        ObjectValue::Literal(ConcreteLiteral::StringLiteral { lexical_form, lang, .. }) => {
             let str = pp_quoted_string(lexical_form);
             match lang {
                 Some(lang) => doc.text(format!("{str}@{lang}")),

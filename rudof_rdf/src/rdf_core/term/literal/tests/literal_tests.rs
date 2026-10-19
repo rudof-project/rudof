@@ -8,7 +8,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 #[cfg(not(target_arch = "wasm32"))]
-use crate::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
+use crate::rdf_core::term::literal::{BaseDirection, ConcreteLiteral, Lang, NumericLiteral};
 #[cfg(not(target_arch = "wasm32"))]
 use prefixmap::IriRef;
 #[cfg(not(target_arch = "wasm32"))]
@@ -25,7 +25,13 @@ fn lang_strategy() -> impl Strategy<Value = Lang> {
         .prop_filter_map("valid lang tag", |s| s.and_then(|tag| Lang::new(tag).ok()))
 }
 
-/// Strategy for generating string literals (plain and language-tagged)
+/// Strategy for generating base directions
+#[cfg(not(target_arch = "wasm32"))]
+fn direction_strategy() -> impl Strategy<Value = BaseDirection> {
+    prop_oneof![Just(BaseDirection::Ltr), Just(BaseDirection::Rtl)]
+}
+
+/// Strategy for generating string literals (plain, language-tagged and directional)
 #[cfg(not(target_arch = "wasm32"))]
 fn string_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
     prop_oneof![
@@ -33,6 +39,9 @@ fn string_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
         ".*".prop_map(|s| ConcreteLiteral::str(&s)),
         // Language-tagged string literals
         (".*", lang_strategy()).prop_map(|(s, lang)| ConcreteLiteral::lang_str(&s, lang)),
+        // Directional language-tagged string literals
+        (".*", lang_strategy(), direction_strategy())
+            .prop_map(|(s, lang, dir)| ConcreteLiteral::dir_lang_str(&s, lang, dir)),
     ]
 }
 
@@ -679,5 +688,98 @@ mod edge_case_tests {
         };
 
         assert_eq!(wrong_lit.lexical_form(), "not_a_number");
+    }
+}
+
+/// A base direction is the third component of a directional language-tagged string,
+/// so it has to survive into the term model, be rendered, and tell two terms apart.
+#[cfg(all(not(target_arch = "wasm32"), test))]
+mod base_direction_tests {
+    use super::*;
+    use prefixmap::PrefixMap;
+
+    fn shalom() -> ConcreteLiteral {
+        ConcreteLiteral::dir_lang_str("Shalom", Lang::new("he").unwrap(), BaseDirection::Rtl)
+    }
+
+    fn hash_of(lit: &ConcreteLiteral) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        lit.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    #[test]
+    fn test_dir_lang_str_keeps_every_component() {
+        let lit = shalom();
+
+        assert_eq!(lit.lexical_form(), "Shalom");
+        assert_eq!(lit.lang(), Some(Lang::new("he").unwrap()));
+        assert_eq!(lit.direction(), Some(BaseDirection::Rtl));
+    }
+
+    #[test]
+    fn test_direction_is_none_without_one() {
+        assert_eq!(ConcreteLiteral::str("Hola").direction(), None);
+        assert_eq!(
+            ConcreteLiteral::lang_str("Hola", Lang::new("es").unwrap()).direction(),
+            None
+        );
+        assert_eq!(ConcreteLiteral::integer(23).direction(), None);
+    }
+
+    #[test]
+    fn test_datatype_is_rdf_dir_lang_string() {
+        assert_eq!(
+            shalom().datatype().to_string(),
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString"
+        );
+        // A language tag with no direction is still rdf:langString.
+        assert_eq!(
+            ConcreteLiteral::lang_str("Hola", Lang::new("es").unwrap())
+                .datatype()
+                .to_string(),
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
+        );
+    }
+
+    #[test]
+    fn test_direction_is_rendered_after_the_language_tag() {
+        assert_eq!(shalom().to_string(), "\"Shalom\"@he--rtl");
+        assert_eq!(shalom().show_qualified(&PrefixMap::basic()), "\"Shalom\"@he--rtl");
+        assert_eq!(
+            ConcreteLiteral::dir_lang_str("Hello", Lang::new("en").unwrap(), BaseDirection::Ltr).to_string(),
+            "\"Hello\"@en--ltr"
+        );
+    }
+
+    #[test]
+    fn test_a_dir_lang_string_is_a_distinct_term() {
+        let lang_only = ConcreteLiteral::lang_str("Shalom", Lang::new("he").unwrap());
+        let ltr = ConcreteLiteral::dir_lang_str("Shalom", Lang::new("he").unwrap(), BaseDirection::Ltr);
+
+        assert_ne!(shalom(), lang_only);
+        assert_ne!(shalom(), ltr);
+        assert!(!shalom().match_literal(&lang_only));
+        assert!(!shalom().match_literal(&ltr));
+        assert_ne!(hash_of(&shalom()), hash_of(&lang_only));
+        assert_ne!(hash_of(&shalom()), hash_of(&ltr));
+
+        assert_eq!(shalom(), shalom());
+        assert!(shalom().match_literal(&shalom()));
+        assert_eq!(hash_of(&shalom()), hash_of(&shalom()));
+    }
+
+    #[test]
+    fn test_oxrdf_round_trip_keeps_the_direction() {
+        let oxrdf_literal = oxrdf::Literal::from(shalom());
+        assert_eq!(oxrdf_literal.value(), "Shalom");
+        assert_eq!(oxrdf_literal.language(), Some("he"));
+        assert_eq!(oxrdf_literal.direction(), Some(oxrdf::BaseDirection::Rtl));
+        assert_eq!(
+            oxrdf_literal.datatype().as_str(),
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString"
+        );
+
+        assert_eq!(ConcreteLiteral::try_from(oxrdf_literal).unwrap(), shalom());
     }
 }

@@ -5,7 +5,7 @@ use crate::{
 };
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 const GRAPH: &str = r#"
         prefix : <http://example.org/>
@@ -460,4 +460,29 @@ fn test_added_triples_reach_serialization_and_queries() {
 
     rudof.remove_triple(":carol", ":name", "\"Carol\"").execute().unwrap();
     assert_eq!(names_found(&mut rudof), 2);
+}
+
+/// A base direction is a component of the literal, so a directional language-tagged
+/// string and the same string with only the language tag are two terms, and the triples
+/// holding them two triples.
+#[test]
+fn test_a_base_direction_tells_two_triples_apart() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let graph = InputSpec::from_str(
+        r#"
+            prefix : <http://example.org/>
+            :alice :greeting "Shalom"@he--rtl , "Shalom"@he .
+        "#,
+    )
+    .unwrap();
+    rudof.load_data().with_data(&[graph]).execute().unwrap();
+
+    let triples = triples(&rudof, Some(":alice"), Some(":greeting"), None);
+    assert_eq!(triples.len(), 2, "{triples:?}");
+    assert_ne!(triples[0], triples[1]);
+    assert_eq!(triples.iter().collect::<HashSet<_>>().len(), 2);
+
+    let rendered: Vec<String> = triples.iter().map(|triple| triple.object.to_string()).collect();
+    assert!(rendered.contains(&"\"Shalom\"@he--rtl".to_string()), "{rendered:?}");
+    assert!(rendered.contains(&"\"Shalom\"@he".to_string()), "{rendered:?}");
 }

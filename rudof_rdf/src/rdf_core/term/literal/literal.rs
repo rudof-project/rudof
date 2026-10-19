@@ -1,6 +1,6 @@
 use crate::rdf_core::{
     RDFError,
-    term::literal::{Lang, NumericLiteral, XsdDateTime},
+    term::literal::{BaseDirection, Lang, NumericLiteral, XsdDateTime},
 };
 use rust_decimal::Decimal;
 use std::{
@@ -161,8 +161,20 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
 #[allow(clippy::enum_variant_names)]
 pub enum ConcreteLiteral {
-    /// A plain string literal, optionally with a language tag.
-    StringLiteral { lexical_form: String, lang: Option<Lang> },
+    /// A plain string literal, optionally with a language tag and, with one, a base
+    /// direction.
+    ///
+    /// `direction` is only ever set together with `lang`: a base direction without a
+    /// language tag is not a term RDF 1.2 defines, and nothing constructs one.
+    StringLiteral {
+        lexical_form: String,
+        lang: Option<Lang>,
+        // `default` so a document written before the field existed still deserializes, but
+        // never `skip_serializing_if`: the cache is postcard, which is not self-describing,
+        // so a field the serializer omits is one the deserializer still waits for.
+        #[serde(default)]
+        direction: Option<BaseDirection>,
+    },
 
     /// A literal with an explicit datatype IRI.
     DatatypeLiteral { lexical_form: String, datatype: IriRef },
@@ -220,7 +232,8 @@ impl ConcreteLiteral {
     /// into the provided formatter.
     ///
     /// The output follows RDF/Turtle-style literal syntax:
-    /// - String literals are quoted, with an optional language tag
+    /// - String literals are quoted, with an optional language tag and, after it, an
+    ///   optional base direction (`"Shalom"@he--rtl`)
     /// - Numeric and boolean literals are written as-is
     /// - Datatype literals are written using `^^` and qualified IRIs
     /// - Datatypes are shortened using the provided prefix map when possible
@@ -238,10 +251,17 @@ impl ConcreteLiteral {
     /// Returns any formatting error encountered while writing to the formatter.
     pub fn display_qualified<W: fmt::Write>(&self, f: &mut W, prefixmap: &PrefixMap) -> fmt::Result {
         match self {
-            Self::StringLiteral { lexical_form, lang } => {
+            Self::StringLiteral {
+                lexical_form,
+                lang,
+                direction,
+            } => {
                 write!(f, "\"{lexical_form}\"")?;
                 if let Some(lang) = lang {
                     write!(f, "@{lang}")?;
+                }
+                if let Some(direction) = direction {
+                    write!(f, "--{direction}")?;
                 }
                 Ok(())
             },
@@ -373,12 +393,17 @@ impl ConcreteLiteral {
     pub fn match_literal(&self, literal_expected: &Self) -> bool {
         match (self, literal_expected) {
             (
-                Self::StringLiteral { lexical_form, lang },
+                Self::StringLiteral {
+                    lexical_form,
+                    lang,
+                    direction,
+                },
                 Self::StringLiteral {
                     lexical_form: expected_lexical_form,
                     lang: expected_lang,
+                    direction: expected_direction,
                 },
-            ) => lexical_form == expected_lexical_form && lang == expected_lang,
+            ) => lexical_form == expected_lexical_form && lang == expected_lang && direction == expected_direction,
             (
                 Self::DatatypeLiteral { lexical_form, datatype },
                 Self::DatatypeLiteral {
@@ -573,6 +598,7 @@ impl ConcreteLiteral {
         Self::StringLiteral {
             lexical_form: lexical_form.to_owned(),
             lang: None,
+            direction: None,
         }
     }
 
@@ -585,6 +611,21 @@ impl ConcreteLiteral {
         Self::StringLiteral {
             lexical_form: lexical_form.to_owned(),
             lang: Some(lang),
+            direction: None,
+        }
+    }
+
+    /// Creates a directional language-tagged string.
+    ///
+    /// # Parameters
+    /// - `lexical_form`: The text content of the literal.
+    /// - `lang`: The language of the literal, e.g., `"he"` for Hebrew.
+    /// - `direction`: The initial text direction of the lexical form.
+    pub fn dir_lang_str(lexical_form: &str, lang: Lang, direction: BaseDirection) -> Self {
+        Self::StringLiteral {
+            lexical_form: lexical_form.to_owned(),
+            lang: Some(lang),
+            direction: Some(direction),
         }
     }
 }
@@ -595,6 +636,15 @@ impl ConcreteLiteral {
     pub fn lang(&self) -> Option<Lang> {
         match self {
             Self::StringLiteral { lang, .. } => lang.clone(),
+            _ => None,
+        }
+    }
+
+    /// Returns the base direction of the literal, if it is a directional
+    /// language-tagged string.
+    pub fn direction(&self) -> Option<BaseDirection> {
+        match self {
+            Self::StringLiteral { direction, .. } => *direction,
             _ => None,
         }
     }
@@ -624,7 +674,8 @@ impl ConcreteLiteral {
     /// # Returns
     /// - For explicitly typed literals (`DatatypeLiteral` or `WrongDatatypeLiteral`), returns the stored datatype IRI.
     /// - For plain string literals without a language tag, returns `xsd:string`.
-    /// - For language-tagged string literals, returns `rdf:langString`.
+    /// - For language-tagged string literals, returns `rdf:langString`, and
+    ///   `rdf:dirLangString` when they also have a base direction.
     /// - For numeric literals, returns the appropriate XML Schema datatype (e.g., `xsd:integer`, `xsd:double`).
     /// - For boolean literals, returns `xsd:boolean`.
     /// - For datetime literals, returns `xsd:dateTime`.
@@ -633,6 +684,12 @@ impl ConcreteLiteral {
             Self::DatatypeLiteral { datatype, .. } | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
 
             Self::StringLiteral { lang: None, .. } => IriRef::iri(IriS::new_unchecked(XsdVocab::XSD_STRING)),
+
+            Self::StringLiteral {
+                lang: Some(_),
+                direction: Some(_),
+                ..
+            } => IriRef::iri(IriS::new_unchecked(RdfVocab::RDF_DIR_LANG_STRING)),
 
             Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(RdfVocab::RDF_LANG_STRING)),
 
@@ -919,6 +976,7 @@ impl Default for ConcreteLiteral {
         Self::StringLiteral {
             lexical_form: String::default(),
             lang: None,
+            direction: None,
         }
     }
 }
@@ -1042,7 +1100,7 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
     ///
     /// Supported cases:
     /// - Plain string literals
-    /// - Language-tagged string literals
+    /// - Language-tagged string literals, with or without a base direction
     /// - Typed literals (with datatype parsing)
     ///
     /// # Errors
@@ -1054,20 +1112,23 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
     fn try_from(value: oxrdf::Literal) -> Result<Self, Self::Error> {
         let literal_str = value.to_string();
 
-        let (lexical, datatype_opt, lang_opt, _) = value.destruct();
+        match value.destruct() {
+            (s, None, None, None) => Ok(Self::str(&s)),
 
-        match (lexical, datatype_opt, lang_opt) {
-            (s, None, None) => Ok(Self::str(&s)),
-
-            (s, None, Some(lang_tag)) => Lang::new(lang_tag.clone())
-                .map(|lang| Self::lang_str(&s, lang))
+            // A base direction only comes with a language tag, as the term it is part of
+            // is a directional language-tagged string.
+            (s, None, Some(lang_tag), direction) => Lang::new(lang_tag.clone())
+                .map(|lang| match direction {
+                    Some(direction) => Self::dir_lang_str(&s, lang, direction.into()),
+                    None => Self::lang_str(&s, lang),
+                })
                 .map_err(|e| RDFError::LanguageTagError {
                     literal: literal_str,
                     language: lang_tag,
                     error: e.to_string(),
                 }),
 
-            (s, Some(dtype), None) => {
+            (s, Some(dtype), None, None) => {
                 let datatype_iri = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
                 let iri_str = dtype.as_str();
                 // For bare numeric types in Turtle, preserve original lexical form for valid values
@@ -1115,9 +1176,16 @@ impl From<ConcreteLiteral> for oxrdf::Literal {
         }
 
         match value {
-            ConcreteLiteral::StringLiteral { lexical_form, lang } => match lang {
-                Some(l) => oxrdf::Literal::new_language_tagged_literal_unchecked(lexical_form, l.to_string()),
-                None => lexical_form.into(),
+            ConcreteLiteral::StringLiteral {
+                lexical_form,
+                lang,
+                direction,
+            } => match (lang, direction) {
+                (Some(l), Some(d)) => {
+                    oxrdf::Literal::new_directional_language_tagged_literal_unchecked(lexical_form, l.to_string(), d)
+                },
+                (Some(l), None) => oxrdf::Literal::new_language_tagged_literal_unchecked(lexical_form, l.to_string()),
+                (None, _) => lexical_form.into(),
             },
 
             ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }

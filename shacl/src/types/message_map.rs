@@ -30,6 +30,7 @@ impl MessageMap {
         self.messages.iter().map(|(lang, msg)| ConcreteLiteral::StringLiteral {
             lang: lang.clone(),
             lexical_form: msg.clone(),
+            direction: None,
         })
     }
 

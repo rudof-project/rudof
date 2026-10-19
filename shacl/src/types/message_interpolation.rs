@@ -190,10 +190,7 @@ mod tests {
 
     #[test]
     fn literal_value_is_the_lexical_form() {
-        let lit = Object::Literal(ConcreteLiteral::StringLiteral {
-            lexical_form: "hello".to_string(),
-            lang: Some(Lang::new("en").unwrap()),
-        });
+        let lit = Object::Literal(ConcreteLiteral::lang_str("hello", Lang::new("en").unwrap()));
         assert_eq!(object_to_message_value(&lit), "hello");
 
         let typed = Object::Literal(ConcreteLiteral::DatatypeLiteral {
