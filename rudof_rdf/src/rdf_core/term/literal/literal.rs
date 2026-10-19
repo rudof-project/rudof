@@ -1082,7 +1082,7 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
     ///
     /// Supported cases:
     /// - Plain string literals
-    /// - Language-tagged string literals
+    /// - Language-tagged string literals, with or without a base direction
     /// - Typed literals (with datatype parsing)
     ///
     /// # Errors
@@ -1094,20 +1094,23 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
     fn try_from(value: oxrdf::Literal) -> Result<Self, Self::Error> {
         let literal_str = value.to_string();
 
-        let (lexical, datatype_opt, lang_opt, _) = value.destruct();
+        match value.destruct() {
+            (s, None, None, None) => Ok(Self::str(&s)),
 
-        match (lexical, datatype_opt, lang_opt) {
-            (s, None, None) => Ok(Self::str(&s)),
-
-            (s, None, Some(lang_tag)) => Lang::new(lang_tag.clone())
-                .map(|lang| Self::lang_str(&s, lang))
+            // A base direction only comes with a language tag, as the term it is part of
+            // is a directional language-tagged string.
+            (s, None, Some(lang_tag), direction) => Lang::new(lang_tag.clone())
+                .map(|lang| match direction {
+                    Some(direction) => Self::dir_lang_str(&s, lang, direction.into()),
+                    None => Self::lang_str(&s, lang),
+                })
                 .map_err(|e| RDFError::LanguageTagError {
                     literal: literal_str,
                     language: lang_tag,
                     error: e.to_string(),
                 }),
 
-            (s, Some(dtype), None) => {
+            (s, Some(dtype), None, None) => {
                 let datatype_iri = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
                 let iri_str = dtype.as_str();
                 // For bare numeric types in Turtle, preserve original lexical form for valid values
@@ -1155,9 +1158,16 @@ impl From<ConcreteLiteral> for oxrdf::Literal {
         }
 
         match value {
-            ConcreteLiteral::StringLiteral { lexical_form, lang, .. } => match lang {
-                Some(l) => oxrdf::Literal::new_language_tagged_literal_unchecked(lexical_form, l.to_string()),
-                None => lexical_form.into(),
+            ConcreteLiteral::StringLiteral {
+                lexical_form,
+                lang,
+                direction,
+            } => match (lang, direction) {
+                (Some(l), Some(d)) => {
+                    oxrdf::Literal::new_directional_language_tagged_literal_unchecked(lexical_form, l.to_string(), d)
+                },
+                (Some(l), None) => oxrdf::Literal::new_language_tagged_literal_unchecked(lexical_form, l.to_string()),
+                (None, _) => lexical_form.into(),
             },
 
             ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }
