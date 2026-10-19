@@ -1,9 +1,11 @@
+mod direction;
 mod lang;
 #[allow(clippy::module_inception)]
 mod literal;
 mod numeric_literal;
 mod xsd_datetime;
 
+pub use direction::{BaseDirection, BaseDirectionParseError};
 pub use lang::{Lang, LangParseError};
 pub use literal::{ConcreteLiteral, Literal};
 pub use numeric_literal::NumericLiteral;
