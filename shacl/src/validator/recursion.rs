@@ -20,8 +20,9 @@ impl FromStr for RecursionSemantics {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "none" => Ok(Self::None),
-            "cautious" | "lfp" => Ok(Self::Cautious),
-            "brave" | "gfp" => Ok(Self::Brave),
+            // `cautious`/`brave` are the names used up to 0.3.26, kept as aliases.
+            "lfp" | "cautious" => Ok(Self::Lfp),
+            "gfp" | "brave" => Ok(Self::Gfp),
             other => Err(Self::Err::UnsupportedMode(other.to_string())),
         }
     }
@@ -44,19 +45,19 @@ fn recursion_constraint_component() -> Object {
 /// A schema compiled with [`RecursionSemantics::None`] never has a cycle to
 /// cut in the first place (compilation rejects it first — see
 /// `IRSchema::compile_with_recursion`), so this should never actually be
-/// called with `None`. It's handled the same as `Cautious` regardless, so
+/// called with `None`. It's handled the same as `Lfp` regardless, so
 /// that reusing an already-compiled cyclic schema under a config that was
 /// changed to `None` afterwards degrades safely instead of panicking.
 pub(crate) fn cut_outcome(semantics: RecursionSemantics, shape: &IRShape, node: &Object) -> ValidationOutcome {
     let component = recursion_constraint_component();
     match semantics {
-        RecursionSemantics::Brave => {
+        RecursionSemantics::Gfp => {
             let evidence = Evidence::new(node.clone(), component).with_source(Some(shape.id().clone()));
             ValidationOutcome::from_evidence(evidence)
         },
-        RecursionSemantics::Cautious | RecursionSemantics::None => {
+        RecursionSemantics::Lfp | RecursionSemantics::None => {
             let msg = format!(
-                "Recursive reference to shape {} for node {node} assumed non-conformant (cautious/LFP semantics)",
+                "Recursive reference to shape {} for node {node} assumed non-conformant (LFP semantics)",
                 shape.id()
             );
             let violation = ValidationResult::new(node.clone(), component, shape.severity().clone())
@@ -72,21 +73,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn from_str_accepts_names_and_lfp_gfp_aliases() {
+    fn from_str_accepts_names_and_legacy_aliases() {
         assert_eq!("none".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::None);
+        assert_eq!("lfp".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::Lfp);
+        assert_eq!("LFP".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::Lfp);
+        assert_eq!("gfp".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::Gfp);
+        assert_eq!("GFP".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::Gfp);
         assert_eq!(
             "cautious".parse::<RecursionSemantics>().unwrap(),
-            RecursionSemantics::Cautious
+            RecursionSemantics::Lfp
         );
-        assert_eq!(
-            "LFP".parse::<RecursionSemantics>().unwrap(),
-            RecursionSemantics::Cautious
-        );
-        assert_eq!(
-            "brave".parse::<RecursionSemantics>().unwrap(),
-            RecursionSemantics::Brave
-        );
-        assert_eq!("GFP".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::Brave);
+        assert_eq!("brave".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::Gfp);
         assert!("other".parse::<RecursionSemantics>().is_err());
     }
 
@@ -94,8 +91,8 @@ mod tests {
     fn display_round_trips_through_from_str() {
         for s in [
             RecursionSemantics::None,
-            RecursionSemantics::Cautious,
-            RecursionSemantics::Brave,
+            RecursionSemantics::Lfp,
+            RecursionSemantics::Gfp,
         ] {
             assert_eq!(s.to_string().parse::<RecursionSemantics>().unwrap(), s);
         }

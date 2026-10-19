@@ -25,7 +25,9 @@ cli_wrapper!(
     RecursionSemantics,
     {
         None,
-        Cautious,
-        Brave,
+        #[value(alias = "cautious")]
+        Lfp,
+        #[value(alias = "brave")]
+        Gfp,
     }
 );

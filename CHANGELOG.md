@@ -10,6 +10,8 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 -->
 
 ## [Unreleased]
+### Changed
+- The SHACL recursion semantics are renamed after the fixed point they compute: `cautious` is now `lfp` (least fixed point, still the default) and `brave` is now `gfp` (greatest fixed point), in `--recursion-semantics`, `[shacl].recursion_semantics` and `RecursionSemantics` (`RecursionSemantics::Lfp`/`RecursionSemantics::Gfp`). The old names are still accepted as aliases on the command line and in config files.
 ### Added
 - The `@rudof/rudof` npm package also ships a build with remote SPARQL endpoints, in `endpoints/`: `import "@rudof/rudof/endpoints"` (or `@rudof/rudof/endpoints/web`, `@rudof/rudof/endpoints/node`) loads it in runtimes with JSPI, while the main build is unchanged. `bindings/wasm/build.sh` builds it in `pkg/endpoints/`.
 ### Fixed

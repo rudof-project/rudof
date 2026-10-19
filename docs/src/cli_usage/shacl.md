@@ -74,10 +74,10 @@ rudof shacl -s recursive_shapes.ttl -r internal
 Each recursive shape is reported as one of:
 
 - **positive recursive** — the cycle uses only monotonic constraints (`sh:and`, `sh:or`,
-  `sh:node`, `sh:property`, ...); supported under both `cautious` and `brave`.
+  `sh:node`, `sh:property`, ...); supported under both `lfp` and `gfp`.
 - **stratified recursive** — the cycle also carries a negating constraint (`sh:not`,
   `sh:xone`, ...), but it targets a shape outside of any recursion, so it can be resolved
-  independently; supported under both `cautious` and `brave`.
+  independently; supported under both `lfp` and `gfp`.
 - **non-stratified recursive** — a negating constraint in the cycle reaches back into a
   recursive shape (its own, or a different one's); no safe order exists to resolve it, so a
   schema like this is always rejected, at `-s`/`--shapes` load time.
@@ -85,7 +85,7 @@ Each recursive shape is reported as one of:
 Shapes that aren't part of any cycle are omitted from this section (or the whole section
 reads "none" if the schema has no recursion at all). See
 [Recursive shapes](./shacl_validate.md#recursive-shapes) for the full explanation and how
-`--recursion-semantics` picks between `cautious` and `brave`.
+`--recursion-semantics` picks between `lfp` and `gfp`.
 
 ## Selecting the RDF backend
 

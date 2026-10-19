@@ -8,13 +8,13 @@
 //! very same `(node, shape)` pair, the cycle is cut by assuming a default
 //! verdict for that inner reference — instead of recursing forever — and
 //! the rest of the shape's constraints are evaluated against that
-//! assumption. [`RecursionSemantics::Cautious`] (the default) assumes the
-//! cut reference does *not* conform; [`RecursionSemantics::Brave`] assumes
+//! assumption. [`RecursionSemantics::Lfp`] (the default) assumes the
+//! cut reference does *not* conform; [`RecursionSemantics::Gfp`] assumes
 //! it *does*.
 //!
 //! Only positive recursion (shapes combined via `sh:and`, `sh:or`,
 //! `sh:node`, `sh:property`, `sh:minCount`, `sh:closed`, ...) is soundly
-//! handled by cautious/brave: those constraints are monotonic, so cutting a
+//! handled by LFP/GFP: those constraints are monotonic, so cutting a
 //! cycle can only make the final verdict more permissive or more
 //! restrictive in a well-behaved way. Constructs that rely on negation
 //! (`sh:not`, `sh:xone`, `sh:qualifiedMaxCount`,
@@ -42,12 +42,14 @@ pub enum RecursionSemantics {
     /// default: recursive shapes are accepted, but nothing conforms merely
     /// because a cycle looks self-consistent.
     #[default]
-    Cautious,
+    #[serde(alias = "cautious")]
+    Lfp,
     /// Greatest fixpoint (GFP): "accept any assignment that is
     /// self-consistent, even if the only reason it holds together is the
     /// cycle itself." A cyclic reference is cut by assuming it **does**
     /// conform.
-    Brave,
+    #[serde(alias = "brave")]
+    Gfp,
 }
 
 impl RecursionSemantics {
@@ -62,8 +64,8 @@ impl Display for RecursionSemantics {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             RecursionSemantics::None => write!(f, "none"),
-            RecursionSemantics::Cautious => write!(f, "cautious"),
-            RecursionSemantics::Brave => write!(f, "brave"),
+            RecursionSemantics::Lfp => write!(f, "lfp"),
+            RecursionSemantics::Gfp => write!(f, "gfp"),
         }
     }
 }
@@ -73,17 +75,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn default_is_cautious() {
-        assert_eq!(RecursionSemantics::default(), RecursionSemantics::Cautious);
+    fn default_is_lfp() {
+        assert_eq!(RecursionSemantics::default(), RecursionSemantics::Lfp);
         assert!(!RecursionSemantics::None.allows_recursion());
-        assert!(RecursionSemantics::Cautious.allows_recursion());
-        assert!(RecursionSemantics::Brave.allows_recursion());
+        assert!(RecursionSemantics::Lfp.allows_recursion());
+        assert!(RecursionSemantics::Gfp.allows_recursion());
     }
 
     #[test]
     fn display_matches_serde_names() {
         assert_eq!(RecursionSemantics::None.to_string(), "none");
-        assert_eq!(RecursionSemantics::Cautious.to_string(), "cautious");
-        assert_eq!(RecursionSemantics::Brave.to_string(), "brave");
+        assert_eq!(RecursionSemantics::Lfp.to_string(), "lfp");
+        assert_eq!(RecursionSemantics::Gfp.to_string(), "gfp");
     }
 }

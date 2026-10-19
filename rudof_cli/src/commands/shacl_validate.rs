@@ -37,7 +37,7 @@ impl Command for ShaclValidateCommand {
         // Only override the config's store_errors/store_evidences/evidence_shapes_only/
         // recursion_semantics flags when the corresponding CLI flag is explicitly
         // passed, so the defaults (errors kept, evidence not, everything when
-        // evidence is on, cautious/LFP) survive otherwise.
+        // evidence is on, LFP) survive otherwise.
         if self.args.no_errors
             || self.args.with_evidences
             || self.args.evidences_shapes_only
