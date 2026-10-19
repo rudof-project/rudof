@@ -663,7 +663,8 @@ impl ConcreteLiteral {
     /// # Returns
     /// - For explicitly typed literals (`DatatypeLiteral` or `WrongDatatypeLiteral`), returns the stored datatype IRI.
     /// - For plain string literals without a language tag, returns `xsd:string`.
-    /// - For language-tagged string literals, returns `rdf:langString`.
+    /// - For language-tagged string literals, returns `rdf:langString`, and
+    ///   `rdf:dirLangString` when they also have a base direction.
     /// - For numeric literals, returns the appropriate XML Schema datatype (e.g., `xsd:integer`, `xsd:double`).
     /// - For boolean literals, returns `xsd:boolean`.
     /// - For datetime literals, returns `xsd:dateTime`.
@@ -672,6 +673,12 @@ impl ConcreteLiteral {
             Self::DatatypeLiteral { datatype, .. } | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
 
             Self::StringLiteral { lang: None, .. } => IriRef::iri(IriS::new_unchecked(XsdVocab::XSD_STRING)),
+
+            Self::StringLiteral {
+                lang: Some(_),
+                direction: Some(_),
+                ..
+            } => IriRef::iri(IriS::new_unchecked(RdfVocab::RDF_DIR_LANG_STRING)),
 
             Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(RdfVocab::RDF_LANG_STRING)),
 
