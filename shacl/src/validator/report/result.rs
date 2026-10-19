@@ -19,7 +19,9 @@ pub struct ValidationResult {
     path: Option<SHACLPath>,
     value: Option<Object>,
     source: Option<Object>,
-    details: Option<Vec<Object>>,
+    /// Nested results that caused this one, serialized as `sh:detail`
+    /// (e.g. the violations that made a value node fail its `sh:node` shape).
+    details: Vec<ValidationResult>,
     message: MessageMap,
 }
 
@@ -33,7 +35,7 @@ impl ValidationResult {
             path: None,
             value: None,
             source: None,
-            details: None,
+            details: Vec::new(),
             message: Default::default(),
         }
     }
@@ -51,8 +53,14 @@ impl ValidationResult {
         self.source = source;
         self
     }
-    pub fn with_details(mut self, details: Option<Vec<Object>>) -> Self {
+    pub fn with_details(mut self, details: Vec<ValidationResult>) -> Self {
         self.details = details;
+        self
+    }
+
+    /// The same result without its nested `sh:detail` results, at any depth.
+    pub fn without_details(mut self) -> Self {
+        self.details.clear();
         self
     }
     pub fn with_message(mut self, message: MessageMap) -> Self {
@@ -60,8 +68,8 @@ impl ValidationResult {
         self
     }
 
-    pub fn details(&self) -> Option<&Vec<Object>> {
-        self.details.as_ref()
+    pub fn details(&self) -> &[ValidationResult] {
+        &self.details
     }
 
     pub fn constraint_component(&self) -> &Object {
@@ -130,10 +138,16 @@ impl ValidationResult {
 
         let value = store.object_for(validation_result, &ShaclVocab::sh_value().into())?;
 
+        let mut details = Vec::new();
+        for detail in store.objects_for(validation_result, &ShaclVocab::sh_detail().into())? {
+            details.push(ValidationResult::parse(store, &detail)?);
+        }
+
         Ok(ValidationResult::new(focus_node, constraint_component, severity)
             .with_path(path)
             .with_source(source)
-            .with_value(value))
+            .with_value(value)
+            .with_details(details))
     }
 
     pub fn to_rdf<RDF: BuildRDF + Sized>(
@@ -193,6 +207,19 @@ impl ValidationResult {
             writer
                 .add_triple(report_node.clone(), ShaclVocab::sh_value(), term)
                 .map_err(error_mapper::<RDF>("Error adding value to validation result"))?;
+        }
+
+        for detail in &self.details {
+            let detail_node: RDF::Term = writer
+                .add_bnode()
+                .map_err(error_mapper::<RDF>("Error creating bnode"))?
+                .into();
+            writer
+                .add_triple(report_node.clone(), ShaclVocab::sh_detail(), detail_node.clone())
+                .map_err(error_mapper::<RDF>("Error adding detail to validation result"))?;
+            let detail_subject = RDF::Subject::try_from(detail_node)
+                .map_err(|_| ValidationError::CastError("term".to_string(), "subject".to_string()))?;
+            detail.to_rdf(writer, detail_subject)?;
         }
 
         Ok(())

@@ -29,6 +29,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let mut conforms = true;
+                let mut details = Vec::new();
 
                 for idx in self.shapes().iter() {
                     let and_shape = shapes_graph.get_shape_from_idx_e(idx)?;
@@ -38,6 +39,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                         Ok(results) => {
                             if !results.conforms() {
                                 conforms = false;
+                                details = results.violations().to_vec();
                                 break;
                             }
                         },
@@ -59,7 +61,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                     let vr = ValidationResult::new(fnode_obj.clone(), componet_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
-                        .with_value(node_obj);
+                        .with_value(node_obj)
+                        .with_details(details);
                     outcome.push_violation(vr);
                 }
             }

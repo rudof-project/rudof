@@ -74,6 +74,18 @@ impl ValidationReport {
         self
     }
 
+    /// The same report with every result's nested `sh:detail` results
+    /// dropped. The SHACL test suite compares reports this way, since
+    /// `sh:detail` is optional and processors differ in what they put there.
+    pub fn without_details(mut self) -> Self {
+        self.results = self
+            .results
+            .into_iter()
+            .map(ValidationResult::without_details)
+            .collect();
+        self
+    }
+
     pub fn results(&self) -> &Vec<ValidationResult> {
         &self.results
     }

@@ -555,4 +555,117 @@ prefix : <http://example.org/>
             );
         }
     }
+
+    /// Issue #897: `sh:sourceShape` of a failed `sh:node` is the shape that
+    /// declares the `sh:node` (here, the property shape of `:S`), as the
+    /// SHACL spec requires. The results that made the value node fail `:T`
+    /// are attached as `sh:detail`.
+    const NODE_DETAIL_GRAPH: &str = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:S a sh:NodeShape ;
+  sh:targetNode :a ;
+  sh:property [ sh:path :p ; sh:node :T ] .
+
+:T a sh:NodeShape ;
+  sh:property [ sh:path :p ; sh:hasValue :c ] .
+
+:a :p :b .
+:b :p :a .
+"#;
+
+    #[test]
+    fn node_violation_carries_the_inner_results_as_details() {
+        use rudof_rdf::rdf_core::term::Object;
+
+        let report = validate_with_config(NODE_DETAIL_GRAPH, &ShaclConfig::default());
+        assert_eq!(report.results().len(), 1, "{:?}", report.results());
+
+        let result = &report.results()[0];
+        assert_eq!(result.focus_node().to_string(), "http://example.org/a");
+        assert!(
+            result
+                .constraint_component()
+                .to_string()
+                .contains("NodeConstraintComponent")
+        );
+        assert!(matches!(result.source(), Some(Object::BlankNode(_))), "{result}");
+        let message = result.message().get(None).unwrap();
+        assert!(message.contains("http://example.org/T"), "{message}");
+        assert!(!message.contains('\n'), "{message}");
+
+        let [detail] = result.details() else {
+            panic!("expected exactly one detail: {result}");
+        };
+        assert_eq!(detail.focus_node().to_string(), "http://example.org/b");
+        assert!(
+            detail
+                .constraint_component()
+                .to_string()
+                .contains("HasValueConstraintComponent")
+        );
+        assert!(matches!(detail.source(), Some(Object::BlankNode(_))), "{detail}");
+        assert_ne!(detail.source(), result.source());
+    }
+
+    #[test]
+    fn details_round_trip_through_rdf() {
+        use crate::validator::report::ValidationReport;
+        use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclVocab};
+        use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF, Rdf};
+        use rudof_rdf::rdf_impl::OxigraphInMemory;
+
+        let report = validate_with_config(NODE_DETAIL_GRAPH, &ShaclConfig::default());
+        let mut graph = OxigraphInMemory::empty();
+        report.to_rdf(&mut graph).unwrap();
+
+        let rdf_type: <OxigraphInMemory as Rdf>::IRI = RdfVocab::rdf_type().into();
+        let report_type: <OxigraphInMemory as Rdf>::Term = ShaclVocab::sh_validation_report().into();
+        let report_node = graph
+            .subjects_for(&rdf_type, &report_type)
+            .unwrap()
+            .into_iter()
+            .next()
+            .unwrap();
+        let parsed = ValidationReport::parse(&mut graph, report_node).unwrap();
+
+        let [result] = parsed.results().as_slice() else {
+            panic!("expected one result: {:?}", parsed.results());
+        };
+        assert_eq!(result.details().len(), 1);
+        assert_eq!(result.details(), report.results()[0].details());
+        assert_eq!(parsed.clone().without_details().results()[0].details().len(), 0);
+    }
+
+    #[test]
+    fn or_violation_lists_why_every_alternative_failed() {
+        let graph = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:S a sh:NodeShape ;
+  sh:targetNode :a ;
+  sh:or ( [ sh:property [ sh:path :p ; sh:minCount 1 ] ]
+          [ sh:property [ sh:path :q ; sh:minCount 1 ] ] ) .
+
+:a :r 1 .
+"#;
+        let report = validate_with_config(graph, &ShaclConfig::default());
+        let [result] = report.results().as_slice() else {
+            panic!("expected one result: {:?}", report.results());
+        };
+        assert!(
+            result
+                .constraint_component()
+                .to_string()
+                .contains("OrConstraintComponent")
+        );
+        assert_eq!(result.details().len(), 2, "{result}");
+        assert!(result.details().iter().all(|d| {
+            d.constraint_component()
+                .to_string()
+                .contains("MinCountConstraintComponent")
+        }));
+    }
 }

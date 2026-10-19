@@ -30,15 +30,23 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let mut conforming_shapes = 0;
+                // Only meaningful when no shape conforms: then these are the
+                // reasons each alternative failed.
+                let mut details = Vec::new();
                 for idx in self.shapes().iter() {
                     let internal_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results =
                         internal_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    if let Ok(results) = inner_results
-                        && results.conforms()
-                    {
-                        conforming_shapes += 1;
+                    if let Ok(results) = inner_results {
+                        if results.conforms() {
+                            conforming_shapes += 1;
+                        } else {
+                            details.extend_from_slice(results.violations());
+                        }
                     }
+                }
+                if conforming_shapes > 0 {
+                    details.clear();
                 }
                 let node_obj = S::term_as_object(node).ok();
                 if conforming_shapes != 1 {
@@ -50,7 +58,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj)
-                        .with_source(Some(shape.id().clone()));
+                        .with_source(Some(shape.id().clone()))
+                        .with_details(details);
                     outcome.push_violation(vr);
                 } else {
                     let ev = Evidence::new(fnode_obj.clone(), component.clone())
