@@ -30,6 +30,7 @@
 
 use crate::js::{JsRudof, to_js};
 use rudof_rdf::jspi::run_suspendable;
+use rudof_rdf::rdf_core::EndpointLimits;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_class = Rudof)]
@@ -39,14 +40,52 @@ impl JsRudof {
     /// `https://query.wikidata.org/sparql`) or the name of one of the known
     /// endpoints (see `listEndpoints`). `strategy` selects how nodes are looked
     /// up: `sparql` (the default) queries the endpoint, `dereference` fetches
-    /// each node's IRI as Turtle.
+    /// each node's IRI as Turtle. `options` overrides the configured request
+    /// limits:
+    ///
+    /// - `minRequestIntervalMs`: minimum milliseconds between two requests
+    ///   (default 1100 for remote hosts, 0 for `localhost`). `0` disables the
+    ///   proactive rate limiter, though a `429 Too Many Requests` response still
+    ///   makes rudof back off.
+    /// - `maxConcurrentRequests`: requests in flight at once when several
+    ///   independent ones are needed, e.g. to fetch the nodes of a shapemap
+    ///   before validating them (default 1).
+    /// - `maxNodesPerQuery`: nodes fetched by one query when fetching the nodes
+    ///   of a shapemap (default 20; `1` disables batching).
     ///
     /// No request is made here: the data is queried by the asynchronous
     /// methods (`validateShexAsync`, `validateShaclAsync`, `runQueryAsync`,
     /// `nodeInfoAsync`).
     #[wasm_bindgen(js_name = useEndpoint)]
-    pub fn use_endpoint(&mut self, endpoint: &str, strategy: Option<String>) -> Result<(), JsValue> {
-        Ok(self.session.use_endpoint(endpoint, strategy.as_deref())?)
+    pub fn use_endpoint(
+        &mut self,
+        endpoint: &str,
+        strategy: Option<String>,
+        #[wasm_bindgen(
+            unchecked_param_type = "{ minRequestIntervalMs?: number; maxConcurrentRequests?: number; maxNodesPerQuery?: number }"
+        )]
+        options: JsValue,
+    ) -> Result<(), JsValue> {
+        let options: EndpointOptions = if options.is_undefined() || options.is_null() {
+            EndpointOptions::default()
+        } else {
+            serde_wasm_bindgen::from_value(options).map_err(|e| {
+                JsValue::from(crate::error::Error::new(
+                    "DataError",
+                    format!("Invalid endpoint options: {e}"),
+                ))
+            })?
+        };
+        Ok(self
+            .session
+            .use_endpoint(endpoint, strategy.as_deref(), options.into())?)
+    }
+
+    /// Number of HTTP requests sent so far to the endpoint selected with
+    /// `useEndpoint` (retries included; 0 when the data is not an endpoint).
+    #[wasm_bindgen(js_name = requestCount)]
+    pub fn request_count(&self) -> f64 {
+        self.session.endpoint_request_count() as f64
     }
 
     /// Like `validateShex`, but can validate data from a remote SPARQL
@@ -109,4 +148,22 @@ pub fn set_fetch(
     fetch: Option<js_sys::Function>,
 ) {
     rudof_rdf::jspi::set_fetch(fetch);
+}
+
+/// The `options` of `useEndpoint`.
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct EndpointOptions {
+    min_request_interval_ms: Option<u64>,
+    max_concurrent_requests: Option<usize>,
+    max_nodes_per_query: Option<usize>,
+}
+
+impl From<EndpointOptions> for EndpointLimits {
+    fn from(options: EndpointOptions) -> Self {
+        EndpointLimits::default()
+            .with_min_request_interval_ms(options.min_request_interval_ms)
+            .with_max_concurrent_requests(options.max_concurrent_requests)
+            .with_max_nodes_per_query(options.max_nodes_per_query)
+    }
 }

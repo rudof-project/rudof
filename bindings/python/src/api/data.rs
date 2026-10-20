@@ -27,12 +27,24 @@ impl PyRudof {
     ///         Defaults to ``False``.
     ///     endpoint (str, optional): SPARQL endpoint URL to load data from. If provided, it overrides the ``input``
     ///         parameter.
+    ///     min_request_interval_ms (int, optional): Minimum milliseconds between two requests sent to
+    ///         ``endpoint``, overriding the configured value (by default 1100 for remote hosts, 0 for
+    ///         localhost). ``0`` disables the proactive rate limiter; a ``429 Too Many Requests``
+    ///         response still makes rudof back off. Ignored without ``endpoint``.
+    ///     max_concurrent_requests (int, optional): Maximum requests in flight at once to ``endpoint``
+    ///         when several independent ones are needed, e.g. to fetch the nodes of a shapemap before
+    ///         validating them. Defaults to the configured value, else 1.
+    ///     max_nodes_per_query (int, optional): Maximum nodes one query to ``endpoint`` fetches when
+    ///         fetching the nodes of a shapemap ahead of validation. ``1`` disables batching.
+    ///         Defaults to the configured value, else 20.
     ///
     /// Raises:
     ///     InputError: If the input string, file or URL cannot be resolved.
     ///     DataError: If the data is malformed (in Strict mode).
     #[pyo3(signature = (input = None, format = None, base = None, reader_mode = None,
-                        merge = None, endpoint = None))]
+                        merge = None, endpoint = None, min_request_interval_ms = None,
+                        max_concurrent_requests = None, max_nodes_per_query = None))]
+    #[allow(clippy::too_many_arguments)]
     fn read_data(
         &mut self,
         py: Python<'_>,
@@ -42,6 +54,9 @@ impl PyRudof {
         reader_mode: Option<&PyReaderMode>,
         merge: Option<bool>,
         endpoint: Option<&str>,
+        min_request_interval_ms: Option<u64>,
+        max_concurrent_requests: Option<usize>,
+        max_nodes_per_query: Option<usize>,
     ) -> Result<()> {
         let format: Option<DataFormat> = format.map(Into::into);
         let reader_mode: Option<DataReaderMode> = reader_mode.map(Into::into);
@@ -67,7 +82,12 @@ impl PyRudof {
                 b = b.with_merge(merge);
             }
             if let Some(e) = &endpoint {
-                b = b.with_endpoint(e);
+                b = b.with_endpoint(e).with_endpoint_limits(
+                    rudof_rdf::rdf_core::EndpointLimits::default()
+                        .with_min_request_interval_ms(min_request_interval_ms)
+                        .with_max_concurrent_requests(max_concurrent_requests)
+                        .with_max_nodes_per_query(max_nodes_per_query),
+                );
             }
             b.execute()
         })?;

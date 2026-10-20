@@ -187,6 +187,15 @@ pub trait NeighsRDF: Rdf {
         Ok(results)
     }
 
+    /// Hints that [`Self::outgoing_arcs_from_list`] is about to be called for
+    /// each of `subjects` with (some of) `preds`, so that an implementation
+    /// answering from a remote source can fetch them ahead of time, in fewer
+    /// or concurrent requests. Only a hint: lookups must give the same answers
+    /// whether it was called or not. The default does nothing.
+    fn prefetch_outgoing_arcs(&self, _subjects: &[Self::Subject], _preds: &[Self::IRI]) -> Result<(), Self::Err> {
+        Ok(())
+    }
+
     /// Returns filtered outgoing arcs and remainder predicates.
     ///
     /// This method retrieves outgoing arcs from a subject, but only includes

@@ -1,6 +1,6 @@
-use crate::rdf_core::EndpointDescription;
 use crate::rdf_core::RDFError;
 use crate::rdf_core::visualizer::RDFVisualizationConfig;
+use crate::rdf_core::{EndpointDescription, EndpointLimits};
 use include_dir::{Dir, include_dir};
 use std::{collections::HashMap, path::Path};
 
@@ -29,6 +29,12 @@ pub struct RdfDataConfig {
     /// SPARQL endpoints for querying RDF data. Each endpoint is identified by a unique name.
     #[serde(rename = "endpoints", skip_serializing_if = "HashMap::is_empty")]
     pub(crate) endpoints: HashMap<String, EndpointDescription>,
+
+    /// Default request limits (`min_request_interval_ms`,
+    /// `max_concurrent_requests`, `max_nodes_per_query`) for SPARQL endpoints
+    /// that don't set their own, including ones given by URL.
+    #[serde(flatten)]
+    pub(crate) endpoint_limits: EndpointLimits,
 
     /// If true, automatically set the base IRI to the local file or URI of the document being processed.
     #[serde(rename = "local_base")]
@@ -63,6 +69,7 @@ impl RdfDataConfig {
         RdfDataConfig {
             base: Self::default_base(),
             endpoints: Self::default_endpoints(),
+            endpoint_limits: EndpointLimits::default(),
             automatic_base: Self::default_automatic_base(),
             rdf_visualization: Self::default_rdf_visualization(),
             pretty_json: Self::default_pretty_json(),
@@ -124,6 +131,11 @@ impl RdfDataConfig {
         self
     }
 
+    pub fn with_endpoint_limits(mut self, limits: EndpointLimits) -> Self {
+        self.endpoint_limits = limits;
+        self
+    }
+
     pub fn with_automatic_base(mut self, flag: bool) -> Self {
         self.automatic_base = flag;
         self
@@ -167,6 +179,17 @@ impl RdfDataConfig {
             .iter()
             .find(|(key, _)| key.eq_ignore_ascii_case(name))
             .map(|(_, endpoint)| endpoint)
+    }
+
+    /// The default request limits for endpoints that don't configure their own.
+    pub fn endpoint_limits(&self) -> &EndpointLimits {
+        &self.endpoint_limits
+    }
+
+    /// The request limits that apply to `endpoint`: each of its own, else this
+    /// config's default (unset ones leave the endpoint client's built-in default).
+    pub fn endpoint_limits_for(&self, endpoint: &EndpointDescription) -> EndpointLimits {
+        endpoint.limits().or(self.endpoint_limits)
     }
 
     pub fn automatic_base(&self) -> bool {
@@ -248,7 +271,7 @@ impl TomlConfig for RdfDataConfig {}
 
 #[cfg(test)]
 mod tests {
-    use super::RdfDataConfig;
+    use super::{EndpointLimits, RdfDataConfig};
     #[cfg(not(target_family = "wasm"))]
     use std::io::Write as _;
 
@@ -335,6 +358,58 @@ mod tests {
         let d: RdfDataConfig = toml::from_str(&out).unwrap();
         assert_eq!(c, d);
         assert!(d.endpoints().contains_key("demo"));
+    }
+
+    #[test]
+    fn builtin_endpoints_pin_their_request_interval() {
+        // Public endpoints keep a polite interval even if the global default
+        // is lowered, so every bundled endpoint file must set its own.
+        let config = RdfDataConfig::default()
+            .with_endpoint_limits(EndpointLimits::default().with_min_request_interval_ms(Some(0)));
+        for endpoint in config.endpoints().values() {
+            assert_eq!(
+                config.endpoint_limits_for(endpoint).min_request_interval_ms,
+                Some(1100),
+                "{} should set min_request_interval_ms",
+                endpoint.name()
+            );
+        }
+    }
+
+    #[test]
+    fn endpoint_limits_override_the_global_defaults() {
+        let c: RdfDataConfig = toml::from_str(
+            r#"
+            min_request_interval_ms = 10
+            max_concurrent_requests = 4
+            [endpoints.own]
+            name = "Own"
+            query_url = "https://example.org/sparql"
+            min_request_interval_ms = 0
+            max_nodes_per_query = 50
+            [endpoints.other]
+            name = "Other"
+            query_url = "https://example.com/sparql"
+        "#,
+        )
+        .unwrap();
+        assert_eq!(c.endpoint_limits().min_request_interval_ms, Some(10));
+        let own = c.find_endpoint("own").unwrap();
+        assert_eq!(
+            c.endpoint_limits_for(own),
+            EndpointLimits {
+                min_request_interval_ms: Some(0),
+                max_concurrent_requests: Some(4),
+                max_nodes_per_query: Some(50),
+            }
+        );
+        let other = c.find_endpoint("other").unwrap();
+        assert_eq!(c.endpoint_limits_for(other).min_request_interval_ms, Some(10));
+        assert_eq!(c.endpoint_limits_for(other).max_nodes_per_query, None);
+        assert!(RdfDataConfig::new().endpoint_limits_for(other).is_empty());
+
+        let round_tripped: RdfDataConfig = toml::from_str(&toml::to_string(&c).unwrap()).unwrap();
+        assert_eq!(c, round_tripped);
     }
 
     #[cfg(feature = "qlever")]

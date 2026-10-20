@@ -3,6 +3,10 @@ name = "UniProt"
 
 query_url = "https://sparql.uniprot.org/sparql"
 
+# Minimum gap (ms) between two requests: this is a public endpoint, so stay
+# polite even if `[rdf] min_request_interval_ms` lowers the global default.
+min_request_interval_ms = 1100
+
 [prefixmap]
 formats = "http://www.w3.org/ns/formats/"
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"

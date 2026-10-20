@@ -101,6 +101,8 @@ impl RdfData {
                         err: Box::new(e),
                     },
                 )?;
+            let sparql_endpoint =
+                sparql_endpoint.with_limits(&rdf_data_config.endpoint_limits_for(endpoint_description));
             self.add_endpoint(name, sparql_endpoint);
         }
         Ok(self)
@@ -506,6 +508,21 @@ impl NeighsRDF for RdfData {
             triples.extend(e.triples_matching(subject, predicate, object)?);
         }
         Ok(triples.into_iter())
+    }
+
+    fn prefetch_outgoing_arcs(
+        &self,
+        subjects: &[Self::Subject],
+        preds: &[Self::IRI],
+    ) -> std::result::Result<(), Self::Err> {
+        self.primary
+            .prefetch_outgoing_arcs(subjects, preds)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
+        #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
+        for endpoint in self.use_endpoints.values() {
+            endpoint.prefetch_outgoing_arcs(subjects, preds)?;
+        }
+        Ok(())
     }
 
     fn outgoing_arcs_from_list(

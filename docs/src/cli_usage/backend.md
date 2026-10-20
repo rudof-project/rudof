@@ -47,6 +47,18 @@ rudof node -n :a --endpoint https://my.sparql.server/sparql
 
 Inside `rudof shell`, `endpoint <NAME>` activates a registered endpoint once for the rest of the session instead of repeating `-e` on every line (matched case-insensitively, so `wikidata`/`Wikidata`/`WikiData` are all the same endpoint), and `endpoint FILE.toml` registers a brand-new one from a local file — see [shell](./shell.md#registering-a-new-endpoint-from-a-file). `Wikidata`, `DBpedia` and `UniProt` are registered by default, defined in [`rudof_rdf/endpoints/`](https://github.com/rudof-project/rudof/tree/master/rudof_rdf/endpoints) — every file in that folder is registered automatically — see the [Config reference](../references/config.md#rdfendpointsname) for the `[rdf.endpoints.<name>]` shape used to register more of your own in `rudof.toml`.
 
+### Request rate: `--min-request-interval`
+
+To respect the usage policies of public endpoints, rudof waits a minimum interval between two requests to the same endpoint: by default 1100 ms for a remote host and none for `localhost`. The built-in public endpoints keep 1100 ms. For your own endpoint, lower the interval with `--min-request-interval <MS>`, which overrides the configured value for that run. `0` disables the wait, but a `429 Too Many Requests` response still makes rudof back off:
+
+```sh
+rudof shex-validate -s schema.shex -m shapemap.sm -e https://my.sparql.server/sparql --min-request-interval 0
+```
+
+To make the setting permanent, set `min_request_interval_ms` per endpoint or under `[rdf]` in the TOML config (see [Request rate limiting](../references/config.md#request-rate-limiting)).
+
+`shex-validate` fetches the nodes of the shapemap ahead of validation, up to 20 per SPARQL query. `--max-nodes-per-query <N>` changes that number (`1` disables batching), and `--max-concurrent-requests <N>` lets up to `N` of these queries run at once (default 1). See [Batching and concurrent requests](../references/config.md#batching-and-concurrent-requests).
+
 ### Alternative endpoint access: `--strategy` (Wikibase instances)
 
 `rudof shex-validate` accepts an additional `--strategy sparql|dereference` flag (default `sparql`) alongside `--endpoint`/`-e`. `dereference` answers every lookup by fetching the node's own IRI directly over HTTP — `GET`, `Accept: text/turtle`, following redirects — instead of issuing a SPARQL query. This works because Wikibase instances (Wikidata, [MaRDI](https://portal.mardi4nfdi.de/), …) publish every entity as Linked Data: `http://www.wikidata.org/entity/Q80` is itself dereferenceable, and the response for a single entity already includes its full statement/qualifier/reference structure — the same data a handful of SPARQL round-trips would otherwise take separate requests to assemble.

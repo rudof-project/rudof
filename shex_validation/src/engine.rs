@@ -80,6 +80,7 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
+        self.prefetch_pending(rdf, schema);
         while let Some(atom) = self.pop_pending() {
             match atom.clone() {
                 Atom::Pos((node, idx)) => {
@@ -123,6 +124,40 @@ impl Engine {
             }
         }
         Ok(())
+    }
+
+    /// Lets `rdf` fetch ahead of time the outgoing arcs the pending atoms are
+    /// about to be checked for (see [`NeighsRDF::prefetch_outgoing_arcs`]):
+    /// against a SPARQL endpoint, this turns one request per node of a
+    /// shapemap into one per batch of nodes. Grouped by shape, since the
+    /// predicates to fetch depend on it. Best effort: a failure is only
+    /// logged, as each node's own lookup will ask again.
+    fn prefetch_pending<R>(&self, rdf: &R, schema: &SchemaIR)
+    where
+        R: NeighsRDF,
+    {
+        let mut subjects_by_shape: HashMap<ShapeLabelIdx, Vec<R::Subject>> = HashMap::new();
+        for atom in &self.pending {
+            if let Atom::Pos((node, idx)) = atom
+                && let Ok(subject) = R::term_as_subject(&self.get_rdf_node(node, rdf))
+            {
+                subjects_by_shape.entry(*idx).or_default().push(subject);
+            }
+        }
+        for (idx, subjects) in subjects_by_shape {
+            if subjects.len() < 2 {
+                continue;
+            }
+            let preds: Vec<R::IRI> = schema
+                .get_preds_extends(&idx)
+                .into_iter()
+                .filter(|pred| pred.is_direct())
+                .map(|pred| pred.iri().clone().into())
+                .collect();
+            if let Err(error) = rdf.prefetch_outgoing_arcs(&subjects, &preds) {
+                debug!(%error, "prefetching the arcs of pending nodes failed");
+            }
+        }
     }
 
     pub(crate) fn add_checked_pos(&mut self, atom: Atom, reasons: Vec<Reason>) {

@@ -3,6 +3,10 @@ name = "DBpedia"
 
 query_url = "https://dbpedia.org/sparql"
 
+# Minimum gap (ms) between two requests: this is a public endpoint, so stay
+# polite even if `[rdf] min_request_interval_ms` lowers the global default.
+min_request_interval_ms = 1100
+
 [prefixmap]
 dbc = "http://dbpedia.org/class/"
 dbo = "http://dbpedia.org/ontology/"

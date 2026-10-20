@@ -457,16 +457,37 @@ impl Session {
     /// `strategy` selects how nodes are looked up: `sparql` (the default)
     /// queries the endpoint, `dereference` fetches each node's IRI as Turtle.
     ///
+    /// `limits` overrides, where set, the configured request limits: the
+    /// minimum interval between two requests (by default 1100 ms for remote
+    /// hosts, 0 for localhost; a `429 Too Many Requests` response still makes
+    /// rudof back off), the requests in flight at once (default 1) and the
+    /// nodes fetched per query when prefetching a shapemap (default 20).
+    ///
     /// On `wasm`, the data can then only be used from the asynchronous
     /// (JSPI) API: waiting for HTTP responses needs it.
     #[cfg(feature = "endpoints")]
-    pub fn use_endpoint(&mut self, endpoint: &str, strategy: Option<&str>) -> Result<()> {
+    pub fn use_endpoint(
+        &mut self,
+        endpoint: &str,
+        strategy: Option<&str>,
+        limits: rudof_rdf::rdf_core::EndpointLimits,
+    ) -> Result<()> {
         let strategy: Option<rudof_rdf::rdf_impl::EndpointStrategy> = parse(strategy, "endpoint strategy")?;
-        let mut b = self.rudof.load_data().with_endpoint(endpoint);
+        let mut b = self
+            .rudof
+            .load_data()
+            .with_endpoint(endpoint)
+            .with_endpoint_limits(limits);
         if let Some(s) = strategy {
             b = b.with_endpoint_strategy(s);
         }
         Ok(b.execute()?)
+    }
+
+    /// Number of HTTP requests sent so far to the endpoint in use as the data
+    /// (0 when the data is not an endpoint).
+    pub fn endpoint_request_count(&self) -> u64 {
+        self.rudof.endpoint_request_count()
     }
 
     /// The known SPARQL endpoints, as `(name, url)` pairs. Always empty on

@@ -3,6 +3,10 @@ name = "Wikidata"
 
 query_url = "https://query.wikidata.org/sparql"
 
+# Minimum gap (ms) between two requests: this is a public endpoint, so stay
+# polite even if `[rdf] min_request_interval_ms` lowers the global default.
+min_request_interval_ms = 1100
+
 # Source: https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes
 [prefixmap]
 bd = "http://www.bigdata.com/rdf#"
