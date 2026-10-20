@@ -1278,14 +1278,6 @@ class Rudof:
         Raises:
             QueryError: If there are no results, or serialization fails.
         """
-    def endpoint_request_count(self) -> builtins.int:
-        r"""
-        Returns the number of HTTP requests sent so far to the SPARQL endpoint
-        in use as the data (retries included).
-
-        Returns:
-            int: The number of requests, ``0`` when the data is not an endpoint.
-        """
     def list_endpoints(self) -> builtins.list[tuple[builtins.str, builtins.str]]:
         r"""
         Lists known SPARQL endpoints.
@@ -1295,6 +1287,14 @@ class Rudof:
         
         Raises:
             QueryError: If the endpoint registry cannot be read.
+        """
+    def endpoint_request_count(self) -> builtins.int:
+        r"""
+        Returns the number of HTTP requests sent so far to the SPARQL endpoint
+        in use as the data (retries included).
+        
+        Returns:
+            int: The number of requests, ``0`` when the data is not an endpoint.
         """
     def read_rdf_config(self, input: builtins.str | os.PathLike[str], format: typing.Optional[RdfConfigFormat] = None) -> None:
         r"""
