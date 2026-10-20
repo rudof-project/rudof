@@ -3,6 +3,7 @@ use crate::{
     api::data::DataOperations,
     formats::{BackendSpec, DataFormat, DataReaderMode, InputSpec},
 };
+use rudof_rdf::rdf_core::EndpointLimits;
 use rudof_rdf::rdf_impl::EndpointStrategy;
 
 /// Builder for `load_data` operation.
@@ -23,6 +24,9 @@ pub struct LoadDataBuilder<'a> {
     /// How a `BackendSpec::Endpoint` should answer lookups. Ignored for every
     /// other backend. Defaults to `EndpointStrategy::Sparql`.
     endpoint_strategy: EndpointStrategy,
+    /// Request limits for a `BackendSpec::Endpoint`, overriding the configured
+    /// ones where set. Ignored for every other backend.
+    endpoint_limits: EndpointLimits,
 }
 
 impl<'a> LoadDataBuilder<'a> {
@@ -41,6 +45,7 @@ impl<'a> LoadDataBuilder<'a> {
             prefixes: None,
             backend: BackendSpec::default(),
             endpoint_strategy: EndpointStrategy::default(),
+            endpoint_limits: EndpointLimits::default(),
         }
     }
 
@@ -55,6 +60,23 @@ impl<'a> LoadDataBuilder<'a> {
     /// the backend is (or becomes, via [`Self::with_endpoint`]) an endpoint.
     pub fn with_endpoint_strategy(mut self, strategy: EndpointStrategy) -> Self {
         self.endpoint_strategy = strategy;
+        self
+    }
+
+    /// Sets request limits for a `BackendSpec::Endpoint` backend (minimum
+    /// interval between requests, concurrent requests, nodes per query). Each
+    /// limit set here overrides both the endpoint's own and the `[rdf]` default
+    /// from the config; unset ones keep the configured value. No effect unless
+    /// the backend is an endpoint.
+    pub fn with_endpoint_limits(mut self, limits: EndpointLimits) -> Self {
+        self.endpoint_limits = limits;
+        self
+    }
+
+    /// Shorthand for [`Self::with_endpoint_limits`] setting only the minimum
+    /// interval, in milliseconds, between two requests.
+    pub fn with_endpoint_min_request_interval_ms(mut self, ms: Option<u64>) -> Self {
+        self.endpoint_limits = self.endpoint_limits.with_min_request_interval_ms(ms);
         self
     }
 
@@ -116,17 +138,23 @@ impl<'a> LoadDataBuilder<'a> {
                 self.prefixes,
                 self.endpoint_strategy,
             ),
-            BackendSpec::Endpoint(url) => <Rudof as DataOperations>::load_data(
-                self.rudof,
-                self.data,
-                self.data_format,
-                self.base,
-                Some(url.as_str()),
-                self.reader_mode,
-                self.merge,
-                self.prefixes,
-                self.endpoint_strategy,
-            ),
+            BackendSpec::Endpoint(url) => {
+                <Rudof as DataOperations>::load_data(
+                    self.rudof,
+                    self.data,
+                    self.data_format,
+                    self.base,
+                    Some(url.as_str()),
+                    self.reader_mode,
+                    self.merge,
+                    self.prefixes,
+                    self.endpoint_strategy,
+                )?;
+                if !self.endpoint_limits.is_empty() {
+                    set_endpoint_limits(self.rudof, url, &self.endpoint_limits);
+                }
+                Ok(())
+            },
             BackendSpec::Qlever => self.execute_qlever(),
             BackendSpec::Lbug => Err(Box::new(crate::errors::DataError::DataSourceSpec {
                 message: "the 'lbug' backend cannot supply RDF data yet: rudof has no PG\u{2192}RDF \
@@ -161,3 +189,18 @@ impl<'a> LoadDataBuilder<'a> {
         .into())
     }
 }
+
+/// Applies `limits` to the endpoint `load_data` just registered under `name`.
+#[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
+fn set_endpoint_limits(rudof: &mut Rudof, name: &str, limits: &EndpointLimits) {
+    if let Some(crate::types::Data::RDFData(rdf_data)) = rudof.data.as_mut()
+        && let Some(endpoint) = rdf_data.use_endpoints().get(name).cloned()
+    {
+        rdf_data.use_endpoint(name, endpoint.with_limits(limits));
+    }
+}
+
+/// Endpoints are unavailable here, so `load_data` has already failed before this
+/// could be reached.
+#[cfg(all(target_family = "wasm", not(feature = "jspi")))]
+fn set_endpoint_limits(_rudof: &mut Rudof, _name: &str, _limits: &EndpointLimits) {}

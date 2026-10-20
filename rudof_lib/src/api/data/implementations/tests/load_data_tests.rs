@@ -418,6 +418,79 @@ fn test_load_data_endpoint_uses_configured_prefixmap_for_known_endpoint() {
     assert!(endpoint.prefixmap().resolve_prefix_local("foaf", "depiction").is_ok());
 }
 
+/// The minimum request interval of the active endpoint registered under `name`.
+#[cfg(not(target_family = "wasm"))]
+fn active_endpoint_interval(rudof: &mut Rudof, name: &str) -> u64 {
+    rudof
+        .data
+        .as_mut()
+        .unwrap()
+        .unwrap_rdf_mut()
+        .use_endpoints()
+        .get(name)
+        .expect("endpoint should be active")
+        .min_request_interval_ms()
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn test_load_data_endpoint_min_request_interval_defaults() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    rudof
+        .load_data()
+        .with_endpoint("https://example.org/sparql")
+        .execute()
+        .unwrap();
+    assert_eq!(active_endpoint_interval(&mut rudof, "https://example.org/sparql"), 1100);
+
+    rudof
+        .load_data()
+        .with_endpoint("http://localhost:7878/query")
+        .execute()
+        .unwrap();
+    assert_eq!(active_endpoint_interval(&mut rudof, "http://localhost:7878/query"), 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn test_load_data_endpoint_min_request_interval_from_config() {
+    let config = RudofConfig::default();
+    let rdf_data = config
+        .rdf_data()
+        .clone()
+        .with_endpoint_limits(rudof_rdf::rdf_core::EndpointLimits::default().with_min_request_interval_ms(Some(5)));
+    let mut rudof = Rudof::new(config.with_rdf_data(rdf_data));
+
+    // An endpoint given by URL takes the config-wide default...
+    rudof
+        .load_data()
+        .with_endpoint("https://example.org/sparql")
+        .execute()
+        .unwrap();
+    assert_eq!(active_endpoint_interval(&mut rudof, "https://example.org/sparql"), 5);
+
+    // ...but a built-in public endpoint keeps its own interval.
+    rudof
+        .load_data()
+        .with_endpoint("https://dbpedia.org/sparql")
+        .execute()
+        .unwrap();
+    assert_eq!(active_endpoint_interval(&mut rudof, "https://dbpedia.org/sparql"), 1100);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn test_load_data_endpoint_min_request_interval_override() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    rudof
+        .load_data()
+        .with_endpoint("wikidata")
+        .with_endpoint_min_request_interval_ms(Some(0))
+        .execute()
+        .unwrap();
+    assert_eq!(active_endpoint_interval(&mut rudof, "wikidata"), 0);
+}
+
 #[test]
 fn test_load_data_conflicting_sources() {
     let mut rudof = Rudof::new(RudofConfig::default());

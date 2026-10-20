@@ -14,7 +14,10 @@ mod in_memory_error;
 mod oxrdf_impl;
 
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
-pub use endpoint::{OxigraphEndpoint, SparqlVars};
+pub use endpoint::{
+    DEFAULT_MAX_CONCURRENT_REQUESTS, DEFAULT_MAX_NODES_PER_QUERY, DEFAULT_MIN_REQUEST_INTERVAL_MS, OxigraphEndpoint,
+    SparqlVars,
+};
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub use endpoint_error::OxigraphEndpointError;
 pub use in_memory::{OxigraphInMemory, ReaderMode};

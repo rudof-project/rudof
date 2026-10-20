@@ -218,6 +218,9 @@ mod tests {
             force_overwrite: false,
             backend,
             endpoint: endpoint.map(|s| s.to_string()),
+            min_request_interval: None,
+            max_concurrent_requests: None,
+            max_nodes_per_query: None,
             qlever_index_dir: None,
         }
     }

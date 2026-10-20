@@ -2,7 +2,7 @@ use super::http::{self, HttpClient, Instant, SendError};
 use crate::{
     cancellation,
     rdf_core::{
-        Any, AsyncRDF, Matcher, NeighsRDF, Rdf,
+        Any, AsyncRDF, EndpointLimits, Matcher, NeighsRDF, Rdf,
         query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
     },
     rdf_impl::{EndpointStrategy, OxigraphEndpointError},
@@ -20,7 +20,7 @@ use sparesults::{
     QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution, ReaderQueryResultsParserOutput,
 };
 use std::collections::HashMap;
-use std::{collections::HashSet, fmt::Display, hash::Hash, str::FromStr, sync::Arc};
+use std::{collections::HashSet, fmt::Display, future::Future, hash::Hash, str::FromStr, sync::Arc};
 use tracing::{debug, trace, warn};
 use url::Url;
 
@@ -97,7 +97,9 @@ pub struct OxigraphEndpoint {
 
     /// Minimum interval (in milliseconds) `enforce_rate_limit` waits between
     /// requests to this endpoint, shared across clones. Starts at
-    /// [`INITIAL_RATE_LIMIT_MS`] and is raised by [`http_get_with_retry`]
+    /// [`DEFAULT_MIN_REQUEST_INTERVAL_MS`] (0 for loopback hosts — see
+    /// [`OxigraphEndpoint::default_min_request_interval_ms`]), can be changed
+    /// with [`OxigraphEndpoint::with_min_request_interval_ms`], and is raised by [`http_get_with_retry`]
     /// whenever the server responds `429 Too Many Requests` — Wikidata's
     /// query service buckets clients by (User-Agent, IP) and throttles ones
     /// that don't back off, up to a temporary ban for those that keep
@@ -106,6 +108,16 @@ pub struct OxigraphEndpoint {
     /// keeps the rest of a long validation run from repeating the same
     /// throttle-wait-throttle cycle.
     rate_limit_ms: Arc<std::sync::atomic::AtomicU64>,
+
+    /// Maximum number of requests [`Self::prefetch_outgoing_arcs`] keeps in
+    /// flight at once. Requests still each wait their turn in
+    /// `enforce_rate_limit`, so this only helps when the interval is shorter
+    /// than a request's latency.
+    max_concurrent_requests: usize,
+
+    /// Maximum number of subjects [`Self::prefetch_outgoing_arcs`] asks about in
+    /// one SPARQL query. `1` disables batching.
+    max_nodes_per_query: usize,
 
     /// How this endpoint answers `NeighsRDF` lookups: SPARQL queries (the
     /// default) or dereferencing entity IRIs over plain HTTP. See
@@ -215,7 +227,11 @@ impl OxigraphEndpoint {
             triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
             incoming_triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
             request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
-            rate_limit_ms: Arc::new(std::sync::atomic::AtomicU64::new(INITIAL_RATE_LIMIT_MS)),
+            rate_limit_ms: Arc::new(std::sync::atomic::AtomicU64::new(
+                Self::default_min_request_interval_ms(iri),
+            )),
+            max_concurrent_requests: DEFAULT_MAX_CONCURRENT_REQUESTS,
+            max_nodes_per_query: DEFAULT_MAX_NODES_PER_QUERY,
             strategy: EndpointStrategy::default(),
             // `Accept: text/turtle`: Wikibase entity IRIs content-negotiate a
             // full RDF description of the entity from this.
@@ -235,6 +251,248 @@ impl OxigraphEndpoint {
     /// Returns the strategy this endpoint currently uses to answer lookups.
     pub fn strategy(&self) -> EndpointStrategy {
         self.strategy
+    }
+
+    /// The minimum interval between requests an endpoint at `iri` starts with
+    /// when none is configured: [`DEFAULT_MIN_REQUEST_INTERVAL_MS`] for remote
+    /// hosts, 0 for loopback ones (`localhost`, `127.0.0.1`, `[::1]`) — a local
+    /// endpoint (a QLever container, a test mock, a triplestore on the same
+    /// machine) has no public rate-limit policy to respect.
+    pub fn default_min_request_interval_ms(iri: &IriS) -> u64 {
+        let is_loopback = Url::parse(iri.as_str()).ok().is_some_and(|url| match url.host() {
+            Some(url::Host::Domain(domain)) => domain.eq_ignore_ascii_case("localhost"),
+            Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
+            Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
+            None => false,
+        });
+        if is_loopback {
+            0
+        } else {
+            DEFAULT_MIN_REQUEST_INTERVAL_MS
+        }
+    }
+
+    /// Sets the minimum interval (in milliseconds) enforced between requests
+    /// to this endpoint. `0` disables the proactive rate limiter; a `429 Too
+    /// Many Requests` response still raises it adaptively afterwards.
+    pub fn with_min_request_interval_ms(self, ms: u64) -> OxigraphEndpoint {
+        self.set_min_request_interval_ms(ms);
+        self
+    }
+
+    /// Like [`Self::with_min_request_interval_ms`], but through a shared
+    /// reference: the interval is shared by every clone of this endpoint, so
+    /// this also changes it for clones already handed out (e.g. the one held
+    /// by an `RdfData`).
+    pub fn set_min_request_interval_ms(&self, ms: u64) {
+        self.rate_limit_ms.store(ms, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// The minimum interval (in milliseconds) currently enforced between
+    /// requests — the configured value, or higher if the server has answered
+    /// `429 Too Many Requests` since.
+    pub fn min_request_interval_ms(&self) -> u64 {
+        self.rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Number of requests dispatched to this endpoint so far (shared by all
+    /// its clones).
+    pub fn request_count(&self) -> u64 {
+        self.request_count.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Sets how many requests [`Self::prefetch_outgoing_arcs`] may keep in
+    /// flight at once (at least 1).
+    pub fn with_max_concurrent_requests(mut self, n: usize) -> OxigraphEndpoint {
+        self.max_concurrent_requests = n.max(1);
+        self
+    }
+
+    /// Returns how many requests [`Self::prefetch_outgoing_arcs`] may keep in flight at once.
+    pub fn max_concurrent_requests(&self) -> usize {
+        self.max_concurrent_requests
+    }
+
+    /// Sets how many subjects one query of [`Self::prefetch_outgoing_arcs`] may
+    /// ask about (at least 1; `1` disables batching).
+    pub fn with_max_nodes_per_query(mut self, n: usize) -> OxigraphEndpoint {
+        self.max_nodes_per_query = n.max(1);
+        self
+    }
+
+    /// Returns how many subjects one query of [`Self::prefetch_outgoing_arcs`] may ask about.
+    pub fn max_nodes_per_query(&self) -> usize {
+        self.max_nodes_per_query
+    }
+
+    /// Applies every limit `limits` sets, leaving the others unchanged.
+    pub fn with_limits(self, limits: &EndpointLimits) -> OxigraphEndpoint {
+        let mut endpoint = self;
+        if let Some(ms) = limits.min_request_interval_ms {
+            endpoint = endpoint.with_min_request_interval_ms(ms);
+        }
+        if let Some(n) = limits.max_concurrent_requests {
+            endpoint = endpoint.with_max_concurrent_requests(n);
+        }
+        if let Some(n) = limits.max_nodes_per_query {
+            endpoint = endpoint.with_max_nodes_per_query(n);
+        }
+        endpoint
+    }
+
+    /// Fetches the outgoing arcs of each of `subjects` for `preds` into the
+    /// cache that [`NeighsRDF::outgoing_arcs_from_list`] reads, so that the
+    /// lookups a validator then makes for these subjects, one at a time, need
+    /// no request of their own. Callers use it when they know in advance which
+    /// nodes they will look at (e.g. the nodes of a shapemap).
+    ///
+    /// With the SPARQL strategy, up to `max_nodes_per_query` subjects are
+    /// fetched per query (`VALUES ?s { ... }`); with the dereference strategy,
+    /// each subject is still one request. Either way, up to
+    /// `max_concurrent_requests` requests are in flight at once.
+    ///
+    /// Best effort: a request that fails (other than by cancellation) is only
+    /// logged, and the subjects it was for are left to the lazy lookups.
+    pub fn prefetch_outgoing_arcs(&self, subjects: &[OxSubject], preds: &[OxNamedNode]) -> Result<()> {
+        if preds.is_empty() {
+            return Ok(());
+        }
+        let mut seen = HashSet::new();
+        let subjects: Vec<OxSubject> = subjects.iter().filter(|s| seen.insert(*s)).cloned().collect();
+        match self.strategy {
+            EndpointStrategy::Dereference => {
+                let todo: Vec<OxSubject> = {
+                    let dereferenced = self.dereferenced_subjects.read().unwrap();
+                    subjects.into_iter().filter(|s| !dereferenced.contains(s)).collect()
+                };
+                // A single subject costs the same fetched now or lazily.
+                if todo.len() < 2 || self.max_concurrent_requests < 2 {
+                    return Ok(());
+                }
+                debug!(endpoint = %self.endpoint_iri, subjects = todo.len(), "prefetch: dereferencing subjects");
+                let this = self.clone();
+                http::block_on(async move {
+                    let tasks = todo.into_iter().map(|subject| {
+                        let this = this.clone();
+                        async move { this.dereference_subject(&subject).await }
+                    });
+                    this.run_concurrently(tasks).await
+                })
+            },
+            EndpointStrategy::Sparql => {
+                // Blank nodes can't be named in another query, so only IRIs are
+                // batched; subjects whose predicates are all cached are skipped.
+                let todo: Vec<OxNamedNode> = {
+                    let cache = self.triple_cache.read().unwrap();
+                    subjects
+                        .into_iter()
+                        .filter(|s| {
+                            cache
+                                .get(s)
+                                .is_none_or(|cached| preds.iter().any(|p| !cached.contains_key(p)))
+                        })
+                        .filter_map(|s| match s {
+                            OxSubject::NamedNode(n) => Some(n),
+                            _ => None,
+                        })
+                        .collect()
+                };
+                if todo.len() < 2 || self.max_nodes_per_query < 2 {
+                    return Ok(());
+                }
+                let mut seen = HashSet::new();
+                let preds: Arc<Vec<OxNamedNode>> =
+                    Arc::new(preds.iter().filter(|p| seen.insert(*p)).cloned().collect());
+                let batches: Vec<Vec<OxNamedNode>> = todo.chunks(self.max_nodes_per_query).map(<[_]>::to_vec).collect();
+                debug!(
+                    endpoint = %self.endpoint_iri,
+                    subjects = todo.len(),
+                    batches = batches.len(),
+                    "prefetch: fetching outgoing arcs in batches"
+                );
+                let this = self.clone();
+                http::block_on(async move {
+                    let tasks = batches.into_iter().map(|batch| {
+                        let this = this.clone();
+                        let preds = Arc::clone(&preds);
+                        async move { this.fetch_outgoing_batch(&batch, &preds).await }
+                    });
+                    this.run_concurrently(tasks).await
+                })
+            },
+        }
+    }
+
+    /// Runs `tasks` with up to `max_concurrent_requests` of them at once.
+    /// Cancellation is returned; any other error is logged and dropped (see
+    /// [`Self::prefetch_outgoing_arcs`]).
+    async fn run_concurrently(&self, tasks: impl Iterator<Item = impl Future<Output = Result<()>>>) -> Result<()> {
+        use futures::StreamExt;
+        let mut results = futures::stream::iter(tasks).buffer_unordered(self.max_concurrent_requests);
+        while let Some(result) = results.next().await {
+            match result {
+                Err(OxigraphEndpointError::Cancelled) => return Err(OxigraphEndpointError::Cancelled),
+                Err(error) => {
+                    debug!(endpoint = %self.endpoint_iri, %error, "prefetch: request failed, leaving it to the lazy lookups");
+                },
+                Ok(()) => {},
+            }
+        }
+        Ok(())
+    }
+
+    /// Fetches the arcs of `subjects` for `preds` with one query and stores
+    /// them in `triple_cache`, as `outgoing_arcs_from_list` would have for each
+    /// subject. See `outgoing_arcs_from_list` for why the query is a UNION of
+    /// fully bound patterns; `VALUES` binds `?s` to each subject in turn.
+    async fn fetch_outgoing_batch(&self, subjects: &[OxNamedNode], preds: &[OxNamedNode]) -> Result<()> {
+        let values = subjects.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(" ");
+        let union_clauses = preds
+            .iter()
+            .map(|p| format!("{{ ?s {p} ?o BIND({p} AS ?p) }}"))
+            .collect::<Vec<_>>()
+            .join(" UNION ");
+        let query = format!("SELECT ?s ?p ?o WHERE {{ VALUES ?s {{ {values} }} {union_clauses} }}");
+        trace!(endpoint = %self.endpoint_iri, subjects = subjects.len(), %query, "prefetch batch query");
+
+        self.enforce_rate_limit().await?;
+        let solutions =
+            make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri, &self.rate_limit_ms).await?;
+
+        // Some endpoints silently cut results off at a maximum number of rows
+        // (Virtuoso's default is 10000). A batch that large may be incomplete,
+        // and caching it would hide arcs, so leave its subjects to the lazy
+        // per-subject lookups instead.
+        if solutions.len() >= MAX_BATCH_ROWS {
+            debug!(
+                endpoint = %self.endpoint_iri,
+                rows = solutions.len(),
+                "prefetch: batch result may be truncated, not caching it"
+            );
+            return Ok(());
+        }
+
+        let mut cache = self.triple_cache.write().unwrap();
+        for subject in subjects {
+            let entry = cache.entry(OxSubject::NamedNode(subject.clone())).or_default();
+            for pred in preds {
+                entry.entry(pred.clone()).or_default();
+            }
+        }
+        for solution in solutions {
+            let (Some(OxTerm::NamedNode(s)), Some(OxTerm::NamedNode(p)), Some(o)) =
+                (solution.get("s"), solution.get("p"), solution.get("o"))
+            else {
+                continue;
+            };
+            cache
+                .entry(OxSubject::NamedNode(s.clone()))
+                .or_default()
+                .entry(p.clone())
+                .or_default()
+                .insert(o.clone());
+        }
+        Ok(())
     }
 
     /// Waits until at least [`Self::rate_limit_ms`]'s current value has elapsed
@@ -974,6 +1232,10 @@ impl NeighsRDF for OxigraphEndpoint {
         Ok(triples.into_iter())
     }
 
+    fn prefetch_outgoing_arcs(&self, subjects: &[Self::Subject], preds: &[Self::IRI]) -> Result<()> {
+        OxigraphEndpoint::prefetch_outgoing_arcs(self, subjects, preds)
+    }
+
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,
@@ -1249,11 +1511,22 @@ fn parse_turtle_lenient(body: &str, base: &str) -> std::result::Result<Vec<OxTri
         .collect())
 }
 
-/// Starting value for `OxigraphEndpoint::rate_limit_ms` — the minimum gap enforced
-/// between requests before the server has ever throttled us. Wikidata doesn't publish
-/// an exact requests-per-second budget, so this is a conservative guess (< 1 req/s);
+/// Default starting value for `OxigraphEndpoint::rate_limit_ms` on a remote host — the
+/// minimum gap enforced between requests before the server has ever throttled us, unless
+/// configured otherwise (`min_request_interval_ms`). Wikidata doesn't publish an exact
+/// requests-per-second budget, so this is a conservative guess (< 1 req/s);
 /// `http_get_with_retry` raises it adaptively if the server disagrees via a 429.
-const INITIAL_RATE_LIMIT_MS: u64 = 1100;
+pub const DEFAULT_MIN_REQUEST_INTERVAL_MS: u64 = 1100;
+
+/// Default for `OxigraphEndpoint::max_concurrent_requests`: one request at a time.
+pub const DEFAULT_MAX_CONCURRENT_REQUESTS: usize = 1;
+
+/// Default for `OxigraphEndpoint::max_nodes_per_query`.
+pub const DEFAULT_MAX_NODES_PER_QUERY: usize = 20;
+
+/// A prefetch batch returning at least this many rows may have been cut off
+/// by the endpoint, so it isn't cached. See `fetch_outgoing_batch`.
+const MAX_BATCH_ROWS: usize = 1000;
 
 /// Ceiling for the adaptive growth of `OxigraphEndpoint::rate_limit_ms`. Bounds how
 /// slow repeated 429s can drive the proactive rate limiter, so a pathological run
@@ -1354,7 +1627,11 @@ async fn http_get_with_retry(
                 // The server just told us to slow down; make every future request
                 // through this endpoint wait longer too, not just this retry.
                 let current = rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed);
-                let raised = (current.saturating_mul(3) / 2).min(MAX_RATE_LIMIT_MS).max(current);
+                // Floored at the default so that an endpoint configured with a
+                // low (or zero) interval still actually backs off.
+                let raised = (current.saturating_mul(3) / 2)
+                    .clamp(DEFAULT_MIN_REQUEST_INTERVAL_MS, MAX_RATE_LIMIT_MS)
+                    .max(current);
                 if raised > current
                     && rate_limit_ms
                         .compare_exchange(
@@ -1564,4 +1841,249 @@ fn get_iri_solution(solution: &OxQuerySolution, name: &str) -> Result<OxNamedNod
             OxTerm::NamedNode(n) => Ok(n.clone()),
             _ => Err(OxigraphEndpointError::SPARQLSolutionErrorNoIRI { value: v.clone() }),
         })
+}
+
+#[cfg(all(test, not(target_family = "wasm")))]
+mod rate_limit_tests {
+    use super::*;
+    use std::io::{BufRead, BufReader, Write};
+    use std::net::TcpListener;
+    use std::sync::atomic::Ordering;
+
+    fn endpoint(url: &str) -> OxigraphEndpoint {
+        OxigraphEndpoint::new(&IriS::new_unchecked(url), &PrefixMap::new()).unwrap()
+    }
+
+    #[test]
+    fn remote_hosts_default_to_the_conservative_interval() {
+        assert_eq!(
+            endpoint("https://query.wikidata.org/sparql").min_request_interval_ms(),
+            DEFAULT_MIN_REQUEST_INTERVAL_MS
+        );
+    }
+
+    #[test]
+    fn loopback_hosts_default_to_no_interval() {
+        for url in [
+            "http://localhost:7878/query",
+            "http://LOCALHOST/sparql",
+            "http://127.0.0.1:8080/sparql",
+            "http://[::1]:8080/sparql",
+        ] {
+            assert_eq!(endpoint(url).min_request_interval_ms(), 0, "{url}");
+        }
+    }
+
+    #[test]
+    fn interval_is_shared_across_clones() {
+        let e = endpoint("https://example.org/sparql").with_min_request_interval_ms(250);
+        let clone = e.clone();
+        assert_eq!(clone.min_request_interval_ms(), 250);
+        e.set_min_request_interval_ms(0);
+        assert_eq!(clone.min_request_interval_ms(), 0);
+    }
+
+    #[tokio::test]
+    async fn zero_interval_does_not_wait() {
+        let e = endpoint("https://example.org/sparql").with_min_request_interval_ms(0);
+        let start = std::time::Instant::now();
+        for _ in 0..10 {
+            e.enforce_rate_limit().await.unwrap();
+        }
+        assert!(start.elapsed() < std::time::Duration::from_millis(500));
+        assert_eq!(e.request_count(), 10);
+    }
+
+    #[tokio::test]
+    async fn configured_interval_is_enforced() {
+        let e = endpoint("http://localhost/sparql").with_min_request_interval_ms(100);
+        let start = std::time::Instant::now();
+        for _ in 0..3 {
+            e.enforce_rate_limit().await.unwrap();
+        }
+        // The first request goes out immediately, the next two wait 100 ms each.
+        assert!(start.elapsed() >= std::time::Duration::from_millis(200));
+    }
+
+    /// Serves one `429` (with `Retry-After: 0`), then one `200`, on a local port.
+    fn serve_429_then_200() -> Url {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        std::thread::spawn(move || {
+            let responses = [
+                "HTTP/1.1 429 Too Many Requests\r\nRetry-After: 0\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok",
+            ];
+            for response in responses {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                let mut line = String::new();
+                while reader.read_line(&mut line).unwrap() > 0 && line != "\r\n" {
+                    line.clear();
+                }
+                stream.write_all(response.as_bytes()).unwrap();
+            }
+        });
+        Url::parse(&format!("http://{addr}/sparql")).unwrap()
+    }
+
+    #[tokio::test]
+    async fn too_many_requests_raises_a_zero_interval() {
+        let url = serve_429_then_200();
+        let client = HttpClient::new(SPARQL_RESULTS_JSON).unwrap();
+        let rate_limit_ms = std::sync::atomic::AtomicU64::new(0);
+        let body = http_get_with_retry(&client, &url, &rate_limit_ms).await.unwrap();
+        assert_eq!(body, "ok");
+        assert_eq!(rate_limit_ms.load(Ordering::Relaxed), DEFAULT_MIN_REQUEST_INTERVAL_MS);
+    }
+}
+
+#[cfg(all(test, not(target_family = "wasm")))]
+mod prefetch_tests {
+    use super::*;
+    use std::io::{BufRead, BufReader, Write};
+    use std::net::TcpListener;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    const P: &str = "http://example.org/p";
+
+    fn node(i: usize) -> OxNamedNode {
+        OxNamedNode::new_unchecked(format!("http://example.org/n{i}"))
+    }
+
+    /// A SPARQL endpoint answering every query with `<nI> <p> I` for each
+    /// `<nI>` the query mentions, after `delay`. Returns its URL and a
+    /// counter of the requests it got.
+    fn serve(delay: std::time::Duration) -> (IriS, Arc<AtomicUsize>, Arc<AtomicUsize>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let requests = Arc::new(AtomicUsize::new(0));
+        let max_in_flight = Arc::new(AtomicUsize::new(0));
+        let in_flight = Arc::new(AtomicUsize::new(0));
+        {
+            let requests = Arc::clone(&requests);
+            let max_in_flight = Arc::clone(&max_in_flight);
+            std::thread::spawn(move || {
+                for stream in listener.incoming() {
+                    let mut stream = stream.unwrap();
+                    let requests = Arc::clone(&requests);
+                    let max_in_flight = Arc::clone(&max_in_flight);
+                    let in_flight = Arc::clone(&in_flight);
+                    std::thread::spawn(move || {
+                        let mut reader = BufReader::new(stream.try_clone().unwrap());
+                        let mut request_line = String::new();
+                        reader.read_line(&mut request_line).unwrap();
+                        let mut line = String::new();
+                        while reader.read_line(&mut line).unwrap() > 0 && line != "\r\n" {
+                            line.clear();
+                        }
+                        requests.fetch_add(1, Ordering::SeqCst);
+                        let now = in_flight.fetch_add(1, Ordering::SeqCst) + 1;
+                        max_in_flight.fetch_max(now, Ordering::SeqCst);
+                        std::thread::sleep(delay);
+                        in_flight.fetch_sub(1, Ordering::SeqCst);
+
+                        let target = request_line.split_whitespace().nth(1).unwrap();
+                        let url = Url::parse(&format!("http://localhost{target}")).unwrap();
+                        let query: String = url
+                            .query_pairs()
+                            .find(|(k, _)| k == "query")
+                            .map(|(_, v)| v.into_owned())
+                            .unwrap();
+                        let bindings: Vec<String> = (0..100)
+                            .filter(|i| query.contains(&format!("{}", node(*i))))
+                            .map(|i| {
+                                format!(
+                                    r#"{{"s":{{"type":"uri","value":"{}"}},"p":{{"type":"uri","value":"{P}"}},"o":{{"type":"literal","value":"{i}"}}}}"#,
+                                    node(i).as_str()
+                                )
+                            })
+                            .collect();
+                        let body = format!(
+                            r#"{{"head":{{"vars":["s","p","o"]}},"results":{{"bindings":[{}]}}}}"#,
+                            bindings.join(",")
+                        );
+                        let response = format!(
+                            "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                            body.len()
+                        );
+                        let _ = stream.write_all(response.as_bytes());
+                    });
+                }
+            });
+        }
+        (
+            IriS::new_unchecked(&format!("http://{addr}/sparql")),
+            requests,
+            max_in_flight,
+        )
+    }
+
+    fn subjects(n: usize) -> Vec<OxSubject> {
+        (0..n).map(|i| OxSubject::NamedNode(node(i))).collect()
+    }
+
+    #[test]
+    fn prefetch_batches_subjects_and_feeds_the_lookups() {
+        let (iri, requests, _) = serve(std::time::Duration::ZERO);
+        let endpoint = OxigraphEndpoint::new(&iri, &PrefixMap::new())
+            .unwrap()
+            .with_max_nodes_per_query(2);
+        let pred = OxNamedNode::new_unchecked(P);
+
+        endpoint
+            .prefetch_outgoing_arcs(&subjects(5), std::slice::from_ref(&pred))
+            .unwrap();
+        // 5 subjects, 2 per query.
+        assert_eq!(requests.load(Ordering::SeqCst), 3);
+
+        for (i, subject) in subjects(5).iter().enumerate() {
+            let (arcs, _) = endpoint
+                .outgoing_arcs_from_list(subject, std::slice::from_ref(&pred))
+                .unwrap();
+            let expected: HashSet<OxTerm> = [OxTerm::Literal(OxLiteral::new_simple_literal(i.to_string()))].into();
+            assert_eq!(arcs.get(&pred), Some(&expected));
+        }
+        // All answered from the cache.
+        assert_eq!(requests.load(Ordering::SeqCst), 3);
+
+        // Prefetching subjects already cached sends nothing.
+        endpoint.prefetch_outgoing_arcs(&subjects(5), &[pred]).unwrap();
+        assert_eq!(requests.load(Ordering::SeqCst), 3);
+    }
+
+    #[test]
+    fn prefetch_without_batching_sends_nothing() {
+        let (iri, requests, _) = serve(std::time::Duration::ZERO);
+        let endpoint = OxigraphEndpoint::new(&iri, &PrefixMap::new())
+            .unwrap()
+            .with_max_nodes_per_query(1);
+        let pred = OxNamedNode::new_unchecked(P);
+        endpoint.prefetch_outgoing_arcs(&subjects(5), &[pred]).unwrap();
+        assert_eq!(requests.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn prefetch_keeps_up_to_max_concurrent_requests_in_flight() {
+        let (iri, requests, max_in_flight) = serve(std::time::Duration::from_millis(150));
+        let endpoint = OxigraphEndpoint::new(&iri, &PrefixMap::new())
+            .unwrap()
+            .with_max_nodes_per_query(2)
+            .with_max_concurrent_requests(3);
+        let pred = OxNamedNode::new_unchecked(P);
+        endpoint.prefetch_outgoing_arcs(&subjects(12), &[pred]).unwrap();
+        assert_eq!(requests.load(Ordering::SeqCst), 6);
+        assert_eq!(max_in_flight.load(Ordering::SeqCst), 3);
+    }
+
+    #[test]
+    fn prefetch_is_sequential_by_default() {
+        let (iri, _, max_in_flight) = serve(std::time::Duration::from_millis(50));
+        let endpoint = OxigraphEndpoint::new(&iri, &PrefixMap::new())
+            .unwrap()
+            .with_max_nodes_per_query(2);
+        let pred = OxNamedNode::new_unchecked(P);
+        endpoint.prefetch_outgoing_arcs(&subjects(6), &[pred]).unwrap();
+        assert_eq!(max_in_flight.load(Ordering::SeqCst), 1);
+    }
 }

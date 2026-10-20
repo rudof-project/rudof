@@ -96,6 +96,9 @@ Source: [`rudof_rdf/src/rdf_core/rdf_data_config.rs`](https://github.com/rudof-p
 | `pretty_json` | boolean | `true` | Indent `json`/`jsonld` result-format output instead of emitting it as compact single-line JSON. |
 | `colorize_json` | boolean | `false` | Style `json`/`jsonld` output with ANSI colors (keys, strings, numbers, ...). Only takes effect when `pretty_json` is also `true`, and only on a real terminal (auto-disabled when output is redirected or piped). |
 | `endpoints` | table of tables | `Wikidata`, `DBpedia`, `UniProt` pre-registered | Named SPARQL endpoints — see [`[rdf.endpoints.<name>]`](#rdfendpointsname) below. |
+| `min_request_interval_ms` | integer, optional | unset | Default minimum interval, in milliseconds, between two requests sent to a SPARQL endpoint that doesn't set its own `min_request_interval_ms` (including endpoints given by URL). When unset, rudof waits 1100 ms between requests to a remote host and none to a loopback one (`localhost`, `127.0.0.1`, `[::1]`). See [Request rate limiting](#request-rate-limiting). |
+| `max_concurrent_requests` | integer, optional | unset (1) | Default maximum number of requests in flight at once to an endpoint, when rudof has several independent ones to make (prefetching the nodes of a shapemap). See [Batching and concurrent requests](#batching-and-concurrent-requests). |
+| `max_nodes_per_query` | integer, optional | unset (20) | Default maximum number of nodes one SPARQL query fetches the arcs of when prefetching the nodes of a shapemap. `1` disables batching. See [Batching and concurrent requests](#batching-and-concurrent-requests). |
 | `visualization` | table | see [`[rdf.visualization]`](#rdfvisualization) | Styling for RDF graph visualizations (`svg`/`png`/`plantuml` output). |
 | `qlever` | table, optional | unset | QLever Docker backend settings — see [`[rdf.qlever]`](#rdfqlever) below. Only compiled in with the `qlever` cargo feature, and not available on wasm. |
 
@@ -115,6 +118,9 @@ resolve the same endpoint. `rudof` pre-registers three by default — `Wikidata`
 | `query_url` | IRI string | *(required)* | URL of the SPARQL query endpoint. |
 | `update_url` | IRI string, optional | unset | URL for SPARQL update operations, if the endpoint supports them. |
 | `prefixmap` | table (`alias = "iri"`) | empty | Prefixes to abbreviate IRIs in this endpoint's query results. |
+| `min_request_interval_ms` | integer, optional | unset | Minimum interval, in milliseconds, between two requests sent to this endpoint. Overrides `[rdf] min_request_interval_ms`. See [Request rate limiting](#request-rate-limiting). |
+| `max_concurrent_requests` | integer, optional | unset | Overrides `[rdf] max_concurrent_requests` for this endpoint. |
+| `max_nodes_per_query` | integer, optional | unset | Overrides `[rdf] max_nodes_per_query` for this endpoint. |
 
 ```toml
 [rdf.endpoints.Wikidata]
@@ -135,6 +141,55 @@ or editing a file there and opening a pull request — no Rust code change neede
 file shape can also be loaded at runtime: `RdfDataConfig::load_endpoint_description(path)`
 registers an endpoint from such a file under its own `name` field, which is what the shell's
 `endpoint FILE.toml` command (see [shell](../cli_usage/shell.md#registering-a-new-endpoint-from-a-file)) uses.
+
+#### Request rate limiting
+
+To stay within the usage policies of public endpoints, rudof waits a minimum interval between
+two requests sent to the same endpoint. The interval is, from highest to lowest priority:
+
+1. the `--min-request-interval MS` CLI flag (or `min_request_interval_ms` in Python's
+   `read_data`, or the `minRequestIntervalMs` option of `useEndpoint` in WebAssembly);
+2. the endpoint's own `min_request_interval_ms`;
+3. `[rdf] min_request_interval_ms`;
+4. 1100 ms for a remote host, 0 for a loopback one (`localhost`, `127.0.0.1`, `[::1]`).
+
+The built-in public endpoints (Wikidata, DBpedia, UniProt, ...) all set
+`min_request_interval_ms = 1100`, so lowering `[rdf] min_request_interval_ms` speeds up your own
+endpoints without hammering them. `0` disables the proactive wait altogether. Whatever the
+configured value, a `429 Too Many Requests` response raises the interval (to at least 1100 ms,
+then by 50% on each new 429, up to 10 s) for the rest of the run, and the request is retried
+after the server's `Retry-After`.
+
+```toml
+[rdf]
+min_request_interval_ms = 0   # e.g. for a local or institutional endpoint you control
+
+[rdf.endpoints.MyStore]
+name = "MyStore"
+query_url = "https://sparql.example.org/sparql"
+min_request_interval_ms = 50
+```
+
+#### Batching and concurrent requests
+
+Before validating a shapemap against an endpoint with ShEx, rudof fetches the arcs that the
+shapes of its nodes need ahead of time. It asks about up to `max_nodes_per_query` nodes
+(default 20) per SPARQL query (`VALUES ?s { ... }`), and keeps up to `max_concurrent_requests`
+of these queries (default 1) in flight at once. Validating a shapemap of 100 nodes then takes 5
+requests instead of 100. Nodes reached only through shape references during validation are still
+fetched one at a time. Every request still waits its turn behind the minimum request interval,
+so concurrent requests only help when the interval is shorter than the endpoint's response time:
+for a public endpoint at 1100 ms, `max_concurrent_requests` changes nothing.
+
+`max_nodes_per_query = 1` disables batching. A batch whose result reaches 1000 rows is not used,
+because some endpoints silently cut results off at a maximum number of rows; its nodes are then
+fetched one at a time. With the `dereference` strategy, every node is still one request, but
+`max_concurrent_requests` lets several of them run at once.
+
+The CLI flags `--max-concurrent-requests N` and `--max-nodes-per-query N`, the
+`max_concurrent_requests` and `max_nodes_per_query` arguments of Python's `read_data`, and the
+`maxConcurrentRequests` and `maxNodesPerQuery` options of `useEndpoint` in WebAssembly override
+these settings for one run.
 
 ### `[rdf.visualization]`
 

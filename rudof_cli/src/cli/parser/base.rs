@@ -204,6 +204,46 @@ pub struct CommonArgsAll {
     )]
     pub endpoint: Option<String>,
 
+    /// Minimum interval, in milliseconds, between two requests sent to the
+    /// SPARQL endpoint, overriding both the endpoint's own
+    /// `min_request_interval_ms` and `[rdf] min_request_interval_ms` from the
+    /// TOML config. `0` disables the proactive rate limiter (a `429 Too Many
+    /// Requests` response still makes rudof back off). Only meaningful with
+    /// `-e`/`--endpoint` or `--backend endpoint=…`.
+    #[arg(
+        long = "min-request-interval",
+        value_name = "MS",
+        help = "Minimum milliseconds between two requests to the SPARQL endpoint (-e/--endpoint only); \
+                default: the endpoint's configured value, else 1100 for remote hosts and 0 for localhost"
+    )]
+    pub min_request_interval: Option<u64>,
+
+    /// Maximum number of requests rudof keeps in flight at once to the SPARQL
+    /// endpoint when it has several independent ones to make (fetching the
+    /// nodes of a shapemap ahead of validation). Requests stay spaced by the
+    /// minimum request interval. Overrides `max_concurrent_requests` from the
+    /// TOML config. Only meaningful with an endpoint.
+    #[arg(
+        long = "max-concurrent-requests",
+        value_name = "N",
+        value_parser = clap::value_parser!(u64).range(1..),
+        help = "Maximum requests in flight at once to the SPARQL endpoint (-e/--endpoint only); default 1"
+    )]
+    pub max_concurrent_requests: Option<u64>,
+
+    /// Maximum number of nodes one SPARQL query fetches the arcs of, when rudof
+    /// fetches the nodes of a shapemap ahead of validation. `1` disables
+    /// batching. Overrides `max_nodes_per_query` from the TOML config. Only
+    /// meaningful with an endpoint.
+    #[arg(
+        long = "max-nodes-per-query",
+        value_name = "N",
+        value_parser = clap::value_parser!(u64).range(1..),
+        help = "Maximum nodes fetched per SPARQL query when prefetching a shapemap's nodes (-e/--endpoint only); \
+                1 disables batching; default 20"
+    )]
+    pub max_nodes_per_query: Option<u64>,
+
     /// Directory for the QLever on-disk index, overriding `[rdf.qlever]
     /// index_dir` from the TOML config.
     ///
@@ -220,6 +260,16 @@ pub struct CommonArgsAll {
         help = "Directory for the QLever on-disk index (--backend qlever only); enables sharing/reuse across sessions"
     )]
     pub qlever_index_dir: Option<PathBuf>,
+}
+
+impl CommonArgsAll {
+    /// The endpoint request limits given on the command line.
+    pub fn endpoint_limits(&self) -> rudof_rdf::rdf_core::EndpointLimits {
+        rudof_rdf::rdf_core::EndpointLimits::default()
+            .with_min_request_interval_ms(self.min_request_interval)
+            .with_max_concurrent_requests(self.max_concurrent_requests.map(|n| n as usize))
+            .with_max_nodes_per_query(self.max_nodes_per_query.map(|n| n as usize))
+    }
 }
 
 /// Common arguments for commands that need config and output but not a backend.
@@ -297,5 +347,31 @@ mod tests {
             cli.common.qlever_index_dir,
             Some(std::path::PathBuf::from("/shared/qlever-index"))
         );
+    }
+
+    #[test]
+    fn min_request_interval_parses_alongside_endpoint() {
+        let cli = TestCli::parse_from(["test", "-e", "http://localhost/sparql", "--min-request-interval", "0"]);
+        assert_eq!(cli.common.min_request_interval, Some(0));
+        let cli = TestCli::parse_from(["test", "-e", "wikidata"]);
+        assert_eq!(cli.common.min_request_interval, None);
+    }
+
+    #[test]
+    fn endpoint_limits_collect_the_endpoint_flags() {
+        let cli = TestCli::parse_from([
+            "test",
+            "-e",
+            "http://localhost/sparql",
+            "--max-concurrent-requests",
+            "4",
+            "--max-nodes-per-query",
+            "50",
+        ]);
+        let limits = cli.common.endpoint_limits();
+        assert_eq!(limits.min_request_interval_ms, None);
+        assert_eq!(limits.max_concurrent_requests, Some(4));
+        assert_eq!(limits.max_nodes_per_query, Some(50));
+        assert!(TestCli::try_parse_from(["test", "--max-nodes-per-query", "0"]).is_err());
     }
 }

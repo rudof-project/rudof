@@ -2,6 +2,10 @@ name = "mardi"
 
 query_url = "https://query.portal.mardi4nfdi.de/sparql"
 
+# Minimum gap (ms) between two requests: this is a public endpoint, so stay
+# polite even if `[rdf] min_request_interval_ms` lowers the global default.
+min_request_interval_ms = 1100
+
 [prefixmap]
 wd = "https://portal.mardi4nfdi.de/entity/"
 wdt = "https://portal.mardi4nfdi.de/prop/direct/"

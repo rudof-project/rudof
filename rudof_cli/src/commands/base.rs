@@ -192,6 +192,9 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            min_request_interval: a.common.min_request_interval,
+            max_concurrent_requests: a.common.max_concurrent_requests,
+            max_nodes_per_query: a.common.max_nodes_per_query,
             qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::ShexCheck(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
@@ -205,6 +208,9 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            min_request_interval: a.common.min_request_interval,
+            max_concurrent_requests: a.common.max_concurrent_requests,
+            max_nodes_per_query: a.common.max_nodes_per_query,
             qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::ShaclValidate(a) => CommonArgs::All(CommonArgsAll {
@@ -213,6 +219,9 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            min_request_interval: a.common.min_request_interval,
+            max_concurrent_requests: a.common.max_concurrent_requests,
+            max_nodes_per_query: a.common.max_nodes_per_query,
             qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::Data(a) => CommonArgs::All(CommonArgsAll {
@@ -221,6 +230,9 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            min_request_interval: a.common.min_request_interval,
+            max_concurrent_requests: a.common.max_concurrent_requests,
+            max_nodes_per_query: a.common.max_nodes_per_query,
             qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::Node(a) => CommonArgs::All(CommonArgsAll {
@@ -229,6 +241,9 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            min_request_interval: a.common.min_request_interval,
+            max_concurrent_requests: a.common.max_concurrent_requests,
+            max_nodes_per_query: a.common.max_nodes_per_query,
             qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::Shacl(a) => CommonArgs::All(CommonArgsAll {
@@ -237,6 +252,9 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            min_request_interval: a.common.min_request_interval,
+            max_concurrent_requests: a.common.max_concurrent_requests,
+            max_nodes_per_query: a.common.max_nodes_per_query,
             qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::DCTap(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
@@ -270,6 +288,9 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             force_overwrite: a.common.force_overwrite,
             backend: a.common.backend.clone(),
             endpoint: a.common.endpoint.clone(),
+            min_request_interval: a.common.min_request_interval,
+            max_concurrent_requests: a.common.max_concurrent_requests,
+            max_nodes_per_query: a.common.max_nodes_per_query,
             qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::Sparql(a) => CommonArgs::NoBackend(CommonArgsNoBackend {

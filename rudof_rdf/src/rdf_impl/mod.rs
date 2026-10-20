@@ -7,7 +7,10 @@ mod backend_error;
 mod endpoint_strategy;
 
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
-pub use oxigraph::{OxigraphEndpoint, OxigraphEndpointError, SparqlVars};
+pub use oxigraph::{
+    DEFAULT_MAX_CONCURRENT_REQUESTS, DEFAULT_MAX_NODES_PER_QUERY, DEFAULT_MIN_REQUEST_INTERVAL_MS, OxigraphEndpoint,
+    OxigraphEndpointError, SparqlVars,
+};
 pub use oxigraph::{OxigraphInMemory, OxigraphInMemoryError, ReaderMode};
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 pub use qlever::{

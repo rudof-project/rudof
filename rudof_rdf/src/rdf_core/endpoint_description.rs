@@ -1,3 +1,4 @@
+use crate::rdf_core::EndpointLimits;
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,12 @@ pub struct EndpointDescription {
         skip_serializing_if = "PrefixMap::is_empty"
     )]
     pub(crate) prefixmap: PrefixMap,
+
+    /// Optional request limits for this endpoint (`min_request_interval_ms`,
+    /// `max_concurrent_requests`, `max_nodes_per_query`), overriding the
+    /// defaults set in `[rdf]`.
+    #[serde(flatten)]
+    pub(crate) limits: EndpointLimits,
 }
 
 /// Serde stuff
@@ -57,6 +64,7 @@ impl EndpointDescription {
             query_url: IriS::new_unchecked(str),
             update_url: Self::default_update_url(),
             prefixmap: Self::default_prefixmap(),
+            limits: EndpointLimits::default(),
         }
     }
 
@@ -74,6 +82,12 @@ impl EndpointDescription {
 
     pub fn with_update_query(mut self, iri: Option<IriS>) -> Self {
         self.update_url = iri;
+        self
+    }
+
+    /// Sets the request limits of this endpoint.
+    pub fn with_limits(mut self, limits: EndpointLimits) -> Self {
+        self.limits = limits;
         self
     }
 }
@@ -102,5 +116,10 @@ impl EndpointDescription {
 
     pub fn update_url(&self) -> Option<&IriS> {
         self.update_url.as_ref()
+    }
+
+    /// Returns the request limits configured for this endpoint.
+    pub fn limits(&self) -> &EndpointLimits {
+        &self.limits
     }
 }

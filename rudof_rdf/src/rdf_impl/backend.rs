@@ -184,6 +184,15 @@ impl NeighsRDF for RdfBackend {
         Ok(iter)
     }
 
+    fn prefetch_outgoing_arcs(&self, subjects: &[Self::Subject], preds: &[Self::IRI]) -> Result<(), Self::Err> {
+        #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
+        if let RdfBackend::Endpoint(b) = self {
+            return b.prefetch_outgoing_arcs(subjects, preds).map_err(Into::into);
+        }
+        let _ = (subjects, preds);
+        Ok(())
+    }
+
     fn outgoing_arcs_from_list(
         &self,
         subject: &Self::Subject,

@@ -78,7 +78,8 @@ impl Command for ShexValidateCommand {
                 .with_data_format(&data_format)
                 .with_reader_mode(&reader_mode)
                 .with_backend(backend.clone())
-                .with_endpoint_strategy(self.args.strategy.into());
+                .with_endpoint_strategy(self.args.strategy.into())
+                .with_endpoint_limits(self.args.common.endpoint_limits());
             if !self.args.data.is_empty() {
                 loading = loading.with_data(&self.args.data);
             }

@@ -619,3 +619,113 @@ fn test_validate_shex_bnode_focus_in_shapemap() {
         "Expected FAIL (BNode focus against IRI shape):\n{serialized}",
     );
 }
+
+/// A SPARQL endpoint on a local port answering every query with
+/// `<http://example.org/nI> <http://example.org/p> "I"` for each node `nI`
+/// (`I` < 100) the query mentions. Returns its URL.
+#[cfg(not(target_family = "wasm"))]
+fn serve_mock_endpoint() -> String {
+    use std::io::{BufRead, BufReader, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let mut stream = stream.unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut request_line = String::new();
+            reader.read_line(&mut request_line).unwrap();
+            let mut line = String::new();
+            while reader.read_line(&mut line).unwrap() > 0 && line != "\r\n" {
+                line.clear();
+            }
+            let target = request_line.split_whitespace().nth(1).unwrap();
+            let url = url::Url::parse(&format!("http://localhost{target}")).unwrap();
+            let query: String = url
+                .query_pairs()
+                .find(|(k, _)| k == "query")
+                .map(|(_, v)| v.into_owned())
+                .unwrap();
+            let bindings: Vec<String> = (0..100)
+                .filter(|i| query.contains(&format!("<http://example.org/n{i}>")))
+                .map(|i| {
+                    format!(
+                        r#"{{"s":{{"type":"uri","value":"http://example.org/n{i}"}},"p":{{"type":"uri","value":"http://example.org/p"}},"o":{{"type":"literal","value":"{i}"}}}}"#
+                    )
+                })
+                .collect();
+            let body = format!(
+                r#"{{"head":{{"vars":["s","p","o"]}},"results":{{"bindings":[{}]}}}}"#,
+                bindings.join(",")
+            );
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://{addr}/sparql")
+}
+
+/// Validates `n0`..`n4` (conformant) and `n200` (no `p`, so non-conformant)
+/// against a mock endpoint, returning the number of requests it took.
+#[cfg(not(target_family = "wasm"))]
+fn validate_shapemap_against_mock_endpoint(limits: rudof_rdf::rdf_core::EndpointLimits) -> u64 {
+    let url = serve_mock_endpoint();
+    let mut rudof = Rudof::new(RudofConfig::default());
+    rudof
+        .load_data()
+        .with_endpoint(&url)
+        .with_endpoint_limits(limits)
+        .execute()
+        .unwrap();
+    let schema = InputSpec::str("<S> { <p> . }");
+    load_shex_schema(
+        &mut rudof,
+        &schema,
+        Some(&ShExFormat::ShExC),
+        Some("http://example.org/"),
+        None,
+    )
+    .unwrap();
+    let shapemap = InputSpec::str("<n0>@<S>, <n1>@<S>, <n2>@<S>, <n3>@<S>, <n4>@<S>, <n200>@<S>");
+    load_shapemap(
+        &mut rudof,
+        &shapemap,
+        Some(&ShapeMapFormat::Compact),
+        Some("http://example.org/"),
+        Some("http://example.org/"),
+    )
+    .unwrap();
+
+    validate_shex(&mut rudof).unwrap();
+
+    let results = rudof.shex_validation_results.as_ref().unwrap();
+    let mut seen = 0;
+    for (node, _, status) in results.iter() {
+        seen += 1;
+        if node.to_string().contains("n200") {
+            assert!(status.is_non_conformant(), "{node}: {status:?}");
+        } else {
+            assert!(status.is_conformant(), "{node}: {status:?}");
+        }
+    }
+    assert_eq!(seen, 6);
+    rudof.endpoint_request_count()
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn test_validate_shex_endpoint_batches_shapemap_nodes() {
+    let requests = validate_shapemap_against_mock_endpoint(Default::default());
+    assert_eq!(requests, 1);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn test_validate_shex_endpoint_without_batching() {
+    let requests = validate_shapemap_against_mock_endpoint(
+        rudof_rdf::rdf_core::EndpointLimits::default().with_max_nodes_per_query(Some(1)),
+    );
+    assert_eq!(requests, 6);
+}

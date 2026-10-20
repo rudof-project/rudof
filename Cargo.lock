@@ -3791,6 +3791,7 @@ dependencies = [
  "pythonize",
  "rudof_generate",
  "rudof_lib",
+ "rudof_rdf",
  "tokio",
 ]
 

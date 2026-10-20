@@ -329,7 +329,8 @@ fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<OxigraphEn
                 })
             })?;
 
-            Ok(endpoint)
+            // Not a registered endpoint, so only the config-wide defaults apply.
+            Ok(endpoint.with_limits(rudof.config.rdf_data().endpoint_limits()))
         },
     }
 }

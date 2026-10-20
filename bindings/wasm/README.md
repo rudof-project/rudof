@@ -228,7 +228,8 @@ const results = await rudof.runQueryAsync();
 
 | Method | |
 |--------|-|
-| `useEndpoint(endpoint, strategy?)` | Uses the endpoint (a URL or the name of a known endpoint) as the data, replacing the current data. `strategy` is `sparql` (the default, SPARQL queries) or `dereference` (fetches each node's IRI as Turtle). No request is made yet |
+| `useEndpoint(endpoint, strategy?, options?)` | Uses the endpoint (a URL or the name of a known endpoint) as the data, replacing the current data. `strategy` is `sparql` (the default, SPARQL queries) or `dereference` (fetches each node's IRI as Turtle). `options` overrides the configured request limits: `minRequestIntervalMs`, the minimum milliseconds between two requests (default 1100 for remote hosts, 0 for `localhost`; `0` disables the rate limiter, though a 429 response still makes rudof back off); `maxConcurrentRequests`, the requests in flight at once when fetching the nodes of a shapemap ahead of validation (default 1); and `maxNodesPerQuery`, the nodes fetched per query then (default 20, `1` disables batching). No request is made yet |
+| `requestCount()` | The number of HTTP requests sent so far to the endpoint selected with `useEndpoint`, retries included |
 | `validateShexAsync()`, `validateShaclAsync(mode?)`, `runQueryAsync()`, `nodeInfoAsync(nodeSelector, predicates?, mode?, showColors?, depth?)` | Like `validateShex`, `validateShacl`, `runQuery` and `nodeInfo`, but return a `Promise`, and can wait for the endpoint |
 | `setFetch(fetch)` (a function of the module) | Sets the function used for the HTTP requests, with the signature of `fetch` (`null` restores the global `fetch`) |
 

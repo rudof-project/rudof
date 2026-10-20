@@ -725,7 +725,7 @@ class Rudof:
             InputError: If the schema cannot be resolved.
             ConversionError: If the conversion fails.
         """
-    def read_data(self, input: typing.Optional[builtins.str | os.PathLike[str]] = None, format: typing.Optional[RDFFormat] = None, base: typing.Optional[builtins.str] = None, reader_mode: typing.Optional[ReaderMode] = None, merge: typing.Optional[builtins.bool] = None, endpoint: typing.Optional[builtins.str] = None) -> None:
+    def read_data(self, input: typing.Optional[builtins.str | os.PathLike[str]] = None, format: typing.Optional[RDFFormat] = None, base: typing.Optional[builtins.str] = None, reader_mode: typing.Optional[ReaderMode] = None, merge: typing.Optional[builtins.bool] = None, endpoint: typing.Optional[builtins.str] = None, min_request_interval_ms: typing.Optional[builtins.int] = None, max_concurrent_requests: typing.Optional[builtins.int] = None, max_nodes_per_query: typing.Optional[builtins.int] = None) -> None:
         r"""
         Loads RDF data from a string, file path or URL. If a SPARQL endpoint is
         specified, it loads data from the endpoint instead.
@@ -742,6 +742,16 @@ class Rudof:
                 Defaults to ``False``.
             endpoint (str, optional): SPARQL endpoint URL to load data from. If provided, it overrides the ``input``
                 parameter.
+            min_request_interval_ms (int, optional): Minimum milliseconds between two requests sent to
+                ``endpoint``, overriding the configured value (by default 1100 for remote hosts, 0 for
+                localhost). ``0`` disables the proactive rate limiter; a ``429 Too Many Requests``
+                response still makes rudof back off. Ignored without ``endpoint``.
+            max_concurrent_requests (int, optional): Maximum requests in flight at once to ``endpoint``
+                when several independent ones are needed, e.g. to fetch the nodes of a shapemap before
+                validating them. Defaults to the configured value, else 1.
+            max_nodes_per_query (int, optional): Maximum nodes one query to ``endpoint`` fetches when
+                fetching the nodes of a shapemap ahead of validation. ``1`` disables batching.
+                Defaults to the configured value, else 20.
         
         Raises:
             InputError: If the input string, file or URL cannot be resolved.
@@ -1277,6 +1287,14 @@ class Rudof:
         
         Raises:
             QueryError: If the endpoint registry cannot be read.
+        """
+    def endpoint_request_count(self) -> builtins.int:
+        r"""
+        Returns the number of HTTP requests sent so far to the SPARQL endpoint
+        in use as the data (retries included).
+        
+        Returns:
+            int: The number of requests, ``0`` when the data is not an endpoint.
         """
     def read_rdf_config(self, input: builtins.str | os.PathLike[str], format: typing.Optional[RdfConfigFormat] = None) -> None:
         r"""

@@ -483,6 +483,17 @@ impl Rudof {
         ListEndpointsBuilder::new(self)
     }
 
+    /// Number of HTTP requests sent so far to the SPARQL endpoints in use as the
+    /// current data (0 when the data is not an endpoint). Counts every request,
+    /// retries included, since the endpoint was selected.
+    pub fn endpoint_request_count(&self) -> u64 {
+        #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
+        if let Some(crate::types::Data::RDFData(rdf_data)) = self.data.as_ref() {
+            return rdf_data.use_endpoints().values().map(|e| e.request_count()).sum();
+        }
+        0
+    }
+
     /// Returns whether RDF or PG data is currently loaded in `Rudof`'s state.
     pub fn has_data(&self) -> bool {
         self.data.is_some()
