@@ -226,6 +226,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # x86_64 only: the prebuilt liblbug.a uses `___cpu_model` (CPU feature
+      # detection). It is defined in clang's runtime, libclang_rt.osx.a, but
+      # rustc links with -nodefaultlibs, so it is not linked. pyo3 links with
+      # `-undefined dynamic_lookup`, so the link fails: with the new linker
+      # as a fixup error, with -ld_classic as an "illegal text reloc".
+      # Linking the runtime defines the symbol.
+      - name: Link clang's runtime library
+        if: matrix.target == 'x86_64'
+        run: |
+          rt="$(clang -print-resource-dir)/lib/darwin/libclang_rt.osx.a"
+          nm -gU "$rt" 2>/dev/null | grep -q ' ___cpu_model$' || { echo "___cpu_model not found in $rt" >&2; exit 1; }
+          echo "RUSTFLAGS=-C link-arg=$rt" >> "$GITHUB_ENV"
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -233,8 +245,6 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist
           sccache: 'true'
-        env:
-          RUSTFLAGS: ${{ matrix.target == 'x86_64' && '-C link-arg=-Wl,-ld_classic' || '' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
