@@ -12,7 +12,7 @@ repository.workspace = true
 
 [features]
 default = ["sparql"]
-sparql = ["dep:sparql_service", "sparql_service/sparql", "rudof_rdf/sparql"]
+sparql = ["dep:sparql_service", "sparql_service/sparql", "rudof_rdf/sparql", "dep:oxrdf"]
 
 [dependencies]
 anyhow.workspace = true
@@ -25,6 +25,7 @@ prefixmap.workspace = true
 rayon.workspace = true
 rudof_rdf.workspace = true
 rudof_config.workspace = true
+oxrdf = { workspace = true, optional = true }
 rudof_iri.workspace = true
 rudof_typing.workspace = true
 rust_decimal.workspace = true

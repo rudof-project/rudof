@@ -22,7 +22,8 @@ use rudof_lib::formats::{DCTapFormat, ResultDCTapFormat};
 use rudof_lib::formats::{
     DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, QueryType, ResultDataFormat,
     ResultQueryFormat, ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat, ShExFormat,
-    ShExValidationSortByMode, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode, ShapeMapFormat,
+    ShExValidationSortByMode, ShaclFetchStrategy, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
+    ShapeMapFormat,
 };
 #[cfg(feature = "pgschema")]
 use rudof_lib::formats::{PgSchemaFormat, ResultPgSchemaValidationFormat};
@@ -251,11 +252,24 @@ impl Session {
 
     /// Validates the current data against the SHACL shapes graph, with the
     /// `native` (default) or `sparql` engine.
-    pub fn validate_shacl(&mut self, mode: Option<&str>) -> Result<ShaclValidationReport> {
+    ///
+    /// `fetch_strategy` selects how the data of a SPARQL endpoint is fetched:
+    /// `on-demand` (the default) when the validation needs it, `by-shape`
+    /// shape by shape before validating, many nodes per query. It has no
+    /// effect on data in memory.
+    pub fn validate_shacl(
+        &mut self,
+        mode: Option<&str>,
+        fetch_strategy: Option<&str>,
+    ) -> Result<ShaclValidationReport> {
         let mode: Option<ShaclValidationMode> = parse(mode, "SHACL validation mode")?;
+        let fetch_strategy: Option<ShaclFetchStrategy> = parse(fetch_strategy, "SHACL fetch strategy")?;
         let mut b = self.rudof.validate_shacl();
         if let Some(m) = &mode {
             b = b.with_shacl_validation_mode(m);
+        }
+        if let Some(s) = fetch_strategy {
+            b = b.with_fetch_strategy(s);
         }
         b.execute()?;
         let report = self

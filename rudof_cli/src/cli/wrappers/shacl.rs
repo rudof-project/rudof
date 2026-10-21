@@ -1,7 +1,7 @@
 use crate::cli_wrapper;
 use clap::ValueEnum;
 use rudof_lib::formats::ShaclFormat;
-use shacl::validator::RecursionSemantics;
+use shacl::validator::{FetchStrategy, RecursionSemantics};
 use std::fmt::{Display, Formatter, Result};
 
 cli_wrapper!(
@@ -29,5 +29,16 @@ cli_wrapper!(
         Lfp,
         #[value(alias = "brave")]
         Gfp,
+    }
+);
+
+cli_wrapper!(
+    FetchStrategyCli,
+    FetchStrategy,
+    {
+        #[value(name = "on-demand")]
+        OnDemand,
+        #[value(name = "by-shape")]
+        ByShape,
     }
 );

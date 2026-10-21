@@ -35,9 +35,9 @@ pub mod _pyrudof {
         PyNodeNeighborhood, PyPgSchemaFormat, PyQueryResultFormat, PyQueryType, PyRDFFormat, PyRdfConfigFormat,
         PyReaderMode, PyResultConversionFormat, PyResultConversionMode, PyResultDCTapFormat, PyResultDataFormat,
         PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat, PyResultShaclValidationFormat,
-        PyResultShexValidationFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFormat, PyShaclValidationMode,
-        PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource, PyShexValidationSortMode, PyTriple,
-        PyTriples,
+        PyResultShexValidationFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFetchStrategy, PyShaclFormat,
+        PyShaclValidationMode, PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource,
+        PyShexValidationSortMode, PyTriple, PyTriples,
     };
 
     #[pymodule_export]

@@ -340,6 +340,9 @@ copy of `[rdf]`, which is always overwritten by the top-level `[rdf]` on resolve
 | `store_evidences` | boolean | `false` | Also keep evidence for *why* each `(node, shape)` pair conforms, not just why it fails. Off by default since most validation runs only care about violations. |
 | `evidence_shapes_only` | boolean | `false` | When `store_evidences` is on, keep only the per-shape summary evidence (one per conforming `(node, shape)` pair with its own targets, e.g. "conforms to `:PersonShape`") and drop the finer per-constraint-component evidence (`sh:datatype`, `sh:minCount`, ...). No effect when `store_evidences` is off. |
 | `recursion_semantics` | `"none"` \| `"lfp"` \| `"gfp"` | `"lfp"` | Whether a shape that (directly or transitively) references itself is accepted at all, and if so, how a cycle in the data is resolved. `none` rejects the shapes graph outright — a schema-loading error — the moment it contains such a cycle, regardless of the data. `lfp` (least fixed point, the default) accepts it and assumes a node caught in a cycle does **not** conform unless that can be shown without relying on the cycle; `gfp` (greatest fixed point) accepts it and assumes it **does** conform as long as that assumption is self-consistent. A cycle built only from monotonic constructs (`sh:and`, `sh:or`, `sh:node`, `sh:property`, `sh:minCount`, `sh:closed`, ...) is always sound under `lfp`/`gfp`; one that also carries a negating constraint (`sh:not`, `sh:xone`, ...) is sound too as long as it's *stratified* — every such constraint targets a shape that doesn't itself depend on any recursion. A cycle where negation instead reaches back into a recursive shape has no safe order to resolve it in and is always rejected, regardless of this setting — see [Recursion and negation](../cli_usage/shacl_validate.md#recursion-and-negation). The names `"cautious"` and `"brave"` used up to 0.3.26 are still accepted as aliases of `"lfp"` and `"gfp"`. |
+| `fetch_strategy` | `"on-demand"` \| `"by-shape"` | `"on-demand"` | How the data of a SPARQL endpoint is fetched: `on-demand` fetches each focus node's data when the validation needs it; `by-shape` fetches the data shape by shape before validating, many nodes per query. No effect on data in memory. See [Validating against a SPARQL endpoint](../cli_usage/shacl_validate.md#validating-against-a-sparql-endpoint). |
+| `prefetch_batch_size` | integer | `50` | With `by-shape`, the number of nodes one query fetches the data of. |
+| `prefetch_max_rounds` | integer | `16` | With `by-shape`, how many shape references deep the data is fetched in advance, from the shapes with targets. Deeper data is fetched on demand. |
 
 `store_errors`/`store_evidences`/`evidence_shapes_only` only affect what the *report*
 contains, never whether the data conforms. `recursion_semantics` is different: setting it to
@@ -353,6 +356,9 @@ store_errors = true
 store_evidences = false
 evidence_shapes_only = false
 recursion_semantics = "lfp"
+fetch_strategy = "on-demand"
+prefetch_batch_size = 50
+prefetch_max_rounds = 16
 ```
 
 ## `[shex2uml]` — ShEx → UML/PlantUML conversion

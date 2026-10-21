@@ -81,5 +81,10 @@ rudof_generate.workspace = true
 [dev-dependencies]
 tempfile.workspace = true
 
+# A real SPARQL engine behind the mock endpoints of the SHACL endpoint tests.
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+oxigraph.workspace = true
+sparesults.workspace = true
+
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 wasm-bindgen-test = "0.3"

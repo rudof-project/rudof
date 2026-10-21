@@ -1,4 +1,4 @@
-mod focus_nodes_ops;
+pub(crate) mod focus_nodes_ops;
 mod native;
 #[cfg(feature = "sparql")]
 mod sparql;

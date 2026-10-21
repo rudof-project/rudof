@@ -335,10 +335,20 @@ impl JsRudof {
     }
 
     /// Validates the current data against the SHACL shapes graph, with the
-    /// `native` (default) or `sparql` engine.
+    /// `native` (default) or `sparql` engine. `fetchStrategy` (`on-demand`,
+    /// the default, or `by-shape`) selects how the data of a SPARQL endpoint
+    /// is fetched; see `validateShaclAsync`.
     #[wasm_bindgen(js_name = validateShacl, unchecked_return_type = "ShaclValidationReport")]
-    pub fn validate_shacl(&mut self, mode: Option<String>) -> Result<JsValue, JsValue> {
-        to_js(&self.session.validate_shacl(mode.as_deref())?)
+    pub fn validate_shacl(
+        &mut self,
+        mode: Option<String>,
+        #[wasm_bindgen(js_name = "fetchStrategy")] fetch_strategy: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        to_js(
+            &self
+                .session
+                .validate_shacl(mode.as_deref(), fetch_strategy.as_deref())?,
+        )
     }
 
     /// Serializes the results of the most recent SHACL validation.

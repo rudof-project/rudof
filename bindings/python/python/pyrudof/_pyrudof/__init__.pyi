@@ -69,6 +69,7 @@ __all__ = [
     "ShExValidationEntryIterator",
     "ShExValidationReport",
     "ShaclError",
+    "ShaclFetchStrategy",
     "ShaclFormat",
     "ShaclValidationEntry",
     "ShaclValidationEntryIterator",
@@ -1497,7 +1498,7 @@ class Rudof:
         Raises:
             ShaclError: If no shapes are loaded or serialization fails.
         """
-    def validate_shacl(self, mode: typing.Optional[ShaclValidationMode] = None) -> ShaclValidationReport:
+    def validate_shacl(self, mode: typing.Optional[ShaclValidationMode] = None, fetch_strategy: typing.Optional[ShaclFetchStrategy] = None) -> ShaclValidationReport:
         r"""
         Validates the current RDF data against the loaded SHACL shapes.
         
@@ -1505,6 +1506,11 @@ class Rudof:
             mode (ShaclValidationMode, optional): Validation engine. Defaults to ``ShaclValidationMode.Native``.
                 - ``Native``: Fast built-in engine (recommended for production)
                 - ``Sparql``: SPARQL-based engine
+            fetch_strategy (ShaclFetchStrategy, optional): How the data of a SPARQL endpoint is fetched.
+                Defaults to the configured ``[shacl] fetch_strategy``, else ``ShaclFetchStrategy.OnDemand``.
+                No effect on data in memory.
+                - ``OnDemand``: Fetch each focus node's data when the validation needs it
+                - ``ByShape``: Fetch the data shape by shape before validating, many nodes per query
         
         Returns:
             ShaclValidationReport: A snapshot of the result — ``.conforms``,
@@ -2909,6 +2915,30 @@ class ShExFormat(enum.Enum):
         r"""
         Parses a variant from its name, case-insensitively.
         """
+
+@typing.final
+class ShaclFetchStrategy(enum.Enum):
+    r"""
+    How SHACL validation fetches the data of a SPARQL endpoint. No effect
+    on data in memory.
+    """
+    OnDemand = ...
+    r"""
+    Fetch each focus node's data when the validation needs it: about
+    one request per focus node and path.
+    """
+    ByShape = ...
+    r"""
+    Fetch the data shape by shape before validating, many nodes per
+    query (Corman et al., "Validating SHACL constraints over a SPARQL
+    endpoint", ISWC 2019).
+    """
+
+    def __new__(cls) -> ShaclFetchStrategy: ...
+    def __str__(self) -> builtins.str: ...
+    def __repr__(self) -> builtins.str: ...
+    @classmethod
+    def all(cls) -> builtins.list[ShaclFetchStrategy]: ...
 
 @typing.final
 class ShaclFormat(enum.Enum):

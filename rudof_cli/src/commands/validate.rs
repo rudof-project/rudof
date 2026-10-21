@@ -72,6 +72,7 @@ impl ValidateCommand {
             with_evidences: self.args.with_evidences,
             evidences_shapes_only: self.args.evidences_shapes_only,
             recursion_semantics: self.args.recursion_semantics,
+            fetch_strategy: None,
             common: self.args.common.clone(),
         })
     }

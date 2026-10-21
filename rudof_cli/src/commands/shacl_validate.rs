@@ -42,6 +42,7 @@ impl Command for ShaclValidateCommand {
             || self.args.with_evidences
             || self.args.evidences_shapes_only
             || self.args.recursion_semantics.is_some()
+            || self.args.fetch_strategy.is_some()
         {
             let mut cfg = ctx.rudof.config().execute().clone();
             let mut sc = cfg.shacl().clone();
@@ -56,6 +57,9 @@ impl Command for ShaclValidateCommand {
             }
             if let Some(semantics) = self.args.recursion_semantics {
                 sc = sc.with_recursion_semantics(semantics.into());
+            }
+            if let Some(strategy) = self.args.fetch_strategy {
+                sc = sc.with_fetch_strategy(strategy.into());
             }
             cfg = cfg.with_shacl(sc);
             ctx.rudof.update_config(cfg).execute();

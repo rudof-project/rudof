@@ -10,7 +10,7 @@ pub use reset_shacl_schema::reset_shacl_schema;
 pub use reset_shacl_validation::reset_shacl_validation;
 pub use serialize_shacl_schema::serialize_shacl_schema;
 pub use serialize_shacl_validation_results::serialize_shacl_validation_results;
-pub use validate_shacl::validate_shacl;
+pub use validate_shacl::{validate_shacl, validate_shacl_with};
 
 #[cfg(test)]
 mod tests {

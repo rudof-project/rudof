@@ -1,5 +1,8 @@
 use crate::{errors::ValidationError, formats::ShapeMapFormat};
 use rudof_rdf::rdf_core::RDFFormat;
+/// How SHACL validation fetches the data of a SPARQL endpoint. See
+/// `ValidateShaclBuilder::with_fetch_strategy` and `[shacl] fetch_strategy`.
+pub use shacl::validator::FetchStrategy as ShaclFetchStrategy;
 use shacl::validator::ShaclValidationMode as InnerShaclValidationMode;
 use shacl::validator::report::ValidationReportSorting;
 use shex_ast::shapemap::result_shape_map::SortMode;

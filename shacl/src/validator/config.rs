@@ -1,4 +1,4 @@
-use crate::validator::RecursionSemantics;
+use crate::validator::{FetchStrategy, RecursionSemantics};
 use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
@@ -34,6 +34,22 @@ pub struct ShaclConfig {
     /// `lfp`/LFP). See [`RecursionSemantics`].
     #[serde(rename = "recursion_semantics")]
     pub(crate) recursion_semantics: RecursionSemantics,
+
+    /// How data held by remote SPARQL endpoints is fetched (default:
+    /// `on-demand`). See [`FetchStrategy`].
+    #[serde(rename = "fetch_strategy")]
+    pub(crate) fetch_strategy: FetchStrategy,
+
+    /// With the `by-shape` fetch strategy, how many nodes one query asks
+    /// about (default: 50).
+    #[serde(rename = "prefetch_batch_size")]
+    pub(crate) prefetch_batch_size: usize,
+
+    /// With the `by-shape` fetch strategy, how many shape references deep
+    /// the data is fetched in advance from the target shapes (default: 16).
+    /// Deeper data is fetched on demand.
+    #[serde(rename = "prefetch_max_rounds")]
+    pub(crate) prefetch_max_rounds: usize,
 }
 
 impl ShaclConfig {
@@ -44,6 +60,9 @@ impl ShaclConfig {
             store_evidences: Self::default_store_evidences(),
             evidence_shapes_only: Self::default_evidence_shapes_only(),
             recursion_semantics: Self::default_recursion_semantics(),
+            fetch_strategy: Self::default_fetch_strategy(),
+            prefetch_batch_size: Self::default_prefetch_batch_size(),
+            prefetch_max_rounds: Self::default_prefetch_max_rounds(),
         }
     }
 
@@ -71,6 +90,21 @@ impl ShaclConfig {
         self.recursion_semantics = semantics;
         self
     }
+
+    pub fn with_fetch_strategy(mut self, strategy: FetchStrategy) -> Self {
+        self.fetch_strategy = strategy;
+        self
+    }
+
+    pub fn with_prefetch_batch_size(mut self, size: usize) -> Self {
+        self.prefetch_batch_size = size.max(1);
+        self
+    }
+
+    pub fn with_prefetch_max_rounds(mut self, rounds: usize) -> Self {
+        self.prefetch_max_rounds = rounds;
+        self
+    }
 }
 
 impl ShaclConfig {
@@ -93,6 +127,18 @@ impl ShaclConfig {
     pub fn recursion_semantics(&self) -> RecursionSemantics {
         self.recursion_semantics
     }
+
+    pub fn fetch_strategy(&self) -> FetchStrategy {
+        self.fetch_strategy
+    }
+
+    pub fn prefetch_batch_size(&self) -> usize {
+        self.prefetch_batch_size.max(1)
+    }
+
+    pub fn prefetch_max_rounds(&self) -> usize {
+        self.prefetch_max_rounds
+    }
 }
 
 /// Serde stuff
@@ -104,6 +150,9 @@ impl ShaclConfig {
     #[inline] fn default_store_evidences() -> bool { false }
     #[inline] fn default_evidence_shapes_only() -> bool { false }
     #[inline] fn default_recursion_semantics() -> RecursionSemantics { RecursionSemantics::default() }
+    #[inline] fn default_fetch_strategy() -> FetchStrategy { FetchStrategy::default() }
+    #[inline] fn default_prefetch_batch_size() -> usize { 50 }
+    #[inline] fn default_prefetch_max_rounds() -> usize { 16 }
 }
 
 impl Default for ShaclConfig {
@@ -139,6 +188,24 @@ mod tests {
     fn toml_configures_recursion_semantics() {
         let c: ShaclConfig = toml::from_str(r#"recursion_semantics = "gfp""#).unwrap();
         assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Gfp);
+    }
+
+    #[test]
+    fn toml_configures_fetch_strategy() {
+        let c: ShaclConfig = toml::from_str(
+            r#"
+            fetch_strategy = "by-shape"
+            prefetch_batch_size = 10
+        "#,
+        )
+        .unwrap();
+        assert_eq!(c.fetch_strategy(), crate::validator::FetchStrategy::ByShape);
+        assert_eq!(c.prefetch_batch_size(), 10);
+        assert_eq!(c.prefetch_max_rounds(), 16);
+        assert_eq!(
+            ShaclConfig::default().fetch_strategy(),
+            crate::validator::FetchStrategy::OnDemand
+        );
     }
 
     #[test]

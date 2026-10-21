@@ -78,7 +78,7 @@ fn rudof_class_workflow() {
     assert_eq!(get(&report, "conforms"), JsValue::TRUE);
 
     rudof.read_shacl(Some(SHACL_SHAPES.into()), None, None, None).unwrap();
-    let report = rudof.validate_shacl(None).unwrap();
+    let report = rudof.validate_shacl(None, None).unwrap();
     assert_eq!(array(&get(&report, "entries")).length(), 1);
 
     rudof

@@ -119,7 +119,9 @@ replaces the function used for the HTTP requests (e.g. to add headers or go
 through a proxy). By default rudof waits 1100 ms between two requests to a
 remote endpoint (none for `localhost`); for your own endpoint, pass options such
 as `rudof.useEndpoint(url, "sparql", { minRequestIntervalMs: 0, maxConcurrentRequests: 4 })`.
-`rudof.requestCount()` returns the number of requests sent so far. Everything
+`rudof.requestCount()` returns the number of requests sent so far. To validate many nodes against an
+endpoint with SHACL, `await rudof.validateShaclAsync("native", "by-shape")` fetches
+the data shape by shape, many nodes per query, instead of node by node. Everything
 else is as in the main build; its `.wasm` file is
 exported as `@rudof/rudof/endpoints/rudof_wasm_bg.wasm`. See the
 [repository](https://github.com/rudof-project/rudof/tree/master/bindings/wasm#remote-sparql-endpoints)

@@ -87,5 +87,5 @@ pub fn validate_shacl(
     let mut session = Session::new(None);
     session.read_data(data, data_format, base, None, None)?;
     session.read_shacl(Some(shapes), shapes_format, base, None)?;
-    session.validate_shacl(mode)
+    session.validate_shacl(mode, None)
 }

@@ -248,3 +248,47 @@ rudof shacl-validate --shapes shapes.ttl --endpoint https://my.sparql.server/spa
 ```
 
 See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.
+
+### Validating against a SPARQL endpoint
+
+With an endpoint, rudof reads only the data the validation needs, through a cache, so that
+no lookup is sent twice. (Data in memory is first indexed by class, but over an endpoint that
+would ask for every triple, so it is skipped.) `--fetch-strategy` selects how the data is
+fetched:
+
+- `on-demand` (the default) fetches the data of each focus node when the validation needs
+  it: about one request per focus node and path. Use it to validate a few nodes.
+- `by-shape` fetches the data shape by shape before the validation starts, following the
+  approach of Corman, Florenzano, Reutter and Savković, [*Validating SHACL constraints over a
+  SPARQL endpoint*](https://jreutter.ing.uc.cl/SHACL_19.pdf) (ISWC 2019).
+  rudof starts from the shapes with targets and moves to the shapes they reference, breadth
+  first. For each shape, one query fetches the data of up to 50 nodes, so the number of
+  queries depends on the shapes and not on the number of nodes. Use it to validate many
+  nodes.
+
+```sh
+rudof shacl-validate -s shapes.ttl -e wikidata --fetch-strategy by-shape
+```
+
+The bindings take the same option: `rudof.validate_shacl(fetch_strategy=ShaclFetchStrategy.ByShape)`
+in Python, and `await rudof.validateShaclAsync("native", "by-shape")` in WebAssembly.
+
+In a test with 40 focus nodes and a recursive shape, `on-demand` sent 124 queries and
+`by-shape` sent 6. Both give the same report as validating the same data in memory.
+
+`by-shape` differs from the paper in two ways:
+
+- Each query is restricted, with `VALUES`, to the nodes the validation can reach: the
+  targets, then the values of their paths, and so on. The paper's queries range over the whole
+  graph, which is impractical on an endpoint the size of Wikidata.
+- rudof's own engine validates the fetched data in memory, instead of the paper's rule
+  saturation. It applies the same semantics for recursive shapes (see `--recursion-semantics`),
+  supports every constraint component, and gives the full report. Data the prefetch did not
+  anticipate (for example deeper than `prefetch_max_rounds` shape references, or read by a
+  SPARQL-based constraint) is fetched on demand, so the result does not change.
+
+The targets themselves are still found with one query per target declaration: for
+`sh:targetClass`, all the instances of the class. On a large endpoint, prefer `sh:targetNode`
+or a narrow class. The `[shacl]` keys `fetch_strategy`, `prefetch_batch_size` and
+`prefetch_max_rounds` set the same options in a config file (see the
+[config reference](../references/config.md#shacl--shacl-validation)).

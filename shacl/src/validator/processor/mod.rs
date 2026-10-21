@@ -1,3 +1,5 @@
+#[cfg(feature = "sparql")]
+mod cached;
 #[cfg(all(feature = "sparql", not(target_family = "wasm")))]
 mod endpoint;
 mod graph;
@@ -10,6 +12,8 @@ use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::report::{ValidationOutcome, ValidationReport};
+#[cfg(feature = "sparql")]
+pub use cached::CachedDataValidation;
 #[cfg(all(feature = "sparql", not(target_family = "wasm")))]
 pub use endpoint::EndpointValidation;
 pub use graph::GraphValidation;
@@ -37,6 +41,25 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         Ok(())
     }
 
+    /// Whether to index the store's classes before validation. Building the
+    /// index reads every triple of the store: worth it in memory, but over a
+    /// remote SPARQL endpoint it would ask for the whole endpoint.
+    fn use_class_index(&self) -> bool {
+        true
+    }
+
+    /// Called once before validation begins, after [`Self::prepare_store`],
+    /// with the shapes graph to validate against: e.g. to fetch in advance
+    /// the data the validation will need.
+    fn before_validation(
+        &mut self,
+        _shapes_graph: &IRSchema,
+        _runner: &dyn Engine<S>,
+        _config: &ShaclConfig,
+    ) -> Result<(), ValidationError> {
+        Ok(())
+    }
+
     /// Executes the Validation of the provided Graph, in any of the supported
     /// formats, against the shapes graph passed as an argument. As a result,
     /// the Validation Report generated from the validation process is returned.
@@ -61,12 +84,15 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         config: &ShaclConfig,
     ) -> Result<ValidationReport, ValidationError> {
         self.prepare_store()?;
+        let mut master_runner = Self::runner(mode, config);
+        self.before_validation(shapes_graph, master_runner.as_ref(), config)?;
         let store = self.store();
 
         // Build shared indexes once. Forked engines share
         // the data, avoiding redundant scans.
-        let mut master_runner = Self::runner(mode, config);
-        master_runner.build_indexes(store)?;
+        if self.use_class_index() {
+            master_runner.build_indexes(store)?;
+        }
 
         // Group shapes-with-targets by topological level so that dependencies
         // are always validated before the shapes that reference them.

@@ -417,6 +417,10 @@ SHACL
    :members:
    :undoc-members:
 
+.. autoclass:: ShaclFetchStrategy
+   :members:
+   :undoc-members:
+
 .. autoclass:: ShaclValidationSortMode
    :members:
    :undoc-members:

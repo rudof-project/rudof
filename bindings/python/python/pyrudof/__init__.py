@@ -67,6 +67,7 @@ from ._pyrudof import (
     # --- formats: shacl ---
     ShaclFormat,
     ShaclValidationMode,
+    ShaclFetchStrategy,
     ShaclValidationSortMode,
     ResultShaclValidationFormat,
     ShapesGraphSource,
@@ -165,6 +166,7 @@ __all__ = [
     # Formats: shacl.
     "ShaclFormat",
     "ShaclValidationMode",
+    "ShaclFetchStrategy",
     "ShaclValidationSortMode",
     "ResultShaclValidationFormat",
     "ShapesGraphSource",

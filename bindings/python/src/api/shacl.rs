@@ -2,8 +2,8 @@ use crate::{
     api::PyRudof,
     error::Result,
     formats::{
-        PyReaderMode, PyResultShaclValidationFormat, PyShaclFormat, PyShaclValidationMode, PyShaclValidationReport,
-        PyShaclValidationSortMode,
+        PyReaderMode, PyResultShaclValidationFormat, PyShaclFetchStrategy, PyShaclFormat, PyShaclValidationMode,
+        PyShaclValidationReport, PyShaclValidationSortMode,
     },
     guard,
     input::InputArg,
@@ -12,7 +12,8 @@ use crate::{
 use pyo3::prelude::*;
 use rudof_lib::errors::RudofError as CoreError;
 use rudof_lib::formats::{
-    DataReaderMode, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
+    DataReaderMode, ResultShaclValidationFormat, ShaclFetchStrategy, ShaclFormat, ShaclValidationMode,
+    ShaclValidationSortByMode,
 };
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
@@ -91,6 +92,11 @@ impl PyRudof {
     ///     mode (ShaclValidationMode, optional): Validation engine. Defaults to ``ShaclValidationMode.Native``.
     ///         - ``Native``: Fast built-in engine (recommended for production)
     ///         - ``Sparql``: SPARQL-based engine
+    ///     fetch_strategy (ShaclFetchStrategy, optional): How the data of a SPARQL endpoint is fetched.
+    ///         Defaults to the configured ``[shacl] fetch_strategy``, else ``ShaclFetchStrategy.OnDemand``.
+    ///         No effect on data in memory.
+    ///         - ``OnDemand``: Fetch each focus node's data when the validation needs it
+    ///         - ``ByShape``: Fetch the data shape by shape before validating, many nodes per query
     ///
     /// Returns:
     ///     ShaclValidationReport: A snapshot of the result — ``.conforms``,
@@ -99,18 +105,23 @@ impl PyRudof {
     ///
     /// Raises:
     ///     ValidationError: If no data or schema is loaded, or validation fails.
-    #[pyo3(signature = (mode = None))]
+    #[pyo3(signature = (mode = None, fetch_strategy = None))]
     fn validate_shacl(
         &mut self,
         py: Python<'_>,
         mode: Option<&PyShaclValidationMode>,
+        fetch_strategy: Option<&PyShaclFetchStrategy>,
     ) -> Result<PyShaclValidationReport> {
         let mode: Option<ShaclValidationMode> = mode.map(Into::into);
+        let fetch_strategy: Option<ShaclFetchStrategy> = fetch_strategy.map(Into::into);
 
         guard::detached(py, || {
             let mut b = self.inner.validate_shacl();
             if let Some(m) = &mode {
                 b = b.with_shacl_validation_mode(m);
+            }
+            if let Some(s) = fetch_strategy {
+                b = b.with_fetch_strategy(s);
             }
             b.execute()
         })?;

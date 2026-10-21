@@ -96,10 +96,24 @@ impl JsRudof {
     }
 
     /// Like `validateShacl`, but can validate data from a remote SPARQL
-    /// endpoint (see `useEndpoint`).
+    /// endpoint (see `useEndpoint`). `fetchStrategy` selects how its data is
+    /// fetched: `on-demand` (the default) fetches each focus node's data when
+    /// the validation needs it; `by-shape` fetches it shape by shape before
+    /// validating, many nodes per query, which takes far fewer requests when
+    /// there are many focus nodes.
     #[wasm_bindgen(jspi, js_name = validateShaclAsync, unchecked_return_type = "ShaclValidationReport")]
-    pub fn validate_shacl_async(&mut self, mode: Option<String>) -> Result<JsValue, JsValue> {
-        run_suspendable(|| to_js(&self.session.validate_shacl(mode.as_deref())?))
+    pub fn validate_shacl_async(
+        &mut self,
+        mode: Option<String>,
+        #[wasm_bindgen(js_name = "fetchStrategy")] fetch_strategy: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        run_suspendable(|| {
+            to_js(
+                &self
+                    .session
+                    .validate_shacl(mode.as_deref(), fetch_strategy.as_deref())?,
+            )
+        })
     }
 
     /// Like `runQuery`, but can query a remote SPARQL endpoint (see

@@ -1,7 +1,7 @@
 use crate::cli::parser::CommonArgsAll;
 use crate::cli::wrappers::{
-    DataFormatCli, DataReaderModeCli, RecursionSemanticsCli, ResultShaclValidationFormatCli, ShaclFormatCli,
-    ShaclValidationModeCli, ShaclValidationSortByModeCli,
+    DataFormatCli, DataReaderModeCli, FetchStrategyCli, RecursionSemanticsCli, ResultShaclValidationFormatCli,
+    ShaclFormatCli, ShaclValidationModeCli, ShaclValidationSortByModeCli,
 };
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -130,6 +130,18 @@ pub struct ShaclValidateArgs {
                 rejects it outright"
     )]
     pub recursion_semantics: Option<RecursionSemanticsCli>,
+
+    #[arg(
+        long = "fetch-strategy",
+        value_name = "STRATEGY",
+        ignore_case = true,
+        value_enum,
+        help = "How to fetch the data of a SPARQL endpoint (-e/--endpoint): `on-demand` (default) fetches \
+                each focus node's data when the validation needs it; `by-shape` fetches the data shape by \
+                shape before validating, many nodes per query (Corman et al., \"Validating SHACL constraints \
+                over a SPARQL endpoint\", ISWC 2019). No effect on data in memory"
+    )]
+    pub fetch_strategy: Option<FetchStrategyCli>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

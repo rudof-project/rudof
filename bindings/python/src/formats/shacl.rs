@@ -1,7 +1,9 @@
 #![allow(clippy::clone_on_copy)]
 
 use pyo3::prelude::*;
-use rudof_lib::formats::{ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode};
+use rudof_lib::formats::{
+    ResultShaclValidationFormat, ShaclFetchStrategy, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
+};
 
 pyenum! {
     /// SHACL shapes graph serialization formats.
@@ -34,6 +36,20 @@ pyenum! {
         Native => Native,
         /// SPARQL-based engine, validating through SPARQL queries.
         Sparql => Sparql,
+    }
+}
+
+pyenum! {
+    /// How SHACL validation fetches the data of a SPARQL endpoint. No effect
+    /// on data in memory.
+    "ShaclFetchStrategy": PyShaclFetchStrategy => ShaclFetchStrategy, default = OnDemand {
+        /// Fetch each focus node's data when the validation needs it: about
+        /// one request per focus node and path.
+        OnDemand => OnDemand,
+        /// Fetch the data shape by shape before validating, many nodes per
+        /// query (Corman et al., "Validating SHACL constraints over a SPARQL
+        /// endpoint", ISWC 2019).
+        ByShape => ByShape,
     }
 }
 
