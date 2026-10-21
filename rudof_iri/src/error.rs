@@ -49,6 +49,10 @@ pub enum IriSError {
     #[error("Http request error as String: {error}")]
     ReqwestTextError { error: String },
 
+    /// Error dereferencing an IRI on wasm (see [`crate::set_dereferencer`])
+    #[error("Error dereferencing {url}: {error}")]
+    DereferenceError { url: String, error: String },
+
     /// Error converting a file scheme [`url::Url`] into a [`std::path::Path`]
     #[error("trying to obtain a path from file scheme Url: {url}")]
     ConvertingFileUrlToPath { url: String },

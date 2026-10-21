@@ -88,6 +88,23 @@ impl JsRudof {
         self.session.endpoint_request_count() as f64
     }
 
+    /// Like `readShex`, but can fetch the schemas the schema imports (`IMPORT
+    /// <iri>`, resolved against `base`), with `fetch` (see `setFetch`).
+    #[wasm_bindgen(jspi, js_name = readShexAsync)]
+    pub fn read_shex_async(
+        &mut self,
+        schema: &str,
+        format: Option<String>,
+        base: Option<String>,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+    ) -> Result<(), JsValue> {
+        run_suspendable(|| {
+            Ok(self
+                .session
+                .read_shex(schema, format.as_deref(), base.as_deref(), reader_mode.as_deref())?)
+        })
+    }
+
     /// Like `validateShex`, but can validate data from a remote SPARQL
     /// endpoint (see `useEndpoint`).
     #[wasm_bindgen(jspi, js_name = validateShexAsync, unchecked_return_type = "ShExValidationReport")]

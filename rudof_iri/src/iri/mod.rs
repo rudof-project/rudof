@@ -1,3 +1,5 @@
+#[cfg(target_family = "wasm")]
+pub(crate) mod dereferencer;
 mod iri_or_string;
 mod iris;
 #[cfg(not(target_family = "wasm"))]

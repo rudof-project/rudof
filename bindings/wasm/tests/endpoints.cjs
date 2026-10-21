@@ -50,10 +50,23 @@ function answer(query) {
   return { head: { vars }, results: { bindings } };
 }
 
+// Schemas imported by others, served under /shex/.
+const SCHEMAS = {
+  "/shex/person": SCHEMA,
+};
+
 let requests = 0;
 const server = http.createServer((req, res) => {
+  const url = new URL(req.url, "http://localhost");
+  if (url.pathname.startsWith("/shex/")) {
+    const schema = SCHEMAS[url.pathname];
+    res.statusCode = schema === undefined ? 404 : 200;
+    res.setHeader("content-type", "text/shex");
+    res.end(schema ?? "Not found");
+    return;
+  }
   requests++;
-  const query = new URL(req.url, "http://localhost").searchParams.get("query");
+  const query = url.searchParams.get("query");
   if (query.includes("BAD_REQUEST")) {
     res.statusCode = 400;
     res.end("Query rejected: BAD_REQUEST");
@@ -163,6 +176,29 @@ test("network errors are reported after the retries", async (endpoint) => {
   } finally {
     setFetch(null);
   }
+});
+
+test("readShexAsync fetches the imported schemas", async (endpoint) => {
+  const base = new URL("/shex/", endpoint).href;
+  const rudof = new Rudof();
+  rudof.readData(DATA);
+  await rudof.readShexAsync(`prefix : <${EX}>\nIMPORT <person>\n:Named { :name . }`, null, base);
+  rudof.readShapemap(SHAPEMAP);
+  const report = rudof.validateShex();
+  const status = Object.fromEntries(report.entries.map((e) => [e.node, e.status]));
+  assert.deepEqual(status, { [`${EX}alice`]: "conformant", [`${EX}bob`]: "nonconformant" });
+});
+
+test("imports that cannot be fetched are reported", async (endpoint) => {
+  const rudof = new Rudof();
+  const missing = new URL("/shex/missing", endpoint).href;
+  await assert.rejects(rudof.readShexAsync(`IMPORT <${missing}>`), /missing.*404/s);
+});
+
+test("readShex cannot wait for imports", async (endpoint) => {
+  const rudof = new Rudof();
+  const person = new URL("/shex/person", endpoint).href;
+  assert.throws(() => rudof.readShex(`IMPORT <${person}>`), /asynchronous/);
 });
 
 test("in-memory data still works synchronously", async () => {

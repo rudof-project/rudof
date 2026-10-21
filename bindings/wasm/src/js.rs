@@ -121,6 +121,10 @@ export interface ExternalResolver {
 #[wasm_bindgen(start)]
 fn start() {
     console_error_panic_hook::set_once();
+    // ShEx `IMPORT`s (and other dereferenced IRIs) are fetched with `fetch`,
+    // from the asynchronous methods (e.g. `readShexAsync`).
+    #[cfg(feature = "endpoints")]
+    rudof_rdf::jspi::enable_dereferencing();
 }
 
 impl From<Error> for JsValue {

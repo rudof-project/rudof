@@ -11,5 +11,7 @@ mod iri;
 mod mime_type;
 pub mod registry;
 
+#[cfg(target_family = "wasm")]
+pub use crate::iri::dereferencer::{Dereferencer, set_dereferencer};
 pub use crate::iri::{Iri, IriS};
 pub use crate::mime_type::MimeType;

@@ -114,7 +114,10 @@ rudof.readQuery("SELECT ?p ?o WHERE { <http://www.wikidata.org/entity/Q80> ?p ?o
 const results = await rudof.runQueryAsync();
 ```
 
-`validateShaclAsync` and `nodeInfoAsync` work in the same way, and `setFetch`
+`validateShaclAsync` and `nodeInfoAsync` work in the same way. In this build,
+`await rudof.readShexAsync(schema, format, base)` also loads ShEx schemas with
+`IMPORT`s, fetching the imported schemas (relative IRIs are resolved against
+`base`); `readShex` throws on them. `setFetch`
 replaces the function used for the HTTP requests (e.g. to add headers or go
 through a proxy). By default rudof waits 1100 ms between two requests to a
 remote endpoint (none for `localhost`); for your own endpoint, pass options such
@@ -130,9 +133,9 @@ for the details.
 ## Limitations
 
 Everything is passed as strings: reading files, fetching or dereferencing
-IRIs, ShEx `IMPORT`s, rendering images and property graph databases are not
-available, and remote SPARQL endpoints only in `@rudof/rudof/endpoints` (see
-above). Fetch remote documents yourself (e.g. with
+IRIs, rendering images and property graph databases are not available, and
+remote SPARQL endpoints and ShEx `IMPORT`s only in `@rudof/rudof/endpoints`
+(see above). Fetch remote documents yourself (e.g. with
 `fetch`) and pass their text in. SPARQL over the loaded data (queries,
 SHACL-SPARQL constraints, ShapeMap query selectors) runs on an embedded
 Oxigraph store.

@@ -71,6 +71,35 @@ pub fn set_fetch(fetch: Option<Function>) {
     FETCH.with(|f| *f.borrow_mut() = fetch);
 }
 
+/// Makes [`IriS::dereference`](rudof_iri::IriS::dereference) fetch IRIs
+/// (e.g. the `IMPORT`s of a ShEx schema) with the function set with
+/// [`set_fetch`] or the global `fetch`. As with endpoints, it can only wait
+/// for the responses inside [`run_suspendable`].
+pub fn enable_dereferencing() {
+    rudof_iri::set_dereferencer(Some(dereference));
+}
+
+fn dereference(url: &url::Url) -> Result<String, String> {
+    if !SUSPENDABLE.get() {
+        return Err(
+            "cannot wait for an HTTP response in a synchronous call: on wasm, IRIs can only be \
+             dereferenced from the asynchronous (Promise-returning) API, e.g. readShexAsync"
+                .to_string(),
+        );
+    }
+    let url = url.to_string();
+    let response = block_on(async move {
+        fetch(&url, "*/*").await.map_err(|error| match error {
+            SendError::Transient(error) | SendError::Fatal(error) => error,
+        })
+    })
+    .map_err(|error| error.to_string())?;
+    if !(200..300).contains(&response.status) {
+        return Err(format!("HTTP request failed with status {}", response.status));
+    }
+    Ok(response.body)
+}
+
 /// Runs `future` to completion, suspending the WebAssembly stack with JSPI
 /// until it is done.
 pub(crate) fn block_on<T: 'static>(

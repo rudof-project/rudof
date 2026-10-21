@@ -11,9 +11,9 @@
 //!
 //! Inputs are passed as strings: anything that needs a filesystem, network
 //! access or native tools (reading files, fetching URLs, dereferencing IRIs,
-//! ShEx `IMPORT`s, rendering images) is not available on `wasm`. Remote SPARQL
-//! endpoints are, with the `endpoints` feature, through an asynchronous API
-//! that relies on JSPI (see `js_endpoints`).
+//! rendering images) is not available on `wasm`. Remote SPARQL endpoints and
+//! ShEx `IMPORT`s are, with the `endpoints` feature, through an asynchronous
+//! API that relies on JSPI (see `js_endpoints`).
 
 mod error;
 mod reports;

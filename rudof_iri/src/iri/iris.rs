@@ -173,16 +173,8 @@ impl IriS {
         }
     }
 
-    /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it.
-    /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
-    #[cfg(not(target_family = "wasm"))]
-    pub fn dereference(&self, base: Option<&IriS>) -> Result<String, IriSError> {
-        use reqwest::blocking::Client;
-        use reqwest::header;
-        use reqwest::header::HeaderMap;
-        use reqwest::header::USER_AGENT;
-        use std::fs;
-
+    /// The URL to fetch when dereferencing this IRI, resolved against `base`.
+    fn dereference_url(&self, base: Option<&IriS>) -> Result<Url, IriSError> {
         let url = match base {
             Some(base_iri) => {
                 let base = Url::from_str(base_iri.as_str()).map_err(|e| IriSError::UrlParseError {
@@ -203,7 +195,20 @@ impl IriS {
                 error: e.to_string(),
             })?,
         };
+        Ok(url)
+    }
 
+    /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it.
+    /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
+    #[cfg(not(target_family = "wasm"))]
+    pub fn dereference(&self, base: Option<&IriS>) -> Result<String, IriSError> {
+        use reqwest::blocking::Client;
+        use reqwest::header;
+        use reqwest::header::HeaderMap;
+        use reqwest::header::USER_AGENT;
+        use std::fs;
+
+        let url = self.dereference_url(base)?;
         match url.scheme() {
             "file" => {
                 let path = url
@@ -240,10 +245,30 @@ impl IriS {
         }
     }
 
+    /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it.
+    ///
+    /// There is no file system nor blocking HTTP client on wasm: the IRI is
+    /// fetched with the function set with [`crate::set_dereferencer`], and
+    /// fails if there is none.
     #[cfg(target_family = "wasm")]
-    pub fn dereference(&self, _base: Option<&IriS>) -> Result<String, IriSError> {
-        Err(IriSError::ReqwestClientCreation {
-            error: String::from("rewquest is not enabled"),
+    pub fn dereference(&self, base: Option<&IriS>) -> Result<String, IriSError> {
+        let url = self.dereference_url(base)?;
+        if url.scheme() == "file" {
+            return Err(IriSError::DereferenceError {
+                url: url.to_string(),
+                error: String::from("there is no file system in WebAssembly"),
+            });
+        }
+        let dereferencer = crate::iri::dereferencer::get().ok_or_else(|| IriSError::DereferenceError {
+            url: url.to_string(),
+            error: String::from(
+                "HTTP requests are not available in this WebAssembly build (in @rudof/rudof, they are in \
+                 the `endpoints` build, from the asynchronous methods, e.g. readShexAsync)",
+            ),
+        })?;
+        dereferencer(&url).map_err(|error| IriSError::DereferenceError {
+            url: url.to_string(),
+            error,
         })
     }
 
