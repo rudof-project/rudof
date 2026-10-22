@@ -36,8 +36,8 @@ impl ServerHandler for RudofMcpService {
     // `enable_logging_with` is deprecated by SEP-2577; the protocol still
     // supports it and there is no replacement API, so it stays in use.
     #[allow(deprecated)]
-    fn get_info(&self) -> ServerInfo {
-        tracing::debug!("Generating ServerInfo");
+    fn get_info(&self) -> ServerConfig {
+        tracing::debug!("Generating ServerConfig");
 
         let mut prompts_capability = PromptsCapability::default();
         prompts_capability.list_changed = Some(false);
@@ -57,8 +57,8 @@ impl ServerHandler for RudofMcpService {
             .enable_completions_with(serde_json::Map::new())
             .build();
 
-        ServerInfo::new(capabilities)
-            .with_protocol_version(ProtocolVersion::LATEST)
+        ServerConfig::new(capabilities)
+            .with_protocol_version(ProtocolVersion::LATEST_WITH_INITIALIZE)
             .with_server_info(Implementation::from_build_env())
             .with_instructions(
                 "Rudof MCP server for RDF processing, SPARQL querying and graph validation using ShEx and SHACL.\n\

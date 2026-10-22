@@ -30,11 +30,10 @@ fn test_server_info_has_required_fields() {
     let service = RudofMcpService::new();
     let info = service.get_info();
 
-    // Protocol version should be the latest
     assert_eq!(
         info.protocol_version,
-        ProtocolVersion::LATEST,
-        "Protocol version should be the latest MCP version"
+        ProtocolVersion::LATEST_WITH_INITIALIZE,
+        "Protocol version should be the latest MCP version with an initialize handshake"
     );
 
     // Server info (implementation) must be present

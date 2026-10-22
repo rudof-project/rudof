@@ -325,13 +325,11 @@ reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls",
     "rustls-tls-native-roots",
 ] }
-rmcp = { version = "3.2", features = [
-    "client",
+rmcp = { version = "3.6", features = [
     "server",
     "transport-io",
     "transport-streamable-http-server",
 ] }
-rmcp-macros = "3.2"
 rudof_cli = { version = "0.3.31", path = "./rudof_cli" }
 rudof_config = { version = "0.3.31", path = "./rudof_config" }
 rudof_iri = { version = "0.3.31", path = "./rudof_iri" }
