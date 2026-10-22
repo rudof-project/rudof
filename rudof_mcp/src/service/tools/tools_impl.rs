@@ -13,7 +13,6 @@
 use crate::service::mcp_service::RudofMcpService;
 use rmcp::{
     ErrorData as McpError,
-    handler::server::router::tool::ToolRouter,
     handler::server::{tool::schema_for_output, wrapper::Parameters},
     model::CallToolResult,
     tool, tool_router,
@@ -30,7 +29,7 @@ use crate::service::tools::shex_tools_impl::*;
 use crate::service::tools::shex_validate_tools_impl::*;
 use crate::service::tools::version_tools_impl::*;
 
-#[tool_router]
+#[tool_router(vis = "pub(crate)")]
 impl RudofMcpService {
     // -------------------------------------------------------------------------
     // Data Management Tools
@@ -301,9 +300,4 @@ impl RudofMcpService {
     pub async fn manage_prefixes(&self, params: Parameters<ManagePrefixesRequest>) -> Result<CallToolResult, McpError> {
         manage_prefixes_impl(self, params).await
     }
-}
-
-/// Public wrapper to expose the generated router from the macro
-pub fn tool_router_public() -> ToolRouter<RudofMcpService> {
-    RudofMcpService::tool_router()
 }

@@ -17,9 +17,13 @@ use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler,
     handler::server::tool::ToolCallContext,
     model::*,
+    prompt_handler,
     service::{NotificationContext, RequestContext},
+    tool_handler,
 };
 
+#[tool_handler(router = self.tool_router)]
+#[prompt_handler(router = self.prompt_router)]
 impl ServerHandler for RudofMcpService {
     /// Returns server metadata including protocol version, capabilities, and implementation info.
     ///
@@ -76,34 +80,6 @@ impl ServerHandler for RudofMcpService {
                 - Check a schema without data: check_shex or show_shex (no load needed)\n\
                 ",
             )
-    }
-
-    /// Return a list of available tools using the generated ToolRouter.
-    async fn list_tools(
-        &self,
-        _request: Option<PaginatedRequestParams>,
-        _: RequestContext<RoleServer>,
-    ) -> Result<ListToolsResult, McpError> {
-        tracing::debug!("Listing available tools");
-
-        Ok(ListToolsResult::with_all_items(self.tool_router.list_all()))
-    }
-
-    /// Look a tool up by name, which is how the SDK validates `tools/call`
-    /// and how streamable-HTTP resolves schemas per request.
-    fn get_tool(&self, name: &str) -> Option<Tool> {
-        self.tool_router.get(name).cloned()
-    }
-
-    /// Return a list of available prompts using the generated PromptRouter.
-    async fn list_prompts(
-        &self,
-        _request: Option<PaginatedRequestParams>,
-        _: RequestContext<RoleServer>,
-    ) -> Result<ListPromptsResult, McpError> {
-        tracing::debug!("Listing available prompts");
-
-        Ok(ListPromptsResult::with_all_items(self.prompt_router.list_all()))
     }
 
     /// Return a list of available resources
@@ -257,20 +233,6 @@ impl ServerHandler for RudofMcpService {
             result
         })
         .await
-    }
-
-    // Construct a PromptContext and delegate to the generated router
-    async fn get_prompt(
-        &self,
-        request: GetPromptRequestParams,
-        context: RequestContext<RoleServer>,
-    ) -> Result<GetPromptResponse, McpError> {
-        tracing::debug!(prompt_name = %request.name, "Prompt retrieval requested");
-
-        let ctx = rmcp::handler::server::prompt::PromptContext::new(self, request.name, request.arguments, context);
-
-        let result = self.prompt_router.get_prompt(ctx).await?;
-        Ok(result)
     }
 
     // Handle completion requests for prompt/resource arguments

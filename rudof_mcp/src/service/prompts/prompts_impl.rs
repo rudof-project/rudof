@@ -1,8 +1,5 @@
 use rmcp::{
-    ErrorData as McpError,
-    handler::server::{router::prompt::PromptRouter, wrapper::Parameters},
-    model::GetPromptResult,
-    prompt, prompt_router,
+    ErrorData as McpError, handler::server::wrapper::Parameters, model::GetPromptResult, prompt, prompt_router,
 };
 
 use crate::service::mcp_service::RudofMcpService;
@@ -12,7 +9,7 @@ use crate::service::prompts::data_prompts_impl::*;
 use crate::service::prompts::node_prompts_impl::*;
 use crate::service::prompts::validation_prompts_impl::*;
 
-#[prompt_router]
+#[prompt_router(vis = "pub(crate)")]
 impl RudofMcpService {
     /// Interactive guide for exploring RDF node information
     #[prompt(
@@ -49,9 +46,4 @@ impl RudofMcpService {
     ) -> Result<GetPromptResult, McpError> {
         validation_guide_prompt_impl(Parameters(args)).await
     }
-}
-
-/// Public wrapper to expose the generated prompt router
-pub fn prompt_router_public() -> PromptRouter<RudofMcpService> {
-    RudofMcpService::prompt_router()
 }

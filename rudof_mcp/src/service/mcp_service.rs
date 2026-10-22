@@ -10,7 +10,7 @@ use crate::service::tools::helpers::{
     NODE_INFO_MODE_LIST, RDF_FORMAT_LIST, READER_MODES_LIST, RESULT_FORMAT_LIST, SHACL_FORMAT_LIST, SHEX_FORMAT_LIST,
     SPARQL_RESULT_FORMAT_LIST,
 };
-use crate::service::{logging::LogRateLimiter, prompts, state, tools};
+use crate::service::{logging::LogRateLimiter, state};
 // `LoggingLevel` is deprecated by SEP-2577; the protocol still supports
 // MCP logging and there is no replacement API, so it stays in use here.
 #[allow(deprecated)]
@@ -169,8 +169,8 @@ impl RudofMcpService {
 
         Ok(Self {
             rudof: Arc::new(Mutex::new(rudof)),
-            tool_router: tools::tool_router_public(),
-            prompt_router: prompts::prompt_router_public(),
+            tool_router: Self::tool_router(),
+            prompt_router: Self::prompt_router(),
             current_min_log_level: Arc::new(RwLock::new(None)),
             log_rate_limiter: Arc::new(Mutex::new(LogRateLimiter::default())),
             session_dir: Arc::new(RwLock::new(session_dir)),

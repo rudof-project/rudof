@@ -9,5 +9,3 @@ mod shex_tools_impl;
 mod shex_validate_tools_impl;
 mod tools_impl;
 mod version_tools_impl;
-
-pub use tools_impl::tool_router_public;
