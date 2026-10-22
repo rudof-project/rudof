@@ -373,28 +373,37 @@ impl Engine {
         self.hyp_touched = false;
 
         hyp.push(key.clone());
-        let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
-            hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
         let mut typing = RefTyping::new();
-        let candidates = self.dep(node, label, schema, rdf)?;
+        // AND/OR/NOT and references are checked lazily by `check_node_connective`,
+        // proving each component only when it's needed: proving every dependency
+        // up front would also follow (and, on an endpoint, query) the branches of an
+        // OR that already passed.
+        let lazy = schema
+            .find_shape_idx(label)
+            .is_some_and(|info| is_connective(info.expr()));
+        if !lazy {
+            let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
+                hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
+            let candidates = self.dep(node, label, schema, rdf)?;
 
-        if candidates.iter().any(|c| hyp_as_set.contains(c)) {
-            self.hyp_touched = true;
-        }
-
-        let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
-        for (n1, l1) in cleaned_candidates {
-            match self.prove(&n1, &l1, hyp, schema, rdf)? {
-                Either::Right(_reasons) => {
-                    typing.insert_passed(n1.clone(), l1);
-                },
-                Either::Left(errors) => {
-                    typing.insert_failed(n1.clone(), l1, errors);
-                },
+            if candidates.iter().any(|c| hyp_as_set.contains(c)) {
+                self.hyp_touched = true;
             }
-        }
-        for (n, l) in hyp_as_set.iter() {
-            typing.insert_passed(n.clone(), *l);
+
+            let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
+            for (n1, l1) in cleaned_candidates {
+                match self.prove(&n1, &l1, hyp, schema, rdf)? {
+                    Either::Right(_reasons) => {
+                        typing.insert_passed(n1.clone(), l1);
+                    },
+                    Either::Left(errors) => {
+                        typing.insert_failed(n1.clone(), l1, errors);
+                    },
+                }
+            }
+            for (n, l) in hyp_as_set.iter() {
+                typing.insert_passed(n.clone(), *l);
+            }
         }
         let result = self.check_node_idx(node, label, schema, rdf, &mut typing, hyp)?;
         hyp.pop();
@@ -449,7 +458,11 @@ impl Engine {
                 }
             } else {
                 let se = info.expr();
-                let result = self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?;
+                let result = if is_connective(se) {
+                    self.check_node_connective(node, se, schema, rdf, hyp)?
+                } else {
+                    self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?
+                };
                 /*tracing::debug!(
                     "Result of {node}@{idx} is: {}",
                     show_result(
@@ -533,6 +546,131 @@ impl Engine {
             node: Box::new(node.clone()),
             errors: ValidatorErrors::new(errors_collection),
         }]))
+    }
+
+    /// Checks `node` against an AND/OR/NOT or a reference (see [`is_connective`]),
+    /// proving each component on demand: an OR stops at the first branch that
+    /// passes and an AND at the first that fails, so the neighbourhood the other
+    /// components would need is never fetched. Components that need no data
+    /// (node constraints) or are already proved are tried first.
+    fn check_node_connective<R>(
+        &mut self,
+        node: &Node,
+        se: &ShapeExpr,
+        schema: &SchemaIR,
+        rdf: &R,
+        hyp: &mut Vec<(Node, ShapeLabelIdx)>,
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
+        match se {
+            ShapeExpr::ShapeAnd { exprs } => {
+                let mut reasons_collection = Vec::new();
+                for (_, e) in self.cheapest_first(node, exprs, schema) {
+                    match self.prove_component(node, &e, hyp, schema, rdf)? {
+                        Either::Left(errors) => {
+                            return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
+                                shape_expr: e,
+                                node: Box::new(node.clone()),
+                                errors: ValidatorErrors::new(errors),
+                            }]));
+                        },
+                        Either::Right(reasons) => reasons_collection.push(reasons),
+                    }
+                }
+                Ok(Either::Right(vec![Reason::ShapeAnd {
+                    node: node.clone(),
+                    se: Box::new(se.clone()),
+                    reasons: reasons_collection,
+                }]))
+            },
+            ShapeExpr::ShapeOr { exprs } => {
+                let mut errors_collection = Vec::new();
+                for (pos, e) in self.cheapest_first(node, exprs, schema) {
+                    match self.prove_component(node, &e, hyp, schema, rdf)? {
+                        Either::Left(errors) => errors_collection.push((pos, e, ValidatorErrors::new(errors))),
+                        Either::Right(reasons) => {
+                            return Ok(Either::Right(vec![Reason::ShapeOr {
+                                shape_expr: e,
+                                node: node.clone(),
+                                reasons: Reasons::new(reasons),
+                            }]));
+                        },
+                    }
+                }
+                // All branches failed: report them in the order of the schema
+                errors_collection.sort_by_key(|(pos, _, _)| *pos);
+                Ok(Either::Left(vec![ValidatorError::ShapeOrError {
+                    shape_expr: Box::new(se.clone()),
+                    node: Box::new(node.clone()),
+                    errors: errors_collection.into_iter().map(|(_, e, errs)| (e, errs)).collect(),
+                }]))
+            },
+            ShapeExpr::ShapeNot { expr } => match self.prove_component(node, expr, hyp, schema, rdf)? {
+                Either::Left(errors) => Ok(Either::Right(vec![Reason::ShapeNot {
+                    node: node.clone(),
+                    shape_expr: se.clone(),
+                    errors_evidences: ValidatorErrors::new(errors),
+                }])),
+                Either::Right(reasons) => Ok(Either::Left(vec![ValidatorError::ShapeNotError {
+                    node: Box::new(node.clone()),
+                    shape_expr: Box::new(se.clone()),
+                    reasons: Reasons::new(reasons),
+                }])),
+            },
+            ShapeExpr::Ref { idx } => self.prove_component(node, idx, hyp, schema, rdf),
+            _ => unreachable!("check_node_connective called on a non-connective shape expression"),
+        }
+    }
+
+    /// Proves `node@idx` as a component of a connective, with the same result
+    /// [`Self::check_node_ref`] gives for a component found in the typing. A pair
+    /// that is already being proved up the stack is assumed to hold, as `prove`
+    /// does for its dependencies.
+    fn prove_component<R>(
+        &mut self,
+        node: &Node,
+        idx: &ShapeLabelIdx,
+        hyp: &mut Vec<(Node, ShapeLabelIdx)>,
+        schema: &SchemaIR,
+        rdf: &R,
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
+        let key = (node.clone(), *idx);
+        let result = if hyp.contains(&key) {
+            self.hyp_touched = true;
+            Either::Right(Vec::new())
+        } else {
+            self.prove(node, idx, hyp, schema, rdf)?
+        };
+        match result {
+            Either::Right(_) => pass(Reason::ShapeRef {
+                node: node.clone(),
+                idx: *idx,
+            }),
+            Either::Left(errors) => fail(ValidatorError::ShapeRefFailed {
+                node: Box::new(node.clone()),
+                idx: *idx,
+                errors: ValidatorErrors::new(errors),
+            }),
+        }
+    }
+
+    /// The components of a connective with their position, those that need no
+    /// data from the graph first: node constraints and pairs already proved.
+    fn cheapest_first(&self, node: &Node, exprs: &[ShapeLabelIdx], schema: &SchemaIR) -> Vec<(usize, ShapeLabelIdx)> {
+        let mut ordered: Vec<_> = exprs.iter().copied().enumerate().collect();
+        ordered.sort_by_key(|(_, e)| {
+            let known = self.typing.get(&(node.clone(), *e)).is_some();
+            let no_data = schema
+                .find_shape_idx(e)
+                .is_some_and(|info| matches!(info.expr(), ShapeExpr::NodeConstraint(_) | ShapeExpr::Empty));
+            !(known || no_data)
+        });
+        ordered
     }
 
     pub(crate) fn check_node_shape_expr<R>(
@@ -1907,6 +2045,15 @@ fn extends_closure(schema: &SchemaIR, roots: &[ShapeLabelIdx]) -> Vec<ShapeLabel
         }
     }
     result
+}
+
+/// Whether `se` only combines other shapes (AND/OR/NOT/reference), so it can be
+/// checked without the neighbourhood of the node.
+fn is_connective(se: &ShapeExpr) -> bool {
+    matches!(
+        se,
+        ShapeExpr::ShapeAnd { .. } | ShapeExpr::ShapeOr { .. } | ShapeExpr::ShapeNot { .. } | ShapeExpr::Ref { .. }
+    )
 }
 
 fn pass(reason: Reason) -> Result<ValidationResult> {

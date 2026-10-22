@@ -729,3 +729,116 @@ fn test_validate_shex_endpoint_without_batching() {
     );
     assert_eq!(requests, 6);
 }
+
+/// A SPARQL endpoint on a local port answering every query with the `triples`
+/// (IRIs) whose subject and predicate the query mentions. Returns its URL.
+#[cfg(not(target_family = "wasm"))]
+fn serve_triples_endpoint(triples: Vec<(String, String, String)>) -> String {
+    use std::io::{BufRead, BufReader, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let mut stream = stream.unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut request_line = String::new();
+            reader.read_line(&mut request_line).unwrap();
+            let mut line = String::new();
+            while reader.read_line(&mut line).unwrap() > 0 && line != "\r\n" {
+                line.clear();
+            }
+            let target = request_line.split_whitespace().nth(1).unwrap();
+            let url = url::Url::parse(&format!("http://localhost{target}")).unwrap();
+            let query: String = url
+                .query_pairs()
+                .find(|(k, _)| k == "query")
+                .map(|(_, v)| v.into_owned())
+                .unwrap();
+            let bindings: Vec<String> = triples
+                .iter()
+                .filter(|(s, p, _)| query.contains(&format!("<{s}>")) && query.contains(&format!("<{p}>")))
+                .map(|(s, p, o)| {
+                    format!(
+                        r#"{{"s":{{"type":"uri","value":"{s}"}},"p":{{"type":"uri","value":"{p}"}},"o":{{"type":"uri","value":"{o}"}}}}"#
+                    )
+                })
+                .collect();
+            let body = format!(
+                r#"{{"head":{{"vars":["s","p","o"]}},"results":{{"bindings":[{}]}}}}"#,
+                bindings.join(",")
+            );
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://{addr}/sparql")
+}
+
+/// Validates `<q42>@shape` against a mock endpoint where `<q42> <p31> <q5>` and
+/// `<q5>` has a tree of 39 superclasses (`<p279>`), returning whether it
+/// conforms and the number of requests it took.
+#[cfg(not(target_family = "wasm"))]
+fn validate_instance_of_class_with_superclasses(shape: &str) -> (bool, u64) {
+    let ex = |local: &str| format!("http://example.org/{local}");
+    let mut triples = vec![(ex("q42"), ex("p31"), ex("q5"))];
+    let mut level = vec![ex("q5")];
+    for _ in 0..3 {
+        let mut next = Vec::new();
+        for class in &level {
+            for i in 0..3 {
+                let superclass = format!("{class}_{i}");
+                triples.push((class.clone(), ex("p279"), superclass.clone()));
+                next.push(superclass);
+            }
+        }
+        level = next;
+    }
+    let url = serve_triples_endpoint(triples);
+    let mut rudof = Rudof::new(RudofConfig::default());
+    rudof
+        .load_data()
+        .with_endpoint(&url)
+        .with_endpoint_limits(rudof_rdf::rdf_core::EndpointLimits::default().with_min_request_interval_ms(Some(0)))
+        .execute()
+        .unwrap();
+    let schema = InputSpec::str(
+        "<Person1> EXTRA <p31> { <p31> @<Human> }
+         <Human> [ <q5> ]
+         <Person2> EXTRA <p31> { <p31> @<HumanOrSubclass> }
+         <HumanOrSubclass> [ <q5> ] OR EXTRA <p279> { <p279> @<HumanOrSubclass> + }",
+    );
+    load_shex_schema(
+        &mut rudof,
+        &schema,
+        Some(&ShExFormat::ShExC),
+        Some("http://example.org/"),
+        None,
+    )
+    .unwrap();
+    let shapemap = InputSpec::str(&format!("<q42>@<{shape}>"));
+    load_shapemap(
+        &mut rudof,
+        &shapemap,
+        Some(&ShapeMapFormat::Compact),
+        Some("http://example.org/"),
+        Some("http://example.org/"),
+    )
+    .unwrap();
+
+    validate_shex(&mut rudof).unwrap();
+
+    let results = rudof.shex_validation_results.as_ref().unwrap();
+    let (_, _, status) = results.iter().next().unwrap();
+    (status.is_conformant(), rudof.endpoint_request_count())
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn test_validate_shex_endpoint_or_does_not_follow_the_branch_it_does_not_need() {
+    assert_eq!(validate_instance_of_class_with_superclasses("Person1"), (true, 1));
+    // <q5> is in [ <q5> ]: its superclasses are never asked for.
+    assert_eq!(validate_instance_of_class_with_superclasses("Person2"), (true, 1));
+}
