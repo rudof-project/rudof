@@ -359,8 +359,8 @@ pub async fn export_plantuml_impl(
 ///
 /// # Errors
 ///
-/// Returns a Tool Execution Error for unsupported image formats.
-/// Returns a Protocol Error for internal rendering failures.
+/// Returns a Tool Execution Error for unsupported image formats and for rendering
+/// failures, which usually mean PlantUML is not installed.
 pub async fn export_image_impl(
     service: &RudofMcpService,
     params: Parameters<ExportImageRequest>,
@@ -382,17 +382,14 @@ pub async fn export_image_impl(
 
     let mut v = Vec::new();
 
-    rudof
-        .serialize_data(&mut v)
-        .with_result_data_format(&format)
-        .execute()
-        .map_err(|e| {
-            internal_error(
-                "Serialization error",
-                e.to_string(),
-                Some(json!({"operation":"export_image_impl", "phase":"serialize_data"})),
-            )
-        })?;
+    if let Err(e) = rudof.serialize_data(&mut v).with_result_data_format(&format).execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to render the RDF graph as {}: {}", image_format, e),
+            "Load RDF data first if there is none. Rendering also needs PlantUML: set the PLANTUML \
+             environment variable to plantuml.jar, or call export_plantuml for the diagram source.",
+        )
+        .into_call_tool_result());
+    }
 
     let size_bytes = v.len();
     let base64_data = general_purpose::STANDARD.encode(&v);
@@ -424,4 +421,25 @@ pub async fn export_image_impl(
     result.structured_content = Some(structured);
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn export_image_reports_a_rendering_failure_as_a_tool_error() {
+        let service = RudofMcpService::new();
+
+        let result = export_image_impl(
+            &service,
+            Parameters(ExportImageRequest {
+                image_format: "svg".to_string(),
+            }),
+        )
+        .await
+        .expect("a rendering failure should be a tool error, not a protocol error");
+
+        assert_eq!(result.is_error, Some(true));
+    }
 }
