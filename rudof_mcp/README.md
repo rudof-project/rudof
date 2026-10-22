@@ -49,10 +49,10 @@ In Claude Desktop’s configuration file, add the following entry:
 
 ### HTTP Client
 
-To run the MCP server with `streamable-http` transport on port `8080` under the route `rdf`, allowing connections from localhost and a local network:
+To run the MCP server with `streamable-http` transport on port `8080` under the route `/rdf`, reachable on the local network as `rdf.example.com` and callable from one web app:
 
 ```bash
-rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route rdf --allowed-network 127.0.0.1 --allowed-network 192.168.1.0/24
+rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --allowed-host rdf.example.com --allowed-origin https://app.example.com:443
 ```
 
 > 💡 **Docker**: The server persists loaded RDF data across ephemeral container restarts by saving state to `/app/state/data.json`. Mount a Docker volume at `/app/state/` to preserve data between runs. Override the path with the `RUDOF_MCP_STATE_PATH` environment variable.
@@ -71,8 +71,7 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route rdf --a
 - For web clients and multi-client deployments
 - JSON-RPC over HTTP POST with Server-Sent Events (SSE) for streaming
 - Session management via the `MCP-Session-Id` header
-- Origin header validation and configurable IP allowlist for security
-- CORS support via `tower-http`
+- `Origin` and `Host` validation, configurable per deployment
 
 
 ## MCP Capabilities
@@ -174,12 +173,17 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route rdf --a
 
 ## Security
 
-The HTTP transport enforces:
+The HTTP transport enforces the MCP specification's requirements through `rmcp`, configured
+by `--allowed-origin` and `--allowed-host`:
 
-- **Origin validation** — Requests with invalid `Origin` headers return `403 Forbidden`
-- **Protocol version validation** — Invalid MCP protocol versions return `400 Bad Request`
-- **IP allowlist** — Requests from non-allowed networks are rejected
-- **Session management** — Sessions can be terminated via `HTTP DELETE`
+- **Origin validation**: a present `Origin` outside the allowlist returns `403 Forbidden`.
+  Defaults to loopback origins only; a request with no `Origin` header is not subject to the check
+- **Host validation** — guards against DNS rebinding. Loopback plus a concrete `--bind` address;
+  a wildcard bind needs `--allowed-host`
+- **Protocol version validation**: an unsupported `MCP-Protocol-Version` returns `400 Bad Request`
+- **Session management**: sessions can be terminated via `HTTP DELETE`
+
+CORS is not configured. Put a reverse proxy in front if browser clients need it.
 
 
 ## Dependencies
@@ -190,7 +194,6 @@ The HTTP transport enforces:
 | [`rmcp`](https://crates.io/crates/rmcp) | Rust MCP SDK — protocol and macro infrastructure |
 | [`axum`](https://crates.io/crates/axum) | HTTP server for Streamable HTTP transport |
 | [`tokio`](https://crates.io/crates/tokio) | Async runtime |
-| [`ipnetwork`](https://crates.io/crates/ipnetwork) | IP/CIDR parsing for the network allowlist |
 
 ---
 
