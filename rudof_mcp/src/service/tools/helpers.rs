@@ -241,9 +241,6 @@ pub const RDF_FORMAT_ENTRIES: &[FormatEntry] = &[
     },
 ];
 
-/// Supported RDF formats as a constant for documentation and hints.
-pub const RDF_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, nquads, n3";
-
 /// Supported ShEx formats as a slice for completions.
 pub const SHEX_FORMAT_LIST: &[&str] = &[
     "shexc", "shexj", "turtle", "ntriples", "rdfxml", "jsonld", "trig", "n3", "nquads", "internal", "simple", "json",
@@ -393,9 +390,6 @@ pub const SHACL_FORMATS: &str = "turtle, rdfxml, jsonld, trig, nquads, json";
 
 /// Supported ShapeMap formats as a constant for documentation and hints.
 pub const SHAPEMAP_FORMATS: &str = "compact";
-
-/// Supported image formats as a constant for documentation and hints.
-pub const IMAGE_FORMATS: &str = "svg, png";
 
 /// Supported SPARQL result formats as a constant for documentation and hints.
 pub const SPARQL_RESULT_FORMATS: &str = "internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads";
