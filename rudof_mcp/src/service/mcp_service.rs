@@ -29,12 +29,6 @@ use rudof_lib::{
 /// initializing the underlying Rudof library.
 #[derive(Debug)]
 pub enum ServiceCreationError {
-    /// Failed to create Rudof configuration.
-    ///
-    /// This usually indicates invalid environment settings or missing
-    /// configuration files.
-    ConfigError(String),
-
     /// Failed to initialize the Rudof instance.
     ///
     /// This may occur if there are issues loading default prefixes
@@ -45,7 +39,6 @@ pub enum ServiceCreationError {
 impl std::fmt::Display for ServiceCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ConfigError(e) => write!(f, "Failed to create Rudof configuration: {}", e),
             Self::RudofError(e) => write!(f, "Failed to initialize Rudof: {}", e),
         }
     }
@@ -137,8 +130,8 @@ impl RudofMcpService {
 
         // Attempt to load persisted state (for Docker ephemeral containers)
         if let Some(persisted_state) = state::load_state()
+            && persisted_state.has_rdf_data()
             && let Some(rdf_ntriples) = &persisted_state.rdf_data_ntriples
-            && !rdf_ntriples.is_empty()
         {
             tracing::info!(
                 "Restoring {} triples from persisted state",

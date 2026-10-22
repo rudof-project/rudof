@@ -20,21 +20,12 @@ rudof_lib.workspace = true
 schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-shex_ast.workspace = true
-rudof_rdf.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
-tower = "0.5"
-tower-http = { version = "0.5.2", features = ["trace", "cors"] }
 tracing.workspace = true
-uuid.workspace = true
 chrono.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 # The crate itself only needs the server side; the tests drive a real client.
 rmcp = { workspace = true, features = ["client"] }
-tokio-test.workspace = true
-tracing-test.workspace = true
-tower = { version = "0.5", features = ["util"] }
-http-body-util = "0.1"
 tempfile.workspace = true

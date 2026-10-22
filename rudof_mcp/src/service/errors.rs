@@ -13,7 +13,7 @@ use serde_json::{Map, Value, json};
 
 /// Categories of MCP errors with their corresponding JSON-RPC error codes.
 #[derive(Debug, Clone, Copy)]
-pub enum ErrorKind {
+enum ErrorKind {
     /// The requested resource URI was not found.
     ResourceNotFound,
 
