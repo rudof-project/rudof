@@ -103,6 +103,25 @@ mod tool_router_tests {
         }
     }
 
+    /// The specification recommends a closed object for a tool with no parameters.
+    #[test]
+    fn test_parameterless_tools_take_a_closed_object() {
+        let service = RudofMcpService::new();
+
+        for tool in service.tool_router.list_all() {
+            if !matches!(tool.name.as_ref(), "export_plantuml" | "get_rudof_version") {
+                continue;
+            }
+
+            assert_eq!(tool.input_schema["type"], "object", "tool '{}'", tool.name);
+            assert_eq!(
+                tool.input_schema["additionalProperties"], false,
+                "tool '{}' should accept no properties",
+                tool.name
+            );
+        }
+    }
+
     /// A depth of 0 traverses nothing, so the schema must rule it out.
     #[test]
     fn test_node_info_depth_must_be_positive() {

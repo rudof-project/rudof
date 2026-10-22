@@ -90,7 +90,11 @@ pub struct ExportPlantUmlResponse {
 }
 
 /// Empty request for tools that don't require parameters.
+///
+/// `deny_unknown_fields` makes the input schema a closed object, which is what
+/// the specification recommends for a tool that takes no parameters.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EmptyRequest {}
 
 /// Load RDF data from various sources into the server's datastore.
