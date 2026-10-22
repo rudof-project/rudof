@@ -214,7 +214,6 @@ mod tool_router_tests {
             "export_rdf_data",
             "node_info",
             "reset_session_state",
-            "change_directory",
             "get_rudof_version",
             "manage_prefixes",
         ];
