@@ -303,3 +303,102 @@ pub async fn check_shex_impl(
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SCHEMA: &str = "prefix : <http://example.org/>\n:Person { :name . ; :knows @:Person * }";
+
+    async fn show(show_statistics: bool, show_dependencies: bool) -> ShowShexResponse {
+        let service = RudofMcpService::new();
+        let result = show_shex_impl(
+            &service,
+            Parameters(ShowShexRequest {
+                schema: SCHEMA.to_string(),
+                schema_format: None,
+                base_schema: None,
+                shape: None,
+                result_schema_format: None,
+                show_statistics: Some(show_statistics),
+                show_dependencies: Some(show_dependencies),
+            }),
+        )
+        .await
+        .expect("serialization should not fail at the protocol level");
+
+        serde_json::from_value(result.structured_content.expect("the tool reports structured content"))
+            .expect("the structured content should be a ShowShexResponse")
+    }
+
+    async fn check(schema: &str) -> CheckShexResponse {
+        let service = RudofMcpService::new();
+        let result = check_shex_impl(
+            &service,
+            Parameters(CheckShexRequest {
+                schema: schema.to_string(),
+                schema_format: None,
+                base_schema: None,
+            }),
+        )
+        .await
+        .expect("checking should not fail at the protocol level");
+
+        assert_ne!(
+            result.is_error,
+            Some(true),
+            "a malformed schema is this tool's answer, not a tool error"
+        );
+        serde_json::from_value(result.structured_content.expect("the tool reports structured content"))
+            .expect("the structured content should be a CheckShexResponse")
+    }
+
+    #[tokio::test]
+    async fn the_schema_comes_back_on_its_own_by_default() {
+        let response = show(false, false).await;
+
+        assert!(response.schema.contains(":Person"));
+        assert!(response.statistics.is_none());
+        assert!(response.dependencies.is_none());
+        assert!(
+            !response.schema.contains("Statistics:") && !response.schema.contains("Dependencies:"),
+            "the sections are no longer concatenated into the schema"
+        );
+    }
+
+    #[tokio::test]
+    async fn the_statistics_and_dependencies_each_get_their_own_field() {
+        let response = show(true, true).await;
+
+        assert!(
+            response
+                .statistics
+                .expect("statistics were asked for")
+                .contains("Shapes"),
+            "the statistics list the shapes the schema defines"
+        );
+        assert!(
+            response
+                .dependencies
+                .expect("dependencies were asked for")
+                .contains("http://example.org/Person"),
+            ":Person depends on itself through :knows"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_well_formed_schema_is_reported_as_such() {
+        let response = check(SCHEMA).await;
+
+        assert!(response.well_formed);
+        assert!(response.report.contains("valid"));
+    }
+
+    #[tokio::test]
+    async fn a_malformed_schema_is_an_answer_rather_than_an_error() {
+        let response = check("prefix : <http://example.org/>\n:Person { :name").await;
+
+        assert!(!response.well_formed);
+        assert!(!response.report.is_empty(), "the parser's complaint reaches the caller");
+    }
+}

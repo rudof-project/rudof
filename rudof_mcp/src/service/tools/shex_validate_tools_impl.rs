@@ -327,3 +327,77 @@ pub async fn validate_shex_impl(
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_lib::formats::InputSpec;
+
+    const SCHEMA: &str = "prefix : <http://example.org/>\n:Person { :name . }";
+
+    #[tokio::test]
+    async fn each_shapemap_entry_reports_its_node_shape_and_status() {
+        let service = RudofMcpService::new();
+        service
+            .rudof
+            .lock()
+            .await
+            .load_data()
+            .with_data(&[InputSpec::str(
+                r#"prefix : <http://example.org/>
+                   :alice :name "Alice" .
+                   :bob   :age  23 ."#,
+            )])
+            .execute()
+            .expect("the test data should load");
+
+        let result = validate_shex_impl(
+            &service,
+            Parameters(ValidateShexRequest {
+                schema: SCHEMA.to_string(),
+                schema_format: None,
+                base_schema: None,
+                base_data: None,
+                maybe_node: None,
+                maybe_shape: None,
+                shapemap: Some(":bob@:Person, :alice@:Person".to_string()),
+                result_format: None,
+                sort_by: None,
+                strict_iris: None,
+                external_resolvers: None,
+            }),
+        )
+        .await
+        .expect("validation should not fail at the protocol level");
+
+        let response: ValidateShexResponse =
+            serde_json::from_value(result.structured_content.expect("the tool reports structured content"))
+                .expect("the structured content should be a ValidateShexResponse");
+
+        assert!(!response.conforms, ":bob has no :name");
+        assert_eq!(response.counts.conformant, 1);
+        assert_eq!(response.counts.non_conformant, 1);
+        assert_eq!(response.counts.pending, 0);
+        assert_eq!(response.counts.inconsistent, 0);
+
+        let nodes: Vec<String> = response
+            .entries
+            .iter()
+            .map(|entry| entry.node.as_object().to_string())
+            .collect();
+        assert_eq!(
+            nodes,
+            ["http://example.org/alice", "http://example.org/bob"],
+            "the entries follow sort_by, not the order the shapemap listed them"
+        );
+
+        let alice = &response.entries[0];
+        assert_eq!(alice.shape.to_string(), "http://example.org/Person");
+        assert!(alice.status.is_conformant());
+        assert!(
+            !alice.status.reason().is_empty(),
+            "the validator's reason reaches the caller"
+        );
+        assert!(response.entries[1].status.is_non_conformant());
+    }
+}

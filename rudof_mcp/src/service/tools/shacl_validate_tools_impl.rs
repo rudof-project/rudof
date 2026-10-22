@@ -219,3 +219,103 @@ pub async fn validate_shacl_impl(
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_lib::formats::InputSpec;
+    use rudof_lib::types::Object;
+
+    const SHAPES_AND_DATA: &str = r#"
+        prefix :    <http://example.org/>
+        prefix sh:  <http://www.w3.org/ns/shacl#>
+        prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        :alice :age "old" .
+        :bob   :age 23 .
+
+        :AgeShape a sh:NodeShape ;
+          sh:targetSubjectsOf :age ;
+          sh:property [ sh:path :age ; sh:datatype xsd:integer ] .
+    "#;
+
+    async fn validate(service: &RudofMcpService, data: &str) -> ValidateShaclResponse {
+        service
+            .rudof
+            .lock()
+            .await
+            .load_data()
+            .with_data(&[InputSpec::str(data)])
+            .execute()
+            .expect("the test data should load");
+
+        let result = validate_shacl_impl(
+            service,
+            Parameters(ValidateShaclRequest {
+                shapes: None,
+                shapes_format: None,
+                base: None,
+                mode: None,
+                result_format: None,
+                sort_by: None,
+            }),
+        )
+        .await
+        .expect("validation should not fail at the protocol level");
+
+        serde_json::from_value(result.structured_content.expect("the tool reports structured content"))
+            .expect("the structured content should be a ValidateShaclResponse")
+    }
+
+    #[tokio::test]
+    async fn a_violation_carries_its_focus_node_path_and_value() {
+        let service = RudofMcpService::new();
+        let response = validate(&service, SHAPES_AND_DATA).await;
+
+        assert!(!response.conforms);
+        assert_eq!(response.results.len(), 1, "only :alice has a non-integer age");
+        assert_eq!(
+            response.counts_by_severity.len(),
+            1,
+            "every result of this report is a violation"
+        );
+        assert_eq!(response.counts_by_severity[0].severity, ShaclSeverity::Violation);
+        assert_eq!(response.counts_by_severity[0].count, 1);
+
+        let violation = &response.results[0];
+        assert_eq!(violation.focus_node().to_string(), "http://example.org/alice");
+        assert_eq!(
+            violation.path().and_then(|path| path.pred()).map(|iri| iri.as_str()),
+            Some("http://example.org/age")
+        );
+        assert_eq!(
+            violation.value(),
+            Some(&Object::str("old")),
+            "the offending value keeps its lexical form instead of being rendered"
+        );
+    }
+
+    #[tokio::test]
+    async fn conforming_data_reports_no_results() {
+        let service = RudofMcpService::new();
+        let response = validate(
+            &service,
+            r#"
+            prefix :    <http://example.org/>
+            prefix sh:  <http://www.w3.org/ns/shacl#>
+            prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+            :bob :age 23 .
+
+            :AgeShape a sh:NodeShape ;
+              sh:targetSubjectsOf :age ;
+              sh:property [ sh:path :age ; sh:datatype xsd:integer ] .
+            "#,
+        )
+        .await;
+
+        assert!(response.conforms);
+        assert!(response.results.is_empty());
+        assert!(response.counts_by_severity.is_empty());
+    }
+}

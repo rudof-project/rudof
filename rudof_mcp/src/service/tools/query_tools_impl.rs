@@ -57,6 +57,19 @@ pub struct QueryExecutionResponse {
     pub result_size_bytes: usize,
 }
 
+/// The typed half of a query result: the bindings of a SELECT, or the answer of an ASK.
+/// A CONSTRUCT has neither, and reaches the caller as the rendered graph.
+fn query_outcome(results: &QueryResult) -> Result<(Option<Bindings>, Option<bool>), String> {
+    match results {
+        QueryResult::Select(solutions) => {
+            let bindings = Bindings::try_from(solutions).map_err(|e| e.to_string())?;
+            Ok((Some(bindings), None))
+        },
+        QueryResult::Ask(answer) => Ok((None, Some(*answer))),
+        QueryResult::Construct(_) => Ok((None, None)),
+    }
+}
+
 /// Generate a SPARQL query from natural language using rmcp sampling.
 ///
 /// Uses the MCP sampling capability to request LLM assistance in
@@ -241,20 +254,13 @@ pub async fn execute_sparql_query_impl(
         )
     })?;
     let query_type = query_results.kind();
-    let (bindings, boolean) = match query_results {
-        QueryResult::Select(solutions) => {
-            let bindings = Bindings::try_from(solutions).map_err(|e| {
-                internal_error(
-                    "Query execution error",
-                    e.to_string(),
-                    Some(json!({"operation":"execute_sparql_query_impl", "phase":"qualify_bindings"})),
-                )
-            })?;
-            (Some(bindings), None)
-        },
-        QueryResult::Ask(answer) => (None, Some(*answer)),
-        QueryResult::Construct(_) => (None, None),
-    };
+    let (bindings, boolean) = query_outcome(query_results).map_err(|e| {
+        internal_error(
+            "Query execution error",
+            e,
+            Some(json!({"operation":"execute_sparql_query_impl", "phase":"qualify_bindings"})),
+        )
+    })?;
 
     let mut output_buffer = Cursor::new(Vec::new());
 
@@ -307,4 +313,101 @@ pub async fn execute_sparql_query_impl(
     result.structured_content = Some(structured);
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_lib::types::{Object, QueryResultKind};
+    use rudof_lib::{Rudof, RudofConfig};
+
+    /// Runs `query` over a fixed graph and hands back what the tool would report.
+    ///
+    /// `execute_sparql_query_impl` itself needs a `Peer`, which rmcp keeps crate-private,
+    /// so these drive the result shaping rather than the tool call.
+    fn run(query: &str) -> (QueryResultKind, Option<Bindings>, Option<bool>) {
+        let mut rudof = Rudof::new(RudofConfig::default());
+        rudof
+            .load_data()
+            .with_data(&[InputSpec::str(
+                r#"prefix : <http://example.org/>
+                   :alice :name "Alice"@en ; :knows :bob .
+                   :bob   :name "Bob" ."#,
+            )])
+            .execute()
+            .expect("the test data should load");
+
+        rudof
+            .load_sparql_query(&InputSpec::Str(query.to_string()))
+            .execute()
+            .expect("the query should parse");
+        rudof.run_query().execute().expect("the query should run");
+
+        let results = rudof.query_results().expect("the query leaves results behind");
+        let (bindings, boolean) = query_outcome(results).expect("the terms should qualify");
+        (results.kind(), bindings, boolean)
+    }
+
+    #[test]
+    fn a_select_reports_its_rows_keyed_by_variable() {
+        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
+               select ?person ?name where { ?person :name ?name } order by ?person"#);
+
+        assert_eq!(kind, QueryResultKind::Select);
+        assert_eq!(boolean, None);
+
+        let bindings = bindings.expect("a SELECT reports bindings");
+        assert_eq!(bindings.variables(), ["person", "name"]);
+        assert_eq!(bindings.count(), 2);
+
+        let alice = bindings
+            .rows()
+            .iter()
+            .find(|row| row.get("person").map(|term| term.to_string()) == Some("http://example.org/alice".to_string()))
+            .expect("one row binds ?person to :alice");
+        match alice.get("name") {
+            Some(Object::Literal(literal)) => {
+                assert_eq!(literal.lexical_form(), "Alice");
+                assert_eq!(
+                    literal.lang().map(|lang| lang.as_str().to_string()),
+                    Some("en".to_string())
+                );
+            },
+            other => panic!("?name should bind a language-tagged literal, not {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_unbound_variable_is_absent_from_its_row() {
+        let (_, bindings, _) = run(r#"prefix : <http://example.org/>
+               select ?person ?nickname where { ?person :name ?name optional { ?person :nick ?nickname } }"#);
+
+        let bindings = bindings.expect("a SELECT reports bindings");
+        assert_eq!(bindings.variables(), ["person", "nickname"]);
+        assert!(
+            bindings.rows().iter().all(|row| !row.contains_key("nickname")),
+            "nothing in the data binds ?nickname"
+        );
+        assert!(bindings.rows().iter().all(|row| row.contains_key("person")));
+    }
+
+    #[test]
+    fn an_ask_reports_its_answer() {
+        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
+               ask { :alice :knows :bob }"#);
+
+        assert_eq!(kind, QueryResultKind::Ask);
+        assert_eq!(boolean, Some(true));
+        assert!(bindings.is_none());
+    }
+
+    #[test]
+    fn a_construct_reports_neither() {
+        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
+               construct { ?person :label ?name } where { ?person :name ?name }"#);
+
+        assert_eq!(kind, QueryResultKind::Construct);
+        assert!(bindings.is_none());
+        assert!(boolean.is_none());
+    }
 }

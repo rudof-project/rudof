@@ -211,3 +211,100 @@ pub async fn node_info_impl(
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_lib::formats::InputSpec;
+    use rudof_lib::types::Object;
+
+    async fn inspect(node: &str, mode: Option<NodeModeParam>) -> NodeInfoResponse {
+        let service = RudofMcpService::new();
+        service
+            .rudof
+            .lock()
+            .await
+            .load_data()
+            .with_data(&[InputSpec::str(
+                r#"prefix : <http://example.org/>
+                   :alice :name "Alice"@en ; :knows :bob .
+                   :bob   :knows :alice ."#,
+            )])
+            .execute()
+            .expect("the test data should load");
+
+        let result = node_info_impl(
+            &service,
+            Parameters(NodeInfoRequest {
+                node: node.to_string(),
+                predicates: None,
+                depth: None,
+                mode,
+                strict_iris: None,
+            }),
+        )
+        .await
+        .expect("inspection should not fail at the protocol level");
+
+        serde_json::from_value(result.structured_content.expect("the tool reports structured content"))
+            .expect("the structured content should be a NodeInfoResponse")
+    }
+
+    #[tokio::test]
+    async fn an_arc_keeps_the_language_tag_of_its_literal() {
+        let response = inspect(":alice", None).await;
+
+        let name = response
+            .outgoing_arcs
+            .iter()
+            .find(|arc| arc.predicate.as_str() == "http://example.org/name")
+            .expect(":alice has a :name arc");
+
+        // The rendered tree writes a literal as `"Alice"@en`; the arc carries the lexical
+        // form and the tag apart, which is what the glyph scraping used to lose.
+        match &name.neighbor {
+            Object::Literal(literal) => {
+                assert_eq!(literal.lexical_form(), "Alice");
+                assert_eq!(
+                    literal.lang().map(|lang| lang.as_str().to_string()),
+                    Some("en".to_string())
+                );
+            },
+            other => panic!("the :name arc should reach a literal, not {other}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn the_arcs_are_split_by_direction_and_counted() {
+        let response = inspect(":alice", None).await;
+
+        assert_eq!(response.outgoing_arcs.len(), 2);
+        assert_eq!(response.incoming_arcs.len(), 1);
+        assert!(
+            response
+                .outgoing_arcs
+                .iter()
+                .all(|arc| arc.direction == ArcDirection::Outgoing)
+        );
+        assert!(
+            response
+                .incoming_arcs
+                .iter()
+                .all(|arc| arc.direction == ArcDirection::Incoming)
+        );
+
+        assert_eq!(response.stats.outgoing_arcs_count, 2);
+        assert_eq!(response.stats.outgoing_predicates_count, 2);
+        assert_eq!(response.stats.incoming_arcs_count, 1);
+        assert_eq!(response.stats.unique_incoming_sources_count, 1);
+    }
+
+    #[tokio::test]
+    async fn outgoing_mode_leaves_the_incoming_arcs_out() {
+        let response = inspect(":alice", Some(NodeModeParam::Outgoing)).await;
+
+        assert_eq!(response.outgoing_arcs.len(), 2);
+        assert!(response.incoming_arcs.is_empty());
+        assert_eq!(response.stats.incoming_arcs_count, 0);
+    }
+}
