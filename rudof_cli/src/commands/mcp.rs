@@ -28,10 +28,11 @@ impl Command for McpCommand {
     fn execute(&self, _ctx: &mut CommandContext) -> Result<()> {
         let mcp_config = McpConfig {
             transport: self.args.transport,
-            bind_address: Some(self.args.bind_address.to_string()),
-            port: Some(self.args.port),
-            route_path: Some(self.args.route_path.to_string()),
-            allowed_networks: Some(self.args.allowed_networks.clone()),
+            bind_address: self.args.bind_address.clone(),
+            port: self.args.port,
+            route_path: self.args.route_path.clone(),
+            allowed_origins: self.args.allowed_origins.clone(),
+            allowed_hosts: self.args.allowed_hosts.clone(),
         };
 
         run_mcp(mcp_config)?;

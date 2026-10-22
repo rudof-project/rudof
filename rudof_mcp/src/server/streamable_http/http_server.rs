@@ -1,96 +1,72 @@
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
-use anyhow::Result;
-use axum::{
-    Router,
-    http::{HeaderMap, StatusCode},
-    response::IntoResponse,
-    routing::{any_service, delete},
-};
+use anyhow::{Context, Result};
+use axum::{Router, routing::any_service};
 use rmcp::transport::streamable_http_server::{
-    SessionManager, StreamableHttpService, session::local::LocalSessionManager,
+    StreamableHttpService, session::local::LocalSessionManager, tower::StreamableHttpServerConfig,
 };
+use tokio_util::sync::CancellationToken;
 
-use super::middleware::{OriginConfig, with_guards};
+use crate::server::server_impl::{DEFAULT_ALLOWED_ORIGINS, McpConfig};
 use crate::service::RudofMcpService;
 
-/// Run MCP server using HTTP with Server-Sent Events (SSE) transport.
+/// Run MCP server using the Streamable HTTP transport.
 /// This transport is ideal for:
 /// - Web-based MCP clients
 /// - Remote connections over HTTP/HTTPS
 /// - Multiple concurrent client connections
 /// - Network-based integrations
 ///
-/// # Security Features (per MCP spec 2025-11-25)
-/// - Origin header validation: If present and invalid, returns HTTP 403 Forbidden
-/// - MCP protocol version validation: Invalid/unsupported returns HTTP 400 Bad Request
-/// - Localhost-only binding by default (127.0.0.1, not 0.0.0.0)
-/// - Session management with explicit termination support
-///
-/// # Protocol (MCP 2025-11-25)
-/// - JSON-RPC over HTTP POST (single request/notification/response per POST)
-/// - Server-Sent Events for real-time streaming
-/// - Session management with MCP-Session-Id header
-/// - Supports backwards compatibility with 2025-06-18 and 2025-03-26
+/// # Security
+/// rmcp performs the checks the MCP specification requires on every request:
+/// `Origin` validation (403 when present and not allowed), `Host` validation
+/// against DNS rebinding (loopback by default), `MCP-Protocol-Version`
+/// validation against the versions this server supports (400 when unsupported),
+/// and session routing including explicit `DELETE` termination. They are
+/// configured here.
 ///
 /// # Note on CORS
 /// CORS is not configured here. If you need CORS for browser-based clients,
 /// configure it in a reverse proxy (Nginx, Caddy, etc.) for better flexibility.
-///
-/// # Arguments
-/// * `bind_address` - Address to bind the HTTP server to (e.g., "127.0.0.1", "0.0.0.0", "::1"). Default: "127.0.0.1" for security
-/// * `port` - Port to bind the HTTP server to
-/// * `route_path` - Path for the MCP endpoint (e.g., "/mcp")
-/// * `allowed_networks` - List of allowed IP addresses or CIDR ranges (e.g., ["127.0.0.1", "192.168.1.0/24"]).
-///   If empty or None, defaults to localhost only
-pub async fn run_mcp_http(
-    bind_address: &str,
-    port: u16,
-    route_path: &str,
-    allowed_networks: Option<Vec<String>>,
-) -> Result<()> {
-    // Format bind address and canonical URI
-    let bind_addr = format_bind_address(bind_address, port);
-    let canonical_uri = format_canonical_uri(bind_address, port, route_path);
+pub async fn run_mcp_http(config: &McpConfig) -> Result<()> {
+    let socket_addr = resolve_socket_addr(&config.bind_address, config.port)?;
 
-    // Configure allowed origins
-    let origin_config = match allowed_networks {
-        Some(networks) if !networks.is_empty() => {
-            OriginConfig::new(networks).map_err(|e| anyhow::anyhow!("Invalid network configuration: {}", e))?
-        },
-        _ => {
-            tracing::info!("No custom networks specified, using localhost-only configuration");
-            OriginConfig::localhost_only()
-        },
+    let allowed_origins = if config.allowed_origins.is_empty() {
+        DEFAULT_ALLOWED_ORIGINS
+            .iter()
+            .map(|origin| (*origin).to_string())
+            .collect()
+    } else {
+        config.allowed_origins.clone()
     };
+    let allowed_hosts = allowed_hosts(config);
 
-    let session_manager = Arc::new(LocalSessionManager::default());
+    tracing::debug!(?allowed_origins, ?allowed_hosts, "configured streamable-http guards");
 
-    let mcp_service_factory = move || Ok(RudofMcpService::new());
+    let cancellation_token = CancellationToken::new();
+    let http_config = StreamableHttpServerConfig::default()
+        .with_allowed_origins(allowed_origins)
+        .with_allowed_hosts(allowed_hosts)
+        .with_cancellation_token(cancellation_token.clone());
 
-    let rmcp_service = StreamableHttpService::new(mcp_service_factory, session_manager.clone(), Default::default());
+    let rmcp_service = StreamableHttpService::new(
+        || Ok(RudofMcpService::new()),
+        Arc::new(LocalSessionManager::default()),
+        http_config,
+    );
 
-    // Build routes
-    let router = Router::new()
-        // MCP session endpoint with DELETE handler
-        .route(
-            route_path,
-            delete({
-                let sm = session_manager.clone();
-                move |headers| handle_delete_session(headers, sm.clone())
-            })
-            .fallback_service(any_service(rmcp_service)),
-        );
+    let router = Router::new().route(&config.route_path, any_service(rmcp_service));
 
-    // Apply protocol and origin guards with configured networks
-    let guarded_router = with_guards(router, origin_config);
+    let listener = std::net::TcpListener::bind(socket_addr)
+        .with_context(|| format!("failed to bind the MCP HTTP server to {socket_addr}"))?;
+    let server = axum_server::Server::from_tcp(listener).serve(router.into_make_service());
 
-    let listener = std::net::TcpListener::bind(&bind_addr)?;
-    let server = axum_server::Server::from_tcp(listener).serve(guarded_router.into_make_service());
+    tracing::info!(
+        "MCP HTTP server listening on {}",
+        canonical_uri(socket_addr, &config.route_path)
+    );
 
-    tracing::info!("MCP HTTP server listening on {}", canonical_uri);
-
-    // Graceful shutdown handling
     tokio::select! {
         result = server => {
             if let Err(e) = result {
@@ -98,77 +74,116 @@ pub async fn run_mcp_http(
             }
         }
         _ = tokio::signal::ctrl_c() => {
-            tracing::debug!("Shutdown signal received, stopping HTTP server...");
+            tracing::debug!("Shutdown signal received, terminating active sessions...");
+            cancellation_token.cancel();
         }
     }
 
     Ok(())
 }
 
-/// Handler for explicit session termination (HTTP DELETE).
+/// The `Host` authorities to accept, on top of rmcp's loopback default.
 ///
-/// According to the MCP specification (2025-11-25):
-/// - Clients that no longer need a session SHOULD send HTTP DELETE with MCP-Session-Id header
-/// - The server MAY respond with HTTP 405 Method Not Allowed if it doesn't allow session termination
-/// - The server MUST respond:
-///   - `204 No Content` if the session was terminated successfully
-///   - `404 Not Found` if the session was not found or already expired
-///   - `400 Bad Request` if the header is missing or invalid
-async fn handle_delete_session(headers: HeaderMap, session_manager: Arc<LocalSessionManager>) -> impl IntoResponse {
-    match headers.get("Mcp-Session-Id").and_then(|v| v.to_str().ok()) {
-        Some(id) => {
-            let id_arc = Arc::from(id.to_string());
-            match session_manager.close_session(&id_arc).await {
-                Ok(()) => {
-                    tracing::info!(session_id = %id, "Session terminated successfully");
-                    (StatusCode::NO_CONTENT, "").into_response()
-                },
-                Err(e) => {
-                    tracing::error!(session_id = %id, error = %e, "Session not found or already expired");
-                    (StatusCode::NOT_FOUND, "Session not found or already expired").into_response()
-                },
+/// A bind address that is a concrete address is added, since that is how
+/// clients will reach the server. A wildcard bind cannot be resolved to the
+/// authority clients will use, so it needs `--allowed-host`.
+fn allowed_hosts(config: &McpConfig) -> Vec<String> {
+    let mut hosts: Vec<String> = StreamableHttpServerConfig::default().allowed_hosts;
+    hosts.extend(config.allowed_hosts.iter().cloned());
+
+    match config.bind_address.parse::<IpAddr>() {
+        Ok(address) if address.is_unspecified() => {
+            if config.allowed_hosts.is_empty() {
+                tracing::warn!(
+                    bind_address = %config.bind_address,
+                    "binding to all interfaces, but only loopback Host headers are accepted; \
+                     pass --allowed-host for the name or address clients will use"
+                );
             }
         },
-        None => {
-            tracing::error!("Missing Mcp-Session-Id header in DELETE request");
-            (StatusCode::BAD_REQUEST, "Missing Mcp-Session-Id header").into_response()
-        },
+        _ => hosts.push(config.bind_address.clone()),
     }
+
+    hosts.sort_unstable();
+    hosts.dedup();
+    hosts
 }
 
-/// Helper for format a bind address with port
-///
-/// # Arguments
-/// * `address` - The IP address or hostname (e.g., "127.0.0.1", "::1", "0.0.0.0")
-/// * `port` - The port number
-fn format_bind_address(address: &str, port: u16) -> String {
-    if address.contains(':') {
-        // IPv6 address - needs brackets
-        format!("[{}]:{}", address, port)
-    } else {
-        // IPv4 address or hostname
-        format!("{}:{}", address, port)
+/// Resolve the bind address and port into a socket address.
+fn resolve_socket_addr(address: &str, port: u16) -> Result<SocketAddr> {
+    if let Ok(ip) = address.parse::<IpAddr>() {
+        return Ok(SocketAddr::new(ip, port));
     }
+
+    (address, port)
+        .to_socket_addrs()
+        .with_context(|| format!("failed to resolve the bind address '{address}'"))?
+        .next()
+        .with_context(|| format!("the bind address '{address}' resolved to no socket address"))
 }
 
-/// Helper for format a canonical URI
-///
-/// # Arguments
-/// * `address` - The IP address or hostname
-/// * `port` - The port number
-/// * `route_path` - The route path (e.g., "/rudof")
-fn format_canonical_uri(address: &str, port: u16, route_path: &str) -> String {
-    if address == "0.0.0.0" {
-        // When binding to all interfaces, show localhost in the URI for clarity
-        format!("http://127.0.0.1:{}{}", port, route_path)
-    } else if address == "::" {
-        // IPv6 all interfaces - show localhost IPv6
-        format!("http://[::1]:{}{}", port, route_path)
-    } else if address.contains(':') {
-        // IPv6 address - needs brackets
-        format!("http://[{}]:{}{}", address, port, route_path)
+/// The URI to show the user, with a wildcard bind reported as loopback.
+fn canonical_uri(socket_addr: SocketAddr, route_path: &str) -> String {
+    let reachable = if socket_addr.ip().is_unspecified() {
+        match socket_addr.ip() {
+            IpAddr::V4(_) => SocketAddr::new(IpAddr::V4(std::net::Ipv4Addr::LOCALHOST), socket_addr.port()),
+            IpAddr::V6(_) => SocketAddr::new(IpAddr::V6(std::net::Ipv6Addr::LOCALHOST), socket_addr.port()),
+        }
     } else {
-        // IPv4 address or hostname
-        format!("http://{}:{}{}", address, port, route_path)
+        socket_addr
+    };
+
+    format!("http://{reachable}{route_path}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config_with(bind_address: &str, allowed_hosts: &[&str]) -> McpConfig {
+        McpConfig {
+            bind_address: bind_address.to_string(),
+            allowed_hosts: allowed_hosts.iter().map(|host| (*host).to_string()).collect(),
+            ..McpConfig::default()
+        }
+    }
+
+    #[test]
+    fn loopback_hosts_are_always_accepted() {
+        let hosts = allowed_hosts(&config_with("127.0.0.1", &[]));
+
+        assert!(hosts.contains(&"localhost".to_string()));
+        assert!(hosts.contains(&"127.0.0.1".to_string()));
+        assert!(hosts.contains(&"::1".to_string()));
+    }
+
+    #[test]
+    fn a_concrete_bind_address_is_accepted_as_a_host() {
+        let hosts = allowed_hosts(&config_with("10.0.0.5", &[]));
+
+        assert!(hosts.contains(&"10.0.0.5".to_string()));
+    }
+
+    #[test]
+    fn a_wildcard_bind_address_is_not_accepted_as_a_host() {
+        let hosts = allowed_hosts(&config_with("0.0.0.0", &["example.com"]));
+
+        assert!(!hosts.contains(&"0.0.0.0".to_string()));
+        assert!(hosts.contains(&"example.com".to_string()));
+    }
+
+    #[test]
+    fn ipv6_bind_addresses_resolve_without_manual_bracketing() {
+        let socket_addr = resolve_socket_addr("::1", 8000).expect("::1 should resolve");
+
+        assert_eq!(socket_addr.to_string(), "[::1]:8000");
+        assert_eq!(canonical_uri(socket_addr, "/rudof"), "http://[::1]:8000/rudof");
+    }
+
+    #[test]
+    fn a_wildcard_bind_is_reported_as_loopback() {
+        let socket_addr = resolve_socket_addr("0.0.0.0", 8080).expect("0.0.0.0 should resolve");
+
+        assert_eq!(canonical_uri(socket_addr, "/rudof"), "http://127.0.0.1:8080/rudof");
     }
 }
