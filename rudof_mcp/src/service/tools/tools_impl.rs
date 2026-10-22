@@ -232,7 +232,7 @@ impl RudofMcpService {
     #[tool(
         name = "reset_session_state",
         output_schema = schema_for_output::<ResetSessionStateResponse>(),
-        description = "Clear session state loaded so far in this MCP session. With no `targets` (or [\"all\"]), clears everything (RDF data, ShEx/SHACL/pgschema/DCTap schemas, shapemap, query/validation results, ...) — the same as starting a fresh session. With one or more target names, clears only that state, leaving the rest untouched. Valid targets: data, shex, shex-validation, shacl, shacl-validation, pgschema, pgschema-validation, shapemap, dctap, service, query, sparql, typemap, rdf-config.",
+        description = "Clear session state loaded so far in this MCP session. With no `targets` (or [\"all\"]), clears everything (RDF data, ShEx/SHACL/pgschema/DCTap schemas, shapemap, query/validation results, ...) — the same as starting a fresh session. With one or more targets, clears only that state, leaving the rest untouched.",
         annotations(
             title = "Reset Session State",
             read_only_hint = false,
@@ -289,7 +289,7 @@ impl RudofMcpService {
     #[tool(
         name = "manage_prefixes",
         output_schema = schema_for_output::<ManagePrefixesResponse>(),
-        description = "Show or manage the session's default prefix declarations -- the prefixes assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes, independently of whatever prefixes a loaded resource already declares. Mirrors the `prefixes` command in the rudof shell. `action` defaults to \"list\" (no other fields needed). \"add\" requires `alias` and `iri`. \"remove\" requires `alias`. \"rename\" and \"copy\" require `alias` (the existing one) and `new_alias`. Always returns the full, current list of default prefixes after the action.",
+        description = "Show or manage the session's default prefix declarations -- the prefixes assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes, independently of whatever prefixes a loaded resource already declares. Mirrors the `prefixes` command in the rudof shell. `action` defaults to \"list\", which needs no other field; each other action documents the fields it needs. Always returns the full, current list of default prefixes after the action.",
         annotations(
             title = "Show/Manage Default Prefixes",
             read_only_hint = false,
