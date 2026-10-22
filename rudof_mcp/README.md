@@ -1,218 +1,40 @@
-<div align="center">
+# `rudof_mcp`
 
-# Rudof MCP Server
+`rudof_mcp` exposes [`rudof_lib`](https://crates.io/crates/rudof_lib) as a
+[Model Context Protocol](https://modelcontextprotocol.io/) server, so any MCP client can load RDF
+data, query it with SPARQL, validate it against ShEx or SHACL, inspect nodes and export the graph
+to other serializations or to a diagram. It is built on the [`rmcp`](https://crates.io/crates/rmcp)
+SDK.
 
-A [Model Context Protocol](https://modelcontextprotocol.io/) server for RDF validation, querying, and data transformation
+The server is reached through the CLI:
 
-</div>
+```sh
+rudof mcp                                   # stdio, the default
+rudof mcp --transport streamable-http        # HTTP on 127.0.0.1:8000/rudof
+```
 
----
-
-## Overview
-
-`rudof_mcp` exposes the [Rudof](https://crates.io/crates/rudof_lib) library to any MCP-compatible AI client. It supports Shape Expressions (ShEx), SHACL, SPARQL, and multiple RDF serialization formats, making it straightforward to integrate semantic web operations into AI workflows.
-
-### What You Can Do
-
-- **Load RDF data** — From URLs, local files, raw text, or SPARQL endpoints
-- **Validate** — Against ShEx and SHACL schemas
-- **Query** — Execute SPARQL SELECT, CONSTRUCT, and ASK
-- **Inspect** — Explore outgoing/incoming arcs for any RDF node
-- **Visualize** — Generate PlantUML diagrams and SVG/PNG images
-- **Export** — Serialize data to Turtle, N-Triples, RDF/XML, JSON-LD, and more
-
-
-## Quick Start
-
-### Claude Desktop (Stdio)
-
-In Claude Desktop’s configuration file, add the following entry:
+A client that spawns it as a subprocess needs the command and, for the image export tools, the path
+to `plantuml.jar`:
 
 ```json
 {
   "mcpServers": {
     "rudof": {
-        "command": "/path/to/rudof.exe",
-        "args": [ "mcp" ],
-        "env": {
-            "PLANTUML": "/path/to/plantuml.jar"
-        },
-        "enabled": true
+      "command": "/path/to/rudof",
+      "args": ["mcp"],
+      "env": { "PLANTUML": "/path/to/plantuml.jar" },
+      "enabled": true
     }
   }
 }
 ```
 
-> ⚠️ **Visualization support**: The `export_image` tool require PlantUML. To enable them:
-> 1. Download [plantuml.jar](https://github.com/plantuml/plantuml/releases) and place it at a fixed path (e.g. `C:\ProgramData\PlantUML\plantuml.jar`).
-> 2. Set the `PLANTUML` environment variable in the `env` block above to point to that path.
+## Documentation
 
-### HTTP Client
-
-To run the MCP server with `streamable-http` transport on port `8080` under the route `/rdf`, reachable on the local network as `rdf.example.com` and callable from one web app:
-
-```bash
-rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --allowed-host rdf.example.com --allowed-origin https://app.example.com:443
-```
-
-> 💡 **Docker**: The server persists loaded RDF data across ephemeral container restarts by saving state to `/app/state/data.json`. Mount a Docker volume at `/app/state/` to preserve data between runs. Override the path with the `RUDOF_MCP_STATE_PATH` environment variable.
-
-
-## Transport Types
-
-### Stdio
-
-- For CLI tools, IDE extensions (VS Code, IntelliJ, etc.), and Docker
-- The MCP client spawns the server as a subprocess
-- Communication via stdin/stdout using JSON-RPC
-
-### Streamable HTTP
-
-- For web clients and multi-client deployments
-- JSON-RPC over HTTP POST with Server-Sent Events (SSE) for streaming
-- Session management via the `MCP-Session-Id` header
-- `Origin` and `Host` validation, configurable per deployment
-
-
-## MCP Capabilities
-
-| Capability | Description |
-|------------|-------------|
-| **Tools** | 14 tools for validation, querying, data, and session operations |
-| **Prompts** | Guided templates for common validation workflows |
-| **Resources** | Current RDF data in multiple formats, and the external-resolver kinds |
-| **Resource Templates** | URI template for accessing RDF data in any supported format |
-| **Logging** | MCP `notifications/message` with RFC 5424 level filtering |
-| **Completions** | Argument completions for prompts and resources |
-
-
-## Tools
-
-### Data Management
-
-| Tool | Description |
-|------|-------------|
-| `load_rdf_data_from_sources` | Load RDF data from URLs, files, raw text, or SPARQL endpoints |
-| `export_rdf_data` | Serialize RDF data to Turtle, N-Triples, RDF/XML, JSON-LD, etc. |
-| `export_plantuml` | Generate a PlantUML diagram of the RDF graph |
-| `export_image` | Generate an SVG or PNG visualization |
-
-### Node Inspection
-
-| Tool | Description |
-|------|-------------|
-| `node_info` | Show outgoing and incoming arcs for an RDF node |
-
-### SPARQL
-
-| Tool | Description |
-|------|-------------|
-| `execute_sparql_query` | Execute SELECT, CONSTRUCT, or ASK queries |
-
-### ShEx
-
-| Tool | Description |
-|------|-------------|
-| `validate_shex` | Validate the loaded RDF data against a ShEx schema |
-| `check_shex` | Check whether a ShEx schema is syntactically well-formed |
-| `show_shex` | Serialize a ShEx schema, with optional statistics and dependencies |
-
-### SHACL
-
-| Tool | Description |
-|------|-------------|
-| `validate_shacl` | Validate the loaded RDF data against a SHACL schema |
-
-### Session Management
-
-| Tool | Description |
-|------|-------------|
-| `reset_session_state` | Clear session state (all, or specific targets like data/shex/shacl/...) |
-| `change_directory` | Get or change this session's virtual working directory used to resolve relative file paths |
-| `get_rudof_version` | Report the rudof version this MCP server is running |
-| `manage_prefixes` | Show or manage the session's default prefixes (list/add/remove/rename/copy) |
-
-
-## Tool Parameters and Results
-
-Every parameter with a fixed set of values — an RDF format, a validation mode, a sort
-order — declares those values in the tool's input schema, so a client reads them from
-`tools/list` instead of guessing.
-
-Results come back in both halves of an MCP tool result. `structuredContent` carries the
-facts against the tool's output schema, with RDF terms typed rather than rendered: an IRI,
-a blank node, a literal with its datatype and language tag, or an RDF 1.2 triple term.
-`content` carries a short summary, and the rendered report keeps its own field in
-`structuredContent`.
-
-| Tool | What `structuredContent` carries |
-|------|----------------------------------|
-| `validate_shacl` | `conforms`, `counts_by_severity`, one entry per result with its focus node, severity, constraint component, path, value, source shape, messages and nested `sh:detail` results, and the rendered `report` |
-| `validate_shex` | `conforms`, `counts` by status, one `entries` item per `(node, shape)` pair with the validator's reason, and the rendered `report` |
-| `execute_sparql_query` | `query_type`, plus `bindings` (variables and one row per solution, keyed by variable name) for a SELECT or `boolean` for an ASK |
-| `node_info` | `outgoing_arcs` and `incoming_arcs`, each arc with its direction, depth, predicate and the term at its far end, plus `stats` |
-| `show_shex` | `schema`, and `statistics` / `dependencies` when asked for |
-| `check_shex` | `well_formed` and the checker's `report`; a schema that is not well-formed is an answer, not a tool error |
-
-
-## Prompts
-
-| Prompt | Description |
-|--------|-------------|
-| `explore_rdf_node` | Guide for exploring RDF node relationships |
-| `analyze_rdf_data` | Comprehensive data structure and quality analysis |
-| `validation_guide` | Step-by-step ShEx/SHACL validation workflow |
-
-
-## Resources
-
-### Data
-
-| URI | Description |
-|-----|-------------|
-| `rudof://current-data` | Currently loaded RDF data in Turtle format |
-
-### Resource Templates
-
-| URI Template | Description |
-|--------------|-------------|
-| `rudof://current-data/{format}` | Currently loaded RDF data in the specified format. `{format}` must be one of: `turtle`, `ntriples`, `rdfxml`, `jsonld`, `trig`, `nquads`, `n3` |
-
-### ShEx
-
-| URI | Description |
-|-----|-------------|
-| `rudof://shex/external-resolvers` | External-shape resolver kinds accepted by `validate_shex` |
-
-
-## Security
-
-The HTTP transport enforces the MCP specification's requirements through `rmcp`, configured
-by `--allowed-origin` and `--allowed-host`:
-
-- **Origin validation**: a present `Origin` outside the allowlist returns `403 Forbidden`.
-  Defaults to loopback origins only; a request with no `Origin` header is not subject to the check
-- **Host validation** — guards against DNS rebinding. Loopback plus a concrete `--bind` address;
-  a wildcard bind needs `--allowed-host`
-- **Protocol version validation**: an unsupported `MCP-Protocol-Version` returns `400 Bad Request`
-- **Session management**: sessions can be terminated via `HTTP DELETE`
-
-CORS is not configured. Put a reverse proxy in front if browser clients need it.
-
-
-## Dependencies
-
-| Crate | Role |
-|-------|------|
-| [`rudof_lib`](https://crates.io/crates/rudof_lib) | Core RDF engine (ShEx, SHACL, SPARQL) |
-| [`rmcp`](https://crates.io/crates/rmcp) | Rust MCP SDK — protocol and macro infrastructure |
-| [`axum`](https://crates.io/crates/axum) | HTTP server for Streamable HTTP transport |
-| [`tokio`](https://crates.io/crates/tokio) | Async runtime |
-
----
-
-<div align="center">
-
-*For more information about the Model Context Protocol, visit the [official MCP documentation](https://modelcontextprotocol.io/).*
-
-</div>
+- [Exporting rudof as an MCP server](https://rudof-project.github.io/rudof/cli_usage/mcp.html):
+  transports, options, security settings, the tools, prompts and resources on offer, and how to
+  connect a client. Start here if you want to use the server.
+- [`rudof_mcp` internals](https://rudof-project.github.io/rudof/internals/crates/rudof_mcp.html):
+  how the crate is laid out, how a tool is declared, and how to embed the server in your own
+  program.
+- [API reference](https://docs.rs/rudof_mcp).
