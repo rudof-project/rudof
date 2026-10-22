@@ -32,6 +32,8 @@ uuid.workspace = true
 chrono.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+# The crate itself only needs the server side; the tests drive a real client.
+rmcp = { workspace = true, features = ["client"] }
 tokio-test.workspace = true
 tracing-test.workspace = true
 tower = { version = "0.5", features = ["util"] }

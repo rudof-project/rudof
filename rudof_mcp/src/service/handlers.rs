@@ -193,7 +193,7 @@ impl ServerHandler for RudofMcpService {
     #[allow(deprecated)]
     async fn initialize(
         &self,
-        _request: InitializeRequestParams,
+        request: InitializeRequestParams,
         context: RequestContext<RoleServer>,
     ) -> Result<InitializeResult, McpError> {
         tracing::debug!("Initializing MCP server");
@@ -210,9 +210,11 @@ impl ServerHandler for RudofMcpService {
             *min_level = Some(LoggingLevel::Info);
         }
 
-        tracing::debug!("MCP server initialized successfully");
+        let result = self.negotiate_initialize(&request)?;
 
-        Ok(self.get_info())
+        tracing::debug!(protocol_version = ?result.protocol_version, "MCP server initialized successfully");
+
+        Ok(result)
     }
 
     /// Handle dynamic log level changes from the client
