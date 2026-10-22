@@ -9,7 +9,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
-## [Unreleased]
+## 0.3.34
 ### Added
 - `show_shex` takes `show_statistics` and `show_dependencies`, each reported on its own ([#909](https://github.com/rudof-project/rudof/issues/909)).
 - `rudof_lib::types` re-exports `Object` and `IriOrBlankNode`, and adds `Bindings`, the SELECT solutions with every term qualified as an `Object` ([#909](https://github.com/rudof-project/rudof/issues/909)).
