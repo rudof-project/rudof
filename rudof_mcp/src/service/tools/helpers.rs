@@ -441,21 +441,21 @@ pub const SPARQL_QUERY_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
         value: "turtle",
         mime_type: Some("text/turtle"),
         extensions: &[".ttl"],
-        description: "Terse RDF Triple Language (for CONSTRUCT/DESCRIBE)",
+        description: "Terse RDF Triple Language (for CONSTRUCT)",
     },
     FormatEntry {
         name: "N-Triples",
         value: "ntriples",
         mime_type: Some("application/n-triples"),
         extensions: &[".nt"],
-        description: "N-Triples format (for CONSTRUCT/DESCRIBE)",
+        description: "N-Triples format (for CONSTRUCT)",
     },
     FormatEntry {
         name: "RDF/XML",
         value: "rdfxml",
         mime_type: Some("application/rdf+xml"),
         extensions: &[".rdf"],
-        description: "RDF/XML format (for CONSTRUCT/DESCRIBE)",
+        description: "RDF/XML format (for CONSTRUCT)",
     },
     FormatEntry {
         name: "TriG",
@@ -765,11 +765,6 @@ pub const SPARQL_QUERY_TYPE_ENTRIES: &[QueryTypeEntry] = &[
         name: "ASK",
         description: "Returns a boolean indicating whether a query pattern matches",
         example: "ASK WHERE { ?s ?p ?o }",
-    },
-    QueryTypeEntry {
-        name: "DESCRIBE",
-        description: "Returns an RDF graph describing resources",
-        example: "DESCRIBE <http://example.org/resource>",
     },
 ];
 

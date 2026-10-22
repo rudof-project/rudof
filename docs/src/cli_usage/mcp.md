@@ -68,7 +68,7 @@ The MCP server provides 14 tools organized by functionality:
 
 | Tool | Description |
 |------|-------------|
-| `execute_sparql_query` | Execute SPARQL queries (SELECT, CONSTRUCT, ASK, DESCRIBE) |
+| `execute_sparql_query` | Execute SPARQL queries (SELECT, CONSTRUCT, ASK) |
 
 **ShEx Tools:**
 

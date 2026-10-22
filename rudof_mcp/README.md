@@ -16,7 +16,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io/) server for RDF vali
 
 - **Load RDF data** — From URLs, local files, raw text, or SPARQL endpoints
 - **Validate** — Against ShEx and SHACL schemas
-- **Query** — Execute SPARQL SELECT, CONSTRUCT, ASK, and DESCRIBE
+- **Query** — Execute SPARQL SELECT, CONSTRUCT, and ASK
 - **Inspect** — Explore outgoing/incoming arcs for any RDF node
 - **Visualize** — Generate PlantUML diagrams and SVG/PNG images
 - **Export** — Serialize data to Turtle, N-Triples, RDF/XML, JSON-LD, and more
@@ -107,7 +107,7 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --
 
 | Tool | Description |
 |------|-------------|
-| `execute_sparql_query` | Execute SELECT, CONSTRUCT, ASK, or DESCRIBE queries |
+| `execute_sparql_query` | Execute SELECT, CONSTRUCT, or ASK queries |
 
 ### ShEx
 
