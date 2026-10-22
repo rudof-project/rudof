@@ -1,4 +1,5 @@
 use super::helpers::*;
+use super::params::{ResultShaclValidationFormatParam, ShaclFormatParam, ShaclModeParam, ShaclSortByParam};
 use crate::service::{errors::*, mcp_service::RudofMcpService};
 use rmcp::{
     ErrorData as McpError,
@@ -10,7 +11,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
-use std::str::FromStr;
 
 /// Request parameters for SHACL validation.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -19,22 +19,20 @@ pub struct ValidateShaclRequest {
     /// When omitted, shapes embedded in the loaded RDF data are used.
     pub shapes: Option<String>,
 
-    /// Format of the shapes graph. One of: turtle (default), ntriples, rdfxml, jsonld, trig, nquads, n3.
-    pub shapes_format: Option<String>,
+    /// Format of the shapes graph. Default: turtle.
+    pub shapes_format: Option<ShaclFormatParam>,
 
     /// Base IRI for resolving relative IRIs in the shapes. Example: "http://example.org/"
     pub base: Option<String>,
 
-    /// SHACL validation engine. One of: native (default), sparql.
-    pub mode: Option<String>,
+    /// SHACL validation engine. Default: native.
+    pub mode: Option<ShaclModeParam>,
 
-    /// Output format for the validation report.
-    /// One of: details (default), compact, minimal, csv, turtle, ntriples, rdfxml, trig, n3, nquads.
-    /// Note: json is listed but not yet implemented.
-    pub result_format: Option<String>,
+    /// Output format for the validation report. Default: details.
+    pub result_format: Option<ResultShaclValidationFormatParam>,
 
-    /// Sort order for results. One of: severity (default), node, component, value, path, sourceshape, details.
-    pub sort_by: Option<String>,
+    /// Sort order for results. Default: severity.
+    pub sort_by: Option<ShaclSortByParam>,
 }
 
 /// Response containing SHACL validation results.
@@ -43,9 +41,9 @@ pub struct ValidateShaclResponse {
     /// Validation result output
     pub results: String,
     /// Result format used
-    pub result_format: String,
+    pub result_format: ResultShaclValidationFormatParam,
     /// Sort order applied
-    pub sort_by: String,
+    pub sort_by: ShaclSortByParam,
     /// Size of results in bytes
     pub result_size_bytes: usize,
 }
@@ -55,12 +53,8 @@ pub struct ValidateShaclResponse {
 /// # Errors
 ///
 /// Returns a Tool Execution Error when:
-/// - Shape format is invalid
-/// - Base IRI is malformed
-/// - Reader mode is invalid
-/// - Validation mode is invalid
-/// - Result format is invalid
-/// - Sort order is invalid
+/// - The shapes cannot be resolved or parsed
+/// - Validation fails to run
 ///
 /// Returns a Protocol Error for internal validation failures.
 pub async fn validate_shacl_impl(
@@ -77,11 +71,6 @@ pub async fn validate_shacl_impl(
     let mut rudof = service.rudof.lock().await;
     let session_dir = service.session_dir.read().await.clone();
 
-    let shape_format_hint = format!("Supported values: {}", SHACL_FORMATS);
-    let mode_hint = "Supported values: native, sparql";
-    let result_format_hint = format!("Supported values: {}", SHACL_RESULT_FORMATS);
-    let sort_by_hint = format!("Supported values: {}", SHACL_SORT_BY_MODES);
-
     let parsed_shapes = match parse_optional_value_with_hint(
         shapes.as_deref(),
         "shapes",
@@ -92,59 +81,18 @@ pub async fn validate_shacl_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    let parsed_shapes_format = match parse_optional_value_with_hint(
-        shapes_format.as_deref(),
-        "shapes format",
-        &shape_format_hint,
-        ShaclFormat::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
+    let parsed_shapes_format: ShaclFormat = shapes_format.unwrap_or(ShaclFormatParam::Turtle).into();
+    let parsed_mode: ShaclValidationMode = mode.unwrap_or(ShaclModeParam::Native).into();
+    let result_format = result_format.unwrap_or(ResultShaclValidationFormatParam::Details);
+    let parsed_result_format: ResultShaclValidationFormat = result_format.into();
+    let sort_by = sort_by.unwrap_or(ShaclSortByParam::Severity);
+    let parsed_sort_by: ShaclValidationSortByMode = sort_by.into();
 
-    let parsed_mode = match parse_optional_value_with_hint(
-        mode.as_deref(),
-        "validation mode",
-        mode_hint,
-        ShaclValidationMode::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_result_format = match parse_optional_value_with_hint(
-        result_format.as_deref(),
-        "result format",
-        &result_format_hint,
-        ResultShaclValidationFormat::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_sort_by = match parse_optional_value_with_hint(
-        sort_by.as_deref(),
-        "sort_by",
-        &sort_by_hint,
-        ShaclValidationSortByMode::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    // Guard: JSON result format is not yet implemented for SHACL validation.
-    if matches!(parsed_result_format, Some(ResultShaclValidationFormat::Json)) {
-        return Ok(
-            unsupported_format_error("SHACL validation result", "json", SHACL_RESULT_FORMATS).into_call_tool_result(),
-        );
-    }
-
-    let mut loading_shacl_schema = rudof.load_shacl_shapes();
+    let mut loading_shacl_schema = rudof
+        .load_shacl_shapes()
+        .with_shacl_schema_format(&parsed_shapes_format);
     if let Some(shape) = &parsed_shapes {
         loading_shacl_schema = loading_shacl_schema.with_shacl_schema(shape)
-    }
-    if let Some(shape_format) = &parsed_shapes_format {
-        loading_shacl_schema = loading_shacl_schema.with_shacl_schema_format(shape_format);
     }
     if let Some(base_shape) = base.as_deref() {
         loading_shacl_schema = loading_shacl_schema.with_base(base_shape);
@@ -157,10 +105,7 @@ pub async fn validate_shacl_impl(
         .into_call_tool_result());
     }
 
-    let mut validation = rudof.validate_shacl();
-    if let Some(mode) = &parsed_mode {
-        validation = validation.with_shacl_validation_mode(mode);
-    }
+    let validation = rudof.validate_shacl().with_shacl_validation_mode(&parsed_mode);
     if let Err(e) = validation.execute() {
         return Ok(ToolExecutionError::with_hint(
             format!("SHACL validation failed: {}", e),
@@ -170,13 +115,10 @@ pub async fn validate_shacl_impl(
     }
 
     let mut output_buffer = Cursor::new(Vec::new());
-    let mut serialization = rudof.serialize_shacl_validation_results(&mut output_buffer);
-    if let Some(result_format) = &parsed_result_format {
-        serialization = serialization.with_result_shacl_validation_format(result_format);
-    }
-    if let Some(sort_by) = &parsed_sort_by {
-        serialization = serialization.with_shacl_validation_sort_order_mode(sort_by);
-    }
+    let serialization = rudof
+        .serialize_shacl_validation_results(&mut output_buffer)
+        .with_result_shacl_validation_format(&parsed_result_format)
+        .with_shacl_validation_sort_order_mode(&parsed_sort_by);
     serialization.execute().map_err(|e| {
         internal_error(
             "Shacl validation error",
@@ -197,20 +139,10 @@ pub async fn validate_shacl_impl(
     // Calculate metadata
     let result_size_bytes = output_str.len();
 
-    let result_format_str = if let Some(format) = &parsed_result_format {
-        format.to_string()
-    } else {
-        "details".to_string()
-    };
-    let sort_by_str = if let Some(sort_by) = &parsed_sort_by {
-        sort_by.to_string()
-    } else {
-        "severity".to_string()
-    };
     let response = ValidateShaclResponse {
         results: output_str.clone(),
-        result_format: result_format_str.clone(),
-        sort_by: sort_by_str.clone(),
+        result_format,
+        sort_by,
         result_size_bytes,
     };
 
@@ -221,7 +153,7 @@ pub async fn validate_shacl_impl(
         **Result Format:** {}\n\
         **Sort By:** {}\n\
         **Result Size:** {} bytes\n",
-        result_format_str, sort_by_str, result_size_bytes
+        result_format, sort_by, result_size_bytes
     );
 
     let mut result = CallToolResult::success(vec![

@@ -13,9 +13,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
-use std::str::FromStr;
 
 use super::helpers::*;
+use super::params::ResultQueryFormatParam;
 
 /// Request parameters for executing a SPARQL query.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -29,10 +29,9 @@ pub struct ExecuteSparqlQueryRequest {
     /// Mutually exclusive with `query` — provide exactly one.
     pub query_natural_language: Option<String>,
 
-    /// Output format for results.
-    /// SELECT queries only support "internal".
-    /// CONSTRUCT/ASK support: internal (default), turtle, ntriples, rdfxml, trig, n3, nquads.
-    pub result_format: Option<String>,
+    /// Output format for results. SELECT queries only support "internal".
+    /// Default: internal.
+    pub result_format: Option<ResultQueryFormatParam>,
 }
 
 /// Response containing query execution results.
@@ -43,7 +42,7 @@ pub struct QueryExecutionResponse {
     /// Query results as a string
     pub results: String,
     /// Format used for the results
-    pub result_format: String,
+    pub result_format: ResultQueryFormatParam,
     /// Size of the results in bytes
     pub result_size_bytes: usize,
 }
@@ -145,7 +144,7 @@ async fn generate_sparql_from_natural_language(
 /// - Both `query` and `query_natural_language` are provided
 /// - Neither `query` nor `query_natural_language` is provided
 /// - The query type cannot be determined
-/// - The result format is invalid
+/// - The result format is not supported for the query type
 ///
 /// Returns a Protocol Error for internal execution failures.
 pub async fn execute_sparql_query_impl(
@@ -182,20 +181,8 @@ pub async fn execute_sparql_query_impl(
         },
     };
 
-    // Parse result format - return Tool Execution Error for invalid format
-    let mut result_format_parsed = None;
-    if let Some(result_format) = result_format {
-        match ResultQueryFormat::from_str(&result_format) {
-            Ok(fmt) => result_format_parsed = Some(fmt),
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid result format '{}': {}", result_format, e),
-                    format!("Supported formats: {}", SPARQL_RESULT_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        }
-    }
+    let result_format = result_format.unwrap_or(ResultQueryFormatParam::Internal);
+    let parsed_result_format: ResultQueryFormat = result_format.into();
 
     // Guard: DESCRIBE is not yet implemented in rudof_lib.
     let query_type = sparql_query_type(&sparql_query);
@@ -208,12 +195,9 @@ pub async fn execute_sparql_query_impl(
     }
 
     // Guard: SELECT queries only support the 'internal' result format.
-    if matches!(query_type, Some("SELECT"))
-        && let Some(fmt) = &result_format_parsed
-        && !matches!(fmt, ResultQueryFormat::Internal)
-    {
+    if matches!(query_type, Some("SELECT")) && result_format != ResultQueryFormatParam::Internal {
         return Ok(ToolExecutionError::with_hint(
-            format!("Format '{}' is not yet supported for SELECT queries", fmt),
+            format!("Format '{}' is not yet supported for SELECT queries", result_format),
             "SELECT queries only support 'internal' format. Omit result_format or use 'internal'.",
         )
         .into_call_tool_result());
@@ -241,10 +225,9 @@ pub async fn execute_sparql_query_impl(
 
     let mut output_buffer = Cursor::new(Vec::new());
 
-    let mut serialization = rudof.serialize_query_results(&mut output_buffer);
-    if let Some(result_format_parsed) = &result_format_parsed {
-        serialization = serialization.with_result_query_format(result_format_parsed);
-    }
+    let serialization = rudof
+        .serialize_query_results(&mut output_buffer)
+        .with_result_query_format(&parsed_result_format);
     serialization.execute().map_err(|e| {
         internal_error(
             "Query results serialization error",
@@ -265,14 +248,9 @@ pub async fn execute_sparql_query_impl(
     // Calculate metadata
     let result_size_bytes = output_str.len();
 
-    let result_format_str = if let Some(fmt) = result_format_parsed {
-        fmt.to_string()
-    } else {
-        "internal".to_string()
-    };
     let response = QueryExecutionResponse {
         query: sparql_query.clone(),
-        result_format: result_format_str.clone(),
+        result_format,
         results: output_str.clone(),
         result_size_bytes,
     };
@@ -281,12 +259,12 @@ pub async fn execute_sparql_query_impl(
 
     let summary = format!(
         "SPARQL query executed.\nResult format: {}\nResult size: {} bytes",
-        result_format_str, result_size_bytes
+        result_format, result_size_bytes
     );
 
     let query_display = code_block_preview("sparql", &sparql_query, 600);
 
-    let results_language = match result_format_str.to_lowercase().as_str() {
+    let results_language = match result_format.as_str() {
         "csv" => "csv",
         "jsonld" | "json" => "json",
         "turtle" | "n3" => "turtle",

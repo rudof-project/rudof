@@ -333,10 +333,6 @@ pub const SHEX_FORMAT_ENTRIES: &[FormatEntry] = &[
     },
 ];
 
-/// Supported ShEx formats as a constant for documentation and hints.
-pub const SHEX_FORMATS: &str =
-    "shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple";
-
 /// Supported SHACL formats as a slice for completions.
 pub const SHACL_FORMAT_LIST: &[&str] = &["turtle", "jsonld", "rdfxml", "trig", "nquads", "json"];
 
@@ -384,15 +380,6 @@ pub const SHACL_FORMAT_ENTRIES: &[FormatEntry] = &[
         description: "Plain JSON (when applicable)",
     },
 ];
-
-/// Supported SHACL formats as a constant for documentation and hints.
-pub const SHACL_FORMATS: &str = "turtle, rdfxml, jsonld, trig, nquads, json";
-
-/// Supported ShapeMap formats as a constant for documentation and hints.
-pub const SHAPEMAP_FORMATS: &str = "compact";
-
-/// Supported SPARQL result formats as a constant for documentation and hints.
-pub const SPARQL_RESULT_FORMATS: &str = "internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads";
 
 pub const SPARQL_QUERY_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
     FormatEntry {
@@ -624,19 +611,6 @@ pub const SHACL_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
     },
 ];
 
-/// Supported ShEx schema input formats (loading).
-pub const SHEX_INPUT_FORMATS_SUPPORTED: &str = "shexc, shexj, turtle, ntriples, rdfxml, nquads";
-
-/// Supported ShEx schema output formats (serialization).
-pub const SHEX_OUTPUT_FORMATS_SUPPORTED: &str =
-    "shexc, shexj, json, jsonld, internal, turtle, ntriples, rdfxml, trig, n3, nquads";
-
-/// Supported ShEx validation result formats as a constant.
-pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv";
-
-/// Supported SHACL validation result formats as a constant.
-pub const SHACL_RESULT_FORMATS: &str = "compact, details, minimal, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
-
 /// Supported reader modes as a constant.
 pub const READER_MODES_LIST: &[&str] = &["strict", "lax"];
 
@@ -660,12 +634,6 @@ pub const NODE_MODE_ENTRIES: &[OptionEntry] = &[
         description: "Show only relationships originating from this node",
     },
 ];
-
-/// Supported node info modes as a constant.
-pub const NODE_INFO_MODES: &str = "outgoing, incoming, both";
-
-/// Supported ShEx validation result sort modes as a constant.
-pub const SHEX_SORT_BY_MODES: &str = "node, shape, status, details";
 
 pub const READER_MODE_ENTRIES: &[OptionEntry] = &[
     OptionEntry {
@@ -702,9 +670,6 @@ pub const SHEX_VALIDATION_SORT_OPTION_ENTRIES: &[OptionEntry] = &[
         description: "Sort validation results by detail level or error information",
     },
 ];
-
-/// Supported SHACL validation result sort modes as a constant.
-pub const SHACL_SORT_BY_MODES: &str = "severity, node, component, value, path, sourceshape, details";
 
 pub const SHACL_VALIDATION_SORT_OPTION_ENTRIES: &[OptionEntry] = &[
     OptionEntry {
@@ -761,14 +726,6 @@ pub const SPARQL_QUERY_TYPE_ENTRIES: &[QueryTypeEntry] = &[
         example: "ASK WHERE { ?s ?p ?o }",
     },
 ];
-
-/// Build a `ToolExecutionError` for a format that is recognised but not yet implemented.
-pub fn unsupported_format_error(format_name: &str, requested: &str, supported: &str) -> ToolExecutionError {
-    ToolExecutionError::with_hint(
-        format!("Format '{}' is not yet implemented for {}", requested, format_name),
-        format!("Currently supported: {}", supported),
-    )
-}
 
 /// Detect the SPARQL query type by scanning for the first keyword token.
 ///

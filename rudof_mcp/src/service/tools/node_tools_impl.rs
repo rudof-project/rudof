@@ -8,9 +8,10 @@ use rudof_lib::formats::{IriNormalizationMode, NodeInspectionMode};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashSet, io::Cursor, num::NonZeroUsize, str::FromStr};
+use std::{collections::HashSet, io::Cursor, num::NonZeroUsize};
 
 use super::helpers::*;
+use super::params::NodeModeParam;
 
 /// Request parameters for inspecting an RDF node.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -28,8 +29,9 @@ pub struct NodeInfoRequest {
     /// Maximum traversal depth for the tree output. Default: 1 (direct arcs only).
     pub depth: Option<NonZeroUsize>,
 
-    /// Which arcs to include. One of: both (default), outgoing (node as subject), incoming (node as object).
-    pub mode: Option<String>,
+    /// Which arcs to include: outgoing (node as subject), incoming (node as
+    /// object), or both. Default: both.
+    pub mode: Option<NodeModeParam>,
 
     /// IRI parsing strictness for `node`.
     /// false (default): bare "http://..." IRIs are auto-wrapped in "<>".
@@ -43,7 +45,7 @@ pub struct NodeInfoResponse {
     /// Node selector used for inspection.
     pub node: String,
     /// Effective traversal mode.
-    pub mode: String,
+    pub mode: NodeModeParam,
     /// Human-readable node inspection results.
     pub results: String,
     /// Parsed data extracted from the text tree output.
@@ -245,18 +247,8 @@ pub async fn node_info_impl(
     }): Parameters<NodeInfoRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
-    let mode_str = mode.clone().unwrap_or_else(|| "both".to_string());
-
-    // Parse mode - return Tool Execution Error for invalid mode
-    let parsed_mode = match parse_optional_value_with_hint(
-        mode.as_deref(),
-        "mode",
-        &format!("Supported modes: {}", NODE_INFO_MODES),
-        NodeInspectionMode::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
+    let mode = mode.unwrap_or(NodeModeParam::Both);
+    let parsed_mode: NodeInspectionMode = mode.into();
 
     let iri_mode = if strict_iris.unwrap_or(false) {
         IriNormalizationMode::Strict
@@ -265,10 +257,10 @@ pub async fn node_info_impl(
     };
 
     let mut output_buffer = Cursor::new(Vec::new());
-    let mut showing_node_info = rudof.show_node_info(&node, &mut output_buffer).with_iri_mode(iri_mode);
-    if let Some(mode) = &parsed_mode {
-        showing_node_info = showing_node_info.with_show_node_mode(mode);
-    }
+    let mut showing_node_info = rudof
+        .show_node_info(&node, &mut output_buffer)
+        .with_iri_mode(iri_mode)
+        .with_show_node_mode(&parsed_mode);
     if let Some(predicates) = predicates.as_deref() {
         showing_node_info = showing_node_info.with_predicates(predicates);
     }
@@ -300,7 +292,7 @@ pub async fn node_info_impl(
     let summary = format!(
         "Node inspection completed.\nNode: {}\nMode: {}\nResults size: {} chars\nOutgoing arcs: {} (predicates: {}, unique targets: {})\nIncoming arcs: {} (predicates: {}, unique sources: {})",
         node,
-        mode_str,
+        mode,
         results_size,
         stats.outgoing_arcs_count,
         stats.outgoing_predicates_count,
@@ -312,7 +304,7 @@ pub async fn node_info_impl(
 
     let response = NodeInfoResponse {
         node: node.clone(),
-        mode: mode_str.clone(),
+        mode,
         results: output_str.clone(),
         parsed,
     };

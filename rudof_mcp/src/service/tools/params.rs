@@ -3,7 +3,11 @@
 //! Each type here is the MCP-facing counterpart of a `rudof_lib` format or mode
 //! enum, narrowed to the values this server actually implements.
 
-use rudof_lib::formats::{DataFormat, ResultDataFormat};
+use rudof_lib::formats::{
+    DataFormat, NodeInspectionMode, ResultDataFormat, ResultQueryFormat, ResultShExValidationFormat,
+    ResultShaclValidationFormat, ShExFormat, ShExValidationSortByMode, ShaclFormat, ShaclValidationMode,
+    ShaclValidationSortByMode,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
@@ -105,6 +109,149 @@ impl ImageFormatParam {
     }
 }
 
+mcp_param!(
+    /// Serialization a ShEx schema is read from. Beyond ShExC and ShExJ these
+    /// are the ShExR formats, a ShEx schema encoded as RDF.
+    ShExFormatParam,
+    ShExFormat,
+    {
+        ShExC => "shexc",
+        ShExJ => "shexj",
+        Turtle => "turtle",
+        NTriples => "ntriples",
+        RdfXml => "rdfxml",
+        NQuads => "nquads",
+    }
+);
+
+mcp_param!(
+    /// Serialization a ShEx schema is written in.
+    ResultShExFormatParam,
+    ShExFormat,
+    {
+        ShExC => "shexc",
+        ShExJ => "shexj",
+        Json => "json",
+        JsonLd => "jsonld",
+        Internal => "internal",
+        Turtle => "turtle",
+        NTriples => "ntriples",
+        RdfXml => "rdfxml",
+        TriG => "trig",
+        N3 => "n3",
+        NQuads => "nquads",
+    }
+);
+
+mcp_param!(
+    /// Serialization a SHACL shapes graph is read from.
+    ShaclFormatParam,
+    ShaclFormat,
+    {
+        Turtle => "turtle",
+        NTriples => "ntriples",
+        RdfXml => "rdfxml",
+        JsonLd => "jsonld",
+        TriG => "trig",
+        NQuads => "nquads",
+        N3 => "n3",
+    }
+);
+
+mcp_param!(
+    /// Engine SHACL validation runs on.
+    ShaclModeParam,
+    ShaclValidationMode,
+    {
+        Native => "native",
+        Sparql => "sparql",
+    }
+);
+
+mcp_param!(
+    /// Arc directions to report for a node.
+    NodeModeParam,
+    NodeInspectionMode,
+    {
+        Both => "both",
+        Outgoing => "outgoing",
+        Incoming => "incoming",
+    }
+);
+
+mcp_param!(
+    /// Serialization a ShEx validation result is written in.
+    ResultShExValidationFormatParam,
+    ResultShExValidationFormat,
+    {
+        Details => "details",
+        Compact => "compact",
+        Json => "json",
+        Csv => "csv",
+    }
+);
+
+mcp_param!(
+    /// Serialization a SHACL validation report is written in.
+    ResultShaclValidationFormatParam,
+    ResultShaclValidationFormat,
+    {
+        Details => "details",
+        Compact => "compact",
+        Minimal => "minimal",
+        Csv => "csv",
+        Turtle => "turtle",
+        NTriples => "ntriples",
+        RdfXml => "rdfxml",
+        TriG => "trig",
+        N3 => "n3",
+        NQuads => "nquads",
+    }
+);
+
+mcp_param!(
+    /// Order ShEx validation results are sorted in.
+    ShExSortByParam,
+    ShExValidationSortByMode,
+    {
+        Node => "node",
+        Shape => "shape",
+        Status => "status",
+        Details => "details",
+    }
+);
+
+mcp_param!(
+    /// Order SHACL validation results are sorted in.
+    ShaclSortByParam,
+    ShaclValidationSortByMode,
+    {
+        Severity => "severity",
+        Node => "node",
+        Component => "component",
+        Value => "value",
+        Path => "path",
+        SourceShape => "sourceshape",
+        Details => "details",
+    }
+);
+
+mcp_param!(
+    /// Serialization SPARQL query results are written in.
+    ResultQueryFormatParam,
+    ResultQueryFormat,
+    {
+        Internal => "internal",
+        Turtle => "turtle",
+        NTriples => "ntriples",
+        RdfXml => "rdfxml",
+        JsonLd => "jsonld",
+        TriG => "trig",
+        N3 => "n3",
+        NQuads => "nquads",
+    }
+);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,6 +269,16 @@ mod tests {
         assert_every_variant_converts!(DataFormatParam, DataFormat);
         assert_every_variant_converts!(ResultDataFormatParam, ResultDataFormat);
         assert_every_variant_converts!(ImageFormatParam, ResultDataFormat);
+        assert_every_variant_converts!(ShExFormatParam, ShExFormat);
+        assert_every_variant_converts!(ResultShExFormatParam, ShExFormat);
+        assert_every_variant_converts!(ShaclFormatParam, ShaclFormat);
+        assert_every_variant_converts!(ShaclModeParam, ShaclValidationMode);
+        assert_every_variant_converts!(NodeModeParam, NodeInspectionMode);
+        assert_every_variant_converts!(ResultShExValidationFormatParam, ResultShExValidationFormat);
+        assert_every_variant_converts!(ResultShaclValidationFormatParam, ResultShaclValidationFormat);
+        assert_every_variant_converts!(ShExSortByParam, ShExValidationSortByMode);
+        assert_every_variant_converts!(ShaclSortByParam, ShaclValidationSortByMode);
+        assert_every_variant_converts!(ResultQueryFormatParam, ResultQueryFormat);
     }
 
     #[test]

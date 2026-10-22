@@ -9,9 +9,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
-use std::str::FromStr;
 
 use super::helpers::*;
+use super::params::{ResultShExFormatParam, ShExFormatParam};
 
 /// Request parameters for displaying a ShEx schema.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -19,9 +19,8 @@ pub struct ShowShexRequest {
     /// ShEx schema to parse. Accepts inline ShExC/ShExJ text, a URL, or a local file path.
     pub schema: String,
 
-    /// Format of the input schema. Currently supported for loading: shexc (default), shexj,
-    /// turtle, ntriples, rdfxml, nquads (ShExR — the RDF encoding of a ShEx schema).
-    pub schema_format: Option<String>,
+    /// Format of the input schema. Default: shexc.
+    pub schema_format: Option<ShExFormatParam>,
 
     /// Base IRI for resolving relative IRIs in the schema. Example: "http://example.org/"
     pub base_schema: Option<String>,
@@ -30,9 +29,8 @@ pub struct ShowShexRequest {
     /// Example: ":Person" or "<http://example.org/Person>". When omitted, all shapes are shown.
     pub shape: Option<String>,
 
-    /// Output format for the serialized schema.
-    /// Supported: shexc (default), shexj, json, jsonld, internal.
-    pub result_schema_format: Option<String>,
+    /// Output format for the serialized schema. Default: shexc.
+    pub result_schema_format: Option<ResultShExFormatParam>,
 }
 
 /// Response from displaying a ShEx schema.
@@ -41,7 +39,7 @@ pub struct ShowShexResponse {
     /// Serialized schema output
     pub results: String,
     /// Format used for output
-    pub result_format: String,
+    pub result_format: ResultShExFormatParam,
     /// Size of results in bytes
     pub result_size_bytes: usize,
 }
@@ -51,12 +49,8 @@ pub struct ShowShexResponse {
 /// # Errors
 ///
 /// Returns a Tool Execution Error when:
-/// - Schema format is invalid
-/// - Result format is invalid
-/// - Base IRI is malformed
-/// - Reader mode is invalid
-/// - Schema parsing fails
-/// - Shape selector is invalid
+/// - The schema cannot be resolved or parsed
+/// - The shape selector is invalid
 pub async fn show_shex_impl(
     service: &RudofMcpService,
     Parameters(ShowShexRequest {
@@ -70,8 +64,6 @@ pub async fn show_shex_impl(
     let mut rudof = service.rudof.lock().await;
     let session_dir = service.session_dir.read().await.clone();
 
-    let shex_format_hint = format!("Supported values: {}", SHEX_FORMATS);
-
     let parsed_schema = match parse_value_with_hint(
         &schema,
         "schema",
@@ -82,69 +74,16 @@ pub async fn show_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    let parsed_schema_format = match parse_optional_value_with_hint(
-        schema_format.as_deref(),
-        "schema format",
-        &shex_format_hint,
-        ShExFormat::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
+    let schema_format = schema_format.unwrap_or(ShExFormatParam::ShExC);
+    let parsed_schema_format: ShExFormat = schema_format.into();
+    let result_schema_format = result_schema_format.unwrap_or(ResultShExFormatParam::ShExC);
+    let parsed_result_format: ShExFormat = result_schema_format.into();
 
-    let parsed_result_format = match parse_optional_value_with_hint(
-        result_schema_format.as_deref(),
-        "result schema format",
-        &shex_format_hint,
-        ShExFormat::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    // Guard: shexc/shexj plus the ShExR-readable RDF formats (turtle,
-    // ntriples, rdfxml, nquads) are implemented for loading ShEx schemas.
-    // trig/n3 are excluded: reading them isn't implemented at the
-    // RDF-parsing layer yet.
-    if let Some(fmt) = &parsed_schema_format
-        && !matches!(
-            fmt,
-            ShExFormat::ShExC
-                | ShExFormat::ShExJ
-                | ShExFormat::Turtle
-                | ShExFormat::NTriples
-                | ShExFormat::RdfXml
-                | ShExFormat::NQuads
-        )
-    {
-        return Ok(unsupported_format_error(
-            "ShEx schema input",
-            schema_format.as_deref().unwrap_or(""),
-            SHEX_INPUT_FORMATS_SUPPORTED,
-        )
-        .into_call_tool_result());
-    }
-
-    // Guard: `Simple` is read-only (no writer implemented for it); everything
-    // else (shexc/shexj/json/jsonld/internal plus the RDF formats — turtle,
-    // ntriples, rdfxml, trig, n3, nquads) is implemented for serializing.
-    if let Some(fmt) = &parsed_result_format
-        && matches!(fmt, ShExFormat::Simple)
-    {
-        return Ok(unsupported_format_error(
-            "ShEx schema output",
-            result_schema_format.as_deref().unwrap_or(""),
-            SHEX_OUTPUT_FORMATS_SUPPORTED,
-        )
-        .into_call_tool_result());
-    }
-
-    let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);
+    let mut shex_schema_loading = rudof
+        .load_shex_schema(&parsed_schema)
+        .with_shex_schema_format(&parsed_schema_format);
     if let Some(base_schema) = base_schema.as_deref() {
         shex_schema_loading = shex_schema_loading.with_base(base_schema);
-    }
-    if let Some(schema_format) = &parsed_schema_format {
-        shex_schema_loading = shex_schema_loading.with_shex_schema_format(schema_format);
     }
     if let Err(e) = shex_schema_loading.execute() {
         return Ok(ToolExecutionError::with_hint(
@@ -155,10 +94,9 @@ pub async fn show_shex_impl(
     }
 
     let mut output_buffer = Cursor::new(Vec::new());
-    let mut serialization = rudof.serialize_shex_schema(&mut output_buffer);
-    if let Some(result_schema_format) = &parsed_result_format {
-        serialization = serialization.with_result_shex_format(result_schema_format);
-    }
+    let mut serialization = rudof
+        .serialize_shex_schema(&mut output_buffer)
+        .with_result_shex_format(&parsed_result_format);
     if let Some(shape_selector) = shape.as_deref() {
         serialization = serialization.with_shape(shape_selector);
     }
@@ -186,14 +124,9 @@ pub async fn show_shex_impl(
 
     let result_size_bytes = output_str.len();
 
-    let result_format_str = if let Some(fmt) = parsed_result_format {
-        fmt.to_string()
-    } else {
-        "shexc".to_string()
-    };
     let response = ShowShexResponse {
         results: output_str.clone(),
-        result_format: result_format_str.clone(),
+        result_format: result_schema_format,
         result_size_bytes,
     };
 
@@ -201,10 +134,10 @@ pub async fn show_shex_impl(
 
     let summary = format!(
         "ShEx schema serialized.\nResult format: {}\nResult size: {} bytes",
-        result_format_str, result_size_bytes
+        result_schema_format, result_size_bytes
     );
 
-    let preview_language = match response.result_format.to_lowercase().as_str() {
+    let preview_language = match result_schema_format.as_str() {
         "json" | "jsonld" | "shexj" => "json",
         "turtle" | "n3" => "turtle",
         "ntriples" | "nquads" => "ntriples",
@@ -230,9 +163,8 @@ pub struct CheckShexRequest {
     /// ShEx schema to check. Accepts inline ShExC/ShExJ text, a URL, or a local file path.
     pub schema: String,
 
-    /// Format of the input schema. Supported: shexc (default), shexj, turtle, ntriples,
-    /// rdfxml, nquads (ShExR — the RDF encoding of a ShEx schema).
-    pub schema_format: Option<String>,
+    /// Format of the input schema. Default: shexc.
+    pub schema_format: Option<ShExFormatParam>,
 
     /// Base IRI for resolving relative IRIs in the schema. Example: "http://example.org/"
     pub base_schema: Option<String>,
@@ -252,8 +184,7 @@ pub struct CheckShexResponse {
 ///
 /// # Errors
 ///
-/// Returns a Tool Execution Error for invalid schema format,
-/// base IRI, or reader mode parameters.
+/// Returns a Tool Execution Error when the schema is not well-formed.
 pub async fn check_shex_impl(
     service: &RudofMcpService,
     Parameters(CheckShexRequest {
@@ -265,8 +196,6 @@ pub async fn check_shex_impl(
     let rudof = service.rudof.lock().await;
     let session_dir = service.session_dir.read().await.clone();
 
-    let shex_format_hint = format!("Supported values: {}", SHEX_FORMATS);
-
     let parsed_schema = match parse_value_with_hint(
         &schema,
         "schema",
@@ -277,46 +206,14 @@ pub async fn check_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    let parsed_schema_format = match parse_optional_value_with_hint(
-        schema_format.as_deref(),
-        "schema format",
-        &shex_format_hint,
-        ShExFormat::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    // Guard: shexc/shexj plus the ShExR-readable RDF formats (turtle,
-    // ntriples, rdfxml, nquads) are implemented for loading ShEx schemas.
-    // trig/n3 are excluded: reading them isn't implemented at the
-    // RDF-parsing layer yet.
-    if let Some(fmt) = &parsed_schema_format
-        && !matches!(
-            fmt,
-            ShExFormat::ShExC
-                | ShExFormat::ShExJ
-                | ShExFormat::Turtle
-                | ShExFormat::NTriples
-                | ShExFormat::RdfXml
-                | ShExFormat::NQuads
-        )
-    {
-        return Ok(unsupported_format_error(
-            "ShEx schema input",
-            schema_format.as_deref().unwrap_or(""),
-            SHEX_INPUT_FORMATS_SUPPORTED,
-        )
-        .into_call_tool_result());
-    }
+    let parsed_schema_format: ShExFormat = schema_format.unwrap_or(ShExFormatParam::ShExC).into();
 
     let mut output_buffer = Cursor::new(Vec::new());
-    let mut checking = rudof.check_shex_schema(&parsed_schema, &mut output_buffer);
+    let mut checking = rudof
+        .check_shex_schema(&parsed_schema, &mut output_buffer)
+        .with_shex_schema_format(&parsed_schema_format);
     if let Some(base_schema) = base_schema.as_deref() {
         checking = checking.with_base(base_schema);
-    }
-    if let Some(schema_format) = &parsed_schema_format {
-        checking = checking.with_shex_schema_format(schema_format);
     }
     if let Err(e) = checking.execute() {
         return Ok(ToolExecutionError::with_hint(
