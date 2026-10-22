@@ -11,6 +11,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 
 ## 0.3.32
 ### Fixed
+- SHACL `sh:targetClass`, implicit class targets and `sh:class` did not follow `rdfs:subClassOf` at all depths, so instances of a sub-subclass were missed. The W3C tests only use one level.
 - The MCP server announced itself as `rmcp` instead of `rudof_mcp` ([#901](https://github.com/rudof-project/rudof/issues/901)).
 - The MCP server rejected over `streamable-http` protocol versions it accepts over stdio, such as `2026-07-28` ([#901](https://github.com/rudof-project/rudof/issues/901)).
 - `execute_sparql_query` with `query_natural_language` asked for sampling from clients that do not support it ([#901](https://github.com/rudof-project/rudof/issues/901)).

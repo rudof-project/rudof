@@ -15,7 +15,8 @@ use std::collections::{HashMap, HashSet};
 /// - `class_instances`: `class_object → { subject_as_term, … }` built from all
 ///   `?s rdf:type ?class` triples.
 /// - `subclass_map`: `class_object → { subclass_as_term, … }` built from all
-///   `?sub rdfs:subClassOf ?class` triples (one level).
+///   `?sub rdfs:subClassOf ?class` triples (one level). Lookups follow it
+///   transitively.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct ClassIndex {
     /// Maps each class to the set of its direct `rdf:type` instances
@@ -68,13 +69,19 @@ impl ClassIndex {
         self.subclass_map.get(class).into_iter().flat_map(|set| set.iter())
     }
 
-    /// Returns instances of the class and instances of all its direct subclasses.
-    pub fn instances_of_with_subclasses(&self, class: &Object) -> HashSet<&Object> {
+    /// Returns the SHACL instances of the class: the instances of the class
+    /// and of all its subclasses, at any depth (`rdf:type/rdfs:subClassOf*`).
+    pub fn shacl_instances_of(&self, class: &Object) -> HashSet<&Object> {
         let mut result: HashSet<_> = self.instances_of(class).collect();
+        let mut seen: HashSet<&Object> = HashSet::from([class]);
+        let mut pending: Vec<&Object> = vec![class];
 
-        for subclass in self.subclasses_of(class) {
-            for instance in self.instances_of(subclass) {
-                result.insert(instance);
+        while let Some(current) = pending.pop() {
+            for subclass in self.subclasses_of(current) {
+                if seen.insert(subclass) {
+                    result.extend(self.instances_of(subclass));
+                    pending.push(subclass);
+                }
             }
         }
 
