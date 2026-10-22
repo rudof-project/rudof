@@ -166,9 +166,8 @@ pub async fn validate_shex_impl(
     }): Parameters<ValidateShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
-    let session_dir = service.session_dir.read().await.clone();
 
-    let parsed_schema = match resolve_spec(&session_dir, &schema, "schema") {
+    let parsed_schema = match resolve_spec(&schema, "schema") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };
@@ -196,7 +195,7 @@ pub async fn validate_shex_impl(
         },
     };
 
-    let parsed_shapemap = match resolve_spec(&session_dir, &effective_shapemap, "shapemap") {
+    let parsed_shapemap = match resolve_spec(&effective_shapemap, "shapemap") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };

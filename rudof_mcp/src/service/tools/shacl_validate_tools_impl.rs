@@ -101,9 +101,8 @@ pub async fn validate_shacl_impl(
     }): Parameters<ValidateShaclRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
-    let session_dir = service.session_dir.read().await.clone();
 
-    let parsed_shapes = match resolve_optional_spec(&session_dir, shapes.as_deref(), "shapes") {
+    let parsed_shapes = match resolve_optional_spec(shapes.as_deref(), "shapes") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };

@@ -9,7 +9,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
-## [Unreleased]
+## 0.3.34
 ### Added
 - `show_shex` takes `show_statistics` and `show_dependencies`, each reported on its own ([#909](https://github.com/rudof-project/rudof/issues/909)).
 - `rudof_lib::types` re-exports `Object` and `IriOrBlankNode`, and adds `Bindings`, the SELECT solutions with every term qualified as an `Object` ([#909](https://github.com/rudof-project/rudof/issues/909)).
@@ -30,6 +30,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 - The `rudof://formats/*` resources, now that the tool schemas carry the accepted values ([#909](https://github.com/rudof-project/rudof/issues/909)).
 - `shapemap_format` from `validate_shex`: only `compact` was ever accepted ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- The `change_directory` tool, and with it the per-session working directory: a relative path resolves against the directory the client started the server in ([#903](https://github.com/rudof-project/rudof/issues/903)).
 
 ## 0.3.32
 ### Fixed
@@ -38,7 +39,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - The MCP server rejected over `streamable-http` protocol versions it accepts over stdio, such as `2026-07-28` ([#901](https://github.com/rudof-project/rudof/issues/901)).
 - `execute_sparql_query` with `query_natural_language` asked for sampling from clients that do not support it ([#901](https://github.com/rudof-project/rudof/issues/901)).
 ### Changed
-- MCP `--allowed-network` (CIDR ranges) is replaced by `--allowed-origin` (RFC 6454 origins) and the new `--allowed-host`, required when binding to `0.0.0.0` or `::` ([#901](https://github.com/rudof-project/rudof/issues/901)). `McpConfig` swaps `allowed_networks` for `allowed_origins` and `allowed_hosts`. See [Configuring allowed origins and hosts](docs/src/cli_usage/mcp.md#configuring-allowed-origins-and-hosts-streamable-http).
+- MCP `--allowed-network` (CIDR ranges) is replaced by `--allowed-origin` (RFC 6454 origins) and the new `--allowed-host`, required when binding to `0.0.0.0` or `::` ([#901](https://github.com/rudof-project/rudof/issues/901)). `McpConfig` swaps `allowed_networks` for `allowed_origins` and `allowed_hosts`. See [Allowed origins and hosts](docs/src/cli_usage/mcp.md#allowed-origins-and-hosts).
 - Terminating an MCP session with `HTTP DELETE` answers `202`, not `204`, and `202` for an unknown session id, not `404` ([#901](https://github.com/rudof-project/rudof/issues/901)).
 - `tools/list`, `prompts/list` and `resources/list` drop cursor pagination ([#901](https://github.com/rudof-project/rudof/issues/901)).
 

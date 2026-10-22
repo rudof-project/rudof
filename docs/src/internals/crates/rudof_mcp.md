@@ -1,156 +1,94 @@
 # `rudof_mcp`
 
-The `rudof_mcp` crate provides an implementation of an [MCP (Model Context Protocol) server](https://modelcontextprotocol.io/docs/getting-started/intro) that exposes the core functionality of the `rudof` library.
-It is built using the [`rmcp`](https://crates.io/crates/rmcp) SDK.
+`rudof_mcp` implements an [MCP (Model Context Protocol) server](https://modelcontextprotocol.io/docs/getting-started/intro)
+over [`rudof_lib`](./rudof_lib.md), built on the [`rmcp`](https://crates.io/crates/rmcp) SDK. The
+CLI's `mcp` command is a thin wrapper around it.
 
-## MCP Transport Types
+This page is about the crate. What the server offers a client (its tools, prompts and resources)
+and how to configure and connect it are documented in
+[Exporting rudof as an MCP server](../../cli_usage/mcp.md).
 
-The Rudof MCP server supports two configurable transport mechanisms:
+## Architecture and package structure
 
-- **`stdio` (default):**
-  The client launches the MCP server as a subprocess. The server reads JSON-RPC messages from standard input (`stdin`) and writes responses to standard output (`stdout`).
+Neither module is compiled for WebAssembly, where there is no process to serve from.
 
-- **`streamable-http`:**
-  The server runs as an independent process capable of handling multiple concurrent client connections.
-  This transport uses HTTP `POST` and `GET` requests and can optionally leverage Server-Sent Events (SSE) to stream multiple server messages.
+### `server/`
 
-  The Rudof MCP server allows configuring:
-  - Bind address
-  - Port
-  - Route name
-  - Allowed origins
-  - Allowed hosts
+Everything about getting the server running, with no knowledge of what it serves.
 
-  The security requirements defined by the MCP specification: `Origin` validation,
-  `Host` validation against DNS rebinding, protocol version validation and session
-  management.
+- **`server_impl.rs`**: `McpConfig` (transport, bind address, port, route, allowed origins and
+  hosts) with its defaults, plus `run_mcp`, which creates its own Tokio runtime, and
+  `run_mcp_async` for callers that already have one. Both dispatch on the transport.
+- **`transport.rs`**: `TransportType`, either `Stdio` or `StreamableHTTP`.
+- **`stdio_server.rs`**: serves one `RudofMcpService` over `rmcp`'s stdio transport. Nothing other
+  than MCP messages may reach stdout, so every diagnostic goes through `tracing` to stderr.
+- **`streamable_http/http_server.rs`**: mounts `rmcp`'s `StreamableHttpService` on an `axum` route
+  and builds a service per session through `LocalSessionManager`. The checks the specification
+  requires (`Origin`, `Host`, `MCP-Protocol-Version`, session routing and `DELETE` termination) are
+  `rmcp`'s, configured here from `McpConfig`; an empty origin list would turn validation off, so it
+  is filled with the loopback defaults instead. CORS is left to a reverse proxy.
 
-## MCP Capabilities
+### `service/`
 
-The Rudof MCP server exposes the following capabilities:
+The MCP surface. One `RudofMcpService` per session, so an HTTP deployment can hold several at once.
 
-| Capability    | Description                                           |
-|--------------|-------------------------------------------------------|
-| `tools`       | 14 tools for validation, querying, data, and session operations |
-| `prompts`     | Guided templates for common workflows                  |
-| `resources`   | Access to RDF data and format metadata                 |
-| `resource templates` | URI template for accessing RDF data in any supported format |
-| `logging`     | Real-time log notifications with level filtering       |
-| `completions` | Argument completion for prompts and resources          |
+- **`mcp_service.rs`**: `RudofMcpService` itself, the session state: a `Rudof` instance behind a
+  mutex (the loaded data, schemas and results every tool reads and writes), the tool and prompt
+  routers, the client's minimum log level and the log rate limiter. It also answers the completion
+  requests for prompt arguments and resource URIs.
+- **`handlers.rs`**: the `ServerHandler` implementation. `get_info` advertises the capabilities and
+  announces rudof as the implementation; resources, completions and `logging/setLevel` are handled
+  here, while tool and prompt calls are dispatched by the `#[tool_handler]` and
+  `#[prompt_handler]` macros to the routers.
+- **`tools/`**: `tools_impl.rs` declares every tool with `#[tool]` (name, title, description,
+  output schema and annotations) and delegates to a sibling `*_tools_impl.rs` holding the request
+  and response types and the logic. `params.rs` wraps the `rudof_lib` format and mode enums as
+  parameter types narrowed to the values the server implements, so the accepted values reach the
+  input schema. `helpers.rs` carries what the tools share: `ToolExecutionError`, input spec
+  resolution, structured-content serialization and the code-block previews.
+- **`prompts/`** and **`resources/`**, **`resource_templates/`**: the same split, a declaration
+  module plus one implementation file per domain.
+- **`errors.rs`**: the protocol errors, each with its JSON-RPC code, context object and trace.
+- **`logging.rs`**: the `notifications/message` notifications, filtered by the level the client
+  set and rate limited so a chatty tool cannot flood it.
+- **`state.rs`**: the state file a containerized server restores its data from. It is only used
+  when the directory of the path (`/app/state/data.json`, or `RUDOF_MCP_STATE_PATH`) exists.
 
-## Available Tools
+## Two kinds of error
 
-The MCP server provides 14 tools grouped by functionality.
+A tool reports a problem with its input as a successful response with `isError: true`, built from
+`ToolExecutionError` with a message and a hint, which a model can read and retry from. A schema
+that fails to parse, a format that cannot be produced or a missing PlantUML installation belong
+here. The protocol errors in `errors.rs` are for what a client cannot fix by rewriting the call:
+an unknown resource, a serialization failure, an internal error in the engine.
 
-### Data Management
+## Adding a tool
 
-| Tool | Description |
-|------|-------------|
-| `load_rdf_data_from_sources` | Load RDF data from URLs, files, raw text, or SPARQL endpoints |
-| `export_rdf_data` | Serialize RDF data into multiple formats (Turtle, JSON-LD, N-Triples, etc.) |
-| `export_plantuml` | Generate a PlantUML diagram of the RDF graph |
-| `export_image` | Generate SVG or PNG visualizations of the RDF graph |
+1. Add the request and response types, plus the logic, to the `*_tools_impl.rs` of its domain (or a
+   new one, registered in `tools/mod.rs`). Both types derive `JsonSchema`, every parameter with a
+   fixed set of values comes from `params.rs`, and the response is serialized with
+   `serialize_structured`.
+2. Declare it in `tools_impl.rs` with `#[tool]`, pass the output schema with `schema_for_output`
+   and write the annotations honestly: a tool that writes session state is not `read_only_hint`.
+3. Return the facts as structured content and a short summary as text, not the whole report twice.
+4. Document it in the [user manual](../../cli_usage/mcp.md) and, when it changes what a client
+   sees, in the changelog.
 
-> ⚠️ **IMPORTANT**: The `export_image` tool require [plantuml.jar](https://github.com/plantuml/plantuml/releases). Set the `PLANTUML` environment variable to its path before using them.
+## Resolving file paths
 
-### Node Inspection
+A tool argument can be inline content, a URL or a local path, told apart by
+`rudof_lib::formats::InputSpec`. A relative path is resolved against the working directory of the
+server process, the one its client started it in. The server deliberately has no directory of its
+own to resolve against: re-rooting a client's paths is a filesystem server's job, and under the
+HTTP transport the sessions sharing one process would have to agree on it.
 
-| Tool | Description |
-|------|-------------|
-| `node_info` | Retrieve information about a node (incoming and outgoing arcs) |
-
-### Query
-
-| Tool | Description |
-|------|-------------|
-| `execute_sparql_query` | Execute SPARQL queries (SELECT, CONSTRUCT, ASK, DESCRIBE) |
-
-### ShEx Tools
-
-| Tool | Description |
-|------|-------------|
-| `validate_shex` | Validate RDF data against a ShEx schema |
-| `check_shex` | Verify whether a ShEx schema is well-formed |
-| `show_shex` | Parse and display ShEx schemas with optional analysis |
-
-### SHACL Tools
-
-| Tool | Description |
-|------|-------------|
-| `validate_shacl` | Validate RDF data against a SHACL schema |
-
-### Session Management
-
-| Tool | Description |
-|------|-------------|
-| `reset_session_state` | Clear session state (all, or specific targets like data/shex/shacl/...) |
-| `change_directory` | Get or change this session's virtual working directory used to resolve relative file paths |
-| `get_rudof_version` | Report the rudof version this MCP server is running |
-| `manage_prefixes` | Show or manage the session's default prefixes (list/add/remove/rename/copy), mirroring the shell's `prefixes` command |
-
-## Available Prompts
-
-The MCP server includes guided templates for common workflows:
-
-| Prompt | Description |
-|--------|-------------|
-| `explore_rdf_node` | Interactive guide for exploring RDF nodes and their relationships |
-| `analyze_rdf_data` | Comprehensive guide for analyzing RDF data structure and quality |
-| `validation_guide` | Step-by-step guide for validating RDF data with ShEx or SHACL |
-
-## Available Resources
-
-The server exposes resources for accessing RDF data and format metadata.
-
-### Current RDF Data
-
-- `rudof://current-data` — Turtle format (listed resource)
-
-Additional formats are accessible via the resource template `rudof://current-data/{format}`, where `{format}` is one of: `turtle`, `ntriples`, `rdfxml`, `jsonld`, `trig`, `nquads`, `n3`.
-
-### Format Information
-
-- `rudof://formats/rdf` — Supported RDF formats
-- `rudof://formats/shex` — Supported ShEx formats
-- `rudof://formats/shacl` — Supported SHACL formats
-- `rudof://formats/node-modes` — Node inspection modes
-- `rudof://formats/query-types` — Supported SPARQL query types
-- `rudof://formats/query-results` — Query result formats
-- `rudof://formats/shex-validation-result` — ShEx validation result formats
-- `rudof://formats/shacl-validation-result` — SHACL validation result formats
-- `rudof://formats/validation-reader-modes` — Reader modes (strict/lax)
-- `rudof://formats/shex-validation-sort-options` — ShEx result sorting options
-- `rudof://formats/shacl-validation-sort-options` — SHACL result sorting options
-
-## Usage
-
-We can run Rudof MCP using different transport types depending on the environment (CLI tools, IDE extensions, or HTTP clients).
-
-### Run Rudof MCP using Stdio transport
+## Embedding the server
 
 ```rust
 use rudof_mcp::server::{run_mcp, McpConfig};
 
-run_mcp(McpConfig::default())?;
+run_mcp(McpConfig::default())?; // stdio
 ```
-
-### Run Rudof MCP using HTTP transport (localhost only)
-
-```rust
-use rudof_mcp::server::{run_mcp, McpConfig, TransportType};
-
-let config = McpConfig {
-    transport: TransportType::StreamableHTTP,
-    bind_address: "127.0.0.1".to_string(),
-    port: 8080,
-    route_path: "/mcp".to_string(),
-    ..McpConfig::default() // Loopback origins and hosts only
-};
-
-run_mcp(config)?;
-```
-
-### Run Rudof MCP using HTTP transport with custom origins and hosts
 
 ```rust
 use rudof_mcp::server::{run_mcp, McpConfig, TransportType};
@@ -168,32 +106,15 @@ let config = McpConfig {
 run_mcp(config)?;
 ```
 
-### Run Rudof MCP asynchronously (inside an existing Tokio runtime)
-
-```rust
-use rudof_mcp::server::{run_mcp_async, McpConfig, TransportType};
-
-let config = McpConfig {
-    transport: TransportType::StreamableHTTP,
-    bind_address: "127.0.0.1".to_string(),
-    port: 8080,
-    route_path: "/mcp".to_string(),
-    ..McpConfig::default()
-};
-
-tokio::spawn(async move {
-    run_mcp_async(config).await.unwrap();
-});
-```
+Inside an existing runtime, `run_mcp_async(config).await` takes the same configuration without
+creating a runtime of its own.
 
 ## Dependencies
 
-This crate primarily depends on:
-
-- [`rmcp`](https://crates.io/crates/rmcp) — Rust MCP SDK for protocol implementation
-- [`rudof_lib`](https://crates.io/crates/rudof_lib) — Core Rudof library for RDF operations
-- [`axum`](https://crates.io/crates/axum) — Modern HTTP server for Streamable HTTP transport
-- [`tokio`](https://crates.io/crates/tokio) — High-performance asynchronous runtime
+- [`rmcp`](https://crates.io/crates/rmcp): the Rust MCP SDK, protocol and macros.
+- [`rudof_lib`](./rudof_lib.md): every RDF operation the tools perform.
+- [`axum`](https://crates.io/crates/axum): the HTTP server behind the streamable-HTTP transport.
+- [`tokio`](https://crates.io/crates/tokio): the async runtime.
 
 ## Documentation
 

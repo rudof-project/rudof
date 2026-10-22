@@ -259,27 +259,6 @@ impl RudofMcpService {
         reset_session_state_impl(self, params).await
     }
 
-    /// Get or change this session's virtual working directory.
-    #[tool(
-        name = "change_directory",
-        title = "Get/Change Session Working Directory",
-        output_schema = schema_for_output::<ChangeDirectoryResponse>(),
-        description = "Get or change this MCP session's virtual working directory, which relative local file paths passed to other tools (e.g. `load_rdf_data_from_sources`, `show_shex`, `validate_shacl`) are resolved against. Omit `path` to just report the current session directory. Each session has its own independent working directory — this never changes the server process's actual directory or affects other sessions.",
-        annotations(
-            title = "Get/Change Session Working Directory",
-            read_only_hint = false,
-            destructive_hint = false,
-            idempotent_hint = false,
-            open_world_hint = false,
-        )
-    )]
-    pub async fn change_directory(
-        &self,
-        params: Parameters<ChangeDirectoryRequest>,
-    ) -> Result<CallToolResult, McpError> {
-        change_directory_impl(self, params).await
-    }
-
     /// Report the rudof version this MCP server is running.
     #[tool(
         name = "get_rudof_version",

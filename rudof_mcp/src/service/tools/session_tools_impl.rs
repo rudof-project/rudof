@@ -1,15 +1,8 @@
-//! Session-management tools: `reset` and `cd`.
+//! Session-management tools: `reset`.
 //!
-//! These mirror the `reset` and `cd` commands already available in the `rudof`
-//! interactive shell (`rudof_cli/src/shell/repl.rs`), adapted for MCP:
-//! - `reset` wraps the same `rudof_lib::Rudof::reset_*` builders the shell uses.
-//! - `cd` does **not** call `std::env::set_current_dir` like the shell does —
-//!   under the streamable-HTTP transport, several sessions (each its own
-//!   `RudofMcpService`) can run concurrently inside one OS process, and the
-//!   process's cwd is shared global state. Instead each session keeps its own
-//!   virtual working directory in `RudofMcpService::session_dir`, which
-//!   `resolve_input_spec` (see `helpers.rs`) consults when resolving relative
-//!   local file paths passed to other tools.
+//! This mirrors the `reset` command already available in the `rudof`
+//! interactive shell (`rudof_cli/src/shell/repl.rs`), wrapping the same
+//! `rudof_lib::Rudof::reset_*` builders it uses.
 
 use rmcp::{
     ErrorData as McpError,
@@ -187,72 +180,6 @@ fn reset_target(rudof: &mut Rudof, target: ResetTarget) {
     }
 }
 
-/// Request parameters for getting/changing the session's virtual working directory.
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ChangeDirectoryRequest {
-    /// Directory to change into (absolute, or relative to the current session
-    /// directory). Omit to just report the current session directory without
-    /// changing it.
-    pub path: Option<String>,
-}
-
-/// Response reporting the session's (possibly just-changed) virtual working directory.
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ChangeDirectoryResponse {
-    /// The session's current working directory after this call.
-    pub cwd: String,
-}
-
-/// Get or change this session's virtual working directory, used to resolve
-/// relative local file paths passed to other tools (schema/data/shapes
-/// arguments, ...).
-///
-/// This does not affect the server process's actual working directory or any
-/// other concurrent session — see the module docs for why.
-///
-/// # Errors
-///
-/// Returns a Tool Execution Error when `path` doesn't resolve to an existing directory.
-pub async fn change_directory_impl(
-    service: &RudofMcpService,
-    params: Parameters<ChangeDirectoryRequest>,
-) -> Result<CallToolResult, McpError> {
-    let Parameters(ChangeDirectoryRequest { path }) = params;
-    let mut session_dir = service.session_dir.write().await;
-
-    if let Some(path) = path {
-        let candidate = session_dir.join(&path);
-        let canonical = match candidate.canonicalize() {
-            Ok(p) => p,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Failed to change directory to '{}': {}", path, e),
-                    "Provide a path to an existing directory, absolute or relative to the current session directory",
-                )
-                .into_call_tool_result());
-            },
-        };
-        if !canonical.is_dir() {
-            return Ok(ToolExecutionError::with_hint(
-                format!("'{}' is not a directory", path),
-                "Provide a path to an existing directory",
-            )
-            .into_call_tool_result());
-        }
-        *session_dir = canonical;
-    }
-
-    let response = ChangeDirectoryResponse {
-        cwd: session_dir.display().to_string(),
-    };
-    let structured = serialize_structured(&response, "change_directory_impl")?;
-    let summary = format!("Session directory: {}", response.cwd);
-
-    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
-    result.structured_content = Some(structured);
-    Ok(result)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -328,70 +255,5 @@ mod tests {
             let json = serde_json::to_value(target).expect("a target should serialize");
             assert_eq!(json, serde_json::json!(target.as_str()));
         }
-    }
-
-    #[tokio::test]
-    async fn change_directory_with_no_path_reports_current_dir() {
-        let service = RudofMcpService::new();
-        let before = service.session_dir.read().await.clone();
-
-        let result = change_directory_impl(&service, Parameters(ChangeDirectoryRequest { path: None }))
-            .await
-            .expect("querying cwd should not be a protocol error");
-        assert_ne!(result.is_error, Some(true));
-        assert_eq!(*service.session_dir.read().await, before);
-    }
-
-    #[tokio::test]
-    async fn change_directory_updates_session_dir_not_process_cwd() {
-        let service = RudofMcpService::new();
-        let tmp_dir = std::env::temp_dir().canonicalize().expect("temp dir should exist");
-        let process_cwd_before = std::env::current_dir().unwrap();
-
-        let result = change_directory_impl(
-            &service,
-            Parameters(ChangeDirectoryRequest {
-                path: Some(tmp_dir.display().to_string()),
-            }),
-        )
-        .await
-        .expect("changing to an existing directory should not be a protocol error");
-        assert_ne!(result.is_error, Some(true));
-
-        assert_eq!(*service.session_dir.read().await, tmp_dir);
-        // The OS process cwd must be untouched — that's the whole point of a
-        // per-session virtual directory instead of `std::env::set_current_dir`.
-        assert_eq!(std::env::current_dir().unwrap(), process_cwd_before);
-    }
-
-    #[tokio::test]
-    async fn change_directory_rejects_nonexistent_path() {
-        let service = RudofMcpService::new();
-
-        let result = change_directory_impl(
-            &service,
-            Parameters(ChangeDirectoryRequest {
-                path: Some("/no/such/directory/hopefully".to_string()),
-            }),
-        )
-        .await
-        .expect("a bad path should be a tool error, not a protocol error");
-        assert_eq!(result.is_error, Some(true));
-    }
-
-    #[tokio::test]
-    async fn change_directory_rejects_a_file_path() {
-        let service = RudofMcpService::new();
-        let file = tempfile::NamedTempFile::new().expect("should create temp file");
-
-        let result = change_directory_impl(
-            &service,
-            Parameters(ChangeDirectoryRequest {
-                path: Some(file.path().display().to_string()),
-            }),
-        )
-        .await
-        .expect("a file path should be a tool error, not a protocol error");
-        assert_eq!(result.is_error, Some(true));
     }
 }
