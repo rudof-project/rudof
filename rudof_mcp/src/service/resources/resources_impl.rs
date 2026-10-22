@@ -6,7 +6,6 @@
 
 use crate::service::errors::*;
 use crate::service::mcp_service::RudofMcpService;
-use crate::service::pagination::{DEFAULT_PAGE_SIZE, parse_cursor};
 use rmcp::{
     ErrorData as McpError, RoleServer,
     model::{ListResourcesResult, PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResult, Resource},
@@ -25,7 +24,7 @@ use crate::service::resources::shex_validate_resources_impl::{
 
 /// Return the list of available resources
 pub async fn list_resources(
-    request: Option<PaginatedRequestParams>,
+    _request: Option<PaginatedRequestParams>,
     _ctx: RequestContext<RoleServer>,
 ) -> Result<ListResourcesResult, McpError> {
     // Collect all resources from different modules
@@ -37,31 +36,7 @@ pub async fn list_resources(
     all_resources.extend(get_shex_validate_resources());
     all_resources.extend(get_shacl_validate_resources());
 
-    // Handle pagination if requested
-    let (resources, next_cursor) = if let Some(params) = request {
-        let page_size = DEFAULT_PAGE_SIZE;
-        let cursor = parse_cursor(params.cursor, all_resources.len(), "resources/list")?;
-
-        let start = cursor.min(all_resources.len());
-        let end = std::cmp::min(start + page_size, all_resources.len());
-
-        let page_resources = all_resources[start..end].to_vec();
-        let cursor_value = if end < all_resources.len() {
-            Some(end.to_string())
-        } else {
-            None
-        };
-
-        (page_resources, cursor_value)
-    } else {
-        (all_resources, None)
-    };
-
-    Ok(ListResourcesResult {
-        resources,
-        next_cursor,
-        ..Default::default()
-    })
+    Ok(ListResourcesResult::with_all_items(all_resources))
 }
 
 /// Read a resource by URI and return the MCP read result

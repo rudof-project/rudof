@@ -9,12 +9,9 @@
 //! - **Resources**: Listing and reading resources
 //! - **Completions**: Argument suggestions for tools and prompts
 //! - **Logging**: Dynamic log level configuration
-//! - **Pagination**: Cursor-based pagination for listing promprts, resources and tools
-//! ```
 
 use crate::service::logging::{LogData, send_log};
 use crate::service::mcp_service::RudofMcpService;
-use crate::service::pagination::{DEFAULT_PAGE_SIZE, parse_cursor};
 use crate::service::{resource_templates, resources::*};
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler,
@@ -84,38 +81,12 @@ impl ServerHandler for RudofMcpService {
     /// Return a list of available tools using the generated ToolRouter.
     async fn list_tools(
         &self,
-        request: Option<PaginatedRequestParams>,
+        _request: Option<PaginatedRequestParams>,
         _: RequestContext<RoleServer>,
     ) -> Result<ListToolsResult, McpError> {
         tracing::debug!("Listing available tools");
 
-        let all_tools = self.tool_router.list_all();
-
-        // Handle pagination if requested
-        let (tools, next_cursor) = if let Some(params) = request {
-            let page_size = DEFAULT_PAGE_SIZE;
-            let cursor = parse_cursor(params.cursor, all_tools.len(), "tools/list")?;
-
-            let start = cursor.min(all_tools.len());
-            let end = std::cmp::min(start + page_size, all_tools.len());
-
-            let page_tools = all_tools[start..end].to_vec();
-            let cursor_value = if end < all_tools.len() {
-                Some(end.to_string())
-            } else {
-                None
-            };
-
-            (page_tools, cursor_value)
-        } else {
-            (all_tools, None)
-        };
-
-        Ok(ListToolsResult {
-            tools,
-            next_cursor,
-            ..Default::default()
-        })
+        Ok(ListToolsResult::with_all_items(self.tool_router.list_all()))
     }
 
     /// Look a tool up by name, which is how the SDK validates `tools/call`
@@ -127,37 +98,12 @@ impl ServerHandler for RudofMcpService {
     /// Return a list of available prompts using the generated PromptRouter.
     async fn list_prompts(
         &self,
-        request: Option<PaginatedRequestParams>,
+        _request: Option<PaginatedRequestParams>,
         _: RequestContext<RoleServer>,
     ) -> Result<ListPromptsResult, McpError> {
         tracing::debug!("Listing available prompts");
-        let all_prompts = self.prompt_router.list_all();
 
-        // Handle pagination if requested
-        let (prompts, next_cursor) = if let Some(params) = request {
-            let page_size = DEFAULT_PAGE_SIZE;
-            let cursor = parse_cursor(params.cursor, all_prompts.len(), "prompts/list")?;
-
-            let start = cursor.min(all_prompts.len());
-            let end = std::cmp::min(start + page_size, all_prompts.len());
-
-            let page_prompts = all_prompts[start..end].to_vec();
-            let cursor_value = if end < all_prompts.len() {
-                Some(end.to_string())
-            } else {
-                None
-            };
-
-            (page_prompts, cursor_value)
-        } else {
-            (all_prompts, None)
-        };
-
-        Ok(ListPromptsResult {
-            prompts,
-            next_cursor,
-            ..Default::default()
-        })
+        Ok(ListPromptsResult::with_all_items(self.prompt_router.list_all()))
     }
 
     /// Return a list of available resources
