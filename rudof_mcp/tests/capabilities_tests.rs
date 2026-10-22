@@ -39,11 +39,9 @@ fn test_server_info_has_required_fields() {
         "Protocol version should be the latest MCP version with an initialize handshake"
     );
 
-    // Server info (implementation) must be present
-    assert!(
-        !info.server_info.name.is_empty(),
-        "Server implementation name should not be empty"
-    );
+    // The server must identify itself, not the SDK it is built on.
+    assert_eq!(info.server_info.name, env!("CARGO_PKG_NAME"));
+    assert_eq!(info.server_info.version, env!("CARGO_PKG_VERSION"));
 
     // Instructions should be provided for LLMs
     assert!(

@@ -59,7 +59,9 @@ impl ServerHandler for RudofMcpService {
 
         ServerConfig::new(capabilities)
             .with_protocol_version(ProtocolVersion::LATEST_WITH_INITIALIZE)
-            .with_server_info(Implementation::from_build_env())
+            // Not `Implementation::from_build_env()`: that bakes in rmcp's own
+            // crate name and version, so the server announced itself as rmcp.
+            .with_server_info(Implementation::new(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")))
             .with_instructions(
                 "Rudof MCP server for RDF processing, SPARQL querying and graph validation using ShEx and SHACL.\n\
                 \n\
