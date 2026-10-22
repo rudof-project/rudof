@@ -38,6 +38,7 @@ impl RudofMcpService {
     /// Load RDF data into the server's in-memory datastore.
     #[tool(
         name = "load_rdf_data_from_sources",
+        title = "Load RDF Data from Sources",
         output_schema = schema_for_output::<LoadRdfDataFromSourcesResponse>(),
         description = "Load RDF triples into the server's in-memory datastore from URLs, local file paths, or inline RDF text. Each call is cumulative — triples are merged into existing data. `data` is optional — omit or pass [] when only using `endpoint`. To query a live SPARQL endpoint: set endpoint URL and pass data:[]. Call this before validate_shex, validate_shacl, execute_sparql_query, node_info, or export tools.",
         annotations(
@@ -58,6 +59,7 @@ impl RudofMcpService {
     /// Serialize the current RDF data to a specified format.
     #[tool(
         name = "export_rdf_data",
+        title = "Export RDF Data",
         output_schema = schema_for_output::<ExportRdfDataResponse>(),
         description = "Serialize the server's in-memory RDF graph and return it as text. Use to inspect or export loaded data. Default format: turtle.",
         annotations(
@@ -75,6 +77,7 @@ impl RudofMcpService {
     /// Generate a PlantUML diagram representing the RDF graph structure.
     #[tool(
         name = "export_plantuml",
+        title = "Export PlantUML Diagram",
         output_schema = schema_for_output::<ExportPlantUmlResponse>(),
         description = "Generate a PlantUML class diagram of the RDF graph structure. Shows subjects, predicates, and objects as a visual graph. Requires data to be loaded first.",
         annotations(
@@ -92,6 +95,7 @@ impl RudofMcpService {
     /// Generate a visual image of the RDF graph.
     #[tool(
         name = "export_image",
+        title = "Export RDF Image Visualization",
         output_schema = schema_for_output::<ExportImageResponse>(),
         description = "Render the server's RDF graph as an SVG or PNG image. Use for visual inspection of graph topology. Requires data to be loaded first.",
         annotations(
@@ -113,6 +117,7 @@ impl RudofMcpService {
     /// Retrieve detailed information about an RDF node.
     #[tool(
         name = "node_info",
+        title = "Inspect RDF Node",
         output_schema = schema_for_output::<NodeInfoResponse>(),
         description = "Inspect a specific RDF node's neighborhood: outgoing arcs (node as subject) and incoming arcs (node as object). Use to explore what properties a resource has and what other resources point to it. Requires data to be loaded first.",
         annotations(
@@ -134,6 +139,7 @@ impl RudofMcpService {
     /// Execute a SPARQL query against the loaded RDF data.
     #[tool(
         name = "execute_sparql_query",
+        title = "Execute SPARQL Query",
         output_schema = schema_for_output::<QueryExecutionResponse>(),
         description = "Execute a SPARQL query against the server's in-memory RDF graph. Supports SELECT, CONSTRUCT, and ASK (DESCRIBE not yet implemented). Provide a direct SPARQL string in `query` OR a natural language description in `query_natural_language` — not both. No `endpoint` parameter here — to query a live SPARQL endpoint, first call load_rdf_data_from_sources with {endpoint: 'https://...', data: []}. Requires data to be loaded first.",
         annotations(
@@ -159,6 +165,7 @@ impl RudofMcpService {
     /// Validate RDF data against a ShEx schema.
     #[tool(
         name = "validate_shex",
+        title = "Validate RDF with ShEx",
         output_schema = schema_for_output::<ValidateShexResponse>(),
         description = "Validate the loaded RDF data against a ShEx schema. Requires a node–shape mapping: supply `shapemap` (e.g. ':alice@:Person') or `maybe_node` with an optional `maybe_shape` to auto-generate one. Requires data to be loaded first.",
         annotations(
@@ -176,6 +183,7 @@ impl RudofMcpService {
     /// Check if a ShEx schema is syntactically valid and well-formed.
     #[tool(
         name = "check_shex",
+        title = "Check ShEx Schema Well-Formedness",
         output_schema = schema_for_output::<CheckShexResponse>(),
         description = "Parse and verify that a ShEx schema is syntactically valid and well-formed without running any RDF validation. Use to catch schema errors before attempting validation. Does not require data to be loaded.",
         annotations(
@@ -193,6 +201,7 @@ impl RudofMcpService {
     /// Parse and display a ShEx schema with optional analysis features.
     #[tool(
         name = "show_shex",
+        title = "Parse and Display ShEx Schema",
         output_schema = schema_for_output::<ShowShexResponse>(),
         description = "Parse a ShEx schema and display it in the requested output format, with shape statistics and dependency analysis. Use to inspect, convert, or debug a schema. Does not require data to be loaded.",
         annotations(
@@ -210,6 +219,7 @@ impl RudofMcpService {
     /// Validate RDF data against a SHACL schema.
     #[tool(
         name = "validate_shacl",
+        title = "Validate RDF with SHACL",
         output_schema = schema_for_output::<ValidateShaclResponse>(),
         description = "Validate the loaded RDF data against a SHACL shapes graph. Returns a standard SHACL validation report. If `shapes` is omitted, shapes embedded in the loaded data are used. Requires data to be loaded first.",
         annotations(
@@ -231,6 +241,7 @@ impl RudofMcpService {
     /// Reset session state (RDF data, loaded schemas/shapes, results, ...).
     #[tool(
         name = "reset_session_state",
+        title = "Reset Session State",
         output_schema = schema_for_output::<ResetSessionStateResponse>(),
         description = "Clear session state loaded so far in this MCP session. With no `targets` (or [\"all\"]), clears everything (RDF data, ShEx/SHACL/pgschema/DCTap schemas, shapemap, query/validation results, ...) — the same as starting a fresh session. With one or more targets, clears only that state, leaving the rest untouched.",
         annotations(
@@ -251,6 +262,7 @@ impl RudofMcpService {
     /// Get or change this session's virtual working directory.
     #[tool(
         name = "change_directory",
+        title = "Get/Change Session Working Directory",
         output_schema = schema_for_output::<ChangeDirectoryResponse>(),
         description = "Get or change this MCP session's virtual working directory, which relative local file paths passed to other tools (e.g. `load_rdf_data_from_sources`, `show_shex`, `validate_shacl`) are resolved against. Omit `path` to just report the current session directory. Each session has its own independent working directory — this never changes the server process's actual directory or affects other sessions.",
         annotations(
@@ -271,6 +283,7 @@ impl RudofMcpService {
     /// Report the rudof version this MCP server is running.
     #[tool(
         name = "get_rudof_version",
+        title = "Get Rudof Version",
         output_schema = schema_for_output::<GetVersionResponse>(),
         description = "Report the rudof version this MCP server is running (the same version reported by `rudof --version`). Takes no parameters.",
         annotations(
@@ -288,6 +301,7 @@ impl RudofMcpService {
     /// Show, or manage, the session's default prefix declarations.
     #[tool(
         name = "manage_prefixes",
+        title = "Show/Manage Default Prefixes",
         output_schema = schema_for_output::<ManagePrefixesResponse>(),
         description = "Show or manage the session's default prefix declarations -- the prefixes assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes, independently of whatever prefixes a loaded resource already declares. Mirrors the `prefixes` command in the rudof shell. `action` defaults to \"list\", which needs no other field; each other action documents the fields it needs. Always returns the full, current list of default prefixes after the action.",
         annotations(

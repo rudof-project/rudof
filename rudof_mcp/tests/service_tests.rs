@@ -88,6 +88,21 @@ mod tool_router_tests {
         }
     }
 
+    /// The spec's display name is `title`; `annotations.title` is a hint
+    /// clients are told to distrust, so every tool declares both.
+    #[test]
+    fn test_tools_declare_a_title() {
+        let service = RudofMcpService::new();
+
+        for tool in service.tool_router.list_all() {
+            let title = tool.title.as_deref().unwrap_or_default();
+            assert!(!title.is_empty(), "Tool '{}' should declare a title", tool.name);
+
+            let annotated = tool.annotations.as_ref().and_then(|a| a.title.as_deref());
+            assert_eq!(annotated, Some(title), "Tool '{}' titles should agree", tool.name);
+        }
+    }
+
     /// A depth of 0 traverses nothing, so the schema must rule it out.
     #[test]
     fn test_node_info_depth_must_be_positive() {
