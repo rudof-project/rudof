@@ -30,6 +30,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 - The `rudof://formats/*` resources, now that the tool schemas carry the accepted values ([#909](https://github.com/rudof-project/rudof/issues/909)).
 - `shapemap_format` from `validate_shex`: only `compact` was ever accepted ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- The `change_directory` tool, and with it the per-session working directory: a relative path resolves against the directory the client started the server in ([#903](https://github.com/rudof-project/rudof/issues/903)).
 
 ## 0.3.32
 ### Fixed
