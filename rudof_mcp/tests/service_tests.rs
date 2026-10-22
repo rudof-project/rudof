@@ -231,56 +231,32 @@ mod prompt_router_tests {
 mod completion_tests {
     use super::*;
 
-    /// Test prompt argument completions for format
+    /// Only the arguments the prompts actually declare get completions; the
+    /// value sets of tool parameters live in their input schemas instead.
     #[test]
-    fn test_prompt_argument_completions_format() {
+    fn test_no_completions_for_tool_parameter_names() {
         let service = RudofMcpService::new();
 
-        let completions = service.get_prompt_argument_completions("any", "format");
+        for argument in ["format", "rdf_format", "schema_format", "result_format", "mode"] {
+            let completions = service.get_prompt_argument_completions("any", argument);
 
-        assert!(!completions.is_empty(), "Should have format completions");
-        assert!(
-            completions.contains(&"turtle".to_string()),
-            "Should include turtle format"
-        );
+            assert!(
+                completions.is_empty(),
+                "'{argument}' is a tool parameter, not a prompt argument"
+            );
+        }
     }
 
-    /// Test prompt argument completions for rdf_format
+    /// Test prompt argument completions for focus
     #[test]
-    fn test_prompt_argument_completions_rdf_format() {
+    fn test_prompt_argument_completions_focus() {
         let service = RudofMcpService::new();
 
-        let completions = service.get_prompt_argument_completions("any", "rdf_format");
+        let completions = service.get_prompt_argument_completions("analyze_rdf_data", "focus");
 
         assert!(!completions.is_empty());
-        assert!(completions.contains(&"turtle".to_string()));
-        assert!(completions.contains(&"ntriples".to_string()));
-        assert!(completions.contains(&"rdfxml".to_string()));
-    }
-
-    /// Test prompt argument completions for schema_format
-    #[test]
-    fn test_prompt_argument_completions_schema_format() {
-        let service = RudofMcpService::new();
-
-        let completions = service.get_prompt_argument_completions("any", "schema_format");
-
-        assert!(!completions.is_empty());
-        assert!(completions.contains(&"shexc".to_string()));
-        assert!(completions.contains(&"shexj".to_string()));
-    }
-
-    /// Test prompt argument completions for mode
-    #[test]
-    fn test_prompt_argument_completions_mode() {
-        let service = RudofMcpService::new();
-
-        let completions = service.get_prompt_argument_completions("any", "mode");
-
-        assert!(!completions.is_empty(), "Should have mode completions");
-        assert!(completions.contains(&"both".to_string()), "Should include 'both' mode");
-        assert!(completions.contains(&"outgoing".to_string()));
-        assert!(completions.contains(&"incoming".to_string()));
+        assert!(completions.contains(&"structure".to_string()));
+        assert!(completions.contains(&"all".to_string()));
     }
 
     /// Test prompt argument completions for technology

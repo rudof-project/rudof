@@ -1,7 +1,6 @@
 use crate::service::errors::*;
 use crate::service::mcp_service::RudofMcpService;
-use crate::service::resources::{json_resource_result, make_resource};
-use crate::service::tools::helpers::{RDF_FORMAT_ENTRIES, format_entries_json};
+use crate::service::resources::make_resource;
 use rmcp::{
     ErrorData as McpError,
     model::{ReadResourceResult, Resource, ResourceContents},
@@ -15,20 +14,12 @@ use std::str::FromStr;
 /// These resources allow clients to access the currently loaded RDF
 /// data in various serialization formats.
 pub fn get_data_resources() -> Vec<Resource> {
-    vec![
-        make_resource(
-            "rudof://current-data",
-            "Current RDF Data (Turtle)",
-            "Currently loaded RDF data in Turtle format",
-            "text/turtle",
-        ),
-        make_resource(
-            "rudof://formats/rdf",
-            "Supported RDF Formats",
-            "List of all supported RDF data formats for import/export",
-            "application/json",
-        ),
-    ]
+    vec![make_resource(
+        "rudof://current-data",
+        "Current RDF Data (Turtle)",
+        "Currently loaded RDF data in Turtle format",
+        "text/turtle",
+    )]
 }
 
 pub async fn handle_data_resource(
@@ -43,7 +34,6 @@ pub async fn handle_data_resource(
         "rudof://current-data/trig" => Some(export_rdf_data(service, uri, "trig").await),
         "rudof://current-data/nquads" => Some(export_rdf_data(service, uri, "nquads").await),
         "rudof://current-data/n3" => Some(export_rdf_data(service, uri, "n3").await),
-        "rudof://formats/rdf" => Some(get_rdf_formats(uri)),
         _ => None,
     }
 }
@@ -102,9 +92,4 @@ pub async fn export_rdf_data(
         text,
         meta: None,
     }]))
-}
-
-fn get_rdf_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
-    let formats = format_entries_json(RDF_FORMAT_ENTRIES, "turtle");
-    json_resource_result(uri, &formats)
 }

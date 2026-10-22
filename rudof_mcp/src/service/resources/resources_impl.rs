@@ -13,14 +13,7 @@ use rmcp::{
 };
 
 use crate::service::resources::data_resources_impl::{get_data_resources, handle_data_resource};
-use crate::service::resources::node_resources_impl::{get_node_resources, handle_node_resource};
-use crate::service::resources::query_resources_impl::{get_query_resources, handle_query_resource};
-use crate::service::resources::shacl_validate_resources_impl::{
-    get_shacl_validate_resources, handle_shacl_validate_resource,
-};
-use crate::service::resources::shex_validate_resources_impl::{
-    get_shex_validate_resources, handle_shex_validate_resource,
-};
+use crate::service::resources::shex_resources_impl::{get_shex_resources, handle_shex_resource};
 
 /// Return the list of available resources
 pub async fn list_resources(
@@ -31,10 +24,7 @@ pub async fn list_resources(
     let mut all_resources: Vec<Resource> = Vec::new();
 
     all_resources.extend(get_data_resources());
-    all_resources.extend(get_node_resources());
-    all_resources.extend(get_query_resources());
-    all_resources.extend(get_shex_validate_resources());
-    all_resources.extend(get_shacl_validate_resources());
+    all_resources.extend(get_shex_resources());
 
     Ok(ListResourcesResult::with_all_items(all_resources))
 }
@@ -51,19 +41,7 @@ pub async fn read_resource(
         return result;
     }
 
-    if let Some(result) = handle_node_resource(&uri) {
-        return result;
-    }
-
-    if let Some(result) = handle_query_resource(&uri) {
-        return result;
-    }
-
-    if let Some(result) = handle_shex_validate_resource(&uri) {
-        return result;
-    }
-
-    if let Some(result) = handle_shacl_validate_resource(&uri) {
+    if let Some(result) = handle_shex_resource(&uri) {
         return result;
     }
 
