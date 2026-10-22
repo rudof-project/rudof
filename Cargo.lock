@@ -5152,6 +5152,7 @@ dependencies = [
  "rudof_iri",
  "rudof_rdf",
  "rust_decimal",
+ "schemars 1.2.2",
  "serde",
  "serde_json",
  "tabled",

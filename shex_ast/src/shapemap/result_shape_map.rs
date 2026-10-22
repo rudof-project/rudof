@@ -199,12 +199,15 @@ impl ResultShapeMap {
             .flat_map(|(node, shapes)| shapes.iter().map(move |(shape, status)| (node, shape, status)))
     }
 
+    pub fn iter_sorted(&self, sort_mode: &SortMode) -> impl Iterator<Item = (&Node, &ShapeLabel, &ValidationStatus)> {
+        self.iter().sorted_by(self.get_comparator(sort_mode))
+    }
+
     pub fn as_csv<W: Write>(&self, writer: W, sort_mode: SortMode, with_details: bool) -> Result<(), Error> {
         let mut wtr = csv::Writer::from_writer(writer);
         wtr.write_record(["node", "shape", "status", "details"])?;
 
-        let cmp = self.get_comparator(&sort_mode);
-        for (node, label, status) in self.iter().sorted_by(cmp) {
+        for (node, label, status) in self.iter_sorted(&sort_mode) {
             let node_label = show_node(node, self.nodes_prefixmap());
             let shape_label = show_shapelabel(label, self.shapes_prefixmap());
             let (details, status_label) = match status {
@@ -249,8 +252,7 @@ impl ResultShapeMap {
             builder.push_record(["Node", "Shape", "Status"]);
         }
 
-        let cmp = self.get_comparator(sort_mode);
-        for (node, label, status) in self.iter().sorted_by(cmp) {
+        for (node, label, status) in self.iter_sorted(sort_mode) {
             let node_label = show_node(node, self.nodes_prefixmap());
             let shape_label = show_shapelabel(label, self.shapes_prefixmap());
             let (details, status_label) = match status {

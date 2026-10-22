@@ -5,6 +5,7 @@ use rmcp::{
     model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode};
+use rudof_lib::types::{ResultShapeMap, ShExNode, ShExShapeLabel, ShExValidationStatus};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -76,14 +77,67 @@ pub struct ValidateShexRequest {
 /// Response containing ShEx validation results.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShexResponse {
-    /// Validation result output
-    pub results: String,
+    /// Whether every entry of the shapemap conforms to the shape it was mapped to.
+    pub conforms: bool,
+    /// How many entries reached each status.
+    pub counts: ShExStatusCounts,
+    /// One entry per `(node, shape)` pair of the shapemap.
+    pub entries: Vec<ShExEntry>,
+    /// The results as rendered in `result_format`.
+    pub report: String,
     /// Result format used
     pub result_format: ResultShExValidationFormatParam,
     /// Sort order applied
     pub sort_by: ShExSortByParam,
-    /// Size of results in bytes
+    /// Size of the rendered results in bytes
     pub result_size_bytes: usize,
+}
+
+/// How many shapemap entries reached each validation status.
+#[derive(Debug, Default, Serialize, Deserialize, JsonSchema)]
+pub struct ShExStatusCounts {
+    /// Entries whose node conforms to its shape.
+    pub conformant: usize,
+    /// Entries whose node does not conform to its shape.
+    pub non_conformant: usize,
+    /// Entries the validator did not decide.
+    pub pending: usize,
+    /// Entries the validator found both conformant and non-conformant.
+    pub inconsistent: usize,
+}
+
+/// The outcome of validating one node against one shape.
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ShExEntry {
+    /// The node validated.
+    pub node: ShExNode,
+    /// The shape it was validated against.
+    pub shape: ShExShapeLabel,
+    /// The status it reached, with the validator's reason for it.
+    pub status: ShExValidationStatus,
+}
+
+/// Reads the shapemap the validator left behind into the entries and their counts,
+/// in the same order the rendered report lists them.
+fn shex_entries(results: &ResultShapeMap, sort_by: &ShExValidationSortByMode) -> (Vec<ShExEntry>, ShExStatusCounts) {
+    let mut counts = ShExStatusCounts::default();
+    let entries = results
+        .iter_sorted(&(*sort_by).into())
+        .map(|(node, shape, status)| {
+            match status {
+                ShExValidationStatus::Conformant(_) => counts.conformant += 1,
+                ShExValidationStatus::NonConformant(_) => counts.non_conformant += 1,
+                ShExValidationStatus::Pending => counts.pending += 1,
+                ShExValidationStatus::Inconsistent(_, _) => counts.inconsistent += 1,
+            }
+            ShExEntry {
+                node: node.clone(),
+                shape: shape.clone(),
+                status: status.clone(),
+            }
+        })
+        .collect();
+    (entries, counts)
 }
 
 /// Validate RDF data against a ShEx schema.
@@ -204,6 +258,16 @@ pub async fn validate_shex_impl(
         .into_call_tool_result());
     }
 
+    let shapemap = rudof.shex_validation_results().ok_or_else(|| {
+        internal_error(
+            "Failed to read validation results",
+            "Validation reported success but left no shapemap behind",
+            Some(json!({"operation":"validate_shex_impl", "phase":"read_validation_results"})),
+        )
+    })?;
+    let (entries, counts) = shex_entries(shapemap, &parsed_sort_by);
+    let conforms = counts.non_conformant == 0 && counts.inconsistent == 0;
+
     let mut output_buffer = Cursor::new(Vec::new());
     let serialization = rudof
         .serialize_shex_validation_results(&mut output_buffer)
@@ -229,7 +293,10 @@ pub async fn validate_shex_impl(
     let result_size_bytes = output_str.len();
 
     let response = ValidateShexResponse {
-        results: output_str.clone(),
+        conforms,
+        counts,
+        entries,
+        report: output_str.clone(),
         result_format,
         sort_by,
         result_size_bytes,
@@ -238,8 +305,16 @@ pub async fn validate_shex_impl(
     let structured = serialize_structured(&response, "validate_shex_impl")?;
 
     let mut summary = format!(
-        "ShEx validation completed.\nResult format: {}\nSort by: {}\nResult size: {} bytes",
-        result_format, sort_by, result_size_bytes,
+        "ShEx validation completed.\nConforms: {}\nEntries: {} (conformant: {}, non-conformant: {}, pending: {}, inconsistent: {})\nResult format: {}\nSort by: {}\nResult size: {} bytes",
+        response.conforms,
+        response.entries.len(),
+        response.counts.conformant,
+        response.counts.non_conformant,
+        response.counts.pending,
+        response.counts.inconsistent,
+        result_format,
+        sort_by,
+        result_size_bytes,
     );
 
     // Add ShapeMap source info

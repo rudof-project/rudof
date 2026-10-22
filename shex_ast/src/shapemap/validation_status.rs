@@ -1,12 +1,13 @@
 use std::fmt::Display;
 
-use serde::Serialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::shapemap::{ConformantInfo, NonConformantInfo};
 
 /// Represents the current status of validation
-#[derive(Debug, PartialEq, Clone, Serialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub enum ValidationStatus {
     Conformant(ConformantInfo),
     NonConformant(NonConformantInfo),

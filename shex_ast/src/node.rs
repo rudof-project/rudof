@@ -10,12 +10,13 @@ use rudof_rdf::rdf_core::{
         literal::{ConcreteLiteral, NumericLiteral},
     },
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 impl Value for Node {}
 
-#[derive(PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize, Clone, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize, JsonSchema, Clone, PartialOrd, Ord)]
 #[serde(transparent)]
 pub struct Node {
     node: Object,

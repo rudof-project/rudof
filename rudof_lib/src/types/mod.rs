@@ -26,4 +26,6 @@ pub use shacl::types::Severity as ShaclSeverity;
 pub use shacl::validator::report::{
     ValidationReport as ShaclValidationReport, ValidationResult as ShaclValidationResult,
 };
+pub use shex_ast::ir::shape_label::ShapeLabel as ShExShapeLabel;
+pub use shex_ast::node::Node as ShExNode;
 pub use shex_ast::shapemap::{ResultShapeMap, ValidationStatus as ShExValidationStatus};
