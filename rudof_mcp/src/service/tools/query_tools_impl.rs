@@ -68,6 +68,20 @@ async fn generate_sparql_from_natural_language(
 
     let user_message = format!("Generate a SPARQL query for: {}", natural_language);
 
+    // Sampling is the client's to provide. Asking a client that never declared
+    // it yields an opaque "method not found", so say what is missing instead.
+    let declares_sampling = peer
+        .peer_info()
+        .is_some_and(|info| info.capabilities.sampling.is_some());
+    if !declares_sampling {
+        return Err(invalid_params_error(
+            "Sampling not available",
+            "This MCP client does not support sampling, which 'query_natural_language' needs. \
+             Pass a SPARQL query in 'query' instead.",
+            Some(json!({"operation":"generate_sparql_from_natural_language","phase":"check_capability"})),
+        ));
+    }
+
     // Create sampling request with system prompt and user message.
     let sampling_request = CreateMessageRequestParams::new(vec![SamplingMessage::user_text(user_message.clone())], 512)
         .with_system_prompt(system_message)
