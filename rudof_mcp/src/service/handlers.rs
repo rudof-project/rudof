@@ -176,59 +176,55 @@ impl ServerHandler for RudofMcpService {
     ) -> Result<CallToolResponse, McpError> {
         tracing::debug!(tool_name = %request.name, "Tool call requested");
 
-        RudofMcpService::with_request_context(context.clone(), async {
-            // Send debug log for tool invocation (respects log level filtering)
-            let tool_name = request.name.clone();
-            let log_data = LogData::new("Tool invocation started")
-                .with_field("tool_name", tool_name.clone())
-                .with_field("has_arguments", request.arguments.is_some());
-            send_log(
-                LoggingLevel::Debug,
-                Some("tools".to_string()),
-                log_data,
-                self.current_min_log_level.clone(),
-                self.log_rate_limiter.clone(),
-                &context.peer,
-            )
-            .await;
+        // Send debug log for tool invocation (respects log level filtering)
+        let tool_name = request.name.clone();
+        let log_data = LogData::new("Tool invocation started")
+            .with_field("tool_name", tool_name.clone())
+            .with_field("has_arguments", request.arguments.is_some());
+        send_log(
+            LoggingLevel::Debug,
+            Some("tools".to_string()),
+            log_data,
+            self.current_min_log_level.clone(),
+            self.log_rate_limiter.clone(),
+            &context.peer,
+        )
+        .await;
 
-            let ctx = ToolCallContext::new(self, request, context.clone());
-            let result = self.tool_router.call(ctx).await;
+        let ctx = ToolCallContext::new(self, request, context.clone());
+        let result = self.tool_router.call(ctx).await;
 
-            // Log tool completion (respects log level filtering)
-            match &result {
-                Ok(_) => {
-                    let log_data =
-                        LogData::new("Tool executed successfully").with_field("tool_name", tool_name.clone());
-                    send_log(
-                        LoggingLevel::Debug,
-                        Some("tools".to_string()),
-                        log_data,
-                        self.current_min_log_level.clone(),
-                        self.log_rate_limiter.clone(),
-                        &context.peer,
-                    )
-                    .await;
-                },
-                Err(_) => {
-                    let log_data = LogData::new("Tool execution failed")
-                        .with_field("tool_name", tool_name.clone())
-                        .with_field("error", "[redacted]");
-                    send_log(
-                        LoggingLevel::Error,
-                        Some("tools".to_string()),
-                        log_data,
-                        self.current_min_log_level.clone(),
-                        self.log_rate_limiter.clone(),
-                        &context.peer,
-                    )
-                    .await;
-                },
-            }
+        // Log tool completion (respects log level filtering)
+        match &result {
+            Ok(_) => {
+                let log_data = LogData::new("Tool executed successfully").with_field("tool_name", tool_name.clone());
+                send_log(
+                    LoggingLevel::Debug,
+                    Some("tools".to_string()),
+                    log_data,
+                    self.current_min_log_level.clone(),
+                    self.log_rate_limiter.clone(),
+                    &context.peer,
+                )
+                .await;
+            },
+            Err(_) => {
+                let log_data = LogData::new("Tool execution failed")
+                    .with_field("tool_name", tool_name.clone())
+                    .with_field("error", "[redacted]");
+                send_log(
+                    LoggingLevel::Error,
+                    Some("tools".to_string()),
+                    log_data,
+                    self.current_min_log_level.clone(),
+                    self.log_rate_limiter.clone(),
+                    &context.peer,
+                )
+                .await;
+            },
+        }
 
-            result
-        })
-        .await
+        result
     }
 
     // Handle completion requests for prompt/resource arguments

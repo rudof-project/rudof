@@ -4,7 +4,7 @@ use crate::service::{errors::*, mcp_service::*};
 // is no replacement API, so they stay in use here.
 #[allow(deprecated)]
 use rmcp::{
-    ErrorData as McpError,
+    ErrorData as McpError, Peer, RoleServer,
     handler::server::wrapper::Parameters,
     model::{CallToolResult, ContentBlock, CreateMessageRequestParams, SamplingMessage},
 };
@@ -55,7 +55,10 @@ pub struct QueryExecutionResponse {
 // MCP sampling is deprecated by SEP-2577; the protocol still supports it
 // and there is no replacement API, so it stays in use here.
 #[allow(deprecated)]
-async fn generate_sparql_from_natural_language(natural_language: &str) -> Result<String, McpError> {
+async fn generate_sparql_from_natural_language(
+    natural_language: &str,
+    peer: &Peer<RoleServer>,
+) -> Result<String, McpError> {
     let system_message = r#"You are a SPARQL query expert. Convert natural language questions into valid SPARQL queries.
                                     - Only output the SPARQL query, no explanations or markdown formatting
                                     - Use standard SPARQL syntax (SELECT, CONSTRUCT, ASK, or DESCRIBE)
@@ -65,22 +68,13 @@ async fn generate_sparql_from_natural_language(natural_language: &str) -> Result
 
     let user_message = format!("Generate a SPARQL query for: {}", natural_language);
 
-    // Get the current request context to access the peer for sampling
-    let context = RudofMcpService::current_request_context().ok_or_else(|| {
-        internal_error(
-            "Sampling context error",
-            "Request context not found",
-            Some(json!({"operation":"generate_sparql_from_natural_language","phase":"get_context"})),
-        )
-    })?;
-
     // Create sampling request with system prompt and user message.
     let sampling_request = CreateMessageRequestParams::new(vec![SamplingMessage::user_text(user_message.clone())], 512)
         .with_system_prompt(system_message)
         .with_temperature(0.1); // Low temperature for more deterministic output
 
     // Send sampling request through rmcp
-    let response = context.peer.create_message(sampling_request).await.map_err(|e| {
+    let response = peer.create_message(sampling_request).await.map_err(|e| {
         internal_error(
             "Query generation error",
             e.to_string(),
@@ -147,6 +141,7 @@ pub async fn execute_sparql_query_impl(
         query_natural_language,
         result_format,
     }): Parameters<ExecuteSparqlQueryRequest>,
+    peer: &Peer<RoleServer>,
 ) -> Result<CallToolResult, McpError> {
     // Determine the SPARQL query to execute - return Tool Execution Error for invalid combinations
     let sparql_query = match (query, query_natural_language) {
@@ -156,7 +151,7 @@ pub async fn execute_sparql_query_impl(
         },
         (None, Some(nl)) => {
             // Natural language query provided - generate SPARQL using rmcp sampling
-            generate_sparql_from_natural_language(&nl).await?
+            generate_sparql_from_natural_language(&nl, peer).await?
         },
         (Some(_), Some(_)) => {
             return Ok(ToolExecutionError::new(

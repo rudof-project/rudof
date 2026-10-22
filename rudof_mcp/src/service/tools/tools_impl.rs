@@ -12,7 +12,7 @@
 
 use crate::service::mcp_service::RudofMcpService;
 use rmcp::{
-    ErrorData as McpError,
+    ErrorData as McpError, Peer, RoleServer,
     handler::server::{tool::schema_for_output, wrapper::Parameters},
     model::CallToolResult,
     tool, tool_router,
@@ -147,8 +147,9 @@ impl RudofMcpService {
     pub async fn execute_sparql_query(
         &self,
         params: Parameters<ExecuteSparqlQueryRequest>,
+        peer: Peer<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
-        execute_sparql_query_impl(self, params).await
+        execute_sparql_query_impl(self, params, &peer).await
     }
 
     // -------------------------------------------------------------------------

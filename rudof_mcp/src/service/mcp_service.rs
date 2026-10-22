@@ -3,7 +3,7 @@
 //! This module contains the main [`RudofMcpService`] struct which implements
 //! the MCP `ServerHandler` trait and manages all server state.
 
-use std::{future::Future, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::service::tools::helpers::{
@@ -15,19 +15,13 @@ use crate::service::{logging::LogRateLimiter, state};
 // MCP logging and there is no replacement API, so it stays in use here.
 #[allow(deprecated)]
 use rmcp::{
-    RoleServer,
     handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
     model::LoggingLevel,
-    service::RequestContext,
 };
 use rudof_lib::{
     Rudof, RudofConfig,
     formats::{DataFormat, InputSpec, ResultDataFormat},
 };
-
-tokio::task_local! {
-    static REQUEST_CONTEXT: RequestContext<RoleServer>;
-}
 
 /// Errors that can occur when creating a [`RudofMcpService`].
 ///
@@ -175,19 +169,6 @@ impl RudofMcpService {
             log_rate_limiter: Arc::new(Mutex::new(LogRateLimiter::default())),
             session_dir: Arc::new(RwLock::new(session_dir)),
         })
-    }
-
-    /// Run a future with a request context bound to task-local storage.
-    pub async fn with_request_context<F, T>(context: RequestContext<RoleServer>, future: F) -> T
-    where
-        F: Future<Output = T>,
-    {
-        REQUEST_CONTEXT.scope(context, future).await
-    }
-
-    /// Returns the request context bound to the current async task, if any.
-    pub fn current_request_context() -> Option<RequestContext<RoleServer>> {
-        REQUEST_CONTEXT.try_with(Clone::clone).ok()
     }
 
     /// Count the number of triples in an N-Triples string.
