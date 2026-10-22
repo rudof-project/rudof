@@ -4,6 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, ContentBlock},
 };
+use rudof_lib::Rudof;
 use rudof_lib::formats::ShExFormat;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -31,17 +32,75 @@ pub struct ShowShexRequest {
 
     /// Output format for the serialized schema. Default: shexc.
     pub result_schema_format: Option<ResultShExFormatParam>,
+
+    /// Also report the shape counts and the shapes the schema defines. Default: false.
+    pub show_statistics: Option<bool>,
+
+    /// Also report the dependencies between the shapes. Default: false.
+    pub show_dependencies: Option<bool>,
 }
 
 /// Response from displaying a ShEx schema.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ShowShexResponse {
-    /// Serialized schema output
-    pub results: String,
+    /// The schema serialized in `result_format`.
+    pub schema: String,
+    /// The statistics, when `show_statistics` asked for them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub statistics: Option<String>,
+    /// The shape dependencies, when `show_dependencies` asked for them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dependencies: Option<String>,
     /// Format used for output
     pub result_format: ResultShExFormatParam,
-    /// Size of results in bytes
+    /// Size of the serialized schema in bytes
     pub result_size_bytes: usize,
+}
+
+/// Which of the three sections of `serialize_shex_schema` to write.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ShexSection {
+    Schema,
+    Statistics,
+    Dependencies,
+}
+
+/// Serializes one section of the loaded schema on its own, so each reaches the caller as
+/// its own field instead of all three concatenated into one string.
+fn serialize_section(
+    rudof: &Rudof,
+    format: &ShExFormat,
+    shape: Option<&str>,
+    section: ShexSection,
+) -> Result<ToolResult<String>, McpError> {
+    let mut buffer = Cursor::new(Vec::new());
+    let mut serialization = rudof
+        .serialize_shex_schema(&mut buffer)
+        .with_result_shex_format(format)
+        .with_show_schema(section == ShexSection::Schema)
+        .with_show_statistics(section == ShexSection::Statistics)
+        .with_show_dependencies(section == ShexSection::Dependencies);
+    // The shape selector narrows the schema, and is meaningless for the other two.
+    if section == ShexSection::Schema
+        && let Some(shape) = shape
+    {
+        serialization = serialization.with_shape(shape);
+    }
+    if let Err(e) = serialization.execute() {
+        return Ok(Err(ToolExecutionError::with_hint(
+            format!("Failed to serialize ShEx schema: {}", e),
+            "Try a different result_schema_format or verify the shape selector",
+        )));
+    }
+
+    let serialized = String::from_utf8(buffer.into_inner()).map_err(|e| {
+        internal_error(
+            "Conversion error",
+            e.to_string(),
+            Some(json!({"operation":"show_shex_impl","phase":"utf8_conversion"})),
+        )
+    })?;
+    Ok(Ok(serialized))
 }
 
 /// Parse and display a ShEx schema with optional analysis features.
@@ -59,6 +118,8 @@ pub async fn show_shex_impl(
         base_schema,
         shape,
         result_schema_format,
+        show_statistics,
+        show_dependencies,
     }): Parameters<ShowShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
@@ -88,39 +149,32 @@ pub async fn show_shex_impl(
         .into_call_tool_result());
     }
 
-    let mut output_buffer = Cursor::new(Vec::new());
-    let mut serialization = rudof
-        .serialize_shex_schema(&mut output_buffer)
-        .with_result_shex_format(&parsed_result_format);
-    if let Some(shape_selector) = shape.as_deref() {
-        serialization = serialization.with_shape(shape_selector);
-    }
-    if let Err(e) = serialization
-        .with_show_schema(true)
-        .with_show_dependencies(true)
-        .with_show_statistics(true)
-        .execute()
-    {
-        return Ok(ToolExecutionError::with_hint(
-            format!("Failed to serialize ShEx schema: {}", e),
-            "Try a different result_schema_format or verify the shape selector",
-        )
-        .into_call_tool_result());
-    }
+    let schema_output = match serialize_section(&rudof, &parsed_result_format, shape.as_deref(), ShexSection::Schema)? {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
-    let output_bytes = output_buffer.into_inner();
-    let output_str = String::from_utf8(output_bytes).map_err(|e| {
-        internal_error(
-            "Conversion error",
-            e.to_string(),
-            Some(json!({"operation":"show_shex_impl","phase":"utf8_conversion"})),
-        )
-    })?;
+    let statistics = match show_statistics.unwrap_or(false) {
+        true => match serialize_section(&rudof, &parsed_result_format, None, ShexSection::Statistics)? {
+            Ok(value) => Some(value),
+            Err(e) => return Ok(e.into_call_tool_result()),
+        },
+        false => None,
+    };
+    let dependencies = match show_dependencies.unwrap_or(false) {
+        true => match serialize_section(&rudof, &parsed_result_format, None, ShexSection::Dependencies)? {
+            Ok(value) => Some(value),
+            Err(e) => return Ok(e.into_call_tool_result()),
+        },
+        false => None,
+    };
 
-    let result_size_bytes = output_str.len();
+    let result_size_bytes = schema_output.len();
 
     let response = ShowShexResponse {
-        results: output_str.clone(),
+        schema: schema_output.clone(),
+        statistics,
+        dependencies,
         result_format: result_schema_format,
         result_size_bytes,
     };
@@ -128,7 +182,7 @@ pub async fn show_shex_impl(
     let structured = serialize_structured(&response, "show_shex_impl")?;
 
     let summary = format!(
-        "ShEx schema serialized.\nResult format: {}\nResult size: {} bytes",
+        "ShEx schema serialized.\nResult format: {}\nSchema size: {} bytes",
         result_schema_format, result_size_bytes
     );
 
@@ -141,7 +195,7 @@ pub async fn show_shex_impl(
         "shexc" => "shex",
         _ => "text",
     };
-    let results_preview = code_block_preview(preview_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
+    let results_preview = code_block_preview(preview_language, &schema_output, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
         ContentBlock::text(summary),
