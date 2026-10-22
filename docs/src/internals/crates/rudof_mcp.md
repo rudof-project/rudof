@@ -18,12 +18,12 @@ The Rudof MCP server supports two configurable transport mechanisms:
   - Bind address
   - Port
   - Route name
-  - Allowed networks
+  - Allowed origins
+  - Allowed hosts
 
-  It also implements the security requirements defined by the MCP specification:
-  - Origin Validation
-  - Protocol Version Validation
-  - Session Management
+  The security requirements defined by the MCP specification: `Origin` validation,
+  `Host` validation against DNS rebinding, protocol version validation and session
+  management.
 
 ## MCP Capabilities
 
@@ -141,30 +141,28 @@ use rudof_mcp::server::{run_mcp, McpConfig, TransportType};
 
 let config = McpConfig {
     transport: TransportType::StreamableHTTP,
-    bind_address: Some("127.0.0.1".to_string()),
-    port: Some(8080),
-    route_path: Some("mcp".to_string()),
-    allowed_networks: None, // Defaults to localhost only
+    bind_address: "127.0.0.1".to_string(),
+    port: 8080,
+    route_path: "/mcp".to_string(),
+    ..McpConfig::default() // Loopback origins and hosts only
 };
 
 run_mcp(config)?;
 ```
 
-### Run Rudof MCP using HTTP transport with custom allowed networks
+### Run Rudof MCP using HTTP transport with custom origins and hosts
 
 ```rust
 use rudof_mcp::server::{run_mcp, McpConfig, TransportType};
 
 let config = McpConfig {
     transport: TransportType::StreamableHTTP,
-    bind_address: Some("0.0.0.0".to_string()),
-    port: Some(9000),
-    route_path: Some("mcp".to_string()),
-    allowed_networks: Some(vec![
-        "127.0.0.1".to_string(),
-        "192.168.1.0/24".to_string(),
-        "::1".to_string(),
-    ]),
+    bind_address: "0.0.0.0".to_string(),
+    port: 9000,
+    route_path: "/mcp".to_string(),
+    allowed_origins: vec!["https://app.example.com:443".to_string()],
+    // A wildcard bind accepts only loopback `Host` headers until named here
+    allowed_hosts: vec!["rdf.example.com".to_string()],
 };
 
 run_mcp(config)?;
@@ -177,10 +175,10 @@ use rudof_mcp::server::{run_mcp_async, McpConfig, TransportType};
 
 let config = McpConfig {
     transport: TransportType::StreamableHTTP,
-    bind_address: Some("127.0.0.1".to_string()),
-    port: Some(8080),
-    route_path: Some("mcp".to_string()),
-    allowed_networks: None,
+    bind_address: "127.0.0.1".to_string(),
+    port: 8080,
+    route_path: "/mcp".to_string(),
+    ..McpConfig::default()
 };
 
 tokio::spawn(async move {
@@ -196,7 +194,6 @@ This crate primarily depends on:
 - [`rudof_lib`](https://crates.io/crates/rudof_lib) — Core Rudof library for RDF operations
 - [`axum`](https://crates.io/crates/axum) — Modern HTTP server for Streamable HTTP transport
 - [`tokio`](https://crates.io/crates/tokio) — High-performance asynchronous runtime
-- [`ipnetwork`](https://crates.io/crates/ipnetwork) — IP address and network parsing and validation
 
 ## Documentation
 

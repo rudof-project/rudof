@@ -149,7 +149,7 @@ For example, to bind to all IPv4 interfaces (allows network access):
 rudof mcp --transport streamable-http --bind 0.0.0.0
 ```
 
-> ⚠️ **Security Warning**: When binding to `0.0.0.0` or `::`, the server becomes accessible from any network interface. Always combine this with appropriate firewall rules and the `--allowed-network` option to restrict access.
+> ⚠️ **Security Warning**: When binding to `0.0.0.0` or `::`, the server becomes accessible from any network interface. Combine it with firewall rules and with `--allowed-host`, which is also **required** in that case: a wildcard bind cannot be resolved to the authority clients will use, so only loopback `Host` headers are accepted until you name your own.
 
 ### Changing the port (streamable-http)
 
@@ -173,30 +173,37 @@ By default, it is `/rudof`, but you can change it with `--route` (or `-r`):
 rudof mcp --route /rdfserver
 ```
 
-### Configuring allowed networks (streamable-http)
+### Configuring allowed origins and hosts (streamable-http)
 
-For security, the MCP server validates the `Origin` header of incoming HTTP requests. By default, only `localhost` connections are allowed (127.0.0.0/8 for IPv4 and ::1/128 for IPv6).
+The MCP specification requires an HTTP server to validate two request headers, and rudof configures both.
 
-You can specify custom allowed networks using the `--allowed-network` (or `-n`) option. This option accepts IP addresses or networks in CIDR notation and can be specified multiple times.
+**`Origin`**: which browser origins may call the server. An origin is a `(scheme, host, port)` triple per RFC 6454. By default only loopback origins are accepted: `http://localhost:*`, `http://127.0.0.1:*`, `http://[::1]:*` and their `https` forms. A request carrying any other `Origin` gets `403 Forbidden`; a request with no `Origin` header at all (curl, a CLI client, server-to-server) is not subject to the check.
+
+Set your own list with `--allowed-origin` (or `-o`), comma-separated or repeated. Every entry needs a scheme, and should carry an explicit port or `:*`:
 
 ```sh
-rudof mcp --transport streamable-http -n 127.0.0.1 -n 192.168.1.0/24
+rudof mcp --transport streamable-http -o https://app.example.com:443 -o http://localhost:*
 ```
 
-> 💡 **Note**: The `--bind` and `--allowed-network` options serve different purposes:
-> - `--bind` controls which network interface the server listens on
-> - `--allowed-network` controls which origins are accepted via the Origin HTTP header
->
-> For maximum security, you can bind to `0.0.0.0` (to allow network access) while restricting allowed networks with `-n` flags.
+**`Host`**: which authorities clients may use to reach the server. This is what stops DNS rebinding. Loopback is always accepted, and a concrete `--bind` address is added automatically. A wildcard bind cannot be resolved to the authority clients will use, so when you bind to `0.0.0.0` or `::` you have to name it with `--allowed-host` (or `-H`):
+
+```sh
+rudof mcp --transport streamable-http --bind 0.0.0.0 -H rdf.example.com
+```
+
+> 💡 **Note**: the three options answer three different questions:
+> - `--bind`: which interface the server listens on
+> - `--allowed-origin`: which web origins may call it (browser clients)
+> - `--allowed-host`: which names it answers to (DNS-rebinding protection)
 
 ### Combined example
 
 You can combine all parameters as needed.
 
-For example, to run the MCP server with `streamable-http` transport on port `8080` under the route `/rdf`, allowing connections from localhost and a local network:
+For example, to run the MCP server with `streamable-http` transport on port `8080` under the route `/rdf`, reachable on the local network as `rdf.example.com` and callable from one web app:
 
 ```sh
-rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --allowed-network 127.0.0.1 --allowed-network 192.168.1.0/24
+rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf -H rdf.example.com -o https://app.example.com:443
 ```
 
 ## Connecting with Claude Desktop (Example MCP Client)

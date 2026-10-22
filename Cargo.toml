@@ -281,7 +281,6 @@ hashbag = { version = "0.1.12" }
 hashlink = { version = "0.10" }
 indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
-ipnetwork = "0.21"
 is_ci = "1.0"
 itertools = "0.14"
 lbug = "0.19"
@@ -325,13 +324,11 @@ reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls",
     "rustls-tls-native-roots",
 ] }
-rmcp = { version = "3.2", features = [
-    "client",
+rmcp = { version = "3.6", features = [
     "server",
     "transport-io",
     "transport-streamable-http-server",
 ] }
-rmcp-macros = "3.2"
 rudof_cli = { version = "0.3.31", path = "./rudof_cli" }
 rudof_config = { version = "0.3.31", path = "./rudof_config" }
 rudof_iri = { version = "0.3.31", path = "./rudof_iri" }

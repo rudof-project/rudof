@@ -3,31 +3,25 @@
 //! This module contains the main [`RudofMcpService`] struct which implements
 //! the MCP `ServerHandler` trait and manages all server state.
 
-use std::{future::Future, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::service::tools::helpers::{
     NODE_INFO_MODE_LIST, RDF_FORMAT_LIST, READER_MODES_LIST, RESULT_FORMAT_LIST, SHACL_FORMAT_LIST, SHEX_FORMAT_LIST,
     SPARQL_RESULT_FORMAT_LIST,
 };
-use crate::service::{logging::LogRateLimiter, prompts, state, tools};
+use crate::service::{logging::LogRateLimiter, state};
 // `LoggingLevel` is deprecated by SEP-2577; the protocol still supports
 // MCP logging and there is no replacement API, so it stays in use here.
 #[allow(deprecated)]
 use rmcp::{
-    RoleServer,
     handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
     model::LoggingLevel,
-    service::RequestContext,
 };
 use rudof_lib::{
     Rudof, RudofConfig,
     formats::{DataFormat, InputSpec, ResultDataFormat},
 };
-
-tokio::task_local! {
-    static REQUEST_CONTEXT: RequestContext<RoleServer>;
-}
 
 /// Errors that can occur when creating a [`RudofMcpService`].
 ///
@@ -35,12 +29,6 @@ tokio::task_local! {
 /// initializing the underlying Rudof library.
 #[derive(Debug)]
 pub enum ServiceCreationError {
-    /// Failed to create Rudof configuration.
-    ///
-    /// This usually indicates invalid environment settings or missing
-    /// configuration files.
-    ConfigError(String),
-
     /// Failed to initialize the Rudof instance.
     ///
     /// This may occur if there are issues loading default prefixes
@@ -51,7 +39,6 @@ pub enum ServiceCreationError {
 impl std::fmt::Display for ServiceCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ConfigError(e) => write!(f, "Failed to create Rudof configuration: {}", e),
             Self::RudofError(e) => write!(f, "Failed to initialize Rudof: {}", e),
         }
     }
@@ -143,8 +130,8 @@ impl RudofMcpService {
 
         // Attempt to load persisted state (for Docker ephemeral containers)
         if let Some(persisted_state) = state::load_state()
+            && persisted_state.has_rdf_data()
             && let Some(rdf_ntriples) = &persisted_state.rdf_data_ntriples
-            && !rdf_ntriples.is_empty()
         {
             tracing::info!(
                 "Restoring {} triples from persisted state",
@@ -169,25 +156,12 @@ impl RudofMcpService {
 
         Ok(Self {
             rudof: Arc::new(Mutex::new(rudof)),
-            tool_router: tools::tool_router_public(),
-            prompt_router: prompts::prompt_router_public(),
+            tool_router: Self::tool_router(),
+            prompt_router: Self::prompt_router(),
             current_min_log_level: Arc::new(RwLock::new(None)),
             log_rate_limiter: Arc::new(Mutex::new(LogRateLimiter::default())),
             session_dir: Arc::new(RwLock::new(session_dir)),
         })
-    }
-
-    /// Run a future with a request context bound to task-local storage.
-    pub async fn with_request_context<F, T>(context: RequestContext<RoleServer>, future: F) -> T
-    where
-        F: Future<Output = T>,
-    {
-        REQUEST_CONTEXT.scope(context, future).await
-    }
-
-    /// Returns the request context bound to the current async task, if any.
-    pub fn current_request_context() -> Option<RequestContext<RoleServer>> {
-        REQUEST_CONTEXT.try_with(Clone::clone).ok()
     }
 
     /// Count the number of triples in an N-Triples string.

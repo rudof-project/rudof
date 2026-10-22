@@ -13,6 +13,7 @@ use crate::validator::report::{Evidence, ValidationResult};
 use rudof_rdf::rdf_core::term::Term;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+use std::collections::HashSet;
 #[cfg(feature = "sparql")]
 use std::fmt::Debug;
 
@@ -37,24 +38,8 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
-        let class_fn = |vn: &S::Term| {
-            if vn.is_literal() {
-                return true;
-            }
-            let term = S::object_as_term(self.class_rule());
-
-            !store
-                .objects_for(vn, &RdfVocab::rdf_type().into())
-                .unwrap_or_default()
-                .iter()
-                .any(|ctype| {
-                    ctype == &term
-                        || store
-                            .objects_for(ctype, &RdfsVocab::rdfs_subclass_of_str().into())
-                            .unwrap_or_default()
-                            .contains(&term)
-                })
-        };
+        let term = S::object_as_term(self.class_rule());
+        let class_fn = |vn: &S::Term| vn.is_literal() || !is_shacl_instance(store, vn, &term);
 
         validate_with(
             component,
@@ -96,7 +81,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clas
                 let conforms = if vn.is_literal() {
                     false
                 } else if vn.is_blank_node() {
-                    blank_is_instance::<S>(store, vn, &class_term)?
+                    is_shacl_instance(store, vn, &class_term)
                 } else {
                     let vn_sparql = term_as_sparql::<S>(vn).unwrap_or_default();
                     let query = formatdoc! {"
@@ -129,14 +114,28 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clas
     }
 }
 
-#[cfg(feature = "sparql")]
-fn blank_is_instance<S: NeighsRDF>(store: &S, vn: &S::Term, class_term: &S::Term) -> Result<bool, ValidationError> {
-    let types = store.objects_for(vn, &RdfVocab::rdf_type().into()).unwrap_or_default();
-    Ok(types.iter().any(|ctype| {
-        ctype == class_term
-            || store
-                .objects_for(ctype, &RdfsVocab::rdfs_subclass_of_str().into())
-                .unwrap_or_default()
-                .contains(class_term)
-    }))
+/// Whether `node` is a SHACL instance of `class`: whether it has
+/// `rdf:type/rdfs:subClassOf*` `class`, at any depth of `rdfs:subClassOf`.
+fn is_shacl_instance<S: NeighsRDF>(store: &S, node: &S::Term, class: &S::Term) -> bool {
+    let rdf_type: S::IRI = RdfVocab::rdf_type().into();
+    let subclass_of: S::IRI = RdfsVocab::rdfs_subclass_of_str().into();
+
+    let mut pending: Vec<S::Term> = store
+        .objects_for(node, &rdf_type)
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+    let mut seen: HashSet<S::Term> = pending.iter().cloned().collect();
+
+    while let Some(current) = pending.pop() {
+        if &current == class {
+            return true;
+        }
+        for superclass in store.objects_for(&current, &subclass_of).unwrap_or_default() {
+            if seen.insert(superclass.clone()) {
+                pending.push(superclass);
+            }
+        }
+    }
+    false
 }

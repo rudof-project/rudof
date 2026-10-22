@@ -48,17 +48,6 @@ impl PersistedState {
     /// Current version of the state format.
     pub const CURRENT_VERSION: u32 = 1;
 
-    /// Create a new empty state.
-    #[allow(dead_code)]
-    pub fn new() -> Self {
-        Self {
-            version: Self::CURRENT_VERSION,
-            rdf_data_ntriples: None,
-            last_saved: None,
-            triple_count: None,
-        }
-    }
-
     /// Create state with RDF data.
     pub fn with_rdf_data(rdf_data_ntriples: String, triple_count: usize) -> Self {
         Self {
@@ -70,7 +59,6 @@ impl PersistedState {
     }
 
     /// Check if the state has any RDF data.
-    #[allow(dead_code)]
     pub fn has_rdf_data(&self) -> bool {
         self.rdf_data_ntriples.as_ref().is_some_and(|s| !s.is_empty())
     }
@@ -182,8 +170,6 @@ pub enum StatePersistenceError {
     Json(String),
     /// RDF serialization error
     RdfSerialization(String),
-    /// RDF parsing error
-    RdfParse(String),
 }
 
 impl std::fmt::Display for StatePersistenceError {
@@ -192,7 +178,6 @@ impl std::fmt::Display for StatePersistenceError {
             Self::Io(e) => write!(f, "IO error: {}", e),
             Self::Json(e) => write!(f, "JSON error: {}", e),
             Self::RdfSerialization(e) => write!(f, "RDF serialization error: {}", e),
-            Self::RdfParse(e) => write!(f, "RDF parse error: {}", e),
         }
     }
 }
@@ -211,9 +196,8 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    fn test_persisted_state_new() {
-        let state = PersistedState::new();
-        assert_eq!(state.version, PersistedState::CURRENT_VERSION);
+    fn test_persisted_state_is_empty_by_default() {
+        let state = PersistedState::default();
         assert!(state.rdf_data_ntriples.is_none());
         assert!(!state.has_rdf_data());
     }

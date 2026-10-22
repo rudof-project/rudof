@@ -15,7 +15,6 @@
 //! - `resources`: Access to up-to-date RDF data and supported formats for operations.
 //! - `logging`: Real-time log notifications with level filtering.
 //! - `completions`: Argument completions for tools and prompts.
-//! - `pagination`: Support for paginated resource, prompt and tool listings with opaque cursors.
 //!
 //! ## Docker State Persistence
 //!
@@ -27,7 +26,6 @@ mod errors;
 mod handlers;
 mod logging;
 mod mcp_service;
-mod pagination;
 mod prompts;
 mod resource_templates;
 mod resources;
@@ -35,4 +33,3 @@ mod state;
 mod tools;
 
 pub use mcp_service::RudofMcpService;
-pub use tools::annotated_tools;

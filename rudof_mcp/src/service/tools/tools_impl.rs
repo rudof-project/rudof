@@ -12,11 +12,11 @@
 
 use crate::service::mcp_service::RudofMcpService;
 use rmcp::{
-    ErrorData as McpError, handler::server::router::tool::ToolRouter, handler::server::wrapper::Parameters,
-    model::CallToolResult, tool, tool_router,
+    ErrorData as McpError, Peer, RoleServer,
+    handler::server::{tool::schema_for_output, wrapper::Parameters},
+    model::CallToolResult,
+    tool, tool_router,
 };
-use schemars::JsonSchema;
-use std::sync::{Arc, OnceLock};
 
 // Import the public helper functions from the implementation files
 use crate::service::tools::data_tools_impl::*;
@@ -29,7 +29,7 @@ use crate::service::tools::shex_tools_impl::*;
 use crate::service::tools::shex_validate_tools_impl::*;
 use crate::service::tools::version_tools_impl::*;
 
-#[tool_router]
+#[tool_router(vis = "pub(crate)")]
 impl RudofMcpService {
     // -------------------------------------------------------------------------
     // Data Management Tools
@@ -38,6 +38,7 @@ impl RudofMcpService {
     /// Load RDF data into the server's in-memory datastore.
     #[tool(
         name = "load_rdf_data_from_sources",
+        output_schema = schema_for_output::<LoadRdfDataFromSourcesResponse>(),
         description = "Load RDF triples into the server's in-memory datastore from URLs, local file paths, or inline RDF text. Each call is cumulative — triples are merged into existing data. `data` is optional — omit or pass [] when only using `endpoint`. To query a live SPARQL endpoint: set endpoint URL and pass data:[]. Call this before validate_shex, validate_shacl, execute_sparql_query, node_info, or export tools.",
         annotations(
             title = "Load RDF Data from Sources",
@@ -57,6 +58,7 @@ impl RudofMcpService {
     /// Serialize the current RDF data to a specified format.
     #[tool(
         name = "export_rdf_data",
+        output_schema = schema_for_output::<ExportRdfDataResponse>(),
         description = "Serialize the server's in-memory RDF graph and return it as text. Use to inspect or export loaded data. Default format: turtle.",
         annotations(
             title = "Export RDF Data",
@@ -73,6 +75,7 @@ impl RudofMcpService {
     /// Generate a PlantUML diagram representing the RDF graph structure.
     #[tool(
         name = "export_plantuml",
+        output_schema = schema_for_output::<ExportPlantUmlResponse>(),
         description = "Generate a PlantUML class diagram of the RDF graph structure. Shows subjects, predicates, and objects as a visual graph. Requires data to be loaded first.",
         annotations(
             title = "Export PlantUML Diagram",
@@ -89,6 +92,7 @@ impl RudofMcpService {
     /// Generate a visual image of the RDF graph.
     #[tool(
         name = "export_image",
+        output_schema = schema_for_output::<ExportImageResponse>(),
         description = "Render the server's RDF graph as an SVG or PNG image. Use for visual inspection of graph topology. Requires data to be loaded first.",
         annotations(
             title = "Export RDF Image Visualization",
@@ -109,6 +113,7 @@ impl RudofMcpService {
     /// Retrieve detailed information about an RDF node.
     #[tool(
         name = "node_info",
+        output_schema = schema_for_output::<NodeInfoResponse>(),
         description = "Inspect a specific RDF node's neighborhood: outgoing arcs (node as subject) and incoming arcs (node as object). Use to explore what properties a resource has and what other resources point to it. Requires data to be loaded first.",
         annotations(
             title = "Inspect RDF Node",
@@ -129,6 +134,7 @@ impl RudofMcpService {
     /// Execute a SPARQL query against the loaded RDF data.
     #[tool(
         name = "execute_sparql_query",
+        output_schema = schema_for_output::<QueryExecutionResponse>(),
         description = "Execute a SPARQL query against the server's in-memory RDF graph. Supports SELECT, CONSTRUCT, and ASK (DESCRIBE not yet implemented). Provide a direct SPARQL string in `query` OR a natural language description in `query_natural_language` — not both. No `endpoint` parameter here — to query a live SPARQL endpoint, first call load_rdf_data_from_sources with {endpoint: 'https://...', data: []}. Requires data to be loaded first.",
         annotations(
             title = "Execute SPARQL Query",
@@ -141,8 +147,9 @@ impl RudofMcpService {
     pub async fn execute_sparql_query(
         &self,
         params: Parameters<ExecuteSparqlQueryRequest>,
+        peer: Peer<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
-        execute_sparql_query_impl(self, params).await
+        execute_sparql_query_impl(self, params, &peer).await
     }
 
     // -------------------------------------------------------------------------
@@ -152,6 +159,7 @@ impl RudofMcpService {
     /// Validate RDF data against a ShEx schema.
     #[tool(
         name = "validate_shex",
+        output_schema = schema_for_output::<ValidateShexResponse>(),
         description = "Validate the loaded RDF data against a ShEx schema. Requires a node–shape mapping: supply `shapemap` (e.g. ':alice@:Person') or `maybe_node` with an optional `maybe_shape` to auto-generate one. Requires data to be loaded first.",
         annotations(
             title = "Validate RDF with ShEx",
@@ -168,6 +176,7 @@ impl RudofMcpService {
     /// Check if a ShEx schema is syntactically valid and well-formed.
     #[tool(
         name = "check_shex",
+        output_schema = schema_for_output::<CheckShexResponse>(),
         description = "Parse and verify that a ShEx schema is syntactically valid and well-formed without running any RDF validation. Use to catch schema errors before attempting validation. Does not require data to be loaded.",
         annotations(
             title = "Check ShEx Schema Well-Formedness",
@@ -184,6 +193,7 @@ impl RudofMcpService {
     /// Parse and display a ShEx schema with optional analysis features.
     #[tool(
         name = "show_shex",
+        output_schema = schema_for_output::<ShowShexResponse>(),
         description = "Parse a ShEx schema and display it in the requested output format, with shape statistics and dependency analysis. Use to inspect, convert, or debug a schema. Does not require data to be loaded.",
         annotations(
             title = "Parse and Display ShEx Schema",
@@ -200,6 +210,7 @@ impl RudofMcpService {
     /// Validate RDF data against a SHACL schema.
     #[tool(
         name = "validate_shacl",
+        output_schema = schema_for_output::<ValidateShaclResponse>(),
         description = "Validate the loaded RDF data against a SHACL shapes graph. Returns a standard SHACL validation report. If `shapes` is omitted, shapes embedded in the loaded data are used. Requires data to be loaded first.",
         annotations(
             title = "Validate RDF with SHACL",
@@ -220,6 +231,7 @@ impl RudofMcpService {
     /// Reset session state (RDF data, loaded schemas/shapes, results, ...).
     #[tool(
         name = "reset_session_state",
+        output_schema = schema_for_output::<ResetSessionStateResponse>(),
         description = "Clear session state loaded so far in this MCP session. With no `targets` (or [\"all\"]), clears everything (RDF data, ShEx/SHACL/pgschema/DCTap schemas, shapemap, query/validation results, ...) — the same as starting a fresh session. With one or more target names, clears only that state, leaving the rest untouched. Valid targets: data, shex, shex-validation, shacl, shacl-validation, pgschema, pgschema-validation, shapemap, dctap, service, query, sparql, typemap, rdf-config.",
         annotations(
             title = "Reset Session State",
@@ -239,6 +251,7 @@ impl RudofMcpService {
     /// Get or change this session's virtual working directory.
     #[tool(
         name = "change_directory",
+        output_schema = schema_for_output::<ChangeDirectoryResponse>(),
         description = "Get or change this MCP session's virtual working directory, which relative local file paths passed to other tools (e.g. `load_rdf_data_from_sources`, `show_shex`, `validate_shacl`) are resolved against. Omit `path` to just report the current session directory. Each session has its own independent working directory — this never changes the server process's actual directory or affects other sessions.",
         annotations(
             title = "Get/Change Session Working Directory",
@@ -258,6 +271,7 @@ impl RudofMcpService {
     /// Report the rudof version this MCP server is running.
     #[tool(
         name = "get_rudof_version",
+        output_schema = schema_for_output::<GetVersionResponse>(),
         description = "Report the rudof version this MCP server is running (the same version reported by `rudof --version`). Takes no parameters.",
         annotations(
             title = "Get Rudof Version",
@@ -274,6 +288,7 @@ impl RudofMcpService {
     /// Show, or manage, the session's default prefix declarations.
     #[tool(
         name = "manage_prefixes",
+        output_schema = schema_for_output::<ManagePrefixesResponse>(),
         description = "Show or manage the session's default prefix declarations -- the prefixes assumed and prepended by default to RDF data, SPARQL queries, ShEx schemas and SHACL shapes, independently of whatever prefixes a loaded resource already declares. Mirrors the `prefixes` command in the rudof shell. `action` defaults to \"list\" (no other fields needed). \"add\" requires `alias` and `iri`. \"remove\" requires `alias`. \"rename\" and \"copy\" require `alias` (the existing one) and `new_alias`. Always returns the full, current list of default prefixes after the action.",
         annotations(
             title = "Show/Manage Default Prefixes",
@@ -286,61 +301,4 @@ impl RudofMcpService {
     pub async fn manage_prefixes(&self, params: Parameters<ManagePrefixesRequest>) -> Result<CallToolResult, McpError> {
         manage_prefixes_impl(self, params).await
     }
-}
-
-/// Public wrapper to expose the generated router from the macro
-pub fn tool_router_public() -> ToolRouter<RudofMcpService> {
-    RudofMcpService::tool_router()
-}
-
-/// Return the tools list enriched with output schema and task execution metadata.
-///
-/// Behavioral annotations (title/read_only/destructive/idempotent/open_world)
-/// are declared inline in each `#[tool]` attribute.
-///
-/// # Returns
-///
-/// A vector of `Tool` definitions with annotations for all registered tools.
-fn output_schema_for<T: JsonSchema + 'static>() -> Arc<rmcp::model::JsonObject> {
-    rmcp::handler::server::tool::schema_for_output::<T>()
-}
-
-fn build_annotated_tools() -> Vec<rmcp::model::Tool> {
-    let mut tools = tool_router_public().list_all();
-
-    for tool in tools.iter_mut() {
-        let output_schema = match tool.name.as_ref() {
-            "load_rdf_data_from_sources" => output_schema_for::<LoadRdfDataFromSourcesResponse>(),
-            "export_rdf_data" => output_schema_for::<ExportRdfDataResponse>(),
-            "export_plantuml" => output_schema_for::<ExportPlantUmlResponse>(),
-            "export_image" => output_schema_for::<ExportImageResponse>(),
-            "node_info" => output_schema_for::<NodeInfoResponse>(),
-            "execute_sparql_query" => output_schema_for::<QueryExecutionResponse>(),
-            "show_shex" => output_schema_for::<ShowShexResponse>(),
-            "check_shex" => output_schema_for::<CheckShexResponse>(),
-            "validate_shex" => output_schema_for::<ValidateShexResponse>(),
-            "validate_shacl" => output_schema_for::<ValidateShaclResponse>(),
-            "reset_session_state" => output_schema_for::<ResetSessionStateResponse>(),
-            "change_directory" => output_schema_for::<ChangeDirectoryResponse>(),
-            "get_rudof_version" => output_schema_for::<GetVersionResponse>(),
-            "manage_prefixes" => output_schema_for::<ManagePrefixesResponse>(),
-            _ => {
-                tracing::warn!(tool_name = %tool.name, "Tool missing output schema");
-                continue;
-            },
-        };
-
-        tool.output_schema = Some(output_schema);
-    }
-
-    tools
-}
-
-/// Return the cached annotated tools list.
-///
-/// Output schemas and task support metadata are static — computed once on first
-/// call via [`OnceLock`] and reused for every subsequent `tools/list` request.
-pub fn annotated_tools() -> &'static [rmcp::model::Tool] {
-    static TOOLS: OnceLock<Vec<rmcp::model::Tool>> = OnceLock::new();
-    TOOLS.get_or_init(build_annotated_tools)
 }

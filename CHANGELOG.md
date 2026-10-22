@@ -9,20 +9,41 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
-## [Unreleased]
-### Added
-- `shacl-validate --fetch-strategy by-shape` validates data from a SPARQL endpoint with few queries. The same option is `[shacl] fetch_strategy = "by-shape"` in a config file, `validate_shacl(fetch_strategy=ShaclFetchStrategy.ByShape)` in Python, the `fetchStrategy` argument (`"by-shape"`) of `validateShacl` and `validateShaclAsync` in WebAssembly, and `ValidateShaclBuilder::with_fetch_strategy` in Rust. It fetches the data shape by shape before validating, up to `prefetch_batch_size` nodes (default 50) per query, starting from the shapes with targets and following their shape references. It follows *Validating SHACL constraints over a SPARQL endpoint* (Corman, Florenzano, Reutter and Savković, ISWC 2019), with each query restricted to the nodes the validation can reach. rudof's own engine then validates the fetched data in memory, so the report is the same as with `on-demand`, the default. In a test with 40 focus nodes, `on-demand` sent 124 queries and `by-shape` sent 6. See [Validating against a SPARQL endpoint](docs/src/cli_usage/shacl_validate.md#validating-against-a-sparql-endpoint).
-- The minimum interval between two requests to a SPARQL endpoint, previously fixed at 1.1 s for every endpoint, can now be configured ([#899](https://github.com/rudof-project/rudof/issues/899)). You can set it per endpoint (`min_request_interval_ms` in `[rdf.endpoints.<name>]` or in an endpoint TOML file) and as a default for all endpoints (`[rdf] min_request_interval_ms`). You can also override it for a single run with `--min-request-interval MS` on the CLI, `min_request_interval_ms` in Python's `read_data`, the `minRequestIntervalMs` option of `useEndpoint` in WebAssembly, or `with_endpoint_min_request_interval_ms` on `LoadDataBuilder`. The built-in public endpoints keep 1100 ms. A `429 Too Many Requests` response still raises the interval adaptively, now to at least 1100 ms even when the configured value is lower. `OxigraphEndpoint` gains `with_min_request_interval_ms`, `set_min_request_interval_ms`, `min_request_interval_ms` and `request_count`. See [Request rate limiting](docs/src/references/config.md#request-rate-limiting).
-- ShEx validation of a shapemap against a SPARQL endpoint fetches the arcs of its nodes ahead of time, up to `max_nodes_per_query` nodes (default 20) per query with `VALUES` ([#899](https://github.com/rudof-project/rudof/issues/899)). Validating 100 nodes now takes 5 requests instead of 100. Up to `max_concurrent_requests` of these queries (default 1) run at once, still spaced by the minimum request interval. Both can be set in the same places as `min_request_interval_ms`: `--max-nodes-per-query` and `--max-concurrent-requests` on the CLI, keyword arguments of Python's `read_data`, and the `options` of `useEndpoint` in WebAssembly. `NeighsRDF` gains `prefetch_outgoing_arcs`, a hint that does nothing by default, and `OxigraphEndpoint` implements it. `EndpointLimits` groups the three settings, and `LoadDataBuilder::with_endpoint_limits` overrides them.
-- `Rudof::endpoint_request_count`, `endpoint_request_count()` in Python and `requestCount()` in WebAssembly return the number of requests sent to the endpoint in use ([#899](https://github.com/rudof-project/rudof/issues/899)).
-- `readShexAsync` in the WebAssembly `endpoints` build (`@rudof/rudof/endpoints`). It reads a ShEx schema and fetches the schemas it imports with `IMPORT <iri>`. Relative IRIs are resolved against `base`. The requests use `fetch`, or the function given to `setFetch`. In `rudof_iri`, `set_dereferencer` sets the function that `IriS::dereference` uses on wasm. In `rudof_rdf`, `jspi::enable_dereferencing` sets it to `fetch` with JSPI.
+## 0.3.32
 ### Fixed
-- ShEx `IMPORT` did not work in WebAssembly. On wasm, `IriS::dereference` always failed with the message `rewquest is not enabled`, so a schema with imports could not be read. Imports now work with `readShexAsync` in the `endpoints` build. `readShex` is synchronous and cannot wait for an HTTP response, so it still fails on imports, but the error now says why and points to `readShexAsync`. A non-2xx response is an error, so the next file extension (`.shex`, `.json`, ...) is tried.
-- SHACL validation against a SPARQL endpoint first asked the endpoint for every triple (`SELECT ?s ?p ?o WHERE { ?s ?p ?o }`). On a large endpoint such as Wikidata this query fails, and so did the validation. The cause was the class index that the native engine builds before validation to find the instances of `sh:targetClass` quickly: it reads every triple of the data. rudof now builds it only for data in memory. Data from endpoints is read through a cache (`CachedRdfData`), so that the same lookup is not sent twice.
+- SHACL `sh:targetClass`, implicit class targets and `sh:class` did not follow `rdfs:subClassOf` at all depths, so instances of a sub-subclass were missed. The W3C tests only use one level.
+- The MCP server announced itself as `rmcp` instead of `rudof_mcp` ([#901](https://github.com/rudof-project/rudof/issues/901)).
+- The MCP server rejected over `streamable-http` protocol versions it accepts over stdio, such as `2026-07-28` ([#901](https://github.com/rudof-project/rudof/issues/901)).
+- `execute_sparql_query` with `query_natural_language` asked for sampling from clients that do not support it ([#901](https://github.com/rudof-project/rudof/issues/901)).
 ### Changed
-- Endpoints on a loopback host (`localhost`, `127.0.0.1`, `[::1]`), including the local QLever container, no longer wait between requests by default ([#899](https://github.com/rudof-project/rudof/issues/899)).
-- The SHACL recursion semantics are renamed after the fixed point they compute: `cautious` is now `lfp` (least fixed point, still the default) and `brave` is now `gfp` (greatest fixed point), in `--recursion-semantics`, `[shacl].recursion_semantics` and `RecursionSemantics` (`RecursionSemantics::Lfp`/`RecursionSemantics::Gfp`). The old names are still accepted as aliases on the command line and in config files.
-- A SHACL validation result for `sh:node`, `sh:and`, `sh:or` or `sh:xone` now carries, as `sh:detail`, the nested results that caused it ([#897](https://github.com/rudof-project/rudof/issues/897)), so a report shows why a value failed the referenced shape and which of that shape's constraints it violated. `sh:sourceShape` is unchanged: as the SHACL specification requires, it is the shape that declares the failed constraint (e.g. the property shape holding `sh:node`), not the referenced shape. The `sh:node` result message names the referenced shape by its identifier instead of printing the whole shape. The `details` table output lists the nested results, and `ValidationResult::details()` returns them. See [Which shape caused a violation](docs/src/cli_usage/shacl_validate.md#which-shape-caused-a-violation).
+- MCP `--allowed-network` (CIDR ranges) is replaced by `--allowed-origin` (RFC 6454 origins) and the new `--allowed-host`, required when binding to `0.0.0.0` or `::` ([#901](https://github.com/rudof-project/rudof/issues/901)). `McpConfig` swaps `allowed_networks` for `allowed_origins` and `allowed_hosts`. See [Configuring allowed origins and hosts](docs/src/cli_usage/mcp.md#configuring-allowed-origins-and-hosts-streamable-http).
+- Terminating an MCP session with `HTTP DELETE` answers `202`, not `204`, and `202` for an unknown session id, not `404` ([#901](https://github.com/rudof-project/rudof/issues/901)).
+- `tools/list`, `prompts/list` and `resources/list` drop cursor pagination ([#901](https://github.com/rudof-project/rudof/issues/901)).
+
+## 0.3.31
+### Added
+- `readShexAsync` in the WebAssembly `endpoints` build: reads a ShEx schema and fetches the schemas it imports with `IMPORT <iri>`.
+### Fixed
+- ShEx `IMPORT` did not work in WebAssembly. It works now with `readShexAsync`; the synchronous `readShex` still cannot do it, but the error says why.
+
+## 0.3.30
+### Added
+- `shacl-validate --fetch-strategy by-shape` validates data from a SPARQL endpoint with far fewer queries, fetching it shape by shape. See [Validating against a SPARQL endpoint](docs/src/cli_usage/shacl_validate.md#validating-against-a-sparql-endpoint).
+### Fixed
+- SHACL validation against a SPARQL endpoint asked for every triple first, which fails on a large endpoint such as Wikidata. The class index is now built only for data in memory.
+
+## 0.3.29
+### Added
+- The minimum interval between two requests to a SPARQL endpoint is configurable, per endpoint and as a default ([#899](https://github.com/rudof-project/rudof/issues/899)). See [Request rate limiting](docs/src/references/config.md#request-rate-limiting).
+- ShEx validation of a shapemap against a SPARQL endpoint prefetches the arcs of its nodes: 100 nodes take 5 requests instead of 100 ([#899](https://github.com/rudof-project/rudof/issues/899)).
+- `Rudof::endpoint_request_count`, `endpoint_request_count()` in Python and `requestCount()` in WebAssembly report the requests sent to the endpoint in use ([#899](https://github.com/rudof-project/rudof/issues/899)).
+### Changed
+- Endpoints on a loopback host, including the local QLever container, no longer wait between requests by default ([#899](https://github.com/rudof-project/rudof/issues/899)).
+
+## 0.3.28
+### Changed
+- The SHACL recursion semantics are renamed after the fixed point they compute: `cautious` is now `lfp` and `brave` is now `gfp`. The old names are still accepted as aliases.
+- A SHACL validation result for `sh:node`, `sh:and`, `sh:or` or `sh:xone` now carries the nested results that caused it as `sh:detail` ([#897](https://github.com/rudof-project/rudof/issues/897)). See [Which shape caused a violation](docs/src/cli_usage/shacl_validate.md#which-shape-caused-a-violation).
 
 ## 0.3.27
 ### Added

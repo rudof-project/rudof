@@ -9,7 +9,6 @@ use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationOutcome;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::{Object, Term, Triple};
-use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -66,7 +65,10 @@ impl NativeEngine {
         class: &Object,
     ) -> Result<FocusNodes<RDF>, ValidationError> {
         if let Some(index) = &self.class_index {
-            let focus_nodes = index.instances_of(class).map(|obj| -> RDF::Term { obj.clone().into() });
+            let focus_nodes = index
+                .shacl_instances_of(class)
+                .into_iter()
+                .map(|obj| -> RDF::Term { obj.clone().into() });
             return Ok(FocusNodes::from_iter(focus_nodes));
         }
 
@@ -106,31 +108,14 @@ impl NativeEngine {
         Ok(FocusNodes::from_iter(objects))
     }
 
+    /// A shape that is also a class targets its SHACL instances, as
+    /// `sh:targetClass` does.
     fn implicit_target_class_impl<RDF: NeighsRDF + Debug + 'static>(
         &self,
         store: &RDF,
         shape: &Object,
     ) -> Result<FocusNodes<RDF>, ValidationError> {
-        if let Some(index) = &self.class_index {
-            let instances = index.instances_of_with_subclasses(shape);
-            let focus_nodes = instances.into_iter().map(|obj| -> RDF::Term { obj.clone().into() });
-            return Ok(FocusNodes::from_iter(focus_nodes));
-        }
-
-        let term: RDF::Term = shape.clone().into();
-        let targets = store.subjects_for(&RdfVocab::rdf_type().into(), &term)?;
-
-        let subclass_targets = store
-            .subjects_for(&RdfsVocab::rdfs_subclass_of_str().into(), &term)?
-            .into_iter()
-            .flat_map(move |subclass| {
-                store
-                    .subjects_for(&RdfVocab::rdf_type().into(), &subclass)
-                    .into_iter()
-                    .flatten()
-            });
-
-        Ok(FocusNodes::from_iter(targets.into_iter().chain(subclass_targets)))
+        self.target_class_impl(store, shape)
     }
 }
 

@@ -91,9 +91,16 @@ jobs:
           args: --release --out dist
           sccache: 'true'
           before-script-linux: |
+            # Stop here if a package fails to install. Otherwise the error only
+            # shows up later, at link time (e.g. "cannot find -lssl").
+            set -euxo pipefail
             # If we're running on rhel/almalinux (manylinux containers), install needed packages.
             if command -v yum &> /dev/null; then
-                yum update -y && yum install -y perl-core openssl openssl-devel pkgconfig libatomic
+                # lbug (LadybugDB) always links -lssl -lcrypto, so openssl-devel
+                # is required. No `yum update`: it is not needed, and when it
+                # failed the packages below were not installed.
+                yum install -y perl-core openssl openssl-devel pkgconfig libatomic
+                pkg-config --libs openssl
 
                 # If we're running on i686 we need to symlink libatomic
                 # in order to build openssl with -latomic flag.
@@ -107,7 +114,10 @@ jobs:
                 # this build only. Best-effort: if the package isn't
                 # available, fall through to the container's default compiler.
                 if yum install -y gcc-toolset-13 2>/dev/null; then
+                    # The enable script reads unset variables.
+                    set +u
                     source /opt/rh/gcc-toolset-13/enable
+                    set -u
                     export CC=gcc
                     export CXX=g++
                 fi

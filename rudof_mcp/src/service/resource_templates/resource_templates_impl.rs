@@ -15,9 +15,5 @@ pub async fn list_resource_templates(
         ),
     ];
 
-    Ok(ListResourceTemplatesResult {
-        resource_templates: templates,
-        next_cursor: None,
-        ..Default::default()
-    })
+    Ok(ListResourceTemplatesResult::with_all_items(templates))
 }

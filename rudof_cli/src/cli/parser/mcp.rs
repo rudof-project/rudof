@@ -1,5 +1,5 @@
 use clap::Args;
-use rudof_mcp::server::TransportType;
+use rudof_mcp::server::{DEFAULT_BIND_ADDRESS, DEFAULT_PORT, DEFAULT_ROUTE_PATH, TransportType};
 
 /// Arguments for the `mcp` command
 #[derive(Debug, Clone, Args)]
@@ -18,10 +18,10 @@ pub struct McpArgs {
         short = 'b',
         long = "bind",
         value_name = "ADDRESS",
-        help = "Bind address for HTTP transport. Examples: 127.0.0.1 (localhost IPv4), \
+        help = "Bind address for the streamable-http transport. Examples: 127.0.0.1 (localhost IPv4), \
               0.0.0.0 (all IPv4 interfaces), ::1 (localhost IPv6), :: (all IPv6 interfaces). \
               Default: 127.0.0.1 for security",
-        default_value = "127.0.0.1"
+        default_value = DEFAULT_BIND_ADDRESS
     )]
     pub bind_address: String,
 
@@ -29,8 +29,8 @@ pub struct McpArgs {
         short = 'p',
         long = "port",
         value_name = "PORT",
-        help = "Port number for HTTP transport (only used with http-sse transport)",
-        default_value_t = 8000
+        help = "Port number (only used with the streamable-http transport)",
+        default_value_t = DEFAULT_PORT
     )]
     pub port: u16,
 
@@ -38,21 +38,33 @@ pub struct McpArgs {
         short = 'r',
         long = "route",
         value_name = "PATH",
-        help = "Route path for HTTP transport (only used with http-sse transport)",
-        default_value = "/rudof"
+        help = "Route path for the MCP endpoint (only used with the streamable-http transport)",
+        default_value = DEFAULT_ROUTE_PATH
     )]
     pub route_path: String,
 
     #[arg(
-        short = 'n',
-        long = "allowed-network",
-        value_name = "CIDR",
-        help = "Allowed IP network in CIDR notation (only used with http-sse transport). \
-              Can be comma-separated or specified multiple times to allow multiple networks. \
-              Examples: 127.0.0.1, 192.168.1.0/24, 10.0.0.0/8, ::1. \
-              If not specified, defaults to localhost only (127.0.0.0/8 and ::1/128)",
-        num_args = 0.., // allows multiple values
+        short = 'o',
+        long = "allowed-origin",
+        value_name = "ORIGIN",
+        help = "Browser origin allowed to call the server (only used with the streamable-http transport). \
+              Can be comma-separated or specified multiple times. Each entry needs a scheme and should \
+              carry an explicit port or ':*'. Examples: http://localhost:*, https://app.example.com:443. \
+              If not specified, only loopback origins are allowed",
+        num_args = 0..,
         value_delimiter = ','
     )]
-    pub allowed_networks: Vec<String>,
+    pub allowed_origins: Vec<String>,
+
+    #[arg(
+        short = 'H',
+        long = "allowed-host",
+        value_name = "HOST",
+        help = "Host authority clients may use to reach the server, on top of loopback (only used with \
+              the streamable-http transport). Can be comma-separated or specified multiple times. \
+              Required when binding to all interfaces. Examples: example.com, example.com:8080, 10.0.0.5",
+        num_args = 0..,
+        value_delimiter = ','
+    )]
+    pub allowed_hosts: Vec<String>,
 }
