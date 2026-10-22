@@ -34,20 +34,6 @@ use serde_json::{Value, json};
 use std::{sync::Arc, time::Duration};
 use tokio::{sync::Mutex, sync::RwLock, time::Instant};
 
-/// Mapping of MCP log levels to RFC 5424 numeric severity values.
-///
-/// Lower values indicate higher severity.
-const LOG_LEVEL_MAP: &[(LoggingLevel, u8)] = &[
-    (LoggingLevel::Emergency, 0),
-    (LoggingLevel::Alert, 1),
-    (LoggingLevel::Critical, 2),
-    (LoggingLevel::Error, 3),
-    (LoggingLevel::Warning, 4),
-    (LoggingLevel::Notice, 5),
-    (LoggingLevel::Info, 6),
-    (LoggingLevel::Debug, 7),
-];
-
 /// Maximum number of MCP logging notifications per time window.
 const DEFAULT_MAX_LOGS_PER_WINDOW: u32 = 50;
 
@@ -57,27 +43,23 @@ const DEFAULT_LOG_WINDOW: Duration = Duration::from_secs(1);
 /// Maximum characters retained for free-text log fields.
 const MAX_TEXT_FIELD_CHARS: usize = 2048;
 
-/// Convert a [`LoggingLevel`] to its numeric RFC 5424 value.
+/// The RFC 5424 severity of a [`LoggingLevel`]. Lower is more severe.
 fn level_to_value(level: LoggingLevel) -> u8 {
-    LOG_LEVEL_MAP
-        .iter()
-        .find(|(l, _)| *l == level)
-        .map(|(_, v)| *v)
-        .unwrap_or(6) // Default to Info if not found
+    match level {
+        LoggingLevel::Emergency => 0,
+        LoggingLevel::Alert => 1,
+        LoggingLevel::Critical => 2,
+        LoggingLevel::Error => 3,
+        LoggingLevel::Warning => 4,
+        LoggingLevel::Notice => 5,
+        LoggingLevel::Info => 6,
+        LoggingLevel::Debug => 7,
+    }
 }
 
-/// Check if a log message should be sent based on the current minimum level.
-///
-/// Returns `true` if the message level is at or above the minimum severity.
-///
-/// # Arguments
-///
-/// * `level` - The severity level of the message to send
-/// * `min_level` - The minimum level configured by the client
-pub fn should_log(level: LoggingLevel, min_level: LoggingLevel) -> bool {
-    let numeric_level = level_to_value(level);
-    let min_numeric_level = level_to_value(min_level);
-    numeric_level <= min_numeric_level
+/// Whether `level` is severe enough to send, given the client's minimum.
+fn should_log(level: LoggingLevel, min_level: LoggingLevel) -> bool {
+    level_to_value(level) <= level_to_value(min_level)
 }
 
 /// Simple fixed-window limiter for outbound MCP log notifications.
