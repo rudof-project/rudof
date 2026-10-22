@@ -5,10 +5,12 @@ use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, SHACLPath};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct ValidationResult {
     // Required
     focus_node: Object,

@@ -22,6 +22,7 @@ pub use triple::{Triple, Triples};
 pub use pgschema::result_association::ResultAssociation as PgSchemaResultAssociation;
 #[cfg(feature = "pgschema")]
 pub use pgschema::validation_result::ValidationResult as PgSchemaValidationResult;
+pub use shacl::types::Severity as ShaclSeverity;
 pub use shacl::validator::report::{
     ValidationReport as ShaclValidationReport, ValidationResult as ShaclValidationResult,
 };

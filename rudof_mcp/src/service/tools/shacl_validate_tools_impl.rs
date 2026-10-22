@@ -7,6 +7,7 @@ use rmcp::{
     model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode};
+use rudof_lib::types::{ShaclSeverity, ShaclValidationResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -38,14 +39,45 @@ pub struct ValidateShaclRequest {
 /// Response containing SHACL validation results.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShaclResponse {
-    /// Validation result output
-    pub results: String,
+    /// Whether the data conforms to the shapes.
+    pub conforms: bool,
+    /// How many results carry each severity, in the order the severities first appear.
+    pub counts_by_severity: Vec<SeverityCount>,
+    /// One entry per validation result, each carrying the nested `sh:detail` results
+    /// that caused it. Empty when the validator was configured not to retain them.
+    pub results: Vec<ShaclValidationResult>,
+    /// The report as rendered in `result_format`.
+    pub report: String,
     /// Result format used
     pub result_format: ResultShaclValidationFormatParam,
     /// Sort order applied
     pub sort_by: ShaclSortByParam,
-    /// Size of results in bytes
+    /// Size of the rendered report in bytes
     pub result_size_bytes: usize,
+}
+
+/// How many validation results carry one severity.
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct SeverityCount {
+    /// The severity counted.
+    pub severity: ShaclSeverity,
+    /// How many results carry it, nested `sh:detail` results excluded.
+    pub count: usize,
+}
+
+/// Counts the results of each severity, in the order the severities first appear.
+fn counts_by_severity(results: &[ShaclValidationResult]) -> Vec<SeverityCount> {
+    let mut counts: Vec<SeverityCount> = Vec::new();
+    for result in results {
+        match counts.iter_mut().find(|count| &count.severity == result.severity()) {
+            Some(count) => count.count += 1,
+            None => counts.push(SeverityCount {
+                severity: result.severity().clone(),
+                count: 1,
+            }),
+        }
+    }
+    counts
 }
 
 /// Validate RDF data against SHACL shapes.
@@ -109,6 +141,17 @@ pub async fn validate_shacl_impl(
         .into_call_tool_result());
     }
 
+    let report = rudof.shacl_validation_results().ok_or_else(|| {
+        internal_error(
+            "Shacl validation error",
+            "Validation reported success but left no report behind",
+            Some(json!({"operation":"validate_shacl","phase":"read_validation_report"})),
+        )
+    })?;
+    let conforms = report.conforms();
+    let results = report.results().clone();
+    let counts_by_severity = counts_by_severity(&results);
+
     let mut output_buffer = Cursor::new(Vec::new());
     let serialization = rudof
         .serialize_shacl_validation_results(&mut output_buffer)
@@ -135,7 +178,10 @@ pub async fn validate_shacl_impl(
     let result_size_bytes = output_str.len();
 
     let response = ValidateShaclResponse {
-        results: output_str.clone(),
+        conforms,
+        counts_by_severity,
+        results,
+        report: output_str.clone(),
         result_format,
         sort_by,
         result_size_bytes,
@@ -143,12 +189,29 @@ pub async fn validate_shacl_impl(
 
     let structured = serialize_structured(&response, "validate_shacl_impl")?;
 
+    let severities = response
+        .counts_by_severity
+        .iter()
+        .map(|count| format!("{}: {}", count.severity, count.count))
+        .collect::<Vec<_>>()
+        .join(", ");
     let summary = format!(
         "# SHACL Validation Results\n\n\
+        **Conforms:** {}\n\
+        **Results:** {}{}\n\
         **Result Format:** {}\n\
         **Sort By:** {}\n\
         **Result Size:** {} bytes\n",
-        result_format, sort_by, result_size_bytes
+        response.conforms,
+        response.results.len(),
+        if severities.is_empty() {
+            String::new()
+        } else {
+            format!(" ({severities})")
+        },
+        result_format,
+        sort_by,
+        result_size_bytes
     );
 
     let mut result = CallToolResult::success(vec![

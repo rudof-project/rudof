@@ -5067,6 +5067,7 @@ dependencies = [
  "rudof_rdf",
  "rudof_typing",
  "rust_decimal",
+ "schemars 1.2.2",
  "serde",
  "sparql_service",
  "thiserror 2.0.20",
