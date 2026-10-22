@@ -7,6 +7,7 @@ use crate::rdf_core::{
 };
 use prefixmap::{IriRef, PrefixMap, Show};
 use rudof_iri::IriS;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::{
@@ -175,10 +176,10 @@ pub trait Subject: Debug + Display + PartialEq + Clone + Eq + Hash {
 /// - **Blank Node**: An anonymous resource without a global identifier
 /// - **Literal**: A concrete value (string, number, date, etc.) with optional datatype/language
 /// - **Triple** (RDF-star): A quoted triple that can be nested as an object
-#[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Hash, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub enum Object {
     /// An IRI (Internationalized Resource Identifier) representing a named resource.
-    Iri(IriS),
+    Iri(#[schemars(with = "String")] IriS),
     /// A blank node (anonymous resource) identified by a local label.
     BlankNode(String),
     /// A literal value with a datatype and optional language tag.
@@ -191,6 +192,7 @@ pub enum Object {
     /// - `object`: The object of the nested triple (recursively an Object)
     Triple {
         subject: Box<IriOrBlankNode>,
+        #[schemars(with = "String")]
         predicate: IriS,
         object: Box<Object>,
     },

@@ -3,6 +3,7 @@ use std::fmt::Display;
 use crate::rdf_core::{RDFError, term::Object};
 use prefixmap::{PrefixMap, Show};
 use rudof_iri::IriS;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Represents an RDF resource that is either an IRI or a blank node.
@@ -12,10 +13,10 @@ use serde::{Deserialize, Serialize};
 ///   by a local label (e.g., "b0", "genid1")
 /// - **Iri**: A globally identified resource using an Internationalized Resource
 ///   Identifier
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, JsonSchema, PartialOrd, Ord)]
 pub enum IriOrBlankNode {
     BlankNode(String),
-    Iri(IriS),
+    Iri(#[schemars(with = "String")] IriS),
 }
 
 impl IriOrBlankNode {

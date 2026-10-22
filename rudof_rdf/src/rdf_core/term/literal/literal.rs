@@ -12,6 +12,7 @@ use std::{
 use crate::rdf_core::vocabs::{RdfVocab, XsdVocab};
 use prefixmap::{DerefError, DerefIri, IriRef, PrefixMap};
 use rudof_iri::IriS;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize, Serializer};
 
 /// Types that implement this trait can be used as RDF Literals.
@@ -158,7 +159,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 /// The [`Ord`] implementation panics when comparing incomparable literals (e.g., NaN
 /// floating-point values or literals with different datatypes). Use [`PartialOrd`]
 /// when comparing arbitrary literals to avoid panics.
-#[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, JsonSchema, Clone)]
 #[allow(clippy::enum_variant_names)]
 pub enum ConcreteLiteral {
     /// A plain string literal, optionally with a language tag and, with one, a base
@@ -177,17 +178,22 @@ pub enum ConcreteLiteral {
     },
 
     /// A literal with an explicit datatype IRI.
-    DatatypeLiteral { lexical_form: String, datatype: IriRef },
+    DatatypeLiteral {
+        lexical_form: String,
+        #[schemars(with = "String")]
+        datatype: IriRef,
+    },
 
-    /// A numeric literal (integer, float, decimal, etc.).
-    NumericLiteral(NumericLiteral),
+    /// A numeric literal (integer, float, decimal, etc.). Written as a JSON number,
+    /// or as a string for a decimal too wide for one.
+    NumericLiteral(#[schemars(with = "serde_json::Value")] NumericLiteral),
 
     /// An XSD datetime literal.
-    DatetimeLiteral(XsdDateTime),
+    DatetimeLiteral(#[schemars(with = "String")] XsdDateTime),
 
-    /// A boolean literal (true or false).
+    /// A boolean literal (true or false), written as `"true"` or `"false"`.
     #[serde(serialize_with = "serialize_boolean_literal")]
-    BooleanLiteral(bool),
+    BooleanLiteral(#[schemars(with = "String")] bool),
 
     /// Represents a literal with an invalid datatype.
     ///
@@ -196,6 +202,7 @@ pub enum ConcreteLiteral {
     /// malformed literals while still enabling validation.
     WrongDatatypeLiteral {
         lexical_form: String,
+        #[schemars(with = "String")]
         datatype: IriRef,
         error: String,
     },

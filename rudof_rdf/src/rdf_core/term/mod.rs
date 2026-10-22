@@ -11,3 +11,8 @@ pub use iri::Iri;
 pub use iri_or_blanknode::IriOrBlankNode;
 pub use term::{Term, TermKind};
 pub use triple::{ConcreteTriple, Object, Subject, Triple};
+
+#[cfg(test)]
+mod tests {
+    mod schema_tests;
+}

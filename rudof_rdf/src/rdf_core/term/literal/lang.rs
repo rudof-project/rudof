@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -10,7 +11,7 @@ use thiserror::Error;
 ///
 /// Non-standard but syntactically valid tags (e.g., "fr-be-fbcl" from ShEx
 /// conformance tests) are accepted and lowercased rather than rejected.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(transparent)]
 pub struct Lang {
     lang: String,
