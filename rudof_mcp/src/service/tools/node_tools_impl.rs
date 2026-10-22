@@ -8,7 +8,7 @@ use rudof_lib::formats::{IriNormalizationMode, NodeInspectionMode};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashSet, io::Cursor, str::FromStr};
+use std::{collections::HashSet, io::Cursor, num::NonZeroUsize, str::FromStr};
 
 use super::helpers::*;
 
@@ -26,7 +26,7 @@ pub struct NodeInfoRequest {
     pub predicates: Option<Vec<String>>,
 
     /// Maximum traversal depth for the tree output. Default: 1 (direct arcs only).
-    pub depth: Option<usize>,
+    pub depth: Option<NonZeroUsize>,
 
     /// Which arcs to include. One of: both (default), outgoing (node as subject), incoming (node as object).
     pub mode: Option<String>,
@@ -273,7 +273,7 @@ pub async fn node_info_impl(
         showing_node_info = showing_node_info.with_predicates(predicates);
     }
     if let Some(depth) = depth {
-        showing_node_info = showing_node_info.with_depth(depth);
+        showing_node_info = showing_node_info.with_depth(depth.get());
     }
 
     if let Err(e) = showing_node_info.with_show_colors(false).execute() {

@@ -88,6 +88,24 @@ mod tool_router_tests {
         }
     }
 
+    /// A depth of 0 traverses nothing, so the schema must rule it out.
+    #[test]
+    fn test_node_info_depth_must_be_positive() {
+        let service = RudofMcpService::new();
+
+        let tools = service.tool_router.list_all();
+        let node_info = tools
+            .iter()
+            .find(|t| t.name == "node_info")
+            .expect("node_info should be present");
+
+        let depth = node_info.input_schema["properties"]["depth"]
+            .as_object()
+            .expect("node_info should take a depth");
+
+        assert_eq!(depth["minimum"], 1);
+    }
+
     /// Test expected tools are present
     #[test]
     fn test_expected_tools_present() {
