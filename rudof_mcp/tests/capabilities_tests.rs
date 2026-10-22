@@ -5,7 +5,10 @@
 #[cfg(not(target_family = "wasm"))]
 use rmcp::{
     ServerHandler, ServiceExt,
-    model::{ClientCapabilities, ClientConfig, Implementation, ProtocolVersion},
+    model::{
+        CallToolRequestParams, ClientCapabilities, ClientConfig, Implementation, ProtocolVersion,
+        ReadResourceRequestParams,
+    },
 };
 #[cfg(not(target_family = "wasm"))]
 use rudof_mcp::service::RudofMcpService;
@@ -191,4 +194,46 @@ async fn test_handshake_falls_back_for_an_unknown_protocol_version() {
     let negotiated = negotiated_version(client_pinned_to(unknown)).await;
 
     assert_eq!(negotiated, ProtocolVersion::LATEST_WITH_INITIALIZE);
+}
+
+/// Every format the `rudof://current-data/{format}` template documents must be
+/// readable, `turtle` included — it used to 404 while the others worked.
+#[cfg(not(target_family = "wasm"))]
+#[tokio::test]
+async fn test_current_data_is_readable_in_every_documented_format() {
+    let (server_transport, client_transport) = tokio::io::duplex(4096);
+
+    tokio::spawn(async move {
+        if let Ok(server) = RudofMcpService::new().serve(server_transport).await {
+            let _ = server.waiting().await;
+        }
+    });
+
+    let client = ClientConfig::new(ClientCapabilities::default(), Implementation::from_build_env())
+        .serve(client_transport)
+        .await
+        .expect("the handshake should succeed");
+
+    let mut arguments = serde_json::Map::new();
+    arguments.insert(
+        "data".to_string(),
+        serde_json::json!(["<http://a.example/s> <http://a.example/p> <http://a.example/o> ."]),
+    );
+    arguments.insert("data_format".to_string(), serde_json::json!("ntriples"));
+    client
+        .call_tool(CallToolRequestParams::new("load_rdf_data_from_sources").with_arguments(arguments))
+        .await
+        .expect("loading inline data should succeed");
+
+    for format in ["turtle", "ntriples", "rdfxml", "jsonld", "trig", "nquads", "n3"] {
+        let uri = format!("rudof://current-data/{format}");
+        let result = client
+            .read_resource(ReadResourceRequestParams::new(uri.clone()))
+            .await
+            .unwrap_or_else(|e| panic!("reading {uri} should succeed: {e}"));
+
+        assert!(!result.contents.is_empty(), "{uri} should return contents");
+    }
+
+    let _ = client.cancel().await;
 }

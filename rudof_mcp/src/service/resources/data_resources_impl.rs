@@ -36,7 +36,7 @@ pub async fn handle_data_resource(
     uri: &str,
 ) -> Option<Result<ReadResourceResult, McpError>> {
     match uri {
-        "rudof://current-data" => Some(export_rdf_data(service, uri, "turtle").await),
+        "rudof://current-data" | "rudof://current-data/turtle" => Some(export_rdf_data(service, uri, "turtle").await),
         "rudof://current-data/ntriples" => Some(export_rdf_data(service, uri, "ntriples").await),
         "rudof://current-data/rdfxml" => Some(export_rdf_data(service, uri, "rdfxml").await),
         "rudof://current-data/jsonld" => Some(export_rdf_data(service, uri, "jsonld").await),
