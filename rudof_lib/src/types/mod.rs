@@ -1,3 +1,4 @@
+mod bindings;
 mod data;
 mod node_neighborhood;
 mod query;
@@ -6,10 +7,12 @@ mod staging;
 mod staging_guard;
 mod triple;
 
+pub use bindings::Bindings;
 pub(crate) use data::Data;
 pub use node_neighborhood::{NeighborArc, NodeNeighborhood};
-pub use query::QueryResult;
+pub use query::{QueryResult, QueryResultKind};
 pub use rudof_rdf::rdf_core::ArcDirection;
+pub use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 pub(crate) use shex_statistics::ShExStatistics;
 pub(crate) use staging::{StagingFrame, UndoEntry};
 pub use staging_guard::StagingGuard;
