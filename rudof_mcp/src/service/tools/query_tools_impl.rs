@@ -9,6 +9,7 @@ use rmcp::{
     model::{CallToolResult, ContentBlock, CreateMessageRequestParams, SamplingMessage},
 };
 use rudof_lib::formats::{InputSpec, ResultQueryFormat};
+use rudof_lib::types::{Bindings, QueryResult, QueryResultKind};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -39,7 +40,16 @@ pub struct ExecuteSparqlQueryRequest {
 pub struct QueryExecutionResponse {
     /// The SPARQL query that was executed (either provided directly or generated from natural language)
     pub query: String,
-    /// Query results as a string
+    /// Which kind of result the query produced, and so which of the two fields below is set.
+    pub query_type: QueryResultKind,
+    /// SELECT only: the variable bindings, one row per solution, every term qualified.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bindings: Option<Bindings>,
+    /// ASK only: the answer.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boolean: Option<bool>,
+    /// The results as rendered in `result_format`. For a CONSTRUCT this is the graph
+    /// itself; for a SELECT it is the same rows as `bindings`, as a table.
     pub results: String,
     /// Format used for the results
     pub result_format: ResultQueryFormatParam,
@@ -223,6 +233,29 @@ pub async fn execute_sparql_query_impl(
         )
     })?;
 
+    let query_results = rudof.query_results().ok_or_else(|| {
+        internal_error(
+            "Query execution error",
+            "The query ran but left no results behind",
+            Some(json!({"operation":"execute_sparql_query_impl", "phase":"read_query_results"})),
+        )
+    })?;
+    let query_type = query_results.kind();
+    let (bindings, boolean) = match query_results {
+        QueryResult::Select(solutions) => {
+            let bindings = Bindings::try_from(solutions).map_err(|e| {
+                internal_error(
+                    "Query execution error",
+                    e.to_string(),
+                    Some(json!({"operation":"execute_sparql_query_impl", "phase":"qualify_bindings"})),
+                )
+            })?;
+            (Some(bindings), None)
+        },
+        QueryResult::Ask(answer) => (None, Some(*answer)),
+        QueryResult::Construct(_) => (None, None),
+    };
+
     let mut output_buffer = Cursor::new(Vec::new());
 
     let serialization = rudof
@@ -250,6 +283,9 @@ pub async fn execute_sparql_query_impl(
 
     let response = QueryExecutionResponse {
         query: sparql_query.clone(),
+        query_type,
+        bindings,
+        boolean,
         result_format,
         results: output_str.clone(),
         result_size_bytes,
@@ -257,9 +293,14 @@ pub async fn execute_sparql_query_impl(
 
     let structured = serialize_structured(&response, "execute_sparql_query_impl")?;
 
+    let outcome = match query_type {
+        QueryResultKind::Select => format!("Rows: {}", response.bindings.as_ref().map_or(0, Bindings::count)),
+        QueryResultKind::Ask => format!("Answer: {}", response.boolean.unwrap_or_default()),
+        QueryResultKind::Construct => "Constructed an RDF graph".to_string(),
+    };
     let summary = format!(
-        "SPARQL query executed.\nResult format: {}\nResult size: {} bytes",
-        result_format, result_size_bytes
+        "SPARQL query executed.\n{}\nResult format: {}\nResult size: {} bytes",
+        outcome, result_format, result_size_bytes
     );
 
     let query_display = code_block_preview("sparql", &sparql_query, 600);
