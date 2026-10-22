@@ -58,28 +58,32 @@ mod tool_router_tests {
         let _router = &service.tool_router;
     }
 
-    /// Test that annotated_tools returns tools
+    /// Test that the router exposes tools
     #[test]
-    fn test_annotated_tools_not_empty() {
-        use rudof_mcp::service::annotated_tools;
+    fn test_router_tools_not_empty() {
+        let service = RudofMcpService::new();
 
-        let tools = annotated_tools();
-
-        assert!(!tools.is_empty(), "Should have at least one tool defined");
+        assert!(
+            !service.tool_router.list_all().is_empty(),
+            "Should have at least one tool defined"
+        );
     }
 
     /// Test tools have required fields
     #[test]
-    fn test_tools_have_name_and_description() {
-        use rudof_mcp::service::annotated_tools;
+    fn test_tools_have_name_description_and_output_schema() {
+        let service = RudofMcpService::new();
 
-        let tools = annotated_tools();
-
-        for tool in tools {
+        for tool in service.tool_router.list_all() {
             assert!(!tool.name.is_empty(), "Tool name should not be empty");
             assert!(
                 !tool.description.as_ref().unwrap().is_empty(),
                 "Tool description should not be empty"
+            );
+            assert!(
+                tool.output_schema.is_some(),
+                "Tool '{}' should declare an output schema",
+                tool.name
             );
         }
     }
@@ -87,9 +91,9 @@ mod tool_router_tests {
     /// Test expected tools are present
     #[test]
     fn test_expected_tools_present() {
-        use rudof_mcp::service::annotated_tools;
+        let service = RudofMcpService::new();
 
-        let tools = annotated_tools();
+        let tools = service.tool_router.list_all();
         let tool_names: Vec<_> = tools.iter().map(|t| t.name.to_string()).collect();
 
         // Verify some expected tools exist

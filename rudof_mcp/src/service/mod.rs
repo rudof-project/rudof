@@ -35,4 +35,3 @@ mod state;
 mod tools;
 
 pub use mcp_service::RudofMcpService;
-pub use tools::annotated_tools;

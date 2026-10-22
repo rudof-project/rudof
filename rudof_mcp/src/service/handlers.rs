@@ -89,7 +89,7 @@ impl ServerHandler for RudofMcpService {
     ) -> Result<ListToolsResult, McpError> {
         tracing::debug!("Listing available tools");
 
-        let all_tools = crate::service::tools::annotated_tools();
+        let all_tools = self.tool_router.list_all();
 
         // Handle pagination if requested
         let (tools, next_cursor) = if let Some(params) = request {
@@ -108,7 +108,7 @@ impl ServerHandler for RudofMcpService {
 
             (page_tools, cursor_value)
         } else {
-            (all_tools.to_vec(), None)
+            (all_tools, None)
         };
 
         Ok(ListToolsResult {
@@ -116,6 +116,12 @@ impl ServerHandler for RudofMcpService {
             next_cursor,
             ..Default::default()
         })
+    }
+
+    /// Look a tool up by name, which is how the SDK validates `tools/call`
+    /// and how streamable-HTTP resolves schemas per request.
+    fn get_tool(&self, name: &str) -> Option<Tool> {
+        self.tool_router.get(name).cloned()
     }
 
     /// Return a list of available prompts using the generated PromptRouter.
