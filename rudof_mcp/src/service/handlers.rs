@@ -14,12 +14,8 @@ use crate::service::logging::{LogData, send_log};
 use crate::service::mcp_service::RudofMcpService;
 use crate::service::{resource_templates, resources::*};
 use rmcp::{
-    ErrorData as McpError, RoleServer, ServerHandler,
-    handler::server::tool::ToolCallContext,
-    model::*,
-    prompt_handler,
-    service::{NotificationContext, RequestContext},
-    tool_handler,
+    ErrorData as McpError, RoleServer, ServerHandler, handler::server::tool::ToolCallContext, model::*, prompt_handler,
+    service::RequestContext, tool_handler,
 };
 
 #[tool_handler(router = self.tool_router)]
@@ -241,12 +237,6 @@ impl ServerHandler for RudofMcpService {
         request: CompleteRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<CompleteResult, McpError> {
-        // Extract the reference information and argument name.
-        // Note: Reference only exposes Prompt and Resource variants —
-        // there is no Reference::Tool yet, so tool-argument completions are not
-        // served via this endpoint. See get_tool_argument_completions in mcp_service.rs.
-        // `Reference` is `#[non_exhaustive]`, so a wildcard arm is required even
-        // though only two variants exist today.
         let completions = match &request.r#ref {
             Reference::Prompt(prompt_ref) => {
                 self.get_prompt_argument_completions(&prompt_ref.name, &request.argument.name)
@@ -260,44 +250,5 @@ impl ServerHandler for RudofMcpService {
         let completion = CompletionInfo::with_all_values(completions).map_err(|e| McpError::invalid_params(e, None))?;
 
         Ok(CompleteResult::new(completion))
-    }
-
-    // Handle notification when client is initialized
-    async fn on_initialized(&self, _context: NotificationContext<RoleServer>) -> () {
-        tracing::debug!("Client successfully initialized");
-    }
-
-    // Handle cancelled operation notifications
-    async fn on_cancelled(
-        &self,
-        notification: CancelledNotificationParam,
-        _context: NotificationContext<RoleServer>,
-    ) -> () {
-        tracing::debug!(request_id = ?notification.request_id, "Operation cancelled by client");
-    }
-
-    // Handle progress notifications from client
-    async fn on_progress(
-        &self,
-        notification: ProgressNotificationParam,
-        _context: NotificationContext<RoleServer>,
-    ) -> () {
-        tracing::debug!(
-            progress_token = ?notification.progress_token,
-            progress = notification.progress,
-            total = ?notification.total,
-            "Progress update received from client"
-        );
-    }
-
-    // Handle notification when client's roots list changes
-    async fn on_roots_list_changed(&self, _context: NotificationContext<RoleServer>) -> () {
-        tracing::debug!("Client's roots list changed");
-    }
-
-    // Handle ping requests for health checks
-    async fn ping(&self, _context: RequestContext<RoleServer>) -> Result<(), McpError> {
-        tracing::debug!("Ping received");
-        Ok(())
     }
 }
