@@ -214,10 +214,7 @@ pub async fn validate_shacl_impl(
         result_size_bytes
     );
 
-    let mut result = CallToolResult::success(vec![
-        ContentBlock::text(summary),
-        ContentBlock::text(format!("## Validation Results\n\n{}", output_str)),
-    ]);
+    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
 
     Ok(result)

@@ -322,24 +322,7 @@ pub async fn validate_shex_impl(
         summary.push_str(&format!("\nShapeMap (auto-generated): {}", effective_shapemap));
     }
 
-    let schema_preview = code_block_preview("shex", &schema, 600);
-
-    let results_language = match result_format.as_str() {
-        "csv" => "csv",
-        "json" | "jsonld" => "json",
-        "turtle" | "n3" => "turtle",
-        "ntriples" | "nquads" => "ntriples",
-        "rdfxml" => "xml",
-        "trig" => "trig",
-        _ => "text",
-    };
-    let results_preview = code_block_preview(results_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
-
-    let mut result = CallToolResult::success(vec![
-        ContentBlock::text(summary),
-        ContentBlock::text(format!("## Schema Preview\n\n{}", schema_preview)),
-        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
-    ]);
+    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
 
     Ok(result)

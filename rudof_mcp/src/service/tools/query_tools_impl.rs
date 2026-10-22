@@ -303,24 +303,7 @@ pub async fn execute_sparql_query_impl(
         outcome, result_format, result_size_bytes
     );
 
-    let query_display = code_block_preview("sparql", &sparql_query, 600);
-
-    let results_language = match result_format.as_str() {
-        "csv" => "csv",
-        "jsonld" | "json" => "json",
-        "turtle" | "n3" => "turtle",
-        "ntriples" | "nquads" => "ntriples",
-        "rdfxml" => "xml",
-        "trig" => "trig",
-        _ => "text",
-    };
-    let results_display = code_block_preview(results_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
-
-    let mut result = CallToolResult::success(vec![
-        ContentBlock::text(summary),
-        ContentBlock::text(format!("## Query Preview\n\n{}", query_display)),
-        ContentBlock::text(format!("## Results Preview\n\n{}", results_display)),
-    ]);
+    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
 
     Ok(result)

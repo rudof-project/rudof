@@ -206,12 +206,7 @@ pub async fn node_info_impl(
 
     let structured = serialize_structured(&response, "node_info_impl")?;
 
-    let results_preview = code_block_preview("text", &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
-
-    let mut result = CallToolResult::success(vec![
-        ContentBlock::text(summary),
-        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
-    ]);
+    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
 
     Ok(result)
