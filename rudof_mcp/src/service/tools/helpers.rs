@@ -1,9 +1,8 @@
 use crate::service::errors::internal_error;
 use rmcp::{ErrorData as McpError, model::CallToolResult, model::ContentBlock};
-use rudof_lib::{errors::InputSpecError, formats::InputSpec};
+use rudof_lib::formats::InputSpec;
 use serde::Serialize;
 use serde_json::{Value, json};
-use std::path::Path;
 
 /// Result type for parsing operations that may produce tool execution errors.
 ///
@@ -67,8 +66,11 @@ impl std::error::Error for ToolExecutionError {}
 
 /// Resolve an `argument` holding content, a URL or a file path into an
 /// [`InputSpec`], reporting a recoverable tool error when it is none of those.
-pub fn resolve_spec(base_dir: &Path, value: &str, argument: &str) -> ToolResult<InputSpec> {
-    resolve_input_spec(base_dir, value).map_err(|e| {
+///
+/// A relative path is resolved by [`InputSpec::from_str`] against the server
+/// process's working directory, the one the client started it in.
+pub fn resolve_spec(value: &str, argument: &str) -> ToolResult<InputSpec> {
+    value.parse().map_err(|e| {
         ToolExecutionError::with_hint(
             format!("Invalid {argument}: {e}"),
             format!("Provide valid {argument} content, a URL, or a local file path"),
@@ -77,27 +79,8 @@ pub fn resolve_spec(base_dir: &Path, value: &str, argument: &str) -> ToolResult<
 }
 
 /// [`resolve_spec`] for an argument that may be omitted.
-pub fn resolve_optional_spec(base_dir: &Path, value: Option<&str>, argument: &str) -> ToolResult<Option<InputSpec>> {
-    value.map(|value| resolve_spec(base_dir, value, argument)).transpose()
-}
-
-/// Parse a path-, URL-, or content-like string into an [`InputSpec`], resolving a
-/// relative local path against the session's virtual working directory (`base_dir`,
-/// see [`RudofMcpService::session_dir`](crate::service::mcp_service::RudofMcpService::session_dir))
-/// rather than the OS process's current directory.
-///
-/// [`InputSpec::from_str`] itself decides whether `s` looks like a path by checking
-/// it against the *process* cwd (`Path::new(s).is_file()`), which would ignore a
-/// session's virtual `cd`. So this checks `base_dir.join(s)` first — if that
-/// resolves to a real file/dir, it's used directly as an [`InputSpec::Path`]
-/// (absolute `s` passes through `join` unchanged); otherwise this falls back to
-/// `InputSpec::from_str` unchanged, so URLs, CURIEs, and inline content still work.
-pub fn resolve_input_spec(base_dir: &Path, s: &str) -> Result<InputSpec, InputSpecError> {
-    let candidate = base_dir.join(s);
-    if candidate.is_file() || candidate.is_dir() {
-        return Ok(InputSpec::path(candidate));
-    }
-    s.parse()
+pub fn resolve_optional_spec(value: Option<&str>, argument: &str) -> ToolResult<Option<InputSpec>> {
+    value.map(|value| resolve_spec(value, argument)).transpose()
 }
 
 /// Serialize tool response objects into MCP structured content.

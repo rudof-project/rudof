@@ -123,9 +123,8 @@ pub async fn show_shex_impl(
     }): Parameters<ShowShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
-    let session_dir = service.session_dir.read().await.clone();
 
-    let parsed_schema = match resolve_spec(&session_dir, &schema, "schema") {
+    let parsed_schema = match resolve_spec(&schema, "schema") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };
@@ -248,9 +247,8 @@ pub async fn check_shex_impl(
     }): Parameters<CheckShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let rudof = service.rudof.lock().await;
-    let session_dir = service.session_dir.read().await.clone();
 
-    let parsed_schema = match resolve_spec(&session_dir, &schema, "schema") {
+    let parsed_schema = match resolve_spec(&schema, "schema") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };
