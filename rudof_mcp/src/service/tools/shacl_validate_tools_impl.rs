@@ -71,12 +71,7 @@ pub async fn validate_shacl_impl(
     let mut rudof = service.rudof.lock().await;
     let session_dir = service.session_dir.read().await.clone();
 
-    let parsed_shapes = match parse_optional_value_with_hint(
-        shapes.as_deref(),
-        "shapes",
-        "Provide valid SHACL shapes content, URL, or file path",
-        |s| resolve_input_spec(&session_dir, s),
-    ) {
+    let parsed_shapes = match resolve_optional_spec(&session_dir, shapes.as_deref(), "shapes") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };

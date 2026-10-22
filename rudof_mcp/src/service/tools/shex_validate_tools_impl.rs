@@ -114,12 +114,7 @@ pub async fn validate_shex_impl(
     let mut rudof = service.rudof.lock().await;
     let session_dir = service.session_dir.read().await.clone();
 
-    let parsed_schema = match parse_value_with_hint(
-        &schema,
-        "schema",
-        "Provide valid schema content, URL, or file path",
-        |s| resolve_input_spec(&session_dir, s),
-    ) {
+    let parsed_schema = match resolve_spec(&session_dir, &schema, "schema") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };
@@ -147,12 +142,7 @@ pub async fn validate_shex_impl(
         },
     };
 
-    let parsed_shapemap = match parse_value_with_hint(
-        &effective_shapemap,
-        "shapemap",
-        "Provide a valid ShapeMap value, URL, or file path",
-        |s| resolve_input_spec(&session_dir, s),
-    ) {
+    let parsed_shapemap = match resolve_spec(&session_dir, &effective_shapemap, "shapemap") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };

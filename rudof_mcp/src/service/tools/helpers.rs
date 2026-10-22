@@ -65,29 +65,20 @@ impl std::fmt::Display for ToolExecutionError {
 
 impl std::error::Error for ToolExecutionError {}
 
-/// Parse a required input value and return a recoverable tool error when invalid.
-pub fn parse_value_with_hint<T, E, F>(value: &str, value_name: &str, hint: &str, parser: F) -> ToolResult<T>
-where
-    F: FnOnce(&str) -> Result<T, E>,
-    E: std::fmt::Display,
-{
-    parser(value).map_err(|e| ToolExecutionError::with_hint(format!("Invalid {}: {}", value_name, e), hint.to_string()))
+/// Resolve an `argument` holding content, a URL or a file path into an
+/// [`InputSpec`], reporting a recoverable tool error when it is none of those.
+pub fn resolve_spec(base_dir: &Path, value: &str, argument: &str) -> ToolResult<InputSpec> {
+    resolve_input_spec(base_dir, value).map_err(|e| {
+        ToolExecutionError::with_hint(
+            format!("Invalid {argument}: {e}"),
+            format!("Provide valid {argument} content, a URL, or a local file path"),
+        )
+    })
 }
 
-/// Parse an optional input value and return a recoverable tool error when invalid.
-pub fn parse_optional_value_with_hint<T, E, F>(
-    value: Option<&str>,
-    value_name: &str,
-    hint: &str,
-    parser: F,
-) -> ToolResult<Option<T>>
-where
-    F: Fn(&str) -> Result<T, E>,
-    E: std::fmt::Display,
-{
-    value
-        .map(|raw| parse_value_with_hint(raw, value_name, hint, &parser))
-        .transpose()
+/// [`resolve_spec`] for an argument that may be omitted.
+pub fn resolve_optional_spec(base_dir: &Path, value: Option<&str>, argument: &str) -> ToolResult<Option<InputSpec>> {
+    value.map(|value| resolve_spec(base_dir, value, argument)).transpose()
 }
 
 /// Parse a path-, URL-, or content-like string into an [`InputSpec`], resolving a
