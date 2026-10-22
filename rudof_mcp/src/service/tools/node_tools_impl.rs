@@ -5,6 +5,7 @@ use rmcp::{
     model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{IriNormalizationMode, NodeInspectionMode};
+use rudof_lib::types::{ArcDirection, NeighborArc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -46,40 +47,22 @@ pub struct NodeInfoResponse {
     pub node: String,
     /// Effective traversal mode.
     pub mode: NodeModeParam,
+    /// The arcs where the node is the subject, in depth-first order.
+    pub outgoing_arcs: Vec<NeighborArc>,
+    /// The arcs where the node is the object, in depth-first order.
+    pub incoming_arcs: Vec<NeighborArc>,
+    /// Counts over the arcs above.
+    pub stats: NodeInfoStats,
     /// Human-readable node inspection results.
     pub results: String,
-    /// Parsed data extracted from the text tree output.
-    pub parsed: ParsedNodeInfo,
 }
 
-/// Parsed arc entry extracted from the node tree output.
+/// Summary statistics computed from the outgoing and incoming arcs.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ParsedArc {
-    /// Predicate shown in the rendered output.
-    pub predicate: String,
-    /// Target node/literal shown in the rendered output.
-    pub target: String,
-    /// Depth inside the rendered tree (0 means direct arc from the root node).
-    pub depth: usize,
-}
-
-/// Parsed and summarized information extracted from node inspection text output.
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ParsedNodeInfo {
-    /// Parsed outgoing arcs.
-    pub outgoing_arcs: Vec<ParsedArc>,
-    /// Parsed incoming arcs.
-    pub incoming_arcs: Vec<ParsedArc>,
-    /// High-level stats derived from parsed arcs.
-    pub stats: ParsedNodeInfoStats,
-}
-
-/// Summary statistics computed from parsed outgoing and incoming arcs.
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ParsedNodeInfoStats {
-    /// Total number of parsed outgoing arcs.
+pub struct NodeInfoStats {
+    /// Total number of outgoing arcs.
     pub outgoing_arcs_count: usize,
-    /// Total number of parsed incoming arcs.
+    /// Total number of incoming arcs.
     pub incoming_arcs_count: usize,
     /// Number of unique predicates among outgoing arcs.
     pub outgoing_predicates_count: usize,
@@ -91,138 +74,23 @@ pub struct ParsedNodeInfoStats {
     pub unique_incoming_sources_count: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ArcSection {
-    Outgoing,
-    Incoming,
-}
+impl NodeInfoStats {
+    /// Counts the arcs of each direction, their predicates and their far ends.
+    fn of(outgoing_arcs: &[NeighborArc], incoming_arcs: &[NeighborArc]) -> Self {
+        let unique =
+            |arcs: &[NeighborArc], key: fn(&NeighborArc) -> String| arcs.iter().map(key).collect::<HashSet<_>>().len();
+        let predicate = |arc: &NeighborArc| arc.predicate.to_string();
+        let neighbor = |arc: &NeighborArc| arc.neighbor.to_string();
 
-/// Parses `show_node_info` text output into structured outgoing/incoming arcs.
-fn parse_node_info_results(output: &str) -> ParsedNodeInfo {
-    let mut section: Option<ArcSection> = None;
-    let mut outgoing_arcs = Vec::new();
-    let mut incoming_arcs = Vec::new();
-
-    for line in output.lines() {
-        let trimmed = line.trim();
-
-        if trimmed.eq_ignore_ascii_case("Outgoing arcs") {
-            section = Some(ArcSection::Outgoing);
-            continue;
-        }
-
-        if trimmed.eq_ignore_ascii_case("Incoming arcs") {
-            section = Some(ArcSection::Incoming);
-            continue;
-        }
-
-        if trimmed.is_empty() || trimmed == "▲" {
-            continue;
-        }
-
-        match section {
-            Some(ArcSection::Outgoing) => {
-                if let Some(arc) = parse_arc_line(line, " ─► ") {
-                    outgoing_arcs.push(arc);
-                }
-            },
-            Some(ArcSection::Incoming) => {
-                if let Some(arc) = parse_arc_line(line, " ── ") {
-                    incoming_arcs.push(arc);
-                }
-            },
-            None => {},
-        }
-    }
-
-    let outgoing_predicates_count = outgoing_arcs
-        .iter()
-        .map(|arc| arc.predicate.as_str())
-        .collect::<HashSet<_>>()
-        .len();
-
-    let incoming_predicates_count = incoming_arcs
-        .iter()
-        .map(|arc| arc.predicate.as_str())
-        .collect::<HashSet<_>>()
-        .len();
-
-    let unique_outgoing_targets_count = outgoing_arcs
-        .iter()
-        .map(|arc| arc.target.as_str())
-        .collect::<HashSet<_>>()
-        .len();
-
-    let unique_incoming_sources_count = incoming_arcs
-        .iter()
-        .map(|arc| arc.target.as_str())
-        .collect::<HashSet<_>>()
-        .len();
-
-    ParsedNodeInfo {
-        stats: ParsedNodeInfoStats {
+        Self {
             outgoing_arcs_count: outgoing_arcs.len(),
             incoming_arcs_count: incoming_arcs.len(),
-            outgoing_predicates_count,
-            incoming_predicates_count,
-            unique_outgoing_targets_count,
-            unique_incoming_sources_count,
-        },
-        outgoing_arcs,
-        incoming_arcs,
-    }
-}
-
-/// Parses a single arc line using the provided rendered delimiter.
-fn parse_arc_line(line: &str, delimiter: &str) -> Option<ParsedArc> {
-    let (left, right) = line.split_once(delimiter)?;
-
-    let predicate = strip_tree_glyphs(left);
-    let target = right.trim().to_string();
-
-    if predicate.is_empty() || target.is_empty() {
-        return None;
-    }
-
-    Some(ParsedArc {
-        predicate,
-        target,
-        depth: tree_depth(line),
-    })
-}
-
-/// Removes tree drawing glyphs from the predicate side of a rendered tree line.
-fn strip_tree_glyphs(value: &str) -> String {
-    value
-        .chars()
-        .filter(|c| !matches!(c, '│' | '├' | '└' | '─'))
-        .collect::<String>()
-        .trim()
-        .to_string()
-}
-
-/// Computes the nesting depth from line prefixes used by `termtree`.
-fn tree_depth(line: &str) -> usize {
-    let mut remaining = line;
-    let mut depth = 0;
-
-    loop {
-        if let Some(rest) = remaining.strip_prefix("│   ") {
-            depth += 1;
-            remaining = rest;
-            continue;
+            outgoing_predicates_count: unique(outgoing_arcs, predicate),
+            incoming_predicates_count: unique(incoming_arcs, predicate),
+            unique_outgoing_targets_count: unique(outgoing_arcs, neighbor),
+            unique_incoming_sources_count: unique(incoming_arcs, neighbor),
         }
-
-        if let Some(rest) = remaining.strip_prefix("    ") {
-            depth += 1;
-            remaining = rest;
-            continue;
-        }
-
-        break;
     }
-
-    depth
 }
 
 /// Get detailed information about an RDF node.
@@ -285,8 +153,33 @@ pub async fn node_info_impl(
         )
     })?;
 
-    let parsed = parse_node_info_results(&output_str);
-    let stats = &parsed.stats;
+    let mut walking_neighborhood = rudof
+        .node_neighborhood(&node)
+        .with_mode(&parsed_mode)
+        .with_iri_mode(iri_mode);
+    if let Some(predicates) = predicates.as_deref() {
+        walking_neighborhood = walking_neighborhood.with_predicates(predicates);
+    }
+    if let Some(depth) = depth {
+        walking_neighborhood = walking_neighborhood.with_depth(depth.get());
+    }
+    let arcs = match walking_neighborhood
+        .execute()
+        .and_then(|arcs| arcs.collect::<Result<Vec<_>, _>>())
+    {
+        Ok(arcs) => arcs,
+        Err(e) => {
+            return Ok(ToolExecutionError::with_hint(
+                format!("Failed to walk the neighborhood of {}: {}", node, e),
+                "Give the predicates as angle-bracketed IRIs or prefixed names",
+            )
+            .into_call_tool_result());
+        },
+    };
+    let (outgoing_arcs, incoming_arcs): (Vec<_>, Vec<_>) = arcs
+        .into_iter()
+        .partition(|arc| arc.direction == ArcDirection::Outgoing);
+    let stats = NodeInfoStats::of(&outgoing_arcs, &incoming_arcs);
     let results_size = output_str.chars().count();
 
     let summary = format!(
@@ -305,8 +198,10 @@ pub async fn node_info_impl(
     let response = NodeInfoResponse {
         node: node.clone(),
         mode,
+        outgoing_arcs,
+        incoming_arcs,
+        stats,
         results: output_str.clone(),
-        parsed,
     };
 
     let structured = serialize_structured(&response, "node_info_impl")?;

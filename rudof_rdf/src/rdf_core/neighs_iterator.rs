@@ -1,8 +1,11 @@
 use crate::rdf_core::NeighsRDF;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::{collections::VecDeque, fmt, iter::FusedIterator, vec::IntoIter};
 
 /// Direction in wich an arc is followed from the node being expanded.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum ArcDirection {
     Incoming,
     Outgoing,
