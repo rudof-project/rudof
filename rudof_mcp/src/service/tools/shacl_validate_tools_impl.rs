@@ -1,4 +1,5 @@
 use super::helpers::*;
+use super::params::{ResultShaclValidationFormatParam, ShaclFormatParam, ShaclModeParam, ShaclSortByParam};
 use crate::service::{errors::*, mcp_service::RudofMcpService};
 use rmcp::{
     ErrorData as McpError,
@@ -6,11 +7,11 @@ use rmcp::{
     model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode};
+use rudof_lib::types::{ShaclSeverity, ShaclValidationResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
-use std::str::FromStr;
 
 /// Request parameters for SHACL validation.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -19,35 +20,64 @@ pub struct ValidateShaclRequest {
     /// When omitted, shapes embedded in the loaded RDF data are used.
     pub shapes: Option<String>,
 
-    /// Format of the shapes graph. One of: turtle (default), ntriples, rdfxml, jsonld, trig, nquads, n3.
-    pub shapes_format: Option<String>,
+    /// Format of the shapes graph. Default: turtle.
+    pub shapes_format: Option<ShaclFormatParam>,
 
     /// Base IRI for resolving relative IRIs in the shapes. Example: "http://example.org/"
     pub base: Option<String>,
 
-    /// SHACL validation engine. One of: native (default), sparql.
-    pub mode: Option<String>,
+    /// SHACL validation engine. Default: native.
+    pub mode: Option<ShaclModeParam>,
 
-    /// Output format for the validation report.
-    /// One of: details (default), compact, minimal, csv, turtle, ntriples, rdfxml, trig, n3, nquads.
-    /// Note: json is listed but not yet implemented.
-    pub result_format: Option<String>,
+    /// Output format for the validation report. Default: details.
+    pub result_format: Option<ResultShaclValidationFormatParam>,
 
-    /// Sort order for results. One of: severity (default), node, component, value, path, sourceshape, details.
-    pub sort_by: Option<String>,
+    /// Sort order for results. Default: severity.
+    pub sort_by: Option<ShaclSortByParam>,
 }
 
 /// Response containing SHACL validation results.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShaclResponse {
-    /// Validation result output
-    pub results: String,
+    /// Whether the data conforms to the shapes.
+    pub conforms: bool,
+    /// How many results carry each severity, in the order the severities first appear.
+    pub counts_by_severity: Vec<SeverityCount>,
+    /// One entry per validation result, each carrying the nested `sh:detail` results
+    /// that caused it. Empty when the validator was configured not to retain them.
+    pub results: Vec<ShaclValidationResult>,
+    /// The report as rendered in `result_format`.
+    pub report: String,
     /// Result format used
-    pub result_format: String,
+    pub result_format: ResultShaclValidationFormatParam,
     /// Sort order applied
-    pub sort_by: String,
-    /// Size of results in bytes
+    pub sort_by: ShaclSortByParam,
+    /// Size of the rendered report in bytes
     pub result_size_bytes: usize,
+}
+
+/// How many validation results carry one severity.
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct SeverityCount {
+    /// The severity counted.
+    pub severity: ShaclSeverity,
+    /// How many results carry it, nested `sh:detail` results excluded.
+    pub count: usize,
+}
+
+/// Counts the results of each severity, in the order the severities first appear.
+fn counts_by_severity(results: &[ShaclValidationResult]) -> Vec<SeverityCount> {
+    let mut counts: Vec<SeverityCount> = Vec::new();
+    for result in results {
+        match counts.iter_mut().find(|count| &count.severity == result.severity()) {
+            Some(count) => count.count += 1,
+            None => counts.push(SeverityCount {
+                severity: result.severity().clone(),
+                count: 1,
+            }),
+        }
+    }
+    counts
 }
 
 /// Validate RDF data against SHACL shapes.
@@ -55,12 +85,8 @@ pub struct ValidateShaclResponse {
 /// # Errors
 ///
 /// Returns a Tool Execution Error when:
-/// - Shape format is invalid
-/// - Base IRI is malformed
-/// - Reader mode is invalid
-/// - Validation mode is invalid
-/// - Result format is invalid
-/// - Sort order is invalid
+/// - The shapes cannot be resolved or parsed
+/// - Validation fails to run
 ///
 /// Returns a Protocol Error for internal validation failures.
 pub async fn validate_shacl_impl(
@@ -77,74 +103,23 @@ pub async fn validate_shacl_impl(
     let mut rudof = service.rudof.lock().await;
     let session_dir = service.session_dir.read().await.clone();
 
-    let shape_format_hint = format!("Supported values: {}", SHACL_FORMATS);
-    let mode_hint = "Supported values: native, sparql";
-    let result_format_hint = format!("Supported values: {}", SHACL_RESULT_FORMATS);
-    let sort_by_hint = format!("Supported values: {}", SHACL_SORT_BY_MODES);
-
-    let parsed_shapes = match parse_optional_value_with_hint(
-        shapes.as_deref(),
-        "shapes",
-        "Provide valid SHACL shapes content, URL, or file path",
-        |s| resolve_input_spec(&session_dir, s),
-    ) {
+    let parsed_shapes = match resolve_optional_spec(&session_dir, shapes.as_deref(), "shapes") {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    let parsed_shapes_format = match parse_optional_value_with_hint(
-        shapes_format.as_deref(),
-        "shapes format",
-        &shape_format_hint,
-        ShaclFormat::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
+    let parsed_shapes_format: ShaclFormat = shapes_format.unwrap_or(ShaclFormatParam::Turtle).into();
+    let parsed_mode: ShaclValidationMode = mode.unwrap_or(ShaclModeParam::Native).into();
+    let result_format = result_format.unwrap_or(ResultShaclValidationFormatParam::Details);
+    let parsed_result_format: ResultShaclValidationFormat = result_format.into();
+    let sort_by = sort_by.unwrap_or(ShaclSortByParam::Severity);
+    let parsed_sort_by: ShaclValidationSortByMode = sort_by.into();
 
-    let parsed_mode = match parse_optional_value_with_hint(
-        mode.as_deref(),
-        "validation mode",
-        mode_hint,
-        ShaclValidationMode::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_result_format = match parse_optional_value_with_hint(
-        result_format.as_deref(),
-        "result format",
-        &result_format_hint,
-        ResultShaclValidationFormat::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_sort_by = match parse_optional_value_with_hint(
-        sort_by.as_deref(),
-        "sort_by",
-        &sort_by_hint,
-        ShaclValidationSortByMode::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    // Guard: JSON result format is not yet implemented for SHACL validation.
-    if matches!(parsed_result_format, Some(ResultShaclValidationFormat::Json)) {
-        return Ok(
-            unsupported_format_error("SHACL validation result", "json", SHACL_RESULT_FORMATS).into_call_tool_result(),
-        );
-    }
-
-    let mut loading_shacl_schema = rudof.load_shacl_shapes();
+    let mut loading_shacl_schema = rudof
+        .load_shacl_shapes()
+        .with_shacl_schema_format(&parsed_shapes_format);
     if let Some(shape) = &parsed_shapes {
         loading_shacl_schema = loading_shacl_schema.with_shacl_schema(shape)
-    }
-    if let Some(shape_format) = &parsed_shapes_format {
-        loading_shacl_schema = loading_shacl_schema.with_shacl_schema_format(shape_format);
     }
     if let Some(base_shape) = base.as_deref() {
         loading_shacl_schema = loading_shacl_schema.with_base(base_shape);
@@ -157,10 +132,7 @@ pub async fn validate_shacl_impl(
         .into_call_tool_result());
     }
 
-    let mut validation = rudof.validate_shacl();
-    if let Some(mode) = &parsed_mode {
-        validation = validation.with_shacl_validation_mode(mode);
-    }
+    let validation = rudof.validate_shacl().with_shacl_validation_mode(&parsed_mode);
     if let Err(e) = validation.execute() {
         return Ok(ToolExecutionError::with_hint(
             format!("SHACL validation failed: {}", e),
@@ -169,14 +141,22 @@ pub async fn validate_shacl_impl(
         .into_call_tool_result());
     }
 
+    let report = rudof.shacl_validation_results().ok_or_else(|| {
+        internal_error(
+            "Shacl validation error",
+            "Validation reported success but left no report behind",
+            Some(json!({"operation":"validate_shacl","phase":"read_validation_report"})),
+        )
+    })?;
+    let conforms = report.conforms();
+    let results = report.results().clone();
+    let counts_by_severity = counts_by_severity(&results);
+
     let mut output_buffer = Cursor::new(Vec::new());
-    let mut serialization = rudof.serialize_shacl_validation_results(&mut output_buffer);
-    if let Some(result_format) = &parsed_result_format {
-        serialization = serialization.with_result_shacl_validation_format(result_format);
-    }
-    if let Some(sort_by) = &parsed_sort_by {
-        serialization = serialization.with_shacl_validation_sort_order_mode(sort_by);
-    }
+    let serialization = rudof
+        .serialize_shacl_validation_results(&mut output_buffer)
+        .with_result_shacl_validation_format(&parsed_result_format)
+        .with_shacl_validation_sort_order_mode(&parsed_sort_by);
     serialization.execute().map_err(|e| {
         internal_error(
             "Shacl validation error",
@@ -197,38 +177,145 @@ pub async fn validate_shacl_impl(
     // Calculate metadata
     let result_size_bytes = output_str.len();
 
-    let result_format_str = if let Some(format) = &parsed_result_format {
-        format.to_string()
-    } else {
-        "details".to_string()
-    };
-    let sort_by_str = if let Some(sort_by) = &parsed_sort_by {
-        sort_by.to_string()
-    } else {
-        "severity".to_string()
-    };
     let response = ValidateShaclResponse {
-        results: output_str.clone(),
-        result_format: result_format_str.clone(),
-        sort_by: sort_by_str.clone(),
+        conforms,
+        counts_by_severity,
+        results,
+        report: output_str.clone(),
+        result_format,
+        sort_by,
         result_size_bytes,
     };
 
     let structured = serialize_structured(&response, "validate_shacl_impl")?;
 
+    let severities = response
+        .counts_by_severity
+        .iter()
+        .map(|count| format!("{}: {}", count.severity, count.count))
+        .collect::<Vec<_>>()
+        .join(", ");
     let summary = format!(
         "# SHACL Validation Results\n\n\
+        **Conforms:** {}\n\
+        **Results:** {}{}\n\
         **Result Format:** {}\n\
         **Sort By:** {}\n\
         **Result Size:** {} bytes\n",
-        result_format_str, sort_by_str, result_size_bytes
+        response.conforms,
+        response.results.len(),
+        if severities.is_empty() {
+            String::new()
+        } else {
+            format!(" ({severities})")
+        },
+        result_format,
+        sort_by,
+        result_size_bytes
     );
 
-    let mut result = CallToolResult::success(vec![
-        ContentBlock::text(summary),
-        ContentBlock::text(format!("## Validation Results\n\n{}", output_str)),
-    ]);
+    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_lib::formats::InputSpec;
+    use rudof_lib::types::Object;
+
+    const SHAPES_AND_DATA: &str = r#"
+        prefix :    <http://example.org/>
+        prefix sh:  <http://www.w3.org/ns/shacl#>
+        prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        :alice :age "old" .
+        :bob   :age 23 .
+
+        :AgeShape a sh:NodeShape ;
+          sh:targetSubjectsOf :age ;
+          sh:property [ sh:path :age ; sh:datatype xsd:integer ] .
+    "#;
+
+    async fn validate(service: &RudofMcpService, data: &str) -> ValidateShaclResponse {
+        service
+            .rudof
+            .lock()
+            .await
+            .load_data()
+            .with_data(&[InputSpec::str(data)])
+            .execute()
+            .expect("the test data should load");
+
+        let result = validate_shacl_impl(
+            service,
+            Parameters(ValidateShaclRequest {
+                shapes: None,
+                shapes_format: None,
+                base: None,
+                mode: None,
+                result_format: None,
+                sort_by: None,
+            }),
+        )
+        .await
+        .expect("validation should not fail at the protocol level");
+
+        serde_json::from_value(result.structured_content.expect("the tool reports structured content"))
+            .expect("the structured content should be a ValidateShaclResponse")
+    }
+
+    #[tokio::test]
+    async fn a_violation_carries_its_focus_node_path_and_value() {
+        let service = RudofMcpService::new();
+        let response = validate(&service, SHAPES_AND_DATA).await;
+
+        assert!(!response.conforms);
+        assert_eq!(response.results.len(), 1, "only :alice has a non-integer age");
+        assert_eq!(
+            response.counts_by_severity.len(),
+            1,
+            "every result of this report is a violation"
+        );
+        assert_eq!(response.counts_by_severity[0].severity, ShaclSeverity::Violation);
+        assert_eq!(response.counts_by_severity[0].count, 1);
+
+        let violation = &response.results[0];
+        assert_eq!(violation.focus_node().to_string(), "http://example.org/alice");
+        assert_eq!(
+            violation.path().and_then(|path| path.pred()).map(|iri| iri.as_str()),
+            Some("http://example.org/age")
+        );
+        assert_eq!(
+            violation.value(),
+            Some(&Object::str("old")),
+            "the offending value keeps its lexical form instead of being rendered"
+        );
+    }
+
+    #[tokio::test]
+    async fn conforming_data_reports_no_results() {
+        let service = RudofMcpService::new();
+        let response = validate(
+            &service,
+            r#"
+            prefix :    <http://example.org/>
+            prefix sh:  <http://www.w3.org/ns/shacl#>
+            prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+            :bob :age 23 .
+
+            :AgeShape a sh:NodeShape ;
+              sh:targetSubjectsOf :age ;
+              sh:property [ sh:path :age ; sh:datatype xsd:integer ] .
+            "#,
+        )
+        .await;
+
+        assert!(response.conforms);
+        assert!(response.results.is_empty());
+        assert!(response.counts_by_severity.is_empty());
+    }
 }

@@ -29,6 +29,7 @@ oxrdf = { workspace = true, optional = true }
 rudof_iri.workspace = true
 rudof_typing.workspace = true
 rust_decimal.workspace = true
+schemars.workspace = true
 serde.workspace = true
 sparql_service = { workspace = true, optional = true }
 thiserror.workspace = true

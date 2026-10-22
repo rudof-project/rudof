@@ -4,13 +4,18 @@ use prefixmap::error::PrefixMapError;
 use rudof_iri::IriS;
 use rudof_iri::error::IriSError;
 use rudof_rdf::rdf_core::term::Object;
+use schemars::JsonSchema;
 use serde::de::{Error as DeError, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
 /// Shape labels can be IRIs, Blank nodes or the special `Start` label
-#[derive(PartialEq, Eq, Hash, Debug, Clone, PartialOrd, Ord)]
+///
+/// `Serialize` writes every variant as a plain string, so the JSON Schema says string
+/// rather than describing the variants.
+#[derive(PartialEq, Eq, Hash, Debug, Clone, PartialOrd, Ord, JsonSchema)]
+#[schemars(with = "String")]
 pub enum ShapeLabel {
     Iri(IriS),
     BNode(BNode),

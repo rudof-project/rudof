@@ -43,4 +43,8 @@ pub enum QueryError {
     /// Errors that occur during SPARQL query results serialization.
     #[error("Failed to serialize SPARQL query results: {error}")]
     FailedSerializingQueryResults { error: String },
+
+    /// A term of a SELECT solution could not be qualified as an `Object`.
+    #[error("Failed to qualify a SPARQL solution term: {error}")]
+    FailedQualifyingSolution { error: String },
 }

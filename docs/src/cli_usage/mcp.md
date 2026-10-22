@@ -38,9 +38,9 @@ The Rudof MCP server exposes the following capabilities:
 
 | Capability    | Feature                                              |
 |---------------|------------------------------------------------------|
-| `tools`       | 10 tools for validation, querying, and data ops      |
+| `tools`       | 14 tools for validation, querying, and data ops      |
 | `prompts`     | Guided templates for common workflows                |
-| `resources`   | Access to RDF data and format information            |
+| `resources`   | Access to RDF data and to the external-resolver kinds |
 | `resource templates` | URI template for accessing RDF data in any supported format |
 | `logging`     | Real-time log notifications with level filtering     |
 | `completions` | Argument completions for prompts and resources       |
@@ -68,7 +68,7 @@ The MCP server provides 14 tools organized by functionality:
 
 | Tool | Description |
 |------|-------------|
-| `execute_sparql_query` | Execute SPARQL queries (SELECT, CONSTRUCT, ASK, DESCRIBE) |
+| `execute_sparql_query` | Execute SPARQL queries (SELECT, CONSTRUCT, ASK) |
 
 **ShEx Tools:**
 
@@ -76,7 +76,7 @@ The MCP server provides 14 tools organized by functionality:
 |------|-------------|
 | `validate_shex` | Validate RDF data against a ShEx schema |
 | `check_shex` | Check if a ShEx schema is well-formed |
-| `show_shex` | Parse and display ShEx schema with optional analysis |
+| `show_shex` | Serialize a ShEx schema, with optional statistics and dependencies |
 
 **SHACL Tools:**
 
@@ -103,9 +103,30 @@ The MCP server provides guided templates for common workflows:
 | `analyze_rdf_data` | Comprehensive guide for analyzing RDF data structure and quality |
 | `validation_guide` | Step-by-step guide for validating RDF data against ShEx or SHACL schemas |
 
-### Available Resources
+### Tool Parameters and Results
 
-The server exposes resources for accessing RDF data and format information:
+Every parameter that takes one of a fixed set of values — an RDF format, a validation
+mode, a sort order — declares those values in the tool's input schema, so a client reads
+them from `tools/list` and never has to guess.
+
+Each tool answers with both halves of an MCP tool result:
+
+- `structuredContent` carries the facts, against the tool's output schema. RDF terms are
+  typed rather than rendered: an IRI, a blank node, a literal with its datatype and
+  language tag, or an RDF 1.2 triple term.
+- `content` carries a short summary of those facts, and the rendered report keeps a field
+  of its own in `structuredContent` (`report` for the validators, `results` for the rest).
+
+| Tool | What `structuredContent` carries |
+|------|----------------------------------|
+| `validate_shacl` | `conforms`, `counts_by_severity`, one entry per result with its focus node, severity, constraint component, path, value, source shape, messages and nested `sh:detail` results, and the rendered `report` |
+| `validate_shex` | `conforms`, `counts` by status, one `entries` item per `(node, shape)` pair with the validator's reason, and the rendered `report` |
+| `execute_sparql_query` | `query_type`, plus `bindings` (variables and one row per solution, keyed by variable name) for a SELECT or `boolean` for an ASK |
+| `node_info` | `outgoing_arcs` and `incoming_arcs`, each arc with its direction, depth, predicate and the term at its far end, plus `stats` |
+| `show_shex` | `schema`, and `statistics` / `dependencies` when asked for with `show_statistics` / `show_dependencies` |
+| `check_shex` | `well_formed`, and the checker's `report`. A schema that is not well-formed is an answer, not a tool error |
+
+### Available Resources
 
 **Current RDF Data:**
 
@@ -113,19 +134,9 @@ The server exposes resources for accessing RDF data and format information:
 
 Additional formats are accessible via the resource template `rudof://current-data/{format}`, where `{format}` is one of: `turtle`, `ntriples`, `rdfxml`, `jsonld`, `trig`, `nquads`, `n3`.
 
-**Format Information:**
+**ShEx:**
 
-- `rudof://formats/rdf` - Supported RDF formats
-- `rudof://formats/shex` - Supported ShEx formats
-- `rudof://formats/shacl` - Supported SHACL formats
-- `rudof://formats/node-modes` - Node inspection modes
-- `rudof://formats/query-types` - Supported SPARQL query types
-- `rudof://formats/query-results` - Query result formats
-- `rudof://formats/shex-validation-result` - ShEx validation result formats
-- `rudof://formats/shacl-validation-result` - SHACL validation result formats
-- `rudof://formats/validation-reader-modes` - Reader modes (strict/lax)
-- `rudof://formats/shex-validation-sort-options` - ShEx result sort options
-- `rudof://formats/shacl-validation-sort-options` - SHACL result sort options
+- `rudof://shex/external-resolvers` - Available external-shape resolver kinds for `validate_shex`
 
 ## Changing MCP Server Settings
 

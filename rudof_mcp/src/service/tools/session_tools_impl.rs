@@ -23,80 +23,118 @@ use serde::{Deserialize, Serialize};
 use super::helpers::*;
 use crate::service::mcp_service::RudofMcpService;
 
-/// Valid `reset` target names, mirroring the shell's `RESET_TARGETS`
-/// (`rudof_cli/src/shell/repl.rs`) minus `endpoint`, which has no equivalent
-/// piece of session state in the MCP service.
-const RESET_TARGETS: &[&str] = &[
-    "data",
-    "shex",
-    "shex-validation",
-    "shacl",
-    "shacl-validation",
-    "pgschema",
-    "pgschema-validation",
-    "shapemap",
-    "dctap",
-    "service",
-    "query",
-    "sparql",
-    "typemap",
-    "rdf-config",
-];
+/// A piece of session state `reset_session_state` can clear.
+///
+/// Mirrors the shell's `RESET_TARGETS` (`rudof_cli/src/shell/repl.rs`) minus
+/// `endpoint`, which has no equivalent piece of session state here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub enum ResetTarget {
+    /// Everything below, the same as starting a fresh session.
+    #[serde(rename = "all")]
+    All,
+    #[serde(rename = "data")]
+    Data,
+    #[serde(rename = "shex")]
+    Shex,
+    #[serde(rename = "shex-validation")]
+    ShexValidation,
+    #[serde(rename = "shacl")]
+    Shacl,
+    #[serde(rename = "shacl-validation")]
+    ShaclValidation,
+    #[serde(rename = "pgschema")]
+    PgSchema,
+    #[serde(rename = "pgschema-validation")]
+    PgSchemaValidation,
+    #[serde(rename = "shapemap")]
+    Shapemap,
+    #[serde(rename = "dctap")]
+    Dctap,
+    #[serde(rename = "service")]
+    Service,
+    #[serde(rename = "query")]
+    Query,
+    #[serde(rename = "sparql")]
+    Sparql,
+    #[serde(rename = "typemap")]
+    Typemap,
+    #[serde(rename = "rdf-config")]
+    RdfConfig,
+}
+
+impl ResetTarget {
+    /// The wire value, as it appears in the input schema.
+    fn as_str(&self) -> &'static str {
+        match self {
+            ResetTarget::All => "all",
+            ResetTarget::Data => "data",
+            ResetTarget::Shex => "shex",
+            ResetTarget::ShexValidation => "shex-validation",
+            ResetTarget::Shacl => "shacl",
+            ResetTarget::ShaclValidation => "shacl-validation",
+            ResetTarget::PgSchema => "pgschema",
+            ResetTarget::PgSchemaValidation => "pgschema-validation",
+            ResetTarget::Shapemap => "shapemap",
+            ResetTarget::Dctap => "dctap",
+            ResetTarget::Service => "service",
+            ResetTarget::Query => "query",
+            ResetTarget::Sparql => "sparql",
+            ResetTarget::Typemap => "typemap",
+            ResetTarget::RdfConfig => "rdf-config",
+        }
+    }
+
+    /// Every target `all` expands to, in reset order.
+    const EVERYTHING: &'static [ResetTarget] = &[
+        ResetTarget::Data,
+        ResetTarget::Shex,
+        ResetTarget::ShexValidation,
+        ResetTarget::Shacl,
+        ResetTarget::ShaclValidation,
+        ResetTarget::PgSchema,
+        ResetTarget::PgSchemaValidation,
+        ResetTarget::Shapemap,
+        ResetTarget::Dctap,
+        ResetTarget::Service,
+        ResetTarget::Query,
+        ResetTarget::Sparql,
+        ResetTarget::Typemap,
+        ResetTarget::RdfConfig,
+    ];
+}
 
 /// Request parameters for resetting session state.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ResetSessionStateRequest {
     /// Which pieces of session state to clear. Omit, pass [], or pass ["all"]
-    /// to clear everything (RDF data, schemas, shapes, shapemap, results, ...).
-    /// Otherwise pass one or more of: data, shex, shex-validation, shacl,
-    /// shacl-validation, pgschema, pgschema-validation, shapemap, dctap,
-    /// service, query, sparql, typemap, rdf-config.
-    pub targets: Option<Vec<String>>,
+    /// to clear everything.
+    pub targets: Option<Vec<ResetTarget>>,
 }
 
 /// Response after resetting session state.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ResetSessionStateResponse {
     /// The targets that were actually reset (expanded to the full list when "all"/none was requested).
-    pub reset: Vec<String>,
+    pub reset: Vec<ResetTarget>,
 }
 
 /// Reset one or more pieces of session state (RDF data, loaded schemas/shapes,
 /// shapemap, cached results, ...), or everything when no target is given.
-///
-/// # Errors
-///
-/// Returns a Tool Execution Error when an unknown target name is given.
 pub async fn reset_session_state_impl(
     service: &RudofMcpService,
     params: Parameters<ResetSessionStateRequest>,
 ) -> Result<CallToolResult, McpError> {
     let Parameters(ResetSessionStateRequest { targets }) = params;
     let requested = targets.unwrap_or_default();
-    let reset_all = requested.is_empty() || requested.iter().any(|t| t == "all");
+    let reset_all = requested.is_empty() || requested.contains(&ResetTarget::All);
 
-    if !reset_all {
-        let unknown: Vec<&str> = requested
-            .iter()
-            .map(String::as_str)
-            .filter(|target| !RESET_TARGETS.contains(target))
-            .collect();
-        if !unknown.is_empty() {
-            return Ok(ToolExecutionError::with_hint(
-                format!("Unknown reset target(s): {}", unknown.join(", ")),
-                format!("Valid targets: {}, or 'all'", RESET_TARGETS.join(", ")),
-            )
-            .into_call_tool_result());
-        }
-    }
-
-    let reset_list: Vec<String> = if reset_all {
-        RESET_TARGETS.iter().map(|s| s.to_string()).collect()
+    let reset_list: Vec<ResetTarget> = if reset_all {
+        ResetTarget::EVERYTHING.to_vec()
     } else {
         requested
     };
 
-    let data_touched = reset_all || reset_list.iter().any(|t| t == "data");
+    let data_touched = reset_list.contains(&ResetTarget::Data);
 
     {
         let mut rudof = service.rudof.lock().await;
@@ -104,7 +142,7 @@ pub async fn reset_session_state_impl(
             rudof.reset_all().execute();
         } else {
             for target in &reset_list {
-                reset_target(&mut rudof, target);
+                reset_target(&mut rudof, *target);
             }
         }
     }
@@ -116,37 +154,36 @@ pub async fn reset_session_state_impl(
         tracing::warn!("Failed to persist state after reset: {}", e);
     }
 
-    let response = ResetSessionStateResponse {
-        reset: reset_list.clone(),
-    };
+    let names: Vec<&str> = reset_list.iter().map(ResetTarget::as_str).collect();
+    let summary = format!("Reset: {}.", names.join(", "));
+    let response = ResetSessionStateResponse { reset: reset_list };
     let structured = serialize_structured(&response, "reset_session_state_impl")?;
-    let summary = format!("Reset: {}.", reset_list.join(", "));
 
     let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
     Ok(result)
 }
 
-fn reset_target(rudof: &mut Rudof, target: &str) {
+fn reset_target(rudof: &mut Rudof, target: ResetTarget) {
     match target {
-        "data" => rudof.reset_data().execute(),
-        "shex" => rudof.reset_shex_schema().execute(),
-        "shex-validation" => rudof.reset_shex().execute(),
-        "shacl" => rudof.reset_shacl_shapes().execute(),
-        "shacl-validation" => rudof.reset_shacl().execute(),
-        "pgschema" => rudof.reset_pg_schema().execute(),
-        "pgschema-validation" => rudof.reset_pg_schema_validation().execute(),
-        "shapemap" => rudof.reset_shapemap().execute(),
-        "dctap" => rudof.reset_dctap().execute(),
-        "service" => rudof.reset_service_description().execute(),
-        "query" => {
+        ResetTarget::All => rudof.reset_all().execute(),
+        ResetTarget::Data => rudof.reset_data().execute(),
+        ResetTarget::Shex => rudof.reset_shex_schema().execute(),
+        ResetTarget::ShexValidation => rudof.reset_shex().execute(),
+        ResetTarget::Shacl => rudof.reset_shacl_shapes().execute(),
+        ResetTarget::ShaclValidation => rudof.reset_shacl().execute(),
+        ResetTarget::PgSchema => rudof.reset_pg_schema().execute(),
+        ResetTarget::PgSchemaValidation => rudof.reset_pg_schema_validation().execute(),
+        ResetTarget::Shapemap => rudof.reset_shapemap().execute(),
+        ResetTarget::Dctap => rudof.reset_dctap().execute(),
+        ResetTarget::Service => rudof.reset_service_description().execute(),
+        ResetTarget::Query => {
             rudof.reset_sparql_query().execute();
             rudof.reset_query_results().execute();
         },
-        "sparql" => rudof.reset_sparql_query().execute(),
-        "typemap" => rudof.reset_typemap().execute(),
-        "rdf-config" => rudof.reset_rdf_config().execute(),
-        _ => unreachable!("target validated against RESET_TARGETS by reset_session_state_impl"),
+        ResetTarget::Sparql => rudof.reset_sparql_query().execute(),
+        ResetTarget::Typemap => rudof.reset_typemap().execute(),
+        ResetTarget::RdfConfig => rudof.reset_rdf_config().execute(),
     }
 }
 
@@ -266,7 +303,7 @@ mod tests {
         let result = reset_session_state_impl(
             &service,
             Parameters(ResetSessionStateRequest {
-                targets: Some(vec!["shex".to_string()]),
+                targets: Some(vec![ResetTarget::Shex]),
             }),
         )
         .await
@@ -276,19 +313,21 @@ mod tests {
         assert!(!is_data_empty(&service).await);
     }
 
-    #[tokio::test]
-    async fn reset_unknown_target_is_a_tool_error() {
-        let service = RudofMcpService::new();
+    /// An unknown target no longer reaches the tool: the input schema rejects it.
+    #[test]
+    fn an_unknown_reset_target_does_not_deserialize() {
+        let request: Result<ResetSessionStateRequest, _> =
+            serde_json::from_value(serde_json::json!({"targets": ["not-a-real-target"]}));
 
-        let result = reset_session_state_impl(
-            &service,
-            Parameters(ResetSessionStateRequest {
-                targets: Some(vec!["not-a-real-target".to_string()]),
-            }),
-        )
-        .await
-        .expect("invalid target should be a tool error, not a protocol error");
-        assert_eq!(result.is_error, Some(true));
+        assert!(request.is_err());
+    }
+
+    #[test]
+    fn every_reset_target_serializes_as_its_wire_value() {
+        for target in std::iter::once(&ResetTarget::All).chain(ResetTarget::EVERYTHING) {
+            let json = serde_json::to_value(target).expect("a target should serialize");
+            assert_eq!(json, serde_json::json!(target.as_str()));
+        }
     }
 
     #[tokio::test]

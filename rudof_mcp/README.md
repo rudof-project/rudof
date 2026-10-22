@@ -16,7 +16,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io/) server for RDF vali
 
 - **Load RDF data** — From URLs, local files, raw text, or SPARQL endpoints
 - **Validate** — Against ShEx and SHACL schemas
-- **Query** — Execute SPARQL SELECT, CONSTRUCT, ASK, and DESCRIBE
+- **Query** — Execute SPARQL SELECT, CONSTRUCT, and ASK
 - **Inspect** — Explore outgoing/incoming arcs for any RDF node
 - **Visualize** — Generate PlantUML diagrams and SVG/PNG images
 - **Export** — Serialize data to Turtle, N-Triples, RDF/XML, JSON-LD, and more
@@ -78,9 +78,9 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --
 
 | Capability | Description |
 |------------|-------------|
-| **Tools** | 12 tools for validation, querying, data, and session operations |
+| **Tools** | 14 tools for validation, querying, data, and session operations |
 | **Prompts** | Guided templates for common validation workflows |
-| **Resources** | Current RDF data exposed in multiple formats |
+| **Resources** | Current RDF data in multiple formats, and the external-resolver kinds |
 | **Resource Templates** | URI template for accessing RDF data in any supported format |
 | **Logging** | MCP `notifications/message` with RFC 5424 level filtering |
 | **Completions** | Argument completions for prompts and resources |
@@ -107,7 +107,7 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --
 
 | Tool | Description |
 |------|-------------|
-| `execute_sparql_query` | Execute SELECT, CONSTRUCT, ASK, or DESCRIBE queries |
+| `execute_sparql_query` | Execute SELECT, CONSTRUCT, or ASK queries |
 
 ### ShEx
 
@@ -115,7 +115,7 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --
 |------|-------------|
 | `validate_shex` | Validate the loaded RDF data against a ShEx schema |
 | `check_shex` | Check whether a ShEx schema is syntactically well-formed |
-| `show_shex` | Parse and display a ShEx schema with optional analysis |
+| `show_shex` | Serialize a ShEx schema, with optional statistics and dependencies |
 
 ### SHACL
 
@@ -129,6 +129,30 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --
 |------|-------------|
 | `reset_session_state` | Clear session state (all, or specific targets like data/shex/shacl/...) |
 | `change_directory` | Get or change this session's virtual working directory used to resolve relative file paths |
+| `get_rudof_version` | Report the rudof version this MCP server is running |
+| `manage_prefixes` | Show or manage the session's default prefixes (list/add/remove/rename/copy) |
+
+
+## Tool Parameters and Results
+
+Every parameter with a fixed set of values — an RDF format, a validation mode, a sort
+order — declares those values in the tool's input schema, so a client reads them from
+`tools/list` instead of guessing.
+
+Results come back in both halves of an MCP tool result. `structuredContent` carries the
+facts against the tool's output schema, with RDF terms typed rather than rendered: an IRI,
+a blank node, a literal with its datatype and language tag, or an RDF 1.2 triple term.
+`content` carries a short summary, and the rendered report keeps its own field in
+`structuredContent`.
+
+| Tool | What `structuredContent` carries |
+|------|----------------------------------|
+| `validate_shacl` | `conforms`, `counts_by_severity`, one entry per result with its focus node, severity, constraint component, path, value, source shape, messages and nested `sh:detail` results, and the rendered `report` |
+| `validate_shex` | `conforms`, `counts` by status, one `entries` item per `(node, shape)` pair with the validator's reason, and the rendered `report` |
+| `execute_sparql_query` | `query_type`, plus `bindings` (variables and one row per solution, keyed by variable name) for a SELECT or `boolean` for an ASK |
+| `node_info` | `outgoing_arcs` and `incoming_arcs`, each arc with its direction, depth, predicate and the term at its far end, plus `stats` |
+| `show_shex` | `schema`, and `statistics` / `dependencies` when asked for |
+| `check_shex` | `well_formed` and the checker's `report`; a schema that is not well-formed is an answer, not a tool error |
 
 
 ## Prompts
@@ -154,21 +178,11 @@ rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route /rdf --
 |--------------|-------------|
 | `rudof://current-data/{format}` | Currently loaded RDF data in the specified format. `{format}` must be one of: `turtle`, `ntriples`, `rdfxml`, `jsonld`, `trig`, `nquads`, `n3` |
 
-### Format Metadata
+### ShEx
 
 | URI | Description |
 |-----|-------------|
-| `rudof://formats/rdf` | Supported RDF serialization formats |
-| `rudof://formats/node-modes` | Available node inspection modes |
-| `rudof://formats/query-types` | Supported SPARQL query types |
-| `rudof://formats/query-results` | Supported SPARQL result formats |
-| `rudof://formats/shex` | Supported ShEx formats |
-| `rudof://formats/shex-validation-result` | ShEx validation result formats |
-| `rudof://formats/validation-reader-modes` | Reader modes (strict/lax) |
-| `rudof://formats/shex-validation-sort-options` | Sort options for ShEx results |
-| `rudof://formats/shacl` | Supported SHACL formats |
-| `rudof://formats/shacl-validation-result` | SHACL validation result formats |
-| `rudof://formats/shacl-validation-sort-options` | Sort options for SHACL results |
+| `rudof://shex/external-resolvers` | External-shape resolver kinds accepted by `validate_shex` |
 
 
 ## Security

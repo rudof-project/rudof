@@ -16,23 +16,51 @@ use serde::{Deserialize, Serialize};
 use super::helpers::*;
 use crate::service::mcp_service::RudofMcpService;
 
+/// What `manage_prefixes` does to the default prefix declarations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum PrefixAction {
+    /// Show the current default prefixes.
+    #[default]
+    List,
+    /// Add an alias, or overwrite the IRI of one already declared. Needs
+    /// `alias` and `iri`.
+    Add,
+    /// Delete an alias. Needs `alias`.
+    Remove,
+    /// Rename an alias, keeping its IRI. Needs `alias` and `new_alias`.
+    Rename,
+    /// Declare a new alias for the IRI of an existing one. Needs `alias` and
+    /// `new_alias`.
+    Copy,
+}
+
+impl PrefixAction {
+    fn as_str(&self) -> &'static str {
+        match self {
+            PrefixAction::List => "list",
+            PrefixAction::Add => "add",
+            PrefixAction::Remove => "remove",
+            PrefixAction::Rename => "rename",
+            PrefixAction::Copy => "copy",
+        }
+    }
+}
+
 /// Request parameters for showing or managing the default prefixes.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ManagePrefixesRequest {
-    /// Action to perform. One of: "list" (default) -- show the current default
-    /// prefixes; "add" -- add or overwrite an alias; "remove" -- delete an
-    /// alias; "rename" -- rename an alias, keeping its IRI; "copy" -- add a
-    /// new alias for the same IRI as an existing one.
-    pub action: Option<String>,
+    /// Action to perform. Default: list.
+    pub action: Option<PrefixAction>,
 
-    /// Prefix alias, e.g. "wd". Required for "add" and "remove"; for "rename"
-    /// and "copy" this is the existing alias to rename/copy from.
+    /// Prefix alias, e.g. "wd". For "rename" and "copy" this is the existing
+    /// alias to rename or copy from.
     pub alias: Option<String>,
 
-    /// IRI to associate with `alias`, e.g. "http://www.wikidata.org/entity/". Required for "add".
+    /// IRI to associate with `alias`, e.g. "http://www.wikidata.org/entity/".
     pub iri: Option<String>,
 
-    /// New alias name. Required for "rename" and "copy".
+    /// New alias name, for "rename" and "copy".
     pub new_alias: Option<String>,
 }
 
@@ -56,10 +84,9 @@ pub struct ManagePrefixesResponse {
 ///
 /// # Errors
 ///
-/// Returns a Tool Execution Error when `action` is unknown, a required field
-/// for the given `action` is missing, or the underlying operation fails (e.g.
-/// removing/renaming/copying an alias that isn't defined, or adding an
-/// invalid IRI).
+/// Returns a Tool Execution Error when a field the action needs is missing, or
+/// when the operation fails: removing, renaming or copying an alias that is
+/// not declared, or adding an invalid IRI.
 pub async fn manage_prefixes_impl(
     service: &RudofMcpService,
     params: Parameters<ManagePrefixesRequest>,
@@ -70,18 +97,18 @@ pub async fn manage_prefixes_impl(
         iri,
         new_alias,
     }) = params;
-    let action = action.unwrap_or_else(|| "list".to_string());
+    let action = action.unwrap_or_default();
 
     let mut rudof = service.rudof.lock().await;
 
-    match action.as_str() {
-        "list" => {},
-        "add" => {
-            let alias = match require(&alias, "alias", "add") {
+    match action {
+        PrefixAction::List => {},
+        PrefixAction::Add => {
+            let alias = match require(&alias, "alias", action) {
                 Ok(v) => v,
                 Err(result) => return Ok(result),
             };
-            let iri = match require(&iri, "iri", "add") {
+            let iri = match require(&iri, "iri", action) {
                 Ok(v) => v,
                 Err(result) => return Ok(result),
             };
@@ -93,8 +120,8 @@ pub async fn manage_prefixes_impl(
                 .into_call_tool_result());
             }
         },
-        "remove" => {
-            let alias = match require(&alias, "alias", "remove") {
+        PrefixAction::Remove => {
+            let alias = match require(&alias, "alias", action) {
                 Ok(v) => v,
                 Err(result) => return Ok(result),
             };
@@ -106,12 +133,12 @@ pub async fn manage_prefixes_impl(
                 .into_call_tool_result());
             }
         },
-        "rename" => {
-            let old_alias = match require(&alias, "alias", "rename") {
+        PrefixAction::Rename => {
+            let old_alias = match require(&alias, "alias", action) {
                 Ok(v) => v,
                 Err(result) => return Ok(result),
             };
-            let new_alias = match require(&new_alias, "new_alias", "rename") {
+            let new_alias = match require(&new_alias, "new_alias", action) {
                 Ok(v) => v,
                 Err(result) => return Ok(result),
             };
@@ -123,12 +150,12 @@ pub async fn manage_prefixes_impl(
                 .into_call_tool_result());
             }
         },
-        "copy" => {
-            let old_alias = match require(&alias, "alias", "copy") {
+        PrefixAction::Copy => {
+            let old_alias = match require(&alias, "alias", action) {
                 Ok(v) => v,
                 Err(result) => return Ok(result),
             };
-            let new_alias = match require(&new_alias, "new_alias", "copy") {
+            let new_alias = match require(&new_alias, "new_alias", action) {
                 Ok(v) => v,
                 Err(result) => return Ok(result),
             };
@@ -139,13 +166,6 @@ pub async fn manage_prefixes_impl(
                 )
                 .into_call_tool_result());
             }
-        },
-        other => {
-            return Ok(ToolExecutionError::with_hint(
-                format!("Unknown action '{other}'"),
-                "Valid actions: list, add, remove, rename, copy",
-            )
-            .into_call_tool_result());
         },
     }
 
@@ -180,9 +200,10 @@ pub async fn manage_prefixes_impl(
     Ok(result)
 }
 
-/// Extracts a required string field, or a Tool Execution Error result naming
+/// Extracts a field the action needs, or a Tool Execution Error result naming
 /// which field is missing for which action.
-fn require<'a>(value: &'a Option<String>, field: &str, action: &str) -> Result<&'a str, CallToolResult> {
+fn require<'a>(value: &'a Option<String>, field: &str, action: PrefixAction) -> Result<&'a str, CallToolResult> {
+    let action = action.as_str();
     value.as_deref().ok_or_else(|| {
         ToolExecutionError::with_hint(
             format!("Missing required field '{field}' for action '{action}'"),
@@ -197,13 +218,13 @@ mod tests {
     use super::*;
 
     fn request(
-        action: &str,
+        action: PrefixAction,
         alias: Option<&str>,
         iri: Option<&str>,
         new_alias: Option<&str>,
     ) -> Parameters<ManagePrefixesRequest> {
         Parameters(ManagePrefixesRequest {
-            action: Some(action.to_string()),
+            action: Some(action),
             alias: alias.map(String::from),
             iri: iri.map(String::from),
             new_alias: new_alias.map(String::from),
@@ -214,7 +235,7 @@ mod tests {
     async fn list_on_fresh_session_is_empty() {
         let service = RudofMcpService::new();
 
-        let result = manage_prefixes_impl(&service, request("list", None, None, None))
+        let result = manage_prefixes_impl(&service, request(PrefixAction::List, None, None, None))
             .await
             .expect("list should not be a protocol error");
         assert_ne!(result.is_error, Some(true));
@@ -232,7 +253,12 @@ mod tests {
 
         let add_result = manage_prefixes_impl(
             &service,
-            request("add", Some("wd"), Some("http://www.wikidata.org/entity/"), None),
+            request(
+                PrefixAction::Add,
+                Some("wd"),
+                Some("http://www.wikidata.org/entity/"),
+                None,
+            ),
         )
         .await
         .expect("add should not be a protocol error");
@@ -251,9 +277,9 @@ mod tests {
     async fn add_missing_iri_is_a_tool_error() {
         let service = RudofMcpService::new();
 
-        let result = manage_prefixes_impl(&service, request("add", Some("wd"), None, None))
+        let result = manage_prefixes_impl(&service, request(PrefixAction::Add, Some("wd"), None, None))
             .await
-            .expect("missing field should be a tool error, not a protocol error");
+            .expect("a missing field should be a tool error, not a protocol error");
         assert_eq!(result.is_error, Some(true));
     }
 
@@ -261,9 +287,12 @@ mod tests {
     async fn add_invalid_iri_is_a_tool_error() {
         let service = RudofMcpService::new();
 
-        let result = manage_prefixes_impl(&service, request("add", Some("wd"), Some("not an iri"), None))
-            .await
-            .expect("invalid IRI should be a tool error, not a protocol error");
+        let result = manage_prefixes_impl(
+            &service,
+            request(PrefixAction::Add, Some("wd"), Some("not an iri"), None),
+        )
+        .await
+        .expect("invalid IRI should be a tool error, not a protocol error");
         assert_eq!(result.is_error, Some(true));
     }
 
@@ -271,7 +300,7 @@ mod tests {
     async fn remove_unknown_alias_is_a_tool_error() {
         let service = RudofMcpService::new();
 
-        let result = manage_prefixes_impl(&service, request("remove", Some("nope"), None, None))
+        let result = manage_prefixes_impl(&service, request(PrefixAction::Remove, Some("nope"), None, None))
             .await
             .expect("removing an unknown alias should be a tool error, not a protocol error");
         assert_eq!(result.is_error, Some(true));
@@ -282,14 +311,22 @@ mod tests {
         let service = RudofMcpService::new();
         manage_prefixes_impl(
             &service,
-            request("add", Some("wd"), Some("http://www.wikidata.org/entity/"), None),
+            request(
+                PrefixAction::Add,
+                Some("wd"),
+                Some("http://www.wikidata.org/entity/"),
+                None,
+            ),
         )
         .await
         .unwrap();
 
-        let result = manage_prefixes_impl(&service, request("rename", Some("wd"), None, Some("wikidata")))
-            .await
-            .expect("rename should not be a protocol error");
+        let result = manage_prefixes_impl(
+            &service,
+            request(PrefixAction::Rename, Some("wd"), None, Some("wikidata")),
+        )
+        .await
+        .expect("rename should not be a protocol error");
         assert_ne!(result.is_error, Some(true));
 
         let structured = result
@@ -305,14 +342,22 @@ mod tests {
         let service = RudofMcpService::new();
         manage_prefixes_impl(
             &service,
-            request("add", Some("wd"), Some("http://www.wikidata.org/entity/"), None),
+            request(
+                PrefixAction::Add,
+                Some("wd"),
+                Some("http://www.wikidata.org/entity/"),
+                None,
+            ),
         )
         .await
         .unwrap();
 
-        let result = manage_prefixes_impl(&service, request("copy", Some("wd"), None, Some("wikidata")))
-            .await
-            .expect("copy should not be a protocol error");
+        let result = manage_prefixes_impl(
+            &service,
+            request(PrefixAction::Copy, Some("wd"), None, Some("wikidata")),
+        )
+        .await
+        .expect("copy should not be a protocol error");
         assert_ne!(result.is_error, Some(true));
 
         let structured = result
@@ -322,13 +367,12 @@ mod tests {
         assert_eq!(prefixes.len(), 2);
     }
 
-    #[tokio::test]
-    async fn unknown_action_is_a_tool_error() {
-        let service = RudofMcpService::new();
+    /// An unknown action no longer reaches the tool: the input schema rejects it.
+    #[test]
+    fn an_unknown_action_does_not_deserialize() {
+        let request: Result<ManagePrefixesRequest, _> =
+            serde_json::from_value(serde_json::json!({"action": "frobnicate"}));
 
-        let result = manage_prefixes_impl(&service, request("frobnicate", None, None, None))
-            .await
-            .expect("unknown action should be a tool error, not a protocol error");
-        assert_eq!(result.is_error, Some(true));
+        assert!(request.is_err());
     }
 }

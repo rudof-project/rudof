@@ -88,6 +88,118 @@ mod tool_router_tests {
         }
     }
 
+    /// The spec's display name is `title`; `annotations.title` is a hint
+    /// clients are told to distrust, so every tool declares both.
+    #[test]
+    fn test_tools_declare_a_title() {
+        let service = RudofMcpService::new();
+
+        for tool in service.tool_router.list_all() {
+            let title = tool.title.as_deref().unwrap_or_default();
+            assert!(!title.is_empty(), "Tool '{}' should declare a title", tool.name);
+
+            let annotated = tool.annotations.as_ref().and_then(|a| a.title.as_deref());
+            assert_eq!(annotated, Some(title), "Tool '{}' titles should agree", tool.name);
+        }
+    }
+
+    /// The specification recommends a closed object for a tool with no parameters.
+    #[test]
+    fn test_parameterless_tools_take_a_closed_object() {
+        let service = RudofMcpService::new();
+
+        for tool in service.tool_router.list_all() {
+            if !matches!(tool.name.as_ref(), "export_plantuml" | "get_rudof_version") {
+                continue;
+            }
+
+            assert_eq!(tool.input_schema["type"], "object", "tool '{}'", tool.name);
+            assert_eq!(
+                tool.input_schema["additionalProperties"], false,
+                "tool '{}' should accept no properties",
+                tool.name
+            );
+        }
+    }
+
+    #[test]
+    fn test_enumerated_parameters_publish_their_values() {
+        let service = RudofMcpService::new();
+
+        for tool in service.tool_router.list_all() {
+            let defs = tool.input_schema.get("$defs");
+            let Some(properties) = tool.input_schema.get("properties").and_then(|p| p.as_object()) else {
+                continue;
+            };
+
+            for (name, schema) in properties {
+                if !name.ends_with("format") && !matches!(name.as_str(), "mode" | "sort_by" | "action" | "targets") {
+                    continue;
+                }
+
+                assert!(
+                    !enumerated_values(schema, defs).is_empty(),
+                    "'{}' of tool '{}' should publish its accepted values, not take a free-form string",
+                    name,
+                    tool.name
+                );
+            }
+        }
+    }
+
+    /// The accepted values of a property, following a `$ref` into `$defs` and
+    /// looking inside `anyOf`/`oneOf` (optional, or one `const` per value) and
+    /// `items` (array) wrappers.
+    fn enumerated_values(schema: &serde_json::Value, defs: Option<&serde_json::Value>) -> Vec<serde_json::Value> {
+        if let Some(values) = schema.get("enum").and_then(|e| e.as_array()) {
+            return values.clone();
+        }
+
+        if let Some(value) = schema.get("const") {
+            return vec![value.clone()];
+        }
+
+        if let Some(reference) = schema.get("$ref").and_then(|r| r.as_str()) {
+            let resolved = reference
+                .strip_prefix("#/$defs/")
+                .and_then(|name| defs?.get(name))
+                .map(|schema| enumerated_values(schema, defs));
+            return resolved.unwrap_or_default();
+        }
+
+        for wrapper in ["anyOf", "oneOf"] {
+            if let Some(branches) = schema.get(wrapper).and_then(|b| b.as_array()) {
+                return branches
+                    .iter()
+                    .flat_map(|branch| enumerated_values(branch, defs))
+                    .collect();
+            }
+        }
+
+        schema
+            .get("items")
+            .map(|items| enumerated_values(items, defs))
+            .unwrap_or_default()
+    }
+
+    /// A depth of 0 traverses nothing, so the schema must rule it out.
+    #[test]
+    fn test_node_info_depth_must_be_positive() {
+        let service = RudofMcpService::new();
+
+        let tools = service.tool_router.list_all();
+        let node_info = tools
+            .iter()
+            .find(|t| t.name == "node_info")
+            .expect("node_info should be present");
+
+        let depth = node_info.input_schema["properties"]["depth"]
+            .as_object()
+            .expect("node_info should take a depth");
+
+        assert_eq!(depth["minimum"], 1);
+    }
+
     /// Test expected tools are present
     #[test]
     fn test_expected_tools_present() {
@@ -179,56 +291,32 @@ mod prompt_router_tests {
 mod completion_tests {
     use super::*;
 
-    /// Test prompt argument completions for format
+    /// Only the arguments the prompts actually declare get completions; the
+    /// value sets of tool parameters live in their input schemas instead.
     #[test]
-    fn test_prompt_argument_completions_format() {
+    fn test_no_completions_for_tool_parameter_names() {
         let service = RudofMcpService::new();
 
-        let completions = service.get_prompt_argument_completions("any", "format");
+        for argument in ["format", "rdf_format", "schema_format", "result_format", "mode"] {
+            let completions = service.get_prompt_argument_completions("any", argument);
 
-        assert!(!completions.is_empty(), "Should have format completions");
-        assert!(
-            completions.contains(&"turtle".to_string()),
-            "Should include turtle format"
-        );
+            assert!(
+                completions.is_empty(),
+                "'{argument}' is a tool parameter, not a prompt argument"
+            );
+        }
     }
 
-    /// Test prompt argument completions for rdf_format
+    /// Test prompt argument completions for focus
     #[test]
-    fn test_prompt_argument_completions_rdf_format() {
+    fn test_prompt_argument_completions_focus() {
         let service = RudofMcpService::new();
 
-        let completions = service.get_prompt_argument_completions("any", "rdf_format");
+        let completions = service.get_prompt_argument_completions("analyze_rdf_data", "focus");
 
         assert!(!completions.is_empty());
-        assert!(completions.contains(&"turtle".to_string()));
-        assert!(completions.contains(&"ntriples".to_string()));
-        assert!(completions.contains(&"rdfxml".to_string()));
-    }
-
-    /// Test prompt argument completions for schema_format
-    #[test]
-    fn test_prompt_argument_completions_schema_format() {
-        let service = RudofMcpService::new();
-
-        let completions = service.get_prompt_argument_completions("any", "schema_format");
-
-        assert!(!completions.is_empty());
-        assert!(completions.contains(&"shexc".to_string()));
-        assert!(completions.contains(&"shexj".to_string()));
-    }
-
-    /// Test prompt argument completions for mode
-    #[test]
-    fn test_prompt_argument_completions_mode() {
-        let service = RudofMcpService::new();
-
-        let completions = service.get_prompt_argument_completions("any", "mode");
-
-        assert!(!completions.is_empty(), "Should have mode completions");
-        assert!(completions.contains(&"both".to_string()), "Should include 'both' mode");
-        assert!(completions.contains(&"outgoing".to_string()));
-        assert!(completions.contains(&"incoming".to_string()));
+        assert!(completions.contains(&"structure".to_string()));
+        assert!(completions.contains(&"all".to_string()));
     }
 
     /// Test prompt argument completions for technology

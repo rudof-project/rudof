@@ -9,13 +9,14 @@ use rmcp::{
     model::{CallToolResult, ContentBlock, CreateMessageRequestParams, SamplingMessage},
 };
 use rudof_lib::formats::{InputSpec, ResultQueryFormat};
+use rudof_lib::types::{Bindings, QueryResult, QueryResultKind};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
-use std::str::FromStr;
 
 use super::helpers::*;
+use super::params::ResultQueryFormatParam;
 
 /// Request parameters for executing a SPARQL query.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -29,10 +30,9 @@ pub struct ExecuteSparqlQueryRequest {
     /// Mutually exclusive with `query` — provide exactly one.
     pub query_natural_language: Option<String>,
 
-    /// Output format for results.
-    /// SELECT queries only support "internal".
-    /// CONSTRUCT/ASK support: internal (default), turtle, ntriples, rdfxml, trig, n3, nquads.
-    pub result_format: Option<String>,
+    /// Output format for results. SELECT queries only support "internal".
+    /// Default: internal.
+    pub result_format: Option<ResultQueryFormatParam>,
 }
 
 /// Response containing query execution results.
@@ -40,12 +40,34 @@ pub struct ExecuteSparqlQueryRequest {
 pub struct QueryExecutionResponse {
     /// The SPARQL query that was executed (either provided directly or generated from natural language)
     pub query: String,
-    /// Query results as a string
+    /// Which kind of result the query produced, and so which of the two fields below is set.
+    pub query_type: QueryResultKind,
+    /// SELECT only: the variable bindings, one row per solution, every term qualified.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bindings: Option<Bindings>,
+    /// ASK only: the answer.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boolean: Option<bool>,
+    /// The results as rendered in `result_format`. For a CONSTRUCT this is the graph
+    /// itself; for a SELECT it is the same rows as `bindings`, as a table.
     pub results: String,
     /// Format used for the results
-    pub result_format: String,
+    pub result_format: ResultQueryFormatParam,
     /// Size of the results in bytes
     pub result_size_bytes: usize,
+}
+
+/// The typed half of a query result: the bindings of a SELECT, or the answer of an ASK.
+/// A CONSTRUCT has neither, and reaches the caller as the rendered graph.
+fn query_outcome(results: &QueryResult) -> Result<(Option<Bindings>, Option<bool>), String> {
+    match results {
+        QueryResult::Select(solutions) => {
+            let bindings = Bindings::try_from(solutions).map_err(|e| e.to_string())?;
+            Ok((Some(bindings), None))
+        },
+        QueryResult::Ask(answer) => Ok((None, Some(*answer))),
+        QueryResult::Construct(_) => Ok((None, None)),
+    }
 }
 
 /// Generate a SPARQL query from natural language using rmcp sampling.
@@ -145,7 +167,7 @@ async fn generate_sparql_from_natural_language(
 /// - Both `query` and `query_natural_language` are provided
 /// - Neither `query` nor `query_natural_language` is provided
 /// - The query type cannot be determined
-/// - The result format is invalid
+/// - The result format is not supported for the query type
 ///
 /// Returns a Protocol Error for internal execution failures.
 pub async fn execute_sparql_query_impl(
@@ -182,20 +204,8 @@ pub async fn execute_sparql_query_impl(
         },
     };
 
-    // Parse result format - return Tool Execution Error for invalid format
-    let mut result_format_parsed = None;
-    if let Some(result_format) = result_format {
-        match ResultQueryFormat::from_str(&result_format) {
-            Ok(fmt) => result_format_parsed = Some(fmt),
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid result format '{}': {}", result_format, e),
-                    format!("Supported formats: {}", SPARQL_RESULT_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        }
-    }
+    let result_format = result_format.unwrap_or(ResultQueryFormatParam::Internal);
+    let parsed_result_format: ResultQueryFormat = result_format.into();
 
     // Guard: DESCRIBE is not yet implemented in rudof_lib.
     let query_type = sparql_query_type(&sparql_query);
@@ -208,12 +218,9 @@ pub async fn execute_sparql_query_impl(
     }
 
     // Guard: SELECT queries only support the 'internal' result format.
-    if matches!(query_type, Some("SELECT"))
-        && let Some(fmt) = &result_format_parsed
-        && !matches!(fmt, ResultQueryFormat::Internal)
-    {
+    if matches!(query_type, Some("SELECT")) && result_format != ResultQueryFormatParam::Internal {
         return Ok(ToolExecutionError::with_hint(
-            format!("Format '{}' is not yet supported for SELECT queries", fmt),
+            format!("Format '{}' is not yet supported for SELECT queries", result_format),
             "SELECT queries only support 'internal' format. Omit result_format or use 'internal'.",
         )
         .into_call_tool_result());
@@ -239,12 +246,27 @@ pub async fn execute_sparql_query_impl(
         )
     })?;
 
+    let query_results = rudof.query_results().ok_or_else(|| {
+        internal_error(
+            "Query execution error",
+            "The query ran but left no results behind",
+            Some(json!({"operation":"execute_sparql_query_impl", "phase":"read_query_results"})),
+        )
+    })?;
+    let query_type = query_results.kind();
+    let (bindings, boolean) = query_outcome(query_results).map_err(|e| {
+        internal_error(
+            "Query execution error",
+            e,
+            Some(json!({"operation":"execute_sparql_query_impl", "phase":"qualify_bindings"})),
+        )
+    })?;
+
     let mut output_buffer = Cursor::new(Vec::new());
 
-    let mut serialization = rudof.serialize_query_results(&mut output_buffer);
-    if let Some(result_format_parsed) = &result_format_parsed {
-        serialization = serialization.with_result_query_format(result_format_parsed);
-    }
+    let serialization = rudof
+        .serialize_query_results(&mut output_buffer)
+        .with_result_query_format(&parsed_result_format);
     serialization.execute().map_err(|e| {
         internal_error(
             "Query results serialization error",
@@ -265,44 +287,127 @@ pub async fn execute_sparql_query_impl(
     // Calculate metadata
     let result_size_bytes = output_str.len();
 
-    let result_format_str = if let Some(fmt) = result_format_parsed {
-        fmt.to_string()
-    } else {
-        "internal".to_string()
-    };
     let response = QueryExecutionResponse {
         query: sparql_query.clone(),
-        result_format: result_format_str.clone(),
+        query_type,
+        bindings,
+        boolean,
+        result_format,
         results: output_str.clone(),
         result_size_bytes,
     };
 
     let structured = serialize_structured(&response, "execute_sparql_query_impl")?;
 
+    let outcome = match query_type {
+        QueryResultKind::Select => format!("Rows: {}", response.bindings.as_ref().map_or(0, Bindings::count)),
+        QueryResultKind::Ask => format!("Answer: {}", response.boolean.unwrap_or_default()),
+        QueryResultKind::Construct => "Constructed an RDF graph".to_string(),
+    };
     let summary = format!(
-        "SPARQL query executed.\nResult format: {}\nResult size: {} bytes",
-        result_format_str, result_size_bytes
+        "SPARQL query executed.\n{}\nResult format: {}\nResult size: {} bytes",
+        outcome, result_format, result_size_bytes
     );
 
-    let query_display = code_block_preview("sparql", &sparql_query, 600);
-
-    let results_language = match result_format_str.to_lowercase().as_str() {
-        "csv" => "csv",
-        "jsonld" | "json" => "json",
-        "turtle" | "n3" => "turtle",
-        "ntriples" | "nquads" => "ntriples",
-        "rdfxml" => "xml",
-        "trig" => "trig",
-        _ => "text",
-    };
-    let results_display = code_block_preview(results_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
-
-    let mut result = CallToolResult::success(vec![
-        ContentBlock::text(summary),
-        ContentBlock::text(format!("## Query Preview\n\n{}", query_display)),
-        ContentBlock::text(format!("## Results Preview\n\n{}", results_display)),
-    ]);
+    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_lib::types::{Object, QueryResultKind};
+    use rudof_lib::{Rudof, RudofConfig};
+
+    /// Runs `query` over a fixed graph and hands back what the tool would report.
+    ///
+    /// `execute_sparql_query_impl` itself needs a `Peer`, which rmcp keeps crate-private,
+    /// so these drive the result shaping rather than the tool call.
+    fn run(query: &str) -> (QueryResultKind, Option<Bindings>, Option<bool>) {
+        let mut rudof = Rudof::new(RudofConfig::default());
+        rudof
+            .load_data()
+            .with_data(&[InputSpec::str(
+                r#"prefix : <http://example.org/>
+                   :alice :name "Alice"@en ; :knows :bob .
+                   :bob   :name "Bob" ."#,
+            )])
+            .execute()
+            .expect("the test data should load");
+
+        rudof
+            .load_sparql_query(&InputSpec::Str(query.to_string()))
+            .execute()
+            .expect("the query should parse");
+        rudof.run_query().execute().expect("the query should run");
+
+        let results = rudof.query_results().expect("the query leaves results behind");
+        let (bindings, boolean) = query_outcome(results).expect("the terms should qualify");
+        (results.kind(), bindings, boolean)
+    }
+
+    #[test]
+    fn a_select_reports_its_rows_keyed_by_variable() {
+        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
+               select ?person ?name where { ?person :name ?name } order by ?person"#);
+
+        assert_eq!(kind, QueryResultKind::Select);
+        assert_eq!(boolean, None);
+
+        let bindings = bindings.expect("a SELECT reports bindings");
+        assert_eq!(bindings.variables(), ["person", "name"]);
+        assert_eq!(bindings.count(), 2);
+
+        let alice = bindings
+            .rows()
+            .iter()
+            .find(|row| row.get("person").map(|term| term.to_string()) == Some("http://example.org/alice".to_string()))
+            .expect("one row binds ?person to :alice");
+        match alice.get("name") {
+            Some(Object::Literal(literal)) => {
+                assert_eq!(literal.lexical_form(), "Alice");
+                assert_eq!(
+                    literal.lang().map(|lang| lang.as_str().to_string()),
+                    Some("en".to_string())
+                );
+            },
+            other => panic!("?name should bind a language-tagged literal, not {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_unbound_variable_is_absent_from_its_row() {
+        let (_, bindings, _) = run(r#"prefix : <http://example.org/>
+               select ?person ?nickname where { ?person :name ?name optional { ?person :nick ?nickname } }"#);
+
+        let bindings = bindings.expect("a SELECT reports bindings");
+        assert_eq!(bindings.variables(), ["person", "nickname"]);
+        assert!(
+            bindings.rows().iter().all(|row| !row.contains_key("nickname")),
+            "nothing in the data binds ?nickname"
+        );
+        assert!(bindings.rows().iter().all(|row| row.contains_key("person")));
+    }
+
+    #[test]
+    fn an_ask_reports_its_answer() {
+        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
+               ask { :alice :knows :bob }"#);
+
+        assert_eq!(kind, QueryResultKind::Ask);
+        assert_eq!(boolean, Some(true));
+        assert!(bindings.is_none());
+    }
+
+    #[test]
+    fn a_construct_reports_neither() {
+        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
+               construct { ?person :label ?name } where { ?person :name ?name }"#);
+
+        assert_eq!(kind, QueryResultKind::Construct);
+        assert!(bindings.is_none());
+        assert!(boolean.is_none());
+    }
 }

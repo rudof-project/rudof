@@ -8,9 +8,9 @@ use rudof_lib::formats::{DataFormat, InputSpec, ResultDataFormat};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::str::FromStr;
 
 use super::helpers::*;
+use super::params::{DataFormatParam, ImageFormatParam, ResultDataFormatParam};
 use crate::service::{errors::*, mcp_service::RudofMcpService};
 
 /// Request parameters for loading RDF data from various sources.
@@ -21,9 +21,8 @@ pub struct LoadRdfDataFromSourcesRequest {
     /// Optional — omit or pass [] when using `endpoint` only.
     pub data: Option<Vec<String>>,
 
-    /// RDF serialization format of the data sources.
-    /// One of: turtle (default), ntriples, rdfxml, jsonld, trig, nquads, n3.
-    pub data_format: Option<String>,
+    /// RDF serialization format of the data sources. Default: turtle.
+    pub data_format: Option<DataFormatParam>,
 
     /// Base IRI for resolving relative IRIs in the data. Example: "http://example.org/"
     pub base: Option<String>,
@@ -40,7 +39,7 @@ pub struct LoadRdfDataFromSourcesResponse {
     /// Number of data sources that were processed
     pub sources_count: usize,
     /// RDF format that was used for parsing
-    pub format: String,
+    pub format: DataFormatParam,
     /// Total number of triples currently loaded in the datastore
     pub triple_count: usize,
 }
@@ -48,9 +47,8 @@ pub struct LoadRdfDataFromSourcesResponse {
 /// Request parameters for exporting RDF data.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportRdfDataRequest {
-    /// Serialization format for the output.
-    /// One of: turtle (default), ntriples, rdfxml, jsonld, trig, nquads, n3.
-    pub format: Option<String>,
+    /// Serialization format for the output. Default: turtle.
+    pub format: Option<ResultDataFormatParam>,
 }
 
 /// Response containing exported RDF data.
@@ -59,7 +57,7 @@ pub struct ExportRdfDataResponse {
     /// Serialized RDF data as a string
     pub data: String,
     /// RDF format used for serialization
-    pub format: String,
+    pub format: ResultDataFormatParam,
     /// Size of the serialized data in bytes
     pub size_bytes: usize,
 }
@@ -67,15 +65,15 @@ pub struct ExportRdfDataResponse {
 /// Request parameters for generating an image visualization.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportImageRequest {
-    /// Image format to generate. One of: svg, png.
-    pub image_format: String,
+    /// Image format to generate.
+    pub image_format: ImageFormatParam,
 }
 
 /// Response containing the generated image.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportImageResponse {
-    /// Image format used (svg or png)
-    pub image_format: String,
+    /// Image format used
+    pub image_format: ImageFormatParam,
     /// MIME type for the generated image
     pub mime_type: String,
     /// Binary image size in bytes
@@ -92,7 +90,11 @@ pub struct ExportPlantUmlResponse {
 }
 
 /// Empty request for tools that don't require parameters.
+///
+/// `deny_unknown_fields` makes the input schema a closed object, which is what
+/// the specification recommends for a tool that takes no parameters.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EmptyRequest {}
 
 /// Load RDF data from various sources into the server's datastore.
@@ -105,9 +107,8 @@ pub struct EmptyRequest {}
 /// # Errors
 ///
 /// Returns a Tool Execution Error (for LLM self-correction) when:
-/// - Data format is invalid or unsupported
-/// - Base IRI is malformed
-/// - Data source specification is invalid
+/// - No data source is given
+/// - A data source specification is invalid
 ///
 /// Returns a Protocol Error when:
 /// - Internal server errors occur during data loading
@@ -153,18 +154,8 @@ pub async fn load_rdf_data_from_sources_impl(
         },
     };
 
-    // Parse data format - return Tool Execution Error for unsupported format
-    let data_format_str = data_format.as_deref().unwrap_or("turtle");
-    let parsed_data_format: DataFormat = match DataFormat::from_str(data_format_str) {
-        Ok(fmt) => fmt,
-        Err(e) => {
-            return Ok(ToolExecutionError::with_hint(
-                format!("Invalid data format '{}': {}", data_format_str, e),
-                format!("Supported formats: {}", RDF_FORMATS),
-            )
-            .into_call_tool_result());
-        },
-    };
+    let data_format = data_format.unwrap_or(DataFormatParam::Turtle);
+    let parsed_data_format: DataFormat = data_format.into();
 
     let mut data_loading = rudof
         .load_data()
@@ -210,7 +201,7 @@ pub async fn load_rdf_data_from_sources_impl(
     let sources_count = data_specs.len();
     let response = LoadRdfDataFromSourcesResponse {
         sources_count,
-        format: data_format_str.to_string(),
+        format: data_format,
         triple_count,
     };
 
@@ -218,7 +209,7 @@ pub async fn load_rdf_data_from_sources_impl(
 
     let summary = format!(
         "Successfully loaded RDF data from {} source(s) in {} format. Total triples: {}",
-        sources_count, data_format_str, triple_count
+        sources_count, data_format, triple_count
     );
 
     let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
@@ -241,7 +232,6 @@ pub async fn load_rdf_data_from_sources_impl(
 ///
 /// # Errors
 ///
-/// Returns a Tool Execution Error when the requested format is unsupported.
 /// Returns a Protocol Error for internal serialization failures.
 pub async fn export_rdf_data_impl(
     service: &RudofMcpService,
@@ -249,19 +239,8 @@ pub async fn export_rdf_data_impl(
 ) -> Result<CallToolResult, McpError> {
     let Parameters(ExportRdfDataRequest { format }) = params;
     let mut rudof = service.rudof.lock().await;
-    let format_str = format.as_deref().unwrap_or("turtle");
-
-    // Parse format - return Tool Execution Error for unsupported format
-    let parsed_format = match ResultDataFormat::from_str(format_str) {
-        Ok(fmt) => fmt,
-        Err(e) => {
-            return Ok(ToolExecutionError::with_hint(
-                format!("Invalid export format '{}': {}", format_str, e),
-                format!("Supported formats: {}", RDF_FORMATS),
-            )
-            .into_call_tool_result());
-        },
-    };
+    let format = format.unwrap_or(ResultDataFormatParam::Turtle);
+    let parsed_format: ResultDataFormat = format.into();
 
     let mut v = Vec::new();
     rudof
@@ -286,17 +265,14 @@ pub async fn export_rdf_data_impl(
     })?;
     let response = ExportRdfDataResponse {
         data: serialized.clone(),
-        format: format_str.to_string(),
+        format,
         size_bytes,
     };
 
     let structured = serialize_structured(&response, "export_rdf_data_impl")?;
 
-    let preview = code_block_preview(format_str, &serialized, DEFAULT_CONTENT_PREVIEW_CHARS);
-    let summary = format!(
-        "RDF export completed.\nFormat: {}\nSize: {} bytes",
-        format_str, size_bytes
-    );
+    let preview = code_block_preview(format.as_str(), &serialized, DEFAULT_CONTENT_PREVIEW_CHARS);
+    let summary = format!("RDF export completed.\nFormat: {}\nSize: {} bytes", format, size_bytes);
     let mut result = CallToolResult::success(vec![
         ContentBlock::text(summary),
         ContentBlock::text(format!("## Data Preview\n\n{}", preview)),
@@ -359,53 +335,33 @@ pub async fn export_plantuml_impl(
 ///
 /// # Errors
 ///
-/// Returns a Tool Execution Error for unsupported image formats.
-/// Returns a Protocol Error for internal rendering failures.
+/// Returns a Tool Execution Error for rendering failures, which usually mean
+/// PlantUML is not installed.
 pub async fn export_image_impl(
     service: &RudofMcpService,
     params: Parameters<ExportImageRequest>,
 ) -> Result<CallToolResult, McpError> {
     let Parameters(ExportImageRequest { image_format }) = params;
     let mut rudof = service.rudof.lock().await;
-
-    // Parse image format - return Tool Execution Error for unsupported format
-    let format = match ResultDataFormat::from_str(&image_format) {
-        Ok(fmt) => fmt,
-        Err(e) => {
-            return Ok(ToolExecutionError::with_hint(
-                format!("Invalid image format '{}': {}", image_format, e),
-                format!("Supported formats: {}", IMAGE_FORMATS),
-            )
-            .into_call_tool_result());
-        },
-    };
+    let format: ResultDataFormat = image_format.into();
 
     let mut v = Vec::new();
 
-    rudof
-        .serialize_data(&mut v)
-        .with_result_data_format(&format)
-        .execute()
-        .map_err(|e| {
-            internal_error(
-                "Serialization error",
-                e.to_string(),
-                Some(json!({"operation":"export_image_impl", "phase":"serialize_data"})),
-            )
-        })?;
+    if let Err(e) = rudof.serialize_data(&mut v).with_result_data_format(&format).execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to render the RDF graph as {}: {}", image_format, e),
+            "Load RDF data first if there is none. Rendering also needs PlantUML: set the PLANTUML \
+             environment variable to plantuml.jar, or call export_plantuml for the diagram source.",
+        )
+        .into_call_tool_result());
+    }
 
     let size_bytes = v.len();
     let base64_data = general_purpose::STANDARD.encode(&v);
-
-    // Determine MIME type based on image format
-    let mime_type = match image_format.to_lowercase().as_str() {
-        "svg" => "image/svg+xml",
-        "png" => "image/png",
-        _ => "application/octet-stream",
-    };
+    let mime_type = image_format.mime_type();
 
     let response = ExportImageResponse {
-        image_format: image_format.clone(),
+        image_format,
         mime_type: mime_type.to_string(),
         size_bytes,
     };
@@ -424,4 +380,25 @@ pub async fn export_image_impl(
     result.structured_content = Some(structured);
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn export_image_reports_a_rendering_failure_as_a_tool_error() {
+        let service = RudofMcpService::new();
+
+        let result = export_image_impl(
+            &service,
+            Parameters(ExportImageRequest {
+                image_format: ImageFormatParam::Svg,
+            }),
+        )
+        .await
+        .expect("a rendering failure should be a tool error, not a protocol error");
+
+        assert_eq!(result.is_error, Some(true));
+    }
 }

@@ -1,17 +1,27 @@
 use crate::{Result, errors::DataError};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::{ArcDirection, NeighArc, NeighsIterator, Rdf, term::Object};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use sparql_service::RdfData;
 use std::{iter::FusedIterator, vec::IntoIter};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct NeighborArc {
+    /// The node the neighborhood expansion started from.
     pub root: Object,
+    /// Whether the arc leaves or enters [`Self::node`].
     pub direction: ArcDirection,
+    /// How many arcs away from [`Self::root`] this arc is, starting at 1.
     pub depth: usize,
+    /// The node this arc starts from.
     pub node: Object,
+    /// The predicate IRI of the arc.
+    #[schemars(with = "String")]
     pub predicate: IriS,
+    /// The node at the other end of the arc.
     pub neighbor: Object,
+    /// `true` for the last arc of [`Self::node`] in this direction.
     pub is_last: bool,
 }
 

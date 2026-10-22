@@ -6,10 +6,7 @@
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
-use crate::service::tools::helpers::{
-    NODE_INFO_MODE_LIST, RDF_FORMAT_LIST, READER_MODES_LIST, RESULT_FORMAT_LIST, SHACL_FORMAT_LIST, SHEX_FORMAT_LIST,
-    SPARQL_RESULT_FORMAT_LIST,
-};
+use crate::service::tools::helpers::RDF_FORMAT_LIST;
 use crate::service::{logging::LogRateLimiter, state};
 // `LoggingLevel` is deprecated by SEP-2577; the protocol still supports
 // MCP logging and there is no replacement API, so it stays in use here.
@@ -229,19 +226,6 @@ impl RudofMcpService {
         self.persist_state_with(None).await
     }
 
-    /// Get completion suggestions for format-related arguments (shared by prompts and tools).
-    pub fn get_format_argument_completions(argument_name: &str) -> Vec<String> {
-        let list: &[&str] = match argument_name {
-            "format" | "input_format" | "output_format" | "rdf_format" => RDF_FORMAT_LIST,
-            "schema_format" | "shex_format" => SHEX_FORMAT_LIST,
-            "shacl_format" | "shapes_format" => SHACL_FORMAT_LIST,
-            "result_format" => RESULT_FORMAT_LIST,
-            "mode" => NODE_INFO_MODE_LIST,
-            _ => return vec![],
-        };
-        list.iter().map(|s| s.to_string()).collect()
-    }
-
     /// Get completion suggestions for prompt arguments
     pub fn get_prompt_argument_completions(&self, prompt_name: &str, argument_name: &str) -> Vec<String> {
         tracing::debug!(
@@ -249,12 +233,6 @@ impl RudofMcpService {
             argument_name = %argument_name,
             "Getting prompt argument completions"
         );
-
-        // Delegate format arguments to the shared helper first
-        let format_completions = Self::get_format_argument_completions(argument_name);
-        if !format_completions.is_empty() {
-            return format_completions;
-        }
 
         match (prompt_name, argument_name) {
             // Base IRI suggestions
@@ -295,16 +273,13 @@ impl RudofMcpService {
         }
 
         match argument_name {
-            // SPARQL endpoint suggestions
+            // The `{format}` of the `rudof://current-data/{format}` template
+            "format" => RDF_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
             "endpoint" => vec![
                 "https://query.wikidata.org/sparql".to_string(),
                 "https://dbpedia.org/sparql".to_string(),
             ],
-            // SPARQL query result formats — distinct from validation RESULT_FORMAT_LIST
-            "result_format" => SPARQL_RESULT_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
-            // Validation reader modes
-            "reader_mode" => READER_MODES_LIST.iter().map(|s| s.to_string()).collect(),
-            _ => Self::get_format_argument_completions(argument_name),
+            _ => vec![],
         }
     }
 }

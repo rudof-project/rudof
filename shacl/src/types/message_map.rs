@@ -1,11 +1,41 @@
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::collections::hash_map::IntoIter;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+/// Serialized as the list of literals it holds, sorted by language tag: a JSON object
+/// cannot key a message by `Option<Lang>`, and a language-tagged literal already carries
+/// the tag the key would have held.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(into = "Vec<ConcreteLiteral>", from = "Vec<ConcreteLiteral>")]
+#[schemars(with = "Vec<ConcreteLiteral>")]
 pub struct MessageMap {
     messages: HashMap<Option<Lang>, String>,
+}
+
+impl From<MessageMap> for Vec<ConcreteLiteral> {
+    fn from(map: MessageMap) -> Self {
+        let mut literals: Vec<_> = map.messages.into_iter().collect();
+        literals.sort_by(|(left, _), (right, _)| left.cmp(right));
+        literals
+            .into_iter()
+            .map(|(lang, message)| ConcreteLiteral::StringLiteral {
+                lexical_form: message,
+                lang,
+                direction: None,
+            })
+            .collect()
+    }
+}
+
+impl From<Vec<ConcreteLiteral>> for MessageMap {
+    fn from(literals: Vec<ConcreteLiteral>) -> Self {
+        literals.into_iter().fold(MessageMap::new(), |map, literal| {
+            map.with_message(literal.lang(), literal.lexical_form())
+        })
+    }
 }
 
 impl MessageMap {

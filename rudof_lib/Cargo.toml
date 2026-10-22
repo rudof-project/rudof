@@ -59,6 +59,7 @@ regex.workspace = true
 rudof_rdf.workspace = true
 rudof_viz.workspace = true
 semver.workspace = true
+schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shacl.workspace = true

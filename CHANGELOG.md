@@ -9,6 +9,28 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
+## [Unreleased]
+### Added
+- `show_shex` takes `show_statistics` and `show_dependencies`, each reported on its own ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `rudof_lib::types` re-exports `Object` and `IriOrBlankNode`, and adds `Bindings`, the SELECT solutions with every term qualified as an `Object` ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `ResultShapeMap::iter_sorted` walks the entries in the order `as_table` and `as_csv` write them.
+- The RDF term types, the SHACL validation results and the ShEx validation statuses carry a JSON Schema.
+### Fixed
+- `execute_sparql_query` advertised DESCRIBE, which it rejects ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `rudof://current-data/turtle` was advertised but not served ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `export_image` reported a missing PlantUML installation as a protocol error ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `node_info` accepted a depth of 0, which returns nothing ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `check_shex` discarded the well-formedness answer and reported the explanation as the result ([#909](https://github.com/rudof-project/rudof/issues/909)).
+### Changed
+- Every MCP tool parameter with a fixed set of values declares them in its input schema ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `validate_shacl`, `validate_shex`, `execute_sparql_query` and `node_info` report the facts as structured content with typed RDF terms, and `content` carries a short summary instead of the whole report ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `node_info` sources its arcs from `node_neighborhood`, so their depth starts at 1 and literals keep their datatype and language tag ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `validate_shex` accepts ShExR schemas, like `show_shex` and `check_shex` ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- A ShEx schema that is not well-formed is `check_shex`'s answer, not a tool error ([#909](https://github.com/rudof-project/rudof/issues/909)).
+### Removed
+- The `rudof://formats/*` resources, now that the tool schemas carry the accepted values ([#909](https://github.com/rudof-project/rudof/issues/909)).
+- `shapemap_format` from `validate_shex`: only `compact` was ever accepted ([#909](https://github.com/rudof-project/rudof/issues/909)).
+
 ## 0.3.32
 ### Fixed
 - SHACL `sh:targetClass`, implicit class targets and `sh:class` did not follow `rdfs:subClassOf` at all depths, so instances of a sub-subclass were missed. The W3C tests only use one level.

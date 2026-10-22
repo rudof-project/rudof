@@ -5,12 +5,14 @@ use rmcp::{
     model::{CallToolResult, ContentBlock},
 };
 use rudof_lib::formats::{IriNormalizationMode, NodeInspectionMode};
+use rudof_lib::types::{ArcDirection, NeighborArc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashSet, io::Cursor, str::FromStr};
+use std::{collections::HashSet, io::Cursor, num::NonZeroUsize};
 
 use super::helpers::*;
+use super::params::NodeModeParam;
 
 /// Request parameters for inspecting an RDF node.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -26,10 +28,11 @@ pub struct NodeInfoRequest {
     pub predicates: Option<Vec<String>>,
 
     /// Maximum traversal depth for the tree output. Default: 1 (direct arcs only).
-    pub depth: Option<usize>,
+    pub depth: Option<NonZeroUsize>,
 
-    /// Which arcs to include. One of: both (default), outgoing (node as subject), incoming (node as object).
-    pub mode: Option<String>,
+    /// Which arcs to include: outgoing (node as subject), incoming (node as
+    /// object), or both. Default: both.
+    pub mode: Option<NodeModeParam>,
 
     /// IRI parsing strictness for `node`.
     /// false (default): bare "http://..." IRIs are auto-wrapped in "<>".
@@ -43,41 +46,23 @@ pub struct NodeInfoResponse {
     /// Node selector used for inspection.
     pub node: String,
     /// Effective traversal mode.
-    pub mode: String,
+    pub mode: NodeModeParam,
+    /// The arcs where the node is the subject, in depth-first order.
+    pub outgoing_arcs: Vec<NeighborArc>,
+    /// The arcs where the node is the object, in depth-first order.
+    pub incoming_arcs: Vec<NeighborArc>,
+    /// Counts over the arcs above.
+    pub stats: NodeInfoStats,
     /// Human-readable node inspection results.
     pub results: String,
-    /// Parsed data extracted from the text tree output.
-    pub parsed: ParsedNodeInfo,
 }
 
-/// Parsed arc entry extracted from the node tree output.
+/// Summary statistics computed from the outgoing and incoming arcs.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ParsedArc {
-    /// Predicate shown in the rendered output.
-    pub predicate: String,
-    /// Target node/literal shown in the rendered output.
-    pub target: String,
-    /// Depth inside the rendered tree (0 means direct arc from the root node).
-    pub depth: usize,
-}
-
-/// Parsed and summarized information extracted from node inspection text output.
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ParsedNodeInfo {
-    /// Parsed outgoing arcs.
-    pub outgoing_arcs: Vec<ParsedArc>,
-    /// Parsed incoming arcs.
-    pub incoming_arcs: Vec<ParsedArc>,
-    /// High-level stats derived from parsed arcs.
-    pub stats: ParsedNodeInfoStats,
-}
-
-/// Summary statistics computed from parsed outgoing and incoming arcs.
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ParsedNodeInfoStats {
-    /// Total number of parsed outgoing arcs.
+pub struct NodeInfoStats {
+    /// Total number of outgoing arcs.
     pub outgoing_arcs_count: usize,
-    /// Total number of parsed incoming arcs.
+    /// Total number of incoming arcs.
     pub incoming_arcs_count: usize,
     /// Number of unique predicates among outgoing arcs.
     pub outgoing_predicates_count: usize,
@@ -89,138 +74,23 @@ pub struct ParsedNodeInfoStats {
     pub unique_incoming_sources_count: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ArcSection {
-    Outgoing,
-    Incoming,
-}
+impl NodeInfoStats {
+    /// Counts the arcs of each direction, their predicates and their far ends.
+    fn of(outgoing_arcs: &[NeighborArc], incoming_arcs: &[NeighborArc]) -> Self {
+        let unique =
+            |arcs: &[NeighborArc], key: fn(&NeighborArc) -> String| arcs.iter().map(key).collect::<HashSet<_>>().len();
+        let predicate = |arc: &NeighborArc| arc.predicate.to_string();
+        let neighbor = |arc: &NeighborArc| arc.neighbor.to_string();
 
-/// Parses `show_node_info` text output into structured outgoing/incoming arcs.
-fn parse_node_info_results(output: &str) -> ParsedNodeInfo {
-    let mut section: Option<ArcSection> = None;
-    let mut outgoing_arcs = Vec::new();
-    let mut incoming_arcs = Vec::new();
-
-    for line in output.lines() {
-        let trimmed = line.trim();
-
-        if trimmed.eq_ignore_ascii_case("Outgoing arcs") {
-            section = Some(ArcSection::Outgoing);
-            continue;
-        }
-
-        if trimmed.eq_ignore_ascii_case("Incoming arcs") {
-            section = Some(ArcSection::Incoming);
-            continue;
-        }
-
-        if trimmed.is_empty() || trimmed == "▲" {
-            continue;
-        }
-
-        match section {
-            Some(ArcSection::Outgoing) => {
-                if let Some(arc) = parse_arc_line(line, " ─► ") {
-                    outgoing_arcs.push(arc);
-                }
-            },
-            Some(ArcSection::Incoming) => {
-                if let Some(arc) = parse_arc_line(line, " ── ") {
-                    incoming_arcs.push(arc);
-                }
-            },
-            None => {},
-        }
-    }
-
-    let outgoing_predicates_count = outgoing_arcs
-        .iter()
-        .map(|arc| arc.predicate.as_str())
-        .collect::<HashSet<_>>()
-        .len();
-
-    let incoming_predicates_count = incoming_arcs
-        .iter()
-        .map(|arc| arc.predicate.as_str())
-        .collect::<HashSet<_>>()
-        .len();
-
-    let unique_outgoing_targets_count = outgoing_arcs
-        .iter()
-        .map(|arc| arc.target.as_str())
-        .collect::<HashSet<_>>()
-        .len();
-
-    let unique_incoming_sources_count = incoming_arcs
-        .iter()
-        .map(|arc| arc.target.as_str())
-        .collect::<HashSet<_>>()
-        .len();
-
-    ParsedNodeInfo {
-        stats: ParsedNodeInfoStats {
+        Self {
             outgoing_arcs_count: outgoing_arcs.len(),
             incoming_arcs_count: incoming_arcs.len(),
-            outgoing_predicates_count,
-            incoming_predicates_count,
-            unique_outgoing_targets_count,
-            unique_incoming_sources_count,
-        },
-        outgoing_arcs,
-        incoming_arcs,
-    }
-}
-
-/// Parses a single arc line using the provided rendered delimiter.
-fn parse_arc_line(line: &str, delimiter: &str) -> Option<ParsedArc> {
-    let (left, right) = line.split_once(delimiter)?;
-
-    let predicate = strip_tree_glyphs(left);
-    let target = right.trim().to_string();
-
-    if predicate.is_empty() || target.is_empty() {
-        return None;
-    }
-
-    Some(ParsedArc {
-        predicate,
-        target,
-        depth: tree_depth(line),
-    })
-}
-
-/// Removes tree drawing glyphs from the predicate side of a rendered tree line.
-fn strip_tree_glyphs(value: &str) -> String {
-    value
-        .chars()
-        .filter(|c| !matches!(c, '│' | '├' | '└' | '─'))
-        .collect::<String>()
-        .trim()
-        .to_string()
-}
-
-/// Computes the nesting depth from line prefixes used by `termtree`.
-fn tree_depth(line: &str) -> usize {
-    let mut remaining = line;
-    let mut depth = 0;
-
-    loop {
-        if let Some(rest) = remaining.strip_prefix("│   ") {
-            depth += 1;
-            remaining = rest;
-            continue;
+            outgoing_predicates_count: unique(outgoing_arcs, predicate),
+            incoming_predicates_count: unique(incoming_arcs, predicate),
+            unique_outgoing_targets_count: unique(outgoing_arcs, neighbor),
+            unique_incoming_sources_count: unique(incoming_arcs, neighbor),
         }
-
-        if let Some(rest) = remaining.strip_prefix("    ") {
-            depth += 1;
-            remaining = rest;
-            continue;
-        }
-
-        break;
     }
-
-    depth
 }
 
 /// Get detailed information about an RDF node.
@@ -245,18 +115,8 @@ pub async fn node_info_impl(
     }): Parameters<NodeInfoRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
-    let mode_str = mode.clone().unwrap_or_else(|| "both".to_string());
-
-    // Parse mode - return Tool Execution Error for invalid mode
-    let parsed_mode = match parse_optional_value_with_hint(
-        mode.as_deref(),
-        "mode",
-        &format!("Supported modes: {}", NODE_INFO_MODES),
-        NodeInspectionMode::from_str,
-    ) {
-        Ok(value) => value,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
+    let mode = mode.unwrap_or(NodeModeParam::Both);
+    let parsed_mode: NodeInspectionMode = mode.into();
 
     let iri_mode = if strict_iris.unwrap_or(false) {
         IriNormalizationMode::Strict
@@ -265,15 +125,15 @@ pub async fn node_info_impl(
     };
 
     let mut output_buffer = Cursor::new(Vec::new());
-    let mut showing_node_info = rudof.show_node_info(&node, &mut output_buffer).with_iri_mode(iri_mode);
-    if let Some(mode) = &parsed_mode {
-        showing_node_info = showing_node_info.with_show_node_mode(mode);
-    }
+    let mut showing_node_info = rudof
+        .show_node_info(&node, &mut output_buffer)
+        .with_iri_mode(iri_mode)
+        .with_show_node_mode(&parsed_mode);
     if let Some(predicates) = predicates.as_deref() {
         showing_node_info = showing_node_info.with_predicates(predicates);
     }
     if let Some(depth) = depth {
-        showing_node_info = showing_node_info.with_depth(depth);
+        showing_node_info = showing_node_info.with_depth(depth.get());
     }
 
     if let Err(e) = showing_node_info.with_show_colors(false).execute() {
@@ -293,14 +153,39 @@ pub async fn node_info_impl(
         )
     })?;
 
-    let parsed = parse_node_info_results(&output_str);
-    let stats = &parsed.stats;
+    let mut walking_neighborhood = rudof
+        .node_neighborhood(&node)
+        .with_mode(&parsed_mode)
+        .with_iri_mode(iri_mode);
+    if let Some(predicates) = predicates.as_deref() {
+        walking_neighborhood = walking_neighborhood.with_predicates(predicates);
+    }
+    if let Some(depth) = depth {
+        walking_neighborhood = walking_neighborhood.with_depth(depth.get());
+    }
+    let arcs = match walking_neighborhood
+        .execute()
+        .and_then(|arcs| arcs.collect::<Result<Vec<_>, _>>())
+    {
+        Ok(arcs) => arcs,
+        Err(e) => {
+            return Ok(ToolExecutionError::with_hint(
+                format!("Failed to walk the neighborhood of {}: {}", node, e),
+                "Give the predicates as angle-bracketed IRIs or prefixed names",
+            )
+            .into_call_tool_result());
+        },
+    };
+    let (outgoing_arcs, incoming_arcs): (Vec<_>, Vec<_>) = arcs
+        .into_iter()
+        .partition(|arc| arc.direction == ArcDirection::Outgoing);
+    let stats = NodeInfoStats::of(&outgoing_arcs, &incoming_arcs);
     let results_size = output_str.chars().count();
 
     let summary = format!(
         "Node inspection completed.\nNode: {}\nMode: {}\nResults size: {} chars\nOutgoing arcs: {} (predicates: {}, unique targets: {})\nIncoming arcs: {} (predicates: {}, unique sources: {})",
         node,
-        mode_str,
+        mode,
         results_size,
         stats.outgoing_arcs_count,
         stats.outgoing_predicates_count,
@@ -312,20 +197,114 @@ pub async fn node_info_impl(
 
     let response = NodeInfoResponse {
         node: node.clone(),
-        mode: mode_str.clone(),
+        mode,
+        outgoing_arcs,
+        incoming_arcs,
+        stats,
         results: output_str.clone(),
-        parsed,
     };
 
     let structured = serialize_structured(&response, "node_info_impl")?;
 
-    let results_preview = code_block_preview("text", &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
-
-    let mut result = CallToolResult::success(vec![
-        ContentBlock::text(summary),
-        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
-    ]);
+    let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
     result.structured_content = Some(structured);
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_lib::formats::InputSpec;
+    use rudof_lib::types::Object;
+
+    async fn inspect(node: &str, mode: Option<NodeModeParam>) -> NodeInfoResponse {
+        let service = RudofMcpService::new();
+        service
+            .rudof
+            .lock()
+            .await
+            .load_data()
+            .with_data(&[InputSpec::str(
+                r#"prefix : <http://example.org/>
+                   :alice :name "Alice"@en ; :knows :bob .
+                   :bob   :knows :alice ."#,
+            )])
+            .execute()
+            .expect("the test data should load");
+
+        let result = node_info_impl(
+            &service,
+            Parameters(NodeInfoRequest {
+                node: node.to_string(),
+                predicates: None,
+                depth: None,
+                mode,
+                strict_iris: None,
+            }),
+        )
+        .await
+        .expect("inspection should not fail at the protocol level");
+
+        serde_json::from_value(result.structured_content.expect("the tool reports structured content"))
+            .expect("the structured content should be a NodeInfoResponse")
+    }
+
+    #[tokio::test]
+    async fn an_arc_keeps_the_language_tag_of_its_literal() {
+        let response = inspect(":alice", None).await;
+
+        let name = response
+            .outgoing_arcs
+            .iter()
+            .find(|arc| arc.predicate.as_str() == "http://example.org/name")
+            .expect(":alice has a :name arc");
+
+        // The rendered tree writes a literal as `"Alice"@en`; the arc carries the lexical
+        // form and the tag apart, which is what the glyph scraping used to lose.
+        match &name.neighbor {
+            Object::Literal(literal) => {
+                assert_eq!(literal.lexical_form(), "Alice");
+                assert_eq!(
+                    literal.lang().map(|lang| lang.as_str().to_string()),
+                    Some("en".to_string())
+                );
+            },
+            other => panic!("the :name arc should reach a literal, not {other}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn the_arcs_are_split_by_direction_and_counted() {
+        let response = inspect(":alice", None).await;
+
+        assert_eq!(response.outgoing_arcs.len(), 2);
+        assert_eq!(response.incoming_arcs.len(), 1);
+        assert!(
+            response
+                .outgoing_arcs
+                .iter()
+                .all(|arc| arc.direction == ArcDirection::Outgoing)
+        );
+        assert!(
+            response
+                .incoming_arcs
+                .iter()
+                .all(|arc| arc.direction == ArcDirection::Incoming)
+        );
+
+        assert_eq!(response.stats.outgoing_arcs_count, 2);
+        assert_eq!(response.stats.outgoing_predicates_count, 2);
+        assert_eq!(response.stats.incoming_arcs_count, 1);
+        assert_eq!(response.stats.unique_incoming_sources_count, 1);
+    }
+
+    #[tokio::test]
+    async fn outgoing_mode_leaves_the_incoming_arcs_out() {
+        let response = inspect(":alice", Some(NodeModeParam::Outgoing)).await;
+
+        assert_eq!(response.outgoing_arcs.len(), 2);
+        assert!(response.incoming_arcs.is_empty());
+        assert_eq!(response.stats.incoming_arcs_count, 0);
+    }
 }
