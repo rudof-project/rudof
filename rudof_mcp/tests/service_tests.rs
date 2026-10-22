@@ -122,6 +122,66 @@ mod tool_router_tests {
         }
     }
 
+    #[test]
+    fn test_enumerated_parameters_publish_their_values() {
+        let service = RudofMcpService::new();
+
+        for tool in service.tool_router.list_all() {
+            let defs = tool.input_schema.get("$defs");
+            let Some(properties) = tool.input_schema.get("properties").and_then(|p| p.as_object()) else {
+                continue;
+            };
+
+            for (name, schema) in properties {
+                if !name.ends_with("format") && !matches!(name.as_str(), "mode" | "sort_by" | "action" | "targets") {
+                    continue;
+                }
+
+                assert!(
+                    !enumerated_values(schema, defs).is_empty(),
+                    "'{}' of tool '{}' should publish its accepted values, not take a free-form string",
+                    name,
+                    tool.name
+                );
+            }
+        }
+    }
+
+    /// The accepted values of a property, following a `$ref` into `$defs` and
+    /// looking inside `anyOf`/`oneOf` (optional, or one `const` per value) and
+    /// `items` (array) wrappers.
+    fn enumerated_values(schema: &serde_json::Value, defs: Option<&serde_json::Value>) -> Vec<serde_json::Value> {
+        if let Some(values) = schema.get("enum").and_then(|e| e.as_array()) {
+            return values.clone();
+        }
+
+        if let Some(value) = schema.get("const") {
+            return vec![value.clone()];
+        }
+
+        if let Some(reference) = schema.get("$ref").and_then(|r| r.as_str()) {
+            let resolved = reference
+                .strip_prefix("#/$defs/")
+                .and_then(|name| defs?.get(name))
+                .map(|schema| enumerated_values(schema, defs));
+            return resolved.unwrap_or_default();
+        }
+
+        for wrapper in ["anyOf", "oneOf"] {
+            if let Some(branches) = schema.get(wrapper).and_then(|b| b.as_array()) {
+                return branches
+                    .iter()
+                    .flat_map(|branch| enumerated_values(branch, defs))
+                    .collect();
+            }
+        }
+
+        schema
+            .get("items")
+            .map(|items| enumerated_values(items, defs))
+            .unwrap_or_default()
+    }
+
     /// A depth of 0 traverses nothing, so the schema must rule it out.
     #[test]
     fn test_node_info_depth_must_be_positive() {
