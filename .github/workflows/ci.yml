@@ -113,7 +113,10 @@ jobs:
       - name: Install Graphviz
         run: sudo apt-get update && sudo apt-get install -y graphviz
       - name: Run cargo test
-        run: cargo test --workspace --features qlever
+        # pyrudof has no Rust tests, and linking its (empty) test binary needs
+        # libpython, which the runner doesn't have. Its Python tests run in the
+        # Python workflow, against the built wheels.
+        run: cargo test --workspace --exclude pyrudof --features qlever
 
   wasm-test:
     name: Test Suite on Wasm
