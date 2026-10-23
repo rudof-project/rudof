@@ -14,6 +14,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Fixed
 - Avoid showing internals in error messages, issue #914
 - Improved ShExR-ShExJ-ShExC round-trip
+- Stack overflow when a shape refers to itself solving issue #916
 
 ### Changed
 ### Removed
