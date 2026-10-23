@@ -234,6 +234,9 @@ pub enum SchemaIRError {
     #[error("SemAct IRI {iri} referenced by cache has no registered extension")]
     UnknownSemActInCache { iri: IriS },
 
+    #[error("A shape extends itself, directly or indirectly: {cycles}")]
+    ExtendsCycle { cycles: String },
+
     #[error("Reading ShEx IR cache: {msg}")]
     CacheReadError { msg: String },
 

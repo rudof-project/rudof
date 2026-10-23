@@ -139,6 +139,15 @@ impl AST2IR {
         compiled_schema.increment_total_shapes(local_shapes);
         compiled_schema.build_dependency_graph();
         compiled_schema.build_inheritance_graph();
+        let cycles = compiled_schema.extends_cycles();
+        if !cycles.is_empty() {
+            let cycles = cycles
+                .iter()
+                .map(|cycle| compiled_schema.show_shapes(cycle))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return Err(Box::new(SchemaIRError::ExtendsCycle { cycles }));
+        }
         Ok(())
     }
 

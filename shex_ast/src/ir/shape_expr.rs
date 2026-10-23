@@ -163,45 +163,29 @@ impl ShapeExpr {
         self.preds_visited(schema, &mut visited)
     }
 
+    /// `visited` holds the shapes already visited, so that a shape that refers
+    /// to itself (e.g. `:A @:A AND { :p . }`) is visited only once
     fn preds_visited(&self, schema: &SchemaIR, visited: &mut HashSet<ShapeLabelIdx>) -> HashSet<Pred> {
         let mut preds = HashSet::new();
+        let mut visit = |idx: &ShapeLabelIdx, preds: &mut HashSet<Pred>| {
+            if visited.insert(*idx) {
+                let info = schema.find_shape_idx(idx).unwrap();
+                preds.extend(info.expr().preds_visited(schema, visited));
+            }
+        };
         match self {
-            ShapeExpr::ShapeOr { exprs, .. } => {
+            ShapeExpr::ShapeOr { exprs, .. } | ShapeExpr::ShapeAnd { exprs, .. } => {
                 for e in exprs {
-                    let info = schema.find_shape_idx(e).unwrap();
-                    visited.insert(*e);
-                    let expr = info.expr();
-                    preds.extend(expr.preds_visited(schema, visited));
+                    visit(e, &mut preds);
                 }
             },
-            ShapeExpr::ShapeAnd { exprs, .. } => {
-                for e in exprs {
-                    let info = schema.find_shape_idx(e).unwrap();
-                    visited.insert(*e);
-                    let expr = info.expr();
-                    preds.extend(expr.preds_visited(schema, visited));
-                }
-            },
-            ShapeExpr::ShapeNot { expr, .. } => {
-                let info = schema.find_shape_idx(expr).unwrap();
-                visited.insert(*expr);
-                let expr = info.expr();
-                preds.extend(expr.preds_visited(schema, visited));
-            },
+            ShapeExpr::ShapeNot { expr, .. } => visit(expr, &mut preds),
             ShapeExpr::NodeConstraint(_nc) => {},
             ShapeExpr::Shape(s) => {
                 preds.extend(s.preds());
             },
             ShapeExpr::External {} => {},
-            ShapeExpr::Ref { idx } => {
-                if visited.contains(idx) {
-                    return preds;
-                }
-                visited.insert(*idx);
-                let info = schema.find_shape_idx(idx).unwrap();
-                let expr = info.expr();
-                preds.extend(expr.preds(schema));
-            },
+            ShapeExpr::Ref { idx } => visit(idx, &mut preds),
             ShapeExpr::Empty => {},
         }
         preds
