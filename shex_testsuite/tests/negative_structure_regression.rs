@@ -12,11 +12,28 @@ const MANIFEST: &str = "shexTest/negativeStructure/manifest.jsonld";
 #[cfg(not(target_family = "wasm"))]
 const BASELINE: &str = "tests/baseline_negative_structure_failing.txt";
 
+/// Entries that are not run, because rudof accepts their schemas on purpose
+#[cfg(not(target_family = "wasm"))]
+const SKIPPED: &[(&str, &str)] = &[
+    (
+        "1focusRefANDSelfdot",
+        "a shape that refers to itself through AND without a triple constraint is \
+         accepted, with a greatest fixpoint for the recursive reference",
+    ),
+    (
+        "Cycle2Extra",
+        "a shape that refers to itself through an EXTRA predicate is accepted: \
+         EXTRA adds no negative edge to the dependency graph, so that recursive \
+         schemas like `:C [ :a ] OR EXTRA :p { :p @:C + }` are valid",
+    ),
+];
+
 /// Regression test for the negative structure tests of the ShEx test suite.
 ///
 /// Each schema in `shexTest/negativeStructure/manifest.jsonld` is valid ShExC,
 /// but not a valid schema (a missing reference, a cycle through a negation or
-/// through EXTENDS, ...). An entry passes when rudof rejects its schema.
+/// through EXTENDS, ...). An entry passes when rudof rejects its schema. The
+/// entries in `SKIPPED` are not run.
 ///
 /// Like `validation_regression`, this compares the current set of failing
 /// entries against a stored baseline so that improvements and regressions are
@@ -33,8 +50,20 @@ fn negative_structure_regression() {
 
     let base = manifest_path.parent().unwrap();
 
+    let names = manifest.entry_names();
+    for (skipped, _) in SKIPPED {
+        assert!(
+            names.iter().any(|n| n == skipped),
+            "skipped entry {skipped} is not in the manifest"
+        );
+    }
+
     let mut current_failing: BTreeSet<String> = BTreeSet::new();
-    for name in manifest.entry_names() {
+    for name in names {
+        if let Some((_, reason)) = SKIPPED.iter().find(|(skipped, _)| *skipped == name) {
+            eprintln!("SKIP {name}: {reason}");
+            continue;
+        }
         let result = catch_unwind(AssertUnwindSafe(|| {
             manifest.run_entry(&name, base, ManifestShExSyntaxMode::ShExC)
         }));

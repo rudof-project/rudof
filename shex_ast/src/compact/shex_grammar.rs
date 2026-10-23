@@ -1832,22 +1832,14 @@ fn is_pn_chars_or_dot(c: char) -> bool {
     c == '.' || is_pn_chars(c)
 }
 
+/// The rest of a blank node label: `PN_CHARS` and dots, but not ending with a
+/// dot. The dots at the end are not part of the label (in `_:b. `, the label is
+/// `b`), so they are given back to the input.
 fn blank_node_label2(src: Span) -> IRes<()> {
-    match blank_node_label3(src) {
-        Ok((left, m)) => {
-            // if last is a '.', remove that
-            if m.ends_with('.') {
-                // TODO!!: Original parser had this:
-                // But I need to see how to remove the last character of left...
-                // Ok(((&src[m.len() - 1..]), ()))
-                tracing::error!("This code is pending review when the last is a '.' {left}");
-                Ok((left, ()))
-            } else {
-                Ok((left, ()))
-            }
-        },
-        Err(e) => Err(e),
-    }
+    let (_, m) = blank_node_label3(src)?;
+    let keep = m.fragment().trim_end_matches('.').len();
+    let (left, _label) = src.take_split(keep);
+    Ok((left, ()))
 }
 
 fn blank_node_label3(i: Span) -> IRes<Span> {
@@ -2252,12 +2244,15 @@ where
             i = left;
         }
 
+        // A separator (`AND`, `OR`) must be followed by an element:
+        // `@<S> OR` without a second shape expression is an error
         match parser_many(i) {
             Ok((left, v)) => {
                 vs.push(v);
                 i = left;
             },
-            _ => return Ok((i, maker(vs))),
+            Err(Err::Error(e)) => return Err(Err::Failure(e)),
+            Err(e) => return Err(e),
         }
     }
 }

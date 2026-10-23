@@ -10,6 +10,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
+    #[error("Negative syntax entry {entry_name}: the ShExC parser accepted the schema, but it is not valid ShExC")]
+    NegativeSyntaxAccepted { entry_name: String },
+
     #[error("Negative structure entry {entry_name}: the schema was accepted, but it is not valid")]
     NegativeStructureAccepted { entry_name: String },
 

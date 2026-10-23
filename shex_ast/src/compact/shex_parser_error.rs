@@ -38,6 +38,21 @@ pub enum ParseError {
     #[error("{msg}")]
     Custom { msg: String },
 
+    #[error("The shape label {label} is declared more than once")]
+    DuplicateShapeLabel { label: String },
+
+    #[error("The triple expression label {label} is declared more than once")]
+    DuplicateTripleExprLabel { label: String },
+
+    #[error("The label {label} is used for a shape and for a triple expression")]
+    ShapeAndTripleExprLabel { label: String },
+
+    #[error("A node constraint has the facet {facet} more than once")]
+    DuplicateFacet { facet: String },
+
+    #[error("The numeric facet {facet} can't be used with the datatype {datatype}, which is not numeric")]
+    NumericFacetWithoutNumericDatatype { facet: String, datatype: String },
+
     #[error(transparent)]
     IRISError {
         #[from]
