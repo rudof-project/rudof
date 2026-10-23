@@ -17,6 +17,16 @@ use tracing::debug;
 
 type Result<A> = std::result::Result<A, ParseError>;
 
+/// Resolves the IRI of a `BASE` or `PREFIX` declaration against the current
+/// base: with `BASE <http://ex.example/a/>`, `BASE <../>` is `http://ex.example/`.
+/// An IRI that can't be resolved is kept as it is.
+fn resolve(base: Option<&IriS>, iri: IriS) -> IriS {
+    match base {
+        Some(base) => base.resolve_str(iri.as_str()).unwrap_or(iri),
+        None => iri,
+    }
+}
+
 pub struct ShExParser<'a> {
     shex_statement_iterator: StatementIterator<'a>,
     // state: ParserState,
@@ -36,9 +46,11 @@ impl ShExParser<'_> {
         for s in parser.shex_statement_iterator.by_ref() {
             match s? {
                 ShExStatement::BaseDecl { iri } => {
+                    let iri = resolve(schema.base().as_ref(), iri);
                     schema = schema.with_base(Some(iri));
                 },
                 ShExStatement::PrefixDecl { alias, iri } => {
+                    let iri = resolve(schema.base().as_ref(), iri);
                     schema.add_prefix(alias, &iri);
                 },
                 ShExStatement::StartDecl { shape_expr } => {
@@ -58,6 +70,10 @@ impl ShExParser<'_> {
                     schema.add_shape(shape_label, shape_expr, is_abstract);
                 },
                 ShExStatement::StartActions { actions } => {
+                    let actions = actions
+                        .into_iter()
+                        .map(|action| action.deref_iri(schema.base().as_ref(), schema.prefixmap().as_ref()))
+                        .collect::<std::result::Result<Vec<_>, _>>()?;
                     schema = schema.with_start_actions(Some(actions));
                 },
             }

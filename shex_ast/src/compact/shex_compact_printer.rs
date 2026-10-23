@@ -676,7 +676,12 @@ where
     }
 
     fn pp_node_constraint(&self, nc: &NodeConstraint) -> DocBuilder<'a, Arena<'a, A>, A> {
-        self.opt_pp(nc.node_kind(), self.pp_node_kind())
+        // A node constraint without node kind, datatype, values or facets
+        // accepts any node: in ShExC, that is `.`
+        let any =
+            nc.node_kind().is_none() && nc.datatype().is_none() && nc.values().is_none() && nc.xs_facet().is_none();
+        let doc = if any { self.doc.text(".") } else { self.doc.nil() };
+        doc.append(self.opt_pp(nc.node_kind(), self.pp_node_kind()))
             .append(self.opt_pp(nc.datatype(), self.pp_datatype()))
             .append(self.opt_pp(nc.values(), self.pp_value_set()))
             .append(self.opt_pp(nc.xs_facet(), self.pp_xsfacets()))
@@ -913,12 +918,33 @@ where
         self.doc.text(value.to_string())
     }
 
+    /// A DECIMAL in ShExC needs a `.`: `5` would be read back as an INTEGER
     fn pp_decimal(&self, value: &Decimal) -> DocBuilder<'a, Arena<'a, A>, A> {
-        self.doc.text(value.to_string())
+        let s = value.to_string();
+        if s.contains('.') {
+            self.doc.text(s)
+        } else {
+            self.doc.text(format!("{s}.0"))
+        }
     }
 
+    /// A DOUBLE in ShExC needs an exponent (`5E0`): `5` or `5.0` would be read
+    /// back as an INTEGER or a DECIMAL. NaN and infinities have no numeric
+    /// syntax, so they are typed literals.
     fn pp_double(&self, value: &f64) -> DocBuilder<'a, Arena<'a, A>, A> {
-        self.doc.text(value.to_string())
+        if value.is_finite() {
+            self.doc.text(format!("{value:E}"))
+        } else {
+            let lexical = if value.is_nan() {
+                "NaN"
+            } else if value.is_sign_positive() {
+                "INF"
+            } else {
+                "-INF"
+            };
+            self.doc
+                .text(format!("\"{lexical}\"^^<http://www.w3.org/2001/XMLSchema#double>"))
+        }
     }
 
     fn pp_float(&self, value: &f64) -> DocBuilder<'a, Arena<'a, A>, A> {

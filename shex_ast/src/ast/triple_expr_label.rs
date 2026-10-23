@@ -36,7 +36,13 @@ impl DerefIri for TripleExprLabel {
 impl TryFrom<&str> for TripleExprLabel {
     type Error = IriSError;
 
+    /// `_:label` is a blank node (as written by `Display`), any other string an IRI
     fn try_from(s: &str) -> Result<Self, Self::Error> {
+        if let Some(label) = s.strip_prefix("_:") {
+            return Ok(TripleExprLabel::BNode {
+                value: BNode::new(label),
+            });
+        }
         let iri_ref = IriRef::try_from(s)?;
         Ok(TripleExprLabel::IriRef { value: iri_ref })
     }

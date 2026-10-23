@@ -36,27 +36,9 @@ fn shexr_parser_matches_shextest_schemas_corpus() {
 
     let mut supported: Vec<String> = Vec::new();
     let mut skipped = 0usize;
-    let mut unsupported_sharing = 0usize;
     let mut unverifiable_imports = 0usize;
 
     for entry in &entries {
-        if ["_all", "kitchenSink"].contains(&entry.name.as_str()) {
-            // The two fixtures that share a single `TripleExpr` (by RDF
-            // node identity, IRI- or blank-node-labelled) across two
-            // positions in the schema — the documented limitation of this
-            // parser (see the module doc): every
-            // `sx:TripleConstraint`/`EachOf`/`OneOf` is parsed inline
-            // wherever it's referenced from, so a genuinely shared node ends
-            // up duplicated in the AST as two structurally-identical but
-            // distinct `TripleExpr` values, and round-tripping *that* back
-            // through the builder emits the shared node's list-valued
-            // properties (`sx:expressions`) twice, with two different
-            // (fresh) list heads — a real round-trip mismatch, not a false
-            // negative in this test.
-            unsupported_sharing += 1;
-            continue;
-        }
-
         let ttl_path = dir.join(&entry.ttl);
         let ttl = std::fs::read_to_string(&ttl_path)
             .unwrap_or_else(|e| panic!("[{}] failed to read {}: {e}", entry.name, ttl_path.display()));
@@ -111,7 +93,6 @@ fn shexr_parser_matches_shextest_schemas_corpus() {
 
     eprintln!(
         "shexr_parser: {} supported (round-tripped exactly), {skipped} not yet implemented, \
-         {unsupported_sharing} unsupported (TripleExpr id-sharing), \
          {unverifiable_imports} imports (base-IRI resolution not verifiable here), {} total",
         supported.len(),
         entries.len()

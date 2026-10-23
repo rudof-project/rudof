@@ -530,16 +530,69 @@ impl PrefixMap {
     }
 
     /// Finds the longest prefix match for a given IRI in the [`PrefixMap`]
+    /// whose rest is a valid local name, so that `alias:rest` is a valid
+    /// prefixed name: with the prefix `ex: <http://a.example>`, the IRI
+    /// `http://a.example/S1` is not `ex:/S1`
     fn longest_prefix_match<'a>(&'a self, iri: &'a IriS) -> Option<(&'a str, &'a str)> {
         self.map
             .iter()
             .filter_map(|(alias, pm_iri)| {
                 iri.as_str()
                     .strip_prefix(pm_iri.as_str())
+                    .filter(|rest| is_local_name(rest))
                     .map(|rest| (alias.as_str(), rest))
             })
             .max_by_key(|(_, rest)| iri.as_str().len() - rest.len())
     }
+}
+
+/// Checks that `s` is a local name of a prefixed name, as in the rule
+/// `PN_LOCAL` of Turtle, SPARQL and ShExC (the empty string is also valid):
+///
+/// `PN_LOCAL ::= (PN_CHARS_U | ':' | [0-9] | PLX) ((PN_CHARS | '.' | ':' | PLX)* (PN_CHARS | ':' | PLX))?`
+fn is_local_name(s: &str) -> bool {
+    let mut chars = s.chars().peekable();
+    let mut first = true;
+    let mut last = None;
+    while let Some(c) = chars.next() {
+        let valid = match c {
+            '%' => {
+                let hex = (chars.next(), chars.next());
+                matches!(hex, (Some(a), Some(b)) if a.is_ascii_hexdigit() && b.is_ascii_hexdigit())
+            },
+            '\\' => matches!(chars.next(), Some(e) if "_~.-!$&'()*+,;=/?#@%".contains(e)),
+            ':' => true,
+            '.' => !first,
+            c if c.is_ascii_digit() => true,
+            c if first => is_pn_chars_u(c),
+            c => is_pn_chars(c),
+        };
+        if !valid {
+            return false;
+        }
+        first = false;
+        last = Some(c);
+    }
+    last != Some('.')
+}
+
+/// `PN_CHARS_U ::= PN_CHARS_BASE | '_'`
+fn is_pn_chars_u(c: char) -> bool {
+    c == '_'
+        || c.is_ascii_alphabetic()
+        || matches!(c,
+            '\u{C0}'..='\u{D6}' | '\u{D8}'..='\u{F6}' | '\u{F8}'..='\u{2FF}' | '\u{370}'..='\u{37D}'
+            | '\u{37F}'..='\u{1FFF}' | '\u{200C}'..='\u{200D}' | '\u{2070}'..='\u{218F}'
+            | '\u{2C00}'..='\u{2FEF}' | '\u{3001}'..='\u{D7FF}' | '\u{F900}'..='\u{FDCF}'
+            | '\u{FDF0}'..='\u{FFFD}' | '\u{10000}'..='\u{EFFFF}')
+}
+
+/// `PN_CHARS ::= PN_CHARS_U | '-' | [0-9] | #x00B7 | [#x0300-#x036F] | [#x203F-#x2040]`
+fn is_pn_chars(c: char) -> bool {
+    is_pn_chars_u(c)
+        || c == '-'
+        || c.is_ascii_digit()
+        || matches!(c, '\u{B7}' | '\u{300}'..='\u{36F}' | '\u{203F}'..='\u{2040}')
 }
 
 /// Resolving strings and IRI references against a [`PrefixMap`]
@@ -695,6 +748,31 @@ mod tests {
 
         let relative = IriS::new_unchecked("relative");
         assert_eq!(pm.qualify(&relative), "<relative>");
+    }
+
+    #[test]
+    fn test_qualify_only_gives_valid_prefixed_names() {
+        let pm: PrefixMap = HashMap::from([("ex", "http://a.example"), ("a", "http://a.example/")])
+            .try_into()
+            .unwrap();
+        // `ex:/S1` is not a valid prefixed name: use the other prefix
+        assert_eq!(pm.qualify(&IriS::new_unchecked("http://a.example/S1")), "a:S1");
+
+        let pm: PrefixMap = HashMap::from([("ex", "http://a.example")]).try_into().unwrap();
+        assert_eq!(
+            pm.qualify(&IriS::new_unchecked("http://a.example/S1")),
+            "<http://a.example/S1>"
+        );
+    }
+
+    #[test]
+    fn test_is_local_name() {
+        for valid in ["", "a", "S1", "1", "_x", "a.b", "a:b", "a-b", "%20x", "é", "a\\/b"] {
+            assert!(is_local_name(valid), "{valid} should be a valid local name");
+        }
+        for invalid in ["/S1", "a/b", "a#b", ".a", "a.", "-a", "%2", "a b", "a?b"] {
+            assert!(!is_local_name(invalid), "{invalid} should not be a valid local name");
+        }
     }
 
     #[test]

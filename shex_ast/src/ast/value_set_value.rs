@@ -109,11 +109,28 @@ impl DerefIri for ValueSetValue {
                 language_tag: language_tag.clone(),
             }),
             ValueSetValue::LanguageStem { stem } => Ok(ValueSetValue::LanguageStem { stem: stem.clone() }),
-            ValueSetValue::IriStem { stem } => Ok(ValueSetValue::IriStem { stem: stem.clone() }),
-            ValueSetValue::IriStemRange { stem, exclusions } => Ok(ValueSetValue::IriStemRange {
-                stem: stem.clone(),
-                exclusions: exclusions.clone(),
+            ValueSetValue::IriStem { stem } => Ok(ValueSetValue::IriStem {
+                stem: stem.deref_iri(base, prefixmap)?,
             }),
+            ValueSetValue::IriStemRange { stem, exclusions } => {
+                let stem = match stem {
+                    IriRefOrWildcard::IriRef(iri) => IriRefOrWildcard::IriRef(iri.deref_iri(base, prefixmap)?),
+                    IriRefOrWildcard::Wildcard => IriRefOrWildcard::Wildcard,
+                };
+                let exclusions = exclusions
+                    .map(|excs| {
+                        excs.into_iter()
+                            .map(|exc| match exc {
+                                IriExclusion::Iri(iri) => Ok(IriExclusion::Iri(iri.deref_iri(base, prefixmap)?)),
+                                IriExclusion::IriStem(stem) => {
+                                    Ok(IriExclusion::IriStem(stem.deref_iri(base, prefixmap)?))
+                                },
+                            })
+                            .collect::<Result<Vec<_>, DerefError>>()
+                    })
+                    .transpose()?;
+                Ok(ValueSetValue::IriStemRange { stem, exclusions })
+            },
             ValueSetValue::LanguageStemRange { stem, exclusions } => Ok(ValueSetValue::LanguageStemRange {
                 stem: stem.clone(),
                 exclusions: exclusions.clone(),

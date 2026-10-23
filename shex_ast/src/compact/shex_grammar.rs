@@ -1,4 +1,4 @@
-use crate::compact::grammar::token_tws_no_case;
+use crate::compact::grammar::{keyword_no_case, token_tws_no_case};
 use crate::compact::grammar_structs::{Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement};
 use crate::compact::{
     IRes, Span, grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws, grammar::tws0,
@@ -13,7 +13,6 @@ use crate::{
     value_set_value::ValueSetValue,
 };
 use lazy_regex::{Lazy, regex};
-use nom::bytes::complete::tag_no_case;
 use nom::{
     Err, Input, Parser,
     branch::alt,
@@ -53,7 +52,7 @@ fn directive(i: Span) -> IRes<ShExStatement> {
 fn base_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     map_error(
         move |i| {
-            let (i, (_, _, iri_ref)) = (tag_no_case("BASE"), tws0, cut(iri_ref)).parse(i)?;
+            let (i, (_, _, iri_ref)) = (keyword_no_case("BASE"), tws0, cut(iri_ref)).parse(i)?;
             Ok((i, ShExStatement::BaseDecl { iri: iri_ref }))
         },
         || ShExParseError::ExpectedBaseDecl,
@@ -65,7 +64,7 @@ fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     map_error(
         move |i| {
             let (i, (_, _, pname_ns, _, iri_ref)) =
-                (tag_no_case("PREFIX"), tws0, cut(pname_ns), tws0, cut(iri_ref)).parse(i)?;
+                (keyword_no_case("PREFIX"), tws0, cut(pname_ns), tws0, cut(iri_ref)).parse(i)?;
             Ok((
                 i,
                 ShExStatement::PrefixDecl {
@@ -83,7 +82,7 @@ fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
 fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     map_error(
         move |i| {
-            let (i, (_, _, iri)) = (tag_no_case("IMPORT"), tws0, cut(iri)).parse(i)?;
+            let (i, (_, _, iri)) = (keyword_no_case("IMPORT"), tws0, cut(iri)).parse(i)?;
             tracing::debug!("grammar: Import {iri:?}");
             Ok((i, ShExStatement::ImportDecl { iri }))
         },
@@ -101,7 +100,7 @@ fn start<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     map_error(
         move |i| {
             let (i, (_, _, _, _, se)) = (
-                tag_no_case("START"),
+                keyword_no_case("START"),
                 tws0,
                 cut(char('=')),
                 tws0,
@@ -158,7 +157,7 @@ fn shape_expr_or_external<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
 }
 
 fn external(i: Span) -> IRes<ShapeExpr> {
-    let (i, _) = tag_no_case("EXTERNAL")(i)?;
+    let (i, _) = keyword_no_case("EXTERNAL")(i)?;
     Ok((i, ShapeExpr::external()))
 }
 
@@ -412,7 +411,7 @@ fn lit_node_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint>
 
 fn literal_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
     move |i| {
-        let (i, (_, _, facets)) = (tag_no_case("LITERAL"), tws0, facets()).parse(i)?;
+        let (i, (_, _, facets)) = (keyword_no_case("LITERAL"), tws0, facets()).parse(i)?;
         Ok((
             i,
             NodeConstraint::new()
@@ -505,17 +504,17 @@ fn string_length(i: Span) -> IRes<XsFacet> {
 }
 
 fn min_length(i: Span) -> IRes<XsFacet> {
-    let (i, (_, _, n)) = (tag_no_case("MINLENGTH"), tws0, pos_integer).parse(i)?;
+    let (i, (_, _, n)) = (keyword_no_case("MINLENGTH"), tws0, pos_integer).parse(i)?;
     Ok((i, XsFacet::min_length(n)))
 }
 
 fn max_length(i: Span) -> IRes<XsFacet> {
-    let (i, (_, _, n)) = (tag_no_case("MAXLENGTH"), tws0, pos_integer).parse(i)?;
+    let (i, (_, _, n)) = (keyword_no_case("MAXLENGTH"), tws0, pos_integer).parse(i)?;
     Ok((i, XsFacet::max_length(n)))
 }
 
 fn length(i: Span) -> IRes<XsFacet> {
-    let (i, (_, _, n)) = (tag_no_case("LENGTH"), tws0, pos_integer).parse(i)?;
+    let (i, (_, _, n)) = (keyword_no_case("LENGTH"), tws0, pos_integer).parse(i)?;
     Ok((i, XsFacet::length(n)))
 }
 
@@ -2199,9 +2198,9 @@ fn one_if<'a, F: Fn(char) -> bool>(f: F) -> impl Fn(Span<'a>) -> IRes<'a, Span<'
     }
 }
 
-fn symbol(value: &str) -> impl FnMut(Span) -> IRes<()> {
+fn symbol<'a>(value: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, ()> {
     move |i| {
-        let (i, (_, _, _)) = (tws0, tag_no_case(value), tws0).parse(i)?;
+        let (i, (_, _, _)) = (tws0, keyword_no_case(value), tws0).parse(i)?;
         Ok((i, ()))
     }
 }

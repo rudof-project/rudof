@@ -8,11 +8,28 @@ use std::str::FromStr;
 /// IriOrStr represents either an IRI or a String.
 /// This enum is used mainly for parsing ShEx schemas which contain an import declaration
 /// The value of the import declaration can be a well formed IRI or a relative IRI which is kept as a string
-#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
+///
+/// Two values are equal when they are written the same: ShExJ reads an import
+/// as a `String`, ShExC and ShExR as an `IriRef`.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "String", into = "String")]
 pub enum IriOrStr {
     String(String),
     IriRef(IriRef),
+}
+
+impl PartialEq for IriOrStr {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_string() == other.to_string()
+    }
+}
+
+impl Eq for IriOrStr {}
+
+impl std::hash::Hash for IriOrStr {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.to_string().hash(state)
+    }
 }
 
 impl IriOrStr {

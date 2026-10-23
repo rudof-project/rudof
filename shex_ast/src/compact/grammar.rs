@@ -3,10 +3,10 @@ use nom::{
     Err, Parser,
     branch::alt,
     bytes::complete::{is_not, tag, tag_no_case, take_until},
-    character::complete::multispace1,
-    combinator::value,
+    character::complete::{multispace1, satisfy},
+    combinator::{not, value},
     multi::many0,
-    sequence::{delimited, pair},
+    sequence::{delimited, pair, terminated},
 };
 use std::fmt::Debug;
 
@@ -114,15 +114,27 @@ pub(crate) fn token_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, 
 /// A combinator that creates a parser for a specific token,
 /// surrounded by trailing whitespace or comments.
 pub(crate) fn token_tws_no_case<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
-    map_error(delimited(tws0, tag_no_case(token), tws0), || {
+    map_error(delimited(tws0, keyword_no_case(token), tws0), || {
         ShExParseError::ExpectedToken(token.to_string())
     })
+}
+
+/// A case insensitive keyword that is a complete word: `PREFIX` does not
+/// match the start of the prefixed name `prefix1:S`, and `NOT` does not
+/// match the start of `not:x`
+pub(crate) fn keyword_no_case<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
+    move |i| terminated(tag_no_case(token), not(satisfy(is_name_char))).parse(i)
+}
+
+/// A character that can continue a keyword into a name or a prefixed name
+fn is_name_char(c: char) -> bool {
+    c.is_alphanumeric() || matches!(c, '_' | '-' | ':')
 }
 
 /// A combinator that creates a parser for a case insensitive tag,
 /// surrounded by trailing whitespace or comments.
 pub(crate) fn tag_no_case_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
-    map_error(delimited(tws0, tag_no_case(token), tws0), || {
+    map_error(delimited(tws0, keyword_no_case(token), tws0), || {
         ShExParseError::ExpectedToken(token.to_string())
     })
 }
