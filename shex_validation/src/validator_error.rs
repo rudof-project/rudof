@@ -121,11 +121,11 @@ pub enum ValidatorError {
     #[error("Serialization of error failed: {source_error} with error: {error}")]
     ErrorSerializationError { source_error: String, error: String },
 
-    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s, ks, _errs)| format!("({n}, {s}, preds: [{:?}])", ks.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(", "))).collect::<Vec<_>>().join(", "))]
+    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s, ks, _errs)| format!("({n}, {s}, preds: [{}])", ks.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(", "))).collect::<Vec<_>>().join(", "))]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx, Vec<Pred>, Vec<ValidatorError>)>,
     },
-    #[error("Negation cycle error: {neg_cycles:?}")]
+    #[error("Negation cycle error: {}", show_neg_cycles(neg_cycles))]
     NegCycleError {
         neg_cycles: Vec<Vec<(String, String, Vec<String>)>>,
     },
@@ -152,7 +152,7 @@ pub enum ValidatorError {
     RbeFailed(),
 
     #[error(
-        "Closed shape but found properties {remainder:?} which are not part of shape declared properties: {declared:?}"
+        "Closed shape but found properties {remainder} which are not part of shape declared properties: {declared}"
     )]
     ClosedShapeWithRemainderPreds { remainder: Preds, declared: Preds },
 
@@ -654,6 +654,19 @@ impl Serialize for ValidatorError {
     }
 }
 
+/// Shows each negative edge of each cycle as `:S -> NOT :T in cycle [:S, :T]`
+fn show_neg_cycles(neg_cycles: &[Vec<(String, String, Vec<String>)>]) -> String {
+    neg_cycles
+        .iter()
+        .flat_map(|cycle| {
+            cycle
+                .iter()
+                .map(|(source, target, shapes)| format!("{source} -> NOT {target} in cycle [{}]", shapes.join(", ")))
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
 fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR, width: usize) -> String {
     if let Some(label) = schema.shape_label_from_idx(idx) {
         schema.show_label(label)
@@ -668,4 +681,36 @@ fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR, width: usize) -> String {
 
 fn show_shape_expr(shape_expr: &ShapeExpr, schema: &SchemaIR, width: usize) -> String {
     schema.show_shape_expr(shape_expr, width)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn neg_cycle_error_shows_the_shape_labels() {
+        let error = ValidatorError::NegCycleError {
+            neg_cycles: vec![vec![(
+                ":N".to_string(),
+                ":N2".to_string(),
+                vec![":N".to_string(), ":N2".to_string()],
+            )]],
+        };
+        assert_eq!(
+            error.to_string(),
+            "Negation cycle error: :N -> NOT :N2 in cycle [:N, :N2]"
+        );
+    }
+
+    #[test]
+    fn closed_shape_error_shows_the_predicates() {
+        let error = ValidatorError::ClosedShapeWithRemainderPreds {
+            remainder: Preds::new(vec![Pred::new_unchecked("http://example.org/p")]),
+            declared: Preds::new(vec![Pred::new_unchecked("http://example.org/q")]),
+        };
+        assert_eq!(
+            error.to_string(),
+            "Closed shape but found properties [http://example.org/p] which are not part of shape declared properties: [http://example.org/q]"
+        );
+    }
 }

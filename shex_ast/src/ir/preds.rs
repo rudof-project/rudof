@@ -1,5 +1,6 @@
 use prefixmap::PrefixMap;
 use serde::Serialize;
+use std::fmt::Display;
 
 use crate::Pred;
 
@@ -29,5 +30,17 @@ impl Preds {
 
     pub fn iter(&self) -> impl Iterator<Item = &Pred> {
         self.values.iter()
+    }
+}
+
+impl Display for Preds {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let preds_str = self
+            .values
+            .iter()
+            .map(|pred| pred.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "[{preds_str}]")
     }
 }

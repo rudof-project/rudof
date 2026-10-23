@@ -76,6 +76,17 @@ impl IRSchema {
         &self.prefixmap
     }
 
+    /// The prefix map to show terms in messages: the prefixes of the shapes graph,
+    /// plus `xsd:` when the shapes graph doesn't declare it, so that a literal
+    /// shows as `"3"^^xsd:integer` and not with the full datatype IRI.
+    pub fn prefix_map_for_messages(&self) -> PrefixMap {
+        let mut prefixmap = self.prefixmap.clone();
+        if prefixmap.find("xsd").is_none() {
+            prefixmap.add_prefix("xsd", XsdVocab::base_iri().clone());
+        }
+        prefixmap
+    }
+
     pub fn base(&self) -> Option<&IriS> {
         self.base.as_ref()
     }
@@ -274,16 +285,17 @@ impl IRSchema {
                             .collect()
                     })
                     .collect();
+                let shown = show_cycles(&cycles, &schema_ir.prefixmap);
                 if !is_stratified {
                     warn!(
                         "Warning: The dependency graph has non-stratified negation: a negating constraint reaches back into a recursive shape. This may lead to unexpected behavior in SHACL validation"
                     );
-                    return Err(IRError::DependencyGraphHasNegativeCycles { cycles });
+                    return Err(IRError::DependencyGraphHasNegativeCycles { cycles, shown });
                 }
                 warn!(
                     "Recursive shapes are disabled (recursion_semantics = none): rejecting the cyclic schema. Set recursion_semantics to \"lfp\" or \"gfp\" to allow it."
                 );
-                return Err(IRError::DependencyGraphHasCycles { cycles });
+                return Err(IRError::DependencyGraphHasCycles { cycles, shown });
             }
             warn!(
                 "The cycle is stratified (any negation in it targets recursion-free shapes): validation will handle it via the configured recursion semantics."
@@ -313,6 +325,18 @@ impl IRSchema {
 
         self.dependency_graph = dg;
     }
+}
+
+/// Shows each cycle as a list of shapes with prefixed names: `[:S, _:b0], [:T, :U]`
+fn show_cycles(cycles: &[Vec<Object>], prefixmap: &PrefixMap) -> String {
+    cycles
+        .iter()
+        .map(|cycle| {
+            let shapes: Vec<String> = cycle.iter().map(|shape| shape.show_qualified(prefixmap)).collect();
+            format!("[{}]", shapes.join(", "))
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 impl TryFrom<ASTSchema> for IRSchema {

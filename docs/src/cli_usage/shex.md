@@ -50,7 +50,7 @@ If you try to check that schema with rudof, it informs about the error:
 
 ```sh
 $ rudof shex -s examples/shex/non_stratified.shex
-Error: ShEx error: Failed to compile ShEx schema: Schema contains negative cycles in its dependency graph. Found 1 negative cycle(s).
+Error: ShEx error: Failed to compile ShEx schema: Schema contains negative cycles in its dependency graph. Found 1 negative cycle(s): [:S]
 ```
 
 ## Obtaining information about a shape

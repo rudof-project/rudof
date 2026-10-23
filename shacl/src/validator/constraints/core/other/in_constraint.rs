@@ -19,8 +19,15 @@ impl<S: NeighsRDF + Debug> Validator<S> for In {
         value_nodes: &ValueNodes<S>,
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
-        _: &IRSchema,
+        shapes_graph: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
+        let prefixmap = shapes_graph.prefix_map_for_messages();
+        let expected = self
+            .values()
+            .iter()
+            .map(|value| value.show_qualified(&prefixmap))
+            .collect::<Vec<_>>()
+            .join(", ");
         validate_with(
             component,
             shape,
@@ -30,7 +37,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for In {
                 let values = self.values().iter().map(S::object_as_term).collect::<Vec<_>>();
                 !values.contains(vn)
             },
-            &format!("In constraint not satisfied. Expected one of {:?}", self.values()),
+            &format!("In constraint not satisfied. Expected one of [{expected}]"),
             maybe_path,
         )
     }

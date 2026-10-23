@@ -41,7 +41,7 @@ pub enum SchemaIRError {
     #[error("SchemaJson Error")]
     SchemaJsonError { source: Box<ast::SchemaJsonError> },
 
-    #[error("Duplicated triple expression label in schema: {label:?}")]
+    #[error("Duplicated triple expression label in schema: {label}")]
     DuplicatedTripleExprLabel { label: Box<TripleExprLabel> },
 
     #[error("Converting min value {min} must be positive")]
@@ -69,7 +69,7 @@ pub enum SchemaIRError {
         lexical_form: String,
     },
 
-    #[error("Finding content from iris. Errors: {errors:?}")]
+    #[error("Finding content from iris. Errors: [{}]", errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", "))]
     FindingContentFromIrisError { errors: Vec<SchemaIRError> },
 
     #[error("Generating candidates from iri {iri}: {error}")]
