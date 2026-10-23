@@ -803,7 +803,11 @@ fn unary_triple_expr_opt1(i: Span) -> IRes<TripleExpr> {
         alt((bracketed_triple_expr(), triple_constraint())),
     )
         .parse(i)?;
-    Ok((i, te.with_id(id)))
+    match (id, te) {
+        (Some(_), TripleExpr::Ref(_)) => Err(Err::Failure(ShExParseError::InclusionWithLabel.at(i))),
+        (None, te) => Ok((i, te)),
+        (id, te) => Ok((i, te.with_id(id))),
+    }
 }
 
 // From unary_triple_expr_opt1
@@ -828,6 +832,14 @@ fn bracketed_triple_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
                 semantic_actions,
             )
                 .parse(i)?;
+            if let TripleExpr::Ref(_) = te {
+                // `( &label )` is the inclusion itself: it has no cardinality,
+                // annotations or semantic actions to keep
+                if maybe_card.is_some() || !annotations.is_empty() || sem_acts.is_some() {
+                    return Err(Err::Failure(ShExParseError::InclusionWithCardinality.at(i)));
+                }
+                return Ok((i, te));
+            }
             let mut te = te;
             if let Some(card) = maybe_card {
                 te = te.with_min(card.min());

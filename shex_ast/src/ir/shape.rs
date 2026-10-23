@@ -106,12 +106,20 @@ impl Shape {
         format!("Shape {closed}{extra}")
     }*/
 
+    /// Adds an edge to each shape referenced by a triple constraint, also when
+    /// the reference is inside an `And` (e.g. `:p @:S %ext{ ... %}`).
+    ///
+    /// `EXTRA` adds no negative edge, although a value of an extra predicate
+    /// that doesn't match the reference is allowed: with it, common recursive
+    /// schemas like `:C [ :a ] OR EXTRA :p { :p @:C + }` would be rejected as
+    /// non-stratified. So the negative structure test `Cycle2Extra` of the test
+    /// suite (`:S EXTRA :a { :a @:S }`) is not rejected.
     pub fn add_edges(&self, source: ShapeLabelIdx, graph: &mut DependencyGraph, pos_neg: PosNeg) {
         for (_component, _pred, cond) in self.expr.components() {
-            match cond {
-                rbe::MatchCond::Single(_single_cond) => {},
-                rbe::MatchCond::And(_match_conds) => {},
-                rbe::MatchCond::Ref(r) => graph.add_edge(source, r, pos_neg),
+            let mut refs = Vec::new();
+            collect_cond_refs(&cond, &mut refs);
+            for r in refs {
+                graph.add_edge(source, r, pos_neg);
             }
         }
     }

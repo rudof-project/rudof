@@ -10,6 +10,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
+    #[error("Negative structure entry {entry_name}: the schema was accepted, but it is not valid")]
+    NegativeStructureAccepted { entry_name: String },
+
     #[error("Error converting path {path} to file URL")]
     FromFilePath { path: PathBuf },
 

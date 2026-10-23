@@ -161,6 +161,12 @@ pub enum ParseError {
     #[error("Expected triple expression between parenthesis")]
     BracketedTripleExpr,
 
+    #[error("An inclusion (&label) can't have a cardinality, annotations or semantic actions")]
+    InclusionWithCardinality,
+
+    #[error("An inclusion (&label) can't have a label ($label)")]
+    InclusionWithLabel,
+
     #[error("Expected OneOf triple expression")]
     OneOfTripleExpr,
 
