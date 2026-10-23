@@ -9,6 +9,15 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
+## 0.3.35
+### Added
+### Fixed
+- Avoid showing internals in error messages, issue #914
+- Improved ShExR-ShExJ-ShExC round-trip
+
+### Changed
+### Removed
+
 ## 0.3.34
 ### Added
 - `show_shex` takes `show_statistics` and `show_dependencies`, each reported on its own ([#909](https://github.com/rudof-project/rudof/issues/909)).
