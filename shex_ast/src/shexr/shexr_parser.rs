@@ -23,6 +23,7 @@ use rudof_rdf::rdf_core::{
     },
     term::Object,
 };
+use std::collections::{HashMap, HashSet};
 
 /// Parses RDF encoding a ShEx schema in the ShExR vocabulary (`sx:`,
 /// `http://www.w3.org/ns/shex#`) back into a [`Schema`] (the ShExJ-shaped
@@ -35,12 +36,10 @@ use rudof_rdf::rdf_core::{
 /// schema's `start`/`startActs`/`imports`, and value sets (plain values,
 /// IRI/literal/language stems and stem ranges with exclusions).
 ///
-/// Not supported: sharing/reuse of a `TripleExpr` across more than one
-/// position via its own `id` (`sx:TripleConstraint`/`EachOf`/`OneOf` nodes
-/// are always parsed inline, at every position they're referenced from,
-/// rather than once-and-referenced) — a rare feature (a handful of fixtures
-/// in the ShExTest corpus). `ShapeExprLabel::Start` (the `START` pseudo
-/// label) also has no ShExR representation to parse back.
+/// A triple expression used in several places (one node of the graph) is
+/// read once, with its label, and referenced in the other places (see
+/// `share_triple_exprs`). `ShapeExprLabel::Start` (the `START` pseudo
+/// label) has no ShExR representation to parse back.
 pub struct ShExRParser<RDF>
 where
     RDF: FocusRDF,
@@ -229,7 +228,9 @@ fn parse_schema<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<Schema, RDFErr
     let start_acts = read_list_property(rdf, ShexRVocab::sx_start_acts(), parse_sem_act)?;
 
     rdf.set_focus(&node);
-    let shapes = read_list_property(rdf, ShexRVocab::sx_shapes(), parse_shape_decl)?;
+    let mut shapes = read_list_property(rdf, ShexRVocab::sx_shapes(), parse_shape_decl)?;
+    let mut start = start;
+    share_triple_exprs(shapes.as_deref_mut().unwrap_or_default(), &mut start);
 
     let mut schema = Schema::new(&rudof_iri::iri!("http://default/"))
         .with_start(start)
@@ -244,6 +245,108 @@ fn parse_schema<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<Schema, RDFErr
         }
     }
     Ok(schema)
+}
+
+/// In ShExR, a triple expression used in several places is one node of the
+/// graph. The parser reads it in each place: this keeps it in the first place,
+/// with its label, and replaces the other places by a reference to the label,
+/// as in ShExC (`$:e` and `&:e`). The label of a blank node used only once is
+/// removed, as it isn't needed.
+fn share_triple_exprs(shapes: &mut [ShapeDecl], start: &mut Option<ShapeExpr>) {
+    let mut uses: HashMap<TripleExprLabel, usize> = HashMap::new();
+    visit_triple_exprs(shapes, start, &mut |te| match triple_expr_id(te) {
+        Some(id) => {
+            let n = uses.entry(id.clone()).or_default();
+            *n += 1;
+            *n == 1
+        },
+        None => true,
+    });
+    let mut seen: HashSet<TripleExprLabel> = HashSet::new();
+    visit_triple_exprs(shapes, start, &mut |te| {
+        let Some(id) = triple_expr_id(te).cloned() else {
+            return true;
+        };
+        if seen.contains(&id) {
+            *te = TripleExpr::Ref(id);
+            false
+        } else {
+            if matches!(id, TripleExprLabel::BNode { .. }) && uses.get(&id) == Some(&1) {
+                set_triple_expr_id(te, None);
+            }
+            seen.insert(id);
+            true
+        }
+    });
+}
+
+fn triple_expr_id(te: &TripleExpr) -> Option<&TripleExprLabel> {
+    match te {
+        TripleExpr::EachOf { id, .. } | TripleExpr::OneOf { id, .. } | TripleExpr::TripleConstraint { id, .. } => {
+            id.as_ref()
+        },
+        TripleExpr::Ref(_) => None,
+    }
+}
+
+fn set_triple_expr_id(te: &mut TripleExpr, new_id: Option<TripleExprLabel>) {
+    match te {
+        TripleExpr::EachOf { id, .. } | TripleExpr::OneOf { id, .. } | TripleExpr::TripleConstraint { id, .. } => {
+            *id = new_id
+        },
+        TripleExpr::Ref(_) => {},
+    }
+}
+
+/// Calls `f` on each triple expression of the schema, in the order of the
+/// schema, and visits the expressions inside it only when `f` returns `true`
+fn visit_triple_exprs(
+    shapes: &mut [ShapeDecl],
+    start: &mut Option<ShapeExpr>,
+    f: &mut impl FnMut(&mut TripleExpr) -> bool,
+) {
+    if let Some(start) = start {
+        visit_shape_expr(start, f);
+    }
+    for shape in shapes {
+        visit_shape_expr(&mut shape.shape_expr, f);
+    }
+}
+
+fn visit_shape_expr(se: &mut ShapeExpr, f: &mut impl FnMut(&mut TripleExpr) -> bool) {
+    match se {
+        ShapeExpr::ShapeOr { shape_exprs } | ShapeExpr::ShapeAnd { shape_exprs } => {
+            for se in shape_exprs {
+                visit_shape_expr(&mut se.se, f);
+            }
+        },
+        ShapeExpr::ShapeNot { shape_expr } => visit_shape_expr(&mut shape_expr.se, f),
+        ShapeExpr::Shape(shape) => {
+            if let Some(expression) = &mut shape.expression {
+                visit_triple_expr(&mut expression.te, f);
+            }
+        },
+        ShapeExpr::NodeConstraint(_) | ShapeExpr::External | ShapeExpr::Ref(_) => {},
+    }
+}
+
+fn visit_triple_expr(te: &mut TripleExpr, f: &mut impl FnMut(&mut TripleExpr) -> bool) {
+    if !f(te) {
+        return;
+    }
+    match te {
+        TripleExpr::EachOf { expressions, .. } | TripleExpr::OneOf { expressions, .. } => {
+            for expression in expressions {
+                visit_triple_expr(&mut expression.te, f);
+            }
+        },
+        TripleExpr::TripleConstraint { value_expr, .. } => {
+            if let Some(value_expr) = value_expr {
+                visit_shape_expr(value_expr, f);
+            }
+        },
+        TripleExpr::Ref(_) => {},
+    }
 }
 
 fn parse_shape_decl<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<ShapeDecl, RDFError> {
@@ -349,17 +452,20 @@ fn parse_shape<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<Shape, RDFError
 
 fn parse_triple_expr<RDF: FocusRDF + 'static>(rdf: &mut RDF) -> Result<TripleExpr, RDFError> {
     let node = rdf.get_focus().cloned().ok_or(RDFError::NoFocusNodeError)?;
-    // Triple expressions are nodes of the graph, usually blank nodes. Only
-    // IRIs are labels: blank nodes would become `$_:b3` labels in ShExC.
-    let id = term_to_triple_expr_label::<RDF>(&node)
-        .ok()
-        .filter(|label| matches!(label, TripleExprLabel::IriRef { .. }));
+    // Triple expressions are nodes of the graph, usually blank nodes. The
+    // node is kept as the label here: `share_triple_exprs` removes the labels
+    // of the blank nodes that are used only once, and replaces the other uses
+    // of a node used more than once by a reference to it.
+    let id = term_to_triple_expr_label::<RDF>(&node).ok();
     let type_iri = current_type::<RDF>(rdf)?;
 
     match type_iri.as_deref() {
         Some(ShexRVocab::SX_EACH_OF) => parse_triple_expr_group(rdf, id, TripleExpr::each_of),
         Some(ShexRVocab::SX_ONE_OF) => parse_triple_expr_group(rdf, id, TripleExpr::one_of),
         Some(ShexRVocab::SX_TRIPLE_CONSTRAINT) => parse_triple_constraint(rdf, id),
+        // An IRI without type: a reference to a triple expression of another
+        // schema (for example, an imported one)
+        None if matches!(id, Some(TripleExprLabel::IriRef { .. })) => Ok(TripleExpr::Ref(id.unwrap())),
         other => Err(RDFError::DefaultError {
             msg: format!("Expected a triple expression (TripleConstraint/EachOf/OneOf) at {node}, found: {other:?}"),
         }),

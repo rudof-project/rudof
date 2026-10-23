@@ -42,11 +42,13 @@ pub enum IRError {
     #[error(transparent)]
     RDFError(#[from] Box<RDFError>),
 
-    #[error("Dependency graph has cycles: {cycles:?}")]
-    DependencyGraphHasCycles { cycles: Vec<Vec<Object>> },
+    /// `shown` is `cycles` with prefixed names, e.g. `[:S, _:b0]`
+    #[error("Dependency graph has cycles: {shown}")]
+    DependencyGraphHasCycles { cycles: Vec<Vec<Object>>, shown: String },
 
-    #[error("Dependency graph has negative cycles (non-stratified): {cycles:?}")]
-    DependencyGraphHasNegativeCycles { cycles: Vec<Vec<Object>> },
+    /// `shown` is `cycles` with prefixed names, e.g. `[:S, _:b0]`
+    #[error("Dependency graph has negative cycles (non-stratified): {shown}")]
+    DependencyGraphHasNegativeCycles { cycles: Vec<Vec<Object>>, shown: String },
 
     #[error("The IfExpression ({0}) is invalid, missing shnex:then or shnex:else")]
     IfNodeExprBodyErr(IfExpression),

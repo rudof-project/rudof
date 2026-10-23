@@ -186,7 +186,7 @@ impl Schema {
                 error: e.to_string(),
             })?;
             trace!("SchemaJson read from {}: {}", path.display(), schema_str);
-            serde_json::from_str::<Schema>(&schema_str).map_err(|e| SchemaJsonError::JsonError {
+            Schema::from_json_str(&schema_str).map_err(|e| SchemaJsonError::JsonError {
                 path_name: path.display().to_string(),
                 error: e.to_string(),
             })?
@@ -200,9 +200,25 @@ impl Schema {
         rdr.read_to_string(&mut schema_str)
             .map_err(|e| SchemaJsonError::JsonErrorFromReader { error: e.to_string() })?;
 
-        let schema = serde_json::from_str::<Schema>(&schema_str)
+        let schema = Schema::from_json_str(&schema_str)
             .map_err(|e| SchemaJsonError::JsonErrorFromReader { error: e.to_string() })?;
         Ok(schema)
+    }
+
+    /// Parses a schema in ShExJ. A key that appears twice in an object (for
+    /// example, `@context` at the start and at the end of the schema) takes
+    /// the last value, as in most JSON parsers.
+    pub fn from_json_str(json: &str) -> Result<Schema, serde_json::Error> {
+        serde_json::from_str::<Schema>(json).or_else(|error| {
+            if error.to_string().starts_with("duplicate field") {
+                // The labels are read from borrowed strings, so the value is
+                // written again (without the repeated keys) and read as a string
+                let value = serde_json::from_str::<serde_json::Value>(json)?;
+                serde_json::from_str::<Schema>(&value.to_string())
+            } else {
+                Err(error)
+            }
+        })
     }
 
     pub fn parse_schema_name(schema_name: &String, folder: &Path) -> Result<Schema, SchemaJsonError> {

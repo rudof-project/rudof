@@ -554,6 +554,72 @@ impl SchemaIR {
         }
     }
 
+    /// The cycles of the schema that contain an `EXTENDS`, e.g. `:S EXTENDS @:S { }`
+    /// or `:S EXTENDS @:Any { }` with `:Any @:S OR @:T`. A shape can't extend itself,
+    /// directly or indirectly. Each cycle is the list of its shapes, starting at
+    /// the shape that has the `EXTENDS`. A cycle without `EXTENDS`, e.g.
+    /// `:A @:A AND { :p . }`, is a recursive reference and is valid.
+    pub fn extends_cycles(&self) -> Vec<Vec<ShapeLabelIdx>> {
+        // A shape points to the shapes it extends and to the shapes it combines
+        // (AND, OR, NOT and references). Triple constraints are not followed.
+        let edges = |idx: &ShapeLabelIdx| -> Vec<ShapeLabelIdx> {
+            match self.find_shape_idx(idx).map(|info| info.expr()) {
+                Some(ShapeExpr::Shape(shape)) => shape.extends().to_vec(),
+                Some(se) => se.direct_references(),
+                None => Vec::new(),
+            }
+        };
+        let mut indexes: Vec<ShapeLabelIdx> = self.shapes.keys().copied().collect();
+        indexes.sort_unstable();
+        let mut cycles = Vec::new();
+        let mut in_cycle = HashSet::new();
+        for source in indexes {
+            let Some(ShapeExpr::Shape(shape)) = self.find_shape_idx(&source).map(|info| info.expr()) else {
+                continue;
+            };
+            if in_cycle.contains(&source) {
+                continue;
+            }
+            for parent in shape.extends() {
+                // Depth first search of a path from `parent` back to `source`
+                let mut stack = vec![vec![*parent]];
+                let mut seen = HashSet::from([*parent]);
+                while let Some(path) = stack.pop() {
+                    let last = *path.last().unwrap();
+                    if last == source {
+                        let mut cycle = vec![source];
+                        cycle.extend(path.into_iter().filter(|idx| *idx != source));
+                        in_cycle.extend(cycle.iter().copied());
+                        cycles.push(cycle);
+                        break;
+                    }
+                    for next in edges(&last) {
+                        if seen.insert(next) || next == source {
+                            let mut longer = path.clone();
+                            longer.push(next);
+                            stack.push(longer);
+                        }
+                    }
+                }
+                if in_cycle.contains(&source) {
+                    break;
+                }
+            }
+        }
+        cycles
+    }
+
+    /// Shows a list of shapes with their labels: `[:S, :T]`. A shape without
+    /// label (an inner shape expression) is not shown.
+    pub fn show_shapes(&self, shapes: &[ShapeLabelIdx]) -> String {
+        let labels: Vec<String> = shapes
+            .iter()
+            .filter_map(|idx| self.shape_label_from_idx(idx))
+            .map(|label| self.show_label(label))
+            .collect();
+        format!("[{}]", labels.join(", "))
+    }
+
     pub fn neg_cycles(&self) -> Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>> {
         let dep_graph = self.dependency_graph();
         dep_graph.neg_cycles()

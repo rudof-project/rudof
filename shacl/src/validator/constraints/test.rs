@@ -257,6 +257,50 @@ prefix : <http://example.org/>
     }
 
     #[test]
+    fn cycle_error_shows_the_shapes_with_prefixed_names() {
+        let graph = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:S a sh:NodeShape ;
+   sh:property [ sh:path :p ; sh:qualifiedValueShape :S ; sh:qualifiedMinCount 1 ] .
+"#;
+        let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let schema = ShaclParser::new(rdf).parse().unwrap();
+        let error = IRSchema::compile_with_recursion(&schema, RecursionSemantics::None)
+            .expect_err("expected a cyclic schema to be rejected under None")
+            .to_string();
+        assert!(
+            error.starts_with("Dependency graph has cycles: [:S, _:"),
+            "unexpected message: {error}"
+        );
+        assert!(
+            error.ends_with(']') && !error.contains("Iri {"),
+            "unexpected message: {error}"
+        );
+    }
+
+    #[test]
+    fn in_message_shows_the_values_with_prefixed_names() {
+        let graph = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:S a sh:NodeShape ;
+   sh:targetNode :x ;
+   sh:property [ sh:path :p ; sh:in ( :a "b" 3 ) ] .
+
+:x :p :y .
+"#;
+        let report = validate_with_config(graph, &ShaclConfig::default());
+        let message = report.results()[0].message().get(None).unwrap();
+        assert_eq!(
+            message,
+            r#"In constraint not satisfied. Expected one of [:a, "b", "3"^^xsd:integer]"#
+        );
+    }
+
+    #[test]
     fn lfp_mode_rejects_an_ungrounded_cycle() {
         // Least fixpoint: nothing in the cycle can be justified without
         // assuming itself, so it's assumed non-conformant.

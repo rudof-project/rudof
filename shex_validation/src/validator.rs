@@ -6,7 +6,7 @@ use crate::validator_error::*;
 use colored::Color;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};
-use serde_json::Value;
+use serde_json::{Value, json};
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
 use shex_ast::ShapeLabelIdx;
@@ -271,7 +271,7 @@ impl Validator {
             match atom {
                 Atom::Pos(positive_atom) => {
                     let reasons = engine.find_reasons(positive_atom);
-                    let json_reasons = json_reasons(&reasons)?;
+                    let json_reasons = json_reasons(&reasons, &nodes_prefixmap, &self.schema, self.config.width())?;
                     let str_reasons = show_reasons(&reasons, &nodes_prefixmap, &self.schema, self.config.width())?;
                     let status = ValidationStatus::conformant(str_reasons, json_reasons);
                     result.add_result((*node).clone(), label.clone(), status).map_err(|e| {
@@ -284,7 +284,7 @@ impl Validator {
                 },
                 Atom::Neg(negative_atom) => {
                     let errors = engine.find_errors(negative_atom);
-                    let json_errors = json_errors(&errors)?;
+                    let json_errors = json_errors(&errors, &nodes_prefixmap, &self.schema, self.config.width())?;
                     let str_errors = show_errors(&errors, &nodes_prefixmap, &self.schema, self.config.width())?;
                     let status = ValidationStatus::non_conformant(str_errors, json_errors);
                     result.add_result((*node).clone(), label.clone(), status).map_err(|e| {
@@ -352,35 +352,34 @@ fn show_errors(
     Ok(result)
 }
 
-fn json_errors(errors: &[ValidatorError]) -> Result<Value> {
+/// The errors as `[{"error": ...}]`, shown with shape labels and prefixed names
+/// as in the `reason` of the result, not with the internal indexes of the shapes.
+fn json_errors(
+    errors: &[ValidatorError],
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+    width: usize,
+) -> Result<Value> {
     let vs: Result<Vec<_>> = errors
         .iter()
         .map(|err| {
-            serde_json::to_value(err).map_err(|e| ValidatorError::ErrorSerializationError {
-                source_error: err.to_string(),
-                error: e.to_string(),
-            })
+            let shown = err.show_qualified(nodes_prefixmap, schema, width)?;
+            Ok(json!({ "error": shown.trim_end_matches('\n') }))
         })
         .collect();
-    let vs = vs?;
-    let vs = Value::Array(vs);
-    Ok(vs)
+    Ok(Value::Array(vs?))
 }
 
-fn json_reasons(reasons: &[Reason]) -> Result<Value> {
+/// The reasons as `[{"reason": ...}]`, shown as in [`json_errors`].
+fn json_reasons(reasons: &[Reason], nodes_prefixmap: &PrefixMap, schema: &SchemaIR, width: usize) -> Result<Value> {
     let rs: Result<Vec<_>> = reasons
         .iter()
         .map(|reason| {
-            let r = reason.as_json().map_err(|e| ValidatorError::ReasonSerializationError {
-                reason: reason.to_string(),
-                error: format!("{e}"),
-            })?;
-            Ok(r)
+            let shown = reason.show_qualified(nodes_prefixmap, schema, width)?;
+            Ok(json!({ "reason": shown.trim_end_matches('\n') }))
         })
         .collect();
-    let vs = rs?;
-    let value = Value::Array(vs);
-    Ok(value)
+    Ok(Value::Array(rs?))
 }
 
 fn show_reasons(reasons: &[Reason], nodes_prefixmap: &PrefixMap, schema: &SchemaIR, width: usize) -> Result<String> {

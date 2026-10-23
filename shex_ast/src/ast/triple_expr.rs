@@ -551,9 +551,9 @@ impl DerefIri for TripleExpr {
 impl FromStr for TripleExpr {
     type Err = IriSError;
 
+    /// A string in place of a triple expression is a reference to its label
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri_ref = IriRef::try_from(s)?;
-        Ok(TripleExpr::Ref(TripleExprLabel::IriRef { value: iri_ref }))
+        Ok(TripleExpr::Ref(TripleExprLabel::try_from(s)?))
     }
 }
 

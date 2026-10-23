@@ -28,6 +28,7 @@ struct ManifestGraph {
 pub struct ManifestEntry {
     pub name: String,
     pub json: String,
+    pub shex: String,
     pub ttl: String,
 }
 

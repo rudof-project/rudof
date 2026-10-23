@@ -456,7 +456,7 @@ fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
+pub(crate) fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
     let canonical = path.canonicalize().map_err(|err| {
         Box::new(ManifestError::AbsolutePathError {
             base: path.to_string_lossy().to_string().into(),

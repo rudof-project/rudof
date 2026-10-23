@@ -6,6 +6,8 @@ use crate::{
     manifest_mode::ManifestShExSyntaxMode,
 };
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_family = "wasm"))]
+use shex_ast::ShExParser;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestNegativeSyntaxJson")]
@@ -77,7 +79,7 @@ impl Manifest for ManifestNegativeSyntax {
     }
 
     fn has_traits(&self, _name: &str) -> Result<Vec<std::string::String>, Box<ManifestError>> {
-        todo!()
+        Ok(Vec::new())
     }
 }
 
@@ -101,6 +103,25 @@ struct NegativeSyntaxEntry {
 }
 
 impl NegativeSyntaxEntry {
+    /// The schema of the entry is not valid ShExC. The entry passes when the
+    /// ShExC parser rejects it: a schema that the parser accepts and a later
+    /// step rejects is a failure, as this is a syntax error.
+    #[cfg(not(target_family = "wasm"))]
+    pub fn run(&self, base: &Path) -> Result<(), Box<ManifestError>> {
+        let path = base.join(&self.shex);
+        let base_iri = crate::manifest_validation::path_to_iri(&path)?;
+        match ShExParser::parse_buf(&path, Some(base_iri)) {
+            Err(error) => {
+                debug!("Negative syntax entry {} rejected as expected: {error}", self.name);
+                Ok(())
+            },
+            Ok(_) => Err(Box::new(ManifestError::NegativeSyntaxAccepted {
+                entry_name: self.name.clone(),
+            })),
+        }
+    }
+
+    #[cfg(target_family = "wasm")]
     pub fn run(&self, _base: &Path) -> Result<(), Box<ManifestError>> {
         debug!("Running negative syntax entry: {}...not implemented", self.id);
         Ok(())

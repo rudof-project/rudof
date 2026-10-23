@@ -40,7 +40,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Datatype {
             },
             &format!(
                 "Expected Datatype: {}",
-                shapes_graph.prefix_map().qualify(self.datatype())
+                shapes_graph.prefix_map_for_messages().qualify(self.datatype())
             ),
             maybe_path,
         )

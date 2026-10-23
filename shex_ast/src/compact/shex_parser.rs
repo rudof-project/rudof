@@ -4,9 +4,11 @@ use crate::ast::Schema;
 use crate::compact::grammar_structs::ShExStatement;
 use crate::shex_statement;
 use crate::tws0;
+use crate::{NodeConstraint, NumericFacet, ShapeExpr, StringFacet, TripleExpr, TripleExprLabel, XsFacet};
 use nom::Err;
 use prefixmap::DerefIri;
 use rudof_iri::IriS;
+use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -16,6 +18,16 @@ use tracing::debug;
 // https://github.com/vandenoever/rome/blob/master/src/io/turtle/parser.rs
 
 type Result<A> = std::result::Result<A, ParseError>;
+
+/// Resolves the IRI of a `BASE` or `PREFIX` declaration against the current
+/// base: with `BASE <http://ex.example/a/>`, `BASE <../>` is `http://ex.example/`.
+/// An IRI that can't be resolved is kept as it is.
+fn resolve(base: Option<&IriS>, iri: IriS) -> IriS {
+    match base {
+        Some(base) => base.resolve_str(iri.as_str()).unwrap_or(iri),
+        None => iri,
+    }
+}
 
 pub struct ShExParser<'a> {
     shex_statement_iterator: StatementIterator<'a>,
@@ -36,9 +48,11 @@ impl ShExParser<'_> {
         for s in parser.shex_statement_iterator.by_ref() {
             match s? {
                 ShExStatement::BaseDecl { iri } => {
+                    let iri = resolve(schema.base().as_ref(), iri);
                     schema = schema.with_base(Some(iri));
                 },
                 ShExStatement::PrefixDecl { alias, iri } => {
+                    let iri = resolve(schema.base().as_ref(), iri);
                     schema.add_prefix(alias, &iri);
                 },
                 ShExStatement::StartDecl { shape_expr } => {
@@ -58,10 +72,15 @@ impl ShExParser<'_> {
                     schema.add_shape(shape_label, shape_expr, is_abstract);
                 },
                 ShExStatement::StartActions { actions } => {
+                    let actions = actions
+                        .into_iter()
+                        .map(|action| action.deref_iri(schema.base().as_ref(), schema.prefixmap().as_ref()))
+                        .collect::<std::result::Result<Vec<_>, _>>()?;
                     schema = schema.with_start_actions(Some(actions));
                 },
             }
         }
+        check_schema(&schema)?;
         Ok(schema)
     }
 
@@ -144,6 +163,168 @@ impl<'a> Iterator for StatementIterator<'a> {
             },
         }
         r
+    }
+}
+
+/// Checks the rules of ShExC that the grammar doesn't express: the labels of
+/// shapes and of triple expressions are unique (a label can't be used for a
+/// shape and for a triple expression), a node constraint has each facet only
+/// once, and numeric facets are only used with numeric datatypes.
+fn check_schema(schema: &Schema) -> Result<()> {
+    let mut shape_labels = HashSet::new();
+    let mut triple_expr_labels = HashSet::new();
+    let shapes = schema.shapes().unwrap_or_default();
+    for shape in &shapes {
+        let label = shape.id.to_string();
+        if !shape_labels.insert(label.clone()) {
+            return Err(ParseError::DuplicateShapeLabel { label });
+        }
+    }
+    let mut result = Ok(());
+    let mut check = |item: Item| {
+        if result.is_err() {
+            return;
+        }
+        result = match item {
+            Item::TripleExprLabel(label) => {
+                let label = label.to_string();
+                if shape_labels.contains(&label) {
+                    Err(ParseError::ShapeAndTripleExprLabel { label })
+                } else if !triple_expr_labels.insert(label.clone()) {
+                    Err(ParseError::DuplicateTripleExprLabel { label })
+                } else {
+                    Ok(())
+                }
+            },
+            Item::NodeConstraint(nc) => check_node_constraint(nc),
+        }
+    };
+    if let Some(start) = schema.start() {
+        visit_shape_expr(&start, &mut check);
+    }
+    for shape in &shapes {
+        visit_shape_expr(&shape.shape_expr, &mut check);
+    }
+    result
+}
+
+const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
+const NUMERIC_DATATYPES: [&str; 16] = [
+    "integer",
+    "decimal",
+    "float",
+    "double",
+    "long",
+    "int",
+    "short",
+    "byte",
+    "nonNegativeInteger",
+    "nonPositiveInteger",
+    "negativeInteger",
+    "positiveInteger",
+    "unsignedLong",
+    "unsignedInt",
+    "unsignedShort",
+    "unsignedByte",
+];
+
+fn check_node_constraint(nc: &NodeConstraint) -> Result<()> {
+    let facets = nc.xs_facet().unwrap_or_default();
+    let mut kinds = HashSet::new();
+    for facet in &facets {
+        let name = facet_name(facet);
+        if !kinds.insert(name) {
+            return Err(ParseError::DuplicateFacet {
+                facet: name.to_string(),
+            });
+        }
+    }
+    if let Some(datatype) = nc.datatype() {
+        let datatype = datatype.to_string();
+        let numeric = datatype
+            .strip_prefix(XSD)
+            .is_some_and(|local| NUMERIC_DATATYPES.contains(&local));
+        if !numeric && let Some(facet) = facets.iter().find(|f| is_numeric_range(f)) {
+            return Err(ParseError::NumericFacetWithoutNumericDatatype {
+                facet: facet_name(facet).to_string(),
+                datatype,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn facet_name(facet: &XsFacet) -> &'static str {
+    match facet {
+        XsFacet::StringFacet(StringFacet::Length(_)) => "LENGTH",
+        XsFacet::StringFacet(StringFacet::MinLength(_)) => "MINLENGTH",
+        XsFacet::StringFacet(StringFacet::MaxLength(_)) => "MAXLENGTH",
+        XsFacet::StringFacet(StringFacet::Pattern(_)) => "PATTERN",
+        XsFacet::NumericFacet(NumericFacet::MinInclusive(_)) => "MININCLUSIVE",
+        XsFacet::NumericFacet(NumericFacet::MinExclusive(_)) => "MINEXCLUSIVE",
+        XsFacet::NumericFacet(NumericFacet::MaxInclusive(_)) => "MAXINCLUSIVE",
+        XsFacet::NumericFacet(NumericFacet::MaxExclusive(_)) => "MAXEXCLUSIVE",
+        XsFacet::NumericFacet(NumericFacet::TotalDigits(_)) => "TOTALDIGITS",
+        XsFacet::NumericFacet(NumericFacet::FractionDigits(_)) => "FRACTIONDIGITS",
+    }
+}
+
+/// The range facets compare values as numbers. `TOTALDIGITS` and
+/// `FRACTIONDIGITS` count the digits of the lexical form.
+fn is_numeric_range(facet: &XsFacet) -> bool {
+    matches!(
+        facet,
+        XsFacet::NumericFacet(
+            NumericFacet::MinInclusive(_)
+                | NumericFacet::MinExclusive(_)
+                | NumericFacet::MaxInclusive(_)
+                | NumericFacet::MaxExclusive(_)
+        )
+    )
+}
+
+enum Item<'a> {
+    TripleExprLabel(&'a TripleExprLabel),
+    NodeConstraint(&'a NodeConstraint),
+}
+
+fn visit_shape_expr(se: &ShapeExpr, f: &mut impl FnMut(Item)) {
+    match se {
+        ShapeExpr::ShapeOr { shape_exprs } | ShapeExpr::ShapeAnd { shape_exprs } => {
+            for se in shape_exprs {
+                visit_shape_expr(&se.se, f);
+            }
+        },
+        ShapeExpr::ShapeNot { shape_expr } => visit_shape_expr(&shape_expr.se, f),
+        ShapeExpr::NodeConstraint(nc) => f(Item::NodeConstraint(nc)),
+        ShapeExpr::Shape(shape) => {
+            if let Some(expression) = &shape.expression {
+                visit_triple_expr(&expression.te, f);
+            }
+        },
+        ShapeExpr::External | ShapeExpr::Ref(_) => {},
+    }
+}
+
+fn visit_triple_expr(te: &TripleExpr, f: &mut impl FnMut(Item)) {
+    match te {
+        TripleExpr::EachOf { id, expressions, .. } | TripleExpr::OneOf { id, expressions, .. } => {
+            if let Some(id) = id {
+                f(Item::TripleExprLabel(id));
+            }
+            for expression in expressions {
+                visit_triple_expr(&expression.te, f);
+            }
+        },
+        TripleExpr::TripleConstraint { id, value_expr, .. } => {
+            if let Some(id) = id {
+                f(Item::TripleExprLabel(id));
+            }
+            if let Some(value_expr) = value_expr {
+                visit_shape_expr(value_expr, f);
+            }
+        },
+        TripleExpr::Ref(_) => {},
     }
 }
 

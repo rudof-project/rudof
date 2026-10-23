@@ -979,7 +979,8 @@ impl Engine {
                 let mut constraint_tes: Vec<Expr> = Vec::new();
                 let mut conjuncts_ok = true;
                 for se in &rest {
-                    conjuncts_ok = conjuncts_ok && collect_constraint_exprs(schema, se, node, &mut constraint_tes);
+                    conjuncts_ok = conjuncts_ok
+                        && collect_constraint_exprs(schema, se, node, &mut constraint_tes, &mut HashSet::new());
                 }
                 for nc in &ncs {
                     let ctx =
@@ -1994,7 +1995,17 @@ fn try_split_constraint(schema: &SchemaIR, cidx: &ShapeLabelIdx, node: &Node, ou
 /// Shapes contribute their triple expression, references are dereferenced (recursing
 /// into conjunctions), and NodeConstraints are checked against the node immediately —
 /// a failing one makes the whole collection report false.
-fn collect_constraint_exprs(schema: &SchemaIR, se: &ShapeExpr, node: &Node, out: &mut Vec<Expr>) -> bool {
+///
+/// `visited` holds the references already followed: a shape that refers to itself
+/// (`:B @:B AND { :p . }`) is collected once, and the reference back to it is assumed
+/// to hold, as in the greatest fixpoint used for recursive references in `prove`.
+fn collect_constraint_exprs(
+    schema: &SchemaIR,
+    se: &ShapeExpr,
+    node: &Node,
+    out: &mut Vec<Expr>,
+    visited: &mut HashSet<ShapeLabelIdx>,
+) -> bool {
     match se {
         ShapeExpr::Shape(s) => {
             out.push(s.triple_expr().clone());
@@ -2004,6 +2015,7 @@ fn collect_constraint_exprs(schema: &SchemaIR, se: &ShapeExpr, node: &Node, out:
             let ctx = SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc());
             nc.cond().matches(node, &ctx).is_ok()
         },
+        ShapeExpr::Ref { idx } if !visited.insert(*idx) => true,
         ShapeExpr::Ref { idx } => match schema.get_main_shape_constraints(idx) {
             Some((ncs, main, rest)) => {
                 for nc in &ncs {
@@ -2016,7 +2028,8 @@ fn collect_constraint_exprs(schema: &SchemaIR, se: &ShapeExpr, node: &Node, out:
                 if let Some(m) = main {
                     out.push(m.triple_expr().clone());
                 }
-                rest.iter().all(|r| collect_constraint_exprs(schema, r, node, out))
+                rest.iter()
+                    .all(|r| collect_constraint_exprs(schema, r, node, out, visited))
             },
             None => true,
         },

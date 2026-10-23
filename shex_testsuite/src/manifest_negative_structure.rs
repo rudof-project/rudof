@@ -5,6 +5,12 @@ use crate::{
     manifest_mode::ManifestShExSyntaxMode,
 };
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_family = "wasm"))]
+use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_registry::SemanticActionsRegistry};
+#[cfg(not(target_family = "wasm"))]
+use shex_ast::{ResolveMethod, ShExParser, ir::ast2ir::AST2IR};
+#[cfg(not(target_family = "wasm"))]
+use shex_validation::{Validator, ValidatorConfig};
 use tracing::debug;
 
 #[derive(Deserialize, Debug)]
@@ -60,6 +66,7 @@ struct NegativeStructureEntry {
     type_: String,
     name: String,
     status: String,
+    shex: String,
     #[serde(rename = "startRow")]
     start_row: u32,
     #[serde(rename = "startColumn")]
@@ -71,6 +78,55 @@ struct NegativeStructureEntry {
 }
 
 impl NegativeStructureEntry {
+    /// The schema of the entry follows the ShExC grammar, but it is not a valid
+    /// schema (e.g. it refers to a shape that doesn't exist, or has a cycle
+    /// through a negation). The entry passes when rudof rejects the schema: when
+    /// it parses it (for what the AST can't hold, e.g. a cardinality on an
+    /// inclusion), when it compiles it, or when it creates a validator for it
+    /// (which checks the negation cycles).
+    #[cfg(not(target_family = "wasm"))]
+    pub fn run(&self, base: &Path) -> Result<(), Box<ManifestError>> {
+        let path = base.join(&self.shex);
+        let base_iri = crate::manifest_validation::path_to_iri(&path)?;
+        match Self::rejection(&path, &base_iri) {
+            Some(error) => {
+                debug!("Negative structure entry {} rejected as expected: {error}", self.name);
+                Ok(())
+            },
+            None => Err(Box::new(ManifestError::NegativeStructureAccepted {
+                entry_name: self.name.clone(),
+            })),
+        }
+    }
+
+    /// Why rudof rejects the schema at `path`, or `None` if it accepts it
+    #[cfg(not(target_family = "wasm"))]
+    fn rejection(path: &Path, base_iri: &rudof_iri::IriS) -> Option<String> {
+        let schema = match ShExParser::parse_buf(path, Some(base_iri.clone())) {
+            Ok(schema) => schema,
+            Err(e) => return Some(format!("parse: {e}")),
+        };
+        let config = ValidatorConfig::default();
+        let mut map_state = MapState::default();
+        let registry = SemanticActionsRegistry::default();
+        registry.set_map_state(&mut map_state);
+        let mut compiler = AST2IR::new(&ResolveMethod::default(), map_state);
+        let mut compiled_schema = SchemaIR::new(registry);
+        if let Err(e) = compiler.compile(
+            &schema,
+            base_iri,
+            &Some(base_iri.clone()),
+            &mut compiled_schema,
+            config.external_resolvers(),
+        ) {
+            return Some(format!("compile: {e}"));
+        }
+        Validator::new(&compiled_schema, &config)
+            .err()
+            .map(|e| format!("validator: {e}"))
+    }
+
+    #[cfg(target_family = "wasm")]
     pub fn run(&self, _base: &Path) -> Result<(), Box<ManifestError>> {
         debug!("Running negative structure entry: {}...not implemented", self.id);
         Ok(())
@@ -103,7 +159,7 @@ impl Manifest for ManifestNegativeStructure {
     }
 
     fn has_traits(&self, _name: &str) -> Result<Vec<std::string::String>, Box<ManifestError>> {
-        todo!()
+        Ok(Vec::new())
     }
 }
 

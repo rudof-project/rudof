@@ -309,9 +309,14 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
             let has_neg_cycles = !neg_cycles.is_empty();
 
             if has_neg_cycles {
+                let cycles_str = neg_cycles
+                    .iter()
+                    .map(|cycle| format!("[{}]", schema_ir.format_cycle_details(cycle).0.join(", ")))
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 Err(ShExError::FailedCompilingShExSchema {
                     error: format!(
-                        "Schema contains negative cycles in its dependency graph. Found {} negative cycle(s).",
+                        "Schema contains negative cycles in its dependency graph. Found {} negative cycle(s): {cycles_str}",
                         neg_cycles.len()
                     ),
                 })?
@@ -320,9 +325,9 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
         DataReaderMode::Lax => {},
     }
 
-    let validator = ShExValidator::new(&schema_ir, rudof.config.shex_validator()).map_err(|_| {
+    let validator = ShExValidator::new(&schema_ir, rudof.config.shex_validator()).map_err(|error| {
         ShExError::FailedCompilingShExSchema {
-            error: "Failed to create ShEx validator.".to_string(),
+            error: format!("Failed to create ShEx validator: {error}"),
         }
     })?;
 

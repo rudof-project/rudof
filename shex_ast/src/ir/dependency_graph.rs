@@ -15,7 +15,14 @@ impl DependencyGraph {
         Self::default()
     }
 
+    /// Adds an edge from `from` to `to`. If there is already an edge between
+    /// them, the edge is negative if one of the two is negative: a later positive
+    /// edge doesn't hide a negation (e.g. in `:S @:T AND NOT @:T`)
     pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
+        let pos_neg = match self.graph.edge_weight(from, to) {
+            Some(PosNeg::Neg) => PosNeg::Neg,
+            _ => pos_neg,
+        };
         self.graph.add_edge(from, to, pos_neg);
     }
 

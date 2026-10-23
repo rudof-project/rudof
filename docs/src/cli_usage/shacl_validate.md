@@ -197,7 +197,7 @@ rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantic
 
   ```sh
   ❯ rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantics none
-  Error: SHACL error: ... Dependency graph has cycles: ...
+  Error: SHACL error: ... Dependency graph has cycles: [:Person, _:b0]
   ```
 
 A shape with no cycles in it validates identically under all three, so there's no harm in

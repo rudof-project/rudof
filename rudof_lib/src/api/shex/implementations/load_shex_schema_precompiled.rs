@@ -38,9 +38,9 @@ pub fn load_shex_schema_precompiled(
     // cache whose header contradicts the caller's `CacheReaderMode`. Skip the
     // Tarjan SCC pass in the validator constructor.
     let validator =
-        ShExValidator::with_neg_cycle_check(&schema_ir, rudof.config.shex_validator(), false).map_err(|_| {
+        ShExValidator::with_neg_cycle_check(&schema_ir, rudof.config.shex_validator(), false).map_err(|error| {
             ShExError::FailedCompilingShExSchema {
-                error: "Failed to create ShEx validator from precompiled schema.".to_string(),
+                error: format!("Failed to create ShEx validator from precompiled schema: {error}"),
             }
         })?;
 
