@@ -71,7 +71,7 @@ pub fn inject(
         let n = config.operators.len();
         for k in 0..n {
             let operator = config.operators[(index + k) % n];
-            if let Some(property) = apply(operator, &mut graph, node, shape, model) {
+            if let Some(property) = apply(operator, &mut graph, node, shape, model, &mut rng) {
                 if !operator.is_trap() {
                     failing.insert(node.clone());
                 }
@@ -240,13 +240,16 @@ fn rng_for(seed: Option<u64>, node: &str) -> StdRng {
     StdRng::seed_from_u64(hasher.finish())
 }
 
-/// Try `operator` on `node`; on success return the property it broke.
+/// Try `operator` on `node`; on success return the property it broke. The
+/// properties are tried from a random starting point, so every property the
+/// operator applies to gets broken somewhere in the data.
 fn apply(
     operator: ViolationOperator,
     triples: &mut Indexed,
     node: &str,
     shape: &UnifiedShape,
     model: &UnifiedConstraintModel,
+    rng: &mut StdRng,
 ) -> Option<String> {
     if operator == ViolationOperator::ClosedExtra {
         if !shape.closed {
@@ -261,6 +264,10 @@ fn apply(
     let mut props: Vec<&UnifiedPropertyConstraint> =
         shape.properties.iter().filter(|p| p.property_iri != RDF_TYPE).collect();
     props.sort_by(|a, b| a.property_iri.cmp(&b.property_iri));
+    if !props.is_empty() {
+        let start = rng.gen_range(0..props.len());
+        props.rotate_left(start);
+    }
     for prop in props {
         let values = triples.values(node, &prop.property_iri);
         let replacement: Option<Mutation> = match operator {

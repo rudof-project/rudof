@@ -472,3 +472,18 @@ async fn decimal_ranges_compare_values_not_trailing_zeros() {
     let v = validate_shacl(&r.data, &shapes);
     assert!(v.failing.is_empty(), "{}\n{}", v.report, r.data);
 }
+
+#[tokio::test]
+async fn an_operator_spreads_over_every_property_it_applies_to() {
+    // derived-datatype applies to ex:age, ex:code, ex:name and ex:nick of the person shape.
+    let r = run(
+        Fixture::shex(SHEX_PERSON),
+        "rate = 1.0\noperators = [\"derived-datatype\"]",
+        24,
+    )
+    .await;
+    let properties: BTreeSet<&str> = r.direct().iter().map(|l| l["property"].as_str().unwrap()).collect();
+    assert!(properties.len() >= 3, "broken properties: {properties:?}");
+    let v = validate_shex(&r.data, SHEX_PERSON, &r.shapemap);
+    assert_eq!(v.failing, r.expected_failing(), "{}", v.report);
+}
