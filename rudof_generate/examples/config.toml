@@ -4,7 +4,7 @@
 [generation]
 entity_count = 5000                   # Number of entities to generate
 seed = 98765                          # Random seed for reproducible results
-entity_distribution = "Weighted"     # How to distribute entities across shapes
+entity_distribution = "Equal"        # How to distribute entities across shapes
 cardinality_strategy = "Random"      # How to handle cardinalities
 
 # Weighted distribution for different shape types

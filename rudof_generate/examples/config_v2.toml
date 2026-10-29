@@ -1,0 +1,46 @@
+# Generator configuration, format v2.
+# Scopes resolve as [[property]] > [[shape]] > [defaults], field by field.
+# Unknown keys are errors. Required properties are always generated: `fill`
+# only decides how often an OPTIONAL property appears.
+version = 2
+
+[prefixes]                      # rdf, rdfs, xsd and sh are always available
+ex = "http://example.org/"
+
+[run]
+seed = 42                       # same seed => same graph, whatever `threads` is
+threads = 4
+scale = { entities = 1000 }
+
+[defaults]
+fill = 0.8                      # probability an optional property is emitted
+cardinality = "balanced"        # "min" | "max" | "uniform" | "balanced"
+unbounded_cap = 3               # values used when the schema gives no maximum
+
+[[shape]]                       # match by shape id; use `count` or `weight` (not both)
+match = "ex:PersonShape"
+weight = 3.0
+fill = 0.5
+
+[[shape]]
+match = "ex:OrganizationShape"
+weight = 1.0
+
+[[property]]                    # any shape that has ex:nickname
+match = { path = "ex:nickname" }
+fill = 0.1
+
+[[property]]                    # only in PersonShape; beats the unscoped rule above
+match = { shape = "ex:PersonShape", path = "ex:email" }
+fill = 1.0
+cardinality = "max"
+unbounded_cap = 2
+
+[values.datatypes."xsd:integer"]
+generator = "integer"
+parameters = { min = 0, max = 120 }
+
+[output]
+path = "generated.ttl"
+format = "turtle"               # "turtle" | "ntriples"
+stats = true

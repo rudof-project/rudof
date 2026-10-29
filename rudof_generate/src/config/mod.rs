@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+pub mod v2;
+
 /// Main configuration structure for the data generator
 ///
 /// Every field, and every field of the structs it nests, has a sensible
@@ -69,6 +71,44 @@ pub struct GenerationConfig {
     /// because a reference is additionally limited by how many entities of the
     /// target shape exist to point at.
     pub unbounded_reference_values: usize,
+
+    /// Per-property policies, from the `[[property]]` tables of a v2 config.
+    /// A rule scoped to a shape wins over one that matches the property in any
+    /// shape; both win over the shape and global settings.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub property_rules: Vec<PropertyRule>,
+}
+
+/// Generation policy for one property, optionally restricted to one shape.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct PropertyRule {
+    /// Shape the rule applies to; `None` matches the property in every shape.
+    pub shape: Option<String>,
+    /// Property IRI.
+    pub path: String,
+    /// Probability that the property is emitted when it is optional. Required
+    /// properties are always emitted.
+    pub fill: Option<f64>,
+    /// Cardinality strategy for this property.
+    pub cardinality: Option<CardinalityStrategy>,
+    /// Number of values used when the schema leaves the maximum open.
+    pub unbounded_cap: Option<usize>,
+}
+
+impl GenerationConfig {
+    /// The most specific rule for `property` in `shape`, if any.
+    pub fn property_rule(&self, shape: &str, property: &str) -> Option<&PropertyRule> {
+        let mut unscoped = None;
+        for rule in self.property_rules.iter().filter(|r| r.path == property) {
+            match rule.shape.as_deref() {
+                Some(s) if s == shape => return Some(rule),
+                None if unscoped.is_none() => unscoped = Some(rule),
+                _ => {},
+            }
+        }
+        unscoped
+    }
 }
 
 impl Default for GenerationConfig {
@@ -88,6 +128,7 @@ impl Default for GenerationConfig {
             type_overrides: HashMap::new(),
             unbounded_property_values: 1,
             unbounded_reference_values: 1,
+            property_rules: Vec::new(),
         }
     }
 }
@@ -102,7 +143,7 @@ pub enum PropertySelectionStrategy {
 }
 
 /// Overrides for coherence settings per type
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TypeOverrideConfig {
     pub property_fill_probability: Option<f64>,
     pub ignore_min_cardinality: Option<bool>,
@@ -309,11 +350,22 @@ impl OutputConfig {
 }
 
 impl GeneratorConfig {
-    /// Load configuration from a TOML file
+    /// Load configuration from a TOML file (v2 when it declares `version`, v1 otherwise).
     pub fn from_toml_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let content = std::fs::read_to_string(path)?;
-        let config: Self = toml::from_str(&content)?;
-        Ok(config)
+        Self::from_toml_str(&content)
+    }
+
+    /// Parse a TOML configuration. A document with a top-level `version` key is
+    /// read strictly as format v2 (see [`v2`]); anything else is the deprecated
+    /// v1 format, kept loadable until the engine reads v2 policies natively.
+    pub fn from_toml_str(content: &str) -> Result<Self> {
+        let table: toml::Table = toml::from_str(content)?;
+        if table.contains_key("version") {
+            return v2::ConfigV2::parse(content)?.lower();
+        }
+        tracing::warn!("generator config v1 is deprecated; add `version = 2` and see the v2 format");
+        Ok(toml::from_str(content)?)
     }
 
     /// Load configuration from a JSON file

@@ -7,6 +7,7 @@ mod common;
 mod basic_passthrough;
 mod cardinality_semantics;
 mod coherence;
+mod config_v2;
 mod configuration;
 mod conformance_metric;
 mod constraint_passthrough;

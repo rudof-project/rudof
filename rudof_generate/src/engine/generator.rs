@@ -1,4 +1,4 @@
-use crate::config::{CardinalityStrategy, EntityDistribution, GenerationConfig};
+use crate::config::{CardinalityStrategy, EntityDistribution, GenerationConfig, PropertyRule};
 use crate::ir::shape_info::ShapeInfo;
 use crate::ir::{NodeKind, UnifiedConstraint};
 use crate::values::{FieldGenerationManager, GenerationContext};
@@ -386,7 +386,12 @@ impl ParallelGenerator {
                 let mut rng = self.derive_rng("fill", shape_id, entity_index);
                 for prop in candidates {
                     let roll: f64 = rng.r#gen();
-                    if roll <= effective_probability {
+                    // A [[property]] rule overrides the shape/global fill for this property.
+                    let fill = config
+                        .property_rule(shape_id, &prop.property_iri)
+                        .and_then(|rule| rule.fill)
+                        .unwrap_or(effective_probability);
+                    if fill > 0.0 && roll <= fill {
                         properties_to_generate.push(prop);
                     }
                 }
@@ -447,6 +452,7 @@ impl ParallelGenerator {
                 property_info.max_cardinality,
                 entity_index,
                 &config,
+                config.property_rule(shape_id, &property_info.property_iri),
             );
 
             // If we decided to include it but calculated 0 values (e.g. random 0..X),
@@ -540,6 +546,7 @@ impl ParallelGenerator {
         max_cardinality: Option<i32>,
         entity_index: usize,
         config: &GenerationConfig,
+        rule: Option<&PropertyRule>,
     ) -> usize {
         // An absent minimum means the property is optional. Only SHACL reaches
         // this point undeclared -- the ShEx converter has already normalised an
@@ -554,11 +561,17 @@ impl ParallelGenerator {
         // some number, and that number bounds the output, so it is configurable
         // rather than an undocumented constant.
         let max_card = match max_cardinality {
-            Some(-1) | None => config.unbounded_property_values.max(min_card),
+            Some(-1) | None => rule
+                .and_then(|r| r.unbounded_cap)
+                .unwrap_or(config.unbounded_property_values)
+                .max(min_card),
             Some(max) => (max as usize).max(min_card),
         };
 
-        match self.config.cardinality_strategy {
+        let strategy = rule
+            .and_then(|r| r.cardinality)
+            .unwrap_or(self.config.cardinality_strategy);
+        match strategy {
             CardinalityStrategy::Minimum => min_card,
             CardinalityStrategy::Maximum => max_card,
             CardinalityStrategy::Random => {
@@ -767,6 +780,7 @@ impl ParallelGenerator {
                     property_info.max_cardinality,
                     parent_entity_index,
                     &self.config,
+                    None,
                 );
 
                 for value_idx in 0..num_values {
