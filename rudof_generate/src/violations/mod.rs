@@ -53,6 +53,7 @@ pub fn inject(
 ) -> Result<Vec<ViolationLabel>> {
     let mut labels = Vec::new();
     let mut failing: BTreeSet<String> = BTreeSet::new();
+    let mut graph = Indexed::new(std::mem::take(triples));
 
     for (index, (node, shape_id)) in entities.iter().enumerate() {
         if !config.shapes.is_empty() && !config.shapes.contains(shape_id) {
@@ -69,7 +70,7 @@ pub fn inject(
         let n = config.operators.len();
         for k in 0..n {
             let operator = config.operators[(index + k) % n];
-            if let Some(property) = apply(operator, triples, node, shape, model) {
+            if let Some(property) = apply(operator, &mut graph, node, shape, model) {
                 failing.insert(node.clone());
                 labels.push(ViolationLabel {
                     node: node.clone(),
@@ -84,6 +85,7 @@ pub fn inject(
         }
     }
 
+    *triples = graph.into_triples();
     labels.extend(induced_failures(triples, model, entities, &mut failing));
     Ok(labels)
 }
@@ -133,26 +135,97 @@ fn induced_failures(
     }
     refs.sort();
 
+    // Reverse index: target -> (referrer, property), then a worklist from the
+    // directly failing nodes, so each reference is followed once.
+    let mut referrers: HashMap<&str, Vec<(&str, &str)>> = HashMap::new();
+    for (referrer, property, target) in &refs {
+        referrers
+            .entry(target.as_str())
+            .or_default()
+            .push((referrer.as_str(), property.as_str()));
+    }
     let mut labels = Vec::new();
-    loop {
-        let mut added = false;
-        for (referrer, property, target) in &refs {
-            if failing.contains(target) && !failing.contains(referrer) {
-                failing.insert(referrer.clone());
+    let mut queue: std::collections::VecDeque<String> = failing.iter().cloned().collect();
+    while let Some(target) = queue.pop_front() {
+        let Some(sources) = referrers.get(target.as_str()) else {
+            continue;
+        };
+        for (referrer, property) in sources {
+            if failing.insert(referrer.to_string()) {
                 labels.push(ViolationLabel {
-                    node: referrer.clone(),
-                    shape: shape_of.get(referrer.as_str()).copied().unwrap_or_default().to_string(),
+                    node: referrer.to_string(),
+                    shape: shape_of.get(referrer).copied().unwrap_or_default().to_string(),
                     kind: "induced",
-                    property: property.clone(),
+                    property: property.to_string(),
                     operator: None,
                     cause: Some(target.clone()),
                 });
-                added = true;
+                queue.push_back(referrer.to_string());
             }
         }
-        if !added {
-            return labels;
+    }
+    labels
+}
+
+/// The generated triples with an index by subject, so a mutation touches only
+/// the triples of the entity it breaks.
+struct Indexed {
+    triples: Vec<Option<Triple>>,
+    by_subject: HashMap<String, Vec<usize>>,
+}
+
+impl Indexed {
+    fn new(triples: Vec<Triple>) -> Self {
+        let mut by_subject: HashMap<String, Vec<usize>> = HashMap::new();
+        for (i, t) in triples.iter().enumerate() {
+            if let NamedOrBlankNode::NamedNode(s) = &t.subject {
+                by_subject.entry(s.as_str().to_string()).or_default().push(i);
+            }
         }
+        Self {
+            triples: triples.into_iter().map(Some).collect(),
+            by_subject,
+        }
+    }
+
+    fn values(&self, node: &str, property: &str) -> Vec<Term> {
+        let mut values: Vec<Term> = self
+            .by_subject
+            .get(node)
+            .into_iter()
+            .flatten()
+            .filter_map(|&i| self.triples[i].as_ref())
+            .filter(|t| t.predicate.as_str() == property)
+            .map(|t| t.object.clone())
+            .collect();
+        values.sort_by_key(|v| v.to_string());
+        values
+    }
+
+    /// Remove the triples of `node` with `property` (and `object`, if given).
+    fn remove(&mut self, node: &str, property: &str, object: Option<&Term>) {
+        for &i in self.by_subject.get(node).into_iter().flatten() {
+            let matches = self.triples[i]
+                .as_ref()
+                .is_some_and(|t| t.predicate.as_str() == property && object.is_none_or(|o| &t.object == o));
+            if matches {
+                self.triples[i] = None;
+            }
+        }
+    }
+
+    fn add(&mut self, triple: Triple) {
+        if let NamedOrBlankNode::NamedNode(s) = &triple.subject {
+            self.by_subject
+                .entry(s.as_str().to_string())
+                .or_default()
+                .push(self.triples.len());
+        }
+        self.triples.push(Some(triple));
+    }
+
+    fn into_triples(self) -> Vec<Triple> {
+        self.triples.into_iter().flatten().collect()
     }
 }
 
@@ -167,7 +240,7 @@ fn rng_for(seed: Option<u64>, node: &str) -> StdRng {
 /// Try `operator` on `node`; on success return the property it broke.
 fn apply(
     operator: ViolationOperator,
-    triples: &mut Vec<Triple>,
+    triples: &mut Indexed,
     node: &str,
     shape: &UnifiedShape,
     model: &UnifiedConstraintModel,
@@ -186,7 +259,7 @@ fn apply(
         shape.properties.iter().filter(|p| p.property_iri != RDF_TYPE).collect();
     props.sort_by(|a, b| a.property_iri.cmp(&b.property_iri));
     for prop in props {
-        let values = values_of(triples, node, &prop.property_iri);
+        let values = triples.values(node, &prop.property_iri);
         let replacement: Option<Mutation> = match operator {
             ViolationOperator::DropRequired => {
                 (prop.min_cardinality.unwrap_or(0) >= 1 && !values.is_empty()).then_some(Mutation::RemoveAll)
@@ -215,34 +288,22 @@ enum Mutation {
 }
 
 impl Mutation {
-    fn apply(self, triples: &mut Vec<Triple>, node: &str, property: &str, values: &[Term]) {
+    fn apply(self, triples: &mut Indexed, node: &str, property: &str, values: &[Term]) {
         let subject = NamedOrBlankNode::NamedNode(NamedNode::new_unchecked(node));
         let predicate = NamedNode::new_unchecked(property);
         match self {
-            Mutation::RemoveAll => triples.retain(|t| !(t.subject == subject && t.predicate == predicate)),
+            Mutation::RemoveAll => triples.remove(node, property, None),
             Mutation::ReplaceFirst(term) => {
-                let first = values[0].clone();
-                triples.retain(|t| !(t.subject == subject && t.predicate == predicate && t.object == first));
-                triples.push(Triple::new(subject, predicate, term));
+                triples.remove(node, property, Some(&values[0]));
+                triples.add(Triple::new(subject, predicate, term));
             },
             Mutation::Add(terms) => {
                 for term in terms {
-                    triples.push(Triple::new(subject.clone(), predicate.clone(), term));
+                    triples.add(Triple::new(subject.clone(), predicate.clone(), term));
                 }
             },
         }
     }
-}
-
-fn values_of(triples: &[Triple], node: &str, property: &str) -> Vec<Term> {
-    let mut values: Vec<Term> = triples
-        .iter()
-        .filter(|t| matches!(&t.subject, NamedOrBlankNode::NamedNode(s) if s.as_str() == node))
-        .filter(|t| t.predicate.as_str() == property)
-        .map(|t| t.object.clone())
-        .collect();
-    values.sort_by_key(|v| v.to_string());
-    values
 }
 
 fn datatype_of(prop: &UnifiedPropertyConstraint) -> Option<&str> {

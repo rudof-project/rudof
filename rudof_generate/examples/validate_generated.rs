@@ -59,6 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let schema_text = std::fs::read_to_string(&schema)?;
 
+    let validation_started = Instant::now();
     let mut rudof = Rudof::new(RudofConfig::default());
     rudof
         .load_data()
@@ -151,7 +152,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     }
 
-    println!("format={format:?} entities={entities} secs={secs:.2} conformant={conformant} violations={violations}");
+    let validate_secs = validation_started.elapsed().as_secs_f64();
+    println!(
+        "format={format:?} entities={entities} secs={secs:.2} validate_secs={validate_secs:.2} conformant={conformant} violations={violations}"
+    );
     let mut top: Vec<_> = reasons.into_iter().collect();
     top.sort_by(|a, b| b.1.cmp(&a.1));
     for (reason, count) in top.into_iter().take(8) {
