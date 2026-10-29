@@ -1,8 +1,8 @@
-use crate::conformance_metrics::TranslationMetrics;
-use crate::unified_constraints::{
+use crate::ir::{
     NodeKind as UnifiedNodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
     Value as UnifiedValue,
 };
+use crate::metrics::conformance::TranslationMetrics;
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
 use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};

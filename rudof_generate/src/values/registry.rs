@@ -1,4 +1,4 @@
-use crate::field_generators::{FieldGenerator, FieldGeneratorFactory};
+use crate::values::{FieldGenerator, FieldGeneratorFactory};
 use crate::{DataGeneratorError, Result};
 use std::collections::HashMap;
 
@@ -71,8 +71,8 @@ impl FieldGeneratorRegistry {
 
     /// Register all default generators
     pub fn register_default_generators(&mut self) -> Result<()> {
-        use crate::field_generators::basic::*;
-        use crate::field_generators::pattern::PatternGenerator;
+        use crate::values::basic::*;
+        use crate::values::pattern::PatternGenerator;
 
         self.register_generator(Box::new(StringGenerator));
         self.register_generator(Box::new(IntegerGenerator));

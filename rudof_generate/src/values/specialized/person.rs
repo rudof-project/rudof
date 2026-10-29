@@ -1,5 +1,5 @@
 use crate::Result;
-use crate::field_generators::{FieldGenerator, GenerationContext};
+use crate::values::{FieldGenerator, GenerationContext};
 use rand::Rng;
 use rand::seq::SliceRandom;
 

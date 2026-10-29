@@ -1,6 +1,6 @@
-use crate::conformance_metrics::TranslationMetrics;
-use crate::converters::{ShExToUnified, ShaclToUnified};
-use crate::unified_constraints::{UnifiedConstraint, UnifiedConstraintModel};
+use crate::adapters::{ShExToUnified, ShaclToUnified};
+use crate::ir::{UnifiedConstraint, UnifiedConstraintModel};
+use crate::metrics::conformance::TranslationMetrics;
 use crate::{DataGeneratorError, Result};
 use shex_ast::ast::{ShapeDecl, ShapeExpr, TripleExpr};
 use shex_ast::compact::ShExParser;

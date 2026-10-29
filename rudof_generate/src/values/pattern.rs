@@ -1,4 +1,4 @@
-use crate::field_generators::{FieldGenerator, GenerationContext};
+use crate::values::{FieldGenerator, GenerationContext};
 use crate::{DataGeneratorError, Result};
 use rand::Rng;
 

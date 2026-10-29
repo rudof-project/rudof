@@ -1,33 +1,31 @@
 #[cfg(not(target_family = "wasm"))]
+pub mod adapters;
+#[cfg(not(target_family = "wasm"))]
 pub mod config;
 #[cfg(not(target_family = "wasm"))]
-pub mod conformance_metrics;
-#[cfg(not(target_family = "wasm"))]
-pub mod converters;
+pub mod engine;
 #[cfg(not(target_family = "wasm"))]
 pub mod errors;
 #[cfg(not(target_family = "wasm"))]
-pub mod field_generators;
+pub mod ir;
 #[cfg(not(target_family = "wasm"))]
-pub mod output;
+pub mod metrics;
 #[cfg(not(target_family = "wasm"))]
-pub mod parallel_generation;
+pub mod sinks;
 #[cfg(not(target_family = "wasm"))]
-pub mod shape_processing;
-#[cfg(not(target_family = "wasm"))]
-pub mod unified_constraints;
+pub mod values;
 // #[cfg(target_family = "wasm")]
 // mod wasm_stubs;
 
 #[cfg(not(target_family = "wasm"))]
 pub use config::{GeneratorConfig, SchemaFormat};
 #[cfg(not(target_family = "wasm"))]
-pub use conformance_metrics::{ConformanceMetrics, TranslationMetrics};
-#[cfg(not(target_family = "wasm"))]
 use errors::{DataGeneratorError, Result};
+#[cfg(not(target_family = "wasm"))]
+pub use metrics::{ConformanceMetrics, TranslationMetrics};
 
 #[cfg(not(target_family = "wasm"))]
-use crate::{output::OutputWriter, parallel_generation::ParallelGenerator, shape_processing::ShapeProcessor};
+use crate::{engine::ParallelGenerator, ir::shape_info::ShapeProcessor, sinks::OutputWriter};
 #[cfg(not(target_family = "wasm"))]
 use std::{path::Path, str::FromStr};
 
@@ -117,7 +115,7 @@ impl DataGenerator {
             self.processor.get_unified_model(),
             self.processor.get_translation_metrics(),
         ) {
-            Some(crate::conformance_metrics::ConformanceMetrics::from_graph_and_model(
+            Some(crate::metrics::conformance::ConformanceMetrics::from_graph_and_model(
                 &graph,
                 unified_model,
                 translation_metrics.clone(),
@@ -181,9 +179,9 @@ impl DataGenerator {
     // Convert unified model to legacy shape infos for backward compatibility
     fn convert_unified_to_shape_infos(
         &self,
-        unified_model: &crate::unified_constraints::UnifiedConstraintModel,
-    ) -> Vec<crate::shape_processing::ShapeInfo> {
-        use crate::shape_processing::{PropertyInfo, ShapeDependency, ShapeInfo};
+        unified_model: &crate::ir::UnifiedConstraintModel,
+    ) -> Vec<crate::ir::shape_info::ShapeInfo> {
+        use crate::ir::shape_info::{PropertyInfo, ShapeDependency, ShapeInfo};
 
         let mut shape_infos = Vec::new();
 
@@ -195,7 +193,7 @@ impl DataGenerator {
             for prop in &unified_shape.properties {
                 // Extract dependencies from shape references
                 for constraint in &prop.constraints {
-                    if let crate::unified_constraints::UnifiedConstraint::ShapeReference(target_shape) = constraint {
+                    if let crate::ir::UnifiedConstraint::ShapeReference(target_shape) = constraint {
                         dependencies.push(ShapeDependency {
                             target_shape: target_shape.clone(),
                             property: prop.property_iri.clone(),
@@ -207,13 +205,13 @@ impl DataGenerator {
 
                 // Extract datatype from constraints
                 let datatype = prop.constraints.iter().find_map(|c| match c {
-                    crate::unified_constraints::UnifiedConstraint::Datatype(dt) => Some(dt.clone()),
+                    crate::ir::UnifiedConstraint::Datatype(dt) => Some(dt.clone()),
                     _ => None,
                 });
 
                 // Extract shape reference
                 let shape_ref = prop.constraints.iter().find_map(|c| match c {
-                    crate::unified_constraints::UnifiedConstraint::ShapeReference(sr) => Some(sr.clone()),
+                    crate::ir::UnifiedConstraint::ShapeReference(sr) => Some(sr.clone()),
                     _ => None,
                 });
 

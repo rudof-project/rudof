@@ -1,7 +1,5 @@
-use crate::conformance_metrics::TranslationMetrics;
-use crate::unified_constraints::{
-    NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
-};
+use crate::ir::{NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape};
+use crate::metrics::conformance::TranslationMetrics;
 use crate::{DataGeneratorError, Result};
 use rudof_iri::IriS;
 use shex_ast::ast::{NodeConstraint, ObjectValue, ShapeDecl, ShapeExpr, TripleExpr, ValueSetValue, XsFacet};
@@ -273,16 +271,16 @@ impl ShExToUnified {
             // Only explicit IRIs and literals are enumerable; stems, ranges and
             // language tags describe infinite sets and stay untranslated.
             metrics.original_schema_constraints += 1;
-            let members: Option<Vec<crate::unified_constraints::Value>> = values
+            let members: Option<Vec<crate::ir::Value>> = values
                 .iter()
                 .map(|v| match v {
-                    ValueSetValue::ObjectValue(ObjectValue::IriRef(iri)) => Some(
-                        crate::unified_constraints::Value::Iri(Self::strip_angle_brackets(&iri.to_string())),
-                    ),
+                    ValueSetValue::ObjectValue(ObjectValue::IriRef(iri)) => {
+                        Some(crate::ir::Value::Iri(Self::strip_angle_brackets(&iri.to_string())))
+                    },
                     ValueSetValue::ObjectValue(ObjectValue::Literal(lit)) => {
                         let datatype = Self::strip_angle_brackets(&lit.datatype().to_string());
                         let datatype = (datatype != XSD_STRING).then_some(datatype);
-                        Some(crate::unified_constraints::Value::Literal(lit.lexical_form(), datatype))
+                        Some(crate::ir::Value::Literal(lit.lexical_form(), datatype))
                     },
                     _ => None,
                 })
@@ -325,27 +323,31 @@ impl ShExToUnified {
             },
             XsFacet::NumericFacet(nf) => match nf {
                 shex_ast::ast::NumericFacet::MinInclusive(val) => {
-                    constraints.push(UnifiedConstraint::MinInclusive(
-                        crate::unified_constraints::Value::Literal(val.to_string(), None),
-                    ));
+                    constraints.push(UnifiedConstraint::MinInclusive(crate::ir::Value::Literal(
+                        val.to_string(),
+                        None,
+                    )));
                     true
                 },
                 shex_ast::ast::NumericFacet::MaxInclusive(val) => {
-                    constraints.push(UnifiedConstraint::MaxInclusive(
-                        crate::unified_constraints::Value::Literal(val.to_string(), None),
-                    ));
+                    constraints.push(UnifiedConstraint::MaxInclusive(crate::ir::Value::Literal(
+                        val.to_string(),
+                        None,
+                    )));
                     true
                 },
                 shex_ast::ast::NumericFacet::MinExclusive(val) => {
-                    constraints.push(UnifiedConstraint::MinExclusive(
-                        crate::unified_constraints::Value::Literal(val.to_string(), None),
-                    ));
+                    constraints.push(UnifiedConstraint::MinExclusive(crate::ir::Value::Literal(
+                        val.to_string(),
+                        None,
+                    )));
                     true
                 },
                 shex_ast::ast::NumericFacet::MaxExclusive(val) => {
-                    constraints.push(UnifiedConstraint::MaxExclusive(
-                        crate::unified_constraints::Value::Literal(val.to_string(), None),
-                    ));
+                    constraints.push(UnifiedConstraint::MaxExclusive(crate::ir::Value::Literal(
+                        val.to_string(),
+                        None,
+                    )));
                     true
                 },
                 shex_ast::ast::NumericFacet::TotalDigits(_) | shex_ast::ast::NumericFacet::FractionDigits(_) => false,

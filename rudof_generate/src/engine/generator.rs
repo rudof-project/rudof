@@ -1,7 +1,7 @@
 use crate::config::{CardinalityStrategy, EntityDistribution, GenerationConfig};
-use crate::field_generators::{FieldGenerationManager, GenerationContext};
-use crate::shape_processing::ShapeInfo;
-use crate::unified_constraints::{NodeKind, UnifiedConstraint};
+use crate::ir::shape_info::ShapeInfo;
+use crate::ir::{NodeKind, UnifiedConstraint};
+use crate::values::{FieldGenerationManager, GenerationContext};
 use crate::{DataGeneratorError, Result};
 use oxrdf::{Literal, NamedNode, NamedOrBlankNode, Term, Triple};
 use rand::SeedableRng;
@@ -36,7 +36,7 @@ impl ParallelGenerator {
     }
 
     /// Set the shapes to generate data for
-    pub async fn set_shapes(&mut self, shape_infos: Vec<crate::shape_processing::ShapeInfo>) -> Result<()> {
+    pub async fn set_shapes(&mut self, shape_infos: Vec<crate::ir::shape_info::ShapeInfo>) -> Result<()> {
         let mut shapes = self.shapes.write().await;
         shapes.clear();
 
@@ -280,14 +280,13 @@ impl ParallelGenerator {
             _ => None,
         })?;
         Some(match value {
-            crate::unified_constraints::Value::Iri(iri) => Term::NamedNode(NamedNode::new_unchecked(iri.as_str())),
-            crate::unified_constraints::Value::Literal(lexical, Some(datatype)) => Term::Literal(
-                Literal::new_typed_literal(lexical.as_str(), NamedNode::new_unchecked(datatype.as_str())),
-            ),
-            crate::unified_constraints::Value::Literal(lexical, None) => {
-                Term::Literal(Literal::new_simple_literal(lexical.as_str()))
-            },
-            crate::unified_constraints::Value::BlankNode(_) => return None,
+            crate::ir::Value::Iri(iri) => Term::NamedNode(NamedNode::new_unchecked(iri.as_str())),
+            crate::ir::Value::Literal(lexical, Some(datatype)) => Term::Literal(Literal::new_typed_literal(
+                lexical.as_str(),
+                NamedNode::new_unchecked(datatype.as_str()),
+            )),
+            crate::ir::Value::Literal(lexical, None) => Term::Literal(Literal::new_simple_literal(lexical.as_str())),
+            crate::ir::Value::BlankNode(_) => return None,
         })
     }
 
@@ -646,7 +645,7 @@ impl ParallelGenerator {
         graph: &mut OxigraphInMemory,
         from_entities: &[String],
         to_entities: &[String],
-        dependency: &crate::shape_processing::ShapeDependency,
+        dependency: &crate::ir::shape_info::ShapeDependency,
     ) -> Result<()> {
         for (idx, from_iri) in from_entities.iter().enumerate() {
             if to_entities.is_empty() {
@@ -799,28 +798,28 @@ impl ParallelGenerator {
 
         for constraint in constraints {
             match constraint {
-                UnifiedConstraint::MinInclusive(crate::unified_constraints::Value::Literal(val, _)) => {
+                UnifiedConstraint::MinInclusive(crate::ir::Value::Literal(val, _)) => {
                     if let Ok(i) = val.parse::<i64>() {
                         params.insert("min".to_string(), json!(i));
                     } else if let Ok(f) = val.parse::<f64>() {
                         params.insert("min".to_string(), json!(f));
                     }
                 },
-                UnifiedConstraint::MaxInclusive(crate::unified_constraints::Value::Literal(val, _)) => {
+                UnifiedConstraint::MaxInclusive(crate::ir::Value::Literal(val, _)) => {
                     if let Ok(i) = val.parse::<i64>() {
                         params.insert("max".to_string(), json!(i));
                     } else if let Ok(f) = val.parse::<f64>() {
                         params.insert("max".to_string(), json!(f));
                     }
                 },
-                UnifiedConstraint::MinExclusive(crate::unified_constraints::Value::Literal(val, _)) => {
+                UnifiedConstraint::MinExclusive(crate::ir::Value::Literal(val, _)) => {
                     if let Ok(i) = val.parse::<i64>() {
                         params.insert("min".to_string(), json!(i + 1));
                     } else if let Ok(f) = val.parse::<f64>() {
                         params.insert("min".to_string(), json!(f + 0.001));
                     }
                 },
-                UnifiedConstraint::MaxExclusive(crate::unified_constraints::Value::Literal(val, _)) => {
+                UnifiedConstraint::MaxExclusive(crate::ir::Value::Literal(val, _)) => {
                     if let Ok(i) = val.parse::<i64>() {
                         params.insert("max".to_string(), json!(i - 1));
                     } else if let Ok(f) = val.parse::<f64>() {
@@ -840,18 +839,18 @@ impl ParallelGenerator {
                     let json_values: Vec<Value> = values
                         .iter()
                         .map(|v| match v {
-                            crate::unified_constraints::Value::Literal(val, _) => json!(val),
-                            crate::unified_constraints::Value::Iri(iri) => json!(iri),
+                            crate::ir::Value::Literal(val, _) => json!(val),
+                            crate::ir::Value::Iri(iri) => json!(iri),
                             _ => json!(null),
                         })
                         .collect();
                     params.insert("values".to_string(), json!(json_values));
                 },
                 UnifiedConstraint::HasValue(value) => match value {
-                    crate::unified_constraints::Value::Literal(val, _) => {
+                    crate::ir::Value::Literal(val, _) => {
                         params.insert("fixed_value".to_string(), json!(val));
                     },
-                    crate::unified_constraints::Value::Iri(iri) => {
+                    crate::ir::Value::Iri(iri) => {
                         params.insert("fixed_value".to_string(), json!(iri));
                     },
                     _ => {},

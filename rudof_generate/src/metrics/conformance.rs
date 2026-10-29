@@ -1,4 +1,4 @@
-use crate::unified_constraints::{NodeKind, UnifiedConstraint, UnifiedConstraintModel, Value};
+use crate::ir::{NodeKind, UnifiedConstraint, UnifiedConstraintModel, Value};
 use crate::{DataGeneratorError, Result};
 use oxrdf::{NamedOrBlankNode, Term};
 use regex::Regex;

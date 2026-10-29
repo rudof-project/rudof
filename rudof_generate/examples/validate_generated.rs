@@ -15,7 +15,7 @@ fn main() {}
 #[cfg(not(target_family = "wasm"))]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use rudof_generate::converters::shex_to_unified::ShExToUnified;
+    use rudof_generate::adapters::shex::ShExToUnified;
     use rudof_generate::{DataGenerator, GeneratorConfig, SchemaFormat};
     use rudof_lib::formats::{
         DataFormat, InputSpec, ResultShExValidationFormat, ResultShaclValidationFormat, ShExFormat, ShaclFormat,

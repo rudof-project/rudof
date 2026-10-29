@@ -1,5 +1,5 @@
 use crate::Result;
-use crate::field_generators::GenerationContext;
+use crate::values::GenerationContext;
 
 /// Trait for field value generators
 pub trait FieldGenerator: Send + Sync {

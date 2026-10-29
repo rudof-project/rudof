@@ -1,7 +1,7 @@
 // Placeholder for other specialized generators
 
 use crate::Result;
-use crate::field_generators::{FieldGenerator, GenerationContext};
+use crate::values::{FieldGenerator, GenerationContext};
 
 pub struct OrganizationGenerator;
 

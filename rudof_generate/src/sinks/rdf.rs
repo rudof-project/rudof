@@ -1,5 +1,5 @@
 use crate::config::OutputConfig;
-use crate::conformance_metrics::ConformanceMetrics;
+use crate::metrics::conformance::ConformanceMetrics;
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF, RDFFormat};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
