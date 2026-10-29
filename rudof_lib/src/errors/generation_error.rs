@@ -26,4 +26,12 @@ pub enum GenerationError {
     /// Failed to generate the synthetic data.
     #[error("Failed to generate data: {error}")]
     FailedGeneratingData { error: String },
+
+    /// Validating the generated data needs it written to a file.
+    #[error("Validating generated data requires an output file (use --output)")]
+    ValidationNeedsOutput,
+
+    /// The validator could not check the generated data.
+    #[error("Failed to validate generated data: {error}")]
+    FailedValidatingGeneratedData { error: String },
 }

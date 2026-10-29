@@ -265,6 +265,10 @@ pub struct OutputConfig {
     /// Number of parallel output files (when parallel_writing is true)
     /// If set to 0, the system will automatically determine the optimal count
     pub parallel_file_count: usize,
+    /// Where to write a ShEx ShapeMap associating every generated node with the
+    /// shape that generated it: the exact targets for validating the output.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shapemap: Option<PathBuf>,
 }
 
 impl Default for OutputConfig {
@@ -276,6 +280,7 @@ impl Default for OutputConfig {
             write_stats: true,
             parallel_writing: false,
             parallel_file_count: 0,
+            shapemap: None,
         }
     }
 }

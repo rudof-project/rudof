@@ -19,4 +19,5 @@ mod pattern_generator_advanced;
 mod pattern_generator_integration;
 mod schema_conformance;
 mod shacl_integration;
+mod shapemap;
 mod target_class_and_seed;

@@ -194,6 +194,18 @@ impl ParallelGenerator {
         Ok(all_triples)
     }
 
+    /// The entities generated so far, as (node IRI, generating shape id) pairs
+    /// sorted by node, so the result does not depend on task scheduling.
+    pub async fn entity_shapes(&self) -> Vec<(String, String)> {
+        let registry = self.generated_entities.read().await;
+        let mut pairs: Vec<(String, String)> = registry
+            .iter()
+            .flat_map(|(shape, nodes)| nodes.iter().map(move |n| (n.clone(), shape.clone())))
+            .collect();
+        pairs.sort();
+        pairs
+    }
+
     /// Get effective configuration for a specific shape, applying overrides if present
     fn get_effective_config(&self, shape_id: &str) -> GenerationConfig {
         let mut config = self.config.clone();

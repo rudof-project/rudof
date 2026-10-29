@@ -130,6 +130,7 @@ pub struct Output {
     pub path: Option<PathBuf>,
     pub format: Option<String>,
     pub stats: Option<bool>,
+    pub shapemap: Option<PathBuf>,
 }
 
 impl ConfigV2 {
@@ -250,6 +251,7 @@ impl ConfigV2 {
         if let Some(stats) = self.output.stats {
             config.output.write_stats = stats;
         }
+        config.output.shapemap = self.output.shapemap;
 
         Ok(config)
     }

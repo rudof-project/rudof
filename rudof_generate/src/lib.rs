@@ -127,7 +127,27 @@ impl DataGenerator {
         self.writer
             .write_graph_with_timing(&graph, Some(generation_time), conformance_metrics.as_ref())
             .await?;
+        if let Some(path) = &self.config.output.shapemap {
+            std::fs::write(path, self.shape_map().await)?;
+        }
         Ok(())
+    }
+
+    /// A ShEx ShapeMap (compact syntax) associating every generated node with
+    /// the shape that generated it.
+    pub async fn shape_map(&self) -> String {
+        self.generator
+            .entity_shapes()
+            .await
+            .into_iter()
+            .map(|(node, shape)| format!("<{node}>@<{shape}>"))
+            .collect::<Vec<_>>()
+            .join(
+                ",
+",
+            )
+            + "
+"
     }
 
     /// Run the complete generation pipeline (legacy ShEx support)

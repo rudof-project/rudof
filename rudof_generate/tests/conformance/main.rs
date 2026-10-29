@@ -293,3 +293,67 @@ async fn shacl_max_properties_per_instance_keeps_required_properties() {
     )
     .await;
 }
+
+// ---------------------------------------------------------------- rudof_lib: generate --validate
+
+async fn generate_and_validate(
+    schema_name: &str,
+    schema: &str,
+    config_toml: Option<&str>,
+) -> rudof_lib::GenerationValidation {
+    use rudof_lib::formats::{GenerationSchemaFormat, InputSpec};
+    let dir = tempfile::TempDir::new().unwrap();
+    let schema_path = dir.path().join(schema_name);
+    std::fs::write(&schema_path, schema).unwrap();
+    let output = dir.path().join("out.ttl");
+    let config_path = dir.path().join("gen.toml");
+    let rudof = rudof_lib::Rudof::new(rudof_lib::RudofConfig::default());
+    let input = InputSpec::path(&schema_path);
+    let mut builder = rudof
+        .generate_data(&input, &GenerationSchemaFormat::Auto, Some(25))
+        .with_seed(3)
+        .with_output(&output)
+        .with_validation(true);
+    if let Some(toml) = config_toml {
+        std::fs::write(&config_path, toml).unwrap();
+        builder = builder.with_config_file(&config_path);
+    }
+    builder
+        .execute_with_report()
+        .await
+        .expect("generate + validate")
+        .expect("validation requested, so a report is returned")
+}
+
+const LIB_SHEX: &str = "PREFIX ex: <http://example.org/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\
+    ex:PersonShape { a [ex:Person] ; ex:name xsd:string ; ex:knows @ex:PersonShape * }";
+
+#[tokio::test]
+async fn generate_with_validation_reports_shex_conformance() {
+    let outcome = generate_and_validate("s.shex", LIB_SHEX, None).await;
+    assert_eq!(outcome.language, "ShEx");
+    assert_eq!(outcome.checked, 25);
+    assert!(outcome.conforms(), "{outcome:?}");
+}
+
+#[tokio::test]
+async fn generate_with_validation_reports_shacl_conformance() {
+    let shapes = shacl_schema(&format!(
+        "{SHACL_PERSON}\n  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] ."
+    ));
+    let outcome = generate_and_validate("s.ttl", &shapes, None).await;
+    assert_eq!(outcome.language, "SHACL");
+    assert!(outcome.conforms() && outcome.checked == 25, "{outcome:?}");
+}
+
+#[tokio::test]
+async fn generate_with_validation_catches_dropped_required_properties() {
+    // ignore_min_cardinality deliberately breaks the schema; the loop must see it.
+    let config = "[generation]\nignore_min_cardinality = true\nproperty_fill_probability = 0.0\n";
+    let outcome = generate_and_validate("s.shex", LIB_SHEX, Some(config)).await;
+    assert!(
+        !outcome.conforms(),
+        "dropped required properties must be reported: {outcome:?}"
+    );
+    assert_eq!(outcome.violations, 25, "{outcome:?}");
+}

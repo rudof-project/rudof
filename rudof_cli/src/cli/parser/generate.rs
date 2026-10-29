@@ -49,6 +49,12 @@ pub struct GenerateArgs {
     #[arg(long = "generator-config", value_name = "Generator config file (TOML or JSON)")]
     pub generator_config: Option<PathBuf>,
 
+    /// Validate the generated data against the input schema (ShEx: each node
+    /// against the shape that generated it, via `<output>.shapemap`; SHACL: the
+    /// shapes' targets). Requires `--output`; exits with an error on violations.
+    #[arg(long = "validate")]
+    pub validate: bool,
+
     #[command(flatten)]
     pub common: CommonArgsNoBackend,
 }

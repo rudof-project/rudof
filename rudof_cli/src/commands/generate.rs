@@ -62,7 +62,23 @@ impl Command for GenerateCommand {
                 generation = generation.with_config_file(generator_config);
             }
 
-            generation.execute().await
+            if self.args.validate {
+                generation = generation.with_validation(true);
+            }
+
+            if let Some(outcome) = generation.execute_with_report().await? {
+                eprintln!(
+                    "{} validation: {} checked, {} conformant, {} violations",
+                    outcome.language, outcome.checked, outcome.conformant, outcome.violations
+                );
+                if !outcome.conforms() {
+                    return Err(anyhow!(
+                        "generated data does not conform to the schema ({} violations)",
+                        outcome.violations
+                    ));
+                }
+            }
+            Ok(())
         })?;
 
         Ok(())
