@@ -713,3 +713,60 @@ async fn sh_class_requires_the_type_not_conformance() {
     let v = validate_shacl(&r.data, &shapes);
     assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
 }
+
+/// A team whose qualified value shape is inline (a blank node), as `[ sh:node … ]`
+/// or `[ sh:class … ]`.
+fn shacl_team_inline(qualified: &str) -> String {
+    format!(
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <{EX}> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:TeamShape a sh:NodeShape ; sh:targetClass ex:Team ;
+  sh:property [ sh:path ex:member ; sh:qualifiedValueShape {qualified} ;
+                sh:qualifiedMinCount 2 ; sh:qualifiedMaxCount 3 ] .
+ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] .
+"#
+    )
+}
+
+#[tokio::test]
+async fn inline_qualified_value_shapes_are_generated_valid() {
+    for qualified in ["[ sh:node ex:PersonShape ]", "[ sh:class ex:Person ]"] {
+        let shapes = shacl_team_inline(qualified);
+        let r = run(Fixture::shacl(&shapes), "rate = 0.0", 12).await;
+        assert!(r.data.contains(&format!("<{EX}member>")), "{qualified}\n{}", r.data);
+        let v = validate_shacl(&r.data, &shapes);
+        assert!(v.conforms(), "{qualified}\n{}\n{}", v.report, r.data);
+    }
+}
+
+#[tokio::test]
+async fn an_inline_node_qualified_shape_counts_only_conforming_members() {
+    let shapes = shacl_team_inline("[ sh:node ex:PersonShape ]");
+    let r = run(
+        Fixture::shacl(&shapes),
+        "rate = 0.6\noperators = [\"trap-extra-value\", \"drop-required\", \"dangling-reference\"]",
+        40,
+    )
+    .await;
+    assert!(!r.direct().is_empty(), "{:?}", r.labels);
+    let v = validate_shacl(&r.data, &shapes);
+    assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
+}
+
+#[tokio::test]
+async fn an_inline_class_qualified_shape_counts_members_by_type() {
+    // Broken persons keep their type, so they still count towards the minimum.
+    let shapes = shacl_team_inline("[ sh:class ex:Person ]");
+    let r = run(
+        Fixture::shacl(&shapes),
+        "rate = 0.6\noperators = [\"drop-required\", \"dangling-reference\"]",
+        40,
+    )
+    .await;
+    assert!(!r.direct().is_empty(), "{:?}", r.labels);
+    assert!(r.labels.iter().all(|l| l["kind"] != "induced"), "{:?}", r.labels);
+    let v = validate_shacl(&r.data, &shapes);
+    assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
+}

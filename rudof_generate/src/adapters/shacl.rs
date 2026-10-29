@@ -57,8 +57,13 @@ impl ShaclToUnified {
         let mut metrics = TranslationMetrics::default();
 
         // Get all shapes from the schema
-        for (_shape_ref, shape) in schema.iter() {
+        for (shape_ref, shape) in schema.iter() {
             if let ASTShape::NodeShape(node_shape) = shape {
+                // An inline (blank node) shape without targets only describes the
+                // values of the property that uses it; it has no instances of its own.
+                if matches!(shape_ref, Object::BlankNode(_)) && node_shape.targets().is_empty() {
+                    continue;
+                }
                 let unified_shape = self.convert_node_shape(node_shape.as_ref(), schema, &mut metrics);
                 model.add_shape(unified_shape);
             }
@@ -88,7 +93,7 @@ impl ShaclToUnified {
                 if target_class.is_none() {
                     target_class = Self::target_class_from_type_constraint(prop_shape);
                 }
-                if let Some(unified_prop) = self.convert_property_shape(prop_shape, metrics) {
+                if let Some(unified_prop) = self.convert_property_shape(prop_shape, schema, metrics) {
                     properties.push(unified_prop);
                 }
             }
@@ -155,6 +160,7 @@ impl ShaclToUnified {
     fn convert_property_shape(
         &self,
         prop_shape: &ASTPropertyShape,
+        schema: &ASTSchema,
         metrics: &mut TranslationMetrics,
     ) -> Option<UnifiedPropertyConstraint> {
         let property_iri = prop_shape.path().to_string();
@@ -162,7 +168,7 @@ impl ShaclToUnified {
 
         metrics.original_schema_constraints += prop_shape.components().len();
 
-        if let Some(qualified) = Self::qualified_value_shape(&property_iri, prop_shape.components()) {
+        if let Some(qualified) = Self::qualified_value_shape(&property_iri, prop_shape.components(), schema) {
             metrics.represented_constraints_in_unified += 1;
             return Some(qualified);
         }
@@ -205,17 +211,37 @@ impl ShaclToUnified {
     /// other values unconstrained: the ShEx reading of `ex:p @S {m,n}` under
     /// `EXTRA ex:p`. An `sh:maxCount` on the same property shape counts every
     /// value, so the maximum is then the smaller of the two over all values.
-    /// Inline (blank node) qualified shapes are not translated yet.
-    fn qualified_value_shape(property_iri: &str, components: &[ASTComponent]) -> Option<UnifiedPropertyConstraint> {
+    /// An inline (blank node) qualified shape is translated when it only names a
+    /// shape (`[ sh:node S ]`, the same as naming `S`) or a class
+    /// (`[ sh:class C ]`, which counts the values typed `C`).
+    fn qualified_value_shape(
+        property_iri: &str,
+        components: &[ASTComponent],
+        schema: &ASTSchema,
+    ) -> Option<UnifiedPropertyConstraint> {
         let (shape, q_min, q_max) = components.iter().find_map(|c| match c {
             ASTComponent::QualifiedValueShape {
-                shape: Object::Iri(iri),
+                shape,
                 q_min_count,
                 q_max_count,
                 ..
-            } => Some((iri.to_string(), *q_min_count, *q_max_count)),
+            } => Some((shape, *q_min_count, *q_max_count)),
             _ => None,
         })?;
+        let constraint = match shape {
+            Object::Iri(iri) => UnifiedConstraint::ShapeReference(iri.to_string()),
+            Object::BlankNode(_) => match schema.get_shape(shape)? {
+                ASTShape::NodeShape(inline) if inline.property_shapes().is_empty() => {
+                    match inline.components().as_slice() {
+                        [ASTComponent::Node(target)] => UnifiedConstraint::ShapeReference(target.to_string()),
+                        [ASTComponent::Class(Object::Iri(class))] => UnifiedConstraint::Class(class.to_string()),
+                        _ => return None,
+                    }
+                },
+                _ => return None,
+            },
+            _ => return None,
+        };
         let count = |n: Option<isize>| n.filter(|n| *n >= 0).map(|n| n as u32);
         let (min_count, max_count) = components.iter().fold((None, None), |(min, max), c| match c {
             ASTComponent::MinCount(n) if *n >= 0 => (Some(*n as u32), max),
@@ -229,7 +255,7 @@ impl ShaclToUnified {
         };
         Some(UnifiedPropertyConstraint {
             property_iri: property_iri.to_string(),
-            constraints: vec![UnifiedConstraint::ShapeReference(shape)],
+            constraints: vec![constraint],
             min_cardinality,
             max_cardinality,
             counts_matching_values: max_count.is_none(),
