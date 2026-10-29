@@ -139,10 +139,13 @@ pub enum ViolationOperator {
     /// Trap (not a violation): extend a tag with a subtag (`en` -> `en-zz`) where
     /// the constraint matches language ranges.
     TrapLanguageSubtag,
+    /// Trap (not a violation): rewrite an integer under a numeric range facet with
+    /// an equal but non-canonical lexical form (`18` -> `018`); facets compare values.
+    TrapNumericLexical,
 }
 
 impl ViolationOperator {
-    pub const ALL: [ViolationOperator; 13] = [
+    pub const ALL: [ViolationOperator; 14] = [
         Self::DropRequired,
         Self::ExceedMax,
         Self::WrongDatatype,
@@ -156,11 +159,15 @@ impl ViolationOperator {
         Self::DuplicateLanguage,
         Self::TrapLanguageCase,
         Self::TrapLanguageSubtag,
+        Self::TrapNumericLexical,
     ];
 
     /// A trap changes the data without making it invalid.
     pub fn is_trap(self) -> bool {
-        matches!(self, Self::TrapLanguageCase | Self::TrapLanguageSubtag)
+        matches!(
+            self,
+            Self::TrapLanguageCase | Self::TrapLanguageSubtag | Self::TrapNumericLexical
+        )
     }
 
     /// The name used in configs and labels.
@@ -179,6 +186,7 @@ impl ViolationOperator {
             Self::DuplicateLanguage => "duplicate-language",
             Self::TrapLanguageCase => "trap-language-case",
             Self::TrapLanguageSubtag => "trap-language-subtag",
+            Self::TrapNumericLexical => "trap-numeric-lexical",
         }
     }
 

@@ -279,6 +279,7 @@ fn apply(
             ViolationOperator::DuplicateLanguage => duplicate_language(prop, &values),
             ViolationOperator::TrapLanguageCase => relabel_language(prop, &values, |t| t.to_ascii_uppercase(), false),
             ViolationOperator::TrapLanguageSubtag => relabel_language(prop, &values, |t| format!("{t}-zz"), true),
+            ViolationOperator::TrapNumericLexical => numeric_lexical_variant(prop, &values),
         };
         if let Some(mutation) = replacement {
             mutation.apply(triples, node, &prop.property_iri, &values);
@@ -441,6 +442,48 @@ fn relabel_language(
     let new_tag = retag(&tag);
     (new_tag != tag && crate::ir::language_matches(&new_tag, tags, ranges))
         .then(|| Mutation::ReplaceFirst(tagged(&lexical, &new_tag)))
+}
+
+/// Same integer value, non-canonical lexical form: a leading zero after the sign.
+/// Only under numeric range facets, and never where a pattern, value set or
+/// length facet reads the lexical form (there it would be a real change).
+fn numeric_lexical_variant(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    let datatype = datatype_of(prop)?;
+    if datatype != format!("{XSD}integer") {
+        return None;
+    }
+    let ranged = prop.constraints.iter().any(|c| {
+        matches!(
+            c,
+            UnifiedConstraint::MinInclusive(_)
+                | UnifiedConstraint::MaxInclusive(_)
+                | UnifiedConstraint::MinExclusive(_)
+                | UnifiedConstraint::MaxExclusive(_)
+        )
+    });
+    let lexical_read = prop.constraints.iter().any(|c| {
+        matches!(
+            c,
+            UnifiedConstraint::Pattern(_)
+                | UnifiedConstraint::In(_)
+                | UnifiedConstraint::HasValue(_)
+                | UnifiedConstraint::MinLength(_)
+                | UnifiedConstraint::MaxLength(_)
+        )
+    });
+    if !ranged || lexical_read {
+        return None;
+    }
+    let Term::Literal(lit) = values.first()? else {
+        return None;
+    };
+    let lexical = lit.value();
+    lexical.parse::<i64>().ok()?;
+    let variant = match lexical.strip_prefix('-') {
+        Some(digits) => format!("-0{digits}"),
+        None => format!("0{}", lexical.trim_start_matches('+')),
+    };
+    Some(Mutation::ReplaceFirst(typed(&variant, datatype)))
 }
 
 fn integer_bound(value: &Value) -> Option<i64> {

@@ -389,3 +389,24 @@ operators = [\"trap-language-subtag\"]",
     .await;
     assert!(r.labels.is_empty(), "{:?}", r.labels);
 }
+
+#[tokio::test]
+async fn numeric_ranges_compare_values_not_lexical_forms() {
+    assert_trap_not_reported_shex(SHEX_PERSON, "trap-numeric-lexical").await;
+    let shapes = shacl_person();
+    let r = run(
+        Fixture::shacl(&shapes),
+        "rate = 1.0\noperators = [\"trap-numeric-lexical\"]",
+        8,
+    )
+    .await;
+    assert!(!r.traps().is_empty(), "{}", r.data);
+    // Turtle writes integers in shorthand, so the planted form shows as `0NN`.
+    assert!(
+        r.data.contains(&format!("<{EX}age> 0")),
+        "a non-canonical lexical form was planted\n{}",
+        r.data
+    );
+    let v = validate_shacl(&r.data, &shapes);
+    assert!(v.failing.is_empty(), "{}\n{}", v.report, r.data);
+}
