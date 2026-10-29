@@ -277,6 +277,45 @@ fn add_errors_to_tree(
 }
 
 impl ValidatorError {
+    /// This error with the explanations of the references it mentions left out:
+    /// a failed reference keeps its node and shape, not why that node failed.
+    ///
+    /// A failing reference embeds the referenced node's errors, so explanations
+    /// nest along the references. On cyclic data with several references per
+    /// node that tree has exponentially many paths, so an embedded explanation
+    /// keeps one level: the referenced node's own errors. The rest is in each
+    /// node's own result.
+    pub(crate) fn without_nested_references(&self) -> ValidatorError {
+        let mut error = self.clone();
+        match &mut error {
+            ValidatorError::ShapeRefFailed { errors, .. } => *errors = ValidatorErrors::new(Vec::new()),
+            ValidatorError::FailedPending { failed_pending } => {
+                for (_, _, _, errors) in failed_pending {
+                    errors.clear();
+                }
+            },
+            ValidatorError::PartitionComponentFailed { errors, .. }
+            | ValidatorError::PartitionFailed { errors, .. }
+            | ValidatorError::AbstractShapeError { errors, .. }
+            | ValidatorError::DescendantShapeError { errors, .. }
+            | ValidatorError::DescendantsShapeError { errors, .. }
+            | ValidatorError::ShapeAndError { errors, .. }
+            | ValidatorError::ParentShapeMainShapeFailed { errors, .. }
+            | ValidatorError::ParentShapeFailed { errors, .. }
+            | ValidatorError::ShapeExtendsError { errors, .. } => *errors = errors.without_nested_references(),
+            ValidatorError::ShapeOrError { errors, .. } => {
+                for (_, branch) in errors {
+                    *branch = branch.without_nested_references();
+                }
+            },
+            ValidatorError::ShapeFailed { errors, .. } => {
+                *errors = errors.iter().map(|e| e.without_nested_references()).collect();
+            },
+            _ => {},
+        }
+        error
+    }
+
     fn show_idx(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
         schema
             .shape_label_from_idx(idx)
