@@ -254,6 +254,40 @@ async fn shacl_class_conforms() {
 }
 
 #[tokio::test]
+async fn shacl_property_shapes_on_the_same_path_are_one_conjunction() {
+    // DCAT-AP states sh:class, sh:nodeKind and sh:maxCount of one path in separate
+    // property shapes; generating each on its own gives three values.
+    assert_shacl_conforms(
+        &format!(
+            "{SHACL_PERSON}\n  sh:property [ sh:path ex:worksFor ; sh:class ex:Org ] ;\n\
+             sh:property [ sh:path ex:worksFor ; sh:nodeKind sh:BlankNodeOrIRI ] ;\n\
+             sh:property [ sh:path ex:worksFor ; sh:minCount 1 ; sh:maxCount 1 ] ;\n\
+             sh:property [ sh:path ex:name ; sh:datatype xsd:string ] ;\n\
+             sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:maxCount 1 ] .\n\
+             ex:OrgShape a sh:NodeShape ; sh:targetClass ex:Org ;\n  sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:datatype xsd:string ] ."
+        ),
+        keep,
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn shacl_literal_node_kind_and_other_xsd_datatypes_conform() {
+    // A required literal without a datatype (DCAT-AP's dct:title), and datatypes the
+    // literal builder used to replace by xsd:string.
+    assert_shacl_conforms(
+        &format!(
+            "{SHACL_PERSON}\n  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:nodeKind sh:Literal ] ;\n\
+             sh:property [ sh:path ex:period ; sh:minCount 1 ; sh:datatype xsd:duration ] ;\n\
+             sh:property [ sh:path ex:checksum ; sh:minCount 1 ; sh:datatype xsd:hexBinary ] ;\n\
+             sh:property [ sh:path ex:size ; sh:minCount 1 ; sh:datatype xsd:nonNegativeInteger ] ."
+        ),
+        keep,
+    )
+    .await;
+}
+
+#[tokio::test]
 async fn shacl_pattern_conforms() {
     assert_shacl_conforms(
         &format!(

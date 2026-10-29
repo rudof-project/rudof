@@ -634,45 +634,19 @@ impl ParallelGenerator {
         }
     }
 
-    /// Create a properly typed literal based on datatype
+    /// A literal of `datatype`. Any datatype IRI is kept as declared (falling back
+    /// to `xsd:string` turned valid `xsd:duration` or `xsd:hexBinary` values into
+    /// datatype violations); `rdf:langString` gets a language tag instead.
     fn create_typed_literal(&self, value: &str, datatype: &str) -> Result<Term> {
-        match datatype {
-            "http://www.w3.org/2001/XMLSchema#string" => Ok(Term::Literal(Literal::new_typed_literal(
-                value,
-                NamedNode::new_unchecked(datatype),
-            ))),
-            "http://www.w3.org/2001/XMLSchema#integer" => Ok(Term::Literal(Literal::new_typed_literal(
-                value,
-                NamedNode::new_unchecked(datatype),
-            ))),
-            "http://www.w3.org/2001/XMLSchema#decimal" => Ok(Term::Literal(Literal::new_typed_literal(
-                value,
-                NamedNode::new_unchecked(datatype),
-            ))),
-            "http://www.w3.org/2001/XMLSchema#boolean" => Ok(Term::Literal(Literal::new_typed_literal(
-                value,
-                NamedNode::new_unchecked(datatype),
-            ))),
-            "http://www.w3.org/2001/XMLSchema#date" => Ok(Term::Literal(Literal::new_typed_literal(
-                value,
-                NamedNode::new_unchecked(datatype),
-            ))),
-            "http://www.w3.org/2001/XMLSchema#dateTime" => Ok(Term::Literal(Literal::new_typed_literal(
-                value,
-                NamedNode::new_unchecked(datatype),
-            ))),
-            "http://www.w3.org/2001/XMLSchema#anyURI" => Ok(Term::Literal(Literal::new_typed_literal(
-                value,
-                NamedNode::new_unchecked(datatype),
-            ))),
-            _ => {
-                // Default to string literal for unknown types
-                Ok(Term::Literal(Literal::new_typed_literal(
-                    value,
-                    NamedNode::new_unchecked("http://www.w3.org/2001/XMLSchema#string"),
-                )))
-            },
+        if datatype == "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString" {
+            return Ok(Term::Literal(Literal::new_language_tagged_literal_unchecked(
+                value, "en",
+            )));
         }
+        Ok(Term::Literal(Literal::new_typed_literal(
+            value,
+            NamedNode::new_unchecked(datatype),
+        )))
     }
 
     /// Generate relationships between entities

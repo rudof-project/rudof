@@ -81,6 +81,7 @@ impl FieldGeneratorRegistry {
         self.register_generator(Box::new(DateGenerator));
         self.register_generator(Box::new(DateTimeGenerator));
         self.register_generator(Box::new(UriGenerator));
+        self.register_generator(Box::new(OtherXsdGenerator));
         self.register_generator(Box::new(PatternGenerator));
 
         Ok(())

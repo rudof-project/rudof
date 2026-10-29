@@ -99,6 +99,8 @@ impl ShaclToUnified {
             }
         }
 
+        let properties = merge_same_path(properties);
+
         let (closed, ignored_properties) = node_shape
             .components()
             .iter()
@@ -188,13 +190,6 @@ impl ShaclToUnified {
             if self.convert_component(component, &mut constraints) {
                 metrics.represented_constraints_in_unified += 1;
             }
-        }
-
-        // If no datatype constraint found, default to string
-        if constraints.is_empty() {
-            constraints.push(UnifiedConstraint::Datatype(
-                "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            ));
         }
 
         Some(UnifiedPropertyConstraint {
@@ -385,4 +380,61 @@ impl ShaclToUnified {
             },
         }
     }
+}
+
+/// Property shapes of one node shape that share a path are one conjunction: every
+/// value must satisfy all their value constraints, and the count lies within all
+/// their bounds (DCAT-AP, for one, states `sh:class`, `sh:nodeKind` and
+/// `sh:maxCount` of a path in separate property shapes). Qualified value shapes
+/// count only their conforming values, so they stay separate. A path whose values
+/// may be literals but whose datatype is not given gets `xsd:string`, the
+/// generator's default.
+fn merge_same_path(properties: Vec<UnifiedPropertyConstraint>) -> Vec<UnifiedPropertyConstraint> {
+    let mut merged: Vec<UnifiedPropertyConstraint> = Vec::new();
+    for prop in properties {
+        let same = merged
+            .iter_mut()
+            .find(|m| m.all_values_match && prop.all_values_match && m.property_iri == prop.property_iri);
+        match same {
+            Some(m) => {
+                for c in prop.constraints {
+                    if !m.constraints.contains(&c) {
+                        m.constraints.push(c);
+                    }
+                }
+                m.min_cardinality = m.min_cardinality.max(prop.min_cardinality);
+                m.max_cardinality = match (m.max_cardinality, prop.max_cardinality) {
+                    (Some(a), Some(b)) => Some(a.min(b)),
+                    (a, b) => a.or(b),
+                };
+            },
+            None => merged.push(prop),
+        }
+    }
+    for m in &mut merged {
+        if needs_default_datatype(&m.constraints) {
+            m.constraints.push(UnifiedConstraint::Datatype(
+                "http://www.w3.org/2001/XMLSchema#string".to_string(),
+            ));
+        }
+    }
+    merged
+}
+
+/// No datatype, no value that names a node or a fixed term, and literals allowed:
+/// without a datatype the generator would produce no value at all (DCAT-AP gives
+/// many required properties only `sh:nodeKind sh:Literal`).
+fn needs_default_datatype(constraints: &[UnifiedConstraint]) -> bool {
+    constraints.iter().all(|c| match c {
+        UnifiedConstraint::Datatype(_)
+        | UnifiedConstraint::ShapeReference(_)
+        | UnifiedConstraint::Class(_)
+        | UnifiedConstraint::In(_)
+        | UnifiedConstraint::HasValue(_) => false,
+        UnifiedConstraint::NodeKind(kind) => matches!(
+            kind,
+            UnifiedNodeKind::Literal | UnifiedNodeKind::BlankNodeOrLiteral | UnifiedNodeKind::IriOrLiteral
+        ),
+        _ => true,
+    })
 }

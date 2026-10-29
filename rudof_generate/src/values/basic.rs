@@ -392,3 +392,50 @@ fn generate_generic_string(rng: &mut impl Rng, _locale: &str) -> String {
 
     format!("{word}{number:03}")
 }
+
+/// Other XSD datatypes found in published schemas (DCAT-AP uses `xsd:duration`,
+/// `xsd:hexBinary` and `xsd:nonNegativeInteger`): a valid lexical form for each.
+pub struct OtherXsdGenerator;
+
+const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
+const OTHER_XSD: [&str; 9] = [
+    "duration",
+    "hexBinary",
+    "nonNegativeInteger",
+    "positiveInteger",
+    "gYear",
+    "double",
+    "float",
+    "time",
+    "base64Binary",
+];
+
+impl FieldGenerator for OtherXsdGenerator {
+    fn generate(&self, context: &GenerationContext) -> Result<String> {
+        let mut rng = context.rng();
+        let local = context.datatype.strip_prefix(XSD).unwrap_or(&context.datatype);
+        Ok(match local {
+            "duration" => format!("P{}DT{}H", rng.gen_range(0..365), rng.gen_range(0..24)),
+            "hexBinary" => format!("{:08X}", rng.r#gen::<u32>()),
+            "nonNegativeInteger" => rng.gen_range(0..10_000).to_string(),
+            "positiveInteger" => rng.gen_range(1..10_000).to_string(),
+            "gYear" => rng.gen_range(1950..2030).to_string(),
+            "double" | "float" => format!("{:.2}", rng.gen_range(0.0..1000.0)),
+            "time" => format!(
+                "{:02}:{:02}:{:02}",
+                rng.gen_range(0..24),
+                rng.gen_range(0..60),
+                rng.gen_range(0..60)
+            ),
+            _ => "AAAA".to_string(), // base64Binary
+        })
+    }
+
+    fn name(&self) -> &str {
+        "other-xsd"
+    }
+
+    fn supported_datatypes(&self) -> Vec<String> {
+        OTHER_XSD.iter().map(|d| format!("{XSD}{d}")).collect()
+    }
+}

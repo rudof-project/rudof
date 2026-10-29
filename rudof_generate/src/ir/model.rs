@@ -50,7 +50,7 @@ fn yes() -> bool {
     true
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum UnifiedConstraint {
     Datatype(String),
     ShapeReference(String),
