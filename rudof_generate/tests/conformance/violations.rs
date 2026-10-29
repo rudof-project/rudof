@@ -615,3 +615,36 @@ async fn a_broken_member_fails_a_qualified_team_only_below_the_minimum() {
     let v = validate_shacl(&r.data, &shapes);
     assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
 }
+
+#[tokio::test]
+async fn an_extra_value_does_not_count_towards_a_qualified_minimum() {
+    // A team with a trap extra member and a broken member keeps only one
+    // conforming member, below the qualified minimum of 2.
+    let shapes = shacl_team();
+    let r = run(
+        Fixture::shacl(&shapes),
+        "rate = 0.6\noperators = [\"trap-extra-value\", \"drop-required\"]",
+        40,
+    )
+    .await;
+    assert!(!r.traps().is_empty() && !r.direct().is_empty(), "{:?}", r.labels);
+    let v = validate_shacl(&r.data, &shapes);
+    assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
+}
+
+#[tokio::test]
+async fn an_extra_value_does_not_count_towards_a_minimum_under_shex_extra() {
+    let schema = r#"PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ex:TeamShape EXTRA ex:member { a [ex:Team] ; ex:member @ex:PersonShape {2,4} }
+ex:PersonShape { a [ex:Person] ; ex:name xsd:string }"#;
+    let r = run(
+        Fixture::shex(schema),
+        "rate = 0.6\noperators = [\"trap-extra-value\", \"drop-required\"]",
+        40,
+    )
+    .await;
+    assert!(!r.traps().is_empty() && !r.direct().is_empty(), "{:?}", r.labels);
+    let v = validate_shex(&r.data, schema, &r.shapemap);
+    assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
+}

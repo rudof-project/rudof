@@ -172,9 +172,11 @@ fn induced_failures(
                 continue;
             }
             if let Some(min) = tolerant.get(&(referrer.to_string(), property.to_string())) {
+                // Only generated entities can conform: the no-data node of a trap
+                // and a dangling target never do.
                 let conforming = targets[&(*referrer, *property)]
                     .iter()
-                    .filter(|t| !failing.contains(**t))
+                    .filter(|t| shape_of.contains_key(**t) && !failing.contains(**t))
                     .count();
                 if conforming >= *min {
                     continue;
