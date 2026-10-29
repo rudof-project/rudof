@@ -181,6 +181,7 @@ fn apply(
             },
             ViolationOperator::ExceedMax => exceed_max(prop, &values),
             ViolationOperator::WrongDatatype => wrong_datatype(prop, &values),
+            ViolationOperator::IllTypedLiteral => ill_typed_literal(prop, &values),
             ViolationOperator::OutOfRange => out_of_range(prop, &values),
             ViolationOperator::NotInValueSet => not_in_value_set(prop, &values),
             ViolationOperator::PatternBreak => pattern_break(prop, &values),
@@ -278,6 +279,28 @@ fn wrong_datatype(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<M
         Term::Literal(Literal::new_simple_literal("not a value of the declared datatype"))
     };
     Some(Mutation::ReplaceFirst(term))
+}
+
+/// A lexical form that is not valid for `datatype`, for the XSD datatypes that
+/// have a lexical space to violate (strings accept every lexical form).
+fn invalid_lexical_form(datatype: &str) -> Option<&'static str> {
+    match datatype.strip_prefix(XSD)? {
+        "integer" | "int" | "long" | "short" | "byte" | "nonNegativeInteger" | "positiveInteger" | "decimal"
+        | "double" | "float" => Some("not-a-number"),
+        "boolean" => Some("maybe"),
+        "date" => Some("2024-13-45"),
+        "dateTime" => Some("yesterday at noon"),
+        _ => None,
+    }
+}
+
+fn ill_typed_literal(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    if values.is_empty() {
+        return None;
+    }
+    let datatype = datatype_of(prop)?;
+    let lexical = invalid_lexical_form(datatype)?;
+    Some(Mutation::ReplaceFirst(typed(lexical, datatype)))
 }
 
 fn integer_bound(value: &Value) -> Option<i64> {

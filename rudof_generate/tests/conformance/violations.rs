@@ -115,10 +115,11 @@ ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
     )
 }
 
-const OPERATORS: [&str; 6] = [
+const OPERATORS: [&str; 7] = [
     "drop-required",
     "exceed-max",
     "wrong-datatype",
+    "ill-typed-literal",
     "out-of-range",
     "not-in-value-set",
     "pattern-break",

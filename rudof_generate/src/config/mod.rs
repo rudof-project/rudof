@@ -119,6 +119,9 @@ pub enum ViolationOperator {
     ExceedMax,
     /// Replace a value with a literal of another datatype.
     WrongDatatype,
+    /// Keep the declared datatype but give the literal an invalid lexical form
+    /// (e.g. `"not-a-number"^^xsd:integer`).
+    IllTypedLiteral,
     /// Replace a numeric value with one outside its bounds.
     OutOfRange,
     /// Replace a value with one outside its value set.
@@ -130,10 +133,11 @@ pub enum ViolationOperator {
 }
 
 impl ViolationOperator {
-    pub const ALL: [ViolationOperator; 7] = [
+    pub const ALL: [ViolationOperator; 8] = [
         Self::DropRequired,
         Self::ExceedMax,
         Self::WrongDatatype,
+        Self::IllTypedLiteral,
         Self::OutOfRange,
         Self::NotInValueSet,
         Self::PatternBreak,
@@ -146,6 +150,7 @@ impl ViolationOperator {
             Self::DropRequired => "drop-required",
             Self::ExceedMax => "exceed-max",
             Self::WrongDatatype => "wrong-datatype",
+            Self::IllTypedLiteral => "ill-typed-literal",
             Self::OutOfRange => "out-of-range",
             Self::NotInValueSet => "not-in-value-set",
             Self::PatternBreak => "pattern-break",
