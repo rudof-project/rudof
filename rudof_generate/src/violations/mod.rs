@@ -291,13 +291,17 @@ fn apply(
             ViolationOperator::DerivedDatatype => derived_datatype(prop, &values),
             ViolationOperator::LookalikeValue => lookalike_value(prop, &values),
             ViolationOperator::TrapDecimalLexical => decimal_lexical_variant(prop, &values),
-            ViolationOperator::UnmatchedValue => (!shape.extra.contains(&prop.property_iri))
-                .then(|| unmatched_value(prop, &values))
+            ViolationOperator::UnmatchedValue => prop
+                .all_values_match
+                .then(|| unmatched_value(prop, &values, node, model))
                 .flatten(),
+            // Every constraint on the path must tolerate the unmatched value.
             ViolationOperator::TrapExtraValue => shape
-                .extra
-                .contains(&prop.property_iri)
-                .then(|| unmatched_value(prop, &values))
+                .properties
+                .iter()
+                .filter(|p| p.property_iri == prop.property_iri)
+                .all(|p| !p.all_values_match)
+                .then(|| unmatched_value(prop, &values, node, model))
                 .flatten(),
         };
         if let Some(mutation) = replacement {
@@ -616,10 +620,18 @@ fn lookalike_value(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<
 /// Add one value outside the property's value set, or of another datatype when
 /// the datatype is its only value constraint. Where the maximum counts every
 /// value (SHACL), it must leave room for the new one.
-fn unmatched_value(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+fn unmatched_value(
+    prop: &UnifiedPropertyConstraint,
+    values: &[Term],
+    node: &str,
+    model: &UnifiedConstraintModel,
+) -> Option<Mutation> {
     let counted = !prop.counts_matching_values;
     if counted && prop.max_cardinality.is_some_and(|max| values.len() + 1 > max as usize) {
         return None;
+    }
+    if let [UnifiedConstraint::ShapeReference(target)] = prop.constraints.as_slice() {
+        return requires_something(model, target).then(|| Mutation::Add(vec![no_data_node(node, "unmatched")]));
     }
     if prop.constraints.iter().all(|c| matches!(c, UnifiedConstraint::In(_))) {
         let members = prop.constraints.iter().find_map(|c| match c {
@@ -709,13 +721,25 @@ fn dangling_reference(
         UnifiedConstraint::ShapeReference(s) => Some(s),
         _ => None,
     })?;
-    // A node with no data violates the target only if the target requires something.
-    let requires = model.shapes.get(target).is_some_and(|s| {
+    // Where only conforming values are counted (a qualified value shape), losing
+    // one is a violation only if fewer than the minimum remain.
+    if !prop.all_values_match && values.len() > prop.min_cardinality.unwrap_or(0) as usize {
+        return None;
+    }
+    requires_something(model, target).then(|| Mutation::ReplaceFirst(no_data_node(node, "dangling")))
+}
+
+/// A node with no data violates `target` only if the target requires something.
+fn requires_something(model: &UnifiedConstraintModel, target: &str) -> bool {
+    model.shapes.get(target).is_some_and(|s| {
         s.properties
             .iter()
             .any(|p| p.property_iri != RDF_TYPE && p.min_cardinality.unwrap_or(0) >= 1)
-    });
-    requires.then(|| Mutation::ReplaceFirst(Term::NamedNode(NamedNode::new_unchecked(format!("{node}/dangling")))))
+    })
+}
+
+fn no_data_node(node: &str, suffix: &str) -> Term {
+    Term::NamedNode(NamedNode::new_unchecked(format!("{node}/{suffix}")))
 }
 
 /// Number of labels per operator, for reports.

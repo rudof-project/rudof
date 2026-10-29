@@ -4,7 +4,7 @@ use crate::ir::{
 };
 use crate::metrics::conformance::TranslationMetrics;
 use crate::{DataGeneratorError, Result};
-use rudof_rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
+use rudof_rdf::rdf_core::{RDFFormat, term::Object, term::literal::ConcreteLiteral};
 use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 use shacl::ast::{ASTComponent, ASTNodeShape, ASTPropertyShape, ASTSchema, ASTShape};
 use shacl::rdf::ShaclParser;
@@ -116,7 +116,6 @@ impl ShaclToUnified {
             properties,
             closed,
             ignored_properties,
-            extra: Vec::new(),
         }
     }
 
@@ -163,6 +162,11 @@ impl ShaclToUnified {
 
         metrics.original_schema_constraints += prop_shape.components().len();
 
+        if let Some(qualified) = Self::qualified_value_shape(&property_iri, prop_shape.components()) {
+            metrics.represented_constraints_in_unified += 1;
+            return Some(qualified);
+        }
+
         // Extract cardinality from components
         let (min_cardinality, max_cardinality) = self.extract_cardinality(prop_shape.components());
         if min_cardinality.is_some() {
@@ -192,6 +196,44 @@ impl ShaclToUnified {
             min_cardinality,
             max_cardinality,
             counts_matching_values: false,
+            all_values_match: true,
+        })
+    }
+
+    /// A qualified value shape that names a node shape, as a count of the values
+    /// conforming to it (`sh:qualifiedMinCount`/`sh:qualifiedMaxCount`), with the
+    /// other values unconstrained: the ShEx reading of `ex:p @S {m,n}` under
+    /// `EXTRA ex:p`. An `sh:maxCount` on the same property shape counts every
+    /// value, so the maximum is then the smaller of the two over all values.
+    /// Inline (blank node) qualified shapes are not translated yet.
+    fn qualified_value_shape(property_iri: &str, components: &[ASTComponent]) -> Option<UnifiedPropertyConstraint> {
+        let (shape, q_min, q_max) = components.iter().find_map(|c| match c {
+            ASTComponent::QualifiedValueShape {
+                shape: Object::Iri(iri),
+                q_min_count,
+                q_max_count,
+                ..
+            } => Some((iri.to_string(), *q_min_count, *q_max_count)),
+            _ => None,
+        })?;
+        let count = |n: Option<isize>| n.filter(|n| *n >= 0).map(|n| n as u32);
+        let (min_count, max_count) = components.iter().fold((None, None), |(min, max), c| match c {
+            ASTComponent::MinCount(n) if *n >= 0 => (Some(*n as u32), max),
+            ASTComponent::MaxCount(n) if *n >= 0 => (min, Some(*n as u32)),
+            _ => (min, max),
+        });
+        let min_cardinality = count(q_min).max(min_count);
+        let max_cardinality = match (count(q_max), max_count) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (a, b) => a.or(b),
+        };
+        Some(UnifiedPropertyConstraint {
+            property_iri: property_iri.to_string(),
+            constraints: vec![UnifiedConstraint::ShapeReference(shape)],
+            min_cardinality,
+            max_cardinality,
+            counts_matching_values: max_count.is_none(),
+            all_values_match: false,
         })
     }
 

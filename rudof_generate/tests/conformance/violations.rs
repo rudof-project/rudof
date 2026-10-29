@@ -509,3 +509,65 @@ async fn unmatched_value_leaves_extra_predicates_alone() {
     .await;
     assert!(r.direct().is_empty(), "{:?}", r.labels);
 }
+
+fn shacl_team() -> String {
+    format!(
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <{EX}> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:TeamShape a sh:NodeShape ; sh:targetClass ex:Team ;
+  sh:property [ sh:path ex:member ; sh:qualifiedValueShape ex:PersonShape ;
+                sh:qualifiedMinCount 2 ; sh:qualifiedMaxCount 3 ] .
+ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] .
+"#
+    )
+}
+
+#[tokio::test]
+async fn qualified_value_shapes_are_generated_valid() {
+    let shapes = shacl_team();
+    let r = run(Fixture::shacl(&shapes), "rate = 0.0", 12).await;
+    assert!(r.data.contains(&format!("<{EX}member>")), "{}", r.data);
+    let v = validate_shacl(&r.data, &shapes);
+    assert!(v.conforms(), "{}\n{}", v.report, r.data);
+}
+
+#[tokio::test]
+async fn a_qualified_value_shape_tolerates_non_conforming_extra_values() {
+    // Only the count of conforming values is constrained, unlike sh:node.
+    let shapes = shacl_team();
+    let r = run(
+        Fixture::shacl(&shapes),
+        "rate = 1.0\noperators = [\"trap-extra-value\"]\nshapes = [\"ex:TeamShape\"]",
+        12,
+    )
+    .await;
+    assert!(!r.traps().is_empty(), "{}", r.data);
+    let v = validate_shacl(&r.data, &shapes);
+    assert!(v.failing.is_empty(), "{}\n{}", v.report, r.data);
+}
+
+#[tokio::test]
+async fn a_dangling_qualified_value_fails_only_below_the_qualified_minimum() {
+    assert_shacl_exact(
+        &shacl_team(),
+        "rate = 1.0\noperators = [\"dangling-reference\"]\nshapes = [\"ex:TeamShape\"]",
+        "dangling-reference",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn an_unmatched_shape_reference_fails_in_shex() {
+    let schema = r#"PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ex:TeamShape { a [ex:Team] ; ex:member @ex:PersonShape {2,3} }
+ex:PersonShape { a [ex:Person] ; ex:name xsd:string }"#;
+    assert_shex_exact(
+        schema,
+        "rate = 1.0\noperators = [\"unmatched-value\"]\nshapes = [\"ex:TeamShape\"]",
+        "unmatched-value",
+    )
+    .await;
+}
