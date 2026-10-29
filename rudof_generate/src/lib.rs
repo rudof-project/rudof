@@ -247,11 +247,21 @@ impl DataGenerator {
 
             // Convert properties
             for prop in &unified_shape.properties {
+                // A shape reference, or for `sh:class` the shape whose instances
+                // carry the class, is generated as a link to one of its instances.
+                let target_of = |c: &crate::ir::UnifiedConstraint| match c {
+                    crate::ir::UnifiedConstraint::ShapeReference(sr) => Some(sr.clone()),
+                    crate::ir::UnifiedConstraint::Class(class) => {
+                        unified_model.shape_for_class(class).map(String::from)
+                    },
+                    _ => None,
+                };
+
                 // Extract dependencies from shape references
                 for constraint in &prop.constraints {
-                    if let crate::ir::UnifiedConstraint::ShapeReference(target_shape) = constraint {
+                    if let Some(target_shape) = target_of(constraint) {
                         dependencies.push(ShapeDependency {
-                            target_shape: target_shape.clone(),
+                            target_shape,
                             property: prop.property_iri.clone(),
                             min_cardinality: prop.min_cardinality.map(|c| c as i32),
                             max_cardinality: prop.max_cardinality.map(|c| c as i32),
@@ -266,10 +276,7 @@ impl DataGenerator {
                 });
 
                 // Extract shape reference
-                let shape_ref = prop.constraints.iter().find_map(|c| match c {
-                    crate::ir::UnifiedConstraint::ShapeReference(sr) => Some(sr.clone()),
-                    _ => None,
-                });
+                let shape_ref = prop.constraints.iter().find_map(target_of);
 
                 properties.push(PropertyInfo {
                     property_iri: prop.property_iri.clone(),

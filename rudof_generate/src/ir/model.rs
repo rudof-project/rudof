@@ -49,6 +49,11 @@ fn yes() -> bool {
 pub enum UnifiedConstraint {
     Datatype(String),
     ShapeReference(String),
+    /// Values are instances of the class (SHACL `sh:class`): they carry its
+    /// `rdf:type`, which is all that is required of them. Unlike a shape
+    /// reference, the value need not conform to any shape, so a failing value
+    /// does not make the node that refers to it fail.
+    Class(String),
     NodeKind(NodeKind),
     Pattern(String),
     MinInclusive(Value),
@@ -119,6 +124,18 @@ impl UnifiedConstraintModel {
 
     pub fn get_dependencies(&self, shape_id: &str) -> Option<&Vec<String>> {
         self.dependencies.get(shape_id)
+    }
+
+    /// The shape whose instances carry `class`, i.e. that targets it; the
+    /// smallest id when several do, so the choice does not depend on map order.
+    pub fn shape_for_class(&self, class: &str) -> Option<&str> {
+        let bare = |iri: &str| iri.trim_matches(['<', '>']).to_string();
+        let class = bare(class);
+        self.shapes
+            .values()
+            .filter(|s| s.target_class.as_deref().map(bare).as_deref() == Some(class.as_str()))
+            .map(|s| s.id.as_str())
+            .min()
     }
 }
 

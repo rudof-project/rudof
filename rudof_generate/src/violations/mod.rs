@@ -90,7 +90,52 @@ pub fn inject(
 
     *triples = graph.into_triples();
     labels.extend(induced_failures(triples, model, entities, &mut failing));
+    labels.extend(class_traps(triples, model, entities, &failing));
     Ok(labels)
+}
+
+/// Nodes whose `sh:class` value fails its own shape. The value keeps its type,
+/// so the node conforms; reporting it means reading `sh:class` as `sh:node`.
+fn class_traps(
+    triples: &[Triple],
+    model: &UnifiedConstraintModel,
+    entities: &[(String, String)],
+    failing: &BTreeSet<String>,
+) -> Vec<ViolationLabel> {
+    let shape_of: HashMap<&str, &str> = entities.iter().map(|(n, s)| (n.as_str(), s.as_str())).collect();
+    let mut traps: BTreeMap<String, ViolationLabel> = BTreeMap::new();
+    for t in triples {
+        let (NamedOrBlankNode::NamedNode(s), Term::NamedNode(o)) = (&t.subject, &t.object) else {
+            continue;
+        };
+        if failing.contains(s.as_str()) || !failing.contains(o.as_str()) || traps.contains_key(s.as_str()) {
+            continue;
+        }
+        let Some((shape_id, shape)) = shape_of
+            .get(s.as_str())
+            .and_then(|id| model.shapes.get(*id).map(|shape| (*id, shape)))
+        else {
+            continue;
+        };
+        let by_class = shape.properties.iter().any(|p| {
+            p.property_iri == t.predicate.as_str()
+                && p.constraints.iter().any(|c| matches!(c, UnifiedConstraint::Class(_)))
+        });
+        if by_class {
+            traps.insert(
+                s.as_str().to_string(),
+                ViolationLabel {
+                    node: s.as_str().to_string(),
+                    shape: shape_id.to_string(),
+                    kind: "trap",
+                    property: t.predicate.as_str().to_string(),
+                    operator: Some("class-of-failing"),
+                    cause: Some(o.as_str().to_string()),
+                },
+            );
+        }
+    }
+    traps.into_values().collect()
 }
 
 /// Write labels as JSON Lines.
@@ -745,8 +790,10 @@ fn dangling_reference(
     if values.is_empty() {
         return None;
     }
-    let target = prop.constraints.iter().find_map(|c| match c {
-        UnifiedConstraint::ShapeReference(s) => Some(s),
+    // A node with no data has no type either, so it always breaks `sh:class`.
+    let breaks = prop.constraints.iter().find_map(|c| match c {
+        UnifiedConstraint::ShapeReference(s) => Some(requires_something(model, s)),
+        UnifiedConstraint::Class(_) => Some(true),
         _ => None,
     })?;
     // Where only conforming values are counted (a qualified value shape), losing
@@ -754,7 +801,7 @@ fn dangling_reference(
     if !prop.all_values_match && values.len() > prop.min_cardinality.unwrap_or(0) as usize {
         return None;
     }
-    requires_something(model, target).then(|| Mutation::ReplaceFirst(no_data_node(node, "dangling")))
+    breaks.then(|| Mutation::ReplaceFirst(no_data_node(node, "dangling")))
 }
 
 /// A node with no data violates `target` only if the target requires something.

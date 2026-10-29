@@ -332,6 +332,10 @@ impl ShaclToUnified {
                 constraints.push(UnifiedConstraint::ShapeReference(shape.to_string()));
                 true
             },
+            ASTComponent::Class(Object::Iri(class)) => {
+                constraints.push(UnifiedConstraint::Class(class.to_string()));
+                true
+            },
             ASTComponent::MinCount(_) | ASTComponent::MaxCount(_) => false,
             _ => {
                 // For other components, we might add basic string datatype

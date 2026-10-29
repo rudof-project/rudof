@@ -665,3 +665,51 @@ async fn a_failure_reaches_only_the_nodes_before_it_when_reference_chains_end() 
     let v = validate_shex(&r.data, &schema, &r.shapemap);
     assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
 }
+
+fn shacl_employment() -> String {
+    format!(
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <{EX}> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path ex:worksFor ; sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:Org ] .
+ex:OrgShape a sh:NodeShape ; sh:targetClass ex:Org ;
+  sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:datatype xsd:string ] .
+"#
+    )
+}
+
+#[tokio::test]
+async fn a_value_without_the_class_breaks_sh_class() {
+    assert_shacl_exact(
+        &shacl_employment(),
+        "rate = 1.0\noperators = [\"dangling-reference\"]\nshapes = [\"ex:PersonShape\"]",
+        "dangling-reference",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn sh_class_requires_the_type_not_conformance() {
+    // Broken orgs keep their type, so the persons working for them still
+    // satisfy sh:class: they are traps for a validator that reads it as sh:node.
+    let shapes = shacl_employment();
+    let r = run(
+        Fixture::shacl(&shapes),
+        "rate = 1.0\noperators = [\"drop-required\"]\nshapes = [\"ex:OrgShape\"]",
+        12,
+    )
+    .await;
+    assert!(!r.direct().is_empty(), "{:?}", r.labels);
+    assert!(r.labels.iter().all(|l| l["kind"] != "induced"), "{:?}", r.labels);
+    assert!(
+        r.traps()
+            .iter()
+            .any(|l| l["shape"] == format!("{EX}PersonShape") && l["operator"] == "class-of-failing"),
+        "{:?}",
+        r.labels
+    );
+    let v = validate_shacl(&r.data, &shapes);
+    assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
+}

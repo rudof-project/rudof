@@ -241,6 +241,18 @@ async fn shacl_shape_reference_conforms() {
 }
 
 #[tokio::test]
+async fn shacl_class_conforms() {
+    assert_shacl_conforms(
+        &format!(
+            "{SHACL_PERSON}\n  sh:property [ sh:path ex:worksFor ; sh:minCount 1 ; sh:maxCount 2 ; sh:class ex:Org ] .\n\
+             ex:OrgShape a sh:NodeShape ; sh:targetClass ex:Org ;\n  sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:datatype xsd:string ] ."
+        ),
+        keep,
+    )
+    .await;
+}
+
+#[tokio::test]
 async fn shacl_pattern_conforms() {
     assert_shacl_conforms(
         &format!(

@@ -152,13 +152,14 @@ fn validate_non_type_triple(
     property
         .constraints
         .iter()
-        .all(|c| evaluate_constraint(c, &triple.object, subject_type))
+        .all(|c| evaluate_constraint(c, &triple.object, subject_type, model))
 }
 
 fn evaluate_constraint(
     constraint: &UnifiedConstraint,
     object: &Term,
     subject_type: &HashMap<NamedOrBlankNode, String>,
+    model: &UnifiedConstraintModel,
 ) -> bool {
     match constraint {
         UnifiedConstraint::Datatype(expected) => match object {
@@ -175,6 +176,20 @@ fn evaluate_constraint(
                 .map(|s| s == target_shape)
                 .unwrap_or(false),
             _ => false,
+        },
+        // The object is an instance of a shape that targets the class.
+        UnifiedConstraint::Class(class) => {
+            let node = match object {
+                Term::NamedNode(node) => NamedOrBlankNode::NamedNode(node.clone()),
+                Term::BlankNode(node) => NamedOrBlankNode::BlankNode(node.clone()),
+                _ => return false,
+            };
+            let bare = |iri: &str| iri.trim_matches(['<', '>']).to_string();
+            subject_type
+                .get(&node)
+                .and_then(|s| model.shapes.get(s))
+                .and_then(|s| s.target_class.as_deref())
+                .is_some_and(|c| bare(c) == bare(class))
         },
         UnifiedConstraint::NodeKind(node_kind) => match node_kind {
             NodeKind::Iri => matches!(object, Term::NamedNode(_)),
