@@ -20,6 +20,10 @@ pub struct UnifiedShape {
     /// (SHACL `sh:ignoredProperties`).
     #[serde(default)]
     pub ignored_properties: Vec<String>,
+    /// Properties that may carry values matching none of their constraints
+    /// (ShEx `EXTRA`). Elsewhere, every value of a declared property must match.
+    #[serde(default)]
+    pub extra: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,6 +32,12 @@ pub struct UnifiedPropertyConstraint {
     pub constraints: Vec<UnifiedConstraint>,
     pub min_cardinality: Option<u32>,
     pub max_cardinality: Option<u32>,
+    /// The cardinality counts only the values that satisfy `constraints` (ShEx
+    /// triple constraints), not every value of the property (SHACL `sh:minCount`
+    /// and `sh:maxCount`). It decides whether an extra non-matching value also
+    /// breaks the maximum.
+    #[serde(default)]
+    pub counts_matching_values: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

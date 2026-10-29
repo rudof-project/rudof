@@ -116,6 +116,7 @@ impl ShaclToUnified {
             properties,
             closed,
             ignored_properties,
+            extra: Vec::new(),
         }
     }
 
@@ -190,6 +191,7 @@ impl ShaclToUnified {
             constraints,
             min_cardinality,
             max_cardinality,
+            counts_matching_values: false,
         })
     }
 

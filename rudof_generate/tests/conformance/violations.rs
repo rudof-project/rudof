@@ -121,7 +121,7 @@ ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
     )
 }
 
-const OPERATORS: [&str; 10] = [
+const OPERATORS: [&str; 11] = [
     "drop-required",
     "exceed-max",
     "wrong-datatype",
@@ -132,6 +132,7 @@ const OPERATORS: [&str; 10] = [
     "lang-string-for-string",
     "derived-datatype",
     "lookalike-value",
+    "unmatched-value",
 ];
 
 #[tokio::test]
@@ -285,15 +286,13 @@ ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
 async fn wrong_language_is_exact_in_shex_and_shacl() {
     assert_shex_exact(
         SHEX_LANG,
-        "rate = 1.0
-operators = [\"wrong-language\"]",
+        "rate = 1.0\noperators = [\"wrong-language\"]",
         "wrong-language",
     )
     .await;
     assert_shacl_exact(
         &shacl_lang(),
-        "rate = 1.0
-operators = [\"wrong-language\"]",
+        "rate = 1.0\noperators = [\"wrong-language\"]",
         "wrong-language",
     )
     .await;
@@ -303,8 +302,7 @@ operators = [\"wrong-language\"]",
 async fn duplicate_language_breaks_unique_lang() {
     assert_shacl_exact(
         &shacl_lang(),
-        "rate = 1.0
-operators = [\"duplicate-language\"]",
+        "rate = 1.0\noperators = [\"duplicate-language\"]",
         "duplicate-language",
     )
     .await;
@@ -314,10 +312,7 @@ operators = [\"duplicate-language\"]",
 async fn assert_trap_not_reported_shex(schema: &str, operator: &str) {
     let r = run(
         Fixture::shex(schema),
-        &format!(
-            "rate = 1.0
-operators = [\"{operator}\"]"
-        ),
+        &format!("rate = 1.0\noperators = [\"{operator}\"]"),
         8,
     )
     .await;
@@ -343,8 +338,7 @@ async fn language_tags_compare_case_insensitively() {
     assert_trap_not_reported_shex(SHEX_LANG, "trap-language-case").await;
     let r = run(
         Fixture::shacl(&shacl_lang()),
-        "rate = 1.0
-operators = [\"trap-language-case\"]",
+        "rate = 1.0\noperators = [\"trap-language-case\"]",
         8,
     )
     .await;
@@ -364,8 +358,7 @@ async fn a_language_range_accepts_subtags() {
     assert_trap_not_reported_shex(SHEX_LANG_STEM, "trap-language-subtag").await;
     let r = run(
         Fixture::shacl(&shacl_lang()),
-        "rate = 1.0
-operators = [\"trap-language-subtag\"]",
+        "rate = 1.0\noperators = [\"trap-language-subtag\"]",
         8,
     )
     .await;
@@ -385,8 +378,7 @@ async fn an_exact_language_tag_rejects_subtags_so_no_trap_is_planted() {
     // ShEx [@en] matches the tag exactly: en-GB would be a real violation, not a trap.
     let r = run(
         Fixture::shex(SHEX_LANG),
-        "rate = 1.0
-operators = [\"trap-language-subtag\"]",
+        "rate = 1.0\noperators = [\"trap-language-subtag\"]",
         6,
     )
     .await;
@@ -486,4 +478,34 @@ async fn an_operator_spreads_over_every_property_it_applies_to() {
     assert!(properties.len() >= 3, "broken properties: {properties:?}");
     let v = validate_shex(&r.data, SHEX_PERSON, &r.shapemap);
     assert_eq!(v.failing, r.expected_failing(), "{}", v.report);
+}
+
+const SHEX_EXTRA: &str = r#"PREFIX ex: <http://example.org/>
+ex:ThingShape EXTRA ex:kind { a [ex:Thing] ; ex:kind [ex:A ex:B] }"#;
+
+#[tokio::test]
+async fn extra_lets_a_shex_shape_carry_values_that_match_no_constraint() {
+    assert_trap_not_reported_shex(SHEX_EXTRA, "trap-extra-value").await;
+}
+
+#[tokio::test]
+async fn without_extra_an_unmatched_value_of_a_mentioned_predicate_fails() {
+    let schema = SHEX_EXTRA.replace("EXTRA ex:kind ", "");
+    assert_shex_exact(
+        &schema,
+        "rate = 1.0\noperators = [\"unmatched-value\"]",
+        "unmatched-value",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn unmatched_value_leaves_extra_predicates_alone() {
+    let r = run(
+        Fixture::shex(SHEX_EXTRA),
+        "rate = 1.0\noperators = [\"unmatched-value\"]",
+        6,
+    )
+    .await;
+    assert!(r.direct().is_empty(), "{:?}", r.labels);
 }

@@ -142,6 +142,13 @@ pub enum ViolationOperator {
     /// Replace a value-set member with a different term of the same text
     /// (the literal `"http://ex/A"` for the IRI `<http://ex/A>`, `"1"` for `1`).
     LookalikeValue,
+    /// Add a value that matches none of the property's constraints, keeping the
+    /// count of matching values valid (in ShEx, only the rule that every value of
+    /// a mentioned predicate must match is broken).
+    UnmatchedValue,
+    /// Trap (not a violation): the same addition on a ShEx `EXTRA` predicate,
+    /// which allows unmatched values.
+    TrapExtraValue,
     /// Trap (not a violation): change a tag's case (`en` -> `EN`); tags compare
     /// case-insensitively, so a validator that reports it is wrong.
     TrapLanguageCase,
@@ -157,7 +164,7 @@ pub enum ViolationOperator {
 }
 
 impl ViolationOperator {
-    pub const ALL: [ViolationOperator; 18] = [
+    pub const ALL: [ViolationOperator; 20] = [
         Self::DropRequired,
         Self::ExceedMax,
         Self::WrongDatatype,
@@ -172,17 +179,23 @@ impl ViolationOperator {
         Self::LangStringForString,
         Self::DerivedDatatype,
         Self::LookalikeValue,
+        Self::UnmatchedValue,
         Self::TrapLanguageCase,
         Self::TrapLanguageSubtag,
         Self::TrapNumericLexical,
         Self::TrapDecimalLexical,
+        Self::TrapExtraValue,
     ];
 
     /// A trap changes the data without making it invalid.
     pub fn is_trap(self) -> bool {
         matches!(
             self,
-            Self::TrapLanguageCase | Self::TrapLanguageSubtag | Self::TrapNumericLexical | Self::TrapDecimalLexical
+            Self::TrapLanguageCase
+                | Self::TrapLanguageSubtag
+                | Self::TrapNumericLexical
+                | Self::TrapDecimalLexical
+                | Self::TrapExtraValue
         )
     }
 
@@ -207,6 +220,8 @@ impl ViolationOperator {
             Self::DerivedDatatype => "derived-datatype",
             Self::LookalikeValue => "lookalike-value",
             Self::TrapDecimalLexical => "trap-decimal-lexical",
+            Self::UnmatchedValue => "unmatched-value",
+            Self::TrapExtraValue => "trap-extra-value",
         }
     }
 

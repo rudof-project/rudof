@@ -69,9 +69,11 @@ impl ShExToUnified {
         let mut properties = Vec::new();
         let mut target_class = None;
         let mut closed = false;
+        let mut extra = Vec::new();
 
         if let ShapeExpr::Shape(s) = &shape_decl.shape_expr {
             closed = s.is_closed();
+            extra = s.extra.iter().flatten().map(|iri| iri.to_string()).collect();
         }
         if let ShapeExpr::Shape(s) = &shape_decl.shape_expr
             && let Some(expr) = &s.expression
@@ -86,6 +88,7 @@ impl ShExToUnified {
             properties,
             closed,
             ignored_properties: Vec::new(),
+            extra,
         }
     }
 
@@ -237,6 +240,7 @@ impl ShExToUnified {
                     constraints,
                     min_cardinality: min_card,
                     max_cardinality: max_card,
+                    counts_matching_values: true,
                 });
             },
             TripleExpr::Ref(_) => {

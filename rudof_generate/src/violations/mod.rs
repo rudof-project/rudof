@@ -291,6 +291,14 @@ fn apply(
             ViolationOperator::DerivedDatatype => derived_datatype(prop, &values),
             ViolationOperator::LookalikeValue => lookalike_value(prop, &values),
             ViolationOperator::TrapDecimalLexical => decimal_lexical_variant(prop, &values),
+            ViolationOperator::UnmatchedValue => (!shape.extra.contains(&prop.property_iri))
+                .then(|| unmatched_value(prop, &values))
+                .flatten(),
+            ViolationOperator::TrapExtraValue => shape
+                .extra
+                .contains(&prop.property_iri)
+                .then(|| unmatched_value(prop, &values))
+                .flatten(),
         };
         if let Some(mutation) = replacement {
             mutation.apply(triples, node, &prop.property_iri, &values);
@@ -365,13 +373,16 @@ fn wrong_datatype(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<M
     if values.is_empty() || has_value_constraints(prop) {
         return None;
     }
-    let datatype = datatype_of(prop)?;
-    let term = if datatype == format!("{XSD}string") {
+    Some(Mutation::ReplaceFirst(other_datatype_value(datatype_of(prop)?)))
+}
+
+/// A value whose datatype is not `datatype`.
+fn other_datatype_value(datatype: &str) -> Term {
+    if datatype == format!("{XSD}string") {
         typed("42", &format!("{XSD}integer"))
     } else {
         Term::Literal(Literal::new_simple_literal("not a value of the declared datatype"))
-    };
-    Some(Mutation::ReplaceFirst(term))
+    }
 }
 
 /// A lexical form that is not valid for `datatype`, for the XSD datatypes that
@@ -602,6 +613,28 @@ fn lookalike_value(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<
     (same_text == 1).then_some(Mutation::ReplaceFirst(term))
 }
 
+/// Add one value outside the property's value set, or of another datatype when
+/// the datatype is its only value constraint. Where the maximum counts every
+/// value (SHACL), it must leave room for the new one.
+fn unmatched_value(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    let counted = !prop.counts_matching_values;
+    if counted && prop.max_cardinality.is_some_and(|max| values.len() + 1 > max as usize) {
+        return None;
+    }
+    if prop.constraints.iter().all(|c| matches!(c, UnifiedConstraint::In(_))) {
+        let members = prop.constraints.iter().find_map(|c| match c {
+            UnifiedConstraint::In(members) if !members.is_empty() => Some(members),
+            _ => None,
+        })?;
+        return Some(Mutation::Add(vec![outside_value_set(&members[0])?]));
+    }
+    if has_value_constraints(prop) {
+        return None;
+    }
+    let datatype = datatype_of(prop)?;
+    Some(Mutation::Add(vec![other_datatype_value(datatype)]))
+}
+
 fn integer_bound(value: &Value) -> Option<i64> {
     match value {
         Value::Literal(lexical, _) => lexical.parse().ok(),
@@ -634,13 +667,17 @@ fn not_in_value_set(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option
         UnifiedConstraint::In(members) if !members.is_empty() => Some(members),
         _ => None,
     })?;
-    let term = match &members[0] {
+    Some(Mutation::ReplaceFirst(outside_value_set(&members[0])?))
+}
+
+/// A term of the same kind as `member` that is not in its value set.
+fn outside_value_set(member: &Value) -> Option<Term> {
+    Some(match member {
         Value::Iri(iri) => Term::NamedNode(NamedNode::new_unchecked(format!("{iri}-not-in-set"))),
         Value::Literal(_, Some(datatype)) => typed("value outside the set", datatype),
         Value::Literal(_, None) => Term::Literal(Literal::new_simple_literal("value outside the set")),
         Value::BlankNode(_) => return None,
-    };
-    Some(Mutation::ReplaceFirst(term))
+    })
 }
 
 fn pattern_break(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
