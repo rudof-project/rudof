@@ -220,12 +220,29 @@ PREFIX :    <http://weso.es/shapes/>
     );
 
     let content = generate(&schema, dir.path().join("out.ttl"), 3, Some(1)).await?;
-    let types = types_in(&content);
 
-    assert!(!types.is_empty(), "expected at least one typed entity");
-    assert!(
-        types.iter().all(|t| t == "http://example.org/ResearchAssistant"),
-        "the shape's own class must win over the one it specialises, found {types:?}"
+    // Every entity carries the shape's own class -- and, because the schema
+    // requires both `rdf:type` values, the class it specialises as well.
+    let own = crate::common::instances_of(&content, "http://example.org/ResearchAssistant");
+    let parent = crate::common::instances_of(&content, "http://example.org/GraduateStudent");
+    assert_eq!(
+        own.len(),
+        3,
+        "every entity must be typed with the shape's own class
+{content}"
     );
+    assert_eq!(
+        own, parent,
+        "every entity must also carry the class it specialises
+{content}"
+    );
+
+    let schema_text = std::fs::read_to_string(&schema)?;
+    let verdict = crate::common::validate_shex(
+        &content,
+        &schema_text,
+        "{FOCUS a <http://example.org/ResearchAssistant>}@<http://weso.es/shapes/ResearchAssistant>",
+    );
+    assert!(verdict.conforms() && verdict.conformant == 3, "{}", verdict.report);
     Ok(())
 }

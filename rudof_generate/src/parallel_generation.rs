@@ -268,6 +268,29 @@ impl ParallelGenerator {
     /// Derived from the subject and the property so that it is unique without a
     /// counter, stable under a fixed seed, and recognisable as generated rather
     /// than resolvable.
+    /// The `n`-th admissible value of an enumerated property, if it is one.
+    ///
+    /// Successive values of one entity take successive members of the set, so a
+    /// property with several values gets distinct ones (repeating a value would
+    /// collapse into a single RDF triple and undercount the cardinality).
+    fn value_from_set(constraints: &[UnifiedConstraint], n: usize) -> Option<Term> {
+        let value = constraints.iter().find_map(|c| match c {
+            UnifiedConstraint::HasValue(value) => Some(value),
+            UnifiedConstraint::In(values) if !values.is_empty() => Some(&values[n % values.len()]),
+            _ => None,
+        })?;
+        Some(match value {
+            crate::unified_constraints::Value::Iri(iri) => Term::NamedNode(NamedNode::new_unchecked(iri.as_str())),
+            crate::unified_constraints::Value::Literal(lexical, Some(datatype)) => Term::Literal(
+                Literal::new_typed_literal(lexical.as_str(), NamedNode::new_unchecked(datatype.as_str())),
+            ),
+            crate::unified_constraints::Value::Literal(lexical, None) => {
+                Term::Literal(Literal::new_simple_literal(lexical.as_str()))
+            },
+            crate::unified_constraints::Value::BlankNode(_) => return None,
+        })
+    }
+
     fn mint_iri_value(entity_iri: &str, property_iri: &str, value_idx: usize) -> String {
         let local = property_iri
             .rsplit(['#', '/'])
@@ -399,16 +422,22 @@ impl ParallelGenerator {
             },
         }
 
+        // 2. Apply max_properties_per_instance to the optional selection only: a
+        // required property is part of what the schema demands, so dropping it to
+        // meet the cap would make the entity invalid.
+        if config.max_properties_per_instance > 0 {
+            let optional_slots = config
+                .max_properties_per_instance
+                .saturating_sub(mandatory_properties.len());
+            if properties_to_generate.len() > optional_slots {
+                let mut rng = self.derive_rng("truncate", shape_id, entity_index);
+                properties_to_generate.shuffle(&mut rng);
+                properties_to_generate.truncate(optional_slots);
+            }
+        }
+
         // Add mandatory properties
         properties_to_generate.extend(mandatory_properties);
-
-        // 2. Apply max_properties_per_instance limit
-        if config.max_properties_per_instance > 0 && properties_to_generate.len() > config.max_properties_per_instance {
-            use rand::seq::SliceRandom;
-            let mut rng = self.derive_rng("truncate", shape_id, entity_index);
-            properties_to_generate.shuffle(&mut rng);
-            properties_to_generate.truncate(config.max_properties_per_instance);
-        }
 
         // 3. Generate triples for selected properties
         for property_info in properties_to_generate {
@@ -448,6 +477,15 @@ impl ParallelGenerator {
                         )?;
                         triples.extend(nested_triples);
                     }
+                } else if let Some(term) = Self::value_from_set(&property_info.constraints, entity_index + value_idx) {
+                    // An enumerated property (sh:in, sh:hasValue, ShEx value set):
+                    // the schema lists the admissible values, so take one of them
+                    // rather than generating from a datatype it may not declare.
+                    triples.push(Triple::new(
+                        NamedOrBlankNode::NamedNode(entity_node.clone()),
+                        NamedNode::new_unchecked(&property_info.property_iri),
+                        term,
+                    ));
                 } else if let Some(datatype) = &property_info.datatype {
                     // Data property with literal value
                     let mut context = GenerationContext::new(

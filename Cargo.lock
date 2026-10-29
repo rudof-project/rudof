@@ -4313,6 +4313,7 @@ dependencies = [
  "rayon",
  "regex",
  "rudof_iri",
+ "rudof_lib",
  "rudof_rdf",
  "rust_decimal",
  "serde",

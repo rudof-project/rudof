@@ -8,6 +8,8 @@ use shex_ast::ast::{NodeConstraint, ObjectValue, ShapeDecl, ShapeExpr, TripleExp
 use shex_ast::compact::ShExParser;
 use std::path::Path;
 
+const XSD_STRING: &str = "http://www.w3.org/2001/XMLSchema#string";
+
 pub struct ShExToUnified;
 
 impl Default for ShExToUnified {
@@ -267,8 +269,28 @@ impl ShExToUnified {
         }
 
         if let Some(values) = node_constraint.values() {
-            // Value set constraints are currently not translated in this converter.
-            metrics.original_schema_constraints += values.len();
+            // A value set is one constraint: the IR either represents it or not.
+            // Only explicit IRIs and literals are enumerable; stems, ranges and
+            // language tags describe infinite sets and stay untranslated.
+            metrics.original_schema_constraints += 1;
+            let members: Option<Vec<crate::unified_constraints::Value>> = values
+                .iter()
+                .map(|v| match v {
+                    ValueSetValue::ObjectValue(ObjectValue::IriRef(iri)) => Some(
+                        crate::unified_constraints::Value::Iri(Self::strip_angle_brackets(&iri.to_string())),
+                    ),
+                    ValueSetValue::ObjectValue(ObjectValue::Literal(lit)) => {
+                        let datatype = Self::strip_angle_brackets(&lit.datatype().to_string());
+                        let datatype = (datatype != XSD_STRING).then_some(datatype);
+                        Some(crate::unified_constraints::Value::Literal(lit.lexical_form(), datatype))
+                    },
+                    _ => None,
+                })
+                .collect();
+            if let Some(members) = members.filter(|m| !m.is_empty()) {
+                metrics.represented_constraints_in_unified += 1;
+                constraints.push(UnifiedConstraint::In(members));
+            }
         }
 
         if let Some(facets) = node_constraint.facets() {
