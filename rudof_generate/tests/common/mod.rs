@@ -77,6 +77,8 @@ pub struct Verdict {
     pub violations: usize,
     /// The serialized validator report, for failure messages.
     pub report: String,
+    /// Nodes reported as failing (`<iri>` form).
+    pub failing: std::collections::BTreeSet<String>,
 }
 
 impl Verdict {
@@ -123,7 +125,12 @@ pub fn validate_shex(data: &str, schema: &str, shapemap: &str) -> Verdict {
     for line in report.lines().filter(|l| l.starts_with('<') || l.starts_with("_:")) {
         match line.split(',').nth(2) {
             Some("OK") => verdict.conformant += 1,
-            Some("FAIL") => verdict.violations += 1,
+            Some("FAIL") => {
+                verdict.violations += 1;
+                if let Some(node) = line.split(',').next() {
+                    verdict.failing.insert(node.to_string());
+                }
+            },
             other => panic!("unexpected ShEx status {other:?} in line: {line}"),
         }
     }
@@ -161,11 +168,35 @@ pub fn validate_shacl(data: &str, shapes: &str) -> Verdict {
     let conforms_true = report
         .lines()
         .any(|l| l.contains("<http://www.w3.org/ns/shacl#conforms>") && l.contains("true"));
+    let failing = top_level_focus_nodes(&report);
     Verdict {
         conformant: usize::from(conforms_true),
         violations,
         report,
+        failing,
     }
+}
+
+/// Focus nodes of the report's own `sh:result`s. Nested `sh:detail` results
+/// (e.g. why an `sh:node` reference failed) name the referenced node instead,
+/// which is not itself a target of the report.
+fn top_level_focus_nodes(report_ntriples: &str) -> std::collections::BTreeSet<String> {
+    use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+    use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
+    let sh = |l: &str| format!("<http://www.w3.org/ns/shacl#{l}>");
+    let graph = OxigraphInMemory::from_str(report_ntriples, &RDFFormat::NTriples, None, &ReaderMode::Strict)
+        .expect("SHACL report parses");
+    let triples: Vec<_> = graph.triples().expect("report triples").collect();
+    let results: std::collections::BTreeSet<String> = triples
+        .iter()
+        .filter(|t| t.predicate.to_string() == sh("result"))
+        .map(|t| t.object.to_string())
+        .collect();
+    triples
+        .iter()
+        .filter(|t| t.predicate.to_string() == sh("focusNode") && results.contains(&t.subject.to_string()))
+        .map(|t| t.object.to_string())
+        .collect()
 }
 
 /// Subjects of `rdf:type <class>` triples in Turtle `data` (parsed, not text-matched).

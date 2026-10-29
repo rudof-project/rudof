@@ -14,6 +14,8 @@ pub mod metrics;
 pub mod sinks;
 #[cfg(not(target_family = "wasm"))]
 pub mod values;
+#[cfg(not(target_family = "wasm"))]
+pub mod violations;
 // #[cfg(target_family = "wasm")]
 // mod wasm_stubs;
 
@@ -108,7 +110,10 @@ impl DataGenerator {
     /// Generate synthetic data and write to output
     pub async fn generate(&mut self) -> Result<()> {
         let start_time = std::time::Instant::now();
-        let graph = self.generator.generate_data(&self.config.generation).await?;
+        let mut graph = self.generator.generate_data(&self.config.generation).await?;
+        if let Some(violations) = &self.config.generation.violations {
+            graph = self.inject_violations(graph, violations).await?;
+        }
         let generation_time = start_time.elapsed();
 
         let conformance_metrics = if let (Some(unified_model), Some(translation_metrics)) = (
@@ -131,6 +136,37 @@ impl DataGenerator {
             std::fs::write(path, self.shape_map().await)?;
         }
         Ok(())
+    }
+
+    /// Break the configured share of entities and write the ground-truth labels.
+    async fn inject_violations(
+        &self,
+        graph: rudof_rdf::rdf_impl::OxigraphInMemory,
+        violations: &config::ViolationsConfig,
+    ) -> Result<rudof_rdf::rdf_impl::OxigraphInMemory> {
+        use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF};
+        let model = self
+            .processor
+            .get_unified_model()
+            .ok_or_else(|| DataGeneratorError::Config("violations need a loaded schema".to_string()))?;
+        let mut triples: Vec<oxrdf::Triple> = graph
+            .triples()
+            .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?
+            .collect();
+        let entities = self.generator.entity_shapes().await;
+        let labels = violations::inject(&mut triples, model, &entities, violations, self.config.generation.seed)?;
+        if let Some(path) = &violations.labels {
+            violations::write_labels(path, &labels)?;
+        }
+        tracing::info!("injected violations: {:?}", violations::summary(&labels));
+
+        let mut mutated = rudof_rdf::rdf_impl::OxigraphInMemory::default();
+        for t in triples {
+            mutated
+                .add_triple(t.subject, t.predicate, t.object)
+                .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?;
+        }
+        Ok(mutated)
     }
 
     /// A ShEx ShapeMap (compact syntax) associating every generated node with

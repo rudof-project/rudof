@@ -69,7 +69,7 @@ fn an_unsupported_version_is_rejected() {
 
 #[test]
 fn sections_that_are_designed_but_not_implemented_are_rejected_explicitly() {
-    for section in ["violations", "targets", "profile", "validate"] {
+    for section in ["targets", "profile", "validate"] {
         let err = parse_err(&format!("version = 2\n[{section}]\n"));
         assert!(
             err.contains(section) && err.contains("not yet supported"),

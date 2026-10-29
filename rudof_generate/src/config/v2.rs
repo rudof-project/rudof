@@ -24,7 +24,7 @@
 
 use super::{
     CardinalityStrategy, DatatypeConfig, EntityDistribution, GeneratorConfig, OutputFormat, PropertyConfig,
-    PropertyRule, TypeOverrideConfig,
+    PropertyRule, TypeOverrideConfig, ViolationOperator, ViolationsConfig,
 };
 use crate::{DataGeneratorError, Result};
 use serde::Deserialize;
@@ -44,7 +44,7 @@ const BUILTIN_PREFIXES: [(&str, &str); 4] = [
 
 /// Sections that are part of the v2 design but not implemented yet. They are
 /// rejected rather than ignored, so a config never silently does less than it says.
-const PLANNED_SECTIONS: [&str; 4] = ["validate", "targets", "violations", "profile"];
+const PLANNED_SECTIONS: [&str; 3] = ["validate", "targets", "profile"];
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -64,6 +64,16 @@ pub struct ConfigV2 {
     pub values: Values,
     #[serde(default)]
     pub output: Output,
+    pub violations: Option<Violations>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Violations {
+    pub rate: f64,
+    pub operators: Option<Vec<String>>,
+    pub shapes: Option<Vec<String>>,
+    pub labels: Option<PathBuf>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -252,6 +262,42 @@ impl ConfigV2 {
             config.output.write_stats = stats;
         }
         config.output.shapemap = self.output.shapemap;
+
+        // violations
+        if let Some(v) = self.violations {
+            if !(0.0..=1.0).contains(&v.rate) {
+                return Err(config_error(format!(
+                    "violations.rate must be between 0.0 and 1.0, got {}",
+                    v.rate
+                )));
+            }
+            let operators = match v.operators {
+                None => ViolationOperator::ALL.to_vec(),
+                Some(names) => names
+                    .iter()
+                    .map(|n| {
+                        ViolationOperator::from_name(n).ok_or_else(|| {
+                            let known: Vec<_> = ViolationOperator::ALL.iter().map(|o| o.name()).collect();
+                            config_error(format!(
+                                "unknown violation operator `{n}` (known: {})",
+                                known.join(", ")
+                            ))
+                        })
+                    })
+                    .collect::<Result<Vec<_>>>()?,
+            };
+            config.generation.violations = Some(ViolationsConfig {
+                rate: v.rate,
+                operators,
+                shapes: v
+                    .shapes
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|s| expand(s))
+                    .collect::<Result<_>>()?,
+                labels: v.labels,
+            });
+        }
 
         Ok(config)
     }

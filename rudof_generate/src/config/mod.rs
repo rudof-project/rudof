@@ -77,6 +77,85 @@ pub struct GenerationConfig {
     /// shape; both win over the shape and global settings.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub property_rules: Vec<PropertyRule>,
+
+    /// Deliberate, labelled constraint violations (see [`crate::violations`]).
+    /// `None` generates schema-valid data only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub violations: Option<ViolationsConfig>,
+}
+
+/// Which violations to inject, into which entities.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct ViolationsConfig {
+    /// Probability that an eligible entity receives one violation.
+    pub rate: f64,
+    /// Operators to use; an entity gets the first one that applies to its shape.
+    pub operators: Vec<ViolationOperator>,
+    /// Shapes whose entities may be broken; empty means every shape.
+    pub shapes: Vec<String>,
+    /// Where to write the ground-truth labels (JSON Lines).
+    pub labels: Option<PathBuf>,
+}
+
+impl Default for ViolationsConfig {
+    fn default() -> Self {
+        Self {
+            rate: 0.0,
+            operators: ViolationOperator::ALL.to_vec(),
+            shapes: Vec::new(),
+            labels: None,
+        }
+    }
+}
+
+/// A way of breaking exactly one constraint of an entity.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ViolationOperator {
+    /// Remove every value of a required property.
+    DropRequired,
+    /// Add values beyond a finite maximum cardinality.
+    ExceedMax,
+    /// Replace a value with a literal of another datatype.
+    WrongDatatype,
+    /// Replace a numeric value with one outside its bounds.
+    OutOfRange,
+    /// Replace a value with one outside its value set.
+    NotInValueSet,
+    /// Replace a string with one that does not match its pattern.
+    PatternBreak,
+    /// Point a shape reference at a node with no data.
+    DanglingReference,
+}
+
+impl ViolationOperator {
+    pub const ALL: [ViolationOperator; 7] = [
+        Self::DropRequired,
+        Self::ExceedMax,
+        Self::WrongDatatype,
+        Self::OutOfRange,
+        Self::NotInValueSet,
+        Self::PatternBreak,
+        Self::DanglingReference,
+    ];
+
+    /// The name used in configs and labels.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::DropRequired => "drop-required",
+            Self::ExceedMax => "exceed-max",
+            Self::WrongDatatype => "wrong-datatype",
+            Self::OutOfRange => "out-of-range",
+            Self::NotInValueSet => "not-in-value-set",
+            Self::PatternBreak => "pattern-break",
+            Self::DanglingReference => "dangling-reference",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|op| op.name() == name)
+    }
 }
 
 /// Generation policy for one property, optionally restricted to one shape.
@@ -129,6 +208,7 @@ impl Default for GenerationConfig {
             unbounded_property_values: 1,
             unbounded_reference_values: 1,
             property_rules: Vec::new(),
+            violations: None,
         }
     }
 }
