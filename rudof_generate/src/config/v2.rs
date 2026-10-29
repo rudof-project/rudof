@@ -251,9 +251,10 @@ impl ConfigV2 {
             config.output.format = match format.as_str() {
                 "turtle" => OutputFormat::Turtle,
                 "ntriples" => OutputFormat::NTriples,
+                "pg" => OutputFormat::Pg,
                 other => {
                     return Err(config_error(format!(
-                        "output.format `{other}` is not supported (use \"turtle\" or \"ntriples\")"
+                        "output.format `{other}` is not supported (use \"turtle\", \"ntriples\" or \"pg\")"
                     )));
                 },
             };

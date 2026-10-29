@@ -199,6 +199,22 @@ impl ViolationOperator {
         )
     }
 
+    /// Whether the operator means something in a property graph: `.pg` values
+    /// carry no datatype IRI, language tag or lexical form, and PG-Schema has
+    /// no value sets, so the other operators would not break anything there.
+    pub fn applies_to_property_graphs(self) -> bool {
+        matches!(
+            self,
+            Self::DropRequired
+                | Self::ExceedMax
+                | Self::WrongDatatype
+                | Self::OutOfRange
+                | Self::PatternBreak
+                | Self::DanglingReference
+                | Self::ClosedExtra
+        )
+    }
+
     /// The name used in configs and labels.
     pub fn name(self) -> &'static str {
         match self {
@@ -308,6 +324,8 @@ pub struct TypeOverrideConfig {
 pub enum SchemaFormat {
     ShEx,
     Shacl,
+    /// PG-Schema (rudof's `.pgs` syntax): generates a property graph.
+    PgSchema,
 }
 
 /// How to distribute entities across different shapes
@@ -440,7 +458,10 @@ pub enum OutputFormat {
     #[default]
     Turtle,
     NTriples,
-    // NOTE: Only Turtle and NTriples are supported.
+    /// rudof's property graph format (`.pg`), for PG-Schema input; the type map
+    /// goes where the ShapeMap would (`output.shapemap`).
+    Pg,
+    // NOTE: Only Turtle and NTriples are supported for RDF.
     // JsonLd and RdfXml removed to avoid serialization issues.
 }
 

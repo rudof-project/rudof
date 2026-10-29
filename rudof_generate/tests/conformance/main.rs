@@ -21,6 +21,7 @@
 
 #[path = "../common/mod.rs"]
 mod common;
+mod pgschema;
 mod violations;
 
 use common::*;

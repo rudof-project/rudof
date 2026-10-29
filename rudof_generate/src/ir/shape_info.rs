@@ -265,6 +265,14 @@ impl ShapeProcessor {
         Ok(())
     }
 
+    /// Load and process a PG-Schema file (`.pgs`)
+    pub async fn load_pgschema_schema<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let (unified_model, translation_metrics) = crate::adapters::PgSchemaToUnified.convert_file(path).await?;
+        self.unified_model = Some(unified_model);
+        self.translation_metrics = Some(translation_metrics);
+        Ok(())
+    }
+
     /// Auto-detect schema format and load
     pub async fn load_schema_auto<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
         let path_str = path.as_ref().to_string_lossy();
@@ -272,6 +280,8 @@ impl ShapeProcessor {
         // Simple format detection based on file extension
         if path_str.ends_with(".shex") {
             self.load_shex_schema(path).await
+        } else if path_str.ends_with(".pgs") {
+            self.load_pgschema_schema(path).await
         } else if path_str.ends_with(".ttl") || path_str.ends_with(".rdf") || path_str.ends_with(".nt") {
             // Assume SHACL for RDF formats
             self.load_shacl_schema(path).await

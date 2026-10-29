@@ -264,6 +264,8 @@ impl OutputWriter {
         match self.config.format {
             crate::config::OutputFormat::Turtle => RDFFormat::Turtle,
             crate::config::OutputFormat::NTriples => RDFFormat::NTriples,
+            // Written by `sinks::pg`; the RDF view of a property graph is N-Triples.
+            crate::config::OutputFormat::Pg => RDFFormat::NTriples,
             // Only Turtle and NTriples are supported
         }
     }

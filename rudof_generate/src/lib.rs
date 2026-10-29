@@ -94,6 +94,16 @@ impl DataGenerator {
         Ok(())
     }
 
+    /// Load and process a PG-Schema file
+    pub async fn load_pgschema_schema<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        self.processor.load_pgschema_schema(path).await?;
+        if let Some(unified_model) = self.processor.get_unified_model() {
+            let shape_infos = self.convert_unified_to_shape_infos(unified_model);
+            self.generator.set_shapes(shape_infos).await?;
+        }
+        Ok(())
+    }
+
     /// Auto-detect schema format and load
     pub async fn load_schema_auto<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
         self.processor.load_schema_auto(path).await?;
@@ -129,11 +139,35 @@ impl DataGenerator {
             None
         };
 
+        if self.config.output.format == config::OutputFormat::Pg {
+            return self.write_property_graph(&graph).await;
+        }
         self.writer
             .write_graph_with_timing(&graph, Some(generation_time), conformance_metrics.as_ref())
             .await?;
         if let Some(path) = &self.config.output.shapemap {
             std::fs::write(path, self.shape_map().await)?;
+        }
+        Ok(())
+    }
+
+    /// Write the graph as a property graph (`.pg`) and the type map in place of
+    /// the ShapeMap.
+    async fn write_property_graph(&self, graph: &rudof_rdf::rdf_impl::OxigraphInMemory) -> Result<()> {
+        use rudof_rdf::rdf_core::NeighsRDF;
+        let model = self
+            .processor
+            .get_unified_model()
+            .ok_or_else(|| DataGeneratorError::Config("property graph output needs a loaded schema".to_string()))?;
+        let triples: Vec<oxrdf::Triple> = graph
+            .triples()
+            .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?
+            .collect();
+        let entities = self.generator.entity_shapes().await;
+        let (pg, type_map) = sinks::pg::property_graph(&triples, model, &entities);
+        std::fs::write(&self.config.output.path, pg)?;
+        if let Some(path) = &self.config.output.shapemap {
+            std::fs::write(path, type_map)?;
         }
         Ok(())
     }
@@ -213,6 +247,9 @@ impl DataGenerator {
             },
             Some(SchemaFormat::Shacl) => {
                 self.load_shacl_schema(schema_path).await?;
+            },
+            Some(SchemaFormat::PgSchema) => {
+                self.load_pgschema_schema(schema_path).await?;
             },
             None => {
                 // Auto-detect based on file extension

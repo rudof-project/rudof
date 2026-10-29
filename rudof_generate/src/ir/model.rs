@@ -20,6 +20,11 @@ pub struct UnifiedShape {
     /// (SHACL `sh:ignoredProperties`).
     #[serde(default)]
     pub ignored_properties: Vec<String>,
+    /// Every label an instance carries, for property graph schemas (a node type
+    /// may require several); `target_class` is the first. Empty for RDF schemas,
+    /// whose instances carry `target_class` only.
+    #[serde(default)]
+    pub labels: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -126,14 +131,15 @@ impl UnifiedConstraintModel {
         self.dependencies.get(shape_id)
     }
 
-    /// The shape whose instances carry `class`, i.e. that targets it; the
+    /// The shape whose instances carry `class` (its target, or one of its
+    /// labels in a property graph); the
     /// smallest id when several do, so the choice does not depend on map order.
     pub fn shape_for_class(&self, class: &str) -> Option<&str> {
         let bare = |iri: &str| iri.trim_matches(['<', '>']).to_string();
         let class = bare(class);
         self.shapes
             .values()
-            .filter(|s| s.target_class.as_deref().map(bare).as_deref() == Some(class.as_str()))
+            .filter(|s| s.target_class.iter().chain(&s.labels).any(|c| bare(c) == class))
             .map(|s| s.id.as_str())
             .min()
     }

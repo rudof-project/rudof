@@ -55,6 +55,7 @@ pub fn inject(
     let mut labels = Vec::new();
     let mut failing: BTreeSet<String> = BTreeSet::new();
     let mut graph = Indexed::new(std::mem::take(triples));
+    let property_graph = crate::adapters::pgschema::is_property_graph(model);
 
     for (index, (node, shape_id)) in entities.iter().enumerate() {
         if !config.shapes.is_empty() && !config.shapes.contains(shape_id) {
@@ -71,7 +72,15 @@ pub fn inject(
         let n = config.operators.len();
         for k in 0..n {
             let operator = config.operators[(index + k) % n];
+            if property_graph && !operator.applies_to_property_graphs() {
+                continue;
+            }
             if let Some(property) = apply(operator, &mut graph, node, shape, model, &mut rng) {
+                // In a property graph the broken reference is the edge, labelled
+                // by `edge_failures`; its source node still conforms.
+                if property_graph && operator == ViolationOperator::DanglingReference {
+                    break;
+                }
                 if !operator.is_trap() {
                     failing.insert(node.clone());
                 }
@@ -89,9 +98,91 @@ pub fn inject(
     }
 
     *triples = graph.into_triples();
+    if property_graph {
+        labels.extend(edge_failures(triples, model, entities, &failing));
+        return Ok(labels.into_iter().map(as_property_graph_label).collect());
+    }
     labels.extend(induced_failures(triples, model, entities, &mut failing));
     labels.extend(class_traps(triples, model, entities, &failing));
     Ok(labels)
+}
+
+/// In a property graph a reference is an edge with a type of its own; node
+/// types say nothing about edges. An edge type requires an endpoint either to
+/// conform to a node type (`(:@T)`) or only to carry a label (`(:L)`). So a
+/// failing node fails the edges whose type requires it to conform, and no node:
+/// the failure goes one step and stops. An edge to a node that is not an entity
+/// (a dangling reference) fails whatever its endpoint requires, since that node
+/// has no labels. An edge whose label-only endpoint fails is a trap.
+fn edge_failures(
+    triples: &[Triple],
+    model: &UnifiedConstraintModel,
+    entities: &[(String, String)],
+    failing: &BTreeSet<String>,
+) -> Vec<ViolationLabel> {
+    use crate::adapters::pgschema::{parse_edge_iri, requires_conforming_source};
+    use crate::sinks::pg::{edge_id, node_id};
+    let shape_of: HashMap<&str, &str> = entities.iter().map(|(n, s)| (n.as_str(), s.as_str())).collect();
+    let mut labels = Vec::new();
+    for t in triples {
+        let (NamedOrBlankNode::NamedNode(s), Term::NamedNode(o)) = (&t.subject, &t.object) else {
+            continue;
+        };
+        let predicate = t.predicate.as_str();
+        let Some((edge_type, label)) = parse_edge_iri(predicate) else {
+            continue;
+        };
+        let conforming_target = shape_of
+            .get(s.as_str())
+            .and_then(|id| model.shapes.get(*id))
+            .and_then(|shape| shape.properties.iter().find(|p| p.property_iri == predicate))
+            .is_some_and(|p| matches!(p.constraints.first(), Some(UnifiedConstraint::ShapeReference(_))));
+        let (s, o) = (s.as_str(), o.as_str());
+        let dangling = !shape_of.contains_key(o);
+        let cause = if requires_conforming_source(predicate) && failing.contains(s) {
+            Some(s)
+        } else if conforming_target && failing.contains(o) {
+            Some(o)
+        } else {
+            None
+        };
+        let (kind, operator, cause) = if dangling {
+            ("direct", Some("dangling-reference"), None)
+        } else if let Some(cause) = cause {
+            ("induced", None, Some(node_id(cause)))
+        } else if failing.contains(o) || failing.contains(s) {
+            (
+                "trap",
+                Some("class-of-failing"),
+                Some(node_id(if failing.contains(o) { o } else { s })),
+            )
+        } else {
+            continue;
+        };
+        labels.push(ViolationLabel {
+            node: edge_id(s, label, o),
+            shape: edge_type.to_string(),
+            kind,
+            property: label.to_string(),
+            operator,
+            cause,
+        });
+    }
+    labels.sort_by(|a, b| a.node.cmp(&b.node));
+    labels
+}
+
+/// A label of a node, renamed into `.pg` identifiers (edge labels already are).
+fn as_property_graph_label(mut label: ViolationLabel) -> ViolationLabel {
+    let on_edge = label.kind == "induced" || matches!(label.operator, Some("dangling-reference" | "class-of-failing"));
+    if !on_edge {
+        label.node = crate::sinks::pg::node_id(&label.node);
+        label.shape = crate::sinks::pg::type_name(&label.shape);
+    }
+    label.property = crate::adapters::pgschema::local_name(&label.property, "key")
+        .map(String::from)
+        .unwrap_or(label.property);
+    label
 }
 
 /// Nodes whose `sh:class` value fails its own shape. The value keeps its type,

@@ -29,10 +29,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let schema = PathBuf::from(args.first().ok_or("missing schema path")?);
     let output = PathBuf::from(args.get(1).ok_or("missing output path")?);
-    let format = if schema.extension().is_some_and(|e| e == "shex") {
-        SchemaFormat::ShEx
-    } else {
-        SchemaFormat::Shacl
+    let format = match schema.extension().and_then(|e| e.to_str()) {
+        Some("shex") => SchemaFormat::ShEx,
+        Some("pgs") => SchemaFormat::PgSchema,
+        _ => SchemaFormat::Shacl,
     };
 
     let mut config = match args.get(2).filter(|a| !a.is_empty() && *a != "-") {
@@ -50,6 +50,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     config.output.path = output.clone();
     config.output.write_stats = false;
+    if format == SchemaFormat::PgSchema {
+        config.output.format = rudof_generate::config::OutputFormat::Pg;
+        if config.output.shapemap.is_none() {
+            config.output.shapemap = Some(output.with_extension("map"));
+        }
+    }
+    let type_map = config.output.shapemap.clone();
     let entities = config.generation.entity_count;
 
     let started = Instant::now();
@@ -58,6 +65,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let secs = started.elapsed().as_secs_f64();
 
     let schema_text = std::fs::read_to_string(&schema)?;
+    if format == SchemaFormat::PgSchema {
+        let type_map = type_map.ok_or("a type map path is needed")?;
+        return validate_property_graph(&schema_text, &output, &type_map, entities, secs);
+    }
 
     // Parsing the data is timed apart, so that validate_secs compares with validators
     // that are timed on an already parsed graph.
@@ -128,6 +139,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         },
+        SchemaFormat::PgSchema => unreachable!("validated above"),
         SchemaFormat::Shacl => {
             rudof
                 .load_shacl_shapes()
@@ -166,5 +178,54 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (reason, count) in top.into_iter().take(8) {
         println!("  {count:>7}  {reason}");
     }
+    Ok(())
+}
+
+/// Validate the property graph at `output` with rudof's PG-Schema validator, for
+/// every association of the type map. The report (`VALIDATION_REPORT`) is CSV in
+/// the form of the ShEx one: `id,type,OK|FAIL,details`.
+#[cfg(not(target_family = "wasm"))]
+fn validate_property_graph(
+    schema: &str,
+    output: &std::path::Path,
+    type_map: &std::path::Path,
+    entities: usize,
+    secs: f64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use pgschema::parser::{map_builder::MapBuilder, pg_builder::PgBuilder, pgs_builder::PgsBuilder};
+    use std::time::Instant;
+
+    let load_started = Instant::now();
+    let schema = PgsBuilder::new().parse_pgs(schema)?;
+    let graph = PgBuilder::new().parse_pg(&std::fs::read_to_string(output)?)?;
+    let map = MapBuilder::new().parse_map(&std::fs::read_to_string(type_map)?)?;
+    let load_secs = load_started.elapsed().as_secs_f64();
+
+    let validation_started = Instant::now();
+    let result = map.validate(&schema, &graph)?;
+    let validate_secs = validation_started.elapsed().as_secs_f64();
+
+    let mut report = String::new();
+    let (mut conformant, mut violations) = (0usize, 0usize);
+    for a in &result.associations {
+        if a.conforms {
+            conformant += 1;
+        } else {
+            violations += 1;
+        }
+        let status = if a.conforms { "OK" } else { "FAIL" };
+        let details = format!("{:?}", a.details).replace('"', "'");
+        report.push_str(&format!(
+            "{},{},{status},\"{details}\"
+",
+            a.node_id, a.type_name
+        ));
+    }
+    if let Ok(path) = std::env::var("VALIDATION_REPORT") {
+        std::fs::write(path, &report)?;
+    }
+    println!(
+        "format=PgSchema entities={entities} secs={secs:.3} load_secs={load_secs:.3} validate_secs={validate_secs:.3} conformant={conformant} violations={violations}"
+    );
     Ok(())
 }

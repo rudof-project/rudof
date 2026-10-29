@@ -121,6 +121,7 @@ impl ShaclToUnified {
             properties,
             closed,
             ignored_properties,
+            labels: Vec::new(),
         }
     }
 

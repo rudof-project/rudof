@@ -90,6 +90,7 @@ impl ShExToUnified {
             properties,
             closed,
             ignored_properties: Vec::new(),
+            labels: Vec::new(),
         }
     }
 

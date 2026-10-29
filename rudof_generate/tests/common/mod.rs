@@ -35,6 +35,10 @@ impl Fixture {
         Self::new("schema.ttl", body, SchemaFormat::Shacl)
     }
 
+    pub fn pgschema(body: &str) -> Self {
+        Self::new("schema.pgs", body, SchemaFormat::PgSchema)
+    }
+
     fn new(name: &str, body: &str, format: SchemaFormat) -> Self {
         let dir = TempDir::new().expect("temp dir");
         let schema = dir.path().join(name);
@@ -213,4 +217,35 @@ pub fn instances_of(data: &str, class: &str) -> Vec<String> {
     subjects.sort();
     subjects.dedup();
     subjects
+}
+
+/// Validate a property graph (`.pg`) against a PG-Schema (`.pgs`) for every
+/// association of the type map (`.map`), with rudof's PG-Schema validator.
+/// `failing` holds the ids of the nodes and edges that do not conform.
+pub fn validate_pgschema(graph: &str, schema: &str, type_map: &str) -> Verdict {
+    use pgschema::parser::{map_builder::MapBuilder, pg_builder::PgBuilder, pgs_builder::PgsBuilder};
+    let schema = PgsBuilder::new().parse_pgs(schema).expect("PG-Schema parses");
+    let graph = PgBuilder::new().parse_pg(graph).unwrap_or_else(|e| {
+        panic!(
+            "property graph parses: {e}
+{graph}"
+        )
+    });
+    let map = MapBuilder::new().parse_map(type_map).expect("type map parses");
+    let result = map.validate(&schema, &graph).expect("validation runs");
+    let mut verdict = Verdict::default();
+    for association in &result.associations {
+        if association.conforms {
+            verdict.conformant += 1;
+        } else {
+            verdict.violations += 1;
+            verdict.failing.insert(association.node_id.clone());
+            verdict.report.push_str(&format!(
+                "{} @ {}: {:?}
+",
+                association.node_id, association.type_name, association.details
+            ));
+        }
+    }
+    verdict
 }

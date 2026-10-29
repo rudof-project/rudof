@@ -188,8 +188,7 @@ fn evaluate_constraint(
             subject_type
                 .get(&node)
                 .and_then(|s| model.shapes.get(s))
-                .and_then(|s| s.target_class.as_deref())
-                .is_some_and(|c| bare(c) == bare(class))
+                .is_some_and(|s| s.target_class.iter().chain(&s.labels).any(|c| bare(c) == bare(class)))
         },
         UnifiedConstraint::NodeKind(node_kind) => match node_kind {
             NodeKind::Iri => matches!(object, Term::NamedNode(_)),

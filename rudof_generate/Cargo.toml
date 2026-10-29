@@ -29,6 +29,7 @@ regex.workspace = true
 rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+pgschema.workspace = true
 shacl.workspace = true
 shex_ast.workspace = true 
 rudof_rdf.workspace = true
