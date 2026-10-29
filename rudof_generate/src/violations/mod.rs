@@ -280,6 +280,10 @@ fn apply(
             ViolationOperator::TrapLanguageCase => relabel_language(prop, &values, |t| t.to_ascii_uppercase(), false),
             ViolationOperator::TrapLanguageSubtag => relabel_language(prop, &values, |t| format!("{t}-zz"), true),
             ViolationOperator::TrapNumericLexical => numeric_lexical_variant(prop, &values),
+            ViolationOperator::LangStringForString => lang_string_for_string(prop, &values),
+            ViolationOperator::DerivedDatatype => derived_datatype(prop, &values),
+            ViolationOperator::LookalikeValue => lookalike_value(prop, &values),
+            ViolationOperator::TrapDecimalLexical => decimal_lexical_variant(prop, &values),
         };
         if let Some(mutation) = replacement {
             mutation.apply(triples, node, &prop.property_iri, &values);
@@ -444,15 +448,8 @@ fn relabel_language(
         .then(|| Mutation::ReplaceFirst(tagged(&lexical, &new_tag)))
 }
 
-/// Same integer value, non-canonical lexical form: a leading zero after the sign.
-/// Only under numeric range facets, and never where a pattern, value set or
-/// length facet reads the lexical form (there it would be a real change).
-fn numeric_lexical_variant(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
-    let datatype = datatype_of(prop)?;
-    if datatype != format!("{XSD}integer") {
-        return None;
-    }
-    let ranged = prop.constraints.iter().any(|c| {
+fn has_range(prop: &UnifiedPropertyConstraint) -> bool {
+    prop.constraints.iter().any(|c| {
         matches!(
             c,
             UnifiedConstraint::MinInclusive(_)
@@ -460,30 +457,142 @@ fn numeric_lexical_variant(prop: &UnifiedPropertyConstraint, values: &[Term]) ->
                 | UnifiedConstraint::MinExclusive(_)
                 | UnifiedConstraint::MaxExclusive(_)
         )
-    });
-    let lexical_read = prop.constraints.iter().any(|c| {
+    })
+}
+
+/// Constraints that compare a value's term (value sets, language tags) rather
+/// than its lexical form or value; changing the term would break them too.
+fn compares_terms(prop: &UnifiedPropertyConstraint) -> bool {
+    prop.constraints.iter().any(|c| {
         matches!(
             c,
-            UnifiedConstraint::Pattern(_)
-                | UnifiedConstraint::In(_)
+            UnifiedConstraint::In(_)
                 | UnifiedConstraint::HasValue(_)
-                | UnifiedConstraint::MinLength(_)
-                | UnifiedConstraint::MaxLength(_)
+                | UnifiedConstraint::Language { .. }
+                | UnifiedConstraint::UniqueLang
         )
-    });
-    if !ranged || lexical_read {
+    })
+}
+
+/// Constraints that read the lexical form; a lexical variant would be a real change there.
+fn reads_lexical_form(prop: &UnifiedPropertyConstraint) -> bool {
+    compares_terms(prop)
+        || prop.constraints.iter().any(|c| {
+            matches!(
+                c,
+                UnifiedConstraint::Pattern(_) | UnifiedConstraint::MinLength(_) | UnifiedConstraint::MaxLength(_)
+            )
+        })
+}
+
+/// The first value's lexical form, if it is a literal.
+fn first_lexical(values: &[Term]) -> Option<&str> {
+    match values.first()? {
+        Term::Literal(lit) => Some(lit.value()),
+        _ => None,
+    }
+}
+
+/// Same integer value, non-canonical lexical form: a leading zero after the sign.
+/// Only under numeric range facets, and never where a pattern, value set or
+/// length facet reads the lexical form (there it would be a real change).
+fn numeric_lexical_variant(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    let datatype = datatype_of(prop)?;
+    if datatype != format!("{XSD}integer") || !has_range(prop) || reads_lexical_form(prop) {
         return None;
     }
-    let Term::Literal(lit) = values.first()? else {
-        return None;
-    };
-    let lexical = lit.value();
+    let lexical = first_lexical(values)?;
     lexical.parse::<i64>().ok()?;
     let variant = match lexical.strip_prefix('-') {
         Some(digits) => format!("-0{digits}"),
         None => format!("0{}", lexical.trim_start_matches('+')),
     };
     Some(Mutation::ReplaceFirst(typed(&variant, datatype)))
+}
+
+/// Same decimal value with a trailing fractional zero (`3.5` -> `3.50`, `3` -> `3.0`).
+fn decimal_lexical_variant(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    let datatype = datatype_of(prop)?;
+    if datatype != format!("{XSD}decimal") || !has_range(prop) || reads_lexical_form(prop) {
+        return None;
+    }
+    let lexical = first_lexical(values)?;
+    let is_decimal = !lexical.is_empty()
+        && lexical.chars().all(|c| c.is_ascii_digit() || "+-.".contains(c))
+        && lexical.parse::<f64>().is_ok();
+    if !is_decimal {
+        return None;
+    }
+    let variant = if lexical.contains('.') {
+        format!("{lexical}0")
+    } else {
+        format!("{lexical}.0")
+    };
+    Some(Mutation::ReplaceFirst(typed(&variant, datatype)))
+}
+
+/// `"ABC"@en` where `xsd:string` is required. Patterns and length facets read the
+/// lexical form, which is kept, so the datatype is the only constraint broken.
+fn lang_string_for_string(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    if datatype_of(prop)? != format!("{XSD}string") || compares_terms(prop) {
+        return None;
+    }
+    Some(Mutation::ReplaceFirst(tagged(first_lexical(values)?, "en")))
+}
+
+/// A datatype derived from `datatype` by restriction, with the lexical forms it
+/// accepts; `None` where no derived type keeps every value.
+fn derived_datatype_of(datatype: &str, lexical: &str) -> Option<&'static str> {
+    match datatype.strip_prefix(XSD)? {
+        "integer" => lexical.parse::<i32>().is_ok().then_some("int"),
+        "decimal" => lexical.parse::<i64>().is_ok().then_some("integer"),
+        "string" => (!lexical.contains(|c: char| c.is_ascii_control())).then_some("normalizedString"),
+        _ => None,
+    }
+}
+
+fn derived_datatype(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    let datatype = datatype_of(prop)?;
+    if compares_terms(prop) {
+        return None;
+    }
+    let lexical = first_lexical(values)?;
+    let derived = derived_datatype_of(datatype, lexical)?;
+    Some(Mutation::ReplaceFirst(typed(lexical, &format!("{XSD}{derived}"))))
+}
+
+/// The text of a value-set member, as `lookalike_value` compares it.
+fn member_text(value: &Value) -> Option<&str> {
+    match value {
+        Value::Iri(iri) => Some(iri.as_str()),
+        Value::Literal(lexical, _) => Some(lexical.as_str()),
+        Value::BlankNode(_) => None,
+    }
+}
+
+/// A term with the same text as the current value (a member of the value set) but
+/// not equal to it: an IRI becomes a string, a typed literal or a language-tagged
+/// string loses its datatype or tag, a string gains a tag.
+fn lookalike_value(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    let members = prop.constraints.iter().find_map(|c| match c {
+        UnifiedConstraint::In(members) if !members.is_empty() => Some(members),
+        _ => None,
+    })?;
+    // Any other constraint could be broken by the new term as well.
+    if prop.constraints.iter().any(|c| !matches!(c, UnifiedConstraint::In(_))) {
+        return None;
+    }
+    let (text, term) = match values.first()? {
+        Term::NamedNode(iri) => (iri.as_str(), Term::Literal(Literal::new_simple_literal(iri.as_str()))),
+        Term::Literal(lit) if lit.language().is_none() && lit.datatype().as_str() == format!("{XSD}string") => {
+            (lit.value(), tagged(lit.value(), "en"))
+        },
+        Term::Literal(lit) => (lit.value(), Term::Literal(Literal::new_simple_literal(lit.value()))),
+        _ => return None,
+    };
+    // With two members of the same text, the lookalike might be the other one.
+    let same_text = members.iter().filter(|m| member_text(m) == Some(text)).count();
+    (same_text == 1).then_some(Mutation::ReplaceFirst(term))
 }
 
 fn integer_bound(value: &Value) -> Option<i64> {

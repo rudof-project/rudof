@@ -133,6 +133,15 @@ pub enum ViolationOperator {
     WrongLanguage,
     /// Add a value with an already used tag to a `sh:uniqueLang` property.
     DuplicateLanguage,
+    /// Replace a string with a language-tagged string of the same lexical form
+    /// where `xsd:string` is required (`rdf:langString` is a different datatype).
+    LangStringForString,
+    /// Retype a value with a datatype derived from the declared one
+    /// (`xsd:int` for `xsd:integer`); datatype tests compare IRIs, not the hierarchy.
+    DerivedDatatype,
+    /// Replace a value-set member with a different term of the same text
+    /// (the literal `"http://ex/A"` for the IRI `<http://ex/A>`, `"1"` for `1`).
+    LookalikeValue,
     /// Trap (not a violation): change a tag's case (`en` -> `EN`); tags compare
     /// case-insensitively, so a validator that reports it is wrong.
     TrapLanguageCase,
@@ -142,10 +151,13 @@ pub enum ViolationOperator {
     /// Trap (not a violation): rewrite an integer under a numeric range facet with
     /// an equal but non-canonical lexical form (`18` -> `018`); facets compare values.
     TrapNumericLexical,
+    /// Trap (not a violation): add a trailing fractional zero to a decimal under a
+    /// numeric range facet (`3.5` -> `3.50`); the value is unchanged.
+    TrapDecimalLexical,
 }
 
 impl ViolationOperator {
-    pub const ALL: [ViolationOperator; 14] = [
+    pub const ALL: [ViolationOperator; 18] = [
         Self::DropRequired,
         Self::ExceedMax,
         Self::WrongDatatype,
@@ -157,16 +169,20 @@ impl ViolationOperator {
         Self::ClosedExtra,
         Self::WrongLanguage,
         Self::DuplicateLanguage,
+        Self::LangStringForString,
+        Self::DerivedDatatype,
+        Self::LookalikeValue,
         Self::TrapLanguageCase,
         Self::TrapLanguageSubtag,
         Self::TrapNumericLexical,
+        Self::TrapDecimalLexical,
     ];
 
     /// A trap changes the data without making it invalid.
     pub fn is_trap(self) -> bool {
         matches!(
             self,
-            Self::TrapLanguageCase | Self::TrapLanguageSubtag | Self::TrapNumericLexical
+            Self::TrapLanguageCase | Self::TrapLanguageSubtag | Self::TrapNumericLexical | Self::TrapDecimalLexical
         )
     }
 
@@ -187,6 +203,10 @@ impl ViolationOperator {
             Self::TrapLanguageCase => "trap-language-case",
             Self::TrapLanguageSubtag => "trap-language-subtag",
             Self::TrapNumericLexical => "trap-numeric-lexical",
+            Self::LangStringForString => "lang-string-for-string",
+            Self::DerivedDatatype => "derived-datatype",
+            Self::LookalikeValue => "lookalike-value",
+            Self::TrapDecimalLexical => "trap-decimal-lexical",
         }
     }
 

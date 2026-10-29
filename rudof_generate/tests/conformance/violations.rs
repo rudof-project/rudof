@@ -121,7 +121,7 @@ ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
     )
 }
 
-const OPERATORS: [&str; 7] = [
+const OPERATORS: [&str; 10] = [
     "drop-required",
     "exceed-max",
     "wrong-datatype",
@@ -129,6 +129,9 @@ const OPERATORS: [&str; 7] = [
     "out-of-range",
     "not-in-value-set",
     "pattern-break",
+    "lang-string-for-string",
+    "derived-datatype",
+    "lookalike-value",
 ];
 
 #[tokio::test]
@@ -407,6 +410,65 @@ async fn numeric_ranges_compare_values_not_lexical_forms() {
         "a non-canonical lexical form was planted\n{}",
         r.data
     );
+    let v = validate_shacl(&r.data, &shapes);
+    assert!(v.failing.is_empty(), "{}\n{}", v.report, r.data);
+}
+
+/// One-property schemas whose value set holds IRIs, integers or strings.
+fn value_set_schemas() -> Vec<(String, String)> {
+    let shacl = |members: &str| {
+        format!(
+            r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <{EX}> .
+ex:ThingShape a sh:NodeShape ; sh:targetClass ex:Thing ;
+  sh:property [ sh:path ex:kind ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( {members} ) ] .
+"#
+        )
+    };
+    let shex = |members: &str| format!("PREFIX ex: <{EX}>\nex:ThingShape {{ a [ex:Thing] ; ex:kind [{members}] }}");
+    ["ex:A ex:B", "1 2", "\"active\" \"retired\""]
+        .into_iter()
+        .map(|m| (shex(m), shacl(m)))
+        .collect()
+}
+
+#[tokio::test]
+async fn a_lookalike_of_a_value_set_member_is_not_a_member() {
+    // Same text, different term: "http://...A" for <...A>, "1" for 1, "active"@en for "active".
+    let ops = "rate = 1.0\noperators = [\"lookalike-value\"]";
+    for (shex, shacl) in value_set_schemas() {
+        assert_shex_exact(&shex, ops, "lookalike-value").await;
+        assert_shacl_exact(&shacl, ops, "lookalike-value").await;
+    }
+}
+
+const SHEX_SCORE: &str = r#"PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ex:ThingShape { a [ex:Thing] ; ex:score xsd:decimal MININCLUSIVE 0 MAXINCLUSIVE 10 }"#;
+
+fn shacl_score() -> String {
+    format!(
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <{EX}> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:ThingShape a sh:NodeShape ; sh:targetClass ex:Thing ;
+  sh:property [ sh:path ex:score ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ;
+                sh:minInclusive 0 ; sh:maxInclusive 10 ] .
+"#
+    )
+}
+
+#[tokio::test]
+async fn decimal_ranges_compare_values_not_trailing_zeros() {
+    assert_trap_not_reported_shex(SHEX_SCORE, "trap-decimal-lexical").await;
+    let shapes = shacl_score();
+    let r = run(
+        Fixture::shacl(&shapes),
+        "rate = 1.0\noperators = [\"trap-decimal-lexical\"]",
+        8,
+    )
+    .await;
+    assert!(!r.traps().is_empty(), "{}", r.data);
     let v = validate_shacl(&r.data, &shapes);
     assert!(v.failing.is_empty(), "{}\n{}", v.report, r.data);
 }
