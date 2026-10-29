@@ -380,3 +380,37 @@ async fn shacl_closed_shape_with_ignored_rdf_type_conforms() {
     )
     .await;
 }
+
+// ---------------------------------------------------------------- language tags
+
+#[tokio::test]
+async fn shacl_language_in_conforms() {
+    assert_shacl_conforms(
+        &format!(
+            "{SHACL_PERSON}\n  sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:languageIn ( \"en\" \"es\" ) ] ."
+        ),
+        keep,
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn shacl_unique_lang_with_several_values_conforms() {
+    assert_shacl_conforms(
+        &format!(
+            "{SHACL_PERSON}\n  sh:property [ sh:path ex:label ; sh:minCount 2 ; sh:maxCount 2 ; sh:languageIn ( \"en\" \"es\" \"fr\" ) ; sh:uniqueLang true ] ."
+        ),
+        keep,
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn shex_language_value_set_conforms() {
+    assert_shex_conforms("ex:PersonShape { a [ex:Person] ; ex:label [@en @es] {1,2} }", keep).await;
+}
+
+#[tokio::test]
+async fn shex_language_stem_conforms() {
+    assert_shex_conforms("ex:PersonShape { a [ex:Person] ; ex:label [@en~] }", keep).await;
+}

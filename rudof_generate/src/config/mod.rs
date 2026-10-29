@@ -129,10 +129,20 @@ pub enum ViolationOperator {
     DanglingReference,
     /// Add a property a closed shape does not allow.
     ClosedExtra,
+    /// Give a language-constrained value a tag outside the admissible ones.
+    WrongLanguage,
+    /// Add a value with an already used tag to a `sh:uniqueLang` property.
+    DuplicateLanguage,
+    /// Trap (not a violation): change a tag's case (`en` -> `EN`); tags compare
+    /// case-insensitively, so a validator that reports it is wrong.
+    TrapLanguageCase,
+    /// Trap (not a violation): extend a tag with a subtag (`en` -> `en-zz`) where
+    /// the constraint matches language ranges.
+    TrapLanguageSubtag,
 }
 
 impl ViolationOperator {
-    pub const ALL: [ViolationOperator; 9] = [
+    pub const ALL: [ViolationOperator; 13] = [
         Self::DropRequired,
         Self::ExceedMax,
         Self::WrongDatatype,
@@ -142,7 +152,16 @@ impl ViolationOperator {
         Self::PatternBreak,
         Self::DanglingReference,
         Self::ClosedExtra,
+        Self::WrongLanguage,
+        Self::DuplicateLanguage,
+        Self::TrapLanguageCase,
+        Self::TrapLanguageSubtag,
     ];
+
+    /// A trap changes the data without making it invalid.
+    pub fn is_trap(self) -> bool {
+        matches!(self, Self::TrapLanguageCase | Self::TrapLanguageSubtag)
+    }
 
     /// The name used in configs and labels.
     pub fn name(self) -> &'static str {
@@ -156,6 +175,10 @@ impl ViolationOperator {
             Self::PatternBreak => "pattern-break",
             Self::DanglingReference => "dangling-reference",
             Self::ClosedExtra => "closed-extra",
+            Self::WrongLanguage => "wrong-language",
+            Self::DuplicateLanguage => "duplicate-language",
+            Self::TrapLanguageCase => "trap-language-case",
+            Self::TrapLanguageSubtag => "trap-language-subtag",
         }
     }
 

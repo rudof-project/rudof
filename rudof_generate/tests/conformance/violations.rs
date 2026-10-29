@@ -18,11 +18,17 @@ struct Run {
 
 impl Run {
     /// Nodes the labels say must fail (direct and induced), in `<iri>` form.
+    /// Trap labels mark changes that must NOT be reported.
     fn expected_failing(&self) -> BTreeSet<String> {
         self.labels
             .iter()
+            .filter(|l| l["kind"] != "trap")
             .map(|l| format!("<{}>", l["node"].as_str().unwrap()))
             .collect()
+    }
+
+    fn traps(&self) -> Vec<&Value> {
+        self.labels.iter().filter(|l| l["kind"] == "trap").collect()
     }
 
     fn direct(&self) -> Vec<&Value> {
@@ -254,4 +260,132 @@ async fn closed_extra_does_not_apply_to_open_shapes() {
         "open shapes allow extra properties: {:?}",
         r.labels
     );
+}
+
+const SHEX_LANG: &str = r#"PREFIX ex: <http://example.org/>
+ex:PersonShape { a [ex:Person] ; ex:label [@en @es] }"#;
+
+const SHEX_LANG_STEM: &str = r#"PREFIX ex: <http://example.org/>
+ex:PersonShape { a [ex:Person] ; ex:label [@en~] }"#;
+
+fn shacl_lang() -> String {
+    format!(
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <{EX}> .
+ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
+  sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:languageIn ( "en" "es" ) ; sh:uniqueLang true ] .
+"#
+    )
+}
+
+#[tokio::test]
+async fn wrong_language_is_exact_in_shex_and_shacl() {
+    assert_shex_exact(
+        SHEX_LANG,
+        "rate = 1.0
+operators = [\"wrong-language\"]",
+        "wrong-language",
+    )
+    .await;
+    assert_shacl_exact(
+        &shacl_lang(),
+        "rate = 1.0
+operators = [\"wrong-language\"]",
+        "wrong-language",
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn duplicate_language_breaks_unique_lang() {
+    assert_shacl_exact(
+        &shacl_lang(),
+        "rate = 1.0
+operators = [\"duplicate-language\"]",
+        "duplicate-language",
+    )
+    .await;
+}
+
+/// A trap changes the data without breaking it; reporting it is a false positive.
+async fn assert_trap_not_reported_shex(schema: &str, operator: &str) {
+    let r = run(
+        Fixture::shex(schema),
+        &format!(
+            "rate = 1.0
+operators = [\"{operator}\"]"
+        ),
+        8,
+    )
+    .await;
+    assert!(
+        !r.traps().is_empty(),
+        "no trap planted for {operator}
+{}",
+        r.data
+    );
+    let v = validate_shex(&r.data, schema, &r.shapemap);
+    assert!(
+        v.failing.is_empty(),
+        "{operator} must not be reported
+{}
+{}",
+        v.report,
+        r.data
+    );
+}
+
+#[tokio::test]
+async fn language_tags_compare_case_insensitively() {
+    assert_trap_not_reported_shex(SHEX_LANG, "trap-language-case").await;
+    let r = run(
+        Fixture::shacl(&shacl_lang()),
+        "rate = 1.0
+operators = [\"trap-language-case\"]",
+        8,
+    )
+    .await;
+    assert!(!r.traps().is_empty(), "{}", r.data);
+    let v = validate_shacl(&r.data, &shacl_lang());
+    assert!(
+        v.failing.is_empty(),
+        "{}
+{}",
+        v.report,
+        r.data
+    );
+}
+
+#[tokio::test]
+async fn a_language_range_accepts_subtags() {
+    assert_trap_not_reported_shex(SHEX_LANG_STEM, "trap-language-subtag").await;
+    let r = run(
+        Fixture::shacl(&shacl_lang()),
+        "rate = 1.0
+operators = [\"trap-language-subtag\"]",
+        8,
+    )
+    .await;
+    assert!(!r.traps().is_empty(), "{}", r.data);
+    let v = validate_shacl(&r.data, &shacl_lang());
+    assert!(
+        v.failing.is_empty(),
+        "{}
+{}",
+        v.report,
+        r.data
+    );
+}
+
+#[tokio::test]
+async fn an_exact_language_tag_rejects_subtags_so_no_trap_is_planted() {
+    // ShEx [@en] matches the tag exactly: en-GB would be a real violation, not a trap.
+    let r = run(
+        Fixture::shex(SHEX_LANG),
+        "rate = 1.0
+operators = [\"trap-language-subtag\"]",
+        6,
+    )
+    .await;
+    assert!(r.labels.is_empty(), "{:?}", r.labels);
 }

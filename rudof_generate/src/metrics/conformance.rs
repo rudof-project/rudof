@@ -192,6 +192,14 @@ fn evaluate_constraint(
         UnifiedConstraint::MaxInclusive(bound) => compare_numeric(object, bound, |v, b| v <= b),
         UnifiedConstraint::MinExclusive(bound) => compare_numeric(object, bound, |v, b| v > b),
         UnifiedConstraint::MaxExclusive(bound) => compare_numeric(object, bound, |v, b| v < b),
+        UnifiedConstraint::Language { tags, ranges } => match object {
+            Term::Literal(lit) => lit
+                .language()
+                .is_some_and(|tag| crate::ir::language_matches(tag, tags, *ranges)),
+            _ => false,
+        },
+        // A property-level condition over all values, not one triple.
+        UnifiedConstraint::UniqueLang => true,
         UnifiedConstraint::MinLength(min) => match object {
             Term::Literal(lit) => lit.value().chars().count() >= *min as usize,
             _ => false,

@@ -293,6 +293,9 @@ impl ShExToUnified {
             if let Some(members) = members.filter(|m| !m.is_empty()) {
                 metrics.represented_constraints_in_unified += 1;
                 constraints.push(UnifiedConstraint::In(members));
+            } else if let Some(language) = Self::language_value_set(&values) {
+                metrics.represented_constraints_in_unified += 1;
+                constraints.push(language);
             }
         }
 
@@ -307,6 +310,34 @@ impl ShExToUnified {
 
         // Basic constraint extraction - simplified for now
         // TODO: Add proper facet and value extraction when needed
+    }
+
+    /// A value set made only of language tags (`[@en @es]`) or only of
+    /// language stems (`[@en~]`); mixtures and exclusions stay untranslated.
+    fn language_value_set(values: &[ValueSetValue]) -> Option<UnifiedConstraint> {
+        use shex_ast::ast::LangOrWildcard;
+        let exact: Option<Vec<String>> = values
+            .iter()
+            .map(|v| match v {
+                ValueSetValue::Language { language_tag } => Some(language_tag.as_str().to_string()),
+                _ => None,
+            })
+            .collect();
+        if let Some(tags) = exact.filter(|t| !t.is_empty()) {
+            return Some(UnifiedConstraint::Language { tags, ranges: false });
+        }
+        let stems: Option<Vec<String>> = values
+            .iter()
+            .map(|v| match v {
+                ValueSetValue::LanguageStem {
+                    stem: LangOrWildcard::Lang(lang),
+                } => Some(lang.as_str().to_string()),
+                _ => None,
+            })
+            .collect();
+        stems
+            .filter(|t| !t.is_empty())
+            .map(|tags| UnifiedConstraint::Language { tags, ranges: true })
     }
 
     fn try_convert_xs_facet(&self, facet: &XsFacet, constraints: &mut Vec<UnifiedConstraint>) -> bool {

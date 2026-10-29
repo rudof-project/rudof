@@ -44,6 +44,16 @@ pub enum UnifiedConstraint {
     MaxLength(u32),
     In(Vec<Value>),
     HasValue(Value),
+    /// Values are literals tagged with one of `tags`. With `ranges` a tag also
+    /// admits its subtags (`en` accepts `en-GB`), as in SHACL `sh:languageIn` and
+    /// ShEx `[@en~]`; without, the tag must match exactly (ShEx `[@en]`).
+    /// Tags compare case-insensitively in both cases.
+    Language {
+        tags: Vec<String>,
+        ranges: bool,
+    },
+    /// No two values share a language tag (SHACL `sh:uniqueLang true`).
+    UniqueLang,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -101,4 +111,21 @@ impl Default for UnifiedConstraintModel {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Whether a literal's language `tag` satisfies a [`UnifiedConstraint::Language`].
+///
+/// Tags compare case-insensitively (RDF 1.1, BCP 47). With `ranges`, a tag matches a
+/// range when it equals it or extends it with `-subtags` (RFC 4647 basic filtering,
+/// as `sh:languageIn` and ShEx language stems use); `*` matches any tag.
+pub fn language_matches(tag: &str, tags: &[String], ranges: bool) -> bool {
+    let tag = tag.to_ascii_lowercase();
+    tags.iter().any(|t| {
+        let t = t.to_ascii_lowercase();
+        if ranges {
+            t == "*" || tag == t || tag.starts_with(&format!("{t}-"))
+        } else {
+            tag == t
+        }
+    })
 }

@@ -31,8 +31,9 @@ pub const UNDECLARED_PROPERTY: &str = "http://rudof.example/violations#undeclare
 pub struct ViolationLabel {
     pub node: String,
     pub shape: String,
-    /// `"direct"` (a constraint of this node was broken) or `"induced"` (it
-    /// references, through `property`, a node that fails).
+    /// `"direct"` (a constraint of this node was broken), `"induced"` (it
+    /// references, through `property`, a node that fails) or `"trap"` (the node
+    /// was changed in a way that keeps it valid; reporting it is a false positive).
     pub kind: &'static str,
     pub property: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -71,11 +72,13 @@ pub fn inject(
         for k in 0..n {
             let operator = config.operators[(index + k) % n];
             if let Some(property) = apply(operator, &mut graph, node, shape, model) {
-                failing.insert(node.clone());
+                if !operator.is_trap() {
+                    failing.insert(node.clone());
+                }
                 labels.push(ViolationLabel {
                     node: node.clone(),
                     shape: shape_id.clone(),
-                    kind: "direct",
+                    kind: if operator.is_trap() { "trap" } else { "direct" },
                     property,
                     operator: Some(operator.name()),
                     cause: None,
@@ -272,6 +275,10 @@ fn apply(
             ViolationOperator::PatternBreak => pattern_break(prop, &values),
             ViolationOperator::DanglingReference => dangling_reference(prop, &values, node, model),
             ViolationOperator::ClosedExtra => None,
+            ViolationOperator::WrongLanguage => wrong_language(prop, &values),
+            ViolationOperator::DuplicateLanguage => duplicate_language(prop, &values),
+            ViolationOperator::TrapLanguageCase => relabel_language(prop, &values, |t| t.to_ascii_uppercase(), false),
+            ViolationOperator::TrapLanguageSubtag => relabel_language(prop, &values, |t| format!("{t}-zz"), true),
         };
         if let Some(mutation) = replacement {
             mutation.apply(triples, node, &prop.property_iri, &values);
@@ -375,6 +382,65 @@ fn ill_typed_literal(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Optio
     let datatype = datatype_of(prop)?;
     let lexical = invalid_lexical_form(datatype)?;
     Some(Mutation::ReplaceFirst(typed(lexical, datatype)))
+}
+
+fn language_constraint(prop: &UnifiedPropertyConstraint) -> Option<(&[String], bool)> {
+    prop.constraints.iter().find_map(|c| match c {
+        UnifiedConstraint::Language { tags, ranges } if !tags.is_empty() => Some((tags.as_slice(), *ranges)),
+        _ => None,
+    })
+}
+
+fn tagged(lexical: &str, tag: &str) -> Term {
+    Term::Literal(Literal::new_language_tagged_literal_unchecked(lexical, tag))
+}
+
+/// The first value as (lexical form, tag), if it is a language-tagged literal.
+fn first_tagged(values: &[Term]) -> Option<(String, String)> {
+    match values.first()? {
+        Term::Literal(lit) => lit.language().map(|tag| (lit.value().to_string(), tag.to_string())),
+        _ => None,
+    }
+}
+
+fn wrong_language(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    let (tags, ranges) = language_constraint(prop)?;
+    let (lexical, _) = first_tagged(values)?;
+    let outside = ["zz", "qaa", "qtz"]
+        .into_iter()
+        .find(|t| !crate::ir::language_matches(t, tags, ranges))?;
+    Some(Mutation::ReplaceFirst(tagged(&lexical, outside)))
+}
+
+fn duplicate_language(prop: &UnifiedPropertyConstraint, values: &[Term]) -> Option<Mutation> {
+    prop.constraints
+        .iter()
+        .any(|c| matches!(c, UnifiedConstraint::UniqueLang))
+        .then_some(())?;
+    let (_, tag) = first_tagged(values)?;
+    // Stay within the maximum, so uniqueLang is the only constraint broken.
+    if prop.max_cardinality.is_some_and(|max| values.len() + 1 > max as usize) {
+        return None;
+    }
+    Some(Mutation::Add(vec![tagged("duplicate language", &tag)]))
+}
+
+/// Retag the first value with `retag(tag)`; used by the traps, which must keep
+/// the node valid. `needs_ranges` limits the subtag trap to range matching.
+fn relabel_language(
+    prop: &UnifiedPropertyConstraint,
+    values: &[Term],
+    retag: impl Fn(&str) -> String,
+    needs_ranges: bool,
+) -> Option<Mutation> {
+    let (tags, ranges) = language_constraint(prop)?;
+    if needs_ranges && !ranges {
+        return None;
+    }
+    let (lexical, tag) = first_tagged(values)?;
+    let new_tag = retag(&tag);
+    (new_tag != tag && crate::ir::language_matches(&new_tag, tags, ranges))
+        .then(|| Mutation::ReplaceFirst(tagged(&lexical, &new_tag)))
 }
 
 fn integer_bound(value: &Value) -> Option<i64> {

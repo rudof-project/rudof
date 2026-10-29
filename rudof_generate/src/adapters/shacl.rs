@@ -234,6 +234,17 @@ impl ShaclToUnified {
                 constraints.push(UnifiedConstraint::Pattern(pattern.clone()));
                 true
             },
+            ASTComponent::LanguageIn(langs) => {
+                constraints.push(UnifiedConstraint::Language {
+                    tags: langs.iter().map(|l| l.as_str().to_string()).collect(),
+                    ranges: true,
+                });
+                true
+            },
+            ASTComponent::UniqueLang(true) => {
+                constraints.push(UnifiedConstraint::UniqueLang);
+                true
+            },
             ASTComponent::MinLength(min_len) => {
                 constraints.push(UnifiedConstraint::MinLength(*min_len as u32));
                 true

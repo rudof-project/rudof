@@ -277,6 +277,33 @@ impl ParallelGenerator {
     /// Derived from the subject and the property so that it is unique without a
     /// counter, stable under a fixed seed, and recognisable as generated rather
     /// than resolvable.
+    /// The `n`-th value of a language-constrained property: a tagged literal
+    /// whose tag is the `n`-th admissible one.
+    fn language_value(constraints: &[UnifiedConstraint], n: usize) -> Option<Term> {
+        let tags = constraints.iter().find_map(|c| match c {
+            UnifiedConstraint::Language { tags, .. } if !tags.is_empty() => Some(tags),
+            _ => None,
+        })?;
+        let tag = &tags[n % tags.len()];
+        Some(Term::Literal(Literal::new_language_tagged_literal_unchecked(
+            format!("text {n}"),
+            tag.to_ascii_lowercase(),
+        )))
+    }
+
+    /// With `sh:uniqueLang`, an entity can carry at most one value per admissible tag.
+    fn cap_for_unique_lang(constraints: &[UnifiedConstraint], count: usize) -> usize {
+        let unique = constraints.iter().any(|c| matches!(c, UnifiedConstraint::UniqueLang));
+        let tags = constraints.iter().find_map(|c| match c {
+            UnifiedConstraint::Language { tags, .. } => Some(tags.len()),
+            _ => None,
+        });
+        match (unique, tags) {
+            (true, Some(n)) => count.min(n),
+            _ => count,
+        }
+    }
+
     /// The `n`-th admissible value of an enumerated property, if it is one.
     ///
     /// Successive values of one entity take successive members of the set, so a
@@ -461,6 +488,7 @@ impl ParallelGenerator {
                 &config,
                 config.property_rule(shape_id, &property_info.property_iri),
             );
+            let num_values = Self::cap_for_unique_lang(&property_info.constraints, num_values);
 
             // If we decided to include it but calculated 0 values (e.g. random 0..X),
             // force at least 1 if we passed the probability check?
@@ -489,6 +517,14 @@ impl ParallelGenerator {
                         )?;
                         triples.extend(nested_triples);
                     }
+                } else if let Some(term) = Self::language_value(&property_info.constraints, entity_index + value_idx) {
+                    // A language-constrained property: a tagged literal, one tag per
+                    // value in turn, so the values of one entity have distinct tags.
+                    triples.push(Triple::new(
+                        NamedOrBlankNode::NamedNode(entity_node.clone()),
+                        NamedNode::new_unchecked(&property_info.property_iri),
+                        term,
+                    ));
                 } else if let Some(term) = Self::value_from_set(&property_info.constraints, entity_index + value_idx) {
                     // An enumerated property (sh:in, sh:hasValue, ShEx value set):
                     // the schema lists the admissible values, so take one of them
