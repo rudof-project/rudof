@@ -35,8 +35,6 @@ cardinality_strategy = "Balanced"     # How to handle property cardinalities
 # property_fill_probability = 1.0     # Probability (0.0-1.0) to include a property
 #                                     # regardless of schema requirements (unless ignore_min is false)
 
-# ignore_min_cardinality = false      # If true, treats all minCount/min constraints as 0.
-#                                     # Allows skipping "required" properties.
 
 # max_properties_per_instance = 0     # Hard cap on properties per instance (0 = unlimited).
 #                                     # Useful for creating sparse nodes.
@@ -54,14 +52,12 @@ cardinality_strategy = "Balanced"     # How to handle property cardinalities
 
 # --- High Coherence Example (like relational DBs) ---
 # property_fill_probability = 1.0
-# ignore_min_cardinality = false
 # max_properties_per_instance = 0
 # property_selection_strategy = "All"
 # property_count_variance = 0.0
 
 # --- Low Coherence Example (like noisy web data) ---
 # property_fill_probability = 0.35
-# ignore_min_cardinality = true
 # max_properties_per_instance = 6
 # property_selection_strategy = "Random"
 # property_count_variance = 0.7

@@ -289,3 +289,17 @@ fn walk(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
     }
     files
 }
+
+#[test]
+fn the_removed_ignore_min_cardinality_flag_is_rejected_with_a_pointer_to_violations() {
+    for toml in [
+        "[generation]\nignore_min_cardinality = true\n",
+        "[generation.type_overrides.\"http://example.org/S\"]\nignore_min_cardinality = true\n",
+    ] {
+        let err = parse_err(toml);
+        assert!(
+            err.contains("ignore_min_cardinality") && err.contains("violations"),
+            "{err}"
+        );
+    }
+}

@@ -7,7 +7,6 @@ seed = 20260421
 entity_distribution = "Equal"
 cardinality_strategy = "Minimum"
 property_fill_probability = 0.35
-ignore_min_cardinality = true
 max_properties_per_instance = 1
 property_selection_strategy = "Random"
 property_count_variance = 0.7

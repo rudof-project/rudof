@@ -214,9 +214,6 @@ impl ParallelGenerator {
             if let Some(val) = override_config.property_fill_probability {
                 config.property_fill_probability = val;
             }
-            if let Some(val) = override_config.ignore_min_cardinality {
-                config.ignore_min_cardinality = val;
-            }
             if let Some(val) = override_config.max_properties_per_instance {
                 config.max_properties_per_instance = val;
             }
@@ -377,9 +374,7 @@ impl ParallelGenerator {
             }
 
             let min_card = property_info.min_cardinality.unwrap_or(0);
-            let effective_min = if config.ignore_min_cardinality { 0 } else { min_card };
-
-            if effective_min > 0 {
+            if min_card > 0 {
                 mandatory_properties.push(property_info);
             } else {
                 candidates.push(property_info);
@@ -469,7 +464,7 @@ impl ParallelGenerator {
 
             // If we decided to include it but calculated 0 values (e.g. random 0..X),
             // force at least 1 if we passed the probability check?
-            // The spec says "generate property with cardinality >= effective_min".
+            // The spec says "generate property with cardinality >= min_cardinality".
             // calculate_property_value_count respects min_cardinality.
 
             for value_idx in 0..num_values {
@@ -564,9 +559,7 @@ impl ParallelGenerator {
         // this point undeclared -- the ShEx converter has already normalised an
         // omitted cardinality to the `{1,1}` that language defines -- and in
         // SHACL a missing `sh:minCount` is a minimum of zero.
-        let min_card_raw = min_cardinality.unwrap_or(0).max(0) as usize;
-        // Apply ignore_min_cardinality: if true, treat min as 0
-        let min_card = if config.ignore_min_cardinality { 0 } else { min_card_raw };
+        let min_card = min_cardinality.unwrap_or(0).max(0) as usize;
         // An absent maximum means unbounded in both languages -- ShEx `*`/`+`
         // and a SHACL shape with no `sh:maxCount` all arrive here as `None`, as
         // does the explicit `-1` the legacy path uses. A generator has to pick

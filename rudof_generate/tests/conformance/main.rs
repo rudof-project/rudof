@@ -349,12 +349,34 @@ async fn generate_with_validation_reports_shacl_conformance() {
 
 #[tokio::test]
 async fn generate_with_validation_catches_dropped_required_properties() {
-    // ignore_min_cardinality deliberately breaks the schema; the loop must see it.
-    let config = "[generation]\nignore_min_cardinality = true\nproperty_fill_probability = 0.0\n";
+    // Deliberately dropped required properties must be seen by the validation loop.
+    let config = "version = 2\n[violations]\nrate = 1.0\noperators = [\"drop-required\"]\n";
     let outcome = generate_and_validate("s.shex", LIB_SHEX, Some(config)).await;
     assert!(
         !outcome.conforms(),
         "dropped required properties must be reported: {outcome:?}"
     );
     assert_eq!(outcome.violations, 25, "{outcome:?}");
+}
+
+// ---------------------------------------------------------------- closed shapes
+
+#[tokio::test]
+async fn shex_closed_shape_conforms() {
+    assert_shex_conforms(
+        "ex:PersonShape CLOSED { a [ex:Person] ; ex:name xsd:string ; ex:nick xsd:string ? }",
+        keep,
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn shacl_closed_shape_with_ignored_rdf_type_conforms() {
+    assert_shacl_conforms(
+        &format!(
+            "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n{SHACL_PERSON}\n  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;\n  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] ;\n  sh:property [ sh:path ex:nick ; sh:datatype xsd:string ] ."
+        ),
+        keep,
+    )
+    .await;
 }

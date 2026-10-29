@@ -22,6 +22,8 @@ use std::hash::{Hash, Hasher};
 
 const RDF_TYPE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
+/// Predicate used by `closed-extra`; no schema declares or ignores it.
+pub const UNDECLARED_PROPERTY: &str = "http://rudof.example/violations#undeclaredProperty";
 
 /// One ground-truth entry: a node a correct validator must report as failing
 /// against `shape`.
@@ -170,6 +172,16 @@ fn apply(
     shape: &UnifiedShape,
     model: &UnifiedConstraintModel,
 ) -> Option<String> {
+    if operator == ViolationOperator::ClosedExtra {
+        if !shape.closed {
+            return None;
+        }
+        Mutation::Add(vec![Term::Literal(Literal::new_simple_literal(
+            "not allowed by the closed shape",
+        ))])
+        .apply(triples, node, UNDECLARED_PROPERTY, &[]);
+        return Some(UNDECLARED_PROPERTY.to_string());
+    }
     let mut props: Vec<&UnifiedPropertyConstraint> =
         shape.properties.iter().filter(|p| p.property_iri != RDF_TYPE).collect();
     props.sort_by(|a, b| a.property_iri.cmp(&b.property_iri));
@@ -186,6 +198,7 @@ fn apply(
             ViolationOperator::NotInValueSet => not_in_value_set(prop, &values),
             ViolationOperator::PatternBreak => pattern_break(prop, &values),
             ViolationOperator::DanglingReference => dangling_reference(prop, &values, node, model),
+            ViolationOperator::ClosedExtra => None,
         };
         if let Some(mutation) = replacement {
             mutation.apply(triples, node, &prop.property_iri, &values);

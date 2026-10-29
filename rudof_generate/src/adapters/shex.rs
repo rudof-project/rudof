@@ -68,7 +68,11 @@ impl ShExToUnified {
         let shape_id = shape_decl.id.to_string();
         let mut properties = Vec::new();
         let mut target_class = None;
+        let mut closed = false;
 
+        if let ShapeExpr::Shape(s) = &shape_decl.shape_expr {
+            closed = s.is_closed();
+        }
         if let ShapeExpr::Shape(s) = &shape_decl.shape_expr
             && let Some(expr) = &s.expression
         {
@@ -80,7 +84,8 @@ impl ShExToUnified {
             id: shape_id,
             target_class,
             properties,
-            closed: false, // TODO: extract from ShEx closed property if available
+            closed,
+            ignored_properties: Vec::new(),
         }
     }
 

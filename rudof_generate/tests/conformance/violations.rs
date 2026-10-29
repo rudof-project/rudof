@@ -217,3 +217,41 @@ fn the_rate_must_be_a_probability() {
         .to_string();
     assert!(err.contains("rate"), "{err}");
 }
+
+#[tokio::test]
+async fn closed_extra_breaks_closed_shex_shapes_only() {
+    let schema = r#"PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ex:PersonShape CLOSED { a [ex:Person] ; ex:name xsd:string }"#;
+    assert_shex_exact(schema, "rate = 1.0\noperators = [\"closed-extra\"]", "closed-extra").await;
+}
+
+#[tokio::test]
+async fn closed_extra_breaks_closed_shacl_shapes() {
+    let shapes = format!(
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <{EX}> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] .
+"#
+    );
+    assert_shacl_exact(&shapes, "rate = 1.0\noperators = [\"closed-extra\"]", "closed-extra").await;
+}
+
+#[tokio::test]
+async fn closed_extra_does_not_apply_to_open_shapes() {
+    let r = run(
+        Fixture::shex(SHEX_PERSON),
+        "rate = 1.0\noperators = [\"closed-extra\"]",
+        6,
+    )
+    .await;
+    assert!(
+        r.labels.is_empty(),
+        "open shapes allow extra properties: {:?}",
+        r.labels
+    );
+}

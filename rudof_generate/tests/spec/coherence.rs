@@ -83,60 +83,6 @@ ex:PersonShape a sh:NodeShape ;
 
 #[cfg(not(target_family = "wasm"))]
 #[tokio::test]
-async fn test_ignore_min_cardinality() {
-    // 1. Create a SHACL schema with REQUIRED properties (minCount 1)
-    let shacl_schema = r#"
-@prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix ex: <http://example.org/> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-ex:RequiredShape a sh:NodeShape ;
-    sh:targetClass ex:Required ;
-    sh:property [ sh:path ex:req1 ; sh:datatype xsd:integer ; sh:minCount 1 ; ] ;
-    sh:property [ sh:path ex:req2 ; sh:datatype xsd:integer ; sh:minCount 1 ; ] .
-"#;
-
-    let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
-    let output_file = NamedTempFile::new().unwrap();
-
-    // 2. Configure with ignore_min_cardinality = true AND low probability
-    // If it works, we should see MISSING properties despite minCount 1
-    let mut config = GeneratorConfig::default();
-    config.generation.entity_count = 100;
-    config.generation.property_fill_probability = 0.5;
-    config.generation.ignore_min_cardinality = true;
-    config.generation.cardinality_strategy = rudof_generate::config::CardinalityStrategy::Maximum;
-    config.output.path = output_file.path().to_path_buf();
-    config.output.format = OutputFormat::NTriples;
-
-    // 3. Generate
-    let mut generator = DataGenerator::new(config).unwrap();
-    generator.load_shacl_schema(schema_file.path()).await.unwrap();
-    generator.generate().await.unwrap();
-
-    // 4. Verify
-    let output_content = std::fs::read_to_string(output_file.path()).unwrap();
-    let total_triples = output_content.lines().count();
-    let type_triples = output_content
-        .lines()
-        .filter(|l| l.contains("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"))
-        .count();
-    let property_triples = total_triples - type_triples;
-
-    // If minCount was respected, we'd have exactly 200 properties (100 * 2).
-    // With ignore_min_cardinality=true and prob=0.5, we expect ~100 properties.
-    println!("Total property triples (ignore_min=true): {}", property_triples);
-
-    assert!(
-        property_triples < 180,
-        "Should have skipped many required properties. Got: {}",
-        property_triples
-    );
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[tokio::test]
 async fn test_max_properties_per_instance() {
     // 1. Create a SHACL schema with MANY optional properties
     // 20 properties
@@ -445,7 +391,6 @@ ex:ShapeLow a sh:NodeShape ;
         "http://example.org/ShapeLow".to_string(),
         TypeOverrideConfig {
             property_fill_probability: Some(0.0), // Should have NO properties
-            ignore_min_cardinality: None,
             max_properties_per_instance: None,
             property_selection_strategy: None,
             property_count_variance: None,

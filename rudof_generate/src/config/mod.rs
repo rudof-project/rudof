@@ -39,9 +39,6 @@ pub struct GenerationConfig {
     /// Probability (0.0 to 1.0) that a property will be included
     pub property_fill_probability: f64,
 
-    /// Whether to ignore minimum cardinality constraints (treat minCount as 0)
-    pub ignore_min_cardinality: bool,
-
     /// Maximum number of properties per instance (0 = unlimited)
     pub max_properties_per_instance: usize,
 
@@ -130,10 +127,12 @@ pub enum ViolationOperator {
     PatternBreak,
     /// Point a shape reference at a node with no data.
     DanglingReference,
+    /// Add a property a closed shape does not allow.
+    ClosedExtra,
 }
 
 impl ViolationOperator {
-    pub const ALL: [ViolationOperator; 8] = [
+    pub const ALL: [ViolationOperator; 9] = [
         Self::DropRequired,
         Self::ExceedMax,
         Self::WrongDatatype,
@@ -142,6 +141,7 @@ impl ViolationOperator {
         Self::NotInValueSet,
         Self::PatternBreak,
         Self::DanglingReference,
+        Self::ClosedExtra,
     ];
 
     /// The name used in configs and labels.
@@ -155,6 +155,7 @@ impl ViolationOperator {
             Self::NotInValueSet => "not-in-value-set",
             Self::PatternBreak => "pattern-break",
             Self::DanglingReference => "dangling-reference",
+            Self::ClosedExtra => "closed-extra",
         }
     }
 
@@ -204,7 +205,6 @@ impl Default for GenerationConfig {
             cardinality_strategy: CardinalityStrategy::default(),
             schema_format: None,
             property_fill_probability: 1.0,
-            ignore_min_cardinality: false,
             max_properties_per_instance: 0,
             property_selection_strategy: PropertySelectionStrategy::default(),
             property_count_variance: 0.0,
@@ -231,7 +231,6 @@ pub enum PropertySelectionStrategy {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TypeOverrideConfig {
     pub property_fill_probability: Option<f64>,
-    pub ignore_min_cardinality: Option<bool>,
     pub max_properties_per_instance: Option<usize>,
     pub property_selection_strategy: Option<PropertySelectionStrategy>,
     pub property_count_variance: Option<f64>,
@@ -439,6 +438,24 @@ impl OutputConfig {
     }
 }
 
+/// v1 keys that were removed. A v1 file is not parsed strictly, so without this
+/// check they would be ignored silently and the run would do something else
+/// than the file says.
+fn reject_removed_v1_keys(table: &toml::Table) -> Result<()> {
+    const MESSAGE: &str = "`ignore_min_cardinality` was removed: it silently produced data that violates the schema. To break required properties on purpose, use a v2 config with `[violations] operators = [\"drop-required\"]`, which also writes ground-truth labels";
+    let Some(generation) = table.get("generation").and_then(|g| g.as_table()) else {
+        return Ok(());
+    };
+    let in_overrides = generation
+        .get("type_overrides")
+        .and_then(|o| o.as_table())
+        .is_some_and(|o| o.values().any(|v| v.get("ignore_min_cardinality").is_some()));
+    if generation.contains_key("ignore_min_cardinality") || in_overrides {
+        return Err(crate::DataGeneratorError::Config(MESSAGE.to_string()));
+    }
+    Ok(())
+}
+
 impl GeneratorConfig {
     /// Load configuration from a TOML file (v2 when it declares `version`, v1 otherwise).
     pub fn from_toml_file<P: AsRef<Path>>(path: P) -> Result<Self> {
@@ -455,6 +472,7 @@ impl GeneratorConfig {
             return v2::ConfigV2::parse(content)?.lower();
         }
         tracing::warn!("generator config v1 is deprecated; add `version = 2` and see the v2 format");
+        reject_removed_v1_keys(&table)?;
         Ok(toml::from_str(content)?)
     }
 

@@ -94,15 +94,28 @@ impl ShaclToUnified {
             }
         }
 
-        // Get closed information from components (currently not available in AST)
-        let closed = false; // TODO: Extract from components when available
-        let _ignored_properties: Vec<String> = Vec::new(); // TODO: Handle ignored properties
+        let (closed, ignored_properties) = node_shape
+            .components()
+            .iter()
+            .find_map(|c| match c {
+                ASTComponent::Closed {
+                    is_closed,
+                    ignored_properties,
+                } => {
+                    let mut ignored: Vec<String> = ignored_properties.iter().map(|i| i.as_str().to_string()).collect();
+                    ignored.sort();
+                    Some((*is_closed, ignored))
+                },
+                _ => None,
+            })
+            .unwrap_or((false, Vec::new()));
 
         UnifiedShape {
             id: shape_id,
             target_class,
             properties,
             closed,
+            ignored_properties,
         }
     }
 

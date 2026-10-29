@@ -11,7 +11,7 @@ A modern, configurable synthetic RDF data generator that creates realistic data 
 - **ShEx and SHACL schema support**: Generate data that conforms to both ShEx shape definitions and SHACL constraints
 - **Auto-detection**: Automatically detect schema format based on file extension
 - **Output formats**: Turtle and N-Triples
-- **Cardinality control**: Configure minimum cardinality enforcement with `ignore_min_cardinality` flag to generate sparse or complete datasets
+- **Cardinality control**: minimum cardinalities are always respected; optional properties are controlled with `fill`, and deliberate violations (with ground-truth labels) with the `[violations]` section
 - **Coherence measurement**: Generate datasets with controllable coherence levels and measure RDF coherence metrics
 
 ## Quick Start

@@ -13,7 +13,13 @@ pub struct UnifiedShape {
     pub id: String,
     pub target_class: Option<String>,
     pub properties: Vec<UnifiedPropertyConstraint>,
+    /// No property other than the declared ones (and `ignored_properties`) may
+    /// appear on an instance: ShEx `CLOSED`, SHACL `sh:closed true`.
     pub closed: bool,
+    /// Properties a closed shape tolerates without declaring them
+    /// (SHACL `sh:ignoredProperties`).
+    #[serde(default)]
+    pub ignored_properties: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -389,7 +389,6 @@ cardinality_strategy = "Balanced"
 
 # Coherence settings
 property_fill_probability = 0.5
-ignore_min_cardinality = true
 max_properties_per_instance = 5
 property_selection_strategy = "Random"
 property_count_variance = 0.2
@@ -428,7 +427,6 @@ parallel_fields = true
 
     // Verify coherence settings
     assert_eq!(config.generation.property_fill_probability, 0.5);
-    assert!(config.generation.ignore_min_cardinality);
     assert_eq!(config.generation.max_properties_per_instance, 5);
     assert_eq!(
         config.generation.property_selection_strategy,
@@ -451,5 +449,4 @@ parallel_fields = true
         .expect("Should have override for Student");
     assert_eq!(student_override.property_fill_probability, Some(0.8));
     assert_eq!(student_override.max_properties_per_instance, Some(10));
-    assert_eq!(student_override.ignore_min_cardinality, None);
 }
