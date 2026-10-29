@@ -6,7 +6,7 @@
 //!     <schema.shex|schema.ttl> <out.ttl> [generator-config.toml] [entities] [seed] [fill]
 //! ```
 //!
-//! Prints one line: `format=… entities=… secs=… conformant=… violations=…`,
+//! Prints one line: `format=… entities=… secs=… load_secs=… validate_secs=… conformant=… violations=…`,
 //! followed by the most frequent violation reasons.
 
 #[cfg(target_family = "wasm")]
@@ -59,13 +59,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let schema_text = std::fs::read_to_string(&schema)?;
 
-    let validation_started = Instant::now();
+    // Parsing the data is timed apart, so that validate_secs compares with validators
+    // that are timed on an already parsed graph.
+    let load_started = Instant::now();
     let mut rudof = Rudof::new(RudofConfig::default());
     rudof
         .load_data()
         .with_data(&[InputSpec::path(&output)])
         .with_data_format(&DataFormat::Turtle)
         .execute()?;
+    let load_secs = load_started.elapsed().as_secs_f64();
+
+    let validation_started = Instant::now();
 
     let mut reasons: BTreeMap<String, usize> = BTreeMap::new();
     let (mut conformant, mut violations) = (0usize, 0usize);
@@ -154,7 +159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let validate_secs = validation_started.elapsed().as_secs_f64();
     println!(
-        "format={format:?} entities={entities} secs={secs:.2} validate_secs={validate_secs:.2} conformant={conformant} violations={violations}"
+        "format={format:?} entities={entities} secs={secs:.3} load_secs={load_secs:.3} validate_secs={validate_secs:.3} conformant={conformant} violations={violations}"
     );
     let mut top: Vec<_> = reasons.into_iter().collect();
     top.sort_by(|a, b| b.1.cmp(&a.1));
