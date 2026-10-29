@@ -648,3 +648,20 @@ ex:PersonShape { a [ex:Person] ; ex:name xsd:string }"#;
     let v = validate_shex(&r.data, schema, &r.shapemap);
     assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
 }
+
+#[tokio::test]
+async fn a_failure_reaches_only_the_nodes_before_it_when_reference_chains_end() {
+    // With {0,2}, persons who know nobody cut the cycle into chains, so some
+    // persons conform and the labels are not simply every node.
+    let schema = SHEX_RECURSIVE.replace("{1,2}", "{0,2}");
+    let r = run(
+        Fixture::shex(&schema),
+        "rate = 0.1\noperators = [\"wrong-datatype\"]",
+        30,
+    )
+    .await;
+    let failing = r.expected_failing().len();
+    assert!(failing > r.direct().len() && failing < 30, "{:?}", r.labels);
+    let v = validate_shex(&r.data, &schema, &r.shapemap);
+    assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
+}
