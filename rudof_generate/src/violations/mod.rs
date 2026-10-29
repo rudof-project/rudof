@@ -115,6 +115,7 @@ fn induced_failures(
     let shape_of: HashMap<&str, &str> = entities.iter().map(|(n, s)| (n.as_str(), s.as_str())).collect();
     // (referrer, property, target) for every shape-reference triple.
     let mut refs: Vec<(String, String, String)> = Vec::new();
+    let mut tolerant: HashMap<(String, String), usize> = HashMap::new();
     for t in triples {
         let (NamedOrBlankNode::NamedNode(s), Term::NamedNode(o)) = (&t.subject, &t.object) else {
             continue;
@@ -122,13 +123,21 @@ fn induced_failures(
         let Some(shape) = shape_of.get(s.as_str()).and_then(|id| model.shapes.get(*id)) else {
             continue;
         };
-        let is_ref = shape.properties.iter().any(|p| {
+        let reference = shape.properties.iter().find(|p| {
             p.property_iri == t.predicate.as_str()
                 && p.constraints
                     .iter()
                     .any(|c| matches!(c, UnifiedConstraint::ShapeReference(_)))
         });
-        if is_ref {
+        if let Some(prop) = reference {
+            // A tolerant reference (qualified value shape, ShEx EXTRA) fails only
+            // when fewer than its minimum of conforming targets remain.
+            if !prop.all_values_match {
+                tolerant.insert(
+                    (s.as_str().to_string(), t.predicate.as_str().to_string()),
+                    prop.min_cardinality.unwrap_or(0) as usize,
+                );
+            }
             refs.push((
                 s.as_str().to_string(),
                 t.predicate.as_str().to_string(),
@@ -141,11 +150,16 @@ fn induced_failures(
     // Reverse index: target -> (referrer, property), then a worklist from the
     // directly failing nodes, so each reference is followed once.
     let mut referrers: HashMap<&str, Vec<(&str, &str)>> = HashMap::new();
+    let mut targets: HashMap<(&str, &str), Vec<&str>> = HashMap::new();
     for (referrer, property, target) in &refs {
         referrers
             .entry(target.as_str())
             .or_default()
             .push((referrer.as_str(), property.as_str()));
+        targets
+            .entry((referrer.as_str(), property.as_str()))
+            .or_default()
+            .push(target.as_str());
     }
     let mut labels = Vec::new();
     let mut queue: std::collections::VecDeque<String> = failing.iter().cloned().collect();
@@ -154,6 +168,18 @@ fn induced_failures(
             continue;
         };
         for (referrer, property) in sources {
+            if failing.contains(*referrer) {
+                continue;
+            }
+            if let Some(min) = tolerant.get(&(referrer.to_string(), property.to_string())) {
+                let conforming = targets[&(*referrer, *property)]
+                    .iter()
+                    .filter(|t| !failing.contains(**t))
+                    .count();
+                if conforming >= *min {
+                    continue;
+                }
+            }
             if failing.insert(referrer.to_string()) {
                 labels.push(ViolationLabel {
                     node: referrer.to_string(),

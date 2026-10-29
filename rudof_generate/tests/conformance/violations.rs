@@ -571,3 +571,47 @@ ex:PersonShape { a [ex:Person] ; ex:name xsd:string }"#;
     )
     .await;
 }
+
+const SHEX_RECURSIVE: &str = r#"PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ex:PersonShape { a [ex:Person] ; ex:name xsd:string ; ex:knows @ex:PersonShape {1,2} }"#;
+
+#[tokio::test]
+async fn recursive_shapes_are_generated_valid() {
+    let r = run(Fixture::shex(SHEX_RECURSIVE), "rate = 0.0", 16).await;
+    let v = validate_shex(&r.data, SHEX_RECURSIVE, &r.shapemap);
+    assert!(v.conforms(), "{}\n{}", v.report, r.data);
+}
+
+#[tokio::test]
+async fn a_failure_propagates_transitively_through_recursive_references() {
+    let r = run(
+        Fixture::shex(SHEX_RECURSIVE),
+        "rate = 0.2\noperators = [\"wrong-datatype\"]",
+        12,
+    )
+    .await;
+    assert!(!r.direct().is_empty(), "{}", r.data);
+    let induced = r.labels.iter().filter(|l| l["kind"] == "induced").count();
+    assert!(
+        induced > r.direct().len(),
+        "chains of knows should induce more failures: {:?}",
+        r.labels
+    );
+    let v = validate_shex(&r.data, SHEX_RECURSIVE, &r.shapemap);
+    assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
+}
+
+#[tokio::test]
+async fn a_broken_member_fails_a_qualified_team_only_below_the_minimum() {
+    let shapes = shacl_team();
+    let r = run(
+        Fixture::shacl(&shapes),
+        "rate = 0.4\noperators = [\"wrong-datatype\"]\nshapes = [\"ex:PersonShape\"]",
+        40,
+    )
+    .await;
+    assert!(!r.direct().is_empty(), "{}", r.data);
+    let v = validate_shacl(&r.data, &shapes);
+    assert_eq!(v.failing, r.expected_failing(), "{}\n{}", v.report, r.data);
+}

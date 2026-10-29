@@ -684,7 +684,14 @@ impl ParallelGenerator {
             if let Some(from_entities) = generated_entities.get(shape_id) {
                 for dependency in &shape_info.dependencies {
                     if let Some(to_entities) = generated_entities.get(&dependency.target_shape) {
-                        self.generate_relationships_for_dependency(graph, from_entities, to_entities, dependency)?;
+                        let recursive = dependency.target_shape == *shape_id;
+                        self.generate_relationships_for_dependency(
+                            graph,
+                            from_entities,
+                            to_entities,
+                            dependency,
+                            recursive,
+                        )?;
                     }
                 }
             }
@@ -700,7 +707,12 @@ impl ParallelGenerator {
         from_entities: &[String],
         to_entities: &[String],
         dependency: &crate::ir::shape_info::ShapeDependency,
+        recursive: bool,
     ) -> Result<()> {
+        // A shape that refers to itself starts at the next entity, so references
+        // form chains and cycles rather than self-loops (which are valid but hide
+        // recursion). An entity still refers to itself when it is the only one.
+        let offset = usize::from(recursive);
         for (idx, from_iri) in from_entities.iter().enumerate() {
             if to_entities.is_empty() {
                 continue;
@@ -718,7 +730,7 @@ impl ParallelGenerator {
             // Select target entities
             let mut selected_targets = Vec::new();
             for i in 0..num_relationships {
-                let target_idx = (idx + i) % to_entities.len();
+                let target_idx = (idx + offset + i) % to_entities.len();
                 selected_targets.push(&to_entities[target_idx]);
             }
 
