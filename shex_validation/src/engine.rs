@@ -408,9 +408,13 @@ impl Engine {
             self.hyp_deps
                 .extend(candidates.iter().filter(|c| hyp_as_set.contains(*c)).cloned());
 
-            let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
+            // In a fixed order: the order decides how deep the proof goes before it
+            // meets a hypothesis, so iterating the set would make the recursion depth
+            // (and whether `max_steps` is hit) change from one run to the next.
+            let mut cleaned_candidates: Vec<_> = candidates.difference(&hyp_as_set).cloned().collect();
+            cleaned_candidates.sort();
             for (n1, l1) in cleaned_candidates {
-                match self.prove(&n1, &l1, hyp, schema, rdf)? {
+                match prove_deeper(|| self.prove(&n1, &l1, hyp, schema, rdf))? {
                     Either::Right(_reasons) => {
                         typing.insert_passed(n1.clone(), l1);
                     },
@@ -577,7 +581,7 @@ impl Engine {
             // Use prove (not check_node_idx) so each descendant builds its own complete
             // typing from its own dependency set.  This implements the ShEx RESTRICTS
             // property: if the node conforms to a descendant, it conforms to the ancestor.
-            match self.prove(node, &desc, hyp, schema, rdf)? {
+            match prove_deeper(|| self.prove(node, &desc, hyp, schema, rdf))? {
                 Either::Left(errors) => {
                     trace!(
                         "Descendant {desc} failed for node {node}\nErrors: {}",
@@ -702,7 +706,7 @@ impl Engine {
             self.hyp_deps.insert(key);
             Either::Right(Vec::new())
         } else {
-            self.prove(node, idx, hyp, schema, rdf)?
+            prove_deeper(|| self.prove(node, idx, hyp, schema, rdf))?
         };
         match result {
             Either::Right(_) => pass(Reason::ShapeRef {
@@ -2125,6 +2129,21 @@ fn is_connective(se: &ShapeExpr) -> bool {
         se,
         ShapeExpr::ShapeAnd { .. } | ShapeExpr::ShapeOr { .. } | ShapeExpr::ShapeNot { .. } | ShapeExpr::Ref { .. }
     )
+}
+
+/// Runs a nested proof with enough stack. A proof recurses once per reference it
+/// follows, so its depth grows with the length of the reference chains in the
+/// data (thousands of nodes in a long `ex:knows` cycle), which overflows a fixed
+/// thread stack (1 MiB for the main thread on Windows). The stack grows on the
+/// heap instead, in 8 MiB segments, whenever less than 256 KiB are left.
+#[cfg(not(target_family = "wasm"))]
+fn prove_deeper<T>(proof: impl FnOnce() -> T) -> T {
+    stacker::maybe_grow(256 * 1024, 8 * 1024 * 1024, proof)
+}
+
+#[cfg(target_family = "wasm")]
+fn prove_deeper<T>(proof: impl FnOnce() -> T) -> T {
+    proof()
 }
 
 fn pass(reason: Reason) -> Result<ValidationResult> {
