@@ -50,6 +50,37 @@ fn yes() -> bool {
     true
 }
 
+/// The datatype generated for literal values whose datatype the schema leaves
+/// open. It is a generation choice, not a constraint: the IR does not record it,
+/// so no violation operator treats it as one.
+pub const DEFAULT_LITERAL_DATATYPE: &str = "http://www.w3.org/2001/XMLSchema#string";
+
+impl UnifiedPropertyConstraint {
+    /// The datatype to generate: the declared one, or [`DEFAULT_LITERAL_DATATYPE`]
+    /// when values may be literals and nothing else fixes them (no datatype, shape,
+    /// class, value set or fixed value).
+    pub fn generated_datatype(&self) -> Option<String> {
+        let mut literal_allowed = true;
+        for c in &self.constraints {
+            match c {
+                UnifiedConstraint::Datatype(d) => return Some(d.clone()),
+                UnifiedConstraint::ShapeReference(_)
+                | UnifiedConstraint::Class(_)
+                | UnifiedConstraint::In(_)
+                | UnifiedConstraint::HasValue(_) => return None,
+                UnifiedConstraint::NodeKind(kind) => {
+                    literal_allowed &= matches!(
+                        kind,
+                        NodeKind::Literal | NodeKind::BlankNodeOrLiteral | NodeKind::IriOrLiteral
+                    )
+                },
+                _ => {},
+            }
+        }
+        literal_allowed.then(|| DEFAULT_LITERAL_DATATYPE.to_string())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum UnifiedConstraint {
     Datatype(String),

@@ -386,9 +386,7 @@ impl ShaclToUnified {
 /// value must satisfy all their value constraints, and the count lies within all
 /// their bounds (DCAT-AP, for one, states `sh:class`, `sh:nodeKind` and
 /// `sh:maxCount` of a path in separate property shapes). Qualified value shapes
-/// count only their conforming values, so they stay separate. A path whose values
-/// may be literals but whose datatype is not given gets `xsd:string`, the
-/// generator's default.
+/// count only their conforming values, so they stay separate.
 fn merge_same_path(properties: Vec<UnifiedPropertyConstraint>) -> Vec<UnifiedPropertyConstraint> {
     let mut merged: Vec<UnifiedPropertyConstraint> = Vec::new();
     for prop in properties {
@@ -411,30 +409,5 @@ fn merge_same_path(properties: Vec<UnifiedPropertyConstraint>) -> Vec<UnifiedPro
             None => merged.push(prop),
         }
     }
-    for m in &mut merged {
-        if needs_default_datatype(&m.constraints) {
-            m.constraints.push(UnifiedConstraint::Datatype(
-                "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            ));
-        }
-    }
     merged
-}
-
-/// No datatype, no value that names a node or a fixed term, and literals allowed:
-/// without a datatype the generator would produce no value at all (DCAT-AP gives
-/// many required properties only `sh:nodeKind sh:Literal`).
-fn needs_default_datatype(constraints: &[UnifiedConstraint]) -> bool {
-    constraints.iter().all(|c| match c {
-        UnifiedConstraint::Datatype(_)
-        | UnifiedConstraint::ShapeReference(_)
-        | UnifiedConstraint::Class(_)
-        | UnifiedConstraint::In(_)
-        | UnifiedConstraint::HasValue(_) => false,
-        UnifiedConstraint::NodeKind(kind) => matches!(
-            kind,
-            UnifiedNodeKind::Literal | UnifiedNodeKind::BlankNodeOrLiteral | UnifiedNodeKind::IriOrLiteral
-        ),
-        _ => true,
-    })
 }

@@ -306,11 +306,7 @@ impl DataGenerator {
                     }
                 }
 
-                // Extract datatype from constraints
-                let datatype = prop.constraints.iter().find_map(|c| match c {
-                    crate::ir::UnifiedConstraint::Datatype(dt) => Some(dt.clone()),
-                    _ => None,
-                });
+                let datatype = prop.generated_datatype();
 
                 // Extract shape reference
                 let shape_ref = prop.constraints.iter().find_map(target_of);

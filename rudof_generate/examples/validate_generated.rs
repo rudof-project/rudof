@@ -87,14 +87,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (mut conformant, mut violations) = (0usize, 0usize);
     match format {
         SchemaFormat::ShEx => {
-            // One query association per shape with a target class.
-            let (model, _) = ShExToUnified.convert_schema(schema_text.clone()).await?;
-            let shapemap = model
-                .shapes
-                .values()
-                .filter_map(|s| s.target_class.as_ref().map(|c| format!("{{FOCUS a <{c}>}}@<{}>", s.id)))
-                .collect::<Vec<_>>()
-                .join(",\n");
+            // The generator's exact ShapeMap when it wrote one (each node against the
+            // shape that generated it); otherwise one query association per shape
+            // with a target class, which also checks a node typed with several
+            // classes against every one of their shapes.
+            let shapemap = match type_map.as_ref().filter(|p| p.exists()) {
+                Some(path) => std::fs::read_to_string(path)?,
+                None => {
+                    let (model, _) = ShExToUnified.convert_schema(schema_text.clone()).await?;
+                    model
+                        .shapes
+                        .values()
+                        .filter_map(|s| s.target_class.as_ref().map(|c| format!("{{FOCUS a <{c}>}}@<{}>", s.id)))
+                        .collect::<Vec<_>>()
+                        .join(",\n")
+                },
+            };
             rudof
                 .load_shex_schema(&InputSpec::str(&schema_text))
                 .with_shex_schema_format(&ShExFormat::ShExC)
