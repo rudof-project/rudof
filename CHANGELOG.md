@@ -9,6 +9,16 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
+## [Unreleased]
+### Added
+- `rudof_rdf`: `ParseBudget` holds the steps that parsing SHACL paths may take, and `ShaclPathParser::with_budget` takes them from a budget shared with other parsers, as `ShaclParser` does for the paths of a shapes graph.
+
+### Fixed
+- A cyclic SHACL path, such as `_:p sh:zeroOrMorePath _:p`, is an invalid path error instead of a stack overflow.
+- A SHACL path nested more than 64 levels deep is an invalid path error instead of a stack overflow. Parsing the SHACL paths of a shapes graph takes at most 4096 steps plus 16 per triple in all, so a blank node shared by nested sequences, or a long path shared by many shapes, is an invalid path error instead of an exponential expansion.
+- An invalid part of a SHACL path is reported with its own error instead of `Unsupported SHACL path construct`.
+- Long RDF lists (`sh:in`, `sh:or`, sequence paths and others) are parsed in linear time and without a stack overflow.
+
 ## 0.3.35
 ### Added
 ### Fixed

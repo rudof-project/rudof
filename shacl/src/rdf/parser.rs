@@ -5,13 +5,14 @@ use crate::rdf::parsers::node_expr::node_expr_from_term;
 use crate::rdf::parsers::{node_shape, property_shape};
 use itertools::Itertools;
 use rudof_rdf::rdf_core::parser::RDFParse;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ListParser, SuccessParser};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ListParser, ParseBudget, SuccessParser};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclNodeExprVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{Any, FocusRDF, Matcher};
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 pub struct ShaclParser<RDF: FocusRDF> {
     rdf_parser: RDFParse<RDF>,
@@ -31,10 +32,12 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
 
         let mut state: State = self.shapes_candidates()?.into();
 
+        // A path shared by many shapes is parsed for each of them, so they share one budget
+        let parser = shape(Arc::default());
         while let Some(node) = state.pop_pending() {
             if !self.shapes.contains_key(&node) {
                 self.rdf_parser.rdf_mut().set_focus(&node.clone().into());
-                let shape = shape().parse_focused(self.rdf_parser.rdf_mut())?;
+                let shape = parser.parse_focused(self.rdf_parser.rdf_mut())?;
                 self.shapes.insert(node, shape);
             }
         }
@@ -218,8 +221,8 @@ fn term_to_subject<RDF: FocusRDF>(term: &RDF::Term, context: &str) -> Result<RDF
     })
 }
 
-fn shape<RDF: FocusRDF + 'static>() -> impl RDFNodeParse<RDF, Output = ASTShape> {
-    node_shape()
+fn shape<RDF: FocusRDF + 'static>(budget: Arc<ParseBudget>) -> impl RDFNodeParse<RDF, Output = ASTShape> {
+    node_shape(budget.clone())
         .then(move |ns| SuccessParser::new(ASTShape::NodeShape(Box::new(ns))))
-        .or(property_shape().then(|ps| SuccessParser::new(ASTShape::PropertyShape(Box::new(ps)))))
+        .or(property_shape(budget).then(|ps| SuccessParser::new(ASTShape::PropertyShape(Box::new(ps)))))
 }

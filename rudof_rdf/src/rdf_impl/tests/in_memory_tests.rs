@@ -1,5 +1,5 @@
 use crate::rdf_core::{
-    Any, BuildRDF, NeighsRDF, RDFError, RDFFormat, Rdf,
+    Any, BuildRDF, FocusRDF, NeighsRDF, RDFError, RDFFormat, Rdf,
     parser::rdf_node_parser::{
         ParserExt, RDFNodeParse,
         constructors::{
@@ -213,6 +213,34 @@ fn test_rdf_list() {
         result,
         vec![OxTerm::from(OxLiteral::from(1)), OxTerm::from(OxLiteral::from(2))]
     )
+}
+
+#[test]
+fn test_rdf_list_long() {
+    let mut graph = OxigraphInMemory::default();
+    let items: Vec<OxTerm> = (0..100_000).map(|i| OxLiteral::from(i).into()).collect();
+    let head = graph.add_rdf_list(items.clone()).unwrap();
+    graph.set_focus(&head);
+    assert_eq!(ListParser::new().parse_focused(&mut graph).unwrap(), items);
+}
+
+#[test]
+fn test_rdf_list_cyclic() {
+    let mut graph = graph_from_str(
+        r#"prefix : <http://example.org/>
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        :x :p _:a .
+        _:a rdf:first 1 ; rdf:rest _:b .
+        _:b rdf:first 2 ; rdf:rest _:a .
+    "#,
+    );
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
+    let parser = SingleValuePropertyParser::new(p).then(move |obj| SetFocusParser::new(obj).with(ListParser::new()));
+    assert!(matches!(
+        parser.parse(&x, &mut graph),
+        Err(RDFError::RecursiveRDFListError { .. })
+    ));
 }
 
 #[test]

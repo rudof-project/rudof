@@ -8,6 +8,7 @@ use crate::rdf_core::{
     },
 };
 use rudof_iri::{IriS, iri};
+use std::collections::HashSet;
 
 /// Converts an RDF term to an IRI string.
 ///
@@ -294,46 +295,44 @@ where
     Ok(literal.lexical_form().to_string())
 }
 
-pub fn parse_list_recursive<RDF>(mut visited: Vec<RDF::Term>, rdf: &mut RDF) -> Result<Vec<RDF::Term>, RDFError>
+pub fn parse_list_recursive<RDF>(visited: Vec<RDF::Term>, rdf: &mut RDF) -> Result<Vec<RDF::Term>, RDFError>
 where
     RDF: FocusRDF,
 {
-    let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?.clone();
+    // A loop, not recursion: a list can have more elements than the stack has frames
+    let mut visited: HashSet<RDF::Term> = visited.into_iter().collect();
+    let mut result = Vec::new();
+    loop {
+        let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?.clone();
 
-    // Base case: rdf:nil
-    if is_nil_node::<RDF>(&focus) {
-        return Ok(Vec::new());
+        if is_nil_node::<RDF>(&focus) {
+            return Ok(result);
+        }
+
+        let first = SingleValuePropertyParser::new(RdfVocab::rdf_first())
+            .parse_focused(rdf)
+            .map_err(|e| RDFError::PropertyNotFoundError {
+                property: RdfVocab::RDF_FIRST.to_string(),
+                subject: focus.to_string(),
+                err: Box::new(e),
+            })?;
+
+        let rest = SingleValuePropertyParser::new(RdfVocab::rdf_rest())
+            .parse_focused(rdf)
+            .map_err(|e| RDFError::PropertyNotFoundError {
+                property: RdfVocab::RDF_REST.to_string(),
+                subject: focus.to_string(),
+                err: Box::new(e),
+            })?;
+
+        // Cycle detection
+        if !visited.insert(rest.clone()) {
+            return Err(RDFError::RecursiveRDFListError { node: rest.to_string() });
+        }
+
+        result.push(first);
+        rdf.set_focus(&rest);
     }
-
-    // Recursive case: extract first and rest
-    let first = SingleValuePropertyParser::new(RdfVocab::rdf_first())
-        .parse_focused(rdf)
-        .map_err(|e| RDFError::PropertyNotFoundError {
-            property: RdfVocab::RDF_FIRST.to_string(),
-            subject: focus.to_string(),
-            err: Box::new(e),
-        })?;
-
-    let rest = SingleValuePropertyParser::new(RdfVocab::rdf_rest())
-        .parse_focused(rdf)
-        .map_err(|e| RDFError::PropertyNotFoundError {
-            property: RdfVocab::RDF_REST.to_string(),
-            subject: focus.to_string(),
-            err: Box::new(e),
-        })?;
-
-    // Cycle detection
-    if visited.contains(&rest) {
-        return Err(RDFError::RecursiveRDFListError { node: rest.to_string() });
-    }
-
-    // Continue recursion
-    visited.push(rest.clone());
-    rdf.set_focus(&rest);
-
-    let mut result = vec![first];
-    result.extend(parse_list_recursive::<RDF>(visited, rdf)?);
-    Ok(result)
 }
 
 fn is_nil_node<RDF>(node: &RDF::Term) -> bool

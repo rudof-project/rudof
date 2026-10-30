@@ -1,9 +1,10 @@
 use crate::ast::ASTComponent;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ShaclPathParser;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ParseBudget, ShaclPathParser};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 /// Parses the values of `sh:subsetOf`.
 ///
@@ -13,6 +14,7 @@ use std::marker::PhantomData;
 ///
 /// https://www.w3.org/TR/shacl12-core/#SubsetOfConstraintComponent
 struct SubsetOfParser<RDF: FocusRDF> {
+    budget: Arc<ParseBudget>,
     _marker: PhantomData<RDF>,
 }
 
@@ -26,7 +28,7 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for SubsetOfParser<RDF> {
         let mut components = Vec::new();
         for value in values {
             // Parsing a path moves the focus to the path node
-            let path = ShaclPathParser::new(value).parse_focused(rdf)?;
+            let path = ShaclPathParser::with_budget(value, self.budget.clone()).parse_focused(rdf)?;
             components.push(ASTComponent::SubsetOf(path));
         }
 
@@ -37,6 +39,9 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for SubsetOfParser<RDF> {
     }
 }
 
-pub(crate) fn subset_of<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    SubsetOfParser { _marker: PhantomData }
+pub(crate) fn subset_of<RDF: FocusRDF>(budget: Arc<ParseBudget>) -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
+    SubsetOfParser {
+        budget,
+        _marker: PhantomData,
+    }
 }

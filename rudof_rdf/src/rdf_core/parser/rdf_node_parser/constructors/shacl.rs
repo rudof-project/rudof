@@ -8,6 +8,54 @@ use crate::rdf_core::{
     term::Iri,
 };
 use rudof_iri::IriS;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
+/// Real paths nest a few levels; each level is a stack frame here and in the derived impls of [`SHACLPath`].
+const MAX_PATH_DEPTH: usize = 64;
+/// Steps that parsing the SHACL paths of a graph may take, however few triples it has.
+const MIN_PARSE_STEPS: usize = 4096;
+/// Further steps that parsing may take per triple of the graph. A path step has triples of its
+/// own unless it is a blank node used more than once, which is what makes a parse outgrow its graph.
+const PARSE_STEPS_PER_TRIPLE: usize = 16;
+
+/// The steps that parsing SHACL paths may take, shared by every parse it is handed to, so a path
+/// shared by many shapes cannot multiply the work.
+#[derive(Debug)]
+pub struct ParseBudget {
+    steps_left: AtomicUsize,
+    graph_counted: AtomicBool,
+}
+
+impl Default for ParseBudget {
+    fn default() -> Self {
+        Self {
+            steps_left: AtomicUsize::new(MIN_PARSE_STEPS),
+            graph_counted: AtomicBool::new(false),
+        }
+    }
+}
+
+impl ParseBudget {
+    /// Runs `parse` with the steps left. Most parses are small, so the graph is only counted the first
+    /// time the steps run out, adding `PARSE_STEPS_PER_TRIPLE` per triple, and that parse is run again.
+    pub fn spend<RDF: FocusRDF, T>(
+        &self,
+        rdf: &mut RDF,
+        parse: impl Fn(&mut RDF, &mut usize) -> Result<T, RDFError>,
+    ) -> Result<T, RDFError> {
+        let before = self.steps_left.load(Ordering::Relaxed);
+        let mut steps = before;
+        let mut out = parse(rdf, &mut steps);
+        if out.is_err() && steps == 0 && !self.graph_counted.swap(true, Ordering::Relaxed) {
+            let triples = rdf.triples().map_or(0, Iterator::count);
+            steps = before + PARSE_STEPS_PER_TRIPLE * triples;
+            out = parse(rdf, &mut steps);
+        }
+        self.steps_left.store(steps, Ordering::Relaxed);
+        out
+    }
+}
 
 /// Parser that interprets an RDF term as a SHACL path expression.
 #[derive(Debug, Clone)]
@@ -16,14 +64,21 @@ where
     RDF: FocusRDF,
 {
     term: RDF::Term,
+    budget: Arc<ParseBudget>,
 }
 
 impl<RDF> ShaclPathParser<RDF>
 where
     RDF: FocusRDF,
 {
+    /// A parser with a budget of its own, as for a path read from a report.
     pub fn new(term: RDF::Term) -> Self {
-        Self { term }
+        Self::with_budget(term, Arc::default())
+    }
+
+    /// A parser that takes its steps from `budget`.
+    pub fn with_budget(term: RDF::Term, budget: Arc<ParseBudget>) -> Self {
+        Self { term, budget }
     }
 }
 
@@ -34,63 +89,80 @@ where
     type Output = SHACLPath;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        // Set focus to the term we want to parse as a path
-        rdf.set_focus(&self.term);
-
-        // Check if it's a simple IRI path
-        if let Ok(iri) = RDF::term_as_iri(&self.term) {
-            return Ok(SHACLPath::iri(IriS::new_unchecked(iri.as_str())));
-        }
-
-        // Check if it's a blank node (complex path expression)
-        if RDF::term_as_bnode(&self.term).is_ok() {
-            // Try each path construct in order (Sequence, Alternative, etc.)
-            return try_parse_complex_path(rdf);
-        }
-
-        // Literals are not valid SHACL paths
-        Err(RDFError::InvalidSHACLPathError {
-            node: self.term.to_string(),
-            error: Box::new(RDFError::ConversionError {
-                msg: "SHACL path cannot be a literal".into(),
-            }),
-        })
+        self.budget
+            .spend(rdf, |rdf, steps| parse_path(&self.term, rdf, 0, steps))
     }
 }
 
-/// Attempts to parse a complex SHACL path (blank node with path construct).
-fn try_parse_complex_path<RDF>(rdf: &mut RDF) -> Result<SHACLPath, RDFError>
+/// Parses `term` as a SHACL path nested `depth` levels deep, taking one of the `steps` left for each path.
+fn parse_path<RDF>(term: &RDF::Term, rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
 where
     RDF: FocusRDF,
 {
-    // Try sequence path (RDF list at focus)
-    if let Ok(path) = parse_sequence(rdf) {
-        return Ok(path);
+    // A cyclic path would nest forever, and a blank node used twice is parsed twice,
+    // so N nested `( _:x _:x )` would make 2^N steps
+    if depth > MAX_PATH_DEPTH {
+        return Err(RDFError::InvalidSHACLPathError {
+            node: term.to_string(),
+            error: Box::new(RDFError::ConversionError {
+                msg: format!("SHACL path is cyclic or nested more than {MAX_PATH_DEPTH} levels deep"),
+            }),
+        });
+    }
+    let Some(left) = steps.checked_sub(1) else {
+        return Err(RDFError::InvalidSHACLPathError {
+            node: term.to_string(),
+            error: Box::new(RDFError::ConversionError {
+                msg: format!(
+                    "parsing takes more than {MIN_PARSE_STEPS} steps plus {PARSE_STEPS_PER_TRIPLE} per triple of the graph"
+                ),
+            }),
+        });
+    };
+    *steps = left;
+
+    // Set focus to the term we want to parse as a path
+    rdf.set_focus(term);
+
+    // Check if it's a simple IRI path
+    if let Ok(iri) = RDF::term_as_iri(term) {
+        return Ok(SHACLPath::iri(IriS::new_unchecked(iri.as_str())));
     }
 
-    // Try alternative path (sh:alternativePath)
-    if let Ok(path) = parse_alternative(rdf) {
-        return Ok(path);
+    // Check if it's a blank node (complex path expression)
+    if RDF::term_as_bnode(term).is_ok() {
+        return try_parse_complex_path(rdf, depth, steps);
     }
 
-    // Try zero-or-more path (sh:zeroOrMorePath)
-    if let Ok(path) = parse_zero_or_more(rdf) {
-        return Ok(path);
-    }
+    // Literals are not valid SHACL paths
+    Err(RDFError::InvalidSHACLPathError {
+        node: term.to_string(),
+        error: Box::new(RDFError::ConversionError {
+            msg: "SHACL path cannot be a literal".into(),
+        }),
+    })
+}
 
-    // Try one-or-more path (sh:oneOrMorePath)
-    if let Ok(path) = parse_one_or_more(rdf) {
-        return Ok(path);
-    }
-
-    // Try zero-or-one path (sh:zeroOrOnePath)
-    if let Ok(path) = parse_zero_or_one(rdf) {
-        return Ok(path);
-    }
-
-    // Try inverse path (sh:inversePath)
-    if let Ok(path) = parse_inverse(rdf) {
-        return Ok(path);
+/// Attempts to parse a complex SHACL path (blank node with path construct).
+fn try_parse_complex_path<RDF>(rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
+where
+    RDF: FocusRDF,
+{
+    // Try each path construct in order. Only parse_path returns InvalidSHACLPathError,
+    // so the construct was found and one of its sub-paths is invalid.
+    for parse in [
+        parse_sequence,
+        parse_alternative,
+        parse_zero_or_more,
+        parse_one_or_more,
+        parse_zero_or_one,
+        parse_inverse,
+    ] {
+        match parse(rdf, depth, steps) {
+            Ok(path) => return Ok(path),
+            Err(e @ RDFError::InvalidSHACLPathError { .. }) => return Err(e),
+            Err(_) => {},
+        }
     }
 
     Err(RDFError::InvalidSHACLPathError {
@@ -102,7 +174,7 @@ where
 }
 
 /// Parses a SHACL sequence path from an RDF list at the current focus.
-fn parse_sequence<RDF>(rdf: &mut RDF) -> Result<SHACLPath, RDFError>
+fn parse_sequence<RDF>(rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
 where
     RDF: FocusRDF,
 {
@@ -112,7 +184,7 @@ where
     // Recursively parse each element as a SHACL path
     let mut paths = Vec::new();
     for term in terms {
-        let path = ShaclPathParser::new(term).parse_focused(rdf)?;
+        let path = parse_path(&term, rdf, depth + 1, steps)?;
         paths.push(path);
     }
 
@@ -120,7 +192,7 @@ where
 }
 
 /// Parses a SHACL alternative path using `sh:alternativePath`.
-fn parse_alternative<RDF>(rdf: &mut RDF) -> Result<SHACLPath, RDFError>
+fn parse_alternative<RDF>(rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
 where
     RDF: FocusRDF,
 {
@@ -134,7 +206,7 @@ where
     // Parse each element as a SHACL path
     let mut paths = Vec::new();
     for term in terms {
-        let path = ShaclPathParser::new(term).parse_focused(rdf)?;
+        let path = parse_path(&term, rdf, depth + 1, steps)?;
         paths.push(path);
     }
 
@@ -142,41 +214,41 @@ where
 }
 
 /// Parses a SHACL zero-or-more path using `sh:zeroOrMorePath`.
-fn parse_zero_or_more<RDF>(rdf: &mut RDF) -> Result<SHACLPath, RDFError>
+fn parse_zero_or_more<RDF>(rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
 where
     RDF: FocusRDF,
 {
     let term = SingleValuePropertyParser::new(ShaclVocab::sh_zero_or_more_path()).parse_focused(rdf)?;
-    let sub_path = ShaclPathParser::new(term).parse_focused(rdf)?;
+    let sub_path = parse_path(&term, rdf, depth + 1, steps)?;
     Ok(SHACLPath::zero_or_more(sub_path))
 }
 
 /// Parses a SHACL one-or-more path using `sh:oneOrMorePath`.
-fn parse_one_or_more<RDF>(rdf: &mut RDF) -> Result<SHACLPath, RDFError>
+fn parse_one_or_more<RDF>(rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
 where
     RDF: FocusRDF,
 {
     let term = SingleValuePropertyParser::new(ShaclVocab::sh_one_or_more_path()).parse_focused(rdf)?;
-    let sub_path = ShaclPathParser::new(term).parse_focused(rdf)?;
+    let sub_path = parse_path(&term, rdf, depth + 1, steps)?;
     Ok(SHACLPath::one_or_more(sub_path))
 }
 
 /// Parses a SHACL zero-or-one path using `sh:zeroOrOnePath`.
-fn parse_zero_or_one<RDF>(rdf: &mut RDF) -> Result<SHACLPath, RDFError>
+fn parse_zero_or_one<RDF>(rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
 where
     RDF: FocusRDF,
 {
     let term = SingleValuePropertyParser::new(ShaclVocab::sh_zero_or_one_path()).parse_focused(rdf)?;
-    let sub_path = ShaclPathParser::new(term).parse_focused(rdf)?;
+    let sub_path = parse_path(&term, rdf, depth + 1, steps)?;
     Ok(SHACLPath::zero_or_one(sub_path))
 }
 
 /// Parses a SHACL inverse path using `sh:inversePath`.
-fn parse_inverse<RDF>(rdf: &mut RDF) -> Result<SHACLPath, RDFError>
+fn parse_inverse<RDF>(rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
 where
     RDF: FocusRDF,
 {
     let term = SingleValuePropertyParser::new(ShaclVocab::sh_inverse_path()).parse_focused(rdf)?;
-    let sub_path = ShaclPathParser::new(term).parse_focused(rdf)?;
+    let sub_path = parse_path(&term, rdf, depth + 1, steps)?;
     Ok(SHACLPath::inverse(sub_path))
 }
