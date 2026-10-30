@@ -12,15 +12,16 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 /// Real paths nest a few levels; each level is a stack frame here and in the derived impls of [`SHACLPath`].
-const MAX_PATH_DEPTH: usize = 64;
-/// Steps that parsing the SHACL paths of a graph may take, however few triples it has.
-const MIN_PARSE_STEPS: usize = 4096;
-/// Further steps that parsing may take per triple of the graph. A path step has triples of its
-/// own unless it is a blank node used more than once, which is what makes a parse outgrow its graph.
-const PARSE_STEPS_PER_TRIPLE: usize = 16;
+pub const MAX_PATH_DEPTH: usize = 64;
+/// Steps that parsing the SHACL paths and node expressions of a graph may take, however few triples it has.
+pub const MIN_PARSE_STEPS: usize = 4096;
+/// Further steps that parsing may take per triple of the graph. A path step or expression has triples
+/// of its own unless it is a blank node used more than once, which is what makes a parse outgrow its graph.
+pub const PARSE_STEPS_PER_TRIPLE: usize = 16;
 
-/// The steps that parsing SHACL paths may take, shared by every parse it is handed to, so a path
-/// shared by many shapes cannot multiply the work.
+/// The steps that parsing SHACL paths and node expressions may take, shared by every parse it is
+/// handed to, so a path or expression shared by many shapes cannot multiply the work.
+/// Atomics rather than cells keep the parsers that hold it `Send` and `Sync`.
 #[derive(Debug)]
 pub struct ParseBudget {
     steps_left: AtomicUsize,
@@ -95,7 +96,7 @@ where
 }
 
 /// Parses `term` as a SHACL path nested `depth` levels deep, taking one of the `steps` left for each path.
-fn parse_path<RDF>(term: &RDF::Term, rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
+pub fn parse_path<RDF>(term: &RDF::Term, rdf: &mut RDF, depth: usize, steps: &mut usize) -> Result<SHACLPath, RDFError>
 where
     RDF: FocusRDF,
 {

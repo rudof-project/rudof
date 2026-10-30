@@ -10,8 +10,7 @@ use crate::types::Target;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-#[cfg(feature = "sparql")]
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::error::ValidationError;
 use crate::validator::RecursionSemantics;
@@ -119,6 +118,18 @@ pub trait Engine<S: NeighsRDF>: Send {
 
     /// Un-marks `(node, shape_idx)` once its validation has finished.
     fn chain_exit(&mut self, node: &Object, shape_idx: ShapeLabelIdx);
+
+    /// This engine's own node expression state, never shared across forks.
+    fn node_expr_state(&mut self) -> &mut NodeExprState;
+}
+
+/// What evaluating node expressions keeps for one validation run.
+#[derive(Debug, Default)]
+pub struct NodeExprState {
+    /// Expressions evaluated for the current focus node.
+    pub(crate) steps: usize,
+    /// The nodes failing each `shnex:nodesMatching` shape, `None` while they are found.
+    pub(crate) matching: HashMap<ShapeLabelIdx, Option<HashSet<Object>>>,
 }
 
 #[cfg(feature = "sparql")]

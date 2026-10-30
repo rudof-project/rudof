@@ -912,4 +912,151 @@ prefix : <http://example.org/>
             assert!(detail.details().is_empty());
         });
     }
+
+    const SHNEX: &str = "prefix shnex: <http://www.w3.org/ns/shacl-node-expr#>\n";
+
+    /// Parses, compiles and validates `graph`, returning the first error as a string.
+    fn try_validate(graph: &str) -> Result<crate::validator::report::ValidationReport, String> {
+        let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let mut validator: DataValidation = rdf.clone().into();
+        let schema = ShaclParser::new(rdf).parse().map_err(|e| e.to_string())?;
+        let schema_ir =
+            IRSchema::compile_with_recursion(&schema, RecursionSemantics::default()).map_err(|e| e.to_string())?;
+        validator
+            .validate(&schema_ir, &ShaclValidationMode::Native, &ShaclConfig::default())
+            .map_err(|e| e.to_string())
+    }
+
+    #[test]
+    fn cyclic_deep_shared_and_unsupported_node_expressions_are_errors() {
+        on_small_stack(|| {
+            let shared: String = (0..40)
+                .map(|i| format!("_:e{i} shnex:concat ( _:e{j} _:e{j} ) .\n", j = i + 1))
+                .collect();
+            let deep: String = (0..DEPTH)
+                .map(|i| format!("_:e{i} shnex:exists _:e{} .\n", i + 1))
+                .collect();
+            for (expr, error) in [
+                ("_:e0 shnex:distinct _:e0 .\n".to_string(), "cyclic node expression"),
+                (
+                    "_:e0 shnex:count _:e1 .\n_:e1 shnex:if _:e0 ; shnex:then 1 .\n".to_string(),
+                    "cyclic node expression",
+                ),
+                (deep, "cyclic node expression"),
+                (shared, "steps plus"),
+                (
+                    "_:e0 shnex:filterShape :T ; shnex:nodes :a .\n".to_string(),
+                    "not supported",
+                ),
+                (
+                    "_:e0 shnex:findFirst :T ; shnex:nodes :a .\n".to_string(),
+                    "not implemented",
+                ),
+                (
+                    "_:e0 shnex:matchAll :T ; shnex:nodes :a .\n".to_string(),
+                    "not yet implemented",
+                ),
+                ("_:e0 shnex:distinct <<( :a :p :b )>> .\n".to_string(), "not supported"),
+            ] {
+                let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:deactivated _:e0 .\n{expr}");
+                let result = try_validate(&graph).map(|_| ());
+                assert!(matches!(&result, Err(e) if e.contains(error)), "{expr}: {result:?}");
+            }
+        });
+    }
+
+    #[test]
+    fn shapes_share_one_budget_for_their_node_expressions() {
+        // _:e0 nests 10 shared shnex:concat, 2047 expressions, and 2000 shapes parse it again each
+        let mut graph = format!("{PREFIXES}{SHNEX}_:e10 shnex:pathValues :p .\n");
+        for i in 0..10 {
+            graph.push_str(&format!("_:e{i} shnex:concat ( _:e{j} _:e{j} ) .\n", j = i + 1));
+        }
+        for i in 0..2000 {
+            graph.push_str(&format!(":S{i} sh:targetNode :a ; sh:deactivated _:e0 .\n"));
+        }
+
+        let result = try_validate(&graph).map(|_| ());
+        assert!(matches!(&result, Err(e) if e.contains("steps plus")), "{result:?}");
+    }
+
+    #[test]
+    fn node_expression_at_the_depth_limit_is_validated_on_a_small_stack() {
+        on_small_stack(|| {
+            let mut graph =
+                format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:class :C ; sh:deactivated _:e0 .\n:a :p :b .\n");
+            for i in 0..61 {
+                graph.push_str(&format!("_:e{i} shnex:exists _:e{} .\n", i + 1));
+            }
+            graph.push_str("_:e61 shnex:pathValues [ sh:inversePath [ sh:inversePath :p ] ] .\n");
+
+            assert!(try_validate(&graph).unwrap().conforms());
+        });
+    }
+
+    #[test]
+    fn shape_deactivated_by_its_own_nodes_is_an_error() {
+        for shapes in [
+            ":S sh:targetNode :a ; sh:class :C ; sh:deactivated [ shnex:nodesMatching :S ] .",
+            ":S sh:targetNode :a ; sh:node :T .\n:T sh:deactivated [ shnex:exists [ shnex:nodesMatching :S ] ] .",
+        ] {
+            let graph = format!("{PREFIXES}{SHNEX}{shapes}\n:a :p :b .\n");
+            let result = try_validate(&graph).map(|_| ());
+            assert!(
+                matches!(&result, Err(e) if e.contains("depends on itself")),
+                "{shapes}: {result:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn chain_of_nodes_matching_is_computed_once_per_shape() {
+        // Recomputing the next shape for every node took over 30 s for 6 shapes over 20 nodes
+        let mut graph = format!("{PREFIXES}{SHNEX}:T0 sh:targetNode :n0 .\n:T6 sh:class :C .\n");
+        for i in 0..6 {
+            graph.push_str(&format!(":T{i} sh:deactivated [ shnex:nodesMatching :T{} ] .\n", i + 1));
+        }
+        for i in 0..20 {
+            graph.push_str(&format!(":n{i} :p :n{} .\n", i + 1));
+        }
+
+        assert!(try_validate(&graph).is_ok());
+    }
+
+    #[test]
+    fn node_expression_fanned_out_by_the_data_is_an_error() {
+        // Every shnex:flatMap level doubles the nodes, so 40 levels would never finish
+        let mut graph = format!(
+            "{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:deactivated _:f40 .\n\
+             :a :p :a, :b .\n:b :p :a, :b .\n_:f0 shnex:pathValues :p .\n"
+        );
+        for i in 1..=40 {
+            graph.push_str(&format!(
+                "_:f{i} shnex:flatMap _:f{} ; shnex:nodes [ shnex:pathValues :p ] .\n",
+                i - 1
+            ));
+        }
+
+        let result = try_validate(&graph).map(|_| ());
+        assert!(matches!(&result, Err(e) if e.contains("steps")), "{result:?}");
+    }
+
+    #[test]
+    fn nodes_matching_keeps_the_step_count_of_the_outer_expression() {
+        // Each _:f18 takes over half the steps, and validating :T used to reset the count between them
+        let mut graph = format!(
+            "{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:deactivated [ shnex:concat ( _:f18 _:m _:f18 ) ] .\n\
+             _:m shnex:nodesMatching :T .\n:T sh:deactivated false .\n\
+             :a :p :a, :b .\n:b :p :a, :b .\n_:f0 shnex:pathValues :p .\n"
+        );
+        for i in 1..=18 {
+            graph.push_str(&format!(
+                "_:f{i} shnex:flatMap _:f{} ; shnex:nodes [ shnex:pathValues :p ] .\n",
+                i - 1
+            ));
+        }
+
+        let result = try_validate(&graph).map(|_| ());
+        assert!(matches!(&result, Err(e) if e.contains("steps")), "{result:?}");
+    }
 }

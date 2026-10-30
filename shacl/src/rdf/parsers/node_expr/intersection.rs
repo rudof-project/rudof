@@ -7,10 +7,12 @@ pub(crate) fn intersection<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     rdf: &mut RDF,
     _: &RDF::Term,
+    depth: usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_intersection())?
         .map(|term| {
-            let intersection = ASTNodeExpr::Intersection(expr_list(&term, rdf)?);
+            let intersection = ASTNodeExpr::Intersection(expr_list(&term, rdf, depth, steps)?);
             Ok(intersection)
         })
         .transpose()

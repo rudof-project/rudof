@@ -26,22 +26,27 @@ use crate::rdf::parsers::node_expr::{Neighs, to_object};
 use prefixmap::IriRef;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{NeighborhoodParser, ValuesPropertyParser};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
+    MAX_PATH_DEPTH, MIN_PARSE_STEPS, NeighborhoodParser, PARSE_STEPS_PER_TRIPLE, ParseBudget, ValuesPropertyParser,
+};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 /// Parses every value of `property` on the focus node as a node expression.
 #[derive(Debug, Clone)]
 pub(crate) struct NodeExprsPropertyParser<RDF> {
     property: IriS,
+    budget: Arc<ParseBudget>,
     _marker: PhantomData<RDF>,
 }
 
 impl<RDF> NodeExprsPropertyParser<RDF> {
-    pub fn new(property: IriS) -> Self {
+    pub fn new(property: IriS, budget: Arc<ParseBudget>) -> Self {
         Self {
             property,
+            budget,
             _marker: PhantomData,
         }
     }
@@ -57,7 +62,13 @@ where
         let focus = rdf.get_focus().cloned();
         let values = ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?;
 
-        let exprs = values.iter().map(|value| node_expr_from_term(value, rdf)).collect();
+        let exprs = values
+            .iter()
+            .map(|value| {
+                self.budget
+                    .spend(rdf, |rdf, steps| node_expr_from_term(value, rdf, 0, steps))
+            })
+            .collect();
 
         if let Some(focus) = &focus {
             rdf.set_focus(focus);
@@ -67,18 +78,47 @@ where
     }
 }
 
-/// Parses `term` as a node expression, recursing into nested expressions.
-pub(crate) fn node_expr_from_term<RDF: FocusRDF>(term: &RDF::Term, rdf: &mut RDF) -> Result<ASTNodeExpr, RDFError> {
+/// Parses `term` as a node expression nested `depth` levels deep, taking one of the `steps` left
+/// for each expression and path.
+pub(crate) fn node_expr_from_term<RDF: FocusRDF>(
+    term: &RDF::Term,
+    rdf: &mut RDF,
+    depth: usize,
+    steps: &mut usize,
+) -> Result<ASTNodeExpr, RDFError> {
+    // Bounded as SHACL paths are: a cyclic expression would nest forever, and a blank node
+    // used twice is parsed twice, so N nested `shnex:concat ( _:x _:x )` would make 2^N
+    if depth > MAX_PATH_DEPTH {
+        return Err(RDFError::DefaultError {
+            msg: format!("{term} is a cyclic node expression, or nests more than {MAX_PATH_DEPTH} levels"),
+        });
+    }
+    let Some(left) = steps.checked_sub(1) else {
+        return Err(RDFError::DefaultError {
+            msg: format!(
+                "Parsing {term} takes more than {MIN_PARSE_STEPS} steps plus {PARSE_STEPS_PER_TRIPLE} per triple of the graph"
+            ),
+        });
+    };
+    *steps = left;
+
     match to_object::<RDF>(term)? {
         Object::Iri(iri) => Ok(ASTNodeExpr::Iri(IriRef::iri(iri))),
         Object::Literal(lit) => Ok(ASTNodeExpr::Literal(lit)),
-        Object::BlankNode(_) => blank_node_expr(term, rdf),
-        Object::Triple { .. } => todo!("Triple term expressions are not supported yet"),
+        Object::BlankNode(_) => blank_node_expr(term, rdf, depth, steps),
+        Object::Triple { .. } => Err(RDFError::DefaultError {
+            msg: "Triple term expressions are not supported yet".to_string(),
+        }),
     }
 }
 
 /// Identifies which kind of node expression a blank node carries, and parses it.
-fn blank_node_expr<RDF: FocusRDF>(term: &RDF::Term, rdf: &mut RDF) -> Result<ASTNodeExpr, RDFError> {
+fn blank_node_expr<RDF: FocusRDF>(
+    term: &RDF::Term,
+    rdf: &mut RDF,
+    depth: usize,
+    steps: &mut usize,
+) -> Result<ASTNodeExpr, RDFError> {
     rdf.set_focus(term);
 
     let neighs: Neighs<RDF> = NeighborhoodParser::new().parse_focused(rdf)?;
@@ -111,7 +151,7 @@ fn blank_node_expr<RDF: FocusRDF>(term: &RDF::Term, rdf: &mut RDF) -> Result<AST
     ];
 
     for fun in expr_fns {
-        if let Some(expr) = fun(&neighs, rdf, term)? {
+        if let Some(expr) = fun(&neighs, rdf, term, depth + 1, steps)? {
             return Ok(expr);
         }
     }

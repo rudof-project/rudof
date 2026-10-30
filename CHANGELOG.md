@@ -12,6 +12,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ## [Unreleased]
 ### Added
 - `rudof_rdf`: `ParseBudget` holds the steps that parsing SHACL paths may take, and `ShaclPathParser::with_budget` takes them from a budget shared with other parsers, as `ShaclParser` does for the paths of a shapes graph.
+- `rudof_rdf`: `parse_path`, `MAX_PATH_DEPTH`, `MIN_PARSE_STEPS` and `PARSE_STEPS_PER_TRIPLE` are public, so that node expressions parse the paths inside them under the same limits.
 
 ### Fixed
 - A cyclic SHACL path, such as `_:p sh:zeroOrMorePath _:p`, is an invalid path error instead of a stack overflow.
@@ -26,10 +27,16 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - On native targets, deeply nested or long chains of SHACL shapes, and recursive shapes over long data chains (such as 10,000 nodes linked by `:next`), are compiled and validated instead of overflowing the stack.
 - A long chain of `owl:imports` under `sh:prefixes` is followed without a stack overflow.
 - Reading a validation report keeps one level of `sh:detail`, as the validator writes, so a cyclic or deep `sh:detail` no longer overflows the stack.
+- A node expression, as in `sh:deactivated`, that is cyclic or nests more than 64 levels is a parse error instead of a stack overflow. Node expressions take their steps from the same parse budget as SHACL paths, so a blank node shared by nested `shnex:concat` is a parse error instead of an exponential expansion.
+- `shnex:filterShape`, `shnex:findFirst`, `shnex:matchAll` and triple term node expressions are parse errors instead of panics.
+- `shnex:nodesMatching` finds the nodes of its shape once per shape that is validated, instead of once per focus node, and a shape deactivated through its own `shnex:nodesMatching` is an error instead of an endless recursion.
+- Evaluating a node expression for one focus node fails after 1,000,000 steps, as nested `shnex:flatMap` can fan out exponentially over the data.
 
 ### Changed
 - A SHACL `sh:detail` result no longer has details of its own: a failed `sh:node`, `sh:and`, `sh:or` or `sh:xone` keeps one level of causes, so reports stay small for long chains.
 - The shapes in a `Dependency graph has cycles` error can be listed in another order, as the cycles are now found without recursion.
+- `Engine` has a new required method, `node_expr_state`, which returns the engine's own `NodeExprState`. An `Engine` implemented outside `shacl` must add it, for example over a `NodeExprState::default()` field.
+- SHACL parsing and validation have hard limits, each reported as an error: a SHACL path or node expression nests at most 64 levels; parsing all the SHACL paths and node expressions of a shapes graph takes at most 4096 steps plus 16 per triple of the graph, each path step and expression counting as one; and evaluating a node expression for one focus node takes at most 1,000,000 steps, each expression evaluated counting as one.
 
 ## 0.3.35
 ### Added

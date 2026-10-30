@@ -7,10 +7,12 @@ pub(crate) fn count<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     rdf: &mut RDF,
     _: &RDF::Term,
+    depth: usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_count())?
         .map(|term| {
-            let count = node_expr_from_term(&term, rdf)?;
+            let count = node_expr_from_term(&term, rdf, depth, steps)?;
             Ok(ASTNodeExpr::Count(count.into()))
         })
         .transpose()

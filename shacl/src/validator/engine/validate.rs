@@ -277,16 +277,24 @@ fn get_active_focus_nodes<RDF: NeighsRDF + Debug>(
         return Ok(focus_nodes.clone());
     };
 
+    // This shape may be validated for the shnex:nodesMatching of an expression being evaluated,
+    // whose step count is put back after the ones counted here
+    let outer_steps = runner.node_expr_state().steps;
     let scope = HashMap::new();
-    let mut active = Vec::new();
-    for node in focus_nodes.iter() {
-        let values = deactivated.evaluate(store, node, &scope, runner, shapes_graph)?;
-        if !node_expr_is_true::<RDF>(&values) {
-            active.push(node.clone());
-        }
-    }
+    let active: Result<Vec<_>, _> = focus_nodes
+        .iter()
+        .filter_map(|node| {
+            runner.node_expr_state().steps = 0;
+            match deactivated.evaluate(store, node, &scope, runner, shapes_graph) {
+                Ok(values) if node_expr_is_true::<RDF>(&values) => None,
+                Ok(_) => Some(Ok(node.clone())),
+                Err(e) => Some(Err(e)),
+            }
+        })
+        .collect();
+    runner.node_expr_state().steps = outer_steps;
 
-    Ok(FocusNodes::from_iter(active))
+    Ok(FocusNodes::from_iter(active?))
 }
 
 /// Validates the reifier(s) of each of `focus_nodes`' relevant triples,

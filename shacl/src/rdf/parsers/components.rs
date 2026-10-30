@@ -42,7 +42,7 @@ pub(crate) fn components<RDF: FocusRDF>(
         Box::new(disjoint()),
         Box::new(less_than()),
         Box::new(less_than_or_equals()),
-        Box::new(subset_of(budget)),
+        Box::new(subset_of(budget.clone())),
         // Logical constraint components
         Box::new(not()),
         Box::new(and()),
@@ -61,7 +61,7 @@ pub(crate) fn components<RDF: FocusRDF>(
         // SPARQL based constraints and SPARQL based constraint components
         Box::new(basic_sparql()),
         // TODO: deactivated is not a shape component...move this code elsewhere?
-        Box::new(deactivated()),
+        Box::new(deactivated(budget)),
     ];
 
     Box::new(class()).combine_many(parsers)

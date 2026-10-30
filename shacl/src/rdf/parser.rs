@@ -32,7 +32,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
 
         let mut state: State = self.shapes_candidates()?.into();
 
-        // A path shared by many shapes is parsed for each of them, so they share one budget
+        // A path or node expression shared by many shapes is parsed for each of them, so they share one budget
         let parser = shape(Arc::default());
         while let Some(node) = state.pop_pending() {
             if !self.shapes.contains_key(&node) {
@@ -49,7 +49,9 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
 
     /// Parses a node expression from `term`.
     pub fn parse_node_expr(&mut self, term: &RDF::Term) -> Result<ASTNodeExpr, ShaclParserError> {
-        let expr = node_expr_from_term(term, self.rdf_parser.rdf_mut())?;
+        let expr = ParseBudget::default().spend(self.rdf_parser.rdf_mut(), |rdf, steps| {
+            node_expr_from_term(term, rdf, 0, steps)
+        })?;
 
         Ok(expr)
     }
