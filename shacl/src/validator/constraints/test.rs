@@ -712,4 +712,29 @@ prefix : <http://example.org/>
                 .contains("MinCountConstraintComponent")
         }));
     }
+
+    #[test]
+    fn inverse_of_an_alternative_path() {
+        // Issue #920
+        let graph = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+
+:OptionShape a sh:NodeShape ;
+  sh:targetClass :Option ;
+  sh:property [
+    sh:path [ sh:inversePath [ sh:alternativePath ( :considers :chooses ) ] ] ;
+    sh:minCount 1
+  ] .
+
+:option1 a :Option .
+:iteration1 :considers :option1 .
+:option2 a :Option .
+"#;
+        let report = validate_with_config(graph, &ShaclConfig::default());
+        let [result] = report.results().as_slice() else {
+            panic!("expected one result: {:?}", report.results());
+        };
+        assert_eq!(result.focus_node().to_string(), "http://example.org/option2");
+    }
 }

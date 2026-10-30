@@ -28,6 +28,7 @@ pub use endpoint_strategy::EndpointStrategy;
 mod tests {
     mod in_memory_tests;
     mod neighs_iterator_tests;
+    mod shacl_path_eval_tests;
     mod shacl_path_literal_tests;
     mod shacl_path_parser_tests;
     mod shacl_path_writer_tests;

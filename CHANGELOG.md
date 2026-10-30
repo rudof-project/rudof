@@ -18,6 +18,9 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - A SHACL path nested more than 64 levels deep is an invalid path error instead of a stack overflow. Parsing the SHACL paths of a shapes graph takes at most 4096 steps plus 16 per triple in all, so a blank node shared by nested sequences, or a long path shared by many shapes, is an invalid path error instead of an exponential expansion.
 - An invalid part of a SHACL path is reported with its own error instead of `Unsupported SHACL path construct`.
 - Long RDF lists (`sh:in`, `sh:or`, sequence paths and others) are parsed in linear time and without a stack overflow.
+- `sh:inversePath` over a path that is not a single predicate is evaluated instead of panicking ([#920](https://github.com/rudof-project/rudof/issues/920)).
+- Long sequence paths are evaluated in linear time and without a stack overflow.
+- Nested repetition paths, such as `((:p*)*)*`, are evaluated in polynomial time instead of a time exponential in the nesting.
 
 ## 0.3.35
 ### Added
