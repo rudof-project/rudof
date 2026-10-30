@@ -223,7 +223,7 @@ impl IRSchema {
                 let label_idx = ShapeLabelIdx::new(self.get_next_idx());
                 self.labels_idx_map.insert(id.clone(), label_idx);
                 self.idx_labels_map.insert(label_idx, id.clone());
-                let compiled = IRShape::compile(shape, ast, self)?;
+                let compiled = crate::with_stack(|| IRShape::compile(shape, ast, self))?;
                 self.shapes.insert(label_idx, compiled);
                 Ok(label_idx)
             },

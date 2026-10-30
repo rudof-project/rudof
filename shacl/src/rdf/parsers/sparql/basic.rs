@@ -60,7 +60,7 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for BasicSparqlConstraintParser<RDF> {
     }
 }
 
-/// Recursively collects `(prefix, namespace)` pairs from a SHACL prefix ontology node.
+/// Collects `(prefix, namespace)` pairs from a SHACL prefix ontology node.
 ///
 /// Follows `sh:declare` to pick up `sh:prefix` / `sh:namespace` pairs, and
 /// `owl:imports` to include prefixes declared in imported ontologies.
@@ -70,34 +70,34 @@ fn collect_prefixes<RDF: FocusRDF>(
     out: &mut PrefixMap,
     visited: &mut HashSet<String>,
 ) {
-    let node_str = node.to_string();
-    if !visited.insert(node_str) {
-        return;
-    }
+    // A loop, as a long chain of imports would overflow the stack
+    let mut pending = vec![node.clone()];
+    while let Some(node) = pending.pop() {
+        if !visited.insert(node.to_string()) {
+            continue;
+        }
 
-    rdf.set_focus(node);
+        rdf.set_focus(&node);
 
-    // sh:declare: bnodes with sh:prefix and sh:namespace
-    if let Ok(decl_nodes) = ValuesPropertyParser::new(ShaclVocab::sh_declare()).parse_focused(rdf) {
-        for decl in decl_nodes {
-            rdf.set_focus(&decl);
-            let prefix = SingleStringPropertyParser::new(ShaclVocab::sh_prefix()).parse_focused(rdf);
-            let ns = SingleStringPropertyParser::new(ShaclVocab::sh_namespace()).parse_focused(rdf);
-            if let (Ok(p), Ok(n)) = (prefix, ns)
-                && let Ok(iri) = IriS::new(&n)
-            {
-                out.add_prefix(&p, iri);
+        // sh:declare: bnodes with sh:prefix and sh:namespace
+        if let Ok(decl_nodes) = ValuesPropertyParser::new(ShaclVocab::sh_declare()).parse_focused(rdf) {
+            for decl in decl_nodes {
+                rdf.set_focus(&decl);
+                let prefix = SingleStringPropertyParser::new(ShaclVocab::sh_prefix()).parse_focused(rdf);
+                let ns = SingleStringPropertyParser::new(ShaclVocab::sh_namespace()).parse_focused(rdf);
+                if let (Ok(p), Ok(n)) = (prefix, ns)
+                    && let Ok(iri) = IriS::new(&n)
+                {
+                    out.add_prefix(&p, iri);
+                }
             }
+            rdf.set_focus(&node);
         }
-        rdf.set_focus(node);
-    }
 
-    // owl:imports
-    if let Ok(import_nodes) = ValuesPropertyParser::new(OwlVocab::owl_imports()).parse_focused(rdf) {
-        for imp in import_nodes {
-            collect_prefixes(rdf, &imp, out, visited);
+        // owl:imports
+        if let Ok(import_nodes) = ValuesPropertyParser::new(OwlVocab::owl_imports()).parse_focused(rdf) {
+            pending.extend(import_nodes);
         }
-        rdf.set_focus(node);
     }
 }
 

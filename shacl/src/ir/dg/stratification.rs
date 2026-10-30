@@ -1,7 +1,7 @@
 use crate::ir::ShapeLabelIdx;
 use crate::ir::dg::DependencyGraph;
 use petgraph::Outgoing;
-use petgraph::algo::tarjan_scc;
+use petgraph::algo::kosaraju_scc;
 use petgraph::prelude::EdgeRef;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
@@ -73,7 +73,8 @@ impl DependencyGraph {
     ///    previous rule), or [`ShapeRecursionKind::Positive`] if it has
     ///    none.
     pub fn shape_recursion_kinds(&self) -> HashMap<ShapeLabelIdx, ShapeRecursionKind> {
-        let sccs = tarjan_scc(&self.graph);
+        // Iterative, unlike tarjan_scc; both list the SCCs in postorder, which depends_on_recursive relies on
+        let sccs = kosaraju_scc(&self.graph);
 
         let mut scc_of: HashMap<ShapeLabelIdx, usize> = HashMap::new();
         for (i, component) in sccs.iter().enumerate() {

@@ -8,12 +8,14 @@ pub(crate) fn order_by<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     rdf: &mut RDF,
     _: &RDF::Term,
+    depth: usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_order_by())?
         .map(|term| {
             let desc = desc::<RDF>(neighs)?;
-            let order_by = node_expr_from_term(&term, rdf)?;
-            let nodes = required_nodes::<RDF>(neighs, rdf, "shnex:orderBy")?;
+            let order_by = node_expr_from_term(&term, rdf, depth, steps)?;
+            let nodes = required_nodes::<RDF>(neighs, rdf, "shnex:orderBy", depth, steps)?;
             Ok(ASTNodeExpr::OrderBy {
                 desc,
                 order_by: order_by.into(),

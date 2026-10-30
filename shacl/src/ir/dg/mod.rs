@@ -1,7 +1,7 @@
 use crate::ir::ShapeLabelIdx;
 pub(crate) use crate::ir::dg::iterator::DependencyGraphIter;
 pub(crate) use crate::ir::dg::pos_neg::PosNeg;
-use petgraph::algo::{is_cyclic_directed, tarjan_scc};
+use petgraph::algo::{kosaraju_scc, toposort};
 use petgraph::prelude::{EdgeRef, GraphMap};
 use petgraph::{Directed, Outgoing};
 use std::collections::HashMap;
@@ -29,11 +29,12 @@ impl DependencyGraph {
 
     /// Check if the dependency graph has any cycle (including positive cycles).
     pub fn has_cycles(&self) -> bool {
-        is_cyclic_directed(&self.graph)
+        // Iterative, unlike is_cyclic_directed, which recurses once per shape along a chain
+        toposort(&self.graph, None).is_err()
     }
 
     pub fn cycles(&self) -> Vec<Vec<ShapeLabelIdx>> {
-        let scc = tarjan_scc(&self.graph);
+        let scc = kosaraju_scc(&self.graph);
         scc.into_iter().filter(|component| component.len() > 1).collect()
     }
 

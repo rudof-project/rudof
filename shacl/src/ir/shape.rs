@@ -170,9 +170,9 @@ impl IRShape {
         ir: &IRSchema,
         cache: &mut HashSet<ShapeLabelIdx>,
     ) {
-        match self {
+        crate::with_stack(|| match self {
             IRShape::NodeShape(ns) => ns.add_edges(idx, dg, posneg, ir, cache),
             IRShape::PropertyShape(ps) => ps.add_edges(idx, dg, posneg, ir, cache),
-        }
+        })
     }
 }

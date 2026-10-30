@@ -34,16 +34,19 @@ impl IRTarget {
                 Some(constant) => graph.add_triple(node, ShaclVocab::sh_target_node(), constant),
                 None => todo!("unable to serialize a composite sh:targetNode node expression"),
             },
-            Target::Class(c) => graph.add_triple(node, ShaclVocab::sh_target_class(), c.clone()),
+            // An ill-formed target is written back as it was read
+            Target::WrongNode(o) => graph.add_triple(node, ShaclVocab::sh_target_node(), o.clone()),
+            Target::Class(c) | Target::WrongClass(c) => {
+                graph.add_triple(node, ShaclVocab::sh_target_class(), c.clone())
+            },
             Target::SubjectsOf(s) => graph.add_triple(node, ShaclVocab::sh_target_subjects_of(), s.clone()),
             Target::ObjectsOf(o) => graph.add_triple(node, ShaclVocab::sh_target_objects_of(), o.clone()),
             // TODO - Review this code and in SHACL 1.2, add sh_shape_class ?
-            Target::ImplicitClass(_) => graph.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class()),
-            Target::WrongNode(_) => todo!(),
-            Target::WrongClass(_) => todo!(),
-            Target::WrongSubjectsOf(_) => todo!(),
-            Target::WrongObjectsOf(_) => todo!(),
-            Target::WrongImplicitClass(_) => todo!(),
+            Target::ImplicitClass(_) | Target::WrongImplicitClass(_) => {
+                graph.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class())
+            },
+            Target::WrongSubjectsOf(o) => graph.add_triple(node, ShaclVocab::sh_target_subjects_of(), o.clone()),
+            Target::WrongObjectsOf(o) => graph.add_triple(node, ShaclVocab::sh_target_objects_of(), o.clone()),
         }
     }
 }

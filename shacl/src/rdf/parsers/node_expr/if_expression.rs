@@ -7,12 +7,14 @@ pub(crate) fn if_expresion<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     rdf: &mut RDF,
     _: &RDF::Term,
+    depth: usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_if())?
         .map(|term| {
-            let if_condition = node_expr_from_term(&term, rdf)?;
-            let then = optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_then(), rdf)?;
-            let else_expr = optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_else(), rdf)?;
+            let if_condition = node_expr_from_term(&term, rdf, depth, steps)?;
+            let then = optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_then(), rdf, depth, steps)?;
+            let else_expr = optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_else(), rdf, depth, steps)?;
 
             if then.is_none() && else_expr.is_none() {
                 return Err(RDFError::DefaultError {
