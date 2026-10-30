@@ -23,6 +23,13 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - Nested repetition paths, such as `((:p*)*)*`, are evaluated in polynomial time instead of a time exponential in the nesting.
 - Literals typed `xsd:long`, `xsd:short`, `xsd:byte`, the unsigned types and the (non)positive/negative integer types keep their lexical form, so `sh:hasValue`, `sh:in` and ShEx value sets match `"01"^^xsd:long` in the data, and reports show it unchanged.
 - A range constraint that mixes these types with `xsd:integer`, such as `sh:minInclusive "3"^^xsd:long` on `5`, compares the values instead of failing.
+- On native targets, deeply nested or long chains of SHACL shapes, and recursive shapes over long data chains (such as 10,000 nodes linked by `:next`), are compiled and validated instead of overflowing the stack.
+- A long chain of `owl:imports` under `sh:prefixes` is followed without a stack overflow.
+- Reading a validation report keeps one level of `sh:detail`, as the validator writes, so a cyclic or deep `sh:detail` no longer overflows the stack.
+
+### Changed
+- A SHACL `sh:detail` result no longer has details of its own: a failed `sh:node`, `sh:and`, `sh:or` or `sh:xone` keeps one level of causes, so reports stay small for long chains.
+- The shapes in a `Dependency graph has cycles` error can be listed in another order, as the cycles are now found without recursion.
 
 ## 0.3.35
 ### Added

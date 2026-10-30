@@ -34,6 +34,19 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         source_shape: Option<&IRShape>,
         shapes_graph: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
+        crate::with_stack(|| self.validate_shape(store, runner, targets, source_shape, shapes_graph))
+    }
+}
+
+impl IRShape {
+    fn validate_shape<RDF: NeighsRDF + Debug>(
+        &self,
+        store: &RDF,
+        runner: &mut dyn Engine<RDF>,
+        targets: Option<&FocusNodes<RDF>>,
+        source_shape: Option<&IRShape>,
+        shapes_graph: &IRSchema,
+    ) -> Result<ValidationOutcome, ValidationError> {
         // Get focus nodes
         let focus_nodes = match targets {
             None => &self.focus_nodes(store, runner),

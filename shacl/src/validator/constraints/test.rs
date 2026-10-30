@@ -271,7 +271,7 @@ prefix : <http://example.org/>
             .expect_err("expected a cyclic schema to be rejected under None")
             .to_string();
         assert!(
-            error.starts_with("Dependency graph has cycles: [:S, _:"),
+            error.starts_with("Dependency graph has cycles: [") && error.contains(":S") && error.contains("_:"),
             "unexpected message: {error}"
         );
         assert!(
@@ -355,13 +355,6 @@ prefix : <http://example.org/>
     /// targets falsely look like ancestors of each other, cutting the chain
     /// nodes as if they were cyclic. Every chain node must conform; every
     /// cycle node must not (LFP).
-    ///
-    /// Lengths are kept modest deliberately: this recursive-descent
-    /// validator's call-stack depth scales with recursion depth regardless
-    /// of whether it's cyclic — a pre-existing, orthogonal characteristic of
-    /// the architecture (the same is true of e.g. deeply nested `sh:and`
-    /// trees) — so this test is about correctness of cycle-cutting, not a
-    /// claim about maximum supported chain length.
     #[test]
     fn chain_and_cycle_in_the_same_batch_terminate_correctly() {
         let mut graph = String::from(
@@ -768,5 +761,155 @@ prefix : <http://example.org/>
             .map(|v| v.to_string())
             .collect();
         assert_eq!(values, ["\"02\"^^xsd:long"]);
+    }
+
+    const DEPTH: usize = 10_000;
+
+    /// Runs `f` on a 256 KiB thread, far less stack than `DEPTH` levels of recursion take.
+    fn on_small_stack(f: impl FnOnce() + Send + 'static) {
+        std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(f)
+            .unwrap()
+            .join()
+            .unwrap();
+    }
+
+    const PREFIXES: &str = "prefix sh: <http://www.w3.org/ns/shacl#>\nprefix : <http://example.org/>\n";
+
+    #[test]
+    fn deeply_nested_property_shapes_in_a_cycle() {
+        on_small_stack(|| {
+            let mut graph = format!("{PREFIXES}:S sh:targetNode :a ; sh:property _:p0 .\n:a :p :a .\n");
+            for i in 0..DEPTH {
+                graph.push_str(&format!("_:p{i} sh:path :p ; sh:property _:p{} .\n", i + 1));
+            }
+            graph.push_str(&format!("_:p{DEPTH} sh:path :p ; sh:node :S .\n"));
+            let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
+
+            let report = validate_with_config(&graph, &config);
+            assert_eq!(report.results().len(), 1, "{:?}", report.results());
+        });
+    }
+
+    #[test]
+    fn deeply_nested_not() {
+        on_small_stack(|| {
+            let mut graph = format!("{PREFIXES}:S sh:targetNode :a ; sh:not _:n0 .\n");
+            for i in 0..DEPTH {
+                graph.push_str(&format!("_:n{i} sh:not _:n{} .\n", i + 1));
+            }
+            // An odd number of sh:not, so :S is sh:not [ sh:class :C ]
+            graph.push_str(&format!("_:n{DEPTH} sh:class :C .\n"));
+
+            assert!(validate_with_config(&graph, &ShaclConfig::default()).conforms());
+        });
+    }
+
+    #[test]
+    fn long_cycle_of_node_shapes_is_rejected() {
+        on_small_stack(|| {
+            let mut graph = PREFIXES.to_string();
+            for i in 0..DEPTH {
+                graph.push_str(&format!(":S{i} sh:node :S{} .\n", i + 1));
+            }
+            graph.push_str(&format!(":S{DEPTH} sh:node :S0 .\n"));
+            let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let schema = ShaclParser::new(rdf).parse().unwrap();
+
+            assert!(IRSchema::compile_with_recursion(&schema, RecursionSemantics::None).is_err());
+        });
+    }
+
+    #[test]
+    fn long_chain_of_node_shapes_keeps_one_level_of_details() {
+        on_small_stack(|| {
+            let mut graph = format!("{PREFIXES}:S0 sh:targetNode :a .\n");
+            for i in 0..DEPTH {
+                graph.push_str(&format!(":S{i} sh:node :S{} .\n", i + 1));
+            }
+            graph.push_str(&format!(":S{DEPTH} sh:class :C .\n"));
+
+            let report = validate_with_config(&graph, &ShaclConfig::default());
+            let [result] = report.results().as_slice() else {
+                panic!("expected one result: {:?}", report.results());
+            };
+            let [detail] = result.details() else {
+                panic!("expected exactly one detail: {result}");
+            };
+            assert!(detail.details().is_empty(), "{detail}");
+        });
+    }
+
+    #[test]
+    fn recursive_shape_over_a_long_data_chain() {
+        use rudof_rdf::rdf_core::BuildRDF;
+        use rudof_rdf::rdf_impl::OxigraphInMemory;
+
+        on_small_stack(|| {
+            let mut graph = format!(
+                "{PREFIXES}:S sh:targetNode :n0 ;
+                   sh:property [ sh:path :next ; sh:node :S ] ;
+                   sh:property [ sh:path :label ; sh:minCount 1 ] .\n"
+            );
+            for i in 0..DEPTH {
+                graph.push_str(&format!(":n{i} :label {i} ; :next :n{} .\n", i + 1));
+            }
+            let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
+
+            // The last node has no label, so every node before it fails too
+            let report = validate_with_config(&graph, &config);
+            let [result] = report.results().as_slice() else {
+                panic!("expected one result: {:?}", report.results());
+            };
+            assert_eq!(result.focus_node().to_string(), "http://example.org/n0");
+            let [detail] = result.details() else {
+                panic!("expected exactly one detail: {result}");
+            };
+            assert!(detail.details().is_empty(), "{detail}");
+            report.to_rdf(&mut OxigraphInMemory::empty()).unwrap();
+
+            graph.push_str(&format!(":n{DEPTH} :label {DEPTH} .\n"));
+            let report = validate_with_config(&graph, &config);
+            assert!(report.conforms(), "{:?}", report.results());
+        });
+    }
+
+    #[test]
+    fn long_chain_of_owl_imports() {
+        on_small_stack(|| {
+            let mut graph = format!(
+                "{PREFIXES}prefix owl: <http://www.w3.org/2002/07/owl#>\n\
+                 :S sh:targetNode :a ; sh:sparql [ sh:select \"SELECT $this WHERE {{ }}\" ; sh:prefixes :o0 ] .\n"
+            );
+            for i in 0..DEPTH {
+                graph.push_str(&format!(":o{i} owl:imports :o{} .\n", i + 1));
+            }
+            let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+
+            assert!(ShaclParser::new(rdf).parse().is_ok());
+        });
+    }
+
+    #[test]
+    fn cyclic_detail_in_a_report_is_read_one_level_deep() {
+        on_small_stack(|| {
+            let graph = format!(
+                "{PREFIXES}:r sh:result _:x .\n\
+                 _:x sh:focusNode :a ; sh:resultSeverity sh:Violation ;\n\
+                 sh:sourceConstraintComponent sh:NodeConstraintComponent ; sh:detail _:x .\n"
+            );
+            let mut rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let report_node = rudof_rdf::rdf_core::term::Object::iri(rudof_iri::iri!("http://example.org/r"));
+            let report = crate::validator::report::ValidationReport::parse(&mut rdf, report_node.into()).unwrap();
+
+            let [result] = report.results().as_slice() else {
+                panic!("expected one result: {:?}", report.results());
+            };
+            let [detail] = result.details() else {
+                panic!("expected one detail: {:?}", result.details());
+            };
+            assert!(detail.details().is_empty());
+        });
     }
 }

@@ -41,7 +41,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                         if results.conforms() {
                             conforming_shapes += 1;
                         } else {
-                            details.extend_from_slice(results.violations());
+                            details.extend(
+                                results
+                                    .violations()
+                                    .iter()
+                                    .cloned()
+                                    .map(ValidationResult::without_details),
+                            );
                         }
                     }
                 }

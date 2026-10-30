@@ -40,7 +40,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                         conforms = true;
                         break;
                     }
-                    details.extend_from_slice(inner_results.violations());
+                    details.extend(
+                        inner_results
+                            .violations()
+                            .iter()
+                            .cloned()
+                            .map(ValidationResult::without_details),
+                    );
                 }
                 let node_obj = S::term_as_object(node).ok();
                 if conforms {
