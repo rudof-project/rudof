@@ -1136,31 +1136,16 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
                 }),
 
             (s, Some(dtype), None, None) => {
-                let datatype_iri = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                let iri_str = dtype.as_str();
-                // For bare numeric types in Turtle, preserve original lexical form for valid values
-                // (ShEx value set matching requires lexical-form equality, not value equality).
-                // But invalid lexical forms must still produce WrongDatatypeLiteral.
-                if iri_str == XsdVocab::XSD_INTEGER
-                    || iri_str == XsdVocab::XSD_DECIMAL
-                    || iri_str == XsdVocab::XSD_DOUBLE
-                    || iri_str == XsdVocab::XSD_FLOAT
-                {
-                    match check_literal_datatype(s.as_ref(), &datatype_iri) {
-                        Ok(ConcreteLiteral::WrongDatatypeLiteral { error, .. }) => {
-                            Ok(ConcreteLiteral::WrongDatatypeLiteral {
-                                lexical_form: s.to_string(),
-                                datatype: datatype_iri,
-                                error,
-                            })
-                        },
-                        _ => Ok(ConcreteLiteral::DatatypeLiteral {
-                            lexical_form: s.to_string(),
-                            datatype: datatype_iri,
-                        }),
-                    }
-                } else {
-                    check_literal_datatype(s.as_ref(), &datatype_iri)
+                let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
+                // Valid numbers keep their lexical form, as ShEx and SHACL compare
+                // literals as RDF terms ("01"^^xsd:long is not "1"^^xsd:long).
+                // Invalid lexical forms still produce WrongDatatypeLiteral.
+                match check_literal_datatype(&s, &datatype)? {
+                    ConcreteLiteral::NumericLiteral(_) => Ok(ConcreteLiteral::DatatypeLiteral {
+                        lexical_form: s,
+                        datatype,
+                    }),
+                    checked => Ok(checked),
                 }
             },
 

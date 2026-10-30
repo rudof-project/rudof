@@ -21,6 +21,8 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `sh:inversePath` over a path that is not a single predicate is evaluated instead of panicking ([#920](https://github.com/rudof-project/rudof/issues/920)).
 - Long sequence paths are evaluated in linear time and without a stack overflow.
 - Nested repetition paths, such as `((:p*)*)*`, are evaluated in polynomial time instead of a time exponential in the nesting.
+- Literals typed `xsd:long`, `xsd:short`, `xsd:byte`, the unsigned types and the (non)positive/negative integer types keep their lexical form, so `sh:hasValue`, `sh:in` and ShEx value sets match `"01"^^xsd:long` in the data, and reports show it unchanged.
+- A range constraint that mixes these types with `xsd:integer`, such as `sh:minInclusive "3"^^xsd:long` on `5`, compares the values instead of failing.
 
 ## 0.3.35
 ### Added

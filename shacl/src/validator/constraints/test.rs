@@ -737,4 +737,36 @@ prefix : <http://example.org/>
         };
         assert_eq!(result.focus_node().to_string(), "http://example.org/option2");
     }
+
+    #[test]
+    fn typed_literals_keep_their_lexical_form() {
+        let graph = r#"
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix : <http://example.org/>
+
+:S a sh:NodeShape ;
+  sh:targetClass :Node ;
+  sh:property [ sh:path :p ; sh:hasValue "01"^^xsd:long ] ;
+  sh:property [ sh:path :q ; sh:minInclusive "3"^^xsd:long ] .
+
+:ok a :Node ; :p "01"^^xsd:long ; :q 5 .
+:ko a :Node ; :p "1"^^xsd:long ; :q "02"^^xsd:long .
+"#;
+        let report = validate_with_config(graph, &ShaclConfig::default());
+        assert_eq!(report.results().len(), 2, "{:?}", report.results());
+        assert!(
+            report
+                .results()
+                .iter()
+                .all(|r| r.focus_node().to_string() == "http://example.org/ko")
+        );
+        let values: Vec<String> = report
+            .results()
+            .iter()
+            .filter_map(|r| r.value())
+            .map(|v| v.to_string())
+            .collect();
+        assert_eq!(values, ["\"02\"^^xsd:long"]);
+    }
 }
