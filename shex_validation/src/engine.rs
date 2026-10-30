@@ -45,6 +45,12 @@ type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 
+/// The errors of a referenced pair as they are embedded in the referrer's errors
+/// (see [`ValidatorError::without_nested_references`]).
+fn without_nested_references(errors: Vec<ValidatorError>) -> Vec<ValidatorError> {
+    errors.iter().map(|e| e.without_nested_references()).collect()
+}
+
 #[derive(Debug, Clone)]
 pub struct Engine {
     checked: IndexSet<Atom>,
@@ -54,7 +60,13 @@ pub struct Engine {
     reasons: HashMap<PosAtom, Vec<Reason>>,
     errors: HashMap<NegAtom, Vec<ValidatorError>>,
     typing: ObservableTyping,
-    hyp_touched: bool,
+    /// Hypotheses (pairs assumed to hold because they are being proved up the
+    /// stack) that the result being proved has used so far.
+    hyp_deps: HashSet<PosAtom>,
+    /// Positive results that used hypotheses, with the hypotheses they used. They
+    /// are reused while those hypotheses are still assumed, and committed to
+    /// `typing` when the outermost proof ends (see `commit_provisional`).
+    provisional: HashMap<PosAtom, (ValidationResult, HashSet<PosAtom>)>,
 }
 
 impl Engine {
@@ -67,7 +79,8 @@ impl Engine {
             reasons: HashMap::new(),
             errors: HashMap::new(),
             typing: ObservableTyping::new(config.typing_observer()),
-            hyp_touched: false,
+            hyp_deps: HashSet::new(),
+            provisional: HashMap::new(),
         }
     }
 
@@ -342,6 +355,13 @@ impl Engine {
         if let Some(cached) = self.typing.get(&key) {
             return Ok(cached.clone());
         }
+        if let Some((result, deps)) = self.provisional.get(&key)
+            && deps.iter().all(|d| hyp.contains(d))
+        {
+            let result = result.clone();
+            self.hyp_deps.extend(deps.iter().cloned());
+            return Ok(result);
+        }
 
         self.new_step();
         if rudof_rdf::cancellation::is_cancelled() {
@@ -369,8 +389,7 @@ impl Engine {
             }
         }
 
-        let saved_hyp_touched = self.hyp_touched;
-        self.hyp_touched = false;
+        let saved_hyp_deps = std::mem::take(&mut self.hyp_deps);
 
         hyp.push(key.clone());
         let mut typing = RefTyping::new();
@@ -386,9 +405,8 @@ impl Engine {
                 hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
             let candidates = self.dep(node, label, schema, rdf)?;
 
-            if candidates.iter().any(|c| hyp_as_set.contains(c)) {
-                self.hyp_touched = true;
-            }
+            self.hyp_deps
+                .extend(candidates.iter().filter(|c| hyp_as_set.contains(*c)).cloned());
 
             let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
             for (n1, l1) in cleaned_candidates {
@@ -408,14 +426,54 @@ impl Engine {
         let result = self.check_node_idx(node, label, schema, rdf, &mut typing, hyp)?;
         hyp.pop();
 
-        let mine = self.hyp_touched;
-        if !mine {
+        let mut used = std::mem::replace(&mut self.hyp_deps, saved_hyp_deps);
+        used.remove(&key);
+        // A failure found while assuming the hypotheses also holds without them
+        // (validation is monotone; negation is stratified), so it is final. A
+        // success that used hypotheses is provisional until they are settled.
+        if used.is_empty() || result.is_left() {
             self.typing.insert(key, result.clone());
+        } else {
+            self.provisional.insert(key, (result.clone(), used.clone()));
+            self.hyp_deps.extend(used);
+        }
+        if hyp.is_empty() {
+            self.commit_provisional();
         }
 
-        self.hyp_touched = saved_hyp_touched || mine;
-
         Ok(result)
+    }
+
+    /// Settles the provisional successes once the outermost proof is done: the
+    /// largest set of them whose hypotheses are all successes (in the set or
+    /// already in the typing) is consistent, so it belongs to the greatest
+    /// fixpoint and is kept. The rest depended on a pair that failed and will be
+    /// proved again if asked for.
+    fn commit_provisional(&mut self) {
+        let mut kept: HashSet<PosAtom> = self.provisional.keys().cloned().collect();
+        loop {
+            let dropped: Vec<PosAtom> = kept
+                .iter()
+                .filter(|k| {
+                    !self.provisional[*k]
+                        .1
+                        .iter()
+                        .all(|d| kept.contains(d) || self.typing.get(d).is_some_and(|r| r.is_right()))
+                })
+                .cloned()
+                .collect();
+            if dropped.is_empty() {
+                break;
+            }
+            for k in dropped {
+                kept.remove(&k);
+            }
+        }
+        for (key, (result, _)) in std::mem::take(&mut self.provisional) {
+            if kept.contains(&key) {
+                self.typing.insert(key, result);
+            }
+        }
     }
 
     pub(crate) fn check_node_idx<R>(
@@ -641,7 +699,7 @@ impl Engine {
     {
         let key = (node.clone(), *idx);
         let result = if hyp.contains(&key) {
-            self.hyp_touched = true;
+            self.hyp_deps.insert(key);
             Either::Right(Vec::new())
         } else {
             self.prove(node, idx, hyp, schema, rdf)?
@@ -654,7 +712,7 @@ impl Engine {
             Either::Left(errors) => fail(ValidatorError::ShapeRefFailed {
                 node: Box::new(node.clone()),
                 idx: *idx,
-                errors: ValidatorErrors::new(errors),
+                errors: ValidatorErrors::new(without_nested_references(errors)),
             }),
         }
     }
@@ -831,7 +889,7 @@ impl Engine {
                 idx: *idx,
             })
         } else {
-            let errors = typing.errors_for(&(node.clone(), *idx));
+            let errors = without_nested_references(typing.errors_for(&(node.clone(), *idx)));
             fail(ValidatorError::ShapeRefFailed {
                 node: Box::new(node.clone()),
                 idx: *idx,
@@ -2187,7 +2245,7 @@ fn check_expr_neigh(
                                 n.clone(),
                                 *idx,
                                 ks.iter().cloned().collect::<Vec<_>>(),
-                                typing.errors_for(&pair),
+                                without_nested_references(typing.errors_for(&pair)),
                             ))
                             // TODO: if (stop_at_first) break
                             // We don't need to compute all the failed pending values once we find the first pair
