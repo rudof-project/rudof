@@ -1059,4 +1059,34 @@ prefix : <http://example.org/>
         let result = try_validate(&graph).map(|_| ());
         assert!(matches!(&result, Err(e) if e.contains("steps")), "{result:?}");
     }
+
+    #[test]
+    fn ill_formed_terms_are_errors_not_panics() {
+        for (shapes, conforms) in [
+            (":S sh:targetNode _:b ; sh:class :C .", true),
+            (":S sh:targetNode :a ; sh:languageIn ( \"1\" :x ) .", false),
+            (":S sh:targetNode \"x\" ; sh:disjoint :p .", true),
+            (":S sh:targetNode :a ; sh:in ( :a <<( :a :b :c )>> _:b ) .", true),
+        ] {
+            let graph = format!("{PREFIXES}{shapes}\n:a :p :b .\n");
+            assert_eq!(try_validate(&graph).unwrap().conforms(), conforms, "{shapes}");
+        }
+
+        let shapes = ":S sh:targetNode :a ; sh:hasValue <<( :a :p :b )>> .";
+        assert!(try_validate(&format!("{PREFIXES}{shapes}\n")).is_err());
+    }
+
+    #[test]
+    fn ill_formed_target_is_written_back() {
+        let graph = format!("{PREFIXES}:S sh:targetNode _:b ; sh:class :C .\n");
+        let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let schema = ShaclParser::new(rdf).parse().unwrap();
+        let schema_ir = IRSchema::compile_with_recursion(&schema, RecursionSemantics::default()).unwrap();
+        let mut writer = crate::rdf::ShaclWriter::<rudof_rdf::rdf_impl::OxigraphInMemory>::new();
+        writer.register(&schema_ir).unwrap();
+        let mut turtle = Vec::new();
+        writer.serialize(&RDFFormat::Turtle, &mut turtle).unwrap();
+
+        assert!(String::from_utf8(turtle).unwrap().contains("targetNode"));
+    }
 }

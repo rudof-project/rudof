@@ -315,16 +315,12 @@ pub trait Rdf: Sized {
     ///
     /// Returns `RDFError::TermAsLang` if the term is not a language-tagged literal.
     fn term_as_lang(term: &Self::Term) -> std::result::Result<Lang, RDFError> {
-        if term.is_blank_node() {
-            Err(RDFError::TermAsLang { term: term.to_string() })
-        } else if let Ok(literal) = Self::term_as_literal(term) {
-            let lang = Lang::new(literal.lexical_form());
-            match lang {
-                Ok(lang) => Ok(lang),
-                Err(_) => todo!(),
-            }
+        if let Ok(literal) = Self::term_as_literal(term)
+            && let Ok(lang) = Lang::new(literal.lexical_form())
+        {
+            Ok(lang)
         } else {
-            todo!()
+            Err(RDFError::TermAsLang { term: term.to_string() })
         }
     }
 

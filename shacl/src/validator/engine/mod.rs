@@ -61,11 +61,11 @@ pub trait Engine<S: NeighsRDF>: Send {
                 Target::SubjectsOf(p) => self.target_subject_of(store, p),
                 Target::ObjectsOf(p) => self.target_object_of(store, p),
                 Target::ImplicitClass(n) => self.implicit_target_class(store, n),
-                Target::WrongNode(_) => todo!(),
-                Target::WrongClass(_) => todo!(),
-                Target::WrongSubjectsOf(_) => todo!(),
-                Target::WrongObjectsOf(_) => todo!(),
-                Target::WrongImplicitClass(_) => todo!(),
+                Target::WrongNode(node) => self.target_node(store, node),
+                Target::WrongClass(_) | Target::WrongImplicitClass(_) => Err(ValidationError::TargetClassNotIri),
+                Target::WrongSubjectsOf(o) | Target::WrongObjectsOf(o) => {
+                    Err(ValidationError::CastError(o.to_string(), "an IRI".to_string()))
+                },
             })
             .flatten()
             .collect();

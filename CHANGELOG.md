@@ -31,6 +31,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `shnex:filterShape`, `shnex:findFirst`, `shnex:matchAll` and triple term node expressions are parse errors instead of panics.
 - `shnex:nodesMatching` finds the nodes of its shape once per shape that is validated, instead of once per focus node, and a shape deactivated through its own `shnex:nodesMatching` is an error instead of an endless recursion.
 - Evaluating a node expression for one focus node fails after 1,000,000 steps, as nested `shnex:flatMap` can fan out exponentially over the data.
+- A blank node `sh:targetNode` targets nothing, an invalid tag or an IRI in `sh:languageIn` is skipped, a triple term in `sh:hasValue` is a parse error and in `sh:in` is skipped like the other members it cannot read, and a literal focus node of `sh:disjoint` conforms, instead of panicking. Writing the shapes graph writes an ill-formed target back as it was read.
 
 ### Changed
 - A SHACL `sh:detail` result no longer has details of its own: a failed `sh:node`, `sh:and`, `sh:or` or `sh:xone` keeps one level of causes, so reports stay small for long chains.
