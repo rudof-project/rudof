@@ -358,6 +358,38 @@ class GeneratorConfig:
         r"""
         Sets how realistic the generated values should be.
         """
+    @staticmethod
+    def from_toml_str(content: builtins.str) -> GeneratorConfig:
+        r"""
+        Loads configuration from a TOML string (v1, or v2 with `version = 2`).
+        """
+    def set_property_fill(self, probability: builtins.float) -> None:
+        r"""
+        Sets the probability of generating an optional property (0.0 to 1.0).
+        """
+    def set_shapemap_path(self, path: typing.Optional[builtins.str | os.PathLike | pathlib.Path]) -> None:
+        r"""
+        Sets where to write the ShapeMap (RDF output) or the type map (property graph
+        output) that associates every generated node with its shape or type.
+        """
+    def set_rdf_output(self, path: builtins.str | os.PathLike | pathlib.Path, shapemap: typing.Optional[builtins.str | os.PathLike | pathlib.Path] = None) -> None:
+        r"""
+        With property graph output: also write the same graph as RDF (Turtle), and its
+        ShapeMap, so that it can be validated against ShEx or SHACL translations.
+        """
+    def set_violations(self, rate: builtins.float, labels: builtins.str | os.PathLike | pathlib.Path, operators: typing.Optional[typing.Sequence[builtins.str]] = None) -> None:
+        r"""
+        Breaks a share of the generated entities on purpose and writes the ground-truth
+        report: every node (and, for a property graph, edge) that a correct validator
+        must report, with the operator, the property and, for failures induced through
+        references, their cause.
+        """
+    def set_rdf_labels(self, labels: builtins.str | os.PathLike | pathlib.Path, closed: builtins.bool = True, keys_required: builtins.bool = True) -> None:
+        r"""
+        With a PG-Schema input: also write the report of the same broken graph read as
+        RDF. `closed` and `keys_required` say whether the RDF translation keeps
+        PG-Schema's closed records and required keys. Call after `set_violations`.
+        """
     def validate(self) -> None:
         r"""
         Validates the configuration.
@@ -2219,6 +2251,10 @@ class OutputFormat(enum.Enum):
     r"""
     N-Triples - line-based RDF format with one triple per line.
     """
+    Pg = ...
+    r"""
+    Property graph in rudof's `.pg` format, with a type map (PG-Schema input only).
+    """
 
     def __new__(cls) -> OutputFormat: ...
     def __str__(self) -> builtins.str: ...
@@ -2798,6 +2834,10 @@ class SchemaFormat(enum.Enum):
     Shacl = ...
     r"""
     SHACL (Shapes Constraint Language).
+    """
+    PgSchema = ...
+    r"""
+    PG-Schema (property graph schemas).
     """
 
     def __new__(cls) -> SchemaFormat: ...

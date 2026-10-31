@@ -536,6 +536,33 @@ expected_output = [
 ]
 
 [[example]]
+key = "generate_same_data"
+source_file = "generate/generate_same_data.py"
+title = "The Same Data from ShEx, SHACL and PG-Schema"
+description = "Generate from equivalent schemas in the three languages and compare the graphs"
+category = "generate"
+files = {}
+expected_output = [
+    "ShEx graph equals PG-Schema graph: True",
+    "SHACL graph equals PG-Schema graph: True",
+    "property graph valid (PG-Schema): True",
+    "RDF graph valid (SHACL): True",
+]
+
+[[example]]
+key = "generate_violations"
+source_file = "generate/generate_violations.py"
+title = "Controlled Violations and Their Report"
+description = "Break a generated property graph on purpose and check the report with a validator"
+category = "generate"
+files = {}
+expected_output = [
+    "property graph report:",
+    "RDF report:",
+    "PG-Schema validator reports exactly the report: True",
+]
+
+[[example]]
 key = "rudof_config_from_path"
 source_file = "utility/rudof_config_from_path.py"
 title = "RudofConfig From Path"
