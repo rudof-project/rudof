@@ -255,6 +255,20 @@ async fn shacl_class_conforms() {
 }
 
 #[tokio::test]
+async fn shacl_has_value_without_min_count_is_required() {
+    // sh:hasValue requires the value to be present, whatever sh:minCount says; this
+    // is how a second type (a second PG-Schema label) is written in SHACL.
+    assert_shacl_conforms(
+        &format!(
+            "{SHACL_PERSON}\n  sh:property [ sh:path <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ; \
+             sh:hasValue ex:Employee ] ;\n  sh:property [ sh:path ex:status ; sh:hasValue \"active\" ] ."
+        ),
+        keep,
+    )
+    .await;
+}
+
+#[tokio::test]
 async fn shacl_property_shapes_on_the_same_path_are_one_conjunction() {
     // DCAT-AP states sh:class, sh:nodeKind and sh:maxCount of one path in separate
     // property shapes; generating each on its own gives three values.

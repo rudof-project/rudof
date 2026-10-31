@@ -254,3 +254,38 @@ async fn language_defaults_decide_whether_the_same_mutation_fails() {
     assert_eq!(rdf_traps, broken_pg, "{:?}", r.rdf_labels);
     assert!(shacl.failing.is_empty(), "{}", shacl.report);
 }
+
+/// A node type with two labels is typed with both in RDF, as a ShEx shape with two
+/// `rdf:type` constraints or a SHACL shape with a target class and `sh:hasValue` is.
+#[tokio::test]
+async fn a_node_type_with_two_labels_is_typed_with_both_in_rdf() {
+    let pgs = "CREATE NODE TYPE ( StaffType : Person & Employee { name: STRING })";
+    let shacl = "@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix k: <http://rudof.example/pg/key/> .
+@prefix l: <http://rudof.example/pg/label/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+<http://rudof.example/pg/type/StaffType> a sh:NodeShape ; sh:targetClass l:Person ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path rdf:type ; sh:hasValue l:Employee ] ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .";
+    let fixture = Fixture::pgschema(pgs);
+    let dir = fixture.dir.path();
+    let mut cfg = GeneratorConfig::from_toml_str("version = 2\n[run]\nseed = 3\nscale = { entities = 20 }\n").unwrap();
+    cfg.output.path = dir.join("out.pg");
+    cfg.output.format = OutputFormat::Pg;
+    cfg.output.write_stats = false;
+    cfg.output.shapemap = Some(dir.join("out.map"));
+    cfg.output.rdf = Some(dir.join("out.ttl"));
+    let graph = generate(&fixture, cfg).await;
+    let pg = validate_pgschema(&graph, pgs, &std::fs::read_to_string(dir.join("out.map")).unwrap());
+    assert!(pg.failing.is_empty(), "{}", pg.report);
+    let rdf = std::fs::read_to_string(dir.join("out.ttl")).unwrap();
+    assert_eq!(
+        instances_of(&rdf, "http://rudof.example/pg/label/Employee").len(),
+        20,
+        "{rdf}"
+    );
+    let v = validate_shacl(&rdf, shacl);
+    assert!(v.failing.is_empty(), "{}", v.report);
+}

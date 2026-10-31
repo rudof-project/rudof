@@ -274,6 +274,11 @@ impl ShaclToUnified {
                 _ => {},
             }
         }
+        // sh:hasValue requires the value to be present, so the property is required
+        // whatever sh:minCount says.
+        if components.iter().any(|c| matches!(c, ASTComponent::HasValue(_))) {
+            min_cardinality = Some(min_cardinality.unwrap_or(0).max(1));
+        }
 
         (min_cardinality, max_cardinality)
     }

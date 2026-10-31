@@ -34,6 +34,7 @@ use std::path::Path;
 
 /// Namespace of the IRIs that name PG-Schema keys, labels, types and edge types.
 pub const PG_NS: &str = "http://rudof.example/pg/";
+const RDF_TYPE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
 
 pub fn type_iri(type_name: &str) -> String {
@@ -136,6 +137,19 @@ impl PgSchemaToUnified {
                 }
             }
             parts.labels.dedup();
+            // The first label is the type the entities carry; every further label is
+            // one more required `rdf:type` value, as in ShEx (`a [L]`) and SHACL
+            // (`sh:hasValue L` on `rdf:type`), so that all three generate the same data.
+            for label in parts.labels.iter().skip(1) {
+                properties.push(UnifiedPropertyConstraint {
+                    property_iri: RDF_TYPE.to_string(),
+                    constraints: vec![UnifiedConstraint::HasValue(Value::Iri(label_iri(label)))],
+                    min_cardinality: Some(1),
+                    max_cardinality: Some(1),
+                    counts_matching_values: false,
+                    all_values_match: true,
+                });
+            }
             shapes.push(UnifiedShape {
                 id: type_iri(type_name),
                 target_class: parts.labels.first().map(|l| label_iri(l)),
