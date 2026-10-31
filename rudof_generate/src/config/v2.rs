@@ -74,7 +74,17 @@ pub struct Violations {
     pub operators: Option<Vec<String>>,
     pub shapes: Option<Vec<String>>,
     pub labels: Option<PathBuf>,
-    pub rdf_labels: Option<PathBuf>,
+    pub rdf: Option<RdfReadingV2>,
+}
+
+/// `[violations.rdf]`: see [`super::RdfReading`]. Both defaults are those of a
+/// faithful translation (closed shapes, required keys).
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RdfReadingV2 {
+    pub labels: PathBuf,
+    pub closed: Option<bool>,
+    pub keys_required: Option<bool>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -302,7 +312,11 @@ impl ConfigV2 {
                     .map(|s| expand(s))
                     .collect::<Result<_>>()?,
                 labels: v.labels,
-                rdf_labels: v.rdf_labels,
+                rdf: v.rdf.map(|r| super::RdfReading {
+                    labels: r.labels,
+                    closed: r.closed.unwrap_or(true),
+                    keys_required: r.keys_required.unwrap_or(true),
+                }),
             });
         }
 

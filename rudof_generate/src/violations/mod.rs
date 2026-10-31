@@ -48,7 +48,7 @@ pub struct Injected {
     /// Labels in the model's own language.
     pub labels: Vec<ViolationLabel>,
     /// For a property graph model, the labels of the same graph read as RDF
-    /// (see [`ViolationsConfig::rdf_labels`]); `None` for an RDF model, whose
+    /// (see [`crate::config::RdfReading`]); `None` for an RDF model, whose
     /// labels already are RDF labels.
     pub rdf_labels: Option<Vec<ViolationLabel>>,
 }
@@ -114,8 +114,21 @@ pub fn inject(
 
     *triples = graph.into_triples();
     if property_graph {
-        let mut rdf_labels = labels.clone();
-        let mut rdf_failing = failing.clone();
+        let mut rdf_labels: Vec<ViolationLabel> = labels
+            .iter()
+            .cloned()
+            .map(|mut label| {
+                if label.kind == "direct" && harmless_in_rdf(&label, config.rdf.as_ref()) {
+                    label.kind = "trap";
+                }
+                label
+            })
+            .collect();
+        let mut rdf_failing: BTreeSet<String> = rdf_labels
+            .iter()
+            .filter(|l| l.kind == "direct")
+            .map(|l| l.node.clone())
+            .collect();
         rdf_failing.extend(dangling_sources.iter().map(|l| l.node.clone()));
         rdf_labels.extend(dangling_sources);
         rdf_labels.extend(induced_failures(triples, model, entities, &mut rdf_failing));
@@ -131,6 +144,22 @@ pub fn inject(
         labels,
         rdf_labels: None,
     })
+}
+
+/// Whether a mutation that breaks a PG-Schema node leaves it valid in an RDF
+/// translation that drops one of PG-Schema's defaults: an undeclared key breaks
+/// only a closed shape, and a dropped key only a translation that keeps keys
+/// required.
+fn harmless_in_rdf(label: &ViolationLabel, reading: Option<&crate::config::RdfReading>) -> bool {
+    let Some(reading) = reading else {
+        return false;
+    };
+    let is_key = crate::adapters::pgschema::local_name(&label.property, "key").is_some();
+    match label.operator {
+        Some("closed-extra") => !reading.closed,
+        Some("drop-required") => is_key && !reading.keys_required,
+        _ => false,
+    }
 }
 
 /// In a property graph a reference is an edge with a type of its own; node

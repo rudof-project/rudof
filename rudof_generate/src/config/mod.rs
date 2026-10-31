@@ -93,10 +93,25 @@ pub struct ViolationsConfig {
     pub shapes: Vec<String>,
     /// Where to write the ground-truth labels (JSON Lines).
     pub labels: Option<PathBuf>,
-    /// With property graph output: where to write the labels of the same broken
-    /// graph read as RDF, where a reference failure fails the node that holds the
-    /// reference and propagates to a fixpoint, instead of failing the edge.
-    pub rdf_labels: Option<PathBuf>,
+    /// With property graph output: label the same broken graph read as RDF too.
+    pub rdf: Option<RdfReading>,
+}
+
+/// How a PG-Schema reads once translated to ShEx or SHACL, for the labels of the
+/// same broken graph as RDF. A reference failure there fails the node that holds
+/// the reference and propagates to a fixpoint, instead of failing the edge. The
+/// defaults also differ between the languages: PG-Schema records are closed and
+/// keys required unless `OPTIONAL`, while ShEx and SHACL shapes are open and
+/// SHACL properties optional, so a translation may keep or drop either default.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RdfReading {
+    /// Where to write the RDF labels (JSON Lines).
+    pub labels: PathBuf,
+    /// Whether the translated shapes are closed, as PG-Schema records are.
+    pub closed: bool,
+    /// Whether keys without `OPTIONAL` stay required (`sh:minCount 1`, ShEx's
+    /// default `{1,1}`).
+    pub keys_required: bool,
 }
 
 impl Default for ViolationsConfig {
@@ -106,7 +121,7 @@ impl Default for ViolationsConfig {
             operators: ViolationOperator::ALL.to_vec(),
             shapes: Vec::new(),
             labels: None,
-            rdf_labels: None,
+            rdf: None,
         }
     }
 }

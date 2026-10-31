@@ -96,12 +96,21 @@ fn failing(labels: &[Value]) -> BTreeSet<String> {
         .collect()
 }
 
-async fn run(entities: usize, rate: f64) -> Run {
+/// `reading` is extra TOML for `[violations.rdf]` (how the RDF translation reads
+/// the schema's defaults); `operators` restricts the operators when not empty.
+async fn run(entities: usize, rate: f64, operators: &[&str], reading: &str) -> Run {
     let fixture = Fixture::pgschema(CHAIN_PGS);
     let dir = fixture.dir.path();
     let toml = format!(
         "version = 2\n[run]\nseed = 11\nscale = {{ entities = {entities} }}\n[violations]\nrate = {rate}\n\
-         labels = \"{}\"\nrdf_labels = \"{}\"\n[output]\nformat = \"pg\"\nrdf = \"{}\"\nrdf_shapemap = \"{}\"\n",
+         {}labels = \"{}\"\n[violations.rdf]\nlabels = \"{}\"\n{reading}\n\
+         [output]\nformat = \"pg\"\nrdf = \"{}\"\nrdf_shapemap = \"{}\"\n",
+        if operators.is_empty() {
+            String::new()
+        } else {
+            let quoted: Vec<String> = operators.iter().map(|o| format!("\"{o}\"")).collect();
+            format!("operators = [{}]\n", quoted.join(", "))
+        },
         dir.join("labels.jsonl").display().to_string().replace('\\', "/"),
         dir.join("rdf_labels.jsonl").display().to_string().replace('\\', "/"),
         dir.join("out.ttl").display().to_string().replace('\\', "/"),
@@ -159,7 +168,7 @@ fn the_rdf_translations_accept_a_conforming_chain() {
 
 #[tokio::test]
 async fn a_clean_graph_conforms_in_all_three_languages() {
-    let r = run(60, 0.0).await;
+    let r = run(60, 0.0, &[], "").await;
     assert!(r.pg_labels.is_empty() && r.rdf_labels.is_empty());
     let pg = validate_pgschema(&r.graph, CHAIN_PGS, &r.type_map);
     assert!(pg.failing.is_empty(), "{}", pg.report);
@@ -171,7 +180,7 @@ async fn a_clean_graph_conforms_in_all_three_languages() {
 
 #[tokio::test]
 async fn one_broken_graph_is_labelled_for_pg_schema_and_for_rdf() {
-    let r = run(300, 0.3).await;
+    let r = run(300, 0.3, &[], "").await;
 
     let pg = validate_pgschema(&r.graph, CHAIN_PGS, &r.type_map);
     assert_eq!(pg.failing, failing(&r.pg_labels), "{}", pg.report);
@@ -198,4 +207,50 @@ async fn one_broken_graph_is_labelled_for_pg_schema_and_for_rdf() {
             .all(|l| l["kind"] != "induced" || l["node"].as_str().unwrap().contains("__")),
         "property graph induced failures are edges"
     );
+}
+
+/// The SHACL a modeller would write for the same schema: shapes open, and keys
+/// without `sh:minCount`, since SHACL properties are optional by default.
+const CHAIN_SHACL_IDIOMATIC: &str = "@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix t: <http://rudof.example/pg/type/> .
+@prefix k: <http://rudof.example/pg/key/> .
+@prefix l: <http://rudof.example/pg/label/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+t:PersonType a sh:NodeShape ; sh:targetClass l:Person ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:property [ sh:path k:age ; sh:datatype xsd:integer ; sh:minExclusive 17 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path <http://rudof.example/pg/edge/WorksForType/worksFor/conforming-source> ;
+                sh:node t:OrgType ] .
+t:OrgType a sh:NodeShape ; sh:targetClass l:Org ;
+  sh:property [ sh:path k:label ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:property [ sh:path <http://rudof.example/pg/edge/LocatedInType/locatedIn/conforming-source> ;
+                sh:node t:CityType ] .
+t:CityType a sh:NodeShape ; sh:targetClass l:City ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:maxCount 1 ] .";
+
+/// Default closedness and default cardinality differ between the languages, so
+/// the same mutation fails in PG-Schema and is harmless in idiomatic SHACL: an
+/// undeclared key (records are closed, shapes are open) and a dropped key (keys
+/// are required unless OPTIONAL, SHACL properties are optional).
+#[tokio::test]
+async fn language_defaults_decide_whether_the_same_mutation_fails() {
+    let r = run(
+        300,
+        0.3,
+        &["closed-extra", "drop-required"],
+        "closed = false\nkeys_required = false",
+    )
+    .await;
+
+    let pg = validate_pgschema(&r.graph, CHAIN_PGS, &r.type_map);
+    assert_eq!(pg.failing, failing(&r.pg_labels), "{}", pg.report);
+    let shacl = validate_shacl(&r.rdf, CHAIN_SHACL_IDIOMATIC);
+    assert_eq!(bare(&shacl.failing), bare(&failing(&r.rdf_labels)), "{}", shacl.report);
+
+    // Every node broken in the property graph is a trap in the RDF reading.
+    let broken_pg = r.pg_labels.iter().filter(|l| l["kind"] == "direct").count();
+    assert!(broken_pg > 20, "too few broken nodes: {broken_pg}");
+    let rdf_traps = r.rdf_labels.iter().filter(|l| l["kind"] == "trap").count();
+    assert_eq!(rdf_traps, broken_pg, "{:?}", r.rdf_labels);
+    assert!(shacl.failing.is_empty(), "{}", shacl.report);
 }

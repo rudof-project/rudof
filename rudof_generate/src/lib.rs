@@ -203,11 +203,12 @@ impl DataGenerator {
         if let Some(path) = &violations.labels {
             violations::write_labels(path, &injected.labels)?;
         }
-        if let Some(path) = &violations.rdf_labels {
-            let rdf_labels = injected.rdf_labels.as_ref().ok_or_else(|| {
-                DataGeneratorError::Config("violations.rdf_labels needs a PG-Schema input".to_string())
-            })?;
-            violations::write_labels(path, rdf_labels)?;
+        if let Some(reading) = &violations.rdf {
+            let rdf_labels = injected
+                .rdf_labels
+                .as_ref()
+                .ok_or_else(|| DataGeneratorError::Config("[violations.rdf] needs a PG-Schema input".to_string()))?;
+            violations::write_labels(&reading.labels, rdf_labels)?;
         }
         tracing::info!("injected violations: {:?}", violations::summary(&injected.labels));
 
