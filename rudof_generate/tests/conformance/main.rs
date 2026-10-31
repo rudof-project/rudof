@@ -21,6 +21,7 @@
 
 #[path = "../common/mod.rs"]
 mod common;
+mod cross_language;
 mod pgschema;
 mod violations;
 

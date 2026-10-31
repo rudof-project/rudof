@@ -154,7 +154,7 @@ impl DataGenerator {
     /// Write the graph as a property graph (`.pg`) and the type map in place of
     /// the ShapeMap.
     async fn write_property_graph(&self, graph: &rudof_rdf::rdf_impl::OxigraphInMemory) -> Result<()> {
-        use rudof_rdf::rdf_core::NeighsRDF;
+        use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF};
         let model = self
             .processor
             .get_unified_model()
@@ -168,6 +168,17 @@ impl DataGenerator {
         std::fs::write(&self.config.output.path, pg)?;
         if let Some(path) = &self.config.output.shapemap {
             std::fs::write(path, type_map)?;
+        }
+        // The same graph as RDF, for validation against RDF translations of the schema.
+        if let Some(path) = &self.config.output.rdf {
+            let mut turtle = Vec::new();
+            graph
+                .serialize(&rudof_rdf::rdf_core::RDFFormat::Turtle, &mut turtle)
+                .map_err(|e| DataGeneratorError::OutputWriting(e.to_string()))?;
+            std::fs::write(path, turtle)?;
+        }
+        if let Some(path) = &self.config.output.rdf_shapemap {
+            std::fs::write(path, self.shape_map().await)?;
         }
         Ok(())
     }
@@ -188,11 +199,17 @@ impl DataGenerator {
             .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?
             .collect();
         let entities = self.generator.entity_shapes().await;
-        let labels = violations::inject(&mut triples, model, &entities, violations, self.config.generation.seed)?;
+        let injected = violations::inject(&mut triples, model, &entities, violations, self.config.generation.seed)?;
         if let Some(path) = &violations.labels {
-            violations::write_labels(path, &labels)?;
+            violations::write_labels(path, &injected.labels)?;
         }
-        tracing::info!("injected violations: {:?}", violations::summary(&labels));
+        if let Some(path) = &violations.rdf_labels {
+            let rdf_labels = injected.rdf_labels.as_ref().ok_or_else(|| {
+                DataGeneratorError::Config("violations.rdf_labels needs a PG-Schema input".to_string())
+            })?;
+            violations::write_labels(path, rdf_labels)?;
+        }
+        tracing::info!("injected violations: {:?}", violations::summary(&injected.labels));
 
         let mut mutated = rudof_rdf::rdf_impl::OxigraphInMemory::default();
         for t in triples {

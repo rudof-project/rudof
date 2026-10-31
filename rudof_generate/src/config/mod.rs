@@ -93,6 +93,10 @@ pub struct ViolationsConfig {
     pub shapes: Vec<String>,
     /// Where to write the ground-truth labels (JSON Lines).
     pub labels: Option<PathBuf>,
+    /// With property graph output: where to write the labels of the same broken
+    /// graph read as RDF, where a reference failure fails the node that holds the
+    /// reference and propagates to a fixpoint, instead of failing the edge.
+    pub rdf_labels: Option<PathBuf>,
 }
 
 impl Default for ViolationsConfig {
@@ -102,6 +106,7 @@ impl Default for ViolationsConfig {
             operators: ViolationOperator::ALL.to_vec(),
             shapes: Vec::new(),
             labels: None,
+            rdf_labels: None,
         }
     }
 }
@@ -437,6 +442,13 @@ pub struct OutputConfig {
     /// shape that generated it: the exact targets for validating the output.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shapemap: Option<PathBuf>,
+    /// With property graph output: also write the same graph as RDF (Turtle),
+    /// so that it can be validated against RDF translations of the schema.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rdf: Option<PathBuf>,
+    /// The ShapeMap of the RDF written to `rdf`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rdf_shapemap: Option<PathBuf>,
 }
 
 impl Default for OutputConfig {
@@ -449,6 +461,8 @@ impl Default for OutputConfig {
             parallel_writing: false,
             parallel_file_count: 0,
             shapemap: None,
+            rdf: None,
+            rdf_shapemap: None,
         }
     }
 }

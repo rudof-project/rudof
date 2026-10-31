@@ -74,6 +74,7 @@ pub struct Violations {
     pub operators: Option<Vec<String>>,
     pub shapes: Option<Vec<String>>,
     pub labels: Option<PathBuf>,
+    pub rdf_labels: Option<PathBuf>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -141,6 +142,8 @@ pub struct Output {
     pub format: Option<String>,
     pub stats: Option<bool>,
     pub shapemap: Option<PathBuf>,
+    pub rdf: Option<PathBuf>,
+    pub rdf_shapemap: Option<PathBuf>,
 }
 
 impl ConfigV2 {
@@ -263,6 +266,8 @@ impl ConfigV2 {
             config.output.write_stats = stats;
         }
         config.output.shapemap = self.output.shapemap;
+        config.output.rdf = self.output.rdf;
+        config.output.rdf_shapemap = self.output.rdf_shapemap;
 
         // violations
         if let Some(v) = self.violations {
@@ -297,6 +302,7 @@ impl ConfigV2 {
                     .map(|s| expand(s))
                     .collect::<Result<_>>()?,
                 labels: v.labels,
+                rdf_labels: v.rdf_labels,
             });
         }
 

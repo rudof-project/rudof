@@ -42,6 +42,17 @@ pub struct ViolationLabel {
     pub cause: Option<String>,
 }
 
+/// The labels of one broken graph.
+#[derive(Debug, Clone, Default)]
+pub struct Injected {
+    /// Labels in the model's own language.
+    pub labels: Vec<ViolationLabel>,
+    /// For a property graph model, the labels of the same graph read as RDF
+    /// (see [`ViolationsConfig::rdf_labels`]); `None` for an RDF model, whose
+    /// labels already are RDF labels.
+    pub rdf_labels: Option<Vec<ViolationLabel>>,
+}
+
 /// Break entities of `triples` according to `config` and return the labels.
 ///
 /// `entities` pairs every generated node with the shape that generated it.
@@ -51,9 +62,11 @@ pub fn inject(
     entities: &[(String, String)],
     config: &ViolationsConfig,
     seed: Option<u64>,
-) -> Result<Vec<ViolationLabel>> {
+) -> Result<Injected> {
     let mut labels = Vec::new();
     let mut failing: BTreeSet<String> = BTreeSet::new();
+    // Read as RDF, a dangling edge fails the node that holds it.
+    let mut dangling_sources = Vec::new();
     let mut graph = Indexed::new(std::mem::take(triples));
     let property_graph = crate::adapters::pgschema::is_property_graph(model);
 
@@ -76,22 +89,24 @@ pub fn inject(
                 continue;
             }
             if let Some(property) = apply(operator, &mut graph, node, shape, model, &mut rng) {
-                // In a property graph the broken reference is the edge, labelled
-                // by `edge_failures`; its source node still conforms.
-                if property_graph && operator == ViolationOperator::DanglingReference {
-                    break;
-                }
-                if !operator.is_trap() {
-                    failing.insert(node.clone());
-                }
-                labels.push(ViolationLabel {
+                let label = ViolationLabel {
                     node: node.clone(),
                     shape: shape_id.clone(),
                     kind: if operator.is_trap() { "trap" } else { "direct" },
                     property,
                     operator: Some(operator.name()),
                     cause: None,
-                });
+                };
+                // In a property graph the broken reference is the edge, labelled
+                // by `edge_failures`; its source node still conforms.
+                if property_graph && operator == ViolationOperator::DanglingReference {
+                    dangling_sources.push(label);
+                    break;
+                }
+                if !operator.is_trap() {
+                    failing.insert(node.clone());
+                }
+                labels.push(label);
                 break;
             }
         }
@@ -99,12 +114,23 @@ pub fn inject(
 
     *triples = graph.into_triples();
     if property_graph {
+        let mut rdf_labels = labels.clone();
+        let mut rdf_failing = failing.clone();
+        rdf_failing.extend(dangling_sources.iter().map(|l| l.node.clone()));
+        rdf_labels.extend(dangling_sources);
+        rdf_labels.extend(induced_failures(triples, model, entities, &mut rdf_failing));
         labels.extend(edge_failures(triples, model, entities, &failing));
-        return Ok(labels.into_iter().map(as_property_graph_label).collect());
+        return Ok(Injected {
+            labels: labels.into_iter().map(as_property_graph_label).collect(),
+            rdf_labels: Some(rdf_labels),
+        });
     }
     labels.extend(induced_failures(triples, model, entities, &mut failing));
     labels.extend(class_traps(triples, model, entities, &failing));
-    Ok(labels)
+    Ok(Injected {
+        labels,
+        rdf_labels: None,
+    })
 }
 
 /// In a property graph a reference is an edge with a type of its own; node
