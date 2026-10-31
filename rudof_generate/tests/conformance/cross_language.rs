@@ -12,63 +12,34 @@ use rudof_generate::config::OutputFormat;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
-/// Person -worksFor-> Org -locatedIn-> City: two reference steps, no recursion
-/// (SHACL leaves recursion undefined).
-const CHAIN_PGS: &str = "CREATE NODE TYPE ( PersonType : Person {
-    name: STRING,
-    OPTIONAL age: INTEGER CHECK > 17
-}) ;
-CREATE NODE TYPE ( OrgType : Org {
-    label: STRING
-}) ;
-CREATE NODE TYPE ( CityType : City {
-    name: STRING
-}) ;
-CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType) ;
-CREATE EDGE TYPE (:@OrgType) -[LocatedInType : locatedIn]-> (:@CityType)";
-
-/// The PG-Schema above over its RDF encoding (keys, labels and edges as IRIs).
-/// Records are closed in PG-Schema, so the shapes are closed too.
-const CHAIN_SHEX: &str = "PREFIX t: <http://rudof.example/pg/type/>
-PREFIX k: <http://rudof.example/pg/key/>
-PREFIX l: <http://rudof.example/pg/label/>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-t:PersonType CLOSED {
-  a [ l:Person ] ;
-  k:name xsd:string ;
-  k:age xsd:integer MinExclusive 17 ? ;
-  <http://rudof.example/pg/edge/WorksForType/worksFor/conforming-source> @t:OrgType *
+/// A shipped example schema, `examples/schemas/<relative>`.
+fn example(relative: &str) -> String {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("examples/schemas")
+        .join(relative);
+    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
 }
-t:OrgType CLOSED {
-  a [ l:Org ] ;
-  k:label xsd:string ;
-  <http://rudof.example/pg/edge/LocatedInType/locatedIn/conforming-source> @t:CityType *
-}
-t:CityType CLOSED {
-  a [ l:City ] ;
-  k:name xsd:string
-}";
 
-const CHAIN_SHACL: &str = "@prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix t: <http://rudof.example/pg/type/> .
-@prefix k: <http://rudof.example/pg/key/> .
-@prefix l: <http://rudof.example/pg/label/> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-t:PersonType a sh:NodeShape ; sh:targetClass l:Person ;
-  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
-  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
-  sh:property [ sh:path k:age ; sh:datatype xsd:integer ; sh:minExclusive 17 ; sh:maxCount 1 ] ;
-  sh:property [ sh:path <http://rudof.example/pg/edge/WorksForType/worksFor/conforming-source> ;
-                sh:node t:OrgType ] .
-t:OrgType a sh:NodeShape ; sh:targetClass l:Org ;
-  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
-  sh:property [ sh:path k:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
-  sh:property [ sh:path <http://rudof.example/pg/edge/LocatedInType/locatedIn/conforming-source> ;
-                sh:node t:CityType ] .
-t:CityType a sh:NodeShape ; sh:targetClass l:City ;
-  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
-  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .";
+/// The running example, Person -worksFor-> Org -locatedIn-> City: two reference steps,
+/// no recursion (SHACL leaves recursion undefined), as a PG-Schema and as its faithful
+/// ShEx and SHACL translations (closed shapes, required keys).
+fn chain_pgs() -> String {
+    example("equivalence/references.pgs")
+}
+
+fn chain_shex() -> String {
+    example("equivalence/references.shex")
+}
+
+fn chain_shacl() -> String {
+    example("equivalence/references.ttl")
+}
+
+/// The SHACL a modeller would write for the same schema: shapes open, and keys without
+/// `sh:minCount`, since SHACL properties are optional by default.
+fn chain_shacl_idiomatic() -> String {
+    example("cross-language/references-idiomatic.ttl")
+}
 
 struct Run {
     graph: String,
@@ -99,7 +70,7 @@ fn failing(labels: &[Value]) -> BTreeSet<String> {
 /// `reading` is extra TOML for `[violations.rdf]` (how the RDF translation reads
 /// the schema's defaults); `operators` restricts the operators when not empty.
 async fn run(entities: usize, rate: f64, operators: &[&str], reading: &str) -> Run {
-    let fixture = Fixture::pgschema(CHAIN_PGS);
+    let fixture = Fixture::pgschema(&chain_pgs());
     let dir = fixture.dir.path();
     let toml = format!(
         "version = 2\n[run]\nseed = 11\nscale = {{ entities = {entities} }}\n[violations]\nrate = {rate}\n\
@@ -151,13 +122,13 @@ fn the_rdf_translations_accept_a_conforming_chain() {
     let map = "<http://x/p>@<http://rudof.example/pg/type/PersonType>,\n\
                <http://x/o>@<http://rudof.example/pg/type/OrgType>,\n\
                <http://x/c>@<http://rudof.example/pg/type/CityType>";
-    let shex = validate_shex(data, CHAIN_SHEX, map);
+    let shex = validate_shex(data, &chain_shex(), map);
     assert!(shex.failing.is_empty(), "{}", shex.report);
-    let shacl = validate_shacl(data, CHAIN_SHACL);
+    let shacl = validate_shacl(data, &chain_shacl());
     assert!(shacl.failing.is_empty(), "{}", shacl.report);
     // A city without a name fails, and so do the org and the person that reach it.
     let broken = data.replace("k:name \"Oviedo\"", "k:label \"Oviedo\"");
-    let shacl = validate_shacl(&broken, CHAIN_SHACL);
+    let shacl = validate_shacl(&broken, &chain_shacl());
     assert_eq!(
         bare(&shacl.failing),
         BTreeSet::from(["http://x/p".into(), "http://x/o".into(), "http://x/c".into()]),
@@ -170,11 +141,11 @@ fn the_rdf_translations_accept_a_conforming_chain() {
 async fn a_clean_graph_conforms_in_all_three_languages() {
     let r = run(60, 0.0, &[], "").await;
     assert!(r.pg_labels.is_empty() && r.rdf_labels.is_empty());
-    let pg = validate_pgschema(&r.graph, CHAIN_PGS, &r.type_map);
+    let pg = validate_pgschema(&r.graph, &chain_pgs(), &r.type_map);
     assert!(pg.failing.is_empty(), "{}", pg.report);
-    let shex = validate_shex(&r.rdf, CHAIN_SHEX, &r.rdf_shapemap);
+    let shex = validate_shex(&r.rdf, &chain_shex(), &r.rdf_shapemap);
     assert!(shex.failing.is_empty(), "{}", shex.report);
-    let shacl = validate_shacl(&r.rdf, CHAIN_SHACL);
+    let shacl = validate_shacl(&r.rdf, &chain_shacl());
     assert!(shacl.failing.is_empty(), "{}", shacl.report);
 }
 
@@ -182,13 +153,13 @@ async fn a_clean_graph_conforms_in_all_three_languages() {
 async fn one_broken_graph_is_labelled_for_pg_schema_and_for_rdf() {
     let r = run(300, 0.3, &[], "").await;
 
-    let pg = validate_pgschema(&r.graph, CHAIN_PGS, &r.type_map);
+    let pg = validate_pgschema(&r.graph, &chain_pgs(), &r.type_map);
     assert_eq!(pg.failing, failing(&r.pg_labels), "{}", pg.report);
 
     let expected_rdf = bare(&failing(&r.rdf_labels));
-    let shex = validate_shex(&r.rdf, CHAIN_SHEX, &r.rdf_shapemap);
+    let shex = validate_shex(&r.rdf, &chain_shex(), &r.rdf_shapemap);
     assert_eq!(bare(&shex.failing), expected_rdf, "{}", shex.report);
-    let shacl = validate_shacl(&r.rdf, CHAIN_SHACL);
+    let shacl = validate_shacl(&r.rdf, &chain_shacl());
     assert_eq!(bare(&shacl.failing), expected_rdf, "{}", shacl.report);
 
     // The two semantics differ: in RDF a person fails when the city of its
@@ -209,25 +180,6 @@ async fn one_broken_graph_is_labelled_for_pg_schema_and_for_rdf() {
     );
 }
 
-/// The SHACL a modeller would write for the same schema: shapes open, and keys
-/// without `sh:minCount`, since SHACL properties are optional by default.
-const CHAIN_SHACL_IDIOMATIC: &str = "@prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix t: <http://rudof.example/pg/type/> .
-@prefix k: <http://rudof.example/pg/key/> .
-@prefix l: <http://rudof.example/pg/label/> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-t:PersonType a sh:NodeShape ; sh:targetClass l:Person ;
-  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
-  sh:property [ sh:path k:age ; sh:datatype xsd:integer ; sh:minExclusive 17 ; sh:maxCount 1 ] ;
-  sh:property [ sh:path <http://rudof.example/pg/edge/WorksForType/worksFor/conforming-source> ;
-                sh:node t:OrgType ] .
-t:OrgType a sh:NodeShape ; sh:targetClass l:Org ;
-  sh:property [ sh:path k:label ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
-  sh:property [ sh:path <http://rudof.example/pg/edge/LocatedInType/locatedIn/conforming-source> ;
-                sh:node t:CityType ] .
-t:CityType a sh:NodeShape ; sh:targetClass l:City ;
-  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:maxCount 1 ] .";
-
 /// Default closedness and default cardinality differ between the languages, so
 /// the same mutation fails in PG-Schema and is harmless in idiomatic SHACL: an
 /// undeclared key (records are closed, shapes are open) and a dropped key (keys
@@ -242,9 +194,9 @@ async fn language_defaults_decide_whether_the_same_mutation_fails() {
     )
     .await;
 
-    let pg = validate_pgschema(&r.graph, CHAIN_PGS, &r.type_map);
+    let pg = validate_pgschema(&r.graph, &chain_pgs(), &r.type_map);
     assert_eq!(pg.failing, failing(&r.pg_labels), "{}", pg.report);
-    let shacl = validate_shacl(&r.rdf, CHAIN_SHACL_IDIOMATIC);
+    let shacl = validate_shacl(&r.rdf, &chain_shacl_idiomatic());
     assert_eq!(bare(&shacl.failing), bare(&failing(&r.rdf_labels)), "{}", shacl.report);
 
     // Every node broken in the property graph is a trap in the RDF reading.

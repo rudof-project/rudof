@@ -41,23 +41,23 @@ rudof generate --schema examples/simple_shacl.ttl --output-file large_shacl_data
 rudof generate --schema examples/simple.shex --output-file shex_data.ttl --entities 100
 
 # Generate with configuration file and ShEx schema
-rudof generate --generator-config rudof_generate/examples/simple_config.toml --schema rudof_generate/examples/schema.shex
+rudof generate --generator-config rudof_generate/examples/configs/simple_config.toml --schema rudof_generate/examples/schemas/basic/person.shex
 
 # Generate with inline parameters using example ShEx schema
-rudof generate --schema rudof_generate/examples/schema.shex --output-file quick_shex_data.ttl --entities 100
+rudof generate --schema rudof_generate/examples/schemas/basic/person.shex --output-file quick_shex_data.ttl --entities 100
 
 # Generate with custom seed for reproducible ShEx results
-rudof generate --schema rudof_generate/examples/schema.shex --entities 50 --seed 12345
+rudof generate --schema rudof_generate/examples/schemas/basic/person.shex --entities 50 --seed 12345
 ```
 
 ### Configuration-Driven Examples
 
 ```bash
 # Use automatic parallel configuration for medium datasets (works with both formats)
-rudof generate --generator-config rudof_generate/examples/auto_parallel.toml --schema examples/simple_shacl.ttl
+rudof generate --generator-config rudof_generate/examples/configs/auto_parallel.toml --schema examples/simple_shacl.ttl
 
 # Use high-performance parallel configuration for large datasets
-rudof generate --generator-config rudof_generate/examples/parallel_config.toml --schema examples/simple.shex
+rudof generate --generator-config rudof_generate/examples/configs/parallel_config.toml --schema examples/simple.shex
 
 # Show help for all options
 rudof generate --help
@@ -126,10 +126,10 @@ rudof generate --help
 1. **Create a configuration file** (copy from examples below):
 ```bash
 # Copy the simple ready-to-use config
-cp rudof_generate/examples/simple_config.toml my_config.toml
+cp rudof_generate/examples/configs/simple_config.toml my_config.toml
 
 # Or copy the comprehensive example
-cp rudof_generate/examples/config.toml my_config.toml
+cp rudof_generate/examples/configs/config.toml my_config.toml
 ```
 
 2. **Run the generator with your schema**:
@@ -170,7 +170,7 @@ rudof generate --help
 
 ## Configuration
 
-See `examples/config.toml` for configuration options.
+See `examples/configs/config.toml` for configuration options.
 
 ### Configuration Examples
 

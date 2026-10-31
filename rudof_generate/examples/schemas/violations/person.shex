@@ -1,0 +1,12 @@
+PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ex:PersonShape {
+  a [ex:Person] ;
+  ex:name xsd:string ;
+  ex:nick xsd:string {0,2} ;
+  ex:age xsd:integer MININCLUSIVE 18 MAXINCLUSIVE 65 ;
+  ex:status ["active" "retired"] ;
+  ex:code xsd:string /^[A-Z]{3}$/ ;
+  ex:worksFor @ex:OrgShape
+}
+ex:OrgShape { a [ex:Org] ; ex:label xsd:string }

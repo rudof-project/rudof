@@ -1,0 +1,21 @@
+# equivalence/references.pgs as a SHACL modeller would write it: shapes are open, and keys carry no
+# sh:minCount, since SHACL properties are optional by default.
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix t: <http://rudof.example/pg/type/> .
+@prefix k: <http://rudof.example/pg/key/> .
+@prefix l: <http://rudof.example/pg/label/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+t:PersonType a sh:NodeShape ; sh:targetClass l:Person ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:property [ sh:path k:age ; sh:datatype xsd:integer ; sh:minExclusive 17 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path <http://rudof.example/pg/edge/WorksForType/worksFor/conforming-source> ;
+                sh:node t:OrgType ] .
+
+t:OrgType a sh:NodeShape ; sh:targetClass l:Org ;
+  sh:property [ sh:path k:label ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:property [ sh:path <http://rudof.example/pg/edge/LocatedInType/locatedIn/conforming-source> ;
+                sh:node t:CityType ] .
+
+t:CityType a sh:NodeShape ; sh:targetClass l:City ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:maxCount 1 ] .

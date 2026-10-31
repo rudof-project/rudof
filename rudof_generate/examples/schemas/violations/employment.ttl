@@ -1,0 +1,15 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# sh:class asks only for the type of the value; sh:node asks the value to conform.
+ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path ex:worksFor ; sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:Org ] ;
+  sh:property [ sh:path ex:livesIn ; sh:minCount 1 ; sh:maxCount 1 ; sh:node ex:CityShape ] .
+
+ex:OrgShape a sh:NodeShape ; sh:targetClass ex:Org ;
+  sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:datatype xsd:string ] .
+
+ex:CityShape a sh:NodeShape ; sh:targetClass ex:City ;
+  sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:datatype xsd:string ] .

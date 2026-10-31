@@ -1,0 +1,22 @@
+# equivalence/references.pgs as a ShEx modeller would write it: shapes are open (ShEx's default),
+# and properties without a cardinality are required ({1,1}, also ShEx's default).
+PREFIX t: <http://rudof.example/pg/type/>
+PREFIX k: <http://rudof.example/pg/key/>
+PREFIX l: <http://rudof.example/pg/label/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+t:PersonType {
+  a [ l:Person ] ;
+  k:name xsd:string ;
+  k:age xsd:integer MinExclusive 17 ? ;
+  <http://rudof.example/pg/edge/WorksForType/worksFor/conforming-source> @t:OrgType *
+}
+t:OrgType {
+  a [ l:Org ] ;
+  k:label xsd:string ;
+  <http://rudof.example/pg/edge/LocatedInType/locatedIn/conforming-source> @t:CityType *
+}
+t:CityType {
+  a [ l:City ] ;
+  k:name xsd:string
+}

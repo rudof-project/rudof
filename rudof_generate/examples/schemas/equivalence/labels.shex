@@ -1,0 +1,11 @@
+# labels.pgs in ShEx over its RDF encoding: a node with two labels has two rdf:type values.
+PREFIX t: <http://rudof.example/pg/type/>
+PREFIX k: <http://rudof.example/pg/key/>
+PREFIX l: <http://rudof.example/pg/label/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+t:StaffType CLOSED {
+  a [ l:Person ] ;
+  a [ l:Employee ] ;
+  k:name xsd:string
+}

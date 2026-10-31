@@ -23,6 +23,7 @@
 mod common;
 mod cross_language;
 mod equivalence;
+mod examples;
 mod pgschema;
 mod violations;
 

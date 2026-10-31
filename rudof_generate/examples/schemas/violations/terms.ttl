@@ -1,0 +1,15 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+# One shape per term kind, so every lookalike kind gets its share of entities.
+ex:IriShape a sh:NodeShape ; sh:targetClass ex:IriThing ;
+  sh:property [ sh:path ex:kind ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( ex:A ex:B ) ] .
+ex:IntShape a sh:NodeShape ; sh:targetClass ex:IntThing ;
+  sh:property [ sh:path ex:level ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( 1 2 3 ) ] .
+ex:StringShape a sh:NodeShape ; sh:targetClass ex:StringThing ;
+  sh:property [ sh:path ex:status ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "active" "retired" ) ] .
+ex:TypedShape a sh:NodeShape ; sh:targetClass ex:TypedThing ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path ex:count ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
+  sh:property [ sh:path ex:score ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ;
+                sh:minInclusive 0 ; sh:maxInclusive 10 ] .
