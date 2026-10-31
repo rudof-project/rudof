@@ -129,8 +129,16 @@ pub fn inject(
             .filter(|l| l.kind == "direct")
             .map(|l| l.node.clone())
             .collect();
-        rdf_failing.extend(dangling_sources.iter().map(|l| l.node.clone()));
-        rdf_labels.extend(dangling_sources);
+        // A reference to a node without triples is harmless when the translation
+        // requires nothing of its target, e.g. every key optional.
+        for mut label in dangling_sources {
+            if target_requires_something_in_rdf(&label, model, config.rdf.as_ref()) {
+                rdf_failing.insert(label.node.clone());
+            } else {
+                label.kind = "trap";
+            }
+            rdf_labels.push(label);
+        }
         rdf_labels.extend(induced_failures(triples, model, entities, &mut rdf_failing));
         labels.extend(edge_failures(triples, model, entities, &failing));
         return Ok(Injected {
@@ -160,6 +168,33 @@ fn harmless_in_rdf(label: &ViolationLabel, reading: Option<&crate::config::RdfRe
         Some("drop-required") => is_key && !reading.keys_required,
         _ => false,
     }
+}
+
+/// Whether the target shape of the reference broken by a `dangling-reference`
+/// label requires anything in the RDF translation, so that a node without
+/// triples fails it. Keys count only if the translation keeps them required.
+fn target_requires_something_in_rdf(
+    label: &ViolationLabel,
+    model: &UnifiedConstraintModel,
+    reading: Option<&crate::config::RdfReading>,
+) -> bool {
+    let keys_required = reading.is_none_or(|r| r.keys_required);
+    let target = model
+        .shapes
+        .get(&label.shape)
+        .and_then(|s| s.properties.iter().find(|p| p.property_iri == label.property))
+        .and_then(|p| {
+            p.constraints.iter().find_map(|c| match c {
+                UnifiedConstraint::ShapeReference(t) => model.shapes.get(t),
+                _ => None,
+            })
+        });
+    target.is_some_and(|t| {
+        t.properties.iter().any(|p| {
+            let is_key = crate::adapters::pgschema::local_name(&p.property_iri, "key").is_some();
+            p.property_iri != RDF_TYPE && p.min_cardinality.unwrap_or(0) >= 1 && (keys_required || !is_key)
+        })
+    })
 }
 
 /// In a property graph a reference is an edge with a type of its own; node

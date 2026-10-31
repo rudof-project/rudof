@@ -237,7 +237,7 @@ async fn language_defaults_decide_whether_the_same_mutation_fails() {
     let r = run(
         300,
         0.3,
-        &["closed-extra", "drop-required"],
+        &["closed-extra", "drop-required", "dangling-reference"],
         "closed = false\nkeys_required = false",
     )
     .await;
