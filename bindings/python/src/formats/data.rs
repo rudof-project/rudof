@@ -1,4 +1,5 @@
 use rudof_lib::formats::{DataFormat, DataReaderMode, ResultDataFormat};
+use rudof_lib::types::{GraphRelation, SubgraphMode};
 
 pyenum! {
     /// RDF data serialization formats supported when reading or writing graphs.
@@ -60,5 +61,37 @@ pyenum! {
         Lax    => Lax,
         /// Fail immediately on the first parsing error.
         Strict => Strict,
+    }
+}
+
+pyenum! {
+    /// The relation between two RDF graphs, as returned by ``Rudof.compare_data``.
+    /// Graphs are compared up to blank node renaming.
+    "GraphRelation": PyGraphRelation => GraphRelation, default = Different {
+        /// Both graphs are isomorphic: equal up to blank node renaming.
+        Isomorphic => Isomorphic,
+        /// Each graph is contained in the other without them being isomorphic
+        /// (only with ``SubgraphMode.Homomorphic`` and ``SubgraphMode.Entailment``).
+        Equivalent => Equivalent,
+        /// The first graph is contained in the second, but not the other way round.
+        Subgraph   => Subgraph,
+        /// The second graph is contained in the first, but not the other way round.
+        Supergraph => Supergraph,
+        /// None of the above.
+        Different  => Different,
+    }
+}
+
+pyenum! {
+    /// How blank nodes may be mapped when ``Rudof.compare_data`` checks whether
+    /// one graph is contained in another.
+    "SubgraphMode": PySubgraphMode => SubgraphMode, default = Injective, from_str {
+        /// One-to-one onto blank nodes: the first graph is isomorphic to a subgraph of the second.
+        Injective   => Injective,
+        /// Onto blank nodes, several possibly onto the same one.
+        Homomorphic => Homomorphic,
+        /// Onto any term (IRI, literal, blank node or triple term): the second graph
+        /// simply entails the first.
+        Entailment  => Entailment,
     }
 }

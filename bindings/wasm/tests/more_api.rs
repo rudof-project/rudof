@@ -26,6 +26,84 @@ fn session_with_data() -> Session {
     rudof
 }
 
+// Graph comparison
+
+#[test]
+fn compare_data_relations() {
+    let rudof = Session::new(None);
+    let small = "prefix : <http://example.org/> :alice :knows [ :name \"Bob\" ] .";
+    let renamed =
+        "<http://example.org/alice> <http://example.org/knows> _:x .\n_:x <http://example.org/name> \"Bob\" .\n";
+    let big = "prefix : <http://example.org/> :alice :knows [ :name \"Bob\" ] ; :name \"Alice\" .";
+    let compare =
+        |a: &str, b: &str, f2: Option<&str>| rudof.compare_data(a, b, None, f2, None, None, None, None).unwrap();
+    assert_eq!(compare(small, renamed, Some("ntriples")), "isomorphic");
+    assert_eq!(compare(small, big, None), "subgraph");
+    assert_eq!(compare(big, small, None), "supergraph");
+    assert_eq!(compare(small, DATA, None), "different");
+}
+
+#[test]
+fn compare_data_rdf12_and_errors() {
+    let rudof = Session::new(None);
+    let annotated = "prefix : <http://example.org/> :s :p :o {| :source :w |} .";
+    let reified = "prefix : <http://example.org/> prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \
+                   :s :p :o . _:r rdf:reifies <<( :s :p :o )>> ; :source :w .";
+    let relation = rudof
+        .compare_data(annotated, reified, None, None, None, None, None, None)
+        .unwrap();
+    assert_eq!(relation, "isomorphic");
+    assert!(
+        rudof
+            .compare_data(annotated, reified, Some("nope"), None, None, None, None, None)
+            .is_err()
+    );
+}
+
+#[test]
+fn compare_data_modes() {
+    let rudof = Session::new(None);
+    let general = "prefix : <http://example.org/> :alice :knows [] .";
+    let specific = "prefix : <http://example.org/> :alice :knows :bob .";
+    let compare = |mode: Option<&str>| {
+        rudof
+            .compare_data(general, specific, None, None, None, None, None, mode)
+            .unwrap()
+    };
+    assert_eq!(compare(None), "different");
+    assert_eq!(compare(Some("homomorphic")), "different");
+    assert_eq!(compare(Some("entailment")), "subgraph");
+    let redundant = "prefix : <http://example.org/> :alice :knows [], [] .";
+    let relation = rudof
+        .compare_data(general, redundant, None, None, None, None, None, Some("homomorphic"))
+        .unwrap();
+    assert_eq!(relation, "equivalent");
+    assert!(
+        rudof
+            .compare_data(general, specific, None, None, None, None, None, Some("subset"))
+            .is_err()
+    );
+}
+
+#[test]
+fn compare_loaded_data_with_other() {
+    let rudof = session_with_data();
+    let bigger = format!("{DATA}\n:carol :name \"Carol\" .");
+    assert_eq!(
+        rudof.compare_loaded_data(&bigger, None, None, None, None).unwrap(),
+        "subgraph"
+    );
+    assert_eq!(
+        rudof.compare_loaded_data(DATA, None, None, None, None).unwrap(),
+        "isomorphic"
+    );
+    assert!(
+        Session::new(None)
+            .compare_loaded_data(DATA, None, None, None, None)
+            .is_err()
+    );
+}
+
 // Node inspection
 
 #[test]

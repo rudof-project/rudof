@@ -237,6 +237,25 @@ expected_output = [
 ]
 
 [[example]]
+key = "compare_data"
+source_file = "rdf_data/compare_data.py"
+title = "Compare RDF Graphs"
+description = "Check whether two RDF graphs are isomorphic, equivalent or one is contained in the other, up to blank node renaming (injective, homomorphic or simple entailment) and including RDF 1.2 triple terms"
+category = "rdf"
+files = {}
+expected_output = [
+    "turtle vs n-triples: Isomorphic",
+    "subgraph: Subgraph",
+    "supergraph: Supergraph",
+    "rdf 1.2 annotation vs reification: Isomorphic",
+    "is different: True",
+    "Injective mode: Different",
+    "Homomorphic mode: Different",
+    "Entailment mode: Subgraph",
+    "loaded data: Subgraph",
+]
+
+[[example]]
 key = "node_info"
 source_file = "rdf_data/node_info.py"
 title = "Node Info"

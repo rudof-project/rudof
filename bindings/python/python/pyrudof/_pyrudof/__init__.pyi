@@ -24,6 +24,7 @@ __all__ = [
     "EntityDistribution",
     "GenerateError",
     "GeneratorConfig",
+    "GraphRelation",
     "InputError",
     "InternalError",
     "IriError",
@@ -81,6 +82,7 @@ __all__ = [
     "ShapesGraphSource",
     "ShexValidationSortMode",
     "Staging",
+    "SubgraphMode",
     "Triple",
     "TripleIterator",
     "UnsupportedOperationError",
@@ -757,6 +759,54 @@ class Rudof:
         Raises:
             InputError: If the input string, file or URL cannot be resolved.
             DataError: If the data is malformed (in Strict mode).
+        """
+    def compare_data(self, data1: builtins.str | os.PathLike[str], data2: builtins.str | os.PathLike[str], format1: typing.Optional[RDFFormat] = None, format2: typing.Optional[RDFFormat] = None, base1: typing.Optional[builtins.str] = None, base2: typing.Optional[builtins.str] = None, reader_mode: typing.Optional[ReaderMode] = None, mode: typing.Optional[SubgraphMode] = None) -> GraphRelation:
+        r"""
+        Compares two RDF graphs up to blank node renaming.
+        
+        Both graphs are read from their inputs; the currently loaded data is
+        neither used nor modified. RDF 1.2 triple terms are supported.
+        
+        Args:
+            data1 (str | os.PathLike): First graph — inline data, file path or URL.
+            data2 (str | os.PathLike): Second graph — inline data, file path or URL.
+            format1 (RDFFormat, optional): Format of the first graph. Defaults to ``RDFFormat.Turtle``.
+            format2 (RDFFormat, optional): Format of the second graph. Defaults to ``RDFFormat.Turtle``.
+            base1 (str, optional): Base IRI for the first graph.
+            base2 (str, optional): Base IRI for the second graph.
+            reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
+            mode (SubgraphMode, optional): How blank nodes may be mapped when checking whether
+                one graph is contained in the other. Defaults to ``SubgraphMode.Injective``.
+        
+        Returns:
+            GraphRelation: ``Isomorphic``, ``Equivalent`` (each contained in the other, not
+            isomorphic), ``Subgraph`` (the first contained in the second), ``Supergraph`` or
+            ``Different``.
+        
+        Raises:
+            InputError: If an input string, file or URL cannot be resolved.
+            DataError: If an input cannot be parsed or its format is not an RDF format.
+        """
+    def compare_loaded_data(self, other: builtins.str | os.PathLike[str], format: typing.Optional[RDFFormat] = None, base: typing.Optional[builtins.str] = None, reader_mode: typing.Optional[ReaderMode] = None, mode: typing.Optional[SubgraphMode] = None) -> GraphRelation:
+        r"""
+        Compares the currently loaded RDF data with another graph, up to blank
+        node renaming. The loaded data is the first graph and is not modified.
+        
+        Args:
+            other (str | os.PathLike): The other graph — inline data, file path or URL.
+            format (RDFFormat, optional): Format of ``other``. Defaults to ``RDFFormat.Turtle``.
+            base (str, optional): Base IRI for ``other``.
+            reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
+            mode (SubgraphMode, optional): How blank nodes may be mapped when checking
+                containment. Defaults to ``SubgraphMode.Injective``.
+        
+        Returns:
+            GraphRelation: The relation of the loaded data to ``other``, e.g. ``Subgraph``
+            if the loaded data is contained in ``other``.
+        
+        Raises:
+            DataError: If no in-memory RDF data is loaded, or ``other`` cannot be parsed.
+            InputError: If ``other`` cannot be resolved.
         """
     def serialize_data(self, format: typing.Optional[ResultDataFormat] = None) -> builtins.str:
         r"""
@@ -2207,6 +2257,40 @@ class EntityDistribution(enum.Enum):
     def all(cls) -> builtins.list[EntityDistribution]: ...
 
 @typing.final
+class GraphRelation(enum.Enum):
+    r"""
+    The relation between two RDF graphs, as returned by ``Rudof.compare_data``.
+    Graphs are compared up to blank node renaming.
+    """
+    Isomorphic = ...
+    r"""
+    Both graphs are isomorphic: equal up to blank node renaming.
+    """
+    Equivalent = ...
+    r"""
+    Each graph is contained in the other without them being isomorphic
+    (only with ``SubgraphMode.Homomorphic`` and ``SubgraphMode.Entailment``).
+    """
+    Subgraph = ...
+    r"""
+    The first graph is contained in the second, but not the other way round.
+    """
+    Supergraph = ...
+    r"""
+    The second graph is contained in the first, but not the other way round.
+    """
+    Different = ...
+    r"""
+    None of the above.
+    """
+
+    def __new__(cls) -> GraphRelation: ...
+    def __str__(self) -> builtins.str: ...
+    def __repr__(self) -> builtins.str: ...
+    @classmethod
+    def all(cls) -> builtins.list[GraphRelation]: ...
+
+@typing.final
 class OutputFormat(enum.Enum):
     r"""
     RDF serialization used for generated data.
@@ -3143,4 +3227,35 @@ class ShexValidationSortMode(enum.Enum):
     def __repr__(self) -> builtins.str: ...
     @classmethod
     def all(cls) -> builtins.list[ShexValidationSortMode]: ...
+
+@typing.final
+class SubgraphMode(enum.Enum):
+    r"""
+    How blank nodes may be mapped when ``Rudof.compare_data`` checks whether
+    one graph is contained in another.
+    """
+    Injective = ...
+    r"""
+    One-to-one onto blank nodes: the first graph is isomorphic to a subgraph of the second.
+    """
+    Homomorphic = ...
+    r"""
+    Onto blank nodes, several possibly onto the same one.
+    """
+    Entailment = ...
+    r"""
+    Onto any term (IRI, literal, blank node or triple term): the second graph
+    simply entails the first.
+    """
+
+    def __new__(cls) -> SubgraphMode: ...
+    def __str__(self) -> builtins.str: ...
+    def __repr__(self) -> builtins.str: ...
+    @classmethod
+    def all(cls) -> builtins.list[SubgraphMode]: ...
+    @classmethod
+    def from_str(cls, s: builtins.str) -> SubgraphMode:
+        r"""
+        Parses a variant from its name, case-insensitively.
+        """
 

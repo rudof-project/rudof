@@ -29,6 +29,7 @@ use rudof_lib::formats::{
 use rudof_lib::formats::{PgSchemaFormat, ResultPgSchemaValidationFormat};
 #[cfg(feature = "rdf-config")]
 use rudof_lib::formats::{RdfConfigFormat, ResultRdfConfigFormat};
+use rudof_lib::types::SubgraphMode;
 use rudof_lib::{Rudof, RudofConfig};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -87,6 +88,85 @@ impl Session {
             b = b.with_merge(merge);
         }
         Ok(b.execute()?)
+    }
+
+    /// Compares two RDF graphs, given as strings, up to blank node renaming.
+    /// RDF 1.2 triple terms are supported. The loaded data is neither used
+    /// nor modified.
+    ///
+    /// `mode` says how blank nodes may be mapped when checking containment:
+    /// `injective` (default), `homomorphic` or `entailment`.
+    ///
+    /// Returns `isomorphic`, `equivalent` (each contained in the other, not
+    /// isomorphic), `subgraph` (the first contained in the second),
+    /// `supergraph` or `different`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn compare_data(
+        &self,
+        data1: &str,
+        data2: &str,
+        format1: Option<&str>,
+        format2: Option<&str>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&str>,
+        mode: Option<&str>,
+    ) -> Result<String> {
+        let (data1, data2) = (InputSpec::str(data1), InputSpec::str(data2));
+        let mode: Option<SubgraphMode> = parse(mode, "subgraph mode")?;
+        let format1: Option<DataFormat> = parse(format1, "data format")?;
+        let format2: Option<DataFormat> = parse(format2, "data format")?;
+        let reader_mode: Option<DataReaderMode> = parse(reader_mode, "reader mode")?;
+        let mut b = self.rudof.compare_data(&data1, &data2);
+        if let Some(f) = &format1 {
+            b = b.with_format1(f);
+        }
+        if let Some(f) = &format2 {
+            b = b.with_format2(f);
+        }
+        if let Some(base) = base1 {
+            b = b.with_base1(base);
+        }
+        if let Some(base) = base2 {
+            b = b.with_base2(base);
+        }
+        if let Some(m) = &reader_mode {
+            b = b.with_reader_mode(m);
+        }
+        if let Some(m) = &mode {
+            b = b.with_mode(m);
+        }
+        Ok(b.execute()?.to_string())
+    }
+
+    /// Compares the loaded RDF data (the first graph) with `other`, given as a
+    /// string; see [`Session::compare_data`]. The loaded data is not modified.
+    pub fn compare_loaded_data(
+        &self,
+        other: &str,
+        format: Option<&str>,
+        base: Option<&str>,
+        reader_mode: Option<&str>,
+        mode: Option<&str>,
+    ) -> Result<String> {
+        let other = InputSpec::str(other);
+        let format: Option<DataFormat> = parse(format, "data format")?;
+        let reader_mode: Option<DataReaderMode> = parse(reader_mode, "reader mode")?;
+        let mode: Option<SubgraphMode> = parse(mode, "subgraph mode")?;
+        let mut b = self.rudof.compare_loaded_data(&other);
+        if let Some(f) = &format {
+            b = b.with_format2(f);
+        }
+        if let Some(base) = base {
+            b = b.with_base2(base);
+        }
+        if let Some(m) = &reader_mode {
+            b = b.with_reader_mode(m);
+        }
+        if let Some(m) = &mode {
+            b = b.with_mode(m);
+        }
+        Ok(b.execute()?.to_string())
     }
 
     /// Serializes the current RDF data.

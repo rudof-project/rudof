@@ -1,6 +1,7 @@
 use crate::cli_wrapper;
 use clap::ValueEnum;
 use rudof_lib::formats::{DataFormat, DataReaderMode, ResultDataFormat};
+use rudof_lib::types::SubgraphMode;
 use std::fmt::{Display, Formatter, Result};
 
 cli_wrapper!(
@@ -43,5 +44,15 @@ cli_wrapper!(
         PlantUML,
         Svg,
         Png,
+    }
+);
+
+cli_wrapper!(
+    SubgraphModeCli,
+    SubgraphMode,
+    {
+        Injective,
+        Homomorphic,
+        Entailment
     }
 );

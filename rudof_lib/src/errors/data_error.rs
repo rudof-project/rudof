@@ -90,6 +90,10 @@ pub enum DataError {
     #[error("No RDF data loaded")]
     NoRdfDataLoaded,
 
+    /// Comparing graphs needs the loaded data in memory.
+    #[error("Comparing the loaded data needs an in-memory graph, but the data is backed by '{backend}'")]
+    ComparisonNeedsInMemoryData { backend: String },
+
     /// No Pg data loaded.
     #[error("No PG data loaded")]
     NoPgDataLoaded,

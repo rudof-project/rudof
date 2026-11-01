@@ -7,6 +7,7 @@
 mod endpoint;
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 mod endpoint_error;
+mod graph_comparison;
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub(crate) mod http;
 mod in_memory;
@@ -20,5 +21,8 @@ pub use endpoint::{
 };
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub use endpoint_error::OxigraphEndpointError;
+pub use graph_comparison::{
+    GraphRelation, SubgraphMode, compare_graphs, compare_graphs_with, is_isomorphic, is_subgraph, is_subgraph_with,
+};
 pub use in_memory::{OxigraphInMemory, ReaderMode};
 pub use in_memory_error::OxigraphInMemoryError;

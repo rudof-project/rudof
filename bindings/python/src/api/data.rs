@@ -1,13 +1,14 @@
 use crate::{
     api::{PyRudof, staging::PyStaging},
     error::Result,
-    formats::{PyRDFFormat, PyReaderMode, PyResultDataFormat, PyTriples},
+    formats::{PyGraphRelation, PyRDFFormat, PyReaderMode, PyResultDataFormat, PySubgraphMode, PyTriples},
     guard,
     input::InputArg,
     output,
 };
 use pyo3::prelude::*;
 use rudof_lib::formats::{DataFormat, DataReaderMode, IriNormalizationMode, ResultDataFormat};
+use rudof_lib::types::SubgraphMode;
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
 #[pymethods]
@@ -92,6 +93,131 @@ impl PyRudof {
             b.execute()
         })?;
         Ok(())
+    }
+
+    /// Compares two RDF graphs up to blank node renaming.
+    ///
+    /// Both graphs are read from their inputs; the currently loaded data is
+    /// neither used nor modified. RDF 1.2 triple terms are supported.
+    ///
+    /// Args:
+    ///     data1 (str | os.PathLike): First graph — inline data, file path or URL.
+    ///     data2 (str | os.PathLike): Second graph — inline data, file path or URL.
+    ///     format1 (RDFFormat, optional): Format of the first graph. Defaults to ``RDFFormat.Turtle``.
+    ///     format2 (RDFFormat, optional): Format of the second graph. Defaults to ``RDFFormat.Turtle``.
+    ///     base1 (str, optional): Base IRI for the first graph.
+    ///     base2 (str, optional): Base IRI for the second graph.
+    ///     reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
+    ///     mode (SubgraphMode, optional): How blank nodes may be mapped when checking whether
+    ///         one graph is contained in the other. Defaults to ``SubgraphMode.Injective``.
+    ///
+    /// Returns:
+    ///     GraphRelation: ``Isomorphic``, ``Equivalent`` (each contained in the other, not
+    ///     isomorphic), ``Subgraph`` (the first contained in the second), ``Supergraph`` or
+    ///     ``Different``.
+    ///
+    /// Raises:
+    ///     InputError: If an input string, file or URL cannot be resolved.
+    ///     DataError: If an input cannot be parsed or its format is not an RDF format.
+    #[pyo3(signature = (data1, data2, format1 = None, format2 = None, base1 = None, base2 = None,
+                        reader_mode = None, mode = None))]
+    #[allow(clippy::too_many_arguments)]
+    fn compare_data(
+        &self,
+        py: Python<'_>,
+        data1: InputArg,
+        data2: InputArg,
+        format1: Option<&PyRDFFormat>,
+        format2: Option<&PyRDFFormat>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&PyReaderMode>,
+        mode: Option<&PySubgraphMode>,
+    ) -> Result<PyGraphRelation> {
+        let (InputArg(data1), InputArg(data2)) = (data1, data2);
+        let mode: Option<SubgraphMode> = mode.map(Into::into);
+        let format1: Option<DataFormat> = format1.map(Into::into);
+        let format2: Option<DataFormat> = format2.map(Into::into);
+        let reader_mode: Option<DataReaderMode> = reader_mode.map(Into::into);
+        let base1 = base1.map(str::to_owned);
+        let base2 = base2.map(str::to_owned);
+
+        let relation = guard::detached(py, move || {
+            let mut b = self.inner.compare_data(&data1, &data2);
+            if let Some(f) = &format1 {
+                b = b.with_format1(f);
+            }
+            if let Some(f) = &format2 {
+                b = b.with_format2(f);
+            }
+            if let Some(base) = &base1 {
+                b = b.with_base1(base);
+            }
+            if let Some(base) = &base2 {
+                b = b.with_base2(base);
+            }
+            if let Some(m) = &reader_mode {
+                b = b.with_reader_mode(m);
+            }
+            if let Some(m) = &mode {
+                b = b.with_mode(m);
+            }
+            b.execute()
+        })?;
+        Ok(relation.into())
+    }
+
+    /// Compares the currently loaded RDF data with another graph, up to blank
+    /// node renaming. The loaded data is the first graph and is not modified.
+    ///
+    /// Args:
+    ///     other (str | os.PathLike): The other graph — inline data, file path or URL.
+    ///     format (RDFFormat, optional): Format of ``other``. Defaults to ``RDFFormat.Turtle``.
+    ///     base (str, optional): Base IRI for ``other``.
+    ///     reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
+    ///     mode (SubgraphMode, optional): How blank nodes may be mapped when checking
+    ///         containment. Defaults to ``SubgraphMode.Injective``.
+    ///
+    /// Returns:
+    ///     GraphRelation: The relation of the loaded data to ``other``, e.g. ``Subgraph``
+    ///     if the loaded data is contained in ``other``.
+    ///
+    /// Raises:
+    ///     DataError: If no in-memory RDF data is loaded, or ``other`` cannot be parsed.
+    ///     InputError: If ``other`` cannot be resolved.
+    #[pyo3(signature = (other, format = None, base = None, reader_mode = None, mode = None))]
+    fn compare_loaded_data(
+        &self,
+        py: Python<'_>,
+        other: InputArg,
+        format: Option<&PyRDFFormat>,
+        base: Option<&str>,
+        reader_mode: Option<&PyReaderMode>,
+        mode: Option<&PySubgraphMode>,
+    ) -> Result<PyGraphRelation> {
+        let InputArg(other) = other;
+        let format: Option<DataFormat> = format.map(Into::into);
+        let reader_mode: Option<DataReaderMode> = reader_mode.map(Into::into);
+        let mode: Option<SubgraphMode> = mode.map(Into::into);
+        let base = base.map(str::to_owned);
+
+        let relation = guard::detached(py, move || {
+            let mut b = self.inner.compare_loaded_data(&other);
+            if let Some(f) = &format {
+                b = b.with_format2(f);
+            }
+            if let Some(base) = &base {
+                b = b.with_base2(base);
+            }
+            if let Some(m) = &reader_mode {
+                b = b.with_reader_mode(m);
+            }
+            if let Some(m) = &mode {
+                b = b.with_mode(m);
+            }
+            b.execute()
+        })?;
+        Ok(relation.into())
     }
 
     /// Serializes the current RDF data to a string.
