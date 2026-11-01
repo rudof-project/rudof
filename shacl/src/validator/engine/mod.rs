@@ -132,10 +132,22 @@ pub trait Engine<S: NeighsRDF>: Send {
 }
 
 /// What validating a shape keeps, which the processor sets from `ShaclConfig`.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Retention {
     /// The most results and evidences that validating one shape may hold, `None` for no limit.
     pub max_results: Option<usize>,
+    /// Whether validation keeps evidences, which only a report with evidences reads.
+    pub store_evidences: bool,
+}
+
+impl Default for Retention {
+    /// No limit, with evidences kept.
+    fn default() -> Self {
+        Self {
+            max_results: None,
+            store_evidences: true,
+        }
+    }
 }
 
 /// What evaluating node expressions keeps for one validation run.

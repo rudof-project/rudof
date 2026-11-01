@@ -107,7 +107,7 @@ impl IRShape {
                     continue;
                 }
                 if runner.is_in_chain(&obj, *idx) {
-                    cached_outcome.extend(cut_outcome(runner.recursion_semantics(), self, &obj));
+                    cached_outcome.extend(kept(cut_outcome(runner.recursion_semantics(), self, &obj), runner));
                     continue;
                 }
                 if single_node_call {
@@ -144,6 +144,7 @@ impl IRShape {
                 self.path(),
                 shapes_graph,
             )?;
+            let outcome = kept(outcome, runner);
             check_max_results(self, &mut held, &outcome, runner)?;
             component_outcome.extend(outcome);
         }
@@ -256,7 +257,7 @@ impl IRShape {
             // even though ":e" has no violations (and possibly no other
             // evidence at all, if none of its constraints happened to
             // iterate any value).
-            if !self.targets().is_empty() {
+            if runner.retention().store_evidences && !self.targets().is_empty() {
                 for (node_object, node_outcome) in by_focus.iter_mut() {
                     if node_outcome.conforms() {
                         let evidence = Evidence::new_shape(node_object.clone(), self.id().clone());
@@ -276,6 +277,15 @@ impl IRShape {
         // Counted whole, with the cut references, reifier shapes and shape-level evidences
         check_max_results(self, &mut 0, &cached_outcome, runner)?;
         Ok(cached_outcome)
+    }
+}
+
+/// Drops the evidences of `outcome` unless the report keeps them, as nothing else reads them.
+fn kept<RDF: NeighsRDF>(outcome: ValidationOutcome, runner: &dyn Engine<RDF>) -> ValidationOutcome {
+    if runner.retention().store_evidences {
+        outcome
+    } else {
+        ValidationOutcome::from_violations(outcome.into_parts().0)
     }
 }
 

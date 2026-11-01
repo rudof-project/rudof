@@ -228,6 +228,28 @@ prefix : <http://example.org/>
         );
     }
 
+    #[test]
+    fn evidences_are_kept_and_counted_only_for_a_report_with_evidences() {
+        // Each of the 10 conforming targets has a sh:minCount evidence and a shape evidence
+        let mut graph = format!("{PREFIXES}:S sh:property [ sh:path :p ; sh:minCount 1 ] .\n");
+        for i in 0..10 {
+            graph.push_str(&format!(":S sh:targetNode :n{i} .\n:n{i} :p 1 .\n"));
+        }
+        let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let schema_ir: IRSchema = ShaclParser::new(rdf.clone()).parse().unwrap().try_into().unwrap();
+        let config = ShaclConfig::default().with_max_results(Some(5));
+        for mode in [ShaclValidationMode::Native, ShaclValidationMode::Sparql] {
+            let mut validator: DataValidation = rdf.clone().into();
+            let report = validator.validate(&schema_ir, &mode, &config).unwrap();
+            assert!(report.conforms() && report.evidences().is_empty());
+            let result = validator.validate(&schema_ir, &mode, &config.clone().with_store_evidences(true));
+            assert!(
+                matches!(result, Err(crate::error::ValidationError::TooManyResults(_, 5))),
+                "{mode:?}: {result:?}"
+            );
+        }
+    }
+
     /// A schema with a purely positive, mutually-recursive pair of shapes
     /// (`:A` depends on `:B`, `:B` depends on `:A`), and data forming a
     /// 2-cycle with no independent base case: `:n1 :next :n2 :next :n1`.
@@ -924,10 +946,12 @@ prefix : <http://example.org/>
     #[test]
     fn error_inside_not_and_xone_or_qualified_value_shape_is_an_error() {
         // :T conforms on :a with 9 evidences, so it fails with an error under max_results 5,
-        // which the shapes around it stay under
+        // which the shapes around it stay under. Evidences count only when they are stored
         let t = ":T sh:property [ sh:path :p ; sh:nodeKind sh:IRI ] .\n:U sh:nodeKind sh:IRI .\n\
                  :a :p :b1, :b2, :b3, :b4, :b5, :b6, :b7, :b8, :b9 ; :r :a .\n";
-        let config = ShaclConfig::default().with_max_results(Some(5));
+        let config = ShaclConfig::default()
+            .with_max_results(Some(5))
+            .with_store_evidences(true);
         for component in [
             "sh:not :T",
             "sh:and ( :T )",

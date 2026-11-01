@@ -17,7 +17,8 @@ pub struct ShaclConfig {
     pub(crate) store_errors: bool,
 
     /// Whether the final `ValidationReport` retains evidence for why
-    /// `(node, shape)` pairs conform (default: false).
+    /// `(node, shape)` pairs conform (default: false). When off, validation
+    /// drops evidence as it is made.
     #[serde(rename = "store_evidences")]
     pub(crate) store_evidences: bool,
 
@@ -53,7 +54,8 @@ pub struct ShaclConfig {
 
     /// The most results and evidences that validating one shape may hold,
     /// counting those of the shapes nested in it (default: no limit).
-    /// Validation fails with an error once a shape holds more.
+    /// Validation fails with an error once a shape holds more. Evidences
+    /// are held, and so counted, only with `store_evidences`.
     #[serde(rename = "max_results", skip_serializing_if = "Option::is_none")]
     pub(crate) max_results: Option<usize>,
 }
