@@ -20,6 +20,7 @@ use rmcp::{
 
 // Import the public helper functions from the implementation files
 use crate::service::tools::data_tools_impl::*;
+use crate::service::tools::generate_tools_impl::*;
 use crate::service::tools::node_tools_impl::*;
 use crate::service::tools::prefix_tools_impl::*;
 use crate::service::tools::query_tools_impl::*;
@@ -232,6 +233,28 @@ impl RudofMcpService {
     )]
     pub async fn validate_shacl(&self, params: Parameters<ValidateShaclRequest>) -> Result<CallToolResult, McpError> {
         validate_shacl_impl(self, params).await
+    }
+
+    // -------------------------------------------------------------------------
+    // Generation Tools
+    // -------------------------------------------------------------------------
+
+    /// Generate synthetic data from a ShEx, SHACL or PG-Schema schema.
+    #[tool(
+        name = "generate_data",
+        title = "Generate Synthetic Data",
+        output_schema = schema_for_output::<GenerateDataResponse>(),
+        description = "Generate synthetic RDF data that conforms to a ShEx, SHACL or PG-Schema schema (inline text or a local file path). From a PG-Schema, also returns the property graph and its type map. Returns a ShapeMap with the shape of every generated node, ready for validate_shex. With `violations`, a share of the entities is broken on purpose and the response lists every node (and edge) a correct validator must flag. By default the RDF is loaded into the session (merged with data already loaded), so validate_shex, validate_shacl and execute_sparql_query can run on it next.",
+        annotations(
+            title = "Generate Synthetic Data",
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = false,
+            open_world_hint = false,
+        )
+    )]
+    pub async fn generate_data(&self, params: Parameters<GenerateDataRequest>) -> Result<CallToolResult, McpError> {
+        generate_data_impl(self, params).await
     }
 
     // -------------------------------------------------------------------------

@@ -4427,6 +4427,7 @@ dependencies = [
  "chrono",
  "clap",
  "rmcp",
+ "rudof_generate",
  "rudof_lib",
  "schemars 1.2.2",
  "serde",

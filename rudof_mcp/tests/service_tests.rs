@@ -216,6 +216,7 @@ mod tool_router_tests {
             "reset_session_state",
             "get_rudof_version",
             "manage_prefixes",
+            "generate_data",
         ];
 
         for expected in expected_tools {
