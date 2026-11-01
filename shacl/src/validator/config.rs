@@ -50,6 +50,12 @@ pub struct ShaclConfig {
     /// Deeper data is fetched on demand.
     #[serde(rename = "prefetch_max_rounds")]
     pub(crate) prefetch_max_rounds: usize,
+
+    /// The most results and evidences that validating one shape may hold,
+    /// counting those of the shapes nested in it (default: no limit).
+    /// Validation fails with an error once a shape holds more.
+    #[serde(rename = "max_results", skip_serializing_if = "Option::is_none")]
+    pub(crate) max_results: Option<usize>,
 }
 
 impl ShaclConfig {
@@ -63,6 +69,7 @@ impl ShaclConfig {
             fetch_strategy: Self::default_fetch_strategy(),
             prefetch_batch_size: Self::default_prefetch_batch_size(),
             prefetch_max_rounds: Self::default_prefetch_max_rounds(),
+            max_results: Self::default_max_results(),
         }
     }
 
@@ -105,6 +112,11 @@ impl ShaclConfig {
         self.prefetch_max_rounds = rounds;
         self
     }
+
+    pub fn with_max_results(mut self, max: Option<usize>) -> Self {
+        self.max_results = max;
+        self
+    }
 }
 
 impl ShaclConfig {
@@ -139,6 +151,10 @@ impl ShaclConfig {
     pub fn prefetch_max_rounds(&self) -> usize {
         self.prefetch_max_rounds
     }
+
+    pub fn max_results(&self) -> Option<usize> {
+        self.max_results
+    }
 }
 
 /// Serde stuff
@@ -153,6 +169,7 @@ impl ShaclConfig {
     #[inline] fn default_fetch_strategy() -> FetchStrategy { FetchStrategy::default() }
     #[inline] fn default_prefetch_batch_size() -> usize { 50 }
     #[inline] fn default_prefetch_max_rounds() -> usize { 16 }
+    #[inline] fn default_max_results() -> Option<usize> { None }
 }
 
 impl Default for ShaclConfig {
@@ -176,6 +193,7 @@ mod tests {
         assert!(!c.store_evidences());
         assert!(!c.evidence_shapes_only());
         assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Lfp);
+        assert_eq!(c.max_results(), None);
     }
 
     #[test]
@@ -240,6 +258,14 @@ mod tests {
     fn toml_configures_evidence_shapes_only() {
         let c: ShaclConfig = toml::from_str(r#"evidence_shapes_only = true"#).unwrap();
         assert!(c.evidence_shapes_only());
+    }
+
+    #[test]
+    fn max_results_from_builder_and_toml() {
+        assert_eq!(ShaclConfig::default().with_max_results(Some(7)).max_results(), Some(7));
+        let c: ShaclConfig = toml::from_str("max_results = 7").unwrap();
+        assert_eq!(c.max_results(), Some(7));
+        assert_eq!(ShaclConfig::from_toml_str(&c.to_toml_string().unwrap()).unwrap(), c);
     }
 
     #[test]

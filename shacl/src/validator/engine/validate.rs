@@ -69,6 +69,8 @@ impl IRShape {
         // recursion semantics instead of recursing forever — see
         // `crate::validator::recursion`.
         let mut cached_outcome = ValidationOutcome::new();
+        // The results, details and evidences that this call holds, as max_results counts them
+        let mut held = 0;
         let mut entered_chain = Vec::new();
         // Multi-node calls only ever occur for a *batch* of independent
         // targets (this shape's own top-level targets, or the nodes of a
@@ -90,6 +92,7 @@ impl IRShape {
                     continue;
                 };
                 if let Some(outcome) = runner.get_cached_outcome(&obj, *idx) {
+                    check_max_results(self, &mut held, &outcome, runner)?;
                     cached_outcome.extend(outcome);
                     continue;
                 }
@@ -131,6 +134,7 @@ impl IRShape {
                 self.path(),
                 shapes_graph,
             )?;
+            check_max_results(self, &mut held, &outcome, runner)?;
             component_outcome.extend(outcome);
         }
 
@@ -165,7 +169,10 @@ impl IRShape {
                 // One call per value node, so that each one joins the recursion chain
                 for node in vn.iter() {
                     let node = FocusNodes::single(node.clone());
-                    outcome.extend(shape.validate(store, runner, Some(&node), Some(self), shapes_graph)?);
+                    let nested = shape.validate(store, runner, Some(&node), Some(self), shapes_graph)?;
+                    // Results are kept once per path to a node, so they can double at each level
+                    check_max_results(self, &mut held, &nested, runner)?;
+                    outcome.extend(nested);
                 }
             }
         }
@@ -264,8 +271,29 @@ impl IRShape {
 
         // Merge cached outcome with newly computed outcome
         cached_outcome.extend(new_outcome);
+        // Counted whole, with the cut references, reifier shapes and shape-level evidences
+        check_max_results(self, &mut 0, &cached_outcome, runner)?;
         Ok(cached_outcome)
     }
+}
+
+/// Adds the results of `outcome`, with their details, and its evidences to `held`, and fails once
+/// that is more than the engine's `max_results`.
+fn check_max_results<RDF: NeighsRDF>(
+    shape: &IRShape,
+    held: &mut usize,
+    outcome: &ValidationOutcome,
+    runner: &dyn Engine<RDF>,
+) -> Result<(), ValidationError> {
+    let Some(max) = runner.retention().max_results else {
+        return Ok(());
+    };
+    let results: usize = outcome.violations().iter().map(|v| 1 + v.details().len()).sum();
+    *held += results + outcome.evidences().len();
+    if *held > max {
+        return Err(ValidationError::TooManyResults(shape.id().to_string(), max));
+    }
+    Ok(())
 }
 
 /// Removes the focus nodes the shape is deactivated for.

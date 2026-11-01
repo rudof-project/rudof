@@ -1201,4 +1201,63 @@ prefix : <http://example.org/>
             );
         }
     }
+
+    #[test]
+    fn max_results_stops_nested_property_shapes_over_diamonds() {
+        // k nested property shapes over k/2 diamonds, each doubling the results of the shapes below it
+        let diamonds = |k: usize| {
+            let mut graph =
+                format!("{PREFIXES}:S sh:targetNode :n0 ; sh:property _:p1 .\n_:p{k} sh:path :next ; sh:class :C .\n");
+            for i in 1..k {
+                graph.push_str(&format!(
+                    "_:p{i} sh:path :next ; sh:class :C ; sh:property _:p{} .\n",
+                    i + 1
+                ));
+            }
+            for i in 0..k / 2 {
+                graph.push_str(&format!(
+                    ":n{i} :next :a{i}, :b{i} .\n:a{i} :next :n{j} .\n:b{i} :next :n{j} .\n",
+                    j = i + 1
+                ));
+            }
+            graph
+        };
+        let config = ShaclConfig::default().with_max_results(Some(1000));
+
+        // Under the limit, the report is the same as without it
+        let report = validate_with_config(&diamonds(8), &config);
+        assert_eq!(report.results().len(), 60);
+        assert_eq!(report, validate_with_config(&diamonds(8), &ShaclConfig::default()));
+
+        // 40 levels would hold about 2^22 results
+        let deep = diamonds(40);
+        // Over 30 nodes that all link to each other, LFP cuts each node once per path that reaches it
+        // again, so the results double at each node
+        let mut clique =
+            format!("{PREFIXES}:S sh:targetNode :n0 ; sh:property _:p .\n_:p sh:path :next ; sh:property _:p .\n");
+        // Each of the 40 sh:node results holds the 40 results of :T as details, which count too
+        let mut details = format!(
+            "{PREFIXES}:S sh:targetNode :a ; sh:property [ sh:path :v ; sh:node :T ] .\n\
+             :T sh:property [ sh:path :p ; sh:class :C ] .\n"
+        );
+        for i in 0..40 {
+            details.push_str(&format!(":a :v :v{i} .\n"));
+            for j in 0..40 {
+                details.push_str(&format!(":v{i} :p :x{j} .\n"));
+                if i < 30 && j < 30 {
+                    clique.push_str(&format!(":n{i} :next :n{j} .\n"));
+                }
+            }
+        }
+        for (name, graph) in [("diamonds", deep), ("clique", clique), ("details", details)] {
+            let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let mut validator: DataValidation = rdf.clone().into();
+            let schema_ir: IRSchema = ShaclParser::new(rdf).parse().unwrap().try_into().unwrap();
+            let result = validator.validate(&schema_ir, &ShaclValidationMode::Native, &config);
+            assert!(
+                matches!(result, Err(crate::error::ValidationError::TooManyResults(_, 1000))),
+                "{name}: {result:?}"
+            );
+        }
+    }
 }

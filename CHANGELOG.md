@@ -14,6 +14,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `rudof_rdf`: `ParseBudget` holds the steps that parsing SHACL paths may take, and `ShaclPathParser::with_budget` takes them from a budget shared with other parsers, as `ShaclParser` does for the paths of a shapes graph.
 - `rudof_rdf`: `parse_path`, `MAX_PATH_DEPTH`, `MIN_PARSE_STEPS` and `PARSE_STEPS_PER_TRIPLE` are public, so that node expressions parse the paths inside them under the same limits.
 - `rudof_rdf`: `ParseBudget::take_free_members` and `FREE_LIST_MEMBERS` let the lists of a shapes graph read 65,536 members before they take steps from its budget.
+- `shacl`: the `max_results` option (`ShaclConfig::with_max_results`, or `max_results` under `[shacl]`), unset by default, makes validation fail with an error once validating one shape holds more results, each counted with its `sh:detail` results, and evidences than it allows. A nested `sh:property` shape reports a result once per path to its node, so over a chain of diamonds in the data the results double at each diamond, and under LFP so do the cut references of a recursive shape over nodes that all link to each other. An `Engine` keeps the limit in a `Retention`, through `retention` and `set_retention`, which by default keep none.
 
 ### Fixed
 - A cyclic SHACL path, such as `_:p sh:zeroOrMorePath _:p`, is an invalid path error instead of a stack overflow.

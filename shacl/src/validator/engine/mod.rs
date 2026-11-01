@@ -121,6 +121,21 @@ pub trait Engine<S: NeighsRDF>: Send {
 
     /// This engine's own node expression state, never shared across forks.
     fn node_expr_state(&mut self) -> &mut NodeExprState;
+
+    /// What validating a shape keeps.
+    fn retention(&self) -> Retention {
+        Retention::default()
+    }
+
+    /// Sets [`Self::retention`], which an engine that does not keep it ignores.
+    fn set_retention(&mut self, _retention: Retention) {}
+}
+
+/// What validating a shape keeps, which the processor sets from `ShaclConfig`.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct Retention {
+    /// The most results and evidences that validating one shape may hold, `None` for no limit.
+    pub max_results: Option<usize>,
 }
 
 /// What evaluating node expressions keeps for one validation run.
