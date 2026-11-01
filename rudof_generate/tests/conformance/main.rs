@@ -380,6 +380,9 @@ async fn generate_and_validate(
         .with_output(&output)
         .with_validation(true);
     if let Some(toml) = config_toml {
+        // Side outputs (labels) go to `[output] dir`, the working directory by default.
+        let side_dir = dir.path().display().to_string().replace('\\', "/");
+        let toml = format!("{toml}[output]\ndir = \"{side_dir}\"\n");
         std::fs::write(&config_path, toml).unwrap();
         builder = builder.with_config_file(&config_path);
     }

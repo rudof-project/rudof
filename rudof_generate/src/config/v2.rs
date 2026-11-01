@@ -10,7 +10,7 @@
 //! ex = "http://example.org/"
 //! [run]
 //! seed = 42
-//! scale = { entities = 1000 }
+//! scale = { entities = 1000 }        # or { per_shape = 100 }
 //! [defaults]
 //! fill = 1.0
 //! cardinality = "balanced"
@@ -20,11 +20,14 @@
 //! [[property]]
 //! match = { shape = "ex:PersonShape", path = "ex:nick" }
 //! fill = 0.2
+//! [output]
+//! dir = "out"
+//! formats = ["turtle"]
 //! ```
 
 use super::{
     CardinalityStrategy, DatatypeConfig, EntityDistribution, GeneratorConfig, OutputFormat, PropertyConfig,
-    PropertyRule, TypeOverrideConfig, ViolationOperator, ViolationsConfig,
+    PropertyRule, TargetsConfig, TypeOverrideConfig, ViolationOperator, ViolationsConfig,
 };
 use crate::{DataGeneratorError, Result};
 use serde::Deserialize;
@@ -44,7 +47,19 @@ const BUILTIN_PREFIXES: [(&str, &str); 4] = [
 
 /// Sections that are part of the v2 design but not implemented yet. They are
 /// rejected rather than ignored, so a config never silently does less than it says.
-const PLANNED_SECTIONS: [&str; 3] = ["validate", "targets", "profile"];
+const PLANNED_SECTIONS: [&str; 2] = ["validate", "profile"];
+
+/// Tolerance of a `[targets]` table that sets none.
+const DEFAULT_TOLERANCE: f64 = 0.01;
+
+/// File names inside `output.dir`.
+pub const TURTLE_FILE: &str = "data.ttl";
+pub const NTRIPLES_FILE: &str = "data.nt";
+pub const PG_FILE: &str = "data.pg";
+pub const SHAPEMAP_FILE: &str = "data.shapemap";
+pub const TYPEMAP_FILE: &str = "data.typemap";
+pub const LABELS_FILE: &str = "labels.jsonl";
+pub const RDF_LABELS_FILE: &str = "labels-rdf.jsonl";
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -65,6 +80,15 @@ pub struct ConfigV2 {
     #[serde(default)]
     pub output: Output,
     pub violations: Option<Violations>,
+    pub targets: Option<Targets>,
+}
+
+/// `[targets]`: one field per metric the generator can search for.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Targets {
+    pub coherence: Option<f64>,
+    pub tolerance: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -73,16 +97,15 @@ pub struct Violations {
     pub rate: f64,
     pub operators: Option<Vec<String>>,
     pub shapes: Option<Vec<String>>,
-    pub labels: Option<PathBuf>,
     pub rdf: Option<RdfReadingV2>,
 }
 
-/// `[violations.rdf]`: see [`super::RdfReading`]. Both defaults are those of a
-/// faithful translation (closed shapes, required keys).
-#[derive(Debug, Deserialize)]
+/// `[violations.rdf]`: how the RDF copy of a property graph reads (see
+/// [`super::RdfReading`]). Both defaults are those of a faithful translation
+/// (closed shapes, required keys).
+#[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RdfReadingV2 {
-    pub labels: PathBuf,
     pub closed: Option<bool>,
     pub keys_required: Option<bool>,
 }
@@ -98,7 +121,10 @@ pub struct Run {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Scale {
-    pub entities: usize,
+    /// Entities in total, split across shapes (equally, or by `[[shape]] weight`).
+    pub entities: Option<usize>,
+    /// Entities of every shape.
+    pub per_shape: Option<usize>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -148,18 +174,20 @@ pub struct Values {
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Output {
-    pub path: Option<PathBuf>,
-    pub format: Option<String>,
+    /// Folder every output is written to, under fixed file names.
+    pub dir: Option<PathBuf>,
+    /// "turtle", "ntriples" and/or "pg"; with "pg", an RDF copy is "turtle".
+    pub formats: Option<Vec<String>>,
     pub stats: Option<bool>,
-    pub shapemap: Option<PathBuf>,
-    pub rdf: Option<PathBuf>,
-    pub rdf_shapemap: Option<PathBuf>,
 }
 
 impl ConfigV2 {
     /// Parse a v2 document, rejecting unknown keys and unsupported sections.
     pub fn parse(content: &str) -> Result<Self> {
         let table: toml::Table = toml::from_str(content)?;
+        if !table.contains_key("version") {
+            return Err(missing_version());
+        }
         for section in PLANNED_SECTIONS {
             if table.contains_key(section) {
                 return Err(config_error(format!(
@@ -168,13 +196,34 @@ impl ConfigV2 {
             }
         }
         let config: Self = toml::from_str(content)?;
-        if config.version != VERSION {
+        config.check_version()
+    }
+
+    /// Parse a v2 document written as JSON.
+    pub fn parse_json(content: &str) -> Result<Self> {
+        let value: serde_json::Value = serde_json::from_str(content)?;
+        for section in PLANNED_SECTIONS {
+            if value.get(section).is_some() {
+                return Err(config_error(format!(
+                    "\"{section}\" is part of the v2 design but not yet supported"
+                )));
+            }
+        }
+        if value.get("version").is_none() {
+            return Err(missing_version());
+        }
+        let config: Self = serde_json::from_value(value)?;
+        config.check_version()
+    }
+
+    fn check_version(self) -> Result<Self> {
+        if self.version != VERSION {
             return Err(config_error(format!(
                 "unsupported config version {} (this build reads version {VERSION})",
-                config.version
+                self.version
             )));
         }
-        Ok(config)
+        Ok(self)
     }
 
     /// Lower onto the settings the engine reads.
@@ -186,9 +235,25 @@ impl ConfigV2 {
         // run
         config.generation.seed = self.run.seed;
         config.parallel.worker_threads = self.run.threads;
-        if let Some(scale) = &self.run.scale {
-            config.generation.entity_count = scale.entities;
-        }
+        let per_shape = match &self.run.scale {
+            None => None,
+            Some(Scale {
+                entities: Some(entities),
+                per_shape: None,
+            }) => {
+                config.generation.entity_count = *entities;
+                None
+            },
+            Some(Scale {
+                entities: None,
+                per_shape: Some(n),
+            }) => Some(*n),
+            Some(_) => {
+                return Err(config_error(
+                    "run.scale takes either `entities` (a total) or `per_shape`, not both or neither".to_string(),
+                ));
+            },
+        };
 
         // defaults
         if let Some(fill) = self.defaults.fill {
@@ -223,6 +288,15 @@ impl ConfigV2 {
             }
         }
         config.generation.entity_distribution = match (counts.is_empty(), weights.is_empty()) {
+            _ if per_shape.is_some() && !weights.is_empty() => {
+                return Err(config_error(
+                    "`weight` splits a total; with run.scale.per_shape use `count` on [[shape]] tables".to_string(),
+                ));
+            },
+            (_, true) if per_shape.is_some() => EntityDistribution::PerShape {
+                default: per_shape.unwrap_or_default(),
+                counts,
+            },
             (true, true) => EntityDistribution::Equal,
             (false, true) => EntityDistribution::Custom(counts),
             (true, false) => EntityDistribution::Weighted(weights),
@@ -257,27 +331,79 @@ impl ConfigV2 {
         }
 
         // output
-        if let Some(path) = self.output.path {
-            config.output.path = path;
+        let dir = self.output.dir.clone().unwrap_or_else(|| PathBuf::from("."));
+        let formats = self
+            .output
+            .formats
+            .clone()
+            .unwrap_or_else(|| vec!["turtle".to_string()]);
+        for format in &formats {
+            if !["turtle", "ntriples", "pg"].contains(&format.as_str()) {
+                return Err(config_error(format!(
+                    "output.formats: `{format}` is not supported (use \"turtle\", \"ntriples\" or \"pg\")"
+                )));
+            }
         }
-        if let Some(format) = &self.output.format {
-            config.output.format = match format.as_str() {
-                "turtle" => OutputFormat::Turtle,
-                "ntriples" => OutputFormat::NTriples,
-                "pg" => OutputFormat::Pg,
-                other => {
-                    return Err(config_error(format!(
-                        "output.format `{other}` is not supported (use \"turtle\", \"ntriples\" or \"pg\")"
-                    )));
-                },
-            };
+        let has = |f: &str| formats.iter().any(|x| x == f);
+        let pg = has("pg");
+        if has("turtle") && has("ntriples") {
+            return Err(config_error(
+                "output.formats: choose one RDF format, \"turtle\" or \"ntriples\"".to_string(),
+            ));
+        }
+        if pg && has("ntriples") {
+            return Err(config_error(
+                "output.formats: the RDF copy of a property graph is written as Turtle; use [\"pg\", \"turtle\"]"
+                    .to_string(),
+            ));
+        }
+        let rdf_copy = pg && has("turtle");
+        if pg {
+            config.output.format = OutputFormat::Pg;
+            config.output.path = dir.join(PG_FILE);
+            config.output.shapemap = Some(dir.join(TYPEMAP_FILE));
+            if rdf_copy {
+                config.output.rdf = Some(dir.join(TURTLE_FILE));
+                config.output.rdf_shapemap = Some(dir.join(SHAPEMAP_FILE));
+            }
+        } else if has("ntriples") {
+            config.output.format = OutputFormat::NTriples;
+            config.output.path = dir.join(NTRIPLES_FILE);
+            config.output.shapemap = Some(dir.join(SHAPEMAP_FILE));
+        } else {
+            config.output.format = OutputFormat::Turtle;
+            config.output.path = dir.join(TURTLE_FILE);
+            config.output.shapemap = Some(dir.join(SHAPEMAP_FILE));
         }
         if let Some(stats) = self.output.stats {
             config.output.write_stats = stats;
         }
-        config.output.shapemap = self.output.shapemap;
-        config.output.rdf = self.output.rdf;
-        config.output.rdf_shapemap = self.output.rdf_shapemap;
+
+        // targets
+        if let Some(targets) = self.targets {
+            let tolerance = targets.tolerance.unwrap_or(DEFAULT_TOLERANCE);
+            if tolerance <= 0.0 {
+                return Err(config_error(format!(
+                    "targets.tolerance must be positive, got {tolerance}"
+                )));
+            }
+            if let Some(coherence) = targets.coherence
+                && !(0.0..=1.0).contains(&coherence)
+            {
+                return Err(config_error(format!(
+                    "targets.coherence must be between 0.0 and 1.0, got {coherence}"
+                )));
+            }
+            if targets.coherence.is_none() {
+                return Err(config_error(
+                    "[targets] sets no metric; supported: `coherence`".to_string(),
+                ));
+            }
+            config.generation.targets = Some(TargetsConfig {
+                coherence: targets.coherence,
+                tolerance,
+            });
+        }
 
         // violations
         if let Some(v) = self.violations {
@@ -311,12 +437,24 @@ impl ConfigV2 {
                     .iter()
                     .map(|s| expand(s))
                     .collect::<Result<_>>()?,
-                labels: v.labels,
-                rdf: v.rdf.map(|r| super::RdfReading {
-                    labels: r.labels,
-                    closed: r.closed.unwrap_or(true),
-                    keys_required: r.keys_required.unwrap_or(true),
-                }),
+                labels: Some(dir.join(LABELS_FILE)),
+                rdf: match (rdf_copy, v.rdf) {
+                    (true, reading) => {
+                        let reading = reading.unwrap_or_default();
+                        Some(super::RdfReading {
+                            labels: dir.join(RDF_LABELS_FILE),
+                            closed: reading.closed.unwrap_or(true),
+                            keys_required: reading.keys_required.unwrap_or(true),
+                        })
+                    },
+                    (false, None) => None,
+                    (false, Some(_)) => {
+                        return Err(config_error(
+                            "[violations.rdf] reads the RDF copy of a property graph: set output.formats = [\"pg\", \"turtle\"]"
+                                .to_string(),
+                        ));
+                    },
+                },
             });
         }
 
@@ -369,6 +507,13 @@ fn cardinality(value: &str, key: &str) -> Result<CardinalityStrategy> {
             "{key} `{other}` is not supported (use \"min\", \"max\", \"uniform\" or \"balanced\")"
         ))),
     }
+}
+
+fn missing_version() -> DataGeneratorError {
+    config_error(
+        "the generator config needs `version = 2` (the v1 format was removed; see rudof_generate/examples/configs)"
+            .to_string(),
+    )
 }
 
 fn config_error(message: String) -> DataGeneratorError {

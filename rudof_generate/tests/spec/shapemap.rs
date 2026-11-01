@@ -7,7 +7,6 @@
 //! "the output conforms to the schema" means for a generator.
 
 use crate::common::*;
-use rudof_generate::GeneratorConfig;
 
 const SCHEMA: &str = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -75,15 +74,6 @@ async fn the_exact_shapemap_validates_where_type_based_targets_overcheck() {
         "{FOCUS a <http://example.org/Student>}@<http://example.org/StudentShape>",
     );
     assert!(by_type.violations > 0, "{}", by_type.report);
-}
-
-#[test]
-fn v2_output_shapemap_sets_the_path() {
-    let config = GeneratorConfig::from_toml_str("version = 2\n[output]\nshapemap = \"run.shapemap\"\n").unwrap();
-    assert_eq!(
-        config.output.shapemap.as_deref(),
-        Some(std::path::Path::new("run.shapemap"))
-    );
 }
 
 #[tokio::test]

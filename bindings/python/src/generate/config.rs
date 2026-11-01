@@ -60,18 +60,6 @@ impl PyGeneratorConfig {
         Ok(Self { inner })
     }
 
-    /// Saves this configuration to a TOML file.
-    ///
-    /// Args:
-    ///     path (str | os.PathLike): Path where the TOML file will be written.
-    ///
-    /// Raises:
-    ///     GenerateError: If writing to the file fails.
-    fn to_toml_file(&self, path: PathBuf) -> Result<()> {
-        self.inner.to_toml_file(&path).map_err(config_error)?;
-        Ok(())
-    }
-
     /// Sets the number of entities to generate.
     fn set_entity_count(&mut self, count: usize) {
         self.inner.generation.entity_count = count;
@@ -316,6 +304,28 @@ impl PyGeneratorConfig {
             labels,
             closed,
             keys_required,
+        });
+        Ok(())
+    }
+
+    /// Asks for the coherence (Duan et al., 2011) of the output: the generator searches
+    /// the default fill of optional properties, with the default cardinality at `max`,
+    /// until the coherence is within `tolerance` of `coherence`, and keeps the data valid.
+    /// `DataGenerator.target_report()` tells what was reached.
+    ///
+    /// Raises:
+    ///     GenerateError: If a value is out of range.
+    #[pyo3(signature = (coherence, tolerance = 0.01))]
+    fn set_target_coherence(&mut self, coherence: f64, tolerance: f64) -> Result<()> {
+        if !(0.0..=1.0).contains(&coherence) || tolerance <= 0.0 {
+            return Err(config_error(format!(
+                "coherence must be between 0.0 and 1.0 and tolerance positive, got {coherence} and {tolerance}"
+            ))
+            .into());
+        }
+        self.inner.generation.targets = Some(rudof_generate::config::TargetsConfig {
+            coherence: Some(coherence),
+            tolerance,
         });
         Ok(())
     }

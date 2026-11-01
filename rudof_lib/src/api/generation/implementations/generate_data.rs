@@ -100,8 +100,10 @@ fn init_defaults(
         config.parallel.worker_threads = Some(threads);
     }
 
-    let result_generation_format = result_generation_format.copied().unwrap_or_default();
-    config.output.format = result_generation_format.into();
+    // Without a format, the configuration's own (Turtle by default) stays in effect.
+    if let Some(format) = result_generation_format {
+        config.output.format = (*format).into();
+    }
 
     let schema_path = match schema {
         InputSpec::Path(path) => path.clone(),

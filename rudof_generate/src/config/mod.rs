@@ -79,6 +79,24 @@ pub struct GenerationConfig {
     /// `None` generates schema-valid data only.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub violations: Option<ViolationsConfig>,
+
+    /// Statistics the output must reach; the generator searches its parameters for
+    /// them (see [`TargetsConfig`]). `None` uses the parameters as given.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub targets: Option<TargetsConfig>,
+}
+
+/// Statistics the generated graph must reach. Each metric is a field, so that a
+/// metric added later is one more field; the search keeps the output schema-valid,
+/// and moves only the default fill of optional properties (shape and property
+/// rules keep their own fill), with the default cardinality set to `max`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TargetsConfig {
+    /// Coherence (Duan et al., 2011), with every node typed by the shape that
+    /// generated it.
+    pub coherence: Option<f64>,
+    /// How far the reached value may be from the target.
+    pub tolerance: f64,
 }
 
 /// Which violations to inject, into which entities.
@@ -316,6 +334,7 @@ impl Default for GenerationConfig {
             unbounded_reference_values: 1,
             property_rules: Vec::new(),
             violations: None,
+            targets: None,
         }
     }
 }
@@ -364,6 +383,11 @@ pub enum EntityDistribution {
     Weighted(HashMap<String, f64>),
     /// Custom distribution with explicit counts per shape
     Custom(HashMap<String, usize>),
+    /// `default` entities of every shape, except the shapes with an explicit count
+    PerShape {
+        default: usize,
+        counts: HashMap<String, usize>,
+    },
 }
 
 /// Strategy for handling cardinalities in relationships
@@ -554,56 +578,22 @@ impl OutputConfig {
     }
 }
 
-/// v1 keys that were removed. A v1 file is not parsed strictly, so without this
-/// check they would be ignored silently and the run would do something else
-/// than the file says.
-fn reject_removed_v1_keys(table: &toml::Table) -> Result<()> {
-    const MESSAGE: &str = "`ignore_min_cardinality` was removed: it silently produced data that violates the schema. To break required properties on purpose, use a v2 config with `[violations] operators = [\"drop-required\"]`, which also writes ground-truth labels";
-    let Some(generation) = table.get("generation").and_then(|g| g.as_table()) else {
-        return Ok(());
-    };
-    let in_overrides = generation
-        .get("type_overrides")
-        .and_then(|o| o.as_table())
-        .is_some_and(|o| o.values().any(|v| v.get("ignore_min_cardinality").is_some()));
-    if generation.contains_key("ignore_min_cardinality") || in_overrides {
-        return Err(crate::DataGeneratorError::Config(MESSAGE.to_string()));
-    }
-    Ok(())
-}
-
 impl GeneratorConfig {
-    /// Load configuration from a TOML file (v2 when it declares `version`, v1 otherwise).
+    /// Load a configuration file (format v2, see [`v2`]).
     pub fn from_toml_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let content = std::fs::read_to_string(path)?;
         Self::from_toml_str(&content)
     }
 
-    /// Parse a TOML configuration. A document with a top-level `version` key is
-    /// read strictly as format v2 (see [`v2`]); anything else is the deprecated
-    /// v1 format, kept loadable until the engine reads v2 policies natively.
+    /// Parse a TOML configuration, strictly, as format v2 (see [`v2`]).
     pub fn from_toml_str(content: &str) -> Result<Self> {
-        let table: toml::Table = toml::from_str(content)?;
-        if table.contains_key("version") {
-            return v2::ConfigV2::parse(content)?.lower();
-        }
-        tracing::warn!("generator config v1 is deprecated; add `version = 2` and see the v2 format");
-        reject_removed_v1_keys(&table)?;
-        Ok(toml::from_str(content)?)
+        v2::ConfigV2::parse(content)?.lower()
     }
 
-    /// Load configuration from a JSON file
+    /// Load a configuration written as JSON, with the same structure as the TOML format.
     pub fn from_json_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let content = std::fs::read_to_string(path)?;
-        let config: Self = serde_json::from_str(&content)?;
-        Ok(config)
-    }
-
-    /// Save configuration to a TOML file
-    pub fn to_toml_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        let content = toml::to_string_pretty(self).map_err(|e| crate::DataGeneratorError::Config(e.to_string()))?;
-        std::fs::write(path, content)?;
-        Ok(())
+        v2::ConfigV2::parse_json(&content)?.lower()
     }
 
     /// Merge with command-line overrides

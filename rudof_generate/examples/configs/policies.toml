@@ -41,6 +41,6 @@ generator = "integer"
 parameters = { min = 0, max = 120 }
 
 [output]
-path = "generated.ttl"
-format = "turtle"               # "turtle" | "ntriples"
+dir = "out"
+formats = ["turtle"]
 stats = true

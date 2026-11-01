@@ -1,0 +1,28 @@
+# Value generators: by datatype, and by property (here, patterns).
+version = 2
+
+[prefixes]
+ex = "http://example.org/"
+
+[run]
+seed = 12345
+scale = { entities = 100 }
+
+[values.datatypes."xsd:integer"]
+generator = "integer"
+parameters = { min = 0, max = 120 }
+
+[values.properties."ex:email"]
+generator = "pattern"
+parameters = { pattern = "[a-z]{3,8}@example[.]org" }
+
+[values.properties."ex:phone"]
+generator = "pattern"
+parameters = { pattern = "[0-9]{3}-[0-9]{3}-[0-9]{4}" }
+
+[values.properties."ex:studentId"]
+generator = "pattern"
+parameters = { pattern = "[A-Z]{2,3}[0-9]{4,6}" }
+
+[output]
+dir = "out"

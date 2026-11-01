@@ -34,7 +34,7 @@ impl Command for GenerateCommand {
             let rudof = Rudof::new(RudofConfig::default());
 
             let schema_format = self.args.schema_format.into();
-            let result_format = self.args.result_format.into();
+            let result_format = self.args.result_format.map(Into::into);
 
             // `-n`/`--entities` always wins when given. Otherwise, a `--generator-config`
             // file's own `entity_count` is left in effect (`None`); with no config file
@@ -45,9 +45,10 @@ impl Command for GenerateCommand {
                 (None, None) => Some(10),
             };
 
-            let mut generation = rudof
-                .generate_data(&self.args.schema, &schema_format, entity_count)
-                .with_result_generation_format(&result_format);
+            let mut generation = rudof.generate_data(&self.args.schema, &schema_format, entity_count);
+            if let Some(result_format) = &result_format {
+                generation = generation.with_result_generation_format(result_format);
+            }
 
             if let Some(seed) = self.args.seed {
                 generation = generation.with_seed(seed);

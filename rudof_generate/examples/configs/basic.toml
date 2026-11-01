@@ -1,0 +1,12 @@
+# The smallest useful configuration: a seeded run of 100 entities.
+# Every field has a default, so even `version = 2` alone is a valid file.
+version = 2
+
+[run]
+seed = 42                       # same seed => same graph, whatever `threads` is
+threads = 4                     # omit to use every core
+scale = { entities = 100 }      # a total, split equally across shapes
+
+[output]
+dir = "out"                     # writes out/data.ttl and out/data.shapemap
+formats = ["turtle"]            # "turtle" | "ntriples" | "pg"

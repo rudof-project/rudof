@@ -74,32 +74,25 @@ async fn run(entities: usize, rate: f64, operators: &[&str], reading: &str) -> R
     let dir = fixture.dir.path();
     let toml = format!(
         "version = 2\n[run]\nseed = 11\nscale = {{ entities = {entities} }}\n[violations]\nrate = {rate}\n\
-         {}labels = \"{}\"\n[violations.rdf]\nlabels = \"{}\"\n{reading}\n\
-         [output]\nformat = \"pg\"\nrdf = \"{}\"\nrdf_shapemap = \"{}\"\n",
+         {}[violations.rdf]\n{reading}\n[output]\ndir = \"{}\"\nformats = [\"pg\", \"turtle\"]\nstats = false\n",
         if operators.is_empty() {
             String::new()
         } else {
             let quoted: Vec<String> = operators.iter().map(|o| format!("\"{o}\"")).collect();
             format!("operators = [{}]\n", quoted.join(", "))
         },
-        dir.join("labels.jsonl").display().to_string().replace('\\', "/"),
-        dir.join("rdf_labels.jsonl").display().to_string().replace('\\', "/"),
-        dir.join("out.ttl").display().to_string().replace('\\', "/"),
-        dir.join("out.shapemap").display().to_string().replace('\\', "/"),
+        dir.display().to_string().replace('\\', "/"),
     );
-    let mut cfg = GeneratorConfig::from_toml_str(&toml).unwrap_or_else(|e| panic!("{e}\n{toml}"));
+    let cfg = GeneratorConfig::from_toml_str(&toml).unwrap_or_else(|e| panic!("{e}\n{toml}"));
     assert_eq!(cfg.output.format, OutputFormat::Pg);
-    cfg.output.path = dir.join("out.pg");
-    cfg.output.write_stats = false;
-    cfg.output.shapemap = Some(dir.join("out.map"));
     let graph = generate(&fixture, cfg).await;
     Run {
         graph,
-        type_map: std::fs::read_to_string(dir.join("out.map")).unwrap(),
+        type_map: std::fs::read_to_string(dir.join("data.typemap")).unwrap(),
         pg_labels: read_labels(&dir.join("labels.jsonl")),
-        rdf: std::fs::read_to_string(dir.join("out.ttl")).unwrap(),
-        rdf_shapemap: std::fs::read_to_string(dir.join("out.shapemap")).unwrap(),
-        rdf_labels: read_labels(&dir.join("rdf_labels.jsonl")),
+        rdf: std::fs::read_to_string(dir.join("data.ttl")).unwrap(),
+        rdf_shapemap: std::fs::read_to_string(dir.join("data.shapemap")).unwrap(),
+        rdf_labels: read_labels(&dir.join("labels-rdf.jsonl")),
     }
 }
 

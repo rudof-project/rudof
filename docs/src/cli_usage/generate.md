@@ -162,7 +162,7 @@ rudof generate -s education.ttl -n 10000 -p 8 -o huge_dataset.ttl
 
 ### Advanced Options
 
-- `-f, --schema-format <FORMAT>` - Force schema format: `auto`, `shex`, or `shacl` (default: `auto`)
+- `-f, --schema-format <FORMAT>` - Force schema format: `auto`, `shex`, or `shacl` (default: `auto`; `auto` reads a `.pgs` file as PG-Schema)
 - `--seed <NUMBER>` - Random seed for reproducible results
 - `-p, --parallel <THREADS>` - Number of CPU threads to use (default: auto)
 - `--force-overwrite` - Overwrite output file if it exists
@@ -172,97 +172,67 @@ rudof generate -s education.ttl -n 10000 -p 8 -o huge_dataset.ttl
 
 ## Using Configuration Files (Advanced)
 
-`--generator-config <FILE>` loads the fine-grained generation settings below (`[generation]`, `[field_generators]`, `[output]`, `[parallel]`). `--entities`, `--result-format`, `--seed`, `--parallel` and `--output-file` on the command line override the matching setting in the file when both are given; everything else (entity distribution, cardinality strategy, per-field generators, ...) only comes from the file.
+`--generator-config <FILE>` loads the generation settings, a TOML (or JSON) file that
+starts with `version = 2`. Unknown keys are errors. `--entities`, `--result-format`,
+`--seed`, `--parallel` and `--output-file` on the command line override the matching
+setting in the file. The full format is described in the
+[rudof_generate README](https://github.com/rudof-project/rudof/tree/master/rudof_generate#configuration),
+with one example per use in `rudof_generate/examples/configs/`.
 
 ### Basic Configuration File
 
-Create a file called `generator_config.toml`:
-
 ```toml
-# How many entities to generate
-[generation]
-entity_count = 100
-seed = 12345                    # For reproducible results
-entity_distribution = "Equal"   # Equal distribution across shapes
-cardinality_strategy = "Balanced" # Balanced cardinality handling
+version = 2
 
-# Default settings for generated data
-[field_generators.default]
-locale = "en"      # Language for generated text
-quality = "Medium" # Data quality: Low, Medium, or High
+[run]
+seed = 42                       # same seed => same graph, whatever `threads` is
+threads = 4
+scale = { entities = 1000 }     # a total; or { per_shape = 1000 }
 
-# Where to save the output
-[output]
-path = "generated_data.ttl"
-format = "Turtle"  # Options: Turtle, NTriples
-compress = false
-write_stats = true # Generate a stats file
-
-# Performance settings
-[parallel]
-worker_threads = 4     # Number of CPU threads
-batch_size = 100      # Entities per batch
-parallel_shapes = true
-parallel_fields = true
-```
-
-**Use it:**
-```sh
-rudof generate --schema person.shex --generator-config generator_config.toml
-```
-
-### Minimal Configuration
-
-For a minimal configuration, you only need:
-
-```toml
-[generation]
-entity_count = 50
+[defaults]
+fill = 0.8                      # probability that an OPTIONAL property is generated
+cardinality = "balanced"        # "min" | "max" | "uniform" | "balanced"
 
 [output]
-path = "output.ttl"
+dir = "out"                     # writes out/data.ttl and out/data.shapemap
+formats = ["turtle"]            # "turtle" | "ntriples" | "pg"
 ```
 
-### Advanced Configuration with Custom Generators
-
-For power users who want fine-grained control:
+### Per-Shape and Per-Property Settings
 
 ```toml
-[generation]
-entity_count = 1000
-seed = 98765
+version = 2
 
-# Custom ranges for integer fields
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer"]
+[prefixes]
+ex = "http://example.org/"
+
+[[shape]]
+match = "ex:PersonShape"
+count = 300
+fill = 0.5
+
+[[property]]
+match = { shape = "ex:PersonShape", path = "ex:email" }
+fill = 1.0
+
+[values.datatypes."xsd:integer"]
 generator = "integer"
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer".parameters]
-min = 1
-max = 10000
+parameters = { min = 18, max = 65 }
+```
 
-# Custom date ranges
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date"]
-generator = "date"
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date".parameters]
-start_year = 1980
-end_year = 2024
+### Controlled Errors and Target Coherence
 
-# Custom email templates
-[field_generators.properties."http://example.org/email"]
-generator = "string"
-[field_generators.properties."http://example.org/email".parameters]
-templates = [
-    "{firstName}.{lastName}@example.com",
-    "{firstName}{number}@company.org"
-]
+```toml
+version = 2
+
+[violations]                    # break 10% of the entities; out/labels.jsonl lists what must fail
+rate = 0.1
+
+[targets]                       # search the fill until the output has this coherence
+coherence = 0.8
 
 [output]
-path = "custom_data.ttl"
-format = "Turtle"
-write_stats = true
-
-[parallel]
-worker_threads = 8
-batch_size = 250
+dir = "out"
 ```
 
 ## Complete Examples
@@ -329,18 +299,17 @@ rudof generate -s courses.ttl -n 50 -o enrollment_data.ttl
 
 **Config (`large_config.toml`):**
 ```toml
-[generation]
-entity_count = 5000
+version = 2
+
+[run]
 seed = 12345
+threads = 8
+scale = { entities = 5000 }
 
 [output]
-path = "large_dataset.ttl"
-format = "NTriples"
-write_stats = true
-
-[parallel]
-worker_threads = 8
-batch_size = 250
+dir = "large_dataset"
+formats = ["ntriples"]
+stats = true
 ```
 
 **Generate:**

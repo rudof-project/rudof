@@ -1,4 +1,4 @@
-"""Persist a GeneratorConfig to TOML, and load one back from TOML and from JSON."""
+"""Load a GeneratorConfig from TOML and from JSON: the same format (version 2) in both."""
 
 import json
 from pathlib import Path
@@ -6,18 +6,24 @@ from tempfile import TemporaryDirectory
 
 from pyrudof import GeneratorConfig
 
+TOML = """
+version = 2
+
+[run]
+seed = 11
+scale = { entities = 3 }
+
+[output]
+dir = "out"
+"""
+
 
 def main() -> None:
-    base = GeneratorConfig()
-    base.set_entity_count(3)
-    base.set_seed(11)
-    base.set_output_path("persist_output.ttl")
-
     with TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
 
         toml_path = tmp_path / "generator.toml"
-        base.to_toml_file(toml_path)
+        toml_path.write_text(TOML, encoding="utf-8")
         loaded_toml = GeneratorConfig.from_toml_file(toml_path)
         loaded_toml.validate()
         print(f"from TOML, entity_count: {loaded_toml.get_entity_count()}")
@@ -27,28 +33,10 @@ def main() -> None:
         json_path.write_text(
             json.dumps(
                 {
-                    "generation": {
-                        "entity_count": 4,
-                        "seed": 5,
-                        "schema_format": "ShEx",
-                        "cardinality_strategy": "Minimum",
-                        "entity_distribution": "Equal",
-                    },
-                    "output": {
-                        "path": str(tmp_path / "out.nt"),
-                        "format": "NTriples",
-                        "compress": False,
-                        "write_stats": False,
-                        "parallel_writing": False,
-                        "parallel_file_count": 1,
-                    },
-                    "parallel": {
-                        "worker_threads": 1,
-                        "batch_size": 8,
-                        "parallel_shapes": False,
-                        "parallel_fields": False,
-                    },
-                    "field_generators": {"default": {"locale": "en", "quality": "Low"}},
+                    "version": 2,
+                    "run": {"seed": 5, "scale": {"entities": 4}},
+                    "defaults": {"cardinality": "min"},
+                    "output": {"dir": str(tmp_path / "out"), "formats": ["ntriples"]},
                 }
             ),
             encoding="utf-8",

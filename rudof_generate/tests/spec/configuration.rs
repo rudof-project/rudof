@@ -1,7 +1,6 @@
 #[cfg(not(target_family = "wasm"))]
 use rudof_generate::config::{
-    CardinalityStrategy, DataQuality, DatatypeConfig, EntityDistribution, GeneratorConfig, OutputFormat,
-    PropertyConfig, PropertySelectionStrategy,
+    CardinalityStrategy, DataQuality, DatatypeConfig, EntityDistribution, GeneratorConfig, OutputFormat, PropertyConfig,
 };
 #[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
@@ -14,136 +13,6 @@ use tempfile::TempDir;
 #[cfg(not(target_family = "wasm"))]
 fn create_test_dir() -> TempDir {
     tempfile::tempdir().expect("Failed to create temp directory")
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[tokio::test]
-async fn test_configuration_loading_toml() {
-    let temp_dir = create_test_dir();
-
-    // Create a comprehensive TOML config file
-    let config_content = r#"
-[generation]
-entity_count = 100
-seed = 12345
-entity_distribution = "Equal"
-cardinality_strategy = "Balanced"
-
-[field_generators.default]
-locale = "es"
-quality = "High"
-
-[field_generators.datatypes]
-
-[field_generators.properties]
-
-[output]
-path = "test_output.ttl"
-format = "Turtle"
-compress = false
-write_stats = true
-parallel_writing = false
-parallel_file_count = 1
-
-[parallel]
-worker_threads = 4
-batch_size = 50
-parallel_shapes = true
-parallel_fields = true
-"#;
-
-    let config_path = temp_dir.path().join("test_config.toml");
-    std::fs::write(&config_path, config_content).expect("Failed to write config file");
-
-    // Load and validate the configuration
-    let config = GeneratorConfig::from_toml_file(&config_path).expect("Should load TOML config successfully");
-
-    // Verify generation settings
-    assert_eq!(config.generation.entity_count, 100);
-    assert_eq!(config.generation.seed, Some(12345));
-    assert_eq!(config.generation.entity_distribution, EntityDistribution::Equal);
-    assert_eq!(config.generation.cardinality_strategy, CardinalityStrategy::Balanced);
-
-    // Verify field generator settings
-    assert_eq!(config.field_generators.default.locale, "es");
-    assert_eq!(config.field_generators.default.quality, DataQuality::High);
-
-    // Verify output settings
-    assert_eq!(config.output.path.to_string_lossy(), "test_output.ttl");
-    assert_eq!(config.output.format, OutputFormat::Turtle);
-    assert!(!config.output.compress);
-    assert!(config.output.write_stats);
-
-    // Verify parallel settings
-    assert_eq!(config.parallel.worker_threads, Some(4));
-    assert_eq!(config.parallel.batch_size, 50);
-    assert!(config.parallel.parallel_shapes);
-    assert!(config.parallel.parallel_fields);
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[tokio::test]
-async fn test_configuration_loading_json() {
-    let temp_dir = create_test_dir();
-
-    // Create a comprehensive JSON config file
-    let config_content = r#"{
-  "generation": {
-    "entity_count": 75,
-    "seed": 54321,
-    "entity_distribution": "Equal",
-    "cardinality_strategy": "Random"
-  },
-  "field_generators": {
-    "default": {
-      "locale": "en",
-      "quality": "Medium"
-    },
-    "datatypes": {},
-    "properties": {}
-  },
-  "output": {
-    "path": "json_output.ttl",
-    "format": "NTriples",
-    "compress": true,
-    "write_stats": false,
-    "parallel_writing": false,
-    "parallel_file_count": 1
-  },
-  "parallel": {
-    "worker_threads": null,
-    "batch_size": 25,
-    "parallel_shapes": false,
-    "parallel_fields": true
-  }
-}"#;
-
-    let config_path = temp_dir.path().join("test_config.json");
-    std::fs::write(&config_path, config_content).expect("Failed to write JSON config file");
-
-    // Load and validate the configuration
-    let config = GeneratorConfig::from_json_file(&config_path).expect("Should load JSON config successfully");
-
-    // Verify generation settings
-    assert_eq!(config.generation.entity_count, 75);
-    assert_eq!(config.generation.seed, Some(54321));
-    assert_eq!(config.generation.entity_distribution, EntityDistribution::Equal);
-    assert_eq!(config.generation.cardinality_strategy, CardinalityStrategy::Random);
-
-    // Verify field generator settings
-    assert_eq!(config.field_generators.default.locale, "en");
-    assert_eq!(config.field_generators.default.quality, DataQuality::Medium);
-
-    // Verify output settings
-    assert_eq!(config.output.format, OutputFormat::NTriples);
-    assert!(config.output.compress);
-    assert!(!config.output.write_stats);
-
-    // Verify parallel settings
-    assert_eq!(config.parallel.worker_threads, None); // Auto-detect
-    assert_eq!(config.parallel.batch_size, 25);
-    assert!(!config.parallel.parallel_shapes);
-    assert!(config.parallel.parallel_fields);
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -199,32 +68,6 @@ async fn test_configuration_merge() {
     assert_eq!(config.generation.entity_count, 500);
     assert_eq!(config.output.path.to_string_lossy(), "custom_output.ttl");
     assert_eq!(config.generation.seed, Some(98765));
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[tokio::test]
-async fn test_configuration_serialization() {
-    let config = GeneratorConfig::default();
-    let temp_dir = create_test_dir();
-
-    // Test TOML serialization
-    let toml_path = temp_dir.path().join("test_output.toml");
-    config.to_toml_file(&toml_path).expect("Should serialize to TOML");
-
-    // Verify file exists and has content
-    assert!(toml_path.exists());
-    let toml_content = std::fs::read_to_string(&toml_path).expect("Should read TOML file");
-    assert!(!toml_content.is_empty());
-    assert!(toml_content.contains("entity_count"));
-    assert!(toml_content.contains("locale"));
-
-    // Test round-trip
-    let loaded_config = GeneratorConfig::from_toml_file(&toml_path).expect("Should load serialized TOML");
-    assert_eq!(loaded_config.generation.entity_count, config.generation.entity_count);
-    assert_eq!(
-        loaded_config.field_generators.default.locale,
-        config.field_generators.default.locale
-    );
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -296,157 +139,31 @@ async fn test_property_configuration() {
 
 #[cfg(not(target_family = "wasm"))]
 #[tokio::test]
-async fn test_complex_configuration_toml() {
-    let temp_dir = create_test_dir();
-
-    // Create TOML with datatype and property configurations
-    let config_content = r#"
-[generation]
-entity_count = 50
-seed = 999
-entity_distribution = "Equal"
-cardinality_strategy = "Balanced"
-
-[field_generators.default]
-locale = "de"
-quality = "Low"
-
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer"]
-generator = "integer"
-
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer".parameters]
-min = 1
-max = 100
-
-[field_generators.properties."foaf:name"]
-generator = "string"
-templates = ["John Doe", "Jane Smith"]
-
-[field_generators.properties."foaf:name".parameters]
-locale = "en"
-
-[output]
-path = "complex_output.ttl"
-format = "Turtle"
-compress = false
-write_stats = true
-parallel_writing = false
-parallel_file_count = 1
-
-[parallel]
-worker_threads = 1
-batch_size = 100
-parallel_shapes = true
-parallel_fields = true
-"#;
-
-    let config_path = temp_dir.path().join("complex_config.toml");
-    std::fs::write(&config_path, config_content).expect("Failed to write complex config");
-
-    let config = GeneratorConfig::from_toml_file(&config_path).expect("Should load complex TOML config");
-
-    // Verify complex configuration
-    assert_eq!(config.generation.entity_count, 50);
-    assert_eq!(config.field_generators.default.quality, DataQuality::Low);
-    assert_eq!(config.output.format, OutputFormat::Turtle);
-
-    // Verify datatype config
-    let int_config = config
-        .field_generators
-        .datatypes
-        .get("http://www.w3.org/2001/XMLSchema#integer")
-        .expect("Should have integer config");
-    assert_eq!(int_config.generator, "integer");
-    assert_eq!(int_config.parameters["min"].as_i64(), Some(1));
-    assert_eq!(int_config.parameters["max"].as_i64(), Some(100));
-
-    // Verify property config
-    let name_config = config
-        .field_generators
-        .properties
-        .get("foaf:name")
-        .expect("Should have name config");
-    assert_eq!(name_config.generator, "string");
-    assert_eq!(name_config.parameters["locale"].as_str(), Some("en"));
-    assert!(name_config.templates.is_some());
-    let templates = name_config.templates.as_ref().unwrap();
-    assert_eq!(templates.len(), 2);
-    assert!(templates.contains(&"John Doe".to_string()));
-    assert!(templates.contains(&"Jane Smith".to_string()));
+async fn a_config_without_version_is_rejected() {
+    let err = GeneratorConfig::from_toml_str("[generation]\nentity_count = 10\n")
+        .expect_err("the v1 format was removed")
+        .to_string();
+    assert!(err.contains("version = 2"), "{err}");
 }
 
 #[cfg(not(target_family = "wasm"))]
 #[tokio::test]
-async fn test_coherence_configuration_toml() {
+async fn a_json_config_reads_like_the_toml_format() {
     let temp_dir = create_test_dir();
-
-    let config_content = r#"
-[generation]
-entity_count = 100
-seed = 12345
-entity_distribution = "Equal"
-cardinality_strategy = "Balanced"
-
-# Coherence settings
-property_fill_probability = 0.5
-max_properties_per_instance = 5
-property_selection_strategy = "Random"
-property_count_variance = 0.2
-excluded_properties = ["http://example.org/prop1", "http://example.org/prop2"]
-
-[generation.type_overrides."http://example.org/Student"]
-property_fill_probability = 0.8
-max_properties_per_instance = 10
-
-[field_generators.default]
-locale = "en"
-quality = "Medium"
-
-[field_generators.datatypes]
-[field_generators.properties]
-
-[output]
-path = "output.ttl"
-format = "Turtle"
-compress = false
-write_stats = true
-parallel_writing = false
-parallel_file_count = 1
-
-[parallel]
-worker_threads = 1
-batch_size = 100
-parallel_shapes = true
-parallel_fields = true
-"#;
-
-    let config_path = temp_dir.path().join("coherence_config.toml");
-    std::fs::write(&config_path, config_content).expect("Failed to write config file");
-
-    let config = GeneratorConfig::from_toml_file(&config_path).expect("Should load TOML config successfully");
-
-    // Verify coherence settings
+    let path = temp_dir.path().join("config.json");
+    std::fs::write(
+        &path,
+        r#"{"version": 2, "run": {"seed": 7, "scale": {"entities": 50}}, "defaults": {"fill": 0.5}}"#,
+    )
+    .unwrap();
+    let config = GeneratorConfig::from_json_file(&path).expect("a v2 JSON config should load");
+    assert_eq!(config.generation.seed, Some(7));
+    assert_eq!(config.generation.entity_count, 50);
     assert_eq!(config.generation.property_fill_probability, 0.5);
-    assert_eq!(config.generation.max_properties_per_instance, 5);
-    assert_eq!(
-        config.generation.property_selection_strategy,
-        PropertySelectionStrategy::Random
-    );
-    assert_eq!(config.generation.property_count_variance, 0.2);
-    assert_eq!(config.generation.excluded_properties.len(), 2);
-    assert!(
-        config
-            .generation
-            .excluded_properties
-            .contains(&"http://example.org/prop1".to_string())
-    );
 
-    // Verify overrides
-    let student_override = config
-        .generation
-        .type_overrides
-        .get("http://example.org/Student")
-        .expect("Should have override for Student");
-    assert_eq!(student_override.property_fill_probability, Some(0.8));
-    assert_eq!(student_override.max_properties_per_instance, Some(10));
+    std::fs::write(&path, r#"{"generation": {"entity_count": 10}}"#).unwrap();
+    assert!(
+        GeneratorConfig::from_json_file(&path).is_err(),
+        "v1 JSON is rejected too"
+    );
 }

@@ -500,8 +500,8 @@ expected_output = ["locale: en"]
 [[example]]
 key = "generate_config_persistence"
 source_file = "generate/generate_config_persistence.py"
-title = "Generator Config Persistence"
-description = "Persist GeneratorConfig to TOML and load from TOML/JSON"
+title = "Generator Config Files"
+description = "Load GeneratorConfig from TOML and from JSON (format v2)"
 category = "generate"
 files = {}
 expected_output = [

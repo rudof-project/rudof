@@ -180,6 +180,11 @@ class DataGenerator:
         Raises:
             GenerateError: If schema loading or generation fails.
         """
+    def target_report(self) -> typing.Optional[tuple[builtins.float, builtins.float, builtins.bool, builtins.float]]:
+        r"""
+        What the coherence search of the last run reached, when the configuration sets a
+        target: `(target, reached, within_tolerance, fill)`. `None` without a target.
+        """
     def run(self, schema_path: builtins.str | os.PathLike | pathlib.Path) -> None:
         r"""
         Runs the whole pipeline with automatic schema format detection.
@@ -232,15 +237,12 @@ class GeneratorConfig:
         Raises:
             GenerateError: If the file cannot be read or parsed.
         """
-    def to_toml_file(self, path: builtins.str | os.PathLike | pathlib.Path) -> None:
+    def set_target_coherence(self, coherence: builtins.float, tolerance: builtins.float = 0.01) -> None:
         r"""
-        Saves this configuration to a TOML file.
-        
-        Args:
-            path (str | os.PathLike): Path where the TOML file will be written.
-        
-        Raises:
-            GenerateError: If writing to the file fails.
+        Asks for the coherence (Duan et al., 2011) of the output: the generator searches
+        the default fill of optional properties, with the default cardinality at `max`,
+        until the coherence is within `tolerance` of `coherence`, and keeps the data valid.
+        `DataGenerator.target_report()` tells what was reached.
         """
     def set_entity_count(self, count: builtins.int) -> None:
         r"""

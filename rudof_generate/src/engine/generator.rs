@@ -141,6 +141,12 @@ impl ParallelGenerator {
                     distribution.insert(shape_id.clone(), *count);
                 }
             },
+            EntityDistribution::PerShape { default, counts } => {
+                for shape_id in shapes.keys() {
+                    let count = counts.get(shape_id).unwrap_or(default);
+                    distribution.insert(shape_id.clone(), *count);
+                }
+            },
         }
 
         Ok(distribution)

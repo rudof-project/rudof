@@ -28,10 +28,9 @@ pub struct GenerateArgs {
         short = 'r',
         long = "result-format",
         ignore_case = true,
-        value_name = "Output RDF format",
-        default_value_t = DataFormatCli::Turtle
+        value_name = "Output RDF format (default: turtle, or the format of --generator-config)"
     )]
-    pub result_format: DataFormatCli,
+    pub result_format: Option<DataFormatCli>,
 
     #[arg(long = "seed", value_name = "Random seed for reproducible generation")]
     pub seed: Option<u64>,

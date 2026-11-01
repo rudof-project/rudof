@@ -38,7 +38,32 @@ pub struct DataGenerator {
     processor: ShapeProcessor,
     generator: ParallelGenerator,
     writer: OutputWriter,
+    target_report: Option<TargetReport>,
 }
+
+#[cfg(not(target_family = "wasm"))]
+/// What a `[targets]` search reached.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TargetReport {
+    /// The metric searched for, e.g. `"coherence"`.
+    pub metric: &'static str,
+    pub target: f64,
+    /// The value of the metric on the generated graph.
+    pub reached: f64,
+    /// Whether `reached` is within the tolerance of `target`.
+    pub within_tolerance: bool,
+    /// The default fill of optional properties that produced the graph.
+    pub fill: f64,
+}
+
+#[cfg(not(target_family = "wasm"))]
+/// Lowest default fill a `[targets]` search tries: at fill 0 an optional property
+/// disappears from its type, which raises coherence instead of lowering it.
+const MIN_TARGET_FILL: f64 = 0.05;
+
+#[cfg(not(target_family = "wasm"))]
+/// Graphs a `[targets]` search generates at most.
+const MAX_TARGET_STEPS: usize = 12;
 
 #[cfg(not(target_family = "wasm"))]
 impl DataGenerator {
@@ -53,7 +78,14 @@ impl DataGenerator {
             processor,
             generator,
             writer,
+            target_report: None,
         })
+    }
+
+    /// What the `[targets]` search of the last [`Self::generate`] reached, if the
+    /// configuration sets targets.
+    pub fn target_report(&self) -> Option<&TargetReport> {
+        self.target_report.as_ref()
     }
 
     /// Load and process a ShEx schema file
@@ -119,8 +151,12 @@ impl DataGenerator {
 
     /// Generate synthetic data and write to output
     pub async fn generate(&mut self) -> Result<()> {
+        self.create_output_dirs()?;
         let start_time = std::time::Instant::now();
-        let mut graph = self.generator.generate_data(&self.config.generation).await?;
+        let mut graph = match self.config.generation.targets.clone() {
+            Some(targets) => self.generate_for_targets(&targets).await?,
+            None => self.generator.generate_data(&self.config.generation).await?,
+        };
         if let Some(violations) = &self.config.generation.violations {
             graph = self.inject_violations(graph, violations).await?;
         }
@@ -149,6 +185,114 @@ impl DataGenerator {
             std::fs::write(path, self.shape_map().await)?;
         }
         Ok(())
+    }
+
+    /// Create the folder of every file the run writes (`[output] dir` need not exist).
+    fn create_output_dirs(&self) -> Result<()> {
+        let output = &self.config.output;
+        let violations = self.config.generation.violations.as_ref();
+        let paths = [
+            Some(&output.path),
+            output.shapemap.as_ref(),
+            output.rdf.as_ref(),
+            output.rdf_shapemap.as_ref(),
+        ]
+        .into_iter()
+        .chain([violations.and_then(|v| v.labels.as_ref())])
+        .chain([violations.and_then(|v| v.rdf.as_ref()).map(|r| &r.labels)])
+        .flatten();
+        for path in paths {
+            if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
+                std::fs::create_dir_all(dir)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Search the default fill of optional properties until the graph reaches the
+    /// target coherence, by bisection, since coherence grows with the fill. The default
+    /// cardinality is `max` during the search, so that the fill alone decides whether
+    /// an optional property appears. The
+    /// generator of the closest graph replaces `self.generator`, so the ShapeMap and
+    /// the violations describe that graph. A target outside the reachable range
+    /// yields the closest graph and a warning.
+    async fn generate_for_targets(
+        &mut self,
+        targets: &config::TargetsConfig,
+    ) -> Result<rudof_rdf::rdf_impl::OxigraphInMemory> {
+        use rudof_rdf::rdf_core::NeighsRDF;
+        let target = targets
+            .coherence
+            .ok_or_else(|| DataGeneratorError::Config("[targets] sets no metric".to_string()))?;
+        let model = self
+            .processor
+            .get_unified_model()
+            .ok_or_else(|| DataGeneratorError::Config("[targets] needs a loaded schema".to_string()))?;
+        let shapes = self.convert_unified_to_shape_infos(model);
+
+        let mut best: Option<(TargetReport, ParallelGenerator, rudof_rdf::rdf_impl::OxigraphInMemory)> = None;
+        let (mut low, mut high) = (MIN_TARGET_FILL, 1.0);
+        for step in 0..MAX_TARGET_STEPS {
+            let fill = match step {
+                0 => high,
+                1 => low,
+                _ => (low + high) / 2.0,
+            };
+            let mut config = self.config.clone();
+            config.generation.property_fill_probability = fill;
+            config.generation.cardinality_strategy = config::CardinalityStrategy::Maximum;
+            let mut generator = ParallelGenerator::new(&config)?;
+            generator.set_shapes(shapes.clone()).await?;
+            let graph = generator.generate_data(&config.generation).await?;
+            let triples: Vec<oxrdf::Triple> = graph
+                .triples()
+                .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?
+                .collect();
+            let reached = metrics::coherence(&triples, &generator.entity_shapes().await);
+            tracing::info!("[targets] fill {fill:.4}: coherence {reached:.4} (target {target})");
+
+            let report = TargetReport {
+                metric: "coherence",
+                target,
+                reached,
+                within_tolerance: (reached - target).abs() <= targets.tolerance,
+                fill,
+            };
+            let done = report.within_tolerance;
+            let closer = best
+                .as_ref()
+                .is_none_or(|(b, _, _)| (reached - target).abs() < (b.reached - target).abs());
+            if closer {
+                best = Some((report, generator, graph));
+            }
+            // Out of range: the highest fill cannot reach a higher target, nor the
+            // lowest a lower one.
+            let out_of_range = (step == 0 && reached < target) || (step == 1 && reached > target);
+            if done || out_of_range {
+                break;
+            }
+            if step >= 1 {
+                if reached < target {
+                    low = fill;
+                } else {
+                    high = fill;
+                }
+            }
+        }
+
+        let (report, generator, graph) =
+            best.ok_or_else(|| DataGeneratorError::GraphGeneration("[targets] generated no graph".to_string()))?;
+        if !report.within_tolerance {
+            tracing::warn!(
+                "[targets] coherence {} not reached: the closest graph has {:.4} (fill {:.4})",
+                report.target,
+                report.reached,
+                report.fill
+            );
+        }
+        self.generator = generator;
+        self.target_report = Some(report);
+        Ok(graph)
     }
 
     /// Write the graph as a property graph (`.pg`) and the type map in place of
