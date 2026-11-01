@@ -304,6 +304,7 @@ mod tests {
             "sh:targetNode :a ; sh:and _:l",
             "sh:targetNode :a ; sh:or _:l",
             "sh:targetNode :a ; sh:xone _:l",
+            "sh:targetNode :a ; sh:closed true ; sh:ignoredProperties _:l",
             // Not a shape, but each list is read when looking for the shapes in it
             "sh:or [ rdf:first :v ; rdf:rest _:l ]",
         ] {
@@ -320,7 +321,7 @@ mod tests {
     #[test]
     fn long_lists_are_parsed() {
         let members: String = (0..5000).map(|j| format!(" :v{j}")).collect();
-        for list in ["sh:in", "sh:deactivated"] {
+        for list in ["sh:in", "sh:deactivated", "sh:closed true ; sh:ignoredProperties"] {
             parse_shapes(&format!("{PATH_PREFIXES}:S sh:targetNode :a ; {list} ({members} ) .")).unwrap();
         }
 

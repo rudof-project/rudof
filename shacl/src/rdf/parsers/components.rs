@@ -53,7 +53,7 @@ pub(crate) fn components<RDF: FocusRDF>(
         // property is handled differently
         Box::new(qualified_value_shape()),
         // Other
-        Box::new(closed()),
+        Box::new(closed(budget.clone())),
         Box::new(has_value()),
         Box::new(in_component(budget.clone())),
         // Non-validating constraint components
