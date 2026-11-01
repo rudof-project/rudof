@@ -201,6 +201,44 @@ mod tests {
         );
     }
 
+    /// Parsing the `sh:ignoredProperties` list must not leave the focus node on
+    /// it either, or the components declared after `sh:closed` are lost.
+    #[test]
+    fn test_ignored_properties() {
+        let shape = r#"
+            @prefix :    <http://example.org/> .
+            @prefix sh:  <http://www.w3.org/ns/shacl#> .
+
+            :TestShape a sh:NodeShape ;
+                sh:closed true ;
+                sh:ignoredProperties ( :p :q ) ;
+                sh:hasValue :a .
+        "#;
+
+        let shape = node_shape_of(shape, "http://example.org/TestShape");
+
+        let expected = ASTComponent::Closed {
+            is_closed: true,
+            ignored_properties: [iri!("http://example.org/p"), iri!("http://example.org/q")].into(),
+        };
+        assert!(shape.components().contains(&expected), "{:?}", shape.components());
+        assert!(
+            shape
+                .components()
+                .iter()
+                .any(|c| matches!(c, ASTComponent::HasValue(_))),
+            "components parsed after sh:ignoredProperties were lost: {:?}",
+            shape.components()
+        );
+
+        // Not a list, which used to mean no ignored properties
+        let err = parse_shapes(&format!(
+            "{PATH_PREFIXES}:S a sh:NodeShape ; sh:closed true ; sh:ignoredProperties :p ."
+        ))
+        .unwrap_err();
+        assert!(err.contains("rdf-syntax-ns#first"), "{err}");
+    }
+
     const PATH_PREFIXES: &str = "@prefix : <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n";
