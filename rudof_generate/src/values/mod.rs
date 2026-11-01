@@ -140,12 +140,17 @@ impl FieldGenerationManager {
 
     /// Generate multiple field values in parallel
     pub async fn generate_fields_parallel(&self, contexts: Vec<GenerationContext>) -> Result<Vec<String>> {
-        use rayon::prelude::*;
-
-        let results: Result<Vec<String>> = contexts
-            .into_par_iter()
-            .map(|context| self.generate_field(&context))
-            .collect();
+        // No threads in WebAssembly.
+        #[cfg(not(target_family = "wasm"))]
+        let results: Result<Vec<String>> = {
+            use rayon::prelude::*;
+            contexts
+                .into_par_iter()
+                .map(|context| self.generate_field(&context))
+                .collect()
+        };
+        #[cfg(target_family = "wasm")]
+        let results: Result<Vec<String>> = contexts.iter().map(|context| self.generate_field(context)).collect();
 
         results
     }

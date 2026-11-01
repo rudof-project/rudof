@@ -8,14 +8,51 @@
     body { font-family: system-ui, sans-serif; margin: 1rem; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
     textarea { width: 100%; box-sizing: border-box; height: 12rem; font-family: monospace; }
-    input { width: 100%; box-sizing: border-box; font-family: monospace; }
+    input, select { width: 100%; box-sizing: border-box; font-family: monospace; }
+    .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin: 0.25rem 0; }
     pre { background: #f4f4f4; padding: 0.5rem; overflow-x: auto; }
+    fieldset { border: 1px solid #ccc; }
   </style>
 </head>
 <body>
   <!-- Serve the bindings/wasm directory over HTTP after running ./build.sh,
        e.g. `python3 -m http.server`, and open /examples/index.html -->
-  <h1>rudof: ShEx and SHACL validation in WebAssembly</h1>
+  <h1>rudof: ShEx and SHACL validation, and data generation, in WebAssembly</h1>
+
+  <fieldset>
+    <legend>Generate data from a schema (rudof generate)</legend>
+    <div class="grid">
+      <label>Schema
+        <textarea id="gen-schema">prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:Person { :name xsd:string ; :age xsd:integer ? ; :worksFor @:Org }
+:Org { :label xsd:string }</textarea>
+      </label>
+      <label>Configuration (optional, TOML, <code>version = 2</code>)
+        <textarea id="gen-config" placeholder="version = 2
+[defaults]
+fill = 0.5
+[violations]
+rate = 0.2
+[targets]
+coherence = 0.9"></textarea>
+      </label>
+    </div>
+    <div class="row">
+      <label>Schema language
+        <select id="gen-format">
+          <option value="shex">ShEx</option>
+          <option value="shacl">SHACL</option>
+          <option value="pgschema">PG-Schema</option>
+        </select>
+      </label>
+      <label>Entities <input id="gen-entities" type="number" min="1" value="20"></label>
+      <label>Seed <input id="gen-seed" type="number" min="0" value="7"></label>
+    </div>
+    <button id="generate">Generate</button>
+    The data and its ShapeMap fill the boxes below, ready to validate.
+  </fieldset>
+
   <div class="grid">
     <label>RDF data (Turtle)
       <textarea id="data">prefix : <http://example.org/>
@@ -43,7 +80,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
   <pre id="output">Loading…</pre>
 
   <script type="module">
-    import init, { validateShex, validateShacl } from "../pkg/web/rudof_wasm.js";
+    import init, { validateShex, validateShacl, generate } from "../pkg/web/rudof_wasm.js";
 
     const $ = (id) => document.getElementById(id);
     const show = (run) => {
@@ -60,6 +97,25 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
       show(() => validateShex($("data").value, $("shex").value, $("shapemap").value));
     $("validate-shacl").onclick = () =>
       show(() => validateShacl($("data").value, $("shacl").value));
+    $("generate").onclick = () =>
+      show(() => {
+        const format = $("gen-format").value;
+        const config = $("gen-config").value.trim() || undefined;
+        const generated = generate($("gen-schema").value, format, config,
+                                   Number($("gen-entities").value), Number($("gen-seed").value));
+        $("data").value = generated.data;
+        $("shapemap").value = generated.shapemap.trim();
+        // The schema the data came from goes to the validator of its language.
+        if (format === "shex") $("shex").value = $("gen-schema").value;
+        if (format === "shacl") $("shacl").value = $("gen-schema").value;
+        return {
+          shapemap: generated.shapemap.split(",").length + " node/shape associations",
+          propertyGraph: generated.propertyGraph,
+          typeMap: generated.typeMap,
+          labels: generated.labels?.trim().split("\n").map((l) => JSON.parse(l)),
+          rdfLabels: generated.rdfLabels?.trim().split("\n").map((l) => JSON.parse(l)),
+        };
+      });
   </script>
 </body>
 </html>

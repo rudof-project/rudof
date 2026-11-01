@@ -36,7 +36,7 @@ if [ -n "${RUDOF_WASM_FEATURES+set}" ]; then
 fi
 # The endpoints/ build adds remote SPARQL endpoints, which need JSPI (see the
 # README), to all the other features.
-endpoints_features=(--no-default-features --features "comparison,conversion,dctap,pgschema,rdf-config,endpoints")
+endpoints_features=(--no-default-features --features "comparison,conversion,dctap,generate,pgschema,rdf-config,endpoints")
 
 # Builds rudof_wasm with the cargo arguments after the first, and writes its
 # web and Node.js modules to <dir>/web and <dir>/node.

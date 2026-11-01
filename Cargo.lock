@@ -4335,6 +4335,7 @@ dependencies = [
  "chrono",
  "clap",
  "futures",
+ "getrandom 0.2.17",
  "oxrdf",
  "oxttl",
  "pgschema",
@@ -4508,7 +4509,9 @@ name = "rudof_wasm"
 version = "0.3.35"
 dependencies = [
  "console_error_panic_hook",
+ "futures",
  "js-sys",
+ "rudof_generate",
  "rudof_lib",
  "rudof_rdf",
  "serde",

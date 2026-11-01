@@ -1,47 +1,32 @@
-#[cfg(not(target_family = "wasm"))]
 pub mod adapters;
-#[cfg(not(target_family = "wasm"))]
 pub mod config;
-#[cfg(not(target_family = "wasm"))]
 pub mod engine;
-#[cfg(not(target_family = "wasm"))]
 pub mod errors;
-#[cfg(not(target_family = "wasm"))]
 pub mod ir;
-#[cfg(not(target_family = "wasm"))]
 pub mod metrics;
-#[cfg(not(target_family = "wasm"))]
 pub mod sinks;
-#[cfg(not(target_family = "wasm"))]
 pub mod values;
-#[cfg(not(target_family = "wasm"))]
 pub mod violations;
-// #[cfg(target_family = "wasm")]
-// mod wasm_stubs;
 
-#[cfg(not(target_family = "wasm"))]
 pub use config::{GeneratorConfig, SchemaFormat};
-#[cfg(not(target_family = "wasm"))]
 use errors::{DataGeneratorError, Result};
-#[cfg(not(target_family = "wasm"))]
 pub use metrics::{ConformanceMetrics, TranslationMetrics};
 
+use crate::{engine::ParallelGenerator, ir::shape_info::ShapeProcessor};
 #[cfg(not(target_family = "wasm"))]
-use crate::{engine::ParallelGenerator, ir::shape_info::ShapeProcessor, sinks::OutputWriter};
-#[cfg(not(target_family = "wasm"))]
+use sinks::OutputWriter;
 use std::{path::Path, str::FromStr};
 
-#[cfg(not(target_family = "wasm"))]
 /// Main data generator interface
 pub struct DataGenerator {
     config: GeneratorConfig,
     processor: ShapeProcessor,
     generator: ParallelGenerator,
+    #[cfg(not(target_family = "wasm"))]
     writer: OutputWriter,
     target_report: Option<TargetReport>,
 }
 
-#[cfg(not(target_family = "wasm"))]
 /// What a `[targets]` search reached.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TargetReport {
@@ -56,27 +41,43 @@ pub struct TargetReport {
     pub fill: f64,
 }
 
-#[cfg(not(target_family = "wasm"))]
 /// Lowest default fill a `[targets]` search tries: at fill 0 an optional property
 /// disappears from its type, which raises coherence instead of lowering it.
 const MIN_TARGET_FILL: f64 = 0.05;
 
-#[cfg(not(target_family = "wasm"))]
 /// Graphs a `[targets]` search generates at most.
 const MAX_TARGET_STEPS: usize = 12;
 
-#[cfg(not(target_family = "wasm"))]
+/// What an in-memory run produced (see [`DataGenerator::generate_in_memory`]).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct GeneratedData {
+    /// The graph as RDF (Turtle); from a PG-Schema, the RDF encoding of the property graph.
+    pub data: String,
+    /// A ShEx ShapeMap (compact syntax) with the shape of every generated node.
+    pub shapemap: String,
+    /// From a PG-Schema: the graph in rudof's property graph format.
+    pub property_graph: Option<String>,
+    /// From a PG-Schema: the type of every node and edge.
+    pub type_map: Option<String>,
+    /// With `[violations]`: what a validator of the schema's language must report (JSON Lines).
+    pub labels: Option<String>,
+    /// With `[violations]` and a PG-Schema: the same for the graph read as RDF (JSON Lines).
+    pub rdf_labels: Option<String>,
+}
+
 impl DataGenerator {
     /// Create a new data generator with the given configuration
     pub fn new(config: GeneratorConfig) -> Result<Self> {
         let processor = ShapeProcessor::new();
         let generator = ParallelGenerator::new(&config)?;
+        #[cfg(not(target_family = "wasm"))]
         let writer = OutputWriter::new(&config.output)?;
 
         Ok(Self {
             config,
             processor,
             generator,
+            #[cfg(not(target_family = "wasm"))]
             writer,
             target_report: None,
         })
@@ -150,6 +151,7 @@ impl DataGenerator {
     }
 
     /// Generate synthetic data and write to output
+    #[cfg(not(target_family = "wasm"))]
     pub async fn generate(&mut self) -> Result<()> {
         self.create_output_dirs()?;
         let start_time = std::time::Instant::now();
@@ -158,7 +160,17 @@ impl DataGenerator {
             None => self.generator.generate_data(&self.config.generation).await?,
         };
         if let Some(violations) = &self.config.generation.violations {
-            graph = self.inject_violations(graph, violations).await?;
+            let injected;
+            (graph, injected) = self.break_graph(graph, violations).await?;
+            if let Some(path) = &violations.labels {
+                violations::write_labels(path, &injected.labels)?;
+            }
+            if let Some(reading) = &violations.rdf {
+                let rdf_labels = injected.rdf_labels.as_ref().ok_or_else(|| {
+                    DataGeneratorError::Config("[violations.rdf] needs a PG-Schema input".to_string())
+                })?;
+                violations::write_labels(&reading.labels, rdf_labels)?;
+            }
         }
         let generation_time = start_time.elapsed();
 
@@ -188,6 +200,7 @@ impl DataGenerator {
     }
 
     /// Create the folder of every file the run writes (`[output] dir` need not exist).
+    #[cfg(not(target_family = "wasm"))]
     fn create_output_dirs(&self) -> Result<()> {
         let output = &self.config.output;
         let violations = self.config.generation.violations.as_ref();
@@ -297,6 +310,7 @@ impl DataGenerator {
 
     /// Write the graph as a property graph (`.pg`) and the type map in place of
     /// the ShapeMap.
+    #[cfg(not(target_family = "wasm"))]
     async fn write_property_graph(&self, graph: &rudof_rdf::rdf_impl::OxigraphInMemory) -> Result<()> {
         use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF};
         let model = self
@@ -327,12 +341,12 @@ impl DataGenerator {
         Ok(())
     }
 
-    /// Break the configured share of entities and write the ground-truth labels.
-    async fn inject_violations(
+    /// Break the configured share of entities; the labels say what must fail.
+    async fn break_graph(
         &self,
         graph: rudof_rdf::rdf_impl::OxigraphInMemory,
         violations: &config::ViolationsConfig,
-    ) -> Result<rudof_rdf::rdf_impl::OxigraphInMemory> {
+    ) -> Result<(rudof_rdf::rdf_impl::OxigraphInMemory, violations::Injected)> {
         use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF};
         let model = self
             .processor
@@ -344,16 +358,6 @@ impl DataGenerator {
             .collect();
         let entities = self.generator.entity_shapes().await;
         let injected = violations::inject(&mut triples, model, &entities, violations, self.config.generation.seed)?;
-        if let Some(path) = &violations.labels {
-            violations::write_labels(path, &injected.labels)?;
-        }
-        if let Some(reading) = &violations.rdf {
-            let rdf_labels = injected
-                .rdf_labels
-                .as_ref()
-                .ok_or_else(|| DataGeneratorError::Config("[violations.rdf] needs a PG-Schema input".to_string()))?;
-            violations::write_labels(&reading.labels, rdf_labels)?;
-        }
         tracing::info!("injected violations: {:?}", violations::summary(&injected.labels));
 
         let mut mutated = rudof_rdf::rdf_impl::OxigraphInMemory::default();
@@ -362,7 +366,60 @@ impl DataGenerator {
                 .add_triple(t.subject, t.predicate, t.object)
                 .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?;
         }
-        Ok(mutated)
+        Ok((mutated, injected))
+    }
+
+    /// Load a schema given as text, in the language `format`.
+    pub async fn load_schema_str(&mut self, text: &str, format: SchemaFormat) -> Result<()> {
+        self.processor.load_schema_text(text, format).await?;
+        if let Some(unified_model) = self.processor.get_unified_model() {
+            let shape_infos = self.convert_unified_to_shape_infos(unified_model);
+            self.generator.set_shapes(shape_infos).await?;
+        }
+        Ok(())
+    }
+
+    /// Generate into strings instead of files: the data, its ShapeMap and, from a
+    /// PG-Schema, the property graph and its type map; with `[violations]`, the reports.
+    /// The `[output]` settings are not used. Works in WebAssembly.
+    pub async fn generate_in_memory(&mut self) -> Result<GeneratedData> {
+        use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF};
+        let mut graph = match self.config.generation.targets.clone() {
+            Some(targets) => self.generate_for_targets(&targets).await?,
+            None => self.generator.generate_data(&self.config.generation).await?,
+        };
+        let mut out = GeneratedData::default();
+        if let Some(violations) = self.config.generation.violations.clone() {
+            let injected;
+            (graph, injected) = self.break_graph(graph, &violations).await?;
+            out.labels = Some(violations::labels_jsonl(&injected.labels)?);
+            out.rdf_labels = injected
+                .rdf_labels
+                .as_deref()
+                .map(violations::labels_jsonl)
+                .transpose()?;
+        }
+        let mut turtle = Vec::new();
+        graph
+            .serialize(&rudof_rdf::rdf_core::RDFFormat::Turtle, &mut turtle)
+            .map_err(|e| DataGeneratorError::OutputWriting(e.to_string()))?;
+        out.data = String::from_utf8_lossy(&turtle).into_owned();
+        out.shapemap = self.shape_map().await;
+        let model = self
+            .processor
+            .get_unified_model()
+            .ok_or_else(|| DataGeneratorError::Config("generation needs a loaded schema".to_string()))?;
+        if adapters::pgschema::is_property_graph(model) {
+            let triples: Vec<oxrdf::Triple> = graph
+                .triples()
+                .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?
+                .collect();
+            let entities = self.generator.entity_shapes().await;
+            let (pg, type_map) = sinks::pg::property_graph(&triples, model, &entities);
+            out.property_graph = Some(pg);
+            out.type_map = Some(type_map);
+        }
+        Ok(out)
     }
 
     /// A ShEx ShapeMap (compact syntax) associating every generated node with
@@ -383,6 +440,7 @@ impl DataGenerator {
     }
 
     /// Run the complete generation pipeline (legacy ShEx support)
+    #[cfg(not(target_family = "wasm"))]
     pub async fn run<P: AsRef<Path>>(&mut self, shex_path: P) -> Result<()> {
         tracing::trace!("Loading ShEx schema from: {}", shex_path.as_ref().display());
         self.load_schema(shex_path).await?;
@@ -395,6 +453,7 @@ impl DataGenerator {
     }
 
     /// Run the complete generation pipeline with schema format detection
+    #[cfg(not(target_family = "wasm"))]
     pub async fn run_with_format<P: AsRef<Path>>(
         &mut self,
         schema_path: P,
@@ -427,6 +486,7 @@ impl DataGenerator {
     }
 
     /// Run the complete generation pipeline with automatic schema format detection
+    #[cfg(not(target_family = "wasm"))]
     pub async fn run_auto<P: AsRef<Path>>(&mut self, schema_path: P) -> Result<()> {
         self.run_with_format(schema_path, None).await
     }

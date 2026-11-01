@@ -29,5 +29,6 @@ pub enum DataGeneratorError {
     Json(#[from] serde_json::Error),
 
     #[error("Join error: {0}")]
+    #[cfg(not(target_family = "wasm"))]
     Join(#[from] tokio::task::JoinError),
 }

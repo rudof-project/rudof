@@ -27,27 +27,21 @@ impl ShaclToUnified {
     ) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let path = shacl_path.as_ref().to_path_buf();
 
-        let schema_data = tokio::task::spawn_blocking(move || {
-            fs::read_to_string(&path).map_err(|e| DataGeneratorError::Config(format!("Failed to read SHACL file: {e}")))
-        })
-        .await??;
+        let schema_data = fs::read_to_string(&path)
+            .map_err(|e| DataGeneratorError::Config(format!("Failed to read SHACL file: {e}")))?;
 
         self.convert_schema(schema_data).await
     }
 
     pub async fn convert_schema(&self, schema_data: String) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
-        let schema = tokio::task::spawn_blocking(move || {
-            // Parse RDF data
-            let graph = OxigraphInMemory::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
-                .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
-
-            // Parse SHACL schema from RDF
-            let mut parser = ShaclParser::new(graph);
-            parser
-                .parse()
-                .map_err(|e| DataGeneratorError::Config(format!("Failed to parse SHACL: {e}")))
-        })
-        .await??;
+        // Parse RDF data
+        let graph = OxigraphInMemory::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
+            .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
+        // Parse SHACL schema from RDF
+        let mut parser = ShaclParser::new(graph);
+        let schema = parser
+            .parse()
+            .map_err(|e| DataGeneratorError::Config(format!("Failed to parse SHACL: {e}")))?;
 
         self.convert_shacl_schema(&schema).await
     }

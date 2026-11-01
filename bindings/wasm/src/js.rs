@@ -110,6 +110,22 @@ export interface ShExCheck {
   message: string;
 }
 
+/** Data generated from a schema by `generate`. */
+export interface GeneratedData {
+  /** The graph as RDF (Turtle); from a PG-Schema, the RDF encoding of the property graph. */
+  data: string;
+  /** A ShapeMap (compact syntax) with the shape of every generated node. */
+  shapemap: string;
+  /** From a PG-Schema: the graph in rudof's property graph format. */
+  propertyGraph: string | null;
+  /** From a PG-Schema: the type of every node and edge. */
+  typeMap: string | null;
+  /** With `[violations]`: what a validator of the schema's language must report (JSON Lines). */
+  labels: string | null;
+  /** With `[violations]` and a PG-Schema: the same for the graph read as RDF. */
+  rdfLabels: string | null;
+}
+
 /** A kind of external shape resolver, for `addExternalResolver`. */
 export interface ExternalResolver {
   name: string;
@@ -911,5 +927,26 @@ pub fn validate_shacl(
         shapes_format.as_deref(),
         base.as_deref(),
         mode.as_deref(),
+    )?)
+}
+
+/// Generates synthetic data from a ShEx, SHACL or PG-Schema schema
+/// (`schemaFormat`: `shex`, `shacl` or `pgschema`), with an optional generator
+/// configuration in TOML (`version = 2`).
+#[cfg(feature = "generate")]
+#[wasm_bindgen(js_name = generate, unchecked_return_type = "GeneratedData")]
+pub fn generate(
+    schema: &str,
+    #[wasm_bindgen(js_name = "schemaFormat")] schema_format: &str,
+    config: Option<String>,
+    entities: Option<u32>,
+    seed: Option<u32>,
+) -> Result<JsValue, JsValue> {
+    to_js(&crate::generate(
+        schema,
+        schema_format,
+        config.as_deref(),
+        entities.map(|n| n as usize),
+        seed.map(u64::from),
     )?)
 }

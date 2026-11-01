@@ -321,13 +321,18 @@ fn class_traps(
 
 /// Write labels as JSON Lines.
 pub fn write_labels(path: &std::path::Path, labels: &[ViolationLabel]) -> Result<()> {
+    std::fs::write(path, labels_jsonl(labels)?)?;
+    Ok(())
+}
+
+/// The labels as JSON Lines, one object per node or edge.
+pub fn labels_jsonl(labels: &[ViolationLabel]) -> Result<String> {
     let mut out = String::new();
     for label in labels {
         out.push_str(&serde_json::to_string(label).map_err(|e| DataGeneratorError::OutputWriting(e.to_string()))?);
         out.push('\n');
     }
-    std::fs::write(path, out)?;
-    Ok(())
+    Ok(out)
 }
 
 /// Nodes that fail because a shape reference points at a failing node,

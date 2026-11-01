@@ -72,15 +72,11 @@ impl ShapeProcessor {
         let path = shex_path.as_ref().to_path_buf();
 
         // Parse ShEx file in a blocking task to avoid blocking the async runtime
-        let shapes = tokio::task::spawn_blocking(move || {
-            let schema = ShExParser::parse_buf(&path, None)
-                .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
-
-            schema
-                .shapes()
-                .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))
-        })
-        .await??;
+        let schema = ShExParser::parse_buf(&path, None)
+            .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
+        let shapes = schema
+            .shapes()
+            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))?;
 
         // Process shapes to extract dependencies and properties
         self.process_shapes(&shapes).await?;
@@ -268,6 +264,19 @@ impl ShapeProcessor {
     /// Load and process a PG-Schema file (`.pgs`)
     pub async fn load_pgschema_schema<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
         let (unified_model, translation_metrics) = crate::adapters::PgSchemaToUnified.convert_file(path).await?;
+        self.unified_model = Some(unified_model);
+        self.translation_metrics = Some(translation_metrics);
+        Ok(())
+    }
+
+    /// Load a schema given as text, in the language `format`.
+    pub async fn load_schema_text(&mut self, text: &str, format: crate::config::SchemaFormat) -> Result<()> {
+        use crate::config::SchemaFormat;
+        let (unified_model, translation_metrics) = match format {
+            SchemaFormat::ShEx => self.shex_converter.convert_schema(text.to_string()).await?,
+            SchemaFormat::Shacl => self.shacl_converter.convert_schema(text.to_string()).await?,
+            SchemaFormat::PgSchema => crate::adapters::PgSchemaToUnified.convert_schema(text)?,
+        };
         self.unified_model = Some(unified_model);
         self.translation_metrics = Some(translation_metrics);
         Ok(())

@@ -2,7 +2,7 @@
 name = "rudof_wasm"
 version.workspace = true
 authors.workspace = true
-description = "WebAssembly bindings for rudof: ShEx and SHACL validation of RDF data"
+description = "WebAssembly bindings for rudof: ShEx and SHACL validation of RDF data, and data generation"
 documentation = "https://rudof-project.github.io/rudof/"
 edition.workspace = true
 license.workspace = true
@@ -20,7 +20,7 @@ crate-type = ["cdylib", "rlib"]
 doctest = false
 
 [features]
-default = ["comparison", "conversion", "dctap", "pgschema", "rdf-config"]
+default = ["comparison", "conversion", "dctap", "generate", "pgschema", "rdf-config"]
 # Optional parts of the API, each backed by the rudof_lib feature of the same
 # name. Leaving them out makes the `.wasm` smaller: RDF data, ShEx, SHACL and
 # SPARQL are always available.
@@ -29,6 +29,8 @@ conversion = ["rudof_lib/conversion"]
 dctap = ["rudof_lib/dctap"]
 pgschema = ["rudof_lib/pgschema"]
 rdf-config = ["rudof_lib/rdf-config"]
+# Synthetic data from ShEx, SHACL or PG-Schema schemas (rudof generate).
+generate = ["dep:rudof_generate", "dep:futures"]
 # Remote SPARQL endpoints (validation and queries against them), through
 # JavaScript's `fetch`. Waiting for the responses relies on JSPI (WebAssembly
 # JavaScript Promise Integration), so a module built with this feature only
@@ -42,6 +44,8 @@ endpoints = ["rudof_lib/jspi", "dep:rudof_rdf", "rudof_rdf/jspi"]
 rudof_lib = { path = "../../rudof_lib", default-features = false, features = ["sparql"] }
 rudof_rdf = { path = "../../rudof_rdf", default-features = false, optional = true }
 serde.workspace = true
+rudof_generate = { path = "../../rudof_generate", optional = true }
+futures = { workspace = true, optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 console_error_panic_hook = "0.1"

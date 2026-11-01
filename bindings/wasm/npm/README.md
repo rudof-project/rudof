@@ -93,6 +93,28 @@ TypeScript declarations list every method, and the
 [repository](https://github.com/rudof-project/rudof/tree/master/bindings/wasm)
 has a summary of them.
 
+## Data generation
+
+`generate` produces synthetic data from a ShEx, SHACL or PG-Schema schema, valid against
+it: RDF (Turtle) and a ShapeMap with the shape of every generated node, ready for
+`validateShex`; from a PG-Schema, also the property graph and its type map.
+
+```js
+const { generate, validateShex } = require("@rudof/rudof");
+
+const schema = `prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:Person { :name xsd:string ; :age xsd:integer ? }`;
+const generated = generate(schema, "shex", undefined, 50, 7); // 50 entities, seed 7
+validateShex(generated.data, schema, generated.shapemap).conforms; // true
+```
+
+An optional configuration in TOML (`version = 2`, the format of
+`rudof generate --generator-config`) sets the fill of optional properties, cardinalities
+and value generators; `[violations]` breaks part of the data on purpose and returns, in
+`labels`, what a validator must report; `[targets] coherence = 0.8` asks for a
+structuredness. Its `[output]` section is ignored: everything is returned as strings.
+
 ## Remote SPARQL endpoints
 
 `@rudof/rudof/endpoints` is a separate build of the package that can also

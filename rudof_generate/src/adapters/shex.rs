@@ -23,31 +23,23 @@ impl ShExToUnified {
     ) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let path = shex_path.as_ref().to_path_buf();
 
-        let shapes = tokio::task::spawn_blocking(move || {
-            let schema = ShExParser::parse_buf(&path, None)
-                .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
-
-            schema
-                .shapes()
-                .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))
-        })
-        .await??;
+        let schema = ShExParser::parse_buf(&path, None)
+            .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
+        let shapes = schema
+            .shapes()
+            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))?;
 
         self.convert_shapes(&shapes).await
     }
 
     pub async fn convert_schema(&self, schema_data: String) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
-        let shapes = tokio::task::spawn_blocking(move || {
-            // Create a default base IRI for parsing
-            let default_base = IriS::new_unchecked("http://example.org/");
-            let schema = ShExParser::parse(&schema_data, None, &default_base)
-                .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
-
-            schema
-                .shapes()
-                .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))
-        })
-        .await??;
+        // Create a default base IRI for parsing
+        let default_base = IriS::new_unchecked("http://example.org/");
+        let schema = ShExParser::parse(&schema_data, None, &default_base)
+            .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
+        let shapes = schema
+            .shapes()
+            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))?;
 
         self.convert_shapes(&shapes).await
     }

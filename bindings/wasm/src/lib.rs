@@ -4,7 +4,8 @@
 //! Python bindings: a stateful [`Session`] (the `Rudof` class in JavaScript)
 //! loads RDF data, ShEx schemas, ShapeMaps, SHACL shapes and SPARQL queries,
 //! validates, queries and serializes them. [`validate_shex`] and
-//! [`validate_shacl`] do a whole validation in one call.
+//! [`validate_shacl`] do a whole validation in one call, and [`generate`]
+//! generates synthetic data from a schema.
 //!
 //! Everything here is plain Rust, so it can be used and tested natively. On
 //! `wasm` targets the `js` module exports it to JavaScript with `wasm-bindgen`.
@@ -25,6 +26,8 @@ pub mod js;
 pub mod js_endpoints;
 
 pub use error::{Error, Result};
+#[cfg(feature = "generate")]
+pub use reports::GeneratedData;
 pub use reports::{
     ExternalResolver, NeighborArc, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationEntry,
     ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
@@ -88,4 +91,56 @@ pub fn validate_shacl(
     session.read_data(data, data_format, base, None, None)?;
     session.read_shacl(Some(shapes), shapes_format, base, None)?;
     session.validate_shacl(mode, None)
+}
+
+/// Generates synthetic data from a `schema` given as text, in `schema_format`
+/// (`shex`, `shacl` or `pgschema`): RDF (Turtle) and the ShapeMap of every
+/// generated node, and from a PG-Schema the property graph and its type map.
+///
+/// * `config` - a generator configuration in TOML (`version = 2`, the format of
+///   `rudof generate --generator-config`); its `[output]` section is ignored.
+///   `[violations]` adds the reports of what a validator must flag, and
+///   `[targets]` asks for a coherence.
+/// * `entities` / `seed` - override the configuration; 20 entities without either.
+#[cfg(feature = "generate")]
+pub fn generate(
+    schema: &str,
+    schema_format: &str,
+    config: Option<&str>,
+    entities: Option<usize>,
+    seed: Option<u64>,
+) -> Result<GeneratedData> {
+    use rudof_generate::{DataGenerator, GeneratorConfig, SchemaFormat};
+    let generate_error = |e: rudof_generate::errors::DataGeneratorError| Error::new("GenerateError", e.to_string());
+    let format = match schema_format.to_ascii_lowercase().as_str() {
+        "shex" | "shexc" => SchemaFormat::ShEx,
+        "shacl" => SchemaFormat::Shacl,
+        "pgschema" | "pg-schema" | "pgs" => SchemaFormat::PgSchema,
+        other => {
+            return Err(Error::invalid_argument(format!(
+                "unknown schema format `{other}` (use shex, shacl or pgschema)"
+            )));
+        },
+    };
+    let mut generator_config = match config {
+        Some(toml) => GeneratorConfig::from_toml_str(toml).map_err(generate_error)?,
+        None => {
+            let mut c = GeneratorConfig::default();
+            c.generation.entity_count = 20;
+            c
+        },
+    };
+    if let Some(n) = entities {
+        generator_config.generation.entity_count = n;
+    }
+    if seed.is_some() {
+        generator_config.generation.seed = seed;
+    }
+    let mut generator = DataGenerator::new(generator_config).map_err(generate_error)?;
+    let generated = futures::executor::block_on(async {
+        generator.load_schema_str(schema, format).await?;
+        generator.generate_in_memory().await
+    })
+    .map_err(generate_error)?;
+    Ok(GeneratedData::from(generated))
 }
