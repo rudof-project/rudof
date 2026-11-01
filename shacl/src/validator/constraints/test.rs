@@ -935,6 +935,10 @@ prefix : <http://example.org/>
                  :r2 :x :c ~ :r1 ~ :r2 .\n"
             );
 
+            // _:q is its own reifier shape, so it is recursive
+            let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let schema = ShaclParser::new(rdf).parse().unwrap();
+            assert!(IRSchema::compile_with_recursion(&schema, RecursionSemantics::None).is_err());
             let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
             assert!(!validate_with_config(&graph, &config).conforms());
             let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Gfp);
