@@ -30,7 +30,7 @@ pub(crate) fn components<RDF: FocusRDF>(
         Box::new(max_length()),
         Box::new(pattern()),
         // single_line(), // TODO - SHACL 1.2
-        Box::new(language_in()),
+        Box::new(language_in(budget.clone())),
         Box::new(unique_lang()),
         // List constraint components - SHACL 1.2
         // member_shape(), // TODO - SHACL 1.2
@@ -45,9 +45,9 @@ pub(crate) fn components<RDF: FocusRDF>(
         Box::new(subset_of(budget.clone())),
         // Logical constraint components
         Box::new(not()),
-        Box::new(and()),
-        Box::new(or()),
-        Box::new(xone()),
+        Box::new(and(budget.clone())),
+        Box::new(or(budget.clone())),
+        Box::new(xone(budget.clone())),
         // Shape based constraint components
         Box::new(node()),
         // property is handled differently
@@ -55,7 +55,7 @@ pub(crate) fn components<RDF: FocusRDF>(
         // Other
         Box::new(closed()),
         Box::new(has_value()),
-        Box::new(in_component()),
+        Box::new(in_component(budget.clone())),
         // Non-validating constraint components
 
         // SPARQL based constraints and SPARQL based constraint components

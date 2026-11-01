@@ -234,4 +234,66 @@ mod tests {
         let err = parse_shapes(&shapes).unwrap_err();
         assert!(err.contains("steps plus"), "{err}");
     }
+
+    #[test]
+    fn node_expressions_take_a_step_per_list_member_and_arc() {
+        // _:d0 nests 11 shared shnex:concat, which reach _:x 2048 times
+        let mut dag = format!(
+            "{PATH_PREFIXES}@prefix shnex: <http://www.w3.org/ns/shacl-node-expr#> .\n\
+             :S sh:targetNode :a ; sh:deactivated _:d0 .\n_:d10 shnex:concat ( _:x _:x ) .\n"
+        );
+        for i in 0..10 {
+            dag.push_str(&format!("_:d{i} shnex:concat ( _:d{j} _:d{j} ) .\n", j = i + 1));
+        }
+        let members: String = (0..200).map(|j| format!(" :v{j}")).collect();
+        let arcs: String = (0..200).map(|j| format!(", {j}")).collect();
+        for x in [
+            format!("_:x rdf:first :v ; rdf:rest ({members} ) ."),
+            format!("_:x shnex:exists :p ; :j -1{arcs} ."),
+        ] {
+            let err = parse_shapes(&format!("{dag}{x}")).unwrap_err();
+            assert!(err.contains("steps plus"), "{x}: {err}");
+        }
+    }
+
+    #[test]
+    fn shapes_share_one_budget_for_their_lists() {
+        // 400 shapes each read the same 401-member list, 160,400 members in all: more than the free ones and the steps
+        let members: String = (0..400).map(|j| format!(" :v{j}")).collect();
+        for shape in [
+            "sh:targetNode :a ; sh:in _:l",
+            "sh:targetNode :a ; sh:languageIn _:l",
+            "sh:targetNode :a ; sh:and _:l",
+            "sh:targetNode :a ; sh:or _:l",
+            "sh:targetNode :a ; sh:xone _:l",
+            // Not a shape, but each list is read when looking for the shapes in it
+            "sh:or [ rdf:first :v ; rdf:rest _:l ]",
+        ] {
+            let mut shapes = format!("{PATH_PREFIXES}_:l rdf:first :v ; rdf:rest ({members} ) .\n");
+            for i in 0..400 {
+                shapes.push_str(&format!(":S{i} {shape} .\n"));
+            }
+
+            let err = parse_shapes(&shapes).unwrap_err();
+            assert!(err.contains("steps plus"), "{shape}: {err}");
+        }
+    }
+
+    #[test]
+    fn long_lists_are_parsed() {
+        let members: String = (0..5000).map(|j| format!(" :v{j}")).collect();
+        for list in ["sh:in", "sh:deactivated"] {
+            parse_shapes(&format!("{PATH_PREFIXES}:S sh:targetNode :a ; {list} ({members} ) .")).unwrap();
+        }
+
+        // 200 shapes each read the same 201-member list, 40,200 members in all, within the free ones
+        let members: String = (0..200).map(|j| format!(" :v{j}")).collect();
+        let shapes: String = (0..200)
+            .map(|i| format!(":S{i} sh:targetNode :a ; sh:in _:l .\n"))
+            .collect();
+        parse_shapes(&format!(
+            "{PATH_PREFIXES}_:l rdf:first :v ; rdf:rest ({members} ) .\n{shapes}"
+        ))
+        .unwrap();
+    }
 }

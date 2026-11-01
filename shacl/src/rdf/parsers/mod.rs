@@ -26,5 +26,6 @@ pub(crate) use sparql::basic_sparql;
 pub(crate) use state::State;
 pub(crate) use string_based::{language_in, max_length, min_length, pattern, unique_lang};
 pub(crate) use targets::targets;
+pub(crate) use utils::list_with_budget;
 pub(crate) use value_range::{max_exclusive, max_inclusive, min_exclusive, min_inclusive};
 pub(crate) use value_type::{class, datatype, node_kind};

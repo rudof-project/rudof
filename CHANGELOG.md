@@ -13,6 +13,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Added
 - `rudof_rdf`: `ParseBudget` holds the steps that parsing SHACL paths may take, and `ShaclPathParser::with_budget` takes them from a budget shared with other parsers, as `ShaclParser` does for the paths of a shapes graph.
 - `rudof_rdf`: `parse_path`, `MAX_PATH_DEPTH`, `MIN_PARSE_STEPS` and `PARSE_STEPS_PER_TRIPLE` are public, so that node expressions parse the paths inside them under the same limits.
+- `rudof_rdf`: `ParseBudget::take_free_members` and `FREE_LIST_MEMBERS` let the lists of a shapes graph read 65,536 members before they take steps from its budget.
 
 ### Fixed
 - A cyclic SHACL path, such as `_:p sh:zeroOrMorePath _:p`, is an invalid path error instead of a stack overflow.
@@ -34,12 +35,13 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - A blank node `sh:targetNode` targets nothing, an invalid tag or an IRI in `sh:languageIn` is skipped, a triple term in `sh:hasValue` is a parse error and in `sh:in` is skipped like the other members it cannot read, and a literal focus node of `sh:disjoint` conforms, instead of panicking. Writing the shapes graph writes an ill-formed target back as it was read.
 - A recursive shape over a data cycle in which a node has several values, such as `_:p sh:path :next ; sh:property _:p` over `:a :next :a, :b`, or in which a triple has several reifiers, is validated instead of recursing without end: nested property shapes and `sh:reifierShape` are validated once per value node, so each node is cut when it is reached again.
 - On native targets, a debug build compiles and validates a long chain of shapes whose SHACL paths and node expressions nest close to the 64-level limit, such as 50 shapes linked by `sh:node`, each with a 64-deep `sh:path` and `sh:deactivated` expression, on a 2 MiB thread, instead of crashing with a stack overflow or a bus error.
+- Parsing a shapes graph also takes a step from its parse budget for each member of a list node expression and for each triple of a blank node expression, every time one is read, and for each member of a `sh:in`, `sh:languageIn`, `sh:and`, `sh:or` or `sh:xone` list once 65,536 have been read, a list shared by K shapes being read K times. A list or node expression shared by many shapes, or by nested `shnex:concat`, is then a parse error instead of taking time or memory quadratic in the size of the shapes graph, such as 1.9 GB for 27 KB of Turtle.
 
 ### Changed
 - A SHACL `sh:detail` result no longer has details of its own: a failed `sh:node`, `sh:and`, `sh:or` or `sh:xone` keeps one level of causes, so reports stay small for long chains.
 - The shapes in a `Dependency graph has cycles` error can be listed in another order, as the cycles are now found without recursion.
 - `Engine` has a new required method, `node_expr_state`, which returns the engine's own `NodeExprState`. An `Engine` implemented outside `shacl` must add it, for example over a `NodeExprState::default()` field.
-- SHACL parsing and validation have hard limits, each reported as an error: a SHACL path or node expression nests at most 64 levels; parsing all the SHACL paths and node expressions of a shapes graph takes at most 4096 steps plus 16 per triple of the graph, each path step and expression counting as one; and evaluating a node expression for one focus node takes at most 1,000,000 steps, each expression evaluated counting as one.
+- SHACL parsing and validation have hard limits, each reported as an error: a SHACL path or node expression nests at most 64 levels; parsing all the SHACL paths, node expressions and lists of a shapes graph takes at most 4096 steps plus 16 per triple of the graph, each path step, expression, member of a list node expression and triple of a blank node expression counting as one, as does each member of a `sh:in`, `sh:languageIn`, `sh:and`, `sh:or` or `sh:xone` list after the first 65,536; and evaluating a node expression for one focus node takes at most 1,000,000 steps, each expression evaluated counting as one.
 
 ## 0.3.35
 ### Added
