@@ -10,7 +10,7 @@ use crate::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
         ResultServiceFormat,
     },
-    types::{GraphDiff, GraphRelation, NodeNeighborhood, StagingGuard, SubgraphMode, Triples},
+    types::{DataDiff, GraphRelation, NodeNeighborhood, StagingGuard, SubgraphMode, Triples},
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
 use rudof_viz::VizEngine;
@@ -387,7 +387,8 @@ pub trait DataOperations {
     ) -> Result<GraphRelation>;
 
     /// Like [`compare_data`](Self::compare_data), but also returns the triples of
-    /// each graph that the other one does not have, and the blank node mapping used.
+    /// each graph that the other one does not have, the blank node mapping used,
+    /// and the prefixes of both documents to write them.
     ///
     /// When one graph is contained in the other the diff is exact. Otherwise the
     /// best blank node mapping is searched for, in at most `exact_search_limit`
@@ -409,7 +410,7 @@ pub trait DataOperations {
         reader_mode: Option<&DataReaderMode>,
         mode: Option<&SubgraphMode>,
         exact_search_limit: Option<usize>,
-    ) -> Result<GraphDiff>;
+    ) -> Result<DataDiff>;
 
     /// Lists the registered SPARQL endpoints.
     ///
@@ -620,7 +621,7 @@ impl DataOperations for Rudof {
         reader_mode: Option<&DataReaderMode>,
         mode: Option<&SubgraphMode>,
         exact_search_limit: Option<usize>,
-    ) -> Result<GraphDiff> {
+    ) -> Result<DataDiff> {
         diff_data(
             self,
             data1,

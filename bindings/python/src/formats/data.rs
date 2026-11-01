@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use rudof_lib::formats::{DataFormat, DataReaderMode, ResultDataFormat};
-use rudof_lib::types::{GraphDiff, GraphRelation, SubgraphMode};
+use rudof_lib::types::{DataDiff, GraphRelation, SubgraphMode};
 
 pyenum! {
     /// RDF data serialization formats supported when reading or writing graphs.
@@ -99,12 +99,14 @@ pyenum! {
 
 /// The differences between two RDF graphs, as returned by ``Rudof.diff_data``:
 /// the triples of each graph that the other one does not have, up to blank
-/// node renaming. Triples are in N-Triples, without the final ``.``.
+/// node renaming. Triples are in N-Triples, without the final ``.``;
+/// ``str(diff)`` is a report with the triples written with the prefixes of
+/// the documents.
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass)]
 #[pyclass(frozen, from_py_object, name = "GraphDiff", module = "pyrudof._pyrudof")]
 #[derive(Clone)]
 pub struct PyGraphDiff {
-    pub(crate) inner: GraphDiff,
+    pub(crate) inner: DataDiff,
 }
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
@@ -160,9 +162,25 @@ impl PyGraphDiff {
         self.inner.is_empty()
     }
 
+    /// ``{alias: IRI}``: the prefixes of the documents used to write ``str(diff)``.
+    #[getter]
+    fn prefixes(&self) -> std::collections::BTreeMap<String, String> {
+        self.inner
+            .used_prefixes()
+            .iter()
+            .map(|(alias, iri)| (alias.clone(), iri.to_string()))
+            .collect()
+    }
+
+    /// The report: the relation, the ``PREFIX`` declarations used, the triples
+    /// only in each graph (with prefixed names) and the blank node mapping.
+    fn __str__(&self) -> String {
+        self.inner.to_string()
+    }
+
     /// The diff as a JSON string.
     fn to_json(&self) -> String {
-        serde_json::to_string_pretty(&self.inner).expect("a diff always serializes")
+        serde_json::to_string_pretty(&self.inner.diff).expect("a diff always serializes")
     }
 
     fn __repr__(&self) -> String {

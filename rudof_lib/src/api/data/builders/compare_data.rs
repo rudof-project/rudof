@@ -2,7 +2,7 @@ use crate::{
     Result, Rudof,
     api::data::DataOperations,
     formats::{DataFormat, DataReaderMode, InputSpec},
-    types::{GraphDiff, GraphRelation, SubgraphMode},
+    types::{DataDiff, GraphRelation, SubgraphMode},
 };
 
 /// Builder for `compare_data` operation.
@@ -96,7 +96,7 @@ impl<'a> CompareDataBuilder<'a> {
 
     /// Executes the comparison, returning also the triples of each graph that
     /// the other one does not have.
-    pub fn execute_diff(self) -> Result<GraphDiff> {
+    pub fn execute_diff(self) -> Result<DataDiff> {
         <Rudof as DataOperations>::diff_data(
             self.rudof,
             self.data1,

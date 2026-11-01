@@ -9,7 +9,7 @@ mod endpoint_strategy;
 pub use oxigraph::{
     DEFAULT_EXACT_SEARCH_LIMIT, DiffOptions, GraphDiff, GraphRelation, OxigraphInMemory, OxigraphInMemoryError,
     ReaderMode, SubgraphMode, compare_graphs, compare_graphs_with, diff_graphs, is_isomorphic, is_subgraph,
-    is_subgraph_with,
+    is_subgraph_with, show_term, show_triple, used_prefixes,
 };
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub use oxigraph::{
@@ -38,6 +38,7 @@ mod tests {
     mod shacl_path_literal_tests;
     mod shacl_path_parser_tests;
     mod shacl_path_writer_tests;
+    mod turtle_display_tests;
 
     #[cfg(feature = "qlever-docker-tests")]
     mod qlever_docker;

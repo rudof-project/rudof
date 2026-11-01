@@ -379,7 +379,9 @@ class GraphDiff:
     r"""
     The differences between two RDF graphs, as returned by ``Rudof.diff_data``:
     the triples of each graph that the other one does not have, up to blank
-    node renaming. Triples are in N-Triples, without the final ``.``.
+    node renaming. Triples are in N-Triples, without the final ``.``;
+    ``str(diff)`` is a report with the triples written with the prefixes of
+    the documents.
     """
     @property
     def relation(self) -> GraphRelation:
@@ -419,9 +421,19 @@ class GraphDiff:
         ``(blank node, term)`` pairs: how the blank nodes of the second graph map to
         terms of the first one.
         """
+    @property
+    def prefixes(self) -> builtins.dict[builtins.str, builtins.str]:
+        r"""
+        ``{alias: IRI}``: the prefixes of the documents used to write ``str(diff)``.
+        """
     def is_empty(self) -> builtins.bool:
         r"""
         ``True`` if neither graph has unmatched triples.
+        """
+    def __str__(self) -> builtins.str:
+        r"""
+        The report: the relation, the ``PREFIX`` declarations used, the triples
+        only in each graph (with prefixed names) and the blank node mapping.
         """
     def to_json(self) -> builtins.str:
         r"""

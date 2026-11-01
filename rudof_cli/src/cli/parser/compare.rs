@@ -12,11 +12,11 @@ pub struct CompareArgs {
         long = "mode",
         value_name = "MODE",
         ignore_case = true,
-        help = "What to compare: two schemas, or two RDF graphs",
-        default_value_t = CompareModeCli::Schema,
+        help = "What to compare: two schemas, or two RDF graphs [default: schema with --schema1 and --schema2, \
+                data with --data1 and --data2]",
         value_enum
     )]
-    pub mode: CompareModeCli,
+    pub mode: Option<CompareModeCli>,
 
     #[arg(long = "mode1",
         value_name = "MODE",
@@ -37,19 +37,31 @@ pub struct CompareArgs {
 
     #[arg(
         long = "schema1",
-        visible_alias = "data1",
         value_name = "INPUT",
-        help = "First schema or RDF graph (URI, file or - for stdin). In data mode, if omitted, the loaded data (in the shell)"
+        help = "First schema (URI, file or - for stdin)"
     )]
     pub schema1: Option<InputSpec>,
 
     #[arg(
         long = "schema2",
-        visible_alias = "data2",
         value_name = "INPUT",
-        help = "Second schema or RDF graph (URI, file or - for stdin)"
+        help = "Second schema (URI, file or - for stdin)"
     )]
-    pub schema2: InputSpec,
+    pub schema2: Option<InputSpec>,
+
+    #[arg(
+        long = "data1",
+        value_name = "INPUT",
+        help = "First RDF graph (URI, file or - for stdin). If omitted with --data2, the loaded data (in the shell)"
+    )]
+    pub data1: Option<InputSpec>,
+
+    #[arg(
+        long = "data2",
+        value_name = "INPUT",
+        help = "Second RDF graph (URI, file or - for stdin)"
+    )]
+    pub data2: Option<InputSpec>,
 
     #[arg(
         long = "format1",

@@ -198,9 +198,12 @@ Show the triples of each RDF graph that the other one does not have, up to blank
             diff = rudof.diff_data(BOB, NAMED_BOB, mode=SubgraphMode.Entailment)
             print(f"entailment: {diff.relation == GraphRelation.Subgraph}, extra: {diff.only_in_second}")
 
+            # str(diff) is a report, with the prefixes of the documents
+            print(rudof.diff_data(BOB, ROBERT))
+
             # The first graph can also be the loaded data
             rudof.read_data(BOB)
-            print(f"loaded data: {rudof.diff_loaded_data(ROBERT)}")
+            print(f"loaded data: {rudof.diff_loaded_data(ROBERT)!r}")
 
 
     if __name__ == "__main__":

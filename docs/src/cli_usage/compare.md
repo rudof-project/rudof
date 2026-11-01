@@ -1,24 +1,22 @@
 # compare: Compare Shapes and RDF data
 
-`rudof` supports comparison between different schemas and shapes (`--mode schema`, the default) and between RDF graphs (`--mode data`, see [below](#comparing-rdf-data)).
+`rudof` supports comparison between different schemas and shapes, given with `--schema1` and `--schema2`, and between RDF graphs, given with `--data1` and `--data2` (see [below](#comparing-rdf-data)). The options say what to compare; `--mode schema` or `--mode data` can also say it explicitly, and then must agree with the options.
 
 The `compare` has the following structure:
 
 ```
 $ rudof compare --help
-Compare two schemas or shapes (which can be in different formats), or two RDF graphs (--mode data)
+Compare two schemas or shapes (--schema1, --schema2), or two RDF graphs (--data1, --data2)
 
-Usage: rudof compare [OPTIONS] --schema2 <INPUT>
+Usage: rudof compare [OPTIONS]
 
 Options:
       --mode <MODE>
-          What to compare: two schemas, or two RDF graphs
+          What to compare: two schemas, or two RDF graphs [default: schema with --schema1 and --schema2, data with --data1 and --data2]
 
           Possible values:
           - schema: Two schemas (ShEx, SHACL, ...), shape by shape
           - data:   Two RDF graphs, up to blank node renaming
-
-          [default: schema]
 
       --mode1 <MODE>
           Input mode first schema (schema mode)
@@ -33,14 +31,16 @@ Options:
           [possible values: shacl, shex, dctap, service]
 
       --schema1 <INPUT>
-          First schema or RDF graph (URI, file or - for stdin). In data mode, if omitted, the loaded data (in the shell)
-
-          [alias: --data1]
+          First schema (URI, file or - for stdin)
 
       --schema2 <INPUT>
-          Second schema or RDF graph (URI, file or - for stdin)
+          Second schema (URI, file or - for stdin)
 
-          [alias: --data2]
+      --data1 <INPUT>
+          First RDF graph (URI, file or - for stdin). If omitted with --data2, the loaded data (in the shell)
+
+      --data2 <INPUT>
+          Second RDF graph (URI, file or - for stdin)
 
       --format1 <FORMAT>
           Format of the first input [default: shexc in schema mode, turtle in data mode]
@@ -211,7 +211,7 @@ In `Python` there is an equivalent method in the class [Rudof](https://pyrudof.r
 
 ## Comparing RDF data
 
-With `--mode data`, `compare` checks whether two RDF graphs, given with `--data1` and `--data2` (aliases of `--schema1` and `--schema2`), are the same up to blank node renaming (isomorphic), or whether one is contained in the other. RDF 1.2 triple terms are supported: blank nodes inside triple terms are mapped like any other blank node.
+With `--data1` and `--data2`, `compare` checks whether two RDF graphs are the same up to blank node renaming (isomorphic), or whether one is contained in the other. RDF 1.2 triple terms are supported: blank nodes inside triple terms are mapped like any other blank node.
 
 The result is one of:
 
@@ -247,9 +247,9 @@ prefix : <http://example.org/>
 ```
 
 ```sh
-$ rudof compare --mode data --data1 general.ttl --data2 specific.ttl
+$ rudof compare --data1 general.ttl --data2 specific.ttl
 different: neither the first graph nor the second graph is contained in the other (mode: injective)
-$ rudof compare --mode data --data1 general.ttl --data2 specific.ttl --subgraph-mode entailment
+$ rudof compare --data1 general.ttl --data2 specific.ttl --subgraph-mode entailment
 subgraph: the first graph is contained in the second graph, but not the other way round (mode: entailment)
 ```
 
@@ -259,7 +259,7 @@ A graph with redundant blank nodes (`:a :p [], [] .`) and its lean version (`:a 
 
 ### Showing the differences
 
-`--show-diff` also lists the triples of each graph that the other one does not have, and how their blank nodes were matched. Blank nodes keep the labels of their documents. With `bob.ttl`:
+`--show-diff` also lists the triples of each graph that the other one does not have, and how their blank nodes were matched. The triples are written with the prefixes of the documents (those of the first one, and those of the second one that the first one does not have), preceded by the `PREFIX` declarations used; IRIs with no prefix are written in full. Blank nodes keep the labels of their documents. With `bob.ttl`:
 
 ```turtle
 prefix : <http://example.org/>
@@ -276,17 +276,18 @@ _:c :name "Robert" .
 ```
 
 ```sh
-$ rudof compare --mode data --data1 bob.ttl --data2 robert.ttl --show-diff
+$ rudof compare --data1 bob.ttl --data2 robert.ttl --show-diff
 different: neither the first graph nor the second graph is contained in the other (mode: injective)
+PREFIX : <http://example.org/>
 Only in the first graph (1):
-  _:b <http://example.org/name> "Bob" .
+  _:b :name "Bob" .
 Only in the second graph (1):
-  _:c <http://example.org/name> "Robert" .
+  _:c :name "Robert" .
 Blank nodes of the first graph matched in the second graph:
   _:b = _:c
 ```
 
-With `-r json`, the output has the fields `relation`, `mode`, `exact`, `only_in_first`, `only_in_second` (triples in N-Triples, without the final `.`), `first_to_second` and `second_to_first` (`[blank node, term]` pairs).
+With `-r json`, the output has the fields `relation`, `mode`, `exact`, `only_in_first`, `only_in_second` (triples in N-Triples with full IRIs, without the final `.`), `first_to_second` and `second_to_first` (`[blank node, term]` pairs).
 
 How the blank nodes are matched:
 
@@ -300,7 +301,7 @@ Both lists come from one mapping, from one graph into the other. With `--subgrap
 Both graphs are read as Turtle unless `--format1`/`--format2` say otherwise (`turtle`, `ntriples`, `rdfxml`, `trig`, `n3`, `nquads` or `jsonld`); `--base1` and `--base2` set their base IRIs. `--shape1`, `--shape2`, `--mode1`, `--mode2` and `--target-folder` only apply to schemas.
 
 ```sh
-$ rudof compare --mode data --data1 data.ttl --data2 data.nt --format2 ntriples
+$ rudof compare --data1 data.ttl --data2 data.nt --format2 ntriples
 isomorphic: the first graph and the second graph are equal up to blank node renaming (mode: injective)
 ```
 
@@ -309,7 +310,7 @@ isomorphic: the first graph and the second graph are equal up to blank node rena
 `-r json` prints the result for programs:
 
 ```sh
-$ rudof compare --mode data --data1 general.ttl --data2 specific.ttl --subgraph-mode entailment -r json
+$ rudof compare --data1 general.ttl --data2 specific.ttl --subgraph-mode entailment -r json
 {
   "mode": "entailment",
   "relation": "subgraph"
@@ -323,6 +324,6 @@ In the [shell](./shell.md), `--data1` can be left out: the loaded data is then t
 ```
 rudof> data general.ttl
 2 triple(s) loaded
-rudof> compare --mode data --data2 specific.ttl --subgraph-mode entailment
+rudof> compare --data2 specific.ttl --subgraph-mode entailment
 subgraph: the loaded data is contained in the given graph, but not the other way round (mode: entailment)
 ```

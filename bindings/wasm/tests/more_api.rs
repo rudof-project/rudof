@@ -648,6 +648,12 @@ fn diff_data_lists_the_triples_only_in_each_graph() {
         vec!["_:c <http://example.org/name> \"Robert\"".to_string()]
     );
     assert_eq!(diff.first_to_second, vec![["_:b".to_string(), "_:c".to_string()]]);
+    assert!(
+        diff.report
+            .contains("PREFIX : <http://example.org/>\nOnly in the first graph (1):\n  _:b :name \"Bob\" .\n"),
+        "{}",
+        diff.report
+    );
 }
 
 #[test]

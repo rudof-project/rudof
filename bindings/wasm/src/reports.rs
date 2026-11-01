@@ -360,10 +360,15 @@ pub struct GraphDiff {
     pub first_to_second: Vec<[String; 2]>,
     /// `[blank node, term]` pairs from the second graph to the first one.
     pub second_to_first: Vec<[String; 2]>,
+    /// The report: the relation, the `PREFIX` declarations used, the triples
+    /// only in each graph (with prefixed names) and the blank node mapping.
+    pub report: String,
 }
 
-impl From<rudof_lib::types::GraphDiff> for GraphDiff {
-    fn from(d: rudof_lib::types::GraphDiff) -> Self {
+impl From<rudof_lib::types::DataDiff> for GraphDiff {
+    fn from(data_diff: rudof_lib::types::DataDiff) -> Self {
+        let report = data_diff.to_string();
+        let d = data_diff.diff;
         fn pairs<B: ToString, T: ToString>(ps: &[(B, T)]) -> Vec<[String; 2]> {
             ps.iter().map(|(b, t)| [b.to_string(), t.to_string()]).collect()
         }
@@ -375,6 +380,7 @@ impl From<rudof_lib::types::GraphDiff> for GraphDiff {
             only_in_second: d.only_in_second.iter().map(ToString::to_string).collect(),
             first_to_second: pairs(&d.first_to_second),
             second_to_first: pairs(&d.second_to_first),
+            report,
         }
     }
 }

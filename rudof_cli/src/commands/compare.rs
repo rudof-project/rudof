@@ -2,13 +2,14 @@ use crate::cli::parser::{CompareArgs, CompareFormatCli, CompareModeCli};
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Result, anyhow, bail};
 use rudof_lib::formats::{ComparisonFormat, DataFormat, DataReaderMode, ResultComparisonFormat};
-use rudof_lib::types::{GraphDiff, GraphRelation, SubgraphMode};
+use rudof_lib::types::{SubgraphMode, describe_relation};
 use std::str::FromStr;
 
 /// Implementation of the `compare` command.
 ///
-/// With `--mode schema` (the default) it compares two schemas; with
-/// `--mode data` it compares two RDF graphs up to blank node renaming.
+/// It compares two schemas (`--schema1` and `--schema2`) or two RDF graphs up
+/// to blank node renaming (`--data1` and `--data2`). The options say which,
+/// unless `--mode` does.
 pub struct CompareCommand {
     /// Arguments specific to Compare command.
     args: CompareArgs,
@@ -28,20 +29,43 @@ impl Command for CompareCommand {
 
     /// Executes the Compare command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        match self.args.mode {
+        match compare_mode(&self.args)? {
             CompareModeCli::Schema => self.compare_schemas(ctx),
             CompareModeCli::Data => self.compare_data(ctx),
         }
     }
 }
 
+/// The mode given with `--mode`, or else the one the input options imply.
+fn compare_mode(args: &CompareArgs) -> Result<CompareModeCli> {
+    let schemas = args.schema1.is_some() || args.schema2.is_some();
+    let data = args.data1.is_some() || args.data2.is_some();
+    match (args.mode, schemas, data) {
+        (_, true, true) => bail!(
+            "Use --schema1 and --schema2 to compare schemas, or --data1 and --data2 to compare RDF data, not both"
+        ),
+        (Some(CompareModeCli::Schema), false, true) => {
+            bail!("--data1 and --data2 compare RDF data: use --mode data, or leave --mode out")
+        },
+        (Some(CompareModeCli::Data), true, false) => {
+            bail!("--schema1 and --schema2 compare schemas: use --mode schema, or leave --mode out")
+        },
+        (Some(mode), _, _) => Ok(mode),
+        (None, true, false) => Ok(CompareModeCli::Schema),
+        (None, false, true) => Ok(CompareModeCli::Data),
+        (None, false, false) => bail!(
+            "Nothing to compare: use --schema1 and --schema2 to compare schemas, or --data1 and --data2 to \
+             compare RDF data"
+        ),
+    }
+}
+
 impl CompareCommand {
     fn compare_schemas(&self, ctx: &mut CommandContext) -> Result<()> {
         let args = &self.args;
-        let schema1 = args
-            .schema1
-            .as_ref()
-            .ok_or_else(|| anyhow!("--schema1 is required to compare schemas"))?;
+        let (Some(schema1), Some(schema2)) = (&args.schema1, &args.schema2) else {
+            bail!("Comparing schemas needs --schema1 and --schema2");
+        };
         let format1 = schema_format(args.format1)?;
         let format2 = schema_format(args.format2)?;
         let input_mode1 = args.input_mode1.into();
@@ -52,7 +76,7 @@ impl CompareCommand {
             .rudof
             .show_schema_comparison(
                 schema1,
-                &args.schema2,
+                schema2,
                 &format1,
                 &format2,
                 &input_mode1,
@@ -84,14 +108,19 @@ impl CompareCommand {
 
     fn compare_data(&self, ctx: &mut CommandContext) -> Result<()> {
         let args = &self.args;
+        let Some(data2) = &args.data2 else {
+            bail!(
+                "Comparing data needs --data2, and --data1 too unless the first graph is the loaded data (in the shell)"
+            );
+        };
         let format1 = data_format(args.format1)?;
         let format2 = data_format(args.format2)?;
         let reader_mode: DataReaderMode = args.reader_mode.into();
         let mode: SubgraphMode = args.subgraph_mode.into();
 
-        let mut b = match &args.schema1 {
-            Some(first) => {
-                let mut b = ctx.rudof.compare_data(first, &args.schema2);
+        let mut b = match &args.data1 {
+            Some(data1) => {
+                let mut b = ctx.rudof.compare_data(data1, data2);
                 if let Some(f) = &format1 {
                     b = b.with_format1(f);
                 }
@@ -107,7 +136,7 @@ impl CompareCommand {
                          loaded data (load some with `data` in the shell)"
                     );
                 }
-                ctx.rudof.compare_loaded_data(&args.schema2)
+                ctx.rudof.compare_loaded_data(data2)
             },
         };
         if let Some(f) = &format2 {
@@ -117,11 +146,6 @@ impl CompareCommand {
             b = b.with_base2(base);
         }
         let b = b.with_reader_mode(&reader_mode).with_mode(&mode);
-        let (first, second) = if args.schema1.is_some() {
-            ("the first graph", "the second graph")
-        } else {
-            ("the loaded data", "the given graph")
-        };
         let result_format = ResultComparisonFormat::from(args.result_format);
 
         if !args.show_diff {
@@ -129,8 +153,8 @@ impl CompareCommand {
             match result_format {
                 ResultComparisonFormat::Internal => writeln!(
                     ctx.writer,
-                    "{relation}: {} (mode: {mode})",
-                    explain(relation, first, second)
+                    "{}",
+                    describe_relation(relation, mode, args.data1.is_none())
                 )?,
                 ResultComparisonFormat::Json => {
                     let json = serde_json::json!({ "relation": relation, "mode": mode });
@@ -146,47 +170,11 @@ impl CompareCommand {
         };
         let diff = b.execute_diff()?;
         match result_format {
-            ResultComparisonFormat::Internal => write_diff(ctx, &diff, first, second)?,
-            ResultComparisonFormat::Json => writeln!(ctx.writer, "{}", serde_json::to_string_pretty(&diff)?)?,
+            ResultComparisonFormat::Internal => write!(ctx.writer, "{diff}")?,
+            ResultComparisonFormat::Json => writeln!(ctx.writer, "{}", serde_json::to_string_pretty(&diff.diff)?)?,
         }
         Ok(())
     }
-}
-
-/// Writes the relation, the triples only in each graph and the blank node mapping.
-fn write_diff(ctx: &mut CommandContext, diff: &GraphDiff, first: &str, second: &str) -> Result<()> {
-    let relation = diff.relation;
-    writeln!(
-        ctx.writer,
-        "{relation}: {} (mode: {})",
-        explain(relation, first, second),
-        diff.mode
-    )?;
-    for (name, triples) in [(first, &diff.only_in_first), (second, &diff.only_in_second)] {
-        writeln!(ctx.writer, "Only in {name} ({}):", triples.len())?;
-        for t in triples {
-            writeln!(ctx.writer, "  {t} .")?;
-        }
-    }
-    let (from, to, pairs) = if diff.first_to_second.is_empty() {
-        (second, first, &diff.second_to_first)
-    } else {
-        (first, second, &diff.first_to_second)
-    };
-    if !pairs.is_empty() {
-        writeln!(ctx.writer, "Blank nodes of {from} matched in {to}:")?;
-        for (b, t) in pairs {
-            writeln!(ctx.writer, "  {b} = {t}")?;
-        }
-    }
-    if !diff.exact {
-        writeln!(
-            ctx.writer,
-            "The diff is approximate: the search for the best blank node mapping reached its limit. \
-             Use a larger --exact-search-limit for an exact diff."
-        )?;
-    }
-    Ok(())
 }
 
 /// The schema format of `format`, ShExC if not given.
@@ -207,14 +195,4 @@ fn data_format(format: Option<CompareFormatCli>) -> Result<Option<DataFormat>> {
             })
         })
         .transpose()
-}
-
-fn explain(relation: GraphRelation, first: &str, second: &str) -> String {
-    match relation {
-        GraphRelation::Isomorphic => format!("{first} and {second} are equal up to blank node renaming"),
-        GraphRelation::Equivalent => format!("{first} and {second} contain each other, but are not isomorphic"),
-        GraphRelation::Subgraph => format!("{first} is contained in {second}, but not the other way round"),
-        GraphRelation::Supergraph => format!("{second} is contained in {first}, but not the other way round"),
-        GraphRelation::Different => format!("neither {first} nor {second} is contained in the other"),
-    }
 }

@@ -163,8 +163,9 @@ fn show_diff_lists_the_triples_only_in_each_graph() {
     let (bob, robert) = (fixture("compare_bob.ttl"), fixture("compare_robert.ttl"));
     let out = compare(&bob, &robert, &["--show-diff"]);
     let expected = "different: neither the first graph nor the second graph is contained in the other (mode: injective)\n\
-                    Only in the first graph (1):\n  _:b <http://example.org/name> \"Bob\" .\n\
-                    Only in the second graph (1):\n  _:c <http://example.org/name> \"Robert\" .\n\
+                    PREFIX : <http://example.org/>\n\
+                    Only in the first graph (1):\n  _:b :name \"Bob\" .\n\
+                    Only in the second graph (1):\n  _:c :name \"Robert\" .\n\
                     Blank nodes of the first graph matched in the second graph:\n  _:b = _:c\n";
     assert_eq!(out.stdout, expected);
 }
@@ -175,9 +176,8 @@ fn show_diff_of_a_subgraph() {
     let out = compare(&small, &big, &["--show-diff"]);
     assert!(out.stdout.contains("Only in the first graph (0):"), "{}", out.stdout);
     assert!(
-        out.stdout.contains(
-            "Only in the second graph (1):\n  <http://example.org/alice> <http://example.org/name> \"Alice\" .\n"
-        ),
+        out.stdout
+            .contains("Only in the second graph (1):\n  :alice :name \"Alice\" .\n"),
         "{}",
         out.stdout
     );
@@ -208,7 +208,7 @@ fn show_diff_with_entailment_mode() {
     let out = compare(&general, &specific, &["--show-diff", "--subgraph-mode", "entailment"]);
     assert!(out.stdout.starts_with("subgraph:"), "{}", out.stdout);
     assert!(out.stdout.contains("Only in the second graph (0):"), "{}", out.stdout);
-    assert!(out.stdout.contains(" = <http://example.org/bob>"), "{}", out.stdout);
+    assert!(out.stdout.contains(" = :bob\n"), "{}", out.stdout);
 }
 
 #[test]
@@ -226,4 +226,81 @@ fn approximate_diffs_are_reported() {
     assert!(out.stdout.contains("The diff is approximate"), "{}", out.stdout);
     let out = compare(&first, &second, &["--show-diff"]);
     assert!(!out.stdout.contains("approximate"), "{}", out.stdout);
+}
+
+// The mode is inferred from the options
+
+/// Runs `rudof compare ARGS...` and returns its output, whether it succeeds or not
+fn compare_raw(args: &[&str]) -> Output {
+    let mut all = vec!["compare"];
+    all.extend_from_slice(args);
+    rudof(&all)
+}
+
+#[test]
+fn data_options_imply_the_data_mode() {
+    let (small, big) = (fixture("compare_alice.ttl"), fixture("compare_alice_more.ttl"));
+    let out = compare_raw(&["--data1", &small, "--data2", &big]);
+    assert!(out.success, "{}", out.stderr);
+    assert!(out.stdout.starts_with("subgraph:"), "{}", out.stdout);
+}
+
+#[test]
+fn schema_options_imply_the_schema_mode() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = dir.path().join("person.shex");
+    std::fs::write(
+        &path,
+        "PREFIX : <http://example.org/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n:Person { :name xsd:string }\n",
+    )
+    .expect("write schema");
+    let path = path.to_string_lossy().into_owned();
+    let label = "http://example.org/Person";
+    let out = compare_raw(&[
+        "--schema1",
+        &path,
+        "--schema2",
+        &path,
+        "--shape1",
+        label,
+        "--shape2",
+        label,
+    ]);
+    assert!(out.success, "{}", out.stderr);
+    assert!(out.stdout.contains("Shapes Comparison"), "{}", out.stdout);
+}
+
+#[test]
+fn schema_and_data_options_cannot_be_mixed() {
+    let a = fixture("compare_alice.ttl");
+    let out = compare_raw(&["--schema1", &a, "--data2", &a]);
+    assert!(!out.success);
+    assert!(out.stderr.contains("not both"), "{}", out.stderr);
+}
+
+#[test]
+fn explicit_mode_must_match_the_options() {
+    let a = fixture("compare_alice.ttl");
+    let out = compare_raw(&["--mode", "schema", "--data1", &a, "--data2", &a]);
+    assert!(!out.success);
+    assert!(
+        out.stderr.contains("--data1 and --data2 compare RDF data"),
+        "{}",
+        out.stderr
+    );
+    let out = compare_raw(&["--mode", "data", "--schema1", &a, "--schema2", &a]);
+    assert!(!out.success);
+    assert!(
+        out.stderr.contains("--schema1 and --schema2 compare schemas"),
+        "{}",
+        out.stderr
+    );
+}
+
+#[test]
+fn compare_needs_some_inputs() {
+    let out = compare_raw(&[]);
+    assert!(!out.success);
+    assert!(out.stderr.contains("--schema1 and --schema2"), "{}", out.stderr);
+    assert!(out.stderr.contains("--data1 and --data2"), "{}", out.stderr);
 }

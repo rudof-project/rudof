@@ -84,6 +84,8 @@ export interface GraphDiff {
   firstToSecond: [string, string][];
   /** `[blank node, term]` pairs from the second graph to the first one. */
   secondToFirst: [string, string][];
+  /** A report for people, with the triples written with the prefixes of the documents. */
+  report: string;
 }
 
 /** The arcs around a node. */

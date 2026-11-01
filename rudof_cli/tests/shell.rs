@@ -1517,20 +1517,20 @@ fn shell_compare_data_mode_with_only_data2_and_no_data_reports_it() {
 fn shell_compare_help_shows_the_data_mode() {
     let out = run_shell("compare --help\nexit\n");
     assert!(out.stdout.contains("--subgraph-mode"), "{}", out.transcript());
-    assert!(out.stdout.contains("[alias: --data1]"), "{}", out.transcript());
+    assert!(out.stdout.contains("--data1 <INPUT>"), "{}", out.transcript());
 }
 
 #[cfg(not(target_family = "wasm"))]
 #[test]
 fn shell_compare_show_diff_with_the_loaded_data() {
     let (bob, robert) = (fixture("compare_bob.ttl"), fixture("compare_robert.ttl"));
-    let out = run_shell(&format!(
-        "data {bob}\ncompare --mode data --data2 {robert} --show-diff\nexit\n"
-    ));
+    // --data2 alone: the data mode, with the loaded data as the first graph
+    let out = run_shell(&format!("data {bob}\ncompare --data2 {robert} --show-diff\nexit\n"));
     for expected in [
         "different: neither the loaded data nor the given graph is contained in the other",
-        "Only in the loaded data (1):\n  _:b <http://example.org/name> \"Bob\" .",
-        "Only in the given graph (1):\n  _:c <http://example.org/name> \"Robert\" .",
+        "PREFIX : <http://example.org/>\n",
+        "Only in the loaded data (1):\n  _:b :name \"Bob\" .",
+        "Only in the given graph (1):\n  _:c :name \"Robert\" .",
         "Blank nodes of the loaded data matched in the given graph:\n  _:b = _:c",
     ] {
         assert!(

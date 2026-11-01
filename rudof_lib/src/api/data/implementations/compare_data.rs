@@ -2,9 +2,10 @@ use crate::{
     Result, Rudof,
     errors::DataError,
     formats::{DataFormat, DataReaderMode, InputSpec},
-    types::{DEFAULT_EXACT_SEARCH_LIMIT, DiffOptions, GraphDiff, GraphRelation, SubgraphMode},
+    types::{DEFAULT_EXACT_SEARCH_LIMIT, DataDiff, DiffOptions, GraphRelation, SubgraphMode},
     utils::{PrefixDirective, default_prefix_header, get_base_iri, rdf_data},
 };
+use prefixmap::PrefixMap;
 use rudof_iri::{IriS, MimeType};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use std::borrow::Cow;
@@ -48,12 +49,31 @@ pub fn diff_data(
     reader_mode: Option<&DataReaderMode>,
     mode: Option<&SubgraphMode>,
     exact_search_limit: Option<usize>,
-) -> Result<GraphDiff> {
+) -> Result<DataDiff> {
     let (graph1, graph2) = read_graphs(rudof, data1, data2, format1, format2, base1, base2, reader_mode)?;
     let options = DiffOptions {
         exact_search_limit: exact_search_limit.unwrap_or(DEFAULT_EXACT_SEARCH_LIMIT),
     };
-    Ok(graph1.diff_with(&graph2, mode.copied().unwrap_or_default(), &options))
+    Ok(DataDiff {
+        diff: graph1.diff_with(&graph2, mode.copied().unwrap_or_default(), &options),
+        prefixmap: merged_prefixes(graph1.prefixmap(), graph2.prefixmap()),
+        first_is_loaded_data: data1.is_none(),
+    })
+}
+
+/// The prefixes of `first`, and those of `second` whose alias and IRI `first`
+/// does not have, without colours, hyperlinks or base IRI, to write plain text.
+fn merged_prefixes(first: &PrefixMap, second: &PrefixMap) -> PrefixMap {
+    let mut merged = PrefixMap::new();
+    for (alias, iri) in first.iter() {
+        merged.add_prefix(alias, iri.clone());
+    }
+    for (alias, iri) in second.iter() {
+        if merged.find(alias).is_none() && !merged.iter().any(|(_, i)| i == iri) {
+            merged.add_prefix(alias, iri.clone());
+        }
+    }
+    merged
 }
 
 #[allow(clippy::too_many_arguments)]
