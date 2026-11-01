@@ -641,12 +641,12 @@ fn modes_rdf12_duplicated_reifiers_are_equivalent() {
 // ---------------------------------------------------------------------------
 
 #[cfg(not(target_family = "wasm"))]
-mod properties {
+pub(crate) mod properties {
     use super::*;
     use oxrdf::{BlankNode, Graph, NamedNode, NamedOrBlankNode, NamedOrBlankNodeRef, Term, Triple};
     use proptest::prelude::*;
 
-    const EX: &str = "http://example.org/";
+    pub(crate) const EX: &str = "http://example.org/";
 
     /// A node: 0..3 are IRIs, 3..8 are blank nodes.
     fn subject(n: u8, bnode_prefix: &str, perm: &[u8]) -> NamedOrBlankNode {
@@ -658,9 +658,9 @@ mod properties {
     }
 
     /// Raw triple: (subject, predicate, object, object is a triple term built from the next 3 fields)
-    type RawTriple = (u8, u8, u8, bool, u8, u8);
+    pub(crate) type RawTriple = (u8, u8, u8, bool, u8, u8);
 
-    fn build(raw: &[RawTriple], bnode_prefix: &str, perm: &[u8]) -> Graph {
+    pub(crate) fn build(raw: &[RawTriple], bnode_prefix: &str, perm: &[u8]) -> Graph {
         let mut g = Graph::new();
         for &(s, p, o, nested, ns, no) in raw {
             let pred = NamedNode::new_unchecked(format!("{EX}p{p}"));
@@ -679,18 +679,18 @@ mod properties {
         g
     }
 
-    fn raw_triples() -> impl Strategy<Value = Vec<RawTriple>> {
+    pub(crate) fn raw_triples() -> impl Strategy<Value = Vec<RawTriple>> {
         prop::collection::vec(
             (0u8..8, 0u8..2, 0u8..8, prop::bool::weighted(0.2), 0u8..8, 0u8..8),
             0..10,
         )
     }
 
-    fn permutation() -> impl Strategy<Value = Vec<u8>> {
+    pub(crate) fn permutation() -> impl Strategy<Value = Vec<u8>> {
         Just((0u8..5).collect::<Vec<_>>()).prop_shuffle()
     }
 
-    const IDENTITY: [u8; 5] = [0, 1, 2, 3, 4];
+    pub(crate) const IDENTITY: [u8; 5] = [0, 1, 2, 3, 4];
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(256))]

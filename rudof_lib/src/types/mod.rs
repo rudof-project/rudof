@@ -13,7 +13,7 @@ pub use node_neighborhood::{NeighborArc, NodeNeighborhood};
 pub use query::{QueryResult, QueryResultKind};
 pub use rudof_rdf::rdf_core::ArcDirection;
 pub use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
-pub use rudof_rdf::rdf_impl::{GraphRelation, SubgraphMode};
+pub use rudof_rdf::rdf_impl::{DEFAULT_EXACT_SEARCH_LIMIT, DiffOptions, GraphDiff, GraphRelation, SubgraphMode};
 pub(crate) use shex_statistics::ShExStatistics;
 pub(crate) use staging::{StagingFrame, UndoEntry};
 pub use staging_guard::StagingGuard;

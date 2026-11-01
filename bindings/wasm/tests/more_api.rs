@@ -628,3 +628,34 @@ fn pg_data_serialization() {
     assert!(json.contains("\"source\": \"n1\""), "{json}");
     assert!(json.contains("\"Student\""), "{json}");
 }
+
+#[test]
+fn diff_data_lists_the_triples_only_in_each_graph() {
+    let rudof = Session::new(None);
+    let bob = "prefix : <http://example.org/> :alice :knows _:b . _:b :name \"Bob\" .";
+    let robert = "prefix : <http://example.org/> :alice :knows _:c . _:c :name \"Robert\" .";
+    let diff = rudof
+        .diff_data(bob, robert, None, None, None, None, None, None, None)
+        .unwrap();
+    assert_eq!(diff.relation, "different");
+    assert!(diff.exact);
+    assert_eq!(
+        diff.only_in_first,
+        vec!["_:b <http://example.org/name> \"Bob\"".to_string()]
+    );
+    assert_eq!(
+        diff.only_in_second,
+        vec!["_:c <http://example.org/name> \"Robert\"".to_string()]
+    );
+    assert_eq!(diff.first_to_second, vec![["_:b".to_string(), "_:c".to_string()]]);
+}
+
+#[test]
+fn diff_loaded_data_with_other() {
+    let rudof = session_with_data();
+    let bigger = format!("{DATA}\n:carol :name \"Carol\" .");
+    let diff = rudof.diff_loaded_data(&bigger, None, None, None, None, None).unwrap();
+    assert_eq!(diff.relation, "subgraph");
+    assert!(diff.only_in_first.is_empty());
+    assert_eq!(diff.only_in_second.len(), 1);
+}

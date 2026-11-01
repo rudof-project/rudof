@@ -2,7 +2,7 @@ use crate::{
     Result, Rudof,
     api::data::DataOperations,
     formats::{DataFormat, DataReaderMode, InputSpec},
-    types::{GraphRelation, SubgraphMode},
+    types::{GraphDiff, GraphRelation, SubgraphMode},
 };
 
 /// Builder for `compare_data` operation.
@@ -20,6 +20,7 @@ pub struct CompareDataBuilder<'a> {
     base2: Option<&'a str>,
     reader_mode: Option<&'a DataReaderMode>,
     mode: Option<&'a SubgraphMode>,
+    exact_search_limit: Option<usize>,
 }
 
 impl<'a> CompareDataBuilder<'a> {
@@ -39,6 +40,7 @@ impl<'a> CompareDataBuilder<'a> {
             base2: None,
             reader_mode: None,
             mode: None,
+            exact_search_limit: None,
         }
     }
 
@@ -82,6 +84,31 @@ impl<'a> CompareDataBuilder<'a> {
     pub fn with_mode(mut self, mode: &'a SubgraphMode) -> Self {
         self.mode = Some(mode);
         self
+    }
+
+    /// Sets the maximum number of steps of the search for the best blank node
+    /// mapping, used by [`execute_diff`](Self::execute_diff) when neither graph
+    /// is contained in the other (100 000 by default; 0 uses the heuristic only).
+    pub fn with_exact_search_limit(mut self, limit: usize) -> Self {
+        self.exact_search_limit = Some(limit);
+        self
+    }
+
+    /// Executes the comparison, returning also the triples of each graph that
+    /// the other one does not have.
+    pub fn execute_diff(self) -> Result<GraphDiff> {
+        <Rudof as DataOperations>::diff_data(
+            self.rudof,
+            self.data1,
+            self.data2,
+            self.format1,
+            self.format2,
+            self.base1,
+            self.base2,
+            self.reader_mode,
+            self.mode,
+            self.exact_search_limit,
+        )
     }
 
     /// Executes the comparison.

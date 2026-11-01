@@ -155,3 +155,75 @@ fn schema_mode_needs_schema1() {
     assert!(!out.success);
     assert!(out.stderr.contains("--schema1"), "{}", out.stderr);
 }
+
+// Diffs
+
+#[test]
+fn show_diff_lists_the_triples_only_in_each_graph() {
+    let (bob, robert) = (fixture("compare_bob.ttl"), fixture("compare_robert.ttl"));
+    let out = compare(&bob, &robert, &["--show-diff"]);
+    let expected = "different: neither the first graph nor the second graph is contained in the other (mode: injective)\n\
+                    Only in the first graph (1):\n  _:b <http://example.org/name> \"Bob\" .\n\
+                    Only in the second graph (1):\n  _:c <http://example.org/name> \"Robert\" .\n\
+                    Blank nodes of the first graph matched in the second graph:\n  _:b = _:c\n";
+    assert_eq!(out.stdout, expected);
+}
+
+#[test]
+fn show_diff_of_a_subgraph() {
+    let (small, big) = (fixture("compare_alice.ttl"), fixture("compare_alice_more.ttl"));
+    let out = compare(&small, &big, &["--show-diff"]);
+    assert!(out.stdout.contains("Only in the first graph (0):"), "{}", out.stdout);
+    assert!(
+        out.stdout.contains(
+            "Only in the second graph (1):\n  <http://example.org/alice> <http://example.org/name> \"Alice\" .\n"
+        ),
+        "{}",
+        out.stdout
+    );
+    assert!(!out.stdout.contains("approximate"), "{}", out.stdout);
+}
+
+#[test]
+fn show_diff_as_json() {
+    let (bob, robert) = (fixture("compare_bob.ttl"), fixture("compare_robert.ttl"));
+    let out = compare(&bob, &robert, &["--show-diff", "-r", "json"]);
+    let json: serde_json::Value = serde_json::from_str(&out.stdout).expect("valid JSON");
+    assert_eq!(json["relation"], "different");
+    assert_eq!(json["exact"], true);
+    assert_eq!(
+        json["only_in_first"],
+        serde_json::json!(["_:b <http://example.org/name> \"Bob\""])
+    );
+    assert_eq!(
+        json["only_in_second"],
+        serde_json::json!(["_:c <http://example.org/name> \"Robert\""])
+    );
+    assert_eq!(json["first_to_second"], serde_json::json!([["_:b", "_:c"]]));
+}
+
+#[test]
+fn show_diff_with_entailment_mode() {
+    let (general, specific) = (fixture("compare_alice.ttl"), fixture("compare_alice_bob.ttl"));
+    let out = compare(&general, &specific, &["--show-diff", "--subgraph-mode", "entailment"]);
+    assert!(out.stdout.starts_with("subgraph:"), "{}", out.stdout);
+    assert!(out.stdout.contains("Only in the second graph (0):"), "{}", out.stdout);
+    assert!(out.stdout.contains(" = <http://example.org/bob>"), "{}", out.stdout);
+}
+
+#[test]
+fn approximate_diffs_are_reported() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let write = |name: &str, content: String| {
+        let path = dir.path().join(name);
+        std::fs::write(&path, format!("@prefix : <http://example.org/> .\n{content}")).expect("write");
+        path.to_string_lossy().into_owned()
+    };
+    let lookalikes = |p: &str| (0..20).map(|i| format!("_:{p}{i} :p :o .\n")).collect::<String>();
+    let first = write("first.ttl", lookalikes("a") + "_:a0 :q 1 .\n_:a1 :r 1 .\n");
+    let second = write("second.ttl", lookalikes("b") + "_:b7 :q 2 .\n_:b3 :r 2 .\n");
+    let out = compare(&first, &second, &["--show-diff", "--exact-search-limit", "10"]);
+    assert!(out.stdout.contains("The diff is approximate"), "{}", out.stdout);
+    let out = compare(&first, &second, &["--show-diff"]);
+    assert!(!out.stdout.contains("approximate"), "{}", out.stdout);
+}

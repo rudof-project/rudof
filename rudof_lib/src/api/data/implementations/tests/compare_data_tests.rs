@@ -208,3 +208,51 @@ fn compare_loaded_data_without_data_is_an_error() {
     let other = InputSpec::str(TTL);
     assert!(rudof.compare_loaded_data(&other).execute().is_err());
 }
+
+// Diffs
+
+#[test]
+fn diff_lists_the_triples_only_in_each_graph() {
+    let rudof = rudof();
+    let first = InputSpec::str("PREFIX : <http://example.org/> :alice :knows _:b . _:b :name \"Bob\" .");
+    let second = InputSpec::str("PREFIX : <http://example.org/> :alice :knows _:c . _:c :name \"Robert\" .");
+    let diff = rudof.compare_data(&first, &second).execute_diff().unwrap();
+    assert_eq!(diff.relation, GraphRelation::Different);
+    assert!(diff.exact);
+    let strings = |ts: &[oxrdf::Triple]| ts.iter().map(ToString::to_string).collect::<Vec<_>>();
+    assert_eq!(
+        strings(&diff.only_in_first),
+        vec!["_:b <http://example.org/name> \"Bob\"".to_string()]
+    );
+    assert_eq!(
+        strings(&diff.only_in_second),
+        vec!["_:c <http://example.org/name> \"Robert\"".to_string()]
+    );
+}
+
+#[test]
+fn diff_uses_the_mode_and_the_search_limit() {
+    let rudof = rudof();
+    let general = InputSpec::str("PREFIX : <http://example.org/> :alice :knows [ :name \"Bob\" ] .");
+    let specific = InputSpec::str("PREFIX : <http://example.org/> :alice :knows :bob . :bob :name \"Bob\" ; :age 3 .");
+    let diff = rudof
+        .compare_data(&general, &specific)
+        .with_mode(&SubgraphMode::Entailment)
+        .with_exact_search_limit(0)
+        .execute_diff()
+        .unwrap();
+    assert_eq!(diff.relation, GraphRelation::Subgraph);
+    assert!(diff.only_in_first.is_empty());
+    assert_eq!(diff.only_in_second.len(), 1);
+}
+
+#[test]
+fn diff_loaded_data_with_input() {
+    let mut rudof = rudof();
+    let loaded = [InputSpec::str(TTL)];
+    rudof.load_data().with_data(&loaded).execute().unwrap();
+    let bigger = InputSpec::str(&format!("{TTL}\n:alice :name \"Alice\" ."));
+    let diff = rudof.compare_loaded_data(&bigger).execute_diff().unwrap();
+    assert_eq!(diff.relation, GraphRelation::Subgraph);
+    assert_eq!(diff.only_in_second.len(), 1);
+}

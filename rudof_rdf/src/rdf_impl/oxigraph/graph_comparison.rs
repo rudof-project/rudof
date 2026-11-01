@@ -120,33 +120,43 @@ impl FromStr for SubgraphMode {
 /// exponential in the number of blank nodes of `first`. Ground triples are
 /// checked directly and candidates are pruned, so typical data is fast.</div>
 pub fn is_subgraph_with(first: &Graph, second: &Graph, mode: SubgraphMode) -> bool {
+    embedding(first, second, mode).is_some()
+}
+
+/// A mapping of the blank nodes of `first` that maps every triple of `first`
+/// to a triple of `second`, according to `mode`, if there is one.
+pub(super) fn embedding<'a, 'b>(
+    first: &'a Graph,
+    second: &'b Graph,
+    mode: SubgraphMode,
+) -> Option<HashMap<BlankNodeRef<'a>, TermRef<'b>>> {
     // Only an injective mapping keeps distinct triples distinct
     if mode == SubgraphMode::Injective && first.len() > second.len() {
-        return false;
+        return None;
     }
     let mut pending = Vec::new();
     for t in first.iter() {
         if triple_is_ground(t) {
             if !second.contains(t) {
-                return false;
+                return None;
             }
         } else {
             pending.push(t);
         }
     }
     if pending.is_empty() {
-        return true;
+        return Some(HashMap::new());
     }
 
     // Candidate images for each pending triple: same shape, same ground terms
     let mut candidates = Vec::with_capacity(pending.len());
     for t in &pending {
-        let cs: Vec<TripleRef<'_>> = second
-            .triples_for_predicate(t.predicate)
+        let cs: Vec<TripleRef<'_>> = candidate_triples(*t, second)
+            .into_iter()
             .filter(|c| unify_triple(*t, *c, &mut Mapping::new(mode)))
             .collect();
         if cs.is_empty() {
-            return false;
+            return None;
         }
         candidates.push(cs);
     }
@@ -154,7 +164,9 @@ pub fn is_subgraph_with(first: &Graph, second: &Graph, mode: SubgraphMode) -> bo
     let order = search_order(&pending, &candidates);
     let triples: Vec<_> = order.iter().map(|&i| pending[i]).collect();
     let candidates: Vec<_> = order.iter().map(|&i| std::mem::take(&mut candidates[i])).collect();
-    search(&triples, &candidates, 0, &mut Mapping::new(mode))
+    let mut mapping = Mapping::new(mode);
+    // On success, the search leaves the bindings that map every triple
+    search(&triples, &candidates, 0, &mut mapping).then_some(mapping.forward)
 }
 
 /// Returns the [`GraphRelation`] between `first` and `second`, containment
@@ -217,11 +229,24 @@ pub fn compare_graphs(first: &Graph, second: &Graph) -> GraphRelation {
     }
 }
 
+/// The triples of `second` that `t` could be mapped to: same predicate, and
+/// same subject or object when it has no blank node, through the most selective index.
+pub(super) fn candidate_triples<'b>(t: TripleRef<'_>, second: &'b Graph) -> Vec<TripleRef<'b>> {
+    let same_predicate = |c: &TripleRef<'_>| c.predicate == t.predicate;
+    if let NamedOrBlankNodeRef::NamedNode(_) = t.subject {
+        second.triples_for_subject(t.subject).filter(same_predicate).collect()
+    } else if term_is_ground(t.object) {
+        second.triples_for_object(t.object).filter(same_predicate).collect()
+    } else {
+        second.triples_for_predicate(t.predicate).collect()
+    }
+}
+
 fn is_ground(graph: &Graph) -> bool {
     graph.iter().all(triple_is_ground)
 }
 
-fn triple_is_ground(t: TripleRef<'_>) -> bool {
+pub(super) fn triple_is_ground(t: TripleRef<'_>) -> bool {
     !matches!(t.subject, NamedOrBlankNodeRef::BlankNode(_)) && term_is_ground(t.object)
 }
 
@@ -235,16 +260,16 @@ fn term_is_ground(t: TermRef<'_>) -> bool {
 
 /// A partial mapping from the blank nodes of the first graph to terms of the
 /// second, constrained by a [`SubgraphMode`], with an undo trail for backtracking.
-struct Mapping<'a, 'b> {
+pub(super) struct Mapping<'a, 'b> {
     mode: SubgraphMode,
-    forward: HashMap<BlankNodeRef<'a>, TermRef<'b>>,
+    pub(super) forward: HashMap<BlankNodeRef<'a>, TermRef<'b>>,
     /// Images already taken, to keep the mapping injective (injective mode only)
     taken: HashSet<TermRef<'b>>,
-    trail: Vec<BlankNodeRef<'a>>,
+    pub(super) trail: Vec<BlankNodeRef<'a>>,
 }
 
 impl<'a, 'b> Mapping<'a, 'b> {
-    fn new(mode: SubgraphMode) -> Self {
+    pub(super) fn new(mode: SubgraphMode) -> Self {
         Self {
             mode,
             forward: HashMap::new(),
@@ -253,7 +278,7 @@ impl<'a, 'b> Mapping<'a, 'b> {
         }
     }
 
-    fn bind(&mut self, from: BlankNodeRef<'a>, to: TermRef<'b>) -> bool {
+    pub(super) fn bind(&mut self, from: BlankNodeRef<'a>, to: TermRef<'b>) -> bool {
         if self.mode != SubgraphMode::Entailment && !matches!(to, TermRef::BlankNode(_)) {
             return false;
         }
@@ -268,7 +293,7 @@ impl<'a, 'b> Mapping<'a, 'b> {
         true
     }
 
-    fn undo_to(&mut self, len: usize) {
+    pub(super) fn undo_to(&mut self, len: usize) {
         while self.trail.len() > len {
             let from = self.trail.pop().unwrap();
             let to = self.forward.remove(&from).unwrap();
@@ -279,7 +304,7 @@ impl<'a, 'b> Mapping<'a, 'b> {
 
 /// Tries to extend `mapping` so that it maps `t1` to `t2`. On failure the
 /// mapping may hold partial bindings: callers undo them.
-fn unify_triple<'a, 'b>(t1: TripleRef<'a>, t2: TripleRef<'b>, mapping: &mut Mapping<'a, 'b>) -> bool {
+pub(super) fn unify_triple<'a, 'b>(t1: TripleRef<'a>, t2: TripleRef<'b>, mapping: &mut Mapping<'a, 'b>) -> bool {
     t1.predicate == t2.predicate
         && match t1.subject {
             NamedOrBlankNodeRef::BlankNode(b1) => mapping.bind(b1, t2.subject.into()),
@@ -315,7 +340,7 @@ fn search<'a, 'b>(
     false
 }
 
-fn blank_nodes<'a>(t: TripleRef<'a>, acc: &mut Vec<BlankNodeRef<'a>>) {
+pub(super) fn blank_nodes<'a>(t: TripleRef<'a>, acc: &mut Vec<BlankNodeRef<'a>>) {
     if let NamedOrBlankNodeRef::BlankNode(b) = t.subject {
         acc.push(b);
     }

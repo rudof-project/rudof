@@ -2,7 +2,7 @@ use crate::cli::parser::{CompareArgs, CompareFormatCli, CompareModeCli};
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Result, anyhow, bail};
 use rudof_lib::formats::{ComparisonFormat, DataFormat, DataReaderMode, ResultComparisonFormat};
-use rudof_lib::types::{GraphRelation, SubgraphMode};
+use rudof_lib::types::{GraphDiff, GraphRelation, SubgraphMode};
 use std::str::FromStr;
 
 /// Implementation of the `compare` command.
@@ -116,26 +116,77 @@ impl CompareCommand {
         if let Some(base) = args.base2.as_deref() {
             b = b.with_base2(base);
         }
-        let relation = b.with_reader_mode(&reader_mode).with_mode(&mode).execute()?;
-
+        let b = b.with_reader_mode(&reader_mode).with_mode(&mode);
         let (first, second) = if args.schema1.is_some() {
             ("the first graph", "the second graph")
         } else {
             ("the loaded data", "the given graph")
         };
-        match ResultComparisonFormat::from(args.result_format) {
-            ResultComparisonFormat::Internal => writeln!(
-                ctx.writer,
-                "{relation}: {} (mode: {mode})",
-                explain(relation, first, second)
-            )?,
-            ResultComparisonFormat::Json => {
-                let json = serde_json::json!({ "relation": relation, "mode": mode });
-                writeln!(ctx.writer, "{}", serde_json::to_string_pretty(&json)?)?
-            },
+        let result_format = ResultComparisonFormat::from(args.result_format);
+
+        if !args.show_diff {
+            let relation = b.execute()?;
+            match result_format {
+                ResultComparisonFormat::Internal => writeln!(
+                    ctx.writer,
+                    "{relation}: {} (mode: {mode})",
+                    explain(relation, first, second)
+                )?,
+                ResultComparisonFormat::Json => {
+                    let json = serde_json::json!({ "relation": relation, "mode": mode });
+                    writeln!(ctx.writer, "{}", serde_json::to_string_pretty(&json)?)?
+                },
+            }
+            return Ok(());
+        }
+
+        let b = match args.exact_search_limit {
+            Some(limit) => b.with_exact_search_limit(limit),
+            None => b,
+        };
+        let diff = b.execute_diff()?;
+        match result_format {
+            ResultComparisonFormat::Internal => write_diff(ctx, &diff, first, second)?,
+            ResultComparisonFormat::Json => writeln!(ctx.writer, "{}", serde_json::to_string_pretty(&diff)?)?,
         }
         Ok(())
     }
+}
+
+/// Writes the relation, the triples only in each graph and the blank node mapping.
+fn write_diff(ctx: &mut CommandContext, diff: &GraphDiff, first: &str, second: &str) -> Result<()> {
+    let relation = diff.relation;
+    writeln!(
+        ctx.writer,
+        "{relation}: {} (mode: {})",
+        explain(relation, first, second),
+        diff.mode
+    )?;
+    for (name, triples) in [(first, &diff.only_in_first), (second, &diff.only_in_second)] {
+        writeln!(ctx.writer, "Only in {name} ({}):", triples.len())?;
+        for t in triples {
+            writeln!(ctx.writer, "  {t} .")?;
+        }
+    }
+    let (from, to, pairs) = if diff.first_to_second.is_empty() {
+        (second, first, &diff.second_to_first)
+    } else {
+        (first, second, &diff.first_to_second)
+    };
+    if !pairs.is_empty() {
+        writeln!(ctx.writer, "Blank nodes of {from} matched in {to}:")?;
+        for (b, t) in pairs {
+            writeln!(ctx.writer, "  {b} = {t}")?;
+        }
+    }
+    if !diff.exact {
+        writeln!(
+            ctx.writer,
+            "The diff is approximate: the search for the best blank node mapping reached its limit. \
+             Use a larger --exact-search-limit for an exact diff."
+        )?;
+    }
+    Ok(())
 }
 
 /// The schema format of `format`, ShExC if not given.

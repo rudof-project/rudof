@@ -1,8 +1,8 @@
 use crate::{
     Result, Rudof,
     api::data::implementations::{
-        add_triple, add_triples, begin_staging, commit_staging, compare_data, dereference, list_endpoints, load_data,
-        load_service_description, node_neighborhood, remove_triple, remove_triples, reset_data,
+        add_triple, add_triples, begin_staging, commit_staging, compare_data, dereference, diff_data, list_endpoints,
+        load_data, load_service_description, node_neighborhood, remove_triple, remove_triples, reset_data,
         reset_service_description, rollback_staging, serialize_data, serialize_service_description, show_node_info,
         staging, staging_depth, triples,
     },
@@ -10,7 +10,7 @@ use crate::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
         ResultServiceFormat,
     },
-    types::{GraphRelation, NodeNeighborhood, StagingGuard, SubgraphMode, Triples},
+    types::{GraphDiff, GraphRelation, NodeNeighborhood, StagingGuard, SubgraphMode, Triples},
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
 use rudof_viz::VizEngine;
@@ -386,6 +386,31 @@ pub trait DataOperations {
         mode: Option<&SubgraphMode>,
     ) -> Result<GraphRelation>;
 
+    /// Like [`compare_data`](Self::compare_data), but also returns the triples of
+    /// each graph that the other one does not have, and the blank node mapping used.
+    ///
+    /// When one graph is contained in the other the diff is exact. Otherwise the
+    /// best blank node mapping is searched for, in at most `exact_search_limit`
+    /// steps (100 000 if None); past it a heuristic mapping is used and the diff
+    /// is marked as not exact.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an input cannot be read or parsed, or its format is not an RDF format.
+    #[allow(clippy::too_many_arguments)]
+    fn diff_data(
+        &self,
+        data1: Option<&InputSpec>,
+        data2: &InputSpec,
+        format1: Option<&DataFormat>,
+        format2: Option<&DataFormat>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&DataReaderMode>,
+        mode: Option<&SubgraphMode>,
+        exact_search_limit: Option<usize>,
+    ) -> Result<GraphDiff>;
+
     /// Lists the registered SPARQL endpoints.
     ///
     /// Returns:
@@ -582,6 +607,32 @@ impl DataOperations for Rudof {
         mode: Option<&SubgraphMode>,
     ) -> Result<GraphRelation> {
         compare_data(self, data1, data2, format1, format2, base1, base2, reader_mode, mode)
+    }
+
+    fn diff_data(
+        &self,
+        data1: Option<&InputSpec>,
+        data2: &InputSpec,
+        format1: Option<&DataFormat>,
+        format2: Option<&DataFormat>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&DataReaderMode>,
+        mode: Option<&SubgraphMode>,
+        exact_search_limit: Option<usize>,
+    ) -> Result<GraphDiff> {
+        diff_data(
+            self,
+            data1,
+            data2,
+            format1,
+            format2,
+            base1,
+            base2,
+            reader_mode,
+            mode,
+            exact_search_limit,
+        )
     }
 
     fn dereference(&mut self, uri: &str, reader_mode: Option<&DataReaderMode>, merge: Option<bool>) -> Result<()> {

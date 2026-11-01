@@ -25,7 +25,7 @@ pub use add_triples::add_triples;
 pub(crate) use add_triples::apply_additions;
 pub use begin_staging::begin_staging;
 pub use commit_staging::commit_staging;
-pub use compare_data::compare_data;
+pub use compare_data::{compare_data, diff_data};
 pub use dereference::dereference;
 pub use list_endpoints::list_endpoints;
 pub use load_data::load_data;

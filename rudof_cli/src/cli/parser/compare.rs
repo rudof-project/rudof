@@ -86,6 +86,20 @@ pub struct CompareArgs {
     pub subgraph_mode: SubgraphModeCli,
 
     #[arg(
+        long = "show-diff",
+        help = "Data mode: also show the triples of each graph that the other one does not have"
+    )]
+    pub show_diff: bool,
+
+    #[arg(
+        long = "exact-search-limit",
+        value_name = "STEPS",
+        help = "Data mode, with --show-diff: maximum steps of the search for the best blank node mapping; past it \
+                the diff is approximate [default: 100000]"
+    )]
+    pub exact_search_limit: Option<usize>,
+
+    #[arg(
         short = 'r',
         long = "result-format",
         value_name = "FORMAT",

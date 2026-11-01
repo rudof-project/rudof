@@ -31,13 +31,13 @@ pub mod _pyrudof {
 
     #[pymodule_export]
     pub use crate::formats::{
-        PyArcDirection, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDbEngine, PyDdlDialect, PyGraphRelation,
-        PyNeighborArc, PyNodeNeighborhood, PyPgSchemaFormat, PyQueryResultFormat, PyQueryType, PyRDFFormat,
-        PyRdfConfigFormat, PyReaderMode, PyResultConversionFormat, PyResultConversionMode, PyResultDCTapFormat,
-        PyResultDataFormat, PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat, PyResultShaclValidationFormat,
-        PyResultShexValidationFormat, PyServiceDescriptionFormat, PyShExFormat, PyShaclFetchStrategy, PyShaclFormat,
-        PyShaclValidationMode, PyShaclValidationSortMode, PyShapeMapFormat, PyShapesGraphSource,
-        PyShexValidationSortMode, PySubgraphMode, PyTriple, PyTriples,
+        PyArcDirection, PyConversionFormat, PyConversionMode, PyDCTapFormat, PyDbEngine, PyDdlDialect, PyGraphDiff,
+        PyGraphRelation, PyNeighborArc, PyNodeNeighborhood, PyPgSchemaFormat, PyQueryResultFormat, PyQueryType,
+        PyRDFFormat, PyRdfConfigFormat, PyReaderMode, PyResultConversionFormat, PyResultConversionMode,
+        PyResultDCTapFormat, PyResultDataFormat, PyResultPgSchemaValidationFormat, PyResultRdfConfigFormat,
+        PyResultShaclValidationFormat, PyResultShexValidationFormat, PyServiceDescriptionFormat, PyShExFormat,
+        PyShaclFetchStrategy, PyShaclFormat, PyShaclValidationMode, PyShaclValidationSortMode, PyShapeMapFormat,
+        PyShapesGraphSource, PyShexValidationSortMode, PySubgraphMode, PyTriple, PyTriples,
     };
 
     #[pymodule_export]

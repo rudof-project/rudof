@@ -64,6 +64,12 @@ Options:
           [default: injective]
           [possible values: injective, homomorphic, entailment]
 
+      --show-diff
+          Data mode: also show the triples of each graph that the other one does not have
+
+      --exact-search-limit <STEPS>
+          Data mode, with --show-diff: maximum steps of the search for the best blank node mapping; past it the diff is approximate [default: 100000]
+
   -r, --result-format <FORMAT>
           Result format
 
@@ -251,6 +257,44 @@ A graph with redundant blank nodes (`:a :p [], [] .`) and its lean version (`:a 
 
 <div class="warning">These checks are NP-complete in general: the worst case is exponential in the number of blank nodes. Ground triples are checked directly and the search is pruned, so typical data is fast.</div>
 
+### Showing the differences
+
+`--show-diff` also lists the triples of each graph that the other one does not have, and how their blank nodes were matched. Blank nodes keep the labels of their documents. With `bob.ttl`:
+
+```turtle
+prefix : <http://example.org/>
+:alice :knows _:b .
+_:b :name "Bob" .
+```
+
+and `robert.ttl`:
+
+```turtle
+prefix : <http://example.org/>
+:alice :knows _:c .
+_:c :name "Robert" .
+```
+
+```sh
+$ rudof compare --mode data --data1 bob.ttl --data2 robert.ttl --show-diff
+different: neither the first graph nor the second graph is contained in the other (mode: injective)
+Only in the first graph (1):
+  _:b <http://example.org/name> "Bob" .
+Only in the second graph (1):
+  _:c <http://example.org/name> "Robert" .
+Blank nodes of the first graph matched in the second graph:
+  _:b = _:c
+```
+
+With `-r json`, the output has the fields `relation`, `mode`, `exact`, `only_in_first`, `only_in_second` (triples in N-Triples, without the final `.`), `first_to_second` and `second_to_first` (`[blank node, term]` pairs).
+
+How the blank nodes are matched:
+
+- When one graph is contained in the other, the mapping found by the containment check is used, and the diff is exact.
+- Otherwise, rudof searches for the mapping that leaves the fewest unmatched triples. That problem is NP-hard, so rudof first pairs blank nodes with the same neighbourhood and matches the others greedily. If that result is not provably the best one, an exact search improves it, in at most `--exact-search-limit` steps (100000 by default). Past the limit the heuristic result is kept and rudof says the diff is approximate.
+
+Both lists come from one mapping, from one graph into the other. With `--subgraph-mode homomorphic` or `entailment` several blank nodes can map to the same term, so a diff can be empty although the graphs are not isomorphic: for example, `_:b :p _:b` is contained in `:a :p :a`, and the mapping `_:b = :a` matches every triple of both.
+
 ### Formats and base IRIs
 
 Both graphs are read as Turtle unless `--format1`/`--format2` say otherwise (`turtle`, `ntriples`, `rdfxml`, `trig`, `n3`, `nquads` or `jsonld`); `--base1` and `--base2` set their base IRIs. `--shape1`, `--shape2`, `--mode1`, `--mode2` and `--target-folder` only apply to schemas.
@@ -274,7 +318,7 @@ $ rudof compare --mode data --data1 general.ttl --data2 specific.ttl --subgraph-
 
 ### In the shell
 
-In the [shell](./shell.md), `--data1` can be left out: the loaded data is then the first graph, compared with `--data2`:
+In the [shell](./shell.md), `--data1` can be left out: the loaded data is then the first graph, compared with `--data2` (also with `--show-diff`):
 
 ```
 rudof> data general.ttl

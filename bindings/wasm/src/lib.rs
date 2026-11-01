@@ -26,7 +26,7 @@ pub mod js_endpoints;
 
 pub use error::{Error, Result};
 pub use reports::{
-    ExternalResolver, NeighborArc, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationEntry,
+    ExternalResolver, GraphDiff, NeighborArc, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationEntry,
     ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
 };
 #[cfg(feature = "pgschema")]

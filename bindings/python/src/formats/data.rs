@@ -1,5 +1,6 @@
+use pyo3::prelude::*;
 use rudof_lib::formats::{DataFormat, DataReaderMode, ResultDataFormat};
-use rudof_lib::types::{GraphRelation, SubgraphMode};
+use rudof_lib::types::{GraphDiff, GraphRelation, SubgraphMode};
 
 pyenum! {
     /// RDF data serialization formats supported when reading or writing graphs.
@@ -94,4 +95,87 @@ pyenum! {
         /// simply entails the first.
         Entailment  => Entailment,
     }
+}
+
+/// The differences between two RDF graphs, as returned by ``Rudof.diff_data``:
+/// the triples of each graph that the other one does not have, up to blank
+/// node renaming. Triples are in N-Triples, without the final ``.``.
+#[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass)]
+#[pyclass(frozen, from_py_object, name = "GraphDiff", module = "pyrudof._pyrudof")]
+#[derive(Clone)]
+pub struct PyGraphDiff {
+    pub(crate) inner: GraphDiff,
+}
+
+#[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
+#[pymethods]
+impl PyGraphDiff {
+    /// The relation between both graphs.
+    #[getter]
+    fn relation(&self) -> PyGraphRelation {
+        self.inner.relation.into()
+    }
+
+    /// The mode used to map blank nodes.
+    #[getter]
+    fn mode(&self) -> PySubgraphMode {
+        self.inner.mode.into()
+    }
+
+    /// ``True`` if the blank node mapping is proven to be the best one. Always
+    /// ``True`` when one graph is contained in the other.
+    #[getter]
+    fn exact(&self) -> bool {
+        self.inner.exact
+    }
+
+    /// Triples of the first graph not matched in the second one, sorted.
+    #[getter]
+    fn only_in_first(&self) -> Vec<String> {
+        self.inner.only_in_first.iter().map(ToString::to_string).collect()
+    }
+
+    /// Triples of the second graph not matched in the first one, sorted.
+    #[getter]
+    fn only_in_second(&self) -> Vec<String> {
+        self.inner.only_in_second.iter().map(ToString::to_string).collect()
+    }
+
+    /// ``(blank node, term)`` pairs: how the blank nodes of the first graph map to
+    /// terms of the second one.
+    #[getter]
+    fn first_to_second(&self) -> Vec<(String, String)> {
+        pairs(&self.inner.first_to_second)
+    }
+
+    /// ``(blank node, term)`` pairs: how the blank nodes of the second graph map to
+    /// terms of the first one.
+    #[getter]
+    fn second_to_first(&self) -> Vec<(String, String)> {
+        pairs(&self.inner.second_to_first)
+    }
+
+    /// ``True`` if neither graph has unmatched triples.
+    fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    /// The diff as a JSON string.
+    fn to_json(&self) -> String {
+        serde_json::to_string_pretty(&self.inner).expect("a diff always serializes")
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "GraphDiff(relation={}, only_in_first={}, only_in_second={}, exact={})",
+            self.inner.relation,
+            self.inner.only_in_first.len(),
+            self.inner.only_in_second.len(),
+            self.inner.exact
+        )
+    }
+}
+
+fn pairs<B: ToString, T: ToString>(ps: &[(B, T)]) -> Vec<(String, String)> {
+    ps.iter().map(|(b, t)| (b.to_string(), t.to_string())).collect()
 }

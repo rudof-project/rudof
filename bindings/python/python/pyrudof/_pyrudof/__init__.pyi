@@ -24,6 +24,7 @@ __all__ = [
     "EntityDistribution",
     "GenerateError",
     "GeneratorConfig",
+    "GraphDiff",
     "GraphRelation",
     "InputError",
     "InternalError",
@@ -370,6 +371,61 @@ class GeneratorConfig:
     def show(self) -> builtins.str:
         r"""
         Returns a debug rendering of the whole configuration.
+        """
+    def __repr__(self) -> builtins.str: ...
+
+@typing.final
+class GraphDiff:
+    r"""
+    The differences between two RDF graphs, as returned by ``Rudof.diff_data``:
+    the triples of each graph that the other one does not have, up to blank
+    node renaming. Triples are in N-Triples, without the final ``.``.
+    """
+    @property
+    def relation(self) -> GraphRelation:
+        r"""
+        The relation between both graphs.
+        """
+    @property
+    def mode(self) -> SubgraphMode:
+        r"""
+        The mode used to map blank nodes.
+        """
+    @property
+    def exact(self) -> builtins.bool:
+        r"""
+        ``True`` if the blank node mapping is proven to be the best one. Always
+        ``True`` when one graph is contained in the other.
+        """
+    @property
+    def only_in_first(self) -> builtins.list[builtins.str]:
+        r"""
+        Triples of the first graph not matched in the second one, sorted.
+        """
+    @property
+    def only_in_second(self) -> builtins.list[builtins.str]:
+        r"""
+        Triples of the second graph not matched in the first one, sorted.
+        """
+    @property
+    def first_to_second(self) -> builtins.list[tuple[builtins.str, builtins.str]]:
+        r"""
+        ``(blank node, term)`` pairs: how the blank nodes of the first graph map to
+        terms of the second one.
+        """
+    @property
+    def second_to_first(self) -> builtins.list[tuple[builtins.str, builtins.str]]:
+        r"""
+        ``(blank node, term)`` pairs: how the blank nodes of the second graph map to
+        terms of the first one.
+        """
+    def is_empty(self) -> builtins.bool:
+        r"""
+        ``True`` if neither graph has unmatched triples.
+        """
+    def to_json(self) -> builtins.str:
+        r"""
+        The diff as a JSON string.
         """
     def __repr__(self) -> builtins.str: ...
 
@@ -803,6 +859,57 @@ class Rudof:
         Returns:
             GraphRelation: The relation of the loaded data to ``other``, e.g. ``Subgraph``
             if the loaded data is contained in ``other``.
+        
+        Raises:
+            DataError: If no in-memory RDF data is loaded, or ``other`` cannot be parsed.
+            InputError: If ``other`` cannot be resolved.
+        """
+    def diff_data(self, data1: builtins.str | os.PathLike[str], data2: builtins.str | os.PathLike[str], format1: typing.Optional[RDFFormat] = None, format2: typing.Optional[RDFFormat] = None, base1: typing.Optional[builtins.str] = None, base2: typing.Optional[builtins.str] = None, reader_mode: typing.Optional[ReaderMode] = None, mode: typing.Optional[SubgraphMode] = None, exact_search_limit: typing.Optional[builtins.int] = None) -> GraphDiff:
+        r"""
+        Compares two RDF graphs like ``compare_data``, and also returns the triples
+        of each graph that the other one does not have.
+        
+        When one graph is contained in the other the diff is exact. Otherwise the best
+        blank node mapping is searched for, in at most ``exact_search_limit`` steps;
+        past it a heuristic mapping is used and ``GraphDiff.exact`` is ``False``.
+        
+        Args:
+            data1 (str | os.PathLike): First graph — inline data, file path or URL.
+            data2 (str | os.PathLike): Second graph — inline data, file path or URL.
+            format1 (RDFFormat, optional): Format of the first graph. Defaults to ``RDFFormat.Turtle``.
+            format2 (RDFFormat, optional): Format of the second graph. Defaults to ``RDFFormat.Turtle``.
+            base1 (str, optional): Base IRI for the first graph.
+            base2 (str, optional): Base IRI for the second graph.
+            reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
+            mode (SubgraphMode, optional): How blank nodes may be mapped. Defaults to
+                ``SubgraphMode.Injective``.
+            exact_search_limit (int, optional): Maximum steps of the search for the best
+                blank node mapping. Defaults to 100000; ``0`` uses the heuristic only.
+        
+        Returns:
+            GraphDiff: The relation, the triples only in each graph and the blank node mapping.
+        
+        Raises:
+            InputError: If an input string, file or URL cannot be resolved.
+            DataError: If an input cannot be parsed or its format is not an RDF format.
+        """
+    def diff_loaded_data(self, other: builtins.str | os.PathLike[str], format: typing.Optional[RDFFormat] = None, base: typing.Optional[builtins.str] = None, reader_mode: typing.Optional[ReaderMode] = None, mode: typing.Optional[SubgraphMode] = None, exact_search_limit: typing.Optional[builtins.int] = None) -> GraphDiff:
+        r"""
+        Like ``diff_data``, with the currently loaded RDF data as the first graph.
+        The loaded data is not modified.
+        
+        Args:
+            other (str | os.PathLike): The other graph — inline data, file path or URL.
+            format (RDFFormat, optional): Format of ``other``. Defaults to ``RDFFormat.Turtle``.
+            base (str, optional): Base IRI for ``other``.
+            reader_mode (ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
+            mode (SubgraphMode, optional): How blank nodes may be mapped. Defaults to
+                ``SubgraphMode.Injective``.
+            exact_search_limit (int, optional): Maximum steps of the search for the best
+                blank node mapping. Defaults to 100000.
+        
+        Returns:
+            GraphDiff: The relation of the loaded data to ``other`` and their differences.
         
         Raises:
             DataError: If no in-memory RDF data is loaded, or ``other`` cannot be parsed.

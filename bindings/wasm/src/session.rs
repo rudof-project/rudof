@@ -11,7 +11,8 @@ use crate::error::{Error, Result};
 #[cfg(feature = "pgschema")]
 use crate::reports::PgSchemaValidationReport;
 use crate::reports::{
-    ExternalResolver, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationReport, ShaclValidationReport, Triples,
+    ExternalResolver, GraphDiff, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationReport,
+    ShaclValidationReport, Triples,
 };
 #[cfg(feature = "comparison")]
 use rudof_lib::formats::{ComparisonFormat, ComparisonMode};
@@ -167,6 +168,86 @@ impl Session {
             b = b.with_mode(m);
         }
         Ok(b.execute()?.to_string())
+    }
+
+    /// Compares two RDF graphs like [`Session::compare_data`], and also returns
+    /// the triples of each graph that the other one does not have. When neither
+    /// graph is contained in the other, the search for the best blank node
+    /// mapping takes at most `exact_search_limit` steps (100 000 by default).
+    #[allow(clippy::too_many_arguments)]
+    pub fn diff_data(
+        &self,
+        data1: &str,
+        data2: &str,
+        format1: Option<&str>,
+        format2: Option<&str>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&str>,
+        mode: Option<&str>,
+        exact_search_limit: Option<usize>,
+    ) -> Result<GraphDiff> {
+        let (data1, data2) = (InputSpec::str(data1), InputSpec::str(data2));
+        let format1: Option<DataFormat> = parse(format1, "data format")?;
+        let format2: Option<DataFormat> = parse(format2, "data format")?;
+        let reader_mode: Option<DataReaderMode> = parse(reader_mode, "reader mode")?;
+        let mode: Option<SubgraphMode> = parse(mode, "subgraph mode")?;
+        let mut b = self.rudof.compare_data(&data1, &data2);
+        if let Some(f) = &format1 {
+            b = b.with_format1(f);
+        }
+        if let Some(f) = &format2 {
+            b = b.with_format2(f);
+        }
+        if let Some(base) = base1 {
+            b = b.with_base1(base);
+        }
+        if let Some(base) = base2 {
+            b = b.with_base2(base);
+        }
+        if let Some(m) = &reader_mode {
+            b = b.with_reader_mode(m);
+        }
+        if let Some(m) = &mode {
+            b = b.with_mode(m);
+        }
+        if let Some(limit) = exact_search_limit {
+            b = b.with_exact_search_limit(limit);
+        }
+        Ok(b.execute_diff()?.into())
+    }
+
+    /// Like [`Session::diff_data`], with the loaded RDF data as the first graph.
+    pub fn diff_loaded_data(
+        &self,
+        other: &str,
+        format: Option<&str>,
+        base: Option<&str>,
+        reader_mode: Option<&str>,
+        mode: Option<&str>,
+        exact_search_limit: Option<usize>,
+    ) -> Result<GraphDiff> {
+        let other = InputSpec::str(other);
+        let format: Option<DataFormat> = parse(format, "data format")?;
+        let reader_mode: Option<DataReaderMode> = parse(reader_mode, "reader mode")?;
+        let mode: Option<SubgraphMode> = parse(mode, "subgraph mode")?;
+        let mut b = self.rudof.compare_loaded_data(&other);
+        if let Some(f) = &format {
+            b = b.with_format2(f);
+        }
+        if let Some(base) = base {
+            b = b.with_base2(base);
+        }
+        if let Some(m) = &reader_mode {
+            b = b.with_reader_mode(m);
+        }
+        if let Some(m) = &mode {
+            b = b.with_mode(m);
+        }
+        if let Some(limit) = exact_search_limit {
+            b = b.with_exact_search_limit(limit);
+        }
+        Ok(b.execute_diff()?.into())
     }
 
     /// Serializes the current RDF data.

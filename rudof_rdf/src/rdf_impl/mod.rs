@@ -6,14 +6,15 @@ mod backend;
 mod backend_error;
 mod endpoint_strategy;
 
+pub use oxigraph::{
+    DEFAULT_EXACT_SEARCH_LIMIT, DiffOptions, GraphDiff, GraphRelation, OxigraphInMemory, OxigraphInMemoryError,
+    ReaderMode, SubgraphMode, compare_graphs, compare_graphs_with, diff_graphs, is_isomorphic, is_subgraph,
+    is_subgraph_with,
+};
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub use oxigraph::{
     DEFAULT_MAX_CONCURRENT_REQUESTS, DEFAULT_MAX_NODES_PER_QUERY, DEFAULT_MIN_REQUEST_INTERVAL_MS, OxigraphEndpoint,
     OxigraphEndpointError, SparqlVars,
-};
-pub use oxigraph::{
-    GraphRelation, OxigraphInMemory, OxigraphInMemoryError, ReaderMode, SubgraphMode, compare_graphs,
-    compare_graphs_with, is_isomorphic, is_subgraph, is_subgraph_with,
 };
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 pub use qlever::{
@@ -30,6 +31,7 @@ pub use endpoint_strategy::EndpointStrategy;
 #[cfg(test)]
 mod tests {
     mod graph_comparison_tests;
+    mod graph_diff_tests;
     mod in_memory_tests;
     mod neighs_iterator_tests;
     mod shacl_path_eval_tests;

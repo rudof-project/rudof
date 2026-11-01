@@ -60,6 +60,7 @@ from ._pyrudof import (
     RDFFormat,
     ResultDataFormat,
     ReaderMode,
+    GraphDiff,
     GraphRelation,
     SubgraphMode,
     # --- formats: shex ---
@@ -161,6 +162,7 @@ __all__ = [
     "RDFFormat",
     "ResultDataFormat",
     "ReaderMode",
+    "GraphDiff",
     "GraphRelation",
     "SubgraphMode",
     # Formats: shex.

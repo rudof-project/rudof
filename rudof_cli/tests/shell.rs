@@ -1519,3 +1519,25 @@ fn shell_compare_help_shows_the_data_mode() {
     assert!(out.stdout.contains("--subgraph-mode"), "{}", out.transcript());
     assert!(out.stdout.contains("[alias: --data1]"), "{}", out.transcript());
 }
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_compare_show_diff_with_the_loaded_data() {
+    let (bob, robert) = (fixture("compare_bob.ttl"), fixture("compare_robert.ttl"));
+    let out = run_shell(&format!(
+        "data {bob}\ncompare --mode data --data2 {robert} --show-diff\nexit\n"
+    ));
+    for expected in [
+        "different: neither the loaded data nor the given graph is contained in the other",
+        "Only in the loaded data (1):\n  _:b <http://example.org/name> \"Bob\" .",
+        "Only in the given graph (1):\n  _:c <http://example.org/name> \"Robert\" .",
+        "Blank nodes of the loaded data matched in the given graph:\n  _:b = _:c",
+    ] {
+        assert!(
+            out.stdout.contains(expected),
+            "missing {expected:?}:\n{}",
+            out.transcript()
+        );
+    }
+    assert_eq!(out.code, 0);
+}

@@ -131,6 +131,17 @@ impl OxigraphInMemory {
         super::graph_comparison::is_subgraph_with(&self.graph, &other.graph, mode)
     }
 
+    /// Returns the triples of this graph and of `other` that the other one does
+    /// not have, blank nodes being mapped according to `mode`; see [`GraphDiff`](super::GraphDiff).
+    pub fn diff_with(
+        &self,
+        other: &OxigraphInMemory,
+        mode: super::SubgraphMode,
+        options: &super::DiffOptions,
+    ) -> super::GraphDiff {
+        super::graph_diff::diff_graphs(&self.graph, &other.graph, mode, options)
+    }
+
     /// Returns the relation between this graph and `other`, containment being
     /// checked according to `mode`.
     pub fn compare_with_mode(&self, other: &OxigraphInMemory, mode: super::SubgraphMode) -> super::GraphRelation {

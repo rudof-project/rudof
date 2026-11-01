@@ -256,6 +256,22 @@ expected_output = [
 ]
 
 [[example]]
+key = "diff_data"
+source_file = "rdf_data/diff_data.py"
+title = "Diff RDF Graphs"
+description = "Show the triples of each RDF graph that the other one does not have, up to blank node renaming, with the blank node mapping used"
+category = "rdf"
+files = {}
+expected_output = [
+    "relation: Different, exact: True",
+    "only in first: ['_:b <http://example.org/name> \"Bob\"']",
+    "only in second: ['_:c <http://example.org/name> \"Robert\"']",
+    "blank nodes: [('_:b', '_:c')]",
+    "entailment: True, extra: ['<http://example.org/bob> <http://example.org/age> \"30\"^^<http://www.w3.org/2001/XMLSchema#integer>']",
+    "loaded data: GraphDiff(relation=different, only_in_first=1, only_in_second=1, exact=true)",
+]
+
+[[example]]
 key = "node_info"
 source_file = "rdf_data/node_info.py"
 title = "Node Info"

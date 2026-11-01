@@ -3814,6 +3814,7 @@ dependencies = [
  "rudof_generate",
  "rudof_lib",
  "rudof_rdf",
+ "serde_json",
  "tokio",
 ]
 

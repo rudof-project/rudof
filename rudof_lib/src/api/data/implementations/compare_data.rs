@@ -2,7 +2,7 @@ use crate::{
     Result, Rudof,
     errors::DataError,
     formats::{DataFormat, DataReaderMode, InputSpec},
-    types::{GraphRelation, SubgraphMode},
+    types::{DEFAULT_EXACT_SEARCH_LIMIT, DiffOptions, GraphDiff, GraphRelation, SubgraphMode},
     utils::{PrefixDirective, default_prefix_header, get_base_iri, rdf_data},
 };
 use rudof_iri::{IriS, MimeType};
@@ -29,8 +29,45 @@ pub fn compare_data(
     reader_mode: Option<&DataReaderMode>,
     mode: Option<&SubgraphMode>,
 ) -> Result<GraphRelation> {
+    let (graph1, graph2) = read_graphs(rudof, data1, data2, format1, format2, base1, base2, reader_mode)?;
+    Ok(graph1.compare_with_mode(&graph2, mode.copied().unwrap_or_default()))
+}
+
+/// Like [`compare_data`], but also returns the triples of each graph that the
+/// other one does not have. `exact_search_limit` bounds the search for the
+/// best blank node mapping ([`DEFAULT_EXACT_SEARCH_LIMIT`] if None).
+#[allow(clippy::too_many_arguments)]
+pub fn diff_data(
+    rudof: &Rudof,
+    data1: Option<&InputSpec>,
+    data2: &InputSpec,
+    format1: Option<&DataFormat>,
+    format2: Option<&DataFormat>,
+    base1: Option<&str>,
+    base2: Option<&str>,
+    reader_mode: Option<&DataReaderMode>,
+    mode: Option<&SubgraphMode>,
+    exact_search_limit: Option<usize>,
+) -> Result<GraphDiff> {
+    let (graph1, graph2) = read_graphs(rudof, data1, data2, format1, format2, base1, base2, reader_mode)?;
+    let options = DiffOptions {
+        exact_search_limit: exact_search_limit.unwrap_or(DEFAULT_EXACT_SEARCH_LIMIT),
+    };
+    Ok(graph1.diff_with(&graph2, mode.copied().unwrap_or_default(), &options))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn read_graphs<'r>(
+    rudof: &'r Rudof,
+    data1: Option<&InputSpec>,
+    data2: &InputSpec,
+    format1: Option<&DataFormat>,
+    format2: Option<&DataFormat>,
+    base1: Option<&str>,
+    base2: Option<&str>,
+    reader_mode: Option<&DataReaderMode>,
+) -> Result<(Cow<'r, OxigraphInMemory>, OxigraphInMemory)> {
     let reader_mode = reader_mode.copied().unwrap_or_default();
-    let mode = mode.copied().unwrap_or_default();
     let graph1 = match data1 {
         Some(data1) => Cow::Owned(read_graph(
             rudof,
@@ -42,7 +79,7 @@ pub fn compare_data(
         None => Cow::Borrowed(loaded_graph(rudof)?),
     };
     let graph2 = read_graph(rudof, data2, format2.copied().unwrap_or_default(), base2, reader_mode)?;
-    Ok(graph1.compare_with_mode(&graph2, mode))
+    Ok((graph1, graph2))
 }
 
 /// The loaded data, as long as it is an in-memory graph.
