@@ -1156,6 +1156,27 @@ prefix : <http://example.org/>
     }
 
     #[test]
+    fn deactivation_that_does_not_read_the_focus_node_is_evaluated_once_per_shape() {
+        // Evaluating it for each of 10,000 focus nodes listed all the nodes each time, which took 28 s
+        let nodes: String = (0..10_000).map(|i| format!(":a{i} :q 1 .\n")).collect();
+        for (t, results) in [("sh:class :C", 20_000), ("sh:nodeKind sh:IRI", 0)] {
+            let graph = format!(
+                "{PREFIXES}{SHNEX}:R sh:targetSubjectsOf :q ; sh:node :S .\n\
+                 :S sh:targetSubjectsOf :q ; sh:class :C ; sh:deactivated [ shnex:exists [ shnex:nodesMatching :T ] ] .\n\
+                 :T {t} .\n{nodes}"
+            );
+            assert_eq!(try_validate(&graph).unwrap().results().len(), results, "{t}");
+        }
+
+        // One that reads the focus node is still evaluated for each of them
+        let graph = format!(
+            "{PREFIXES}{SHNEX}:S sh:targetSubjectsOf :q ; sh:class :C ; sh:deactivated [ shnex:exists [ shnex:pathValues :r ] ] .\n\
+             :a0 :r 1 .\n{nodes}"
+        );
+        assert_eq!(try_validate(&graph).unwrap().results().len(), 9_999);
+    }
+
+    #[test]
     fn node_expression_fanned_out_by_the_data_is_an_error() {
         // Every shnex:flatMap level doubles the nodes, so 40 levels would never finish
         let mut graph = format!(

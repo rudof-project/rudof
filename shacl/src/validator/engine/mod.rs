@@ -145,6 +145,8 @@ pub struct NodeExprState {
     pub(crate) steps: usize,
     /// The nodes failing each `shnex:nodesMatching` shape, `None` while they are found.
     pub(crate) matching: HashMap<ShapeLabelIdx, Option<HashSet<Object>>>,
+    /// Whether each shape whose `sh:deactivated` does not read the focus node is deactivated.
+    pub(crate) deactivated: HashMap<ShapeLabelIdx, bool>,
 }
 
 #[cfg(feature = "sparql")]

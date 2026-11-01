@@ -310,6 +310,10 @@ fn get_active_focus_nodes<RDF: NeighsRDF + Debug>(
         return Ok(focus_nodes.clone());
     };
 
+    // An expression that does not read the focus node, such as one over shnex:nodesMatching, which
+    // lists all the nodes of the graph, has one value for the whole run, so it is evaluated once
+    let shared = shapes_graph.get_idx(shape.id()).filter(|_| !deactivated.reads_focus());
+
     // This shape may be validated for the shnex:nodesMatching of an expression being evaluated,
     // whose step count is put back after the ones counted here
     let outer_steps = runner.node_expr_state().steps;
@@ -317,10 +321,22 @@ fn get_active_focus_nodes<RDF: NeighsRDF + Debug>(
     let active: Result<Vec<_>, _> = focus_nodes
         .iter()
         .filter_map(|node| {
-            runner.node_expr_state().steps = 0;
-            match deactivated.evaluate(store, node, &scope, runner, shapes_graph) {
-                Ok(values) if node_expr_is_true::<RDF>(&values) => None,
-                Ok(_) => Some(Ok(node.clone())),
+            let off = match shared.and_then(|idx| runner.node_expr_state().deactivated.get(idx).copied()) {
+                Some(off) => Ok(off),
+                None => {
+                    runner.node_expr_state().steps = 0;
+                    let off = deactivated
+                        .evaluate(store, node, &scope, runner, shapes_graph)
+                        .map(|values| node_expr_is_true::<RDF>(&values));
+                    if let (Some(idx), Ok(off)) = (shared, &off) {
+                        runner.node_expr_state().deactivated.insert(*idx, *off);
+                    }
+                    off
+                },
+            };
+            match off {
+                Ok(true) => None,
+                Ok(false) => Some(Ok(node.clone())),
                 Err(e) => Some(Err(e)),
             }
         })
