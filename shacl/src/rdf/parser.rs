@@ -37,7 +37,8 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         while let Some(node) = state.pop_pending() {
             if !self.shapes.contains_key(&node) {
                 self.rdf_parser.rdf_mut().set_focus(&node.clone().into());
-                let shape = parser.parse_focused(self.rdf_parser.rdf_mut())?;
+                // rudof_rdf parses a SHACL path without a check, in about 300 KiB at the depth limit in a debug build
+                let shape = crate::with_stack(|| parser.parse_focused(self.rdf_parser.rdf_mut()))?;
                 self.shapes.insert(node, shape);
             }
         }

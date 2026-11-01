@@ -767,12 +767,8 @@ prefix : <http://example.org/>
 
     /// Runs `f` on a 256 KiB thread, far less stack than `DEPTH` levels of recursion take.
     fn on_small_stack(f: impl FnOnce() + Send + 'static) {
-        on_stack(256 * 1024, f)
-    }
-
-    fn on_stack(size: usize, f: impl FnOnce() + Send + 'static) {
         std::thread::Builder::new()
-            .stack_size(size)
+            .stack_size(256 * 1024)
             .spawn(f)
             .unwrap()
             .join()
@@ -1045,6 +1041,19 @@ prefix : <http://example.org/>
     }
 
     #[test]
+    fn path_at_the_depth_limit_is_validated_on_a_small_stack() {
+        on_small_stack(|| {
+            let mut graph = format!("{PREFIXES}:S sh:targetNode :a ; sh:property [ sh:path _:p0 ] .\n");
+            for i in 0..63 {
+                graph.push_str(&format!("_:p{i} sh:zeroOrOnePath _:p{} .\n", i + 1));
+            }
+            graph.push_str("_:p63 sh:zeroOrOnePath :p .\n");
+
+            assert!(try_validate(&graph).unwrap().conforms());
+        });
+    }
+
+    #[test]
     fn chain_of_shapes_with_paths_and_node_expressions_at_the_depth_limit() {
         // Each shape of the chain checks the stack a little deeper, so some check lands just above the
         // red zone, and the 64-deep path and node expression of that shape must then fit in it
@@ -1071,8 +1080,7 @@ prefix : <http://example.org/>
             }
         }
 
-        // 2 MiB, as parsing a 64-deep sh:path, before any check, takes over 256 KiB in a debug build
-        on_stack(2 * 1024 * 1024, move || {
+        on_small_stack(move || {
             // Only the last shape fails, so every shape of the chain was active
             let report = try_validate(&graph).unwrap();
             assert_eq!(report.results().len(), 1, "{:?}", report.results());
