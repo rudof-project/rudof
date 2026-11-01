@@ -12,8 +12,8 @@ pub mod validator;
 /// Compiling shapes, walking their dependencies and validating them recurse once per nested
 /// shape, and validation also once per node of a data chain followed by a recursive shape, so
 /// deep shapes graphs and long chains would overflow the stack. What runs between two calls must
-/// fit in those 512 KiB. The most is evaluating a SHACL path at the depth limit, which `rudof_rdf`
-/// does without a check, in about 360 KiB in a debug build.
+/// fit in those 512 KiB. The most is writing a SHACL path at the depth limit as RDF, which
+/// `rudof_rdf` does without a check, in about 410 KiB in a debug build.
 #[cfg(not(target_family = "wasm"))]
 pub(crate) fn with_stack<R>(f: impl FnOnce() -> R) -> R {
     stacker::maybe_grow(512 * 1024, 2 * 1024 * 1024, f)

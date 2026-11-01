@@ -145,7 +145,8 @@ impl ValidationResult {
             ))?;
 
         // Process the optional fields
-        let path = store.get_path_for(validation_result, &ShaclVocab::sh_result_path().into())?;
+        // rudof_rdf parses a SHACL path without a check, in about 300 KiB at the depth limit in a debug build
+        let path = crate::with_stack(|| store.get_path_for(validation_result, &ShaclVocab::sh_result_path().into()))?;
 
         let source = store.object_for(validation_result, &ShaclVocab::sh_source_shape().into())?;
 
@@ -201,8 +202,8 @@ impl ValidationResult {
         }
 
         if let Some(path) = &self.path {
-            let result_path = writer
-                .add_shacl_path(path)
+            // rudof_rdf writes a SHACL path without a check, in about 410 KiB at the depth limit in a debug build
+            let result_path = crate::with_stack(|| writer.add_shacl_path(path))
                 .map_err(error_mapper::<RDF>("Error serializing result path"))?;
             writer
                 .add_triple(report_node.clone(), ShaclVocab::sh_result_path(), result_path)

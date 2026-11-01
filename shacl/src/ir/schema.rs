@@ -370,7 +370,8 @@ impl IRSchema {
         self.labels_idx_map.iter().try_for_each(|(_, idx)| {
             let shape = self.shapes.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;
 
-            shape.register(&mut graph, &self.shapes)
+            // rudof_rdf writes a SHACL path without a check, in about 410 KiB at the depth limit in a debug build
+            crate::with_stack(|| shape.register(&mut graph, &self.shapes))
         })?;
 
         Ok(graph)

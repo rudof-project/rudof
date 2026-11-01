@@ -1290,4 +1290,89 @@ prefix : <http://example.org/>
             );
         }
     }
+
+    /// Paths at the depth limit: 64 nested `sh:zeroOrOnePath`, and 64 nested one-element sequences.
+    fn paths_at_the_depth_limit() -> [String; 2] {
+        [
+            format!("{}:p{}", "[ sh:zeroOrOnePath ".repeat(64), " ]".repeat(64)),
+            format!("{}:p{}", "( ".repeat(64), " )".repeat(64)),
+        ]
+    }
+
+    #[test]
+    fn result_path_at_the_depth_limit_is_read_on_a_small_stack() {
+        for path in paths_at_the_depth_limit() {
+            on_small_stack(move || {
+                let graph = format!(
+                    "{PREFIXES}:r sh:result _:x .\n\
+                     _:x sh:focusNode :a ; sh:resultSeverity sh:Violation ;\n\
+                     sh:sourceConstraintComponent sh:MaxCountConstraintComponent ; sh:resultPath {path} .\n"
+                );
+                let mut rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+                let report_node = rudof_rdf::rdf_core::term::Object::iri(rudof_iri::iri!("http://example.org/r"));
+                let report = crate::validator::report::ValidationReport::parse(&mut rdf, report_node.into()).unwrap();
+
+                assert!(report.results()[0].path().is_some());
+            });
+        }
+    }
+
+    #[test]
+    fn result_path_at_the_depth_limit_is_written_on_a_small_stack() {
+        use rudof_rdf::rdf_core::BuildRDF;
+        use rudof_rdf::rdf_impl::OxigraphInMemory;
+
+        for path in paths_at_the_depth_limit() {
+            let graph = format!(
+                "{PREFIXES}:S sh:targetNode :a ; sh:property [ sh:path {path} ; sh:maxCount 0 ] .\n:a :p :b .\n"
+            );
+            let report = try_validate(&graph).unwrap();
+            assert_eq!(report.results().len(), 1, "{:?}", report.results());
+
+            on_small_stack(move || report.to_rdf(&mut OxigraphInMemory::empty()).unwrap());
+        }
+    }
+
+    #[test]
+    fn paths_at_the_depth_limit_are_written_back_on_a_small_stack() {
+        for path in paths_at_the_depth_limit() {
+            let graph = format!(
+                "{PREFIXES}:S sh:targetNode :a ; sh:property [ sh:path {path} ], [ sh:path :q ; sh:subsetOf {path} ] .\n"
+            );
+            let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let schema_ir: IRSchema = ShaclParser::new(rdf).parse().unwrap().try_into().unwrap();
+
+            on_small_stack(move || {
+                let mut writer = crate::rdf::ShaclWriter::<rudof_rdf::rdf_impl::OxigraphInMemory>::new();
+                writer.register(&schema_ir).unwrap();
+            });
+        }
+    }
+
+    #[test]
+    fn path_at_the_depth_limit_is_prefetched_on_a_small_stack() {
+        use crate::validator::FetchStrategy;
+        use crate::validator::processor::CachedDataValidation;
+
+        // One graph each: the data fetched for the first path would leave nothing for the second to fetch
+        let path = format!("{}:p{}", "[ sh:zeroOrMorePath ".repeat(64), " ]".repeat(64));
+        for property in [
+            format!("sh:path {path} ; sh:maxCount 0"),
+            format!("sh:path :q ; sh:subsetOf {path}"),
+        ] {
+            on_small_stack(move || {
+                let graph =
+                    format!("{PREFIXES}:S sh:targetNode :a ; sh:property [ {property} ] .\n:a :p :b ; :q :c .\n");
+                let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+                let mut validator = CachedDataValidation::new(rdf.clone());
+                let schema_ir: IRSchema = ShaclParser::new(rdf).parse().unwrap().try_into().unwrap();
+                let config = ShaclConfig::default().with_fetch_strategy(FetchStrategy::ByShape);
+
+                let report = validator
+                    .validate(&schema_ir, &ShaclValidationMode::Native, &config)
+                    .unwrap();
+                assert_eq!(report.results().len(), 1, "{:?}", report.results());
+            });
+        }
+    }
 }
