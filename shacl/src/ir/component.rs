@@ -411,10 +411,11 @@ impl IRComponent {
             IRComponent::Not(not) => {
                 let shape_idx = not.shape();
                 if let Some(shape) = ir.get_shape_from_idx(shape_idx) {
-                    dg.add_edge(idx, *shape_idx, posneg.change());
+                    // A shape that conforms makes sh:not fail, so it is a negation in any context
+                    dg.add_edge(idx, *shape_idx, PosNeg::Neg);
                     if !cache.contains(shape_idx) {
                         cache.insert(*shape_idx);
-                        shape.add_edges(*shape_idx, dg, posneg.change(), ir, cache);
+                        shape.add_edges(*shape_idx, dg, posneg, ir, cache);
                     }
                 }
             },
@@ -453,7 +454,7 @@ impl IRComponent {
                 dg.add_edge(idx, *qvs.shape(), shape_posneg);
                 // A value node is counted only if it does not conform to a sibling shape, as in sh:not
                 for sibling in qvs.siblings() {
-                    dg.add_edge(idx, *sibling, posneg.change());
+                    dg.add_edge(idx, *sibling, PosNeg::Neg);
                 }
             },
             IRComponent::Closed(_) => {},

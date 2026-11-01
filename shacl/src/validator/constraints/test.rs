@@ -1317,6 +1317,47 @@ prefix : <http://example.org/>
     }
 
     #[test]
+    fn not_in_a_cycle_is_rejected_and_a_self_loop_is_named() {
+        // The sh:not cycles were accepted under LFP and GFP, and a self-loop was left out of the message
+        for (shapes, shown) in [
+            (":S sh:not :S .", ": [:S]"),
+            (":S sh:xone ( :S ) .", ": [:S]"),
+            (":S sh:not :T . :T sh:node :S .", ":T"),
+            (":S sh:not :T ; sh:node :T . :T sh:node :S .", ":T"),
+        ] {
+            let graph = format!("{PREFIXES}{shapes}\n");
+            let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let schema = ShaclParser::new(rdf).parse().unwrap();
+
+            for semantics in [
+                RecursionSemantics::None,
+                RecursionSemantics::Lfp,
+                RecursionSemantics::Gfp,
+            ] {
+                let error = IRSchema::compile_with_recursion(&schema, semantics)
+                    .expect_err("expected a rejected cycle")
+                    .to_string();
+                assert!(error.contains("negative cycles") && error.contains(shown), "{error}");
+            }
+        }
+    }
+
+    #[test]
+    fn not_of_a_positive_cycle_from_outside_it_is_stratified() {
+        // :X and :Y are a positive cycle that only :A negates, so LFP cuts :X and GFP keeps it
+        let graph =
+            format!("{PREFIXES}:A sh:targetNode :a ; sh:not :X .\n:X sh:node :Y .\n:Y sh:node :X .\n:a :p :a .\n");
+        for (semantics, results) in [(RecursionSemantics::Lfp, 0), (RecursionSemantics::Gfp, 1)] {
+            let config = ShaclConfig::default().with_recursion_semantics(semantics);
+            assert_eq!(
+                validate_with_config(&graph, &config).results().len(),
+                results,
+                "{semantics:?}"
+            );
+        }
+    }
+
+    #[test]
     fn max_results_stops_nested_property_shapes_over_diamonds() {
         // k nested property shapes over k/2 diamonds, each doubling the results of the shapes below it
         let diamonds = |k: usize| {
