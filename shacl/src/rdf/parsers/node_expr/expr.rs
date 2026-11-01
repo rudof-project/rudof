@@ -105,7 +105,7 @@ pub(crate) fn node_expr_from_term<RDF: FocusRDF>(
     match to_object::<RDF>(term)? {
         Object::Iri(iri) => Ok(ASTNodeExpr::Iri(IriRef::iri(iri))),
         Object::Literal(lit) => Ok(ASTNodeExpr::Literal(lit)),
-        Object::BlankNode(_) => blank_node_expr(term, rdf, depth, steps),
+        Object::BlankNode(_) => crate::with_stack(|| blank_node_expr(term, rdf, depth, steps)),
         Object::Triple { .. } => Err(RDFError::DefaultError {
             msg: "Triple term expressions are not supported yet".to_string(),
         }),
