@@ -92,7 +92,7 @@ pub struct GenerateDataRequest {
     /// Probability that an optional property is generated, from 0.0 to 1.0.
     pub property_fill: Option<f64>,
 
-    /// Generator configuration as TOML text (the format of `rudof generate --config`).
+    /// Generator configuration as TOML text (the format of `rudof generate --generator-config` (format v2)).
     /// The other parameters override it.
     pub config: Option<String>,
 
@@ -281,7 +281,7 @@ fn config(request: &GenerateDataRequest, dir: &Path) -> ToolResult<GeneratorConf
         Some(toml) => GeneratorConfig::from_toml_str(toml).map_err(|e| {
             ToolExecutionError::with_hint(
                 format!("Invalid generator configuration: {e}"),
-                "Pass a TOML configuration as accepted by `rudof generate --config`, or omit `config`",
+                "Pass a TOML configuration as accepted by `rudof generate --generator-config` (format v2), or omit `config`",
             )
         })?,
         None => {
