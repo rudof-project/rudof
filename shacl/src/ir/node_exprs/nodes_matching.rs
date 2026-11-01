@@ -55,7 +55,7 @@ impl NodesMatching {
                     let non_conforming = outcome.violations().iter().map(|v| v.focus_node().clone()).collect();
                     matching.insert(self.shape, Some(non_conforming))
                 },
-                // A caller such as sh:not can go on after the error, and then must not see a cycle
+                // Left as `None`, the entry would make a later evaluation report a cycle
                 Err(e) => {
                     matching.remove(&self.shape);
                     return Err(e.into());

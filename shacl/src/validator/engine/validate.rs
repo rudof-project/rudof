@@ -34,7 +34,17 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         source_shape: Option<&IRShape>,
         shapes_graph: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
-        crate::with_stack(|| self.validate_shape(store, runner, targets, source_shape, shapes_graph))
+        crate::with_stack(|| {
+            let mut entered_chain = Vec::new();
+            let outcome = self.validate_shape(store, runner, targets, source_shape, shapes_graph, &mut entered_chain);
+            // These nodes are no longer "in progress", even after an error
+            if let Some(idx) = shapes_graph.get_idx(self.id()) {
+                for obj in entered_chain {
+                    runner.chain_exit(&obj, *idx);
+                }
+            }
+            outcome
+        })
     }
 }
 
@@ -46,6 +56,7 @@ impl IRShape {
         targets: Option<&FocusNodes<RDF>>,
         source_shape: Option<&IRShape>,
         shapes_graph: &IRSchema,
+        entered_chain: &mut Vec<Object>,
     ) -> Result<ValidationOutcome, ValidationError> {
         // Get focus nodes
         let focus_nodes = match targets {
@@ -71,7 +82,6 @@ impl IRShape {
         let mut cached_outcome = ValidationOutcome::new();
         // The results, details and evidences that this call holds, as max_results counts them
         let mut held = 0;
-        let mut entered_chain = Vec::new();
         // Multi-node calls only ever occur for a *batch* of independent
         // targets (this shape's own top-level targets, or the nodes of a
         // node expression) — siblings, not ancestors of each other. Only a
@@ -197,14 +207,6 @@ impl IRShape {
         new_outcome.extend(component_outcome.clone());
         for outcome in nested_by_focus.values() {
             new_outcome.extend(outcome.clone());
-        }
-
-        // These nodes are no longer "in progress": a nested call reaching
-        // them now would be a fresh lookup, not a recursive reference.
-        if let Some(idx) = idx {
-            for obj in &entered_chain {
-                runner.chain_exit(obj, *idx);
-            }
         }
 
         // Record new outcome in the cache per focus node
@@ -353,7 +355,10 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
         for reifier_shape in reifier_info.reifier_shape() {
             let pred = reifier_info.predicate();
             let pred_iri: RDF::IRI = pred.clone().into();
-            let subject = RDF::term_as_subject(node)?;
+            // A literal is the subject of no triple, so it has no reifiers
+            let Ok(subject) = RDF::term_as_subject(node) else {
+                continue;
+            };
             let triples = store
                 .triples_with_subject_predicate(&subject, &pred_iri)
                 .map_err(ValidationError::new_graph_error::<RDF>)?;

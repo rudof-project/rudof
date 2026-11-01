@@ -922,6 +922,45 @@ prefix : <http://example.org/>
     }
 
     #[test]
+    fn error_inside_not_and_xone_or_qualified_value_shape_is_an_error() {
+        // :T conforms on :a with 9 evidences, so it fails with an error under max_results 5,
+        // which the shapes around it stay under
+        let t = ":T sh:property [ sh:path :p ; sh:nodeKind sh:IRI ] .\n:U sh:nodeKind sh:IRI .\n\
+                 :a :p :b1, :b2, :b3, :b4, :b5, :b6, :b7, :b8, :b9 ; :r :a .\n";
+        let config = ShaclConfig::default().with_max_results(Some(5));
+        for component in [
+            "sh:not :T",
+            "sh:and ( :T )",
+            "sh:xone ( :T )",
+            "sh:property [ sh:path :r ; sh:qualifiedValueShape :T ; sh:qualifiedMinCount 1 ]",
+            // :T is validated only as the sibling of :U
+            "sh:property [ sh:path :r ; sh:qualifiedValueShape :U ; sh:qualifiedMinCount 1 ; sh:qualifiedValueShapesDisjoint true ], \
+             [ sh:path :s ; sh:qualifiedValueShape :T ; sh:qualifiedMinCount 0 ]",
+        ] {
+            let graph = format!("{PREFIXES}:S sh:targetNode :a ; {component} .\n{t}");
+            let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let mut validator: DataValidation = rdf.clone().into();
+            let schema_ir: IRSchema = ShaclParser::new(rdf).parse().unwrap().try_into().unwrap();
+            let result = validator.validate(&schema_ir, &ShaclValidationMode::Native, &config);
+            assert!(
+                matches!(result, Err(crate::error::ValidationError::TooManyResults(..))),
+                "{component}: {result:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn literal_focus_node_of_a_reifier_shape_has_no_reifiers() {
+        // "Bob" is the subject of no triple, so the shape under sh:not conforms and sh:not fails
+        let graph = format!(
+            "{PREFIXES}:S sh:targetNode :a ; sh:property [ sh:path :p ; sh:not [ sh:path :q ; sh:reifierShape :R ] ] .\n\
+             :R sh:class :C .\n:a :p \"Bob\" .\n"
+        );
+        let report = try_validate(&graph).unwrap();
+        assert_eq!(report.results().len(), 1, "{:?}", report.results());
+    }
+
+    #[test]
     fn long_chain_of_owl_imports() {
         on_small_stack(|| {
             let mut graph = format!(

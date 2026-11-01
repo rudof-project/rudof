@@ -36,20 +36,16 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let qv_shape = shapes_graph.get_shape_from_idx_e(self.shape())?;
-                let inner_results = qv_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                let mut is_valid = match inner_results {
-                    Ok(results) => results.conforms(),
-                    Err(_) => false,
-                };
+                let inner_results = qv_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;
+                let mut is_valid = inner_results.conforms();
 
                 if !self.siblings().is_empty() && is_valid {
                     // If there are siblings, check that none of them validate
                     for sibling in self.siblings().iter() {
                         let sibling_shape = shapes_graph.get_shape_from_idx_e(sibling)?;
                         let sibling_results =
-                            sibling_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                        let sibling_is_valid = sibling_results.is_ok_and(|r| r.conforms());
-                        if sibling_is_valid {
+                            sibling_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;
+                        if sibling_results.conforms() {
                             is_valid = false;
                             break;
                         }
