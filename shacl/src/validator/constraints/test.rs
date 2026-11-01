@@ -1543,4 +1543,38 @@ prefix : <http://example.org/>
             assert!(matches!(&result, Err(e) if e.contains("nested")), "{result:?}");
         });
     }
+
+    #[test]
+    fn failed_path_lookup_is_an_error() {
+        use crate::validator::processor::CachedDataValidation;
+        use rudof_iri::IriS;
+        use rudof_rdf::rdf_impl::OxigraphEndpoint;
+        use std::io::{BufRead, BufReader, Write};
+
+        // An endpoint that answers every query with an error
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/sparql", listener.local_addr().unwrap());
+        std::thread::spawn(move || {
+            for stream in listener.incoming().flatten() {
+                let mut reader = BufReader::new(&stream);
+                let mut line = String::new();
+                while reader.read_line(&mut line).unwrap_or(0) > 2 {
+                    line.clear();
+                }
+                let _ = (&stream)
+                    .write_all(b"HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            }
+        });
+
+        let graph = format!("{PREFIXES}:S sh:targetNode :a ; sh:property [ sh:path :p ; sh:minCount 1 ] .\n");
+        let shapes = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let schema_ir: IRSchema = ShaclParser::new(shapes).parse().unwrap().try_into().unwrap();
+        for mode in [ShaclValidationMode::Native, ShaclValidationMode::Sparql] {
+            let endpoint = OxigraphEndpoint::new(&IriS::new_unchecked(&url), &Default::default()).unwrap();
+            let mut validator = CachedDataValidation::new(RdfData::from_endpoint("failing", endpoint));
+            // It used to conform, as :a was left out of the value nodes
+            let result = validator.validate(&schema_ir, &mode, &ShaclConfig::default());
+            assert!(result.is_err(), "{mode:?}: {result:?}");
+        }
+    }
 }
