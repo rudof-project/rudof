@@ -876,6 +876,52 @@ prefix : <http://example.org/>
     }
 
     #[test]
+    fn recursive_property_shape_over_a_data_cycle_with_fan_out() {
+        on_small_stack(|| {
+            let graph = format!(
+                "{PREFIXES}:S sh:targetNode :a ; sh:property _:p .
+                 _:p sh:path :next ; sh:property _:p .
+                 :a :next :a, :b .
+                 :b :next :a, :b .\n"
+            );
+
+            // Under LFP each cut reference is a violation: _:p reaches :a again twice and :b once
+            let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
+            let report = validate_with_config(&graph, &config);
+            let mut focus_nodes: Vec<_> = report.results().iter().map(|r| r.focus_node().to_string()).collect();
+            focus_nodes.sort();
+            assert_eq!(
+                focus_nodes,
+                ["http://example.org/a", "http://example.org/a", "http://example.org/b"]
+            );
+
+            let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Gfp);
+            let report = validate_with_config(&graph, &config);
+            assert!(report.conforms(), "{:?}", report.results());
+        });
+    }
+
+    #[test]
+    fn recursive_reifier_shape_over_several_reifiers() {
+        on_small_stack(|| {
+            // Each :x triple has the reifiers :r1 and :r2, which have :x triples of their own
+            let graph = format!(
+                "{PREFIXES}:S sh:targetNode :a ; sh:property _:q .
+                 _:q sh:path :x ; sh:reifierShape _:q .
+                 :a :x :c ~ :r1 ~ :r2 .
+                 :r1 :x :c ~ :r1 ~ :r2 .
+                 :r2 :x :c ~ :r1 ~ :r2 .\n"
+            );
+
+            let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
+            assert!(!validate_with_config(&graph, &config).conforms());
+            let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Gfp);
+            let report = validate_with_config(&graph, &config);
+            assert!(report.conforms(), "{:?}", report.results());
+        });
+    }
+
+    #[test]
     fn long_chain_of_owl_imports() {
         on_small_stack(|| {
             let mut graph = format!(

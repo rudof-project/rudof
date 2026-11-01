@@ -10,7 +10,7 @@ use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 /// Validate RDF data using SHACL
@@ -71,8 +71,8 @@ impl IRShape {
         let mut cached_outcome = ValidationOutcome::new();
         let mut entered_chain = Vec::new();
         // Multi-node calls only ever occur for a *batch* of independent
-        // targets (this shape's own top-level targets, or several reifiers
-        // of one triple) — siblings, not ancestors of each other. Only a
+        // targets (this shape's own top-level targets, or the nodes of a
+        // node expression) — siblings, not ancestors of each other. Only a
         // single-node call represents one specific node's own place on the
         // recursive-descent path, so only those are chain-eligible: a
         // sibling batch must never poison another sibling by making it look
@@ -161,9 +161,12 @@ impl IRShape {
         for ps in self.property_shapes().iter() {
             let shape = shapes_graph.get_shape_from_idx_e(ps)?;
             for (orig, vn) in value_nodes.iter() {
-                let outcome = shape.validate(store, runner, Some(vn), Some(self), shapes_graph)?;
-                let orig_object = RDF::term_as_object(orig)?;
-                nested_by_focus.entry(orig_object).or_default().extend(outcome);
+                let outcome = nested_by_focus.entry(RDF::term_as_object(orig)?).or_default();
+                // One call per value node, so that each one joins the recursion chain
+                for node in vn.iter() {
+                    let node = FocusNodes::single(node.clone());
+                    outcome.extend(shape.validate(store, runner, Some(&node), Some(self), shapes_graph)?);
+                }
             }
         }
 
@@ -346,19 +349,11 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
                     outcome.push_violation(vr_single);
                     continue;
                 }
-                let reifier_nodes = reifier_subjects
-                    .iter()
-                    .map(RDF::subject_as_term)
-                    .collect::<HashSet<_>>();
                 let reifier_shape = shapes_graph.get_shape_from_idx_e(reifier_shape)?;
-                let inner_outcome = reifier_shape.validate(
-                    store,
-                    runner,
-                    Some(&FocusNodes::from_iter(reifier_nodes)),
-                    Some(shape),
-                    shapes_graph,
-                )?;
-                outcome.extend(inner_outcome)
+                for reifier in &reifier_subjects {
+                    let reifier = FocusNodes::single(RDF::subject_as_term(reifier));
+                    outcome.extend(reifier_shape.validate(store, runner, Some(&reifier), Some(shape), shapes_graph)?);
+                }
             }
         }
     }
