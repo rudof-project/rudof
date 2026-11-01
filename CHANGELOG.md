@@ -33,6 +33,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - Evaluating a node expression for one focus node fails after 1,000,000 steps, as nested `shnex:flatMap` can fan out exponentially over the data.
 - A blank node `sh:targetNode` targets nothing, an invalid tag or an IRI in `sh:languageIn` is skipped, a triple term in `sh:hasValue` is a parse error and in `sh:in` is skipped like the other members it cannot read, and a literal focus node of `sh:disjoint` conforms, instead of panicking. Writing the shapes graph writes an ill-formed target back as it was read.
 - A recursive shape over a data cycle in which a node has several values, such as `_:p sh:path :next ; sh:property _:p` over `:a :next :a, :b`, or in which a triple has several reifiers, is validated instead of recursing without end: nested property shapes and `sh:reifierShape` are validated once per value node, so each node is cut when it is reached again.
+- On native targets, a debug build compiles and validates a long chain of shapes whose SHACL paths and node expressions nest close to the 64-level limit, such as 50 shapes linked by `sh:node`, each with a 64-deep `sh:path` and `sh:deactivated` expression, on a 2 MiB thread, instead of crashing with a stack overflow or a bus error.
 
 ### Changed
 - A SHACL `sh:detail` result no longer has details of its own: a failed `sh:node`, `sh:and`, `sh:or` or `sh:xone` keeps one level of causes, so reports stay small for long chains.

@@ -767,8 +767,12 @@ prefix : <http://example.org/>
 
     /// Runs `f` on a 256 KiB thread, far less stack than `DEPTH` levels of recursion take.
     fn on_small_stack(f: impl FnOnce() + Send + 'static) {
+        on_stack(256 * 1024, f)
+    }
+
+    fn on_stack(size: usize, f: impl FnOnce() + Send + 'static) {
         std::thread::Builder::new()
-            .stack_size(256 * 1024)
+            .stack_size(size)
             .spawn(f)
             .unwrap()
             .join()
@@ -1037,6 +1041,41 @@ prefix : <http://example.org/>
             graph.push_str("_:e61 shnex:pathValues [ sh:inversePath [ sh:inversePath :p ] ] .\n");
 
             assert!(try_validate(&graph).unwrap().conforms());
+        });
+    }
+
+    #[test]
+    fn chain_of_shapes_with_paths_and_node_expressions_at_the_depth_limit() {
+        // Each shape of the chain checks the stack a little deeper, so some check lands just above the
+        // red zone, and the 64-deep path and node expression of that shape must then fit in it
+        let n = 100;
+        let mut graph = format!("{PREFIXES}{SHNEX}:S0 sh:targetNode :a .\n:S{n} sh:class :C .\n");
+        for i in 0..n {
+            let next = i + 1;
+            graph.push_str(&format!(
+                ":S{i} sh:node :S{next} ; sh:property [ sh:path _:p{i}x0 ] .\n"
+            ));
+            for j in 0..63 {
+                let k = j + 1;
+                graph.push_str(&format!("_:p{i}x{j} sh:zeroOrOnePath _:p{i}x{k} .\n"));
+            }
+            graph.push_str(&format!("_:p{i}x63 sh:zeroOrOnePath :p .\n"));
+            graph.push_str(&format!(
+                ":S{i} sh:deactivated _:e{i}x0 .\n_:e{i}x64 shnex:var \"focusNode\" .\n"
+            ));
+            for j in 0..64 {
+                let k = j + 1;
+                graph.push_str(&format!(
+                    "_:e{i}x{j} shnex:pathValues :p ; shnex:focusNode _:e{i}x{k} .\n"
+                ));
+            }
+        }
+
+        // 2 MiB, as parsing a 64-deep sh:path, before any check, takes over 256 KiB in a debug build
+        on_stack(2 * 1024 * 1024, move || {
+            // Only the last shape fails, so every shape of the chain was active
+            let report = try_validate(&graph).unwrap();
+            assert_eq!(report.results().len(), 1, "{:?}", report.results());
         });
     }
 

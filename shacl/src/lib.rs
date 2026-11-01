@@ -7,14 +7,16 @@ pub mod rdf;
 pub mod types;
 pub mod validator;
 
-/// Runs `f`, on a new 2 MiB stack if less than 256 KiB of the current one is left.
+/// Runs `f`, on a new 2 MiB stack if less than 512 KiB of the current one is left.
 ///
 /// Compiling shapes, walking their dependencies and validating them recurse once per nested
 /// shape, and validation also once per node of a data chain followed by a recursive shape, so
-/// deep shapes graphs and long chains would overflow the stack.
+/// deep shapes graphs and long chains would overflow the stack. What runs between two calls must
+/// fit in those 512 KiB. The most is evaluating a SHACL path at the depth limit, which `rudof_rdf`
+/// does without a check, in about 360 KiB in a debug build.
 #[cfg(not(target_family = "wasm"))]
 pub(crate) fn with_stack<R>(f: impl FnOnce() -> R) -> R {
-    stacker::maybe_grow(256 * 1024, 2 * 1024 * 1024, f)
+    stacker::maybe_grow(512 * 1024, 2 * 1024 * 1024, f)
 }
 
 /// On wasm, stacker can only move the shadow stack, not the engine's call stack, so it would not help.

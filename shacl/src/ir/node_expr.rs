@@ -57,6 +57,11 @@ pub enum IRNodeExpr {
 
 impl IRNodeExpr {
     pub fn compile(expr: &ASTNodeExpr, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
+        // A debug build takes about 19 KiB of stack per level, so 64 levels would not fit in the red zone
+        crate::with_stack(|| Self::compile_level(expr, ast, ir))
+    }
+
+    fn compile_level(expr: &ASTNodeExpr, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
         let result = match expr.clone() {
             ASTNodeExpr::Iri(iri) => Self::Iri(Iri::new(convert_iri_ref(iri)?)),
             ASTNodeExpr::Literal(lit) => Self::Literal(Literal::new(lit)),
