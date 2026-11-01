@@ -421,7 +421,8 @@ impl IRComponent {
             IRComponent::Xone(xone) => {
                 for shape_idx in xone.shapes() {
                     if let Some(shape) = ir.get_shape_from_idx(shape_idx) {
-                        dg.add_edge(idx, *shape_idx, posneg);
+                        // A shape that conforms can make sh:xone fail, so it is a negation in any context
+                        dg.add_edge(idx, *shape_idx, PosNeg::Neg);
                         if cache.contains(shape_idx) {
                             continue;
                         }
@@ -443,7 +444,13 @@ impl IRComponent {
             IRComponent::HasValue(_) => {},
             IRComponent::In(_) => {},
             IRComponent::QualifiedValueShape(qvs) => {
-                dg.add_edge(idx, *qvs.shape(), posneg);
+                // With sh:qualifiedMaxCount, a value node that conforms can make it fail, as in sh:xone
+                let shape_posneg = if qvs.qualified_max_count().is_some() {
+                    PosNeg::Neg
+                } else {
+                    posneg
+                };
+                dg.add_edge(idx, *qvs.shape(), shape_posneg);
                 // A value node is counted only if it does not conform to a sibling shape, as in sh:not
                 for sibling in qvs.siblings() {
                     dg.add_edge(idx, *sibling, posneg.change());

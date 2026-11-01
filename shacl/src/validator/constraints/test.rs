@@ -1211,6 +1211,28 @@ prefix : <http://example.org/>
     }
 
     #[test]
+    fn xone_and_qualified_max_count_in_a_cycle_are_rejected() {
+        // Over `:a :p :a`, these made LFP report :a as conforming and GFP as violating
+        let xone = ":S sh:xone ( :T :Any ) . :T sh:property [ sh:path :p ; sh:node :S ] . :Any sh:nodeKind sh:IRI .";
+        let max_count = ":S sh:property [ sh:path :p ; sh:qualifiedValueShape :S ; sh:qualifiedMaxCount 0 ] .";
+        for shapes in [xone, max_count] {
+            let graph = format!("{PREFIXES}{shapes}\n");
+            let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+            let schema = ShaclParser::new(rdf).parse().unwrap();
+
+            for semantics in [
+                RecursionSemantics::None,
+                RecursionSemantics::Lfp,
+                RecursionSemantics::Gfp,
+            ] {
+                let error =
+                    IRSchema::compile_with_recursion(&schema, semantics).expect_err("expected a rejected cycle");
+                assert!(error.to_string().contains("negative cycles"), "{error}");
+            }
+        }
+    }
+
+    #[test]
     fn max_results_stops_nested_property_shapes_over_diamonds() {
         // k nested property shapes over k/2 diamonds, each doubling the results of the shapes below it
         let diamonds = |k: usize| {
