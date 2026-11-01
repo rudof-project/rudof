@@ -8,6 +8,8 @@ pub(crate) fn var<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     _: &mut RDF,
     _: &RDF::Term,
+    _: usize,
+    _: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_var())?
         .map(|term| {

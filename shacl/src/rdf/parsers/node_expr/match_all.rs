@@ -7,9 +7,13 @@ pub(crate) fn match_all<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     _: &mut RDF,
     _: &RDF::Term,
+    _: usize,
+    _: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     if values::<RDF>(neighs, &ShaclNodeExprVocab::shnex_match_all()).is_some() {
-        todo!("shnex:matchAll is not yet implemented");
+        return Err(RDFError::DefaultError {
+            msg: "shnex:matchAll is not yet implemented".to_string(),
+        });
     }
     Ok(None)
 }

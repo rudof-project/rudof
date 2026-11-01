@@ -105,6 +105,17 @@ impl ValidationResult {
 
 impl ValidationResult {
     pub(crate) fn parse<S: FocusRDF>(store: &mut S, validation_result: &S::Term) -> Result<Self, ValidationError> {
+        // One level, as the validator writes: a cyclic or deep sh:detail would overflow the stack
+        let mut details = Vec::new();
+        for detail in store.objects_for(validation_result, &ShaclVocab::sh_detail().into())? {
+            details.push(Self::parse_fields(store, &detail)?);
+        }
+
+        Ok(Self::parse_fields(store, validation_result)?.with_details(details))
+    }
+
+    /// Parses a result without its `sh:detail` results.
+    fn parse_fields<S: FocusRDF>(store: &mut S, validation_result: &S::Term) -> Result<Self, ValidationError> {
         // Start processing the required fields
         let focus_node = store
             .object_for(validation_result, &ShaclVocab::sh_focus_node().into())?
@@ -140,16 +151,10 @@ impl ValidationResult {
 
         let value = store.object_for(validation_result, &ShaclVocab::sh_value().into())?;
 
-        let mut details = Vec::new();
-        for detail in store.objects_for(validation_result, &ShaclVocab::sh_detail().into())? {
-            details.push(ValidationResult::parse(store, &detail)?);
-        }
-
         Ok(ValidationResult::new(focus_node, constraint_component, severity)
             .with_path(path)
             .with_source(source)
-            .with_value(value)
-            .with_details(details))
+            .with_value(value))
     }
 
     pub fn to_rdf<RDF: BuildRDF + Sized>(

@@ -105,6 +105,20 @@ impl SHACLPath {
     pub fn zero_or_one(path: SHACLPath) -> Self {
         SHACLPath::ZeroOrOne { path: Box::new(path) }
     }
+
+    /// The path `^self`, with the inverse moved onto its predicates:
+    /// `^^a` is `a`, `^(a|b)` is `^a|^b`, `^(a/b)` is `^b/^a` and `^(a*)` is `(^a)*`.
+    pub(crate) fn inverted(&self) -> SHACLPath {
+        match self {
+            SHACLPath::Predicate { .. } => SHACLPath::inverse(self.clone()),
+            SHACLPath::Inverse { path } => (**path).clone(),
+            SHACLPath::Alternative { paths } => SHACLPath::alternative(paths.iter().map(Self::inverted).collect()),
+            SHACLPath::Sequence { paths } => SHACLPath::sequence(paths.iter().rev().map(Self::inverted).collect()),
+            SHACLPath::ZeroOrMore { path } => SHACLPath::zero_or_more(path.inverted()),
+            SHACLPath::OneOrMore { path } => SHACLPath::one_or_more(path.inverted()),
+            SHACLPath::ZeroOrOne { path } => SHACLPath::zero_or_one(path.inverted()),
+        }
+    }
 }
 
 impl Display for SHACLPath {

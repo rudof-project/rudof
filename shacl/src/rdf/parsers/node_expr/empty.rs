@@ -6,6 +6,8 @@ pub(crate) fn empty<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     _: &mut RDF,
     _: &RDF::Term,
+    _: usize,
+    _: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     let res = if neighs.is_empty() {
         Some(ASTNodeExpr::Empty)

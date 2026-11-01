@@ -35,7 +35,10 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Disjoint {
         _: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
         let check_fn = |f: &S::Term, vn: &S::Term| {
-            let subject = S::term_as_subject(f).unwrap();
+            // A literal focus node has no values to clash
+            let Ok(subject) = S::term_as_subject(f) else {
+                return false;
+            };
             let iri: S::IRI = self.iri().clone().into();
             let triples_to_compare = match store.triples_with_subject_predicate(&subject, &iri) {
                 Ok(iter) => iter,

@@ -208,7 +208,7 @@ fn path_values(store: &CachedRdfData, nodes: &[OxTerm], path: &SHACLPath) -> Res
         SHACLPath::Predicate { pred } => step(store, nodes, &pred.clone().into(), false)?,
         SHACLPath::Inverse { path } => match path.pred() {
             Some(pred) => step(store, nodes, &pred.clone().into(), true)?,
-            // Left to the lookups, which only support inverse predicates too.
+            // Left to the lookups.
             None => Vec::new(),
         },
         SHACLPath::Alternative { paths } => {

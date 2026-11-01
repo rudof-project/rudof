@@ -50,7 +50,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                         .with_message(MessageMap::from(msg))
                         .with_value(Some(node_object.clone()))
                         .with_source(Some(shape.id().clone()))
-                        .with_details(inner_outcome.violations().to_vec());
+                        .with_details(
+                            inner_outcome
+                                .violations()
+                                .iter()
+                                .cloned()
+                                .map(ValidationResult::without_details)
+                                .collect(),
+                        );
                     outcome.push_violation(vr);
                 } else {
                     let ev = Evidence::new(fnode_obj.clone(), component_obj.clone())

@@ -7,9 +7,13 @@ pub(crate) fn filter_shape<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     _: &mut RDF,
     _: &RDF::Term,
+    _: usize,
+    _: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     if values::<RDF>(neighs, &ShaclNodeExprVocab::shnex_filter_shape()).is_some() {
-        todo!("shnex:filterShape is not supported yet");
+        return Err(RDFError::DefaultError {
+            msg: "shnex:filterShape is not supported yet".to_string(),
+        });
     }
     Ok(None)
 }

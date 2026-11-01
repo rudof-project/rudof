@@ -3,7 +3,7 @@ use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::RecursionSemantics;
 use crate::validator::cache::SharedTyping;
 use crate::validator::constraints::{NativeValidator, ShaclComponent, ValidatorDeref};
-use crate::validator::engine::Engine;
+use crate::validator::engine::{Engine, NodeExprState};
 use crate::validator::index::ClassIndex;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationOutcome;
@@ -30,6 +30,7 @@ pub struct NativeEngine {
     /// engine's own call stack. Per-engine, in-progress state — never
     /// shared across forks, unlike `cache`.
     chain: HashSet<(Object, ShapeLabelIdx)>,
+    node_exprs: NodeExprState,
 }
 
 impl NativeEngine {
@@ -39,6 +40,7 @@ impl NativeEngine {
             class_index: None,
             recursion_semantics,
             chain: HashSet::new(),
+            node_exprs: NodeExprState::default(),
         }
     }
 
@@ -131,6 +133,7 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
             class_index: self.class_index.clone(),
             recursion_semantics: self.recursion_semantics,
             chain: HashSet::new(),
+            node_exprs: NodeExprState::default(),
         })
     }
 
@@ -205,6 +208,10 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
     fn chain_exit(&mut self, node: &Object, shape_idx: ShapeLabelIdx) {
         self.chain.remove(&(node.clone(), shape_idx));
     }
+
+    fn node_expr_state(&mut self) -> &mut NodeExprState {
+        &mut self.node_exprs
+    }
 }
 
 #[cfg(feature = "sparql")]
@@ -219,6 +226,7 @@ impl<RDF: NeighsRDF + QueryRDF + Debug + 'static> Engine<RDF> for NativeEngine {
             class_index: self.class_index.clone(),
             recursion_semantics: self.recursion_semantics,
             chain: HashSet::new(),
+            node_exprs: NodeExprState::default(),
         })
     }
 
@@ -305,6 +313,10 @@ impl<RDF: NeighsRDF + QueryRDF + Debug + 'static> Engine<RDF> for NativeEngine {
 
     fn chain_exit(&mut self, node: &Object, shape_idx: ShapeLabelIdx) {
         self.chain.remove(&(node.clone(), shape_idx));
+    }
+
+    fn node_expr_state(&mut self) -> &mut NodeExprState {
+        &mut self.node_exprs
     }
 }
 

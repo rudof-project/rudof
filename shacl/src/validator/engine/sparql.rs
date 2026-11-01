@@ -3,7 +3,7 @@ use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::RecursionSemantics;
 use crate::validator::cache::SharedTyping;
 use crate::validator::constraints::{BasicSparqlValidator, ShaclComponent, ValidatorDeref, object_as_sparql};
-use crate::validator::engine::{Engine, select};
+use crate::validator::engine::{Engine, NodeExprState, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationOutcome;
 use indoc::formatdoc;
@@ -21,6 +21,7 @@ pub struct SparqlEngine {
     /// `(node, shape)` pairs currently being validated further up this
     /// engine's own call stack. Never shared across forks, unlike `cache`.
     chain: HashSet<(Object, ShapeLabelIdx)>,
+    node_exprs: NodeExprState,
 }
 
 impl SparqlEngine {
@@ -29,6 +30,7 @@ impl SparqlEngine {
             cache: SharedTyping::new(),
             recursion_semantics,
             chain: HashSet::new(),
+            node_exprs: NodeExprState::default(),
         }
     }
 }
@@ -160,11 +162,16 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         self.chain.remove(&(node.clone(), shape_idx));
     }
 
+    fn node_expr_state(&mut self) -> &mut NodeExprState {
+        &mut self.node_exprs
+    }
+
     fn fork(&self) -> Box<dyn Engine<S>> {
         Box::new(SparqlEngine {
             cache: self.cache.clone(),
             recursion_semantics: self.recursion_semantics,
             chain: HashSet::new(),
+            node_exprs: NodeExprState::default(),
         })
     }
 }

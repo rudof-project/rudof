@@ -1,5 +1,5 @@
 use crate::ast::{ASTNodeExpr, ASTSchema};
-use crate::error::IRError;
+use crate::error::{IRError, NodeExprEvalError};
 use crate::ir::node_exprs::{
     Concat, Count, Distinct, Empty, Exists, Filter, FindFirst, FlatMap, IfExpression, InstancesOf, Intersection, Iri,
     Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove, Sum, Var,
@@ -11,6 +11,9 @@ use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
+
+/// Expressions evaluated for one focus node.
+const MAX_EVAL_STEPS: usize = 1_000_000;
 
 #[derive(Debug, Clone)]
 pub enum IRNodeExpr {
@@ -188,7 +191,7 @@ impl IRNodeExpr {
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
-        match self {
+        let out = match self {
             IRNodeExpr::Iri(i) => i.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::Literal(l) => l.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::Empty(e) => e.evaluate(store, focus, scope, runner, ir),
@@ -214,7 +217,17 @@ impl IRNodeExpr {
             IRNodeExpr::Sum(s) => s.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::InstancesOf(io) => io.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::NodesMatching(nm) => nm.evaluate(store, focus, scope, runner, ir),
+        }?;
+
+        // The data can fan an expression out exponentially, as nested shnex:flatMap over
+        // nodes with two values each does, so the work for one focus node is capped
+        let state = runner.node_expr_state();
+        state.steps += 1;
+        if state.steps > MAX_EVAL_STEPS {
+            return Err(NodeExprEvalError::TooManySteps(MAX_EVAL_STEPS).into());
         }
+
+        Ok(out)
     }
 }
 

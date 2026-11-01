@@ -10,8 +10,7 @@ use crate::types::Target;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-#[cfg(feature = "sparql")]
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::error::ValidationError;
 use crate::validator::RecursionSemantics;
@@ -62,11 +61,11 @@ pub trait Engine<S: NeighsRDF>: Send {
                 Target::SubjectsOf(p) => self.target_subject_of(store, p),
                 Target::ObjectsOf(p) => self.target_object_of(store, p),
                 Target::ImplicitClass(n) => self.implicit_target_class(store, n),
-                Target::WrongNode(_) => todo!(),
-                Target::WrongClass(_) => todo!(),
-                Target::WrongSubjectsOf(_) => todo!(),
-                Target::WrongObjectsOf(_) => todo!(),
-                Target::WrongImplicitClass(_) => todo!(),
+                Target::WrongNode(node) => self.target_node(store, node),
+                Target::WrongClass(_) | Target::WrongImplicitClass(_) => Err(ValidationError::TargetClassNotIri),
+                Target::WrongSubjectsOf(o) | Target::WrongObjectsOf(o) => {
+                    Err(ValidationError::CastError(o.to_string(), "an IRI".to_string()))
+                },
             })
             .flatten()
             .collect();
@@ -119,6 +118,18 @@ pub trait Engine<S: NeighsRDF>: Send {
 
     /// Un-marks `(node, shape_idx)` once its validation has finished.
     fn chain_exit(&mut self, node: &Object, shape_idx: ShapeLabelIdx);
+
+    /// This engine's own node expression state, never shared across forks.
+    fn node_expr_state(&mut self) -> &mut NodeExprState;
+}
+
+/// What evaluating node expressions keeps for one validation run.
+#[derive(Debug, Default)]
+pub struct NodeExprState {
+    /// Expressions evaluated for the current focus node.
+    pub(crate) steps: usize,
+    /// The nodes failing each `shnex:nodesMatching` shape, `None` while they are found.
+    pub(crate) matching: HashMap<ShapeLabelIdx, Option<HashSet<Object>>>,
 }
 
 #[cfg(feature = "sparql")]

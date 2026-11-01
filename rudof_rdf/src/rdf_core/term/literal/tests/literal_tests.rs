@@ -613,6 +613,39 @@ mod edge_case_tests {
     }
 
     #[test]
+    fn test_oxrdf_round_trip_keeps_the_lexical_form() {
+        for (lexical_form, datatype) in [
+            ("01", "long"),
+            ("+7", "unsignedInt"),
+            ("-0", "short"),
+            ("0010", "byte"),
+            ("007", "unsignedShort"),
+            ("+1", "positiveInteger"),
+            ("-00", "nonPositiveInteger"),
+            ("01", "integer"),
+            ("1.50", "decimal"),
+        ] {
+            let datatype = oxrdf::NamedNode::new_unchecked(format!("http://www.w3.org/2001/XMLSchema#{datatype}"));
+            let original = oxrdf::Literal::new_typed_literal(lexical_form, datatype);
+            let literal = ConcreteLiteral::try_from(original.clone()).unwrap();
+            assert_eq!(oxrdf::Literal::from(literal), original);
+        }
+    }
+
+    #[test]
+    fn test_converted_numbers_match_as_terms_and_compare_as_values() {
+        let long =
+            |s: &str| ConcreteLiteral::try_from(oxrdf::Literal::new_typed_literal(s, oxrdf::vocab::xsd::LONG)).unwrap();
+        let integer = ConcreteLiteral::try_from(oxrdf::Literal::from(5)).unwrap();
+        let xsd_long = IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#long"));
+
+        assert!(long("1").match_literal(&ConcreteLiteral::lit_datatype("1", &xsd_long)));
+        assert_ne!(long("01"), long("1"));
+        assert_eq!(long("01").partial_cmp(&long("1")), Some(std::cmp::Ordering::Equal));
+        assert_eq!(long("3").partial_cmp(&integer), Some(std::cmp::Ordering::Less));
+    }
+
+    #[test]
     fn test_language_tag_case_sensitivity() {
         let lang_en = Lang::new("en").unwrap();
         let lit1 = ConcreteLiteral::lang_str("hello", lang_en.clone());

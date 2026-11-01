@@ -200,4 +200,38 @@ mod tests {
             shape.components()
         );
     }
+
+    const PATH_PREFIXES: &str = "@prefix : <http://example.org/> .
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n";
+
+    fn parse_shapes(shapes: &str) -> Result<(), String> {
+        let graph = OxigraphInMemory::from_str(shapes, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
+        ShaclParser::new(graph).parse().map(|_| ()).map_err(|e| e.to_string())
+    }
+
+    #[test]
+    fn long_alternative_path_is_parsed() {
+        let preds: String = (0..5000).map(|i| format!(" :p{i}")).collect();
+        parse_shapes(&format!(
+            "{PATH_PREFIXES}:S a sh:PropertyShape ; sh:path [ sh:alternativePath ({preds} ) ] ."
+        ))
+        .unwrap();
+    }
+
+    #[test]
+    fn shapes_share_one_budget_for_their_paths() {
+        // _:l10 is ( _:l9 _:l9 ) down to _:l1 = ( :q :q ), 2047 steps, and 2000 shapes parse it again each
+        let mut shapes = format!("{PATH_PREFIXES}_:l1 rdf:first :q ; rdf:rest ( :q ) .\n");
+        for n in 2..=10 {
+            let m = n - 1;
+            shapes.push_str(&format!("_:l{n} rdf:first _:l{m} ; rdf:rest ( _:l{m} ) .\n"));
+        }
+        for i in 0..2000 {
+            shapes.push_str(&format!(":S{i} a sh:PropertyShape ; sh:path _:l10 .\n"));
+        }
+
+        let err = parse_shapes(&shapes).unwrap_err();
+        assert!(err.contains("steps plus"), "{err}");
+    }
 }

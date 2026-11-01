@@ -9,6 +9,8 @@ pub(crate) fn list<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     rdf: &mut RDF,
     term: &RDF::Term,
+    _: usize,
+    _: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     values::<RDF>(neighs, &RdfVocab::rdf_first())
         .map(|_| {

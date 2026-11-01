@@ -46,8 +46,8 @@ pub(crate) fn term_to_value<RDF: Rdf>(term: &RDF::Term, msg: &str) -> Result<Val
         })?;
         Ok(Value::Literal(slit))
     } else {
-        // TODO - return error?
-        println!("Unexpected code in term_to_value: {term}: {msg}");
-        todo!()
+        Err(RDFError::DefaultError {
+            msg: format!("Unexpected term in {msg}: {term}"),
+        })
     }
 }

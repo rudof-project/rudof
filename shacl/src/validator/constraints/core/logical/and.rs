@@ -39,7 +39,12 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                         Ok(results) => {
                             if !results.conforms() {
                                 conforms = false;
-                                details = results.violations().to_vec();
+                                details = results
+                                    .violations()
+                                    .iter()
+                                    .cloned()
+                                    .map(ValidationResult::without_details)
+                                    .collect();
                                 break;
                             }
                         },
