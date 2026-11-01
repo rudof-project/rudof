@@ -25,6 +25,21 @@ pub(crate) fn with_stack<R>(f: impl FnOnce() -> R) -> R {
     f()
 }
 
+/// Runs `f`, on a new 4 MiB stack if less than 2 MiB of the current one is left.
+///
+/// Compiling an `sh:pattern` recurses once per level of nesting, and at its nesting limit takes
+/// about 1 MiB in a debug build, in `RDFRegex::new` or in the query engine for a SPARQL `ASK`.
+#[cfg(not(target_family = "wasm"))]
+pub(crate) fn with_regex_stack<R>(f: impl FnOnce() -> R) -> R {
+    stacker::maybe_grow(2 * 1024 * 1024, 4 * 1024 * 1024, f)
+}
+
+/// On wasm, as for [`with_stack`].
+#[cfg(target_family = "wasm")]
+pub(crate) fn with_regex_stack<R>(f: impl FnOnce() -> R) -> R {
+    f()
+}
+
 pub mod error {
     pub use crate::ast::error::*;
     pub use crate::ir::error::*;

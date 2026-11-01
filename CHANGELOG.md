@@ -42,6 +42,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - On native targets, a debug build parses a shape whose SHACL path nests to the 64-level limit on a 256 KiB thread, instead of crashing with a stack overflow: each shape is parsed with the same stack check as it is compiled and validated.
 - A shape with `sh:ignoredProperties` keeps its `sh:hasValue`, `sh:in`, SPARQL constraints and `sh:deactivated`, which were dropped because reading the list left the focus node at its end instead of on the shape.
 - On native targets, a debug build reads a validation report back, writes a report or a shapes graph as RDF, and prefetches the data of a shape with `FetchStrategy::ByShape`, when a SHACL path in it nests to the 64-level limit, on a 256 KiB thread, instead of crashing with a stack overflow: each of these follows the path with the same stack check as validation.
+- On native targets, a debug build compiles an `sh:pattern` nested up to 64 levels, and reports a deeper one, such as `a` followed by 250 `*`, as an error, on a 256 KiB thread, instead of crashing with a stack overflow or a bus error while compiling it: the pattern is compiled on a stack of its own when less than 2 MiB is left, in `RDFRegex::new` and, in SPARQL mode, in the query engine.
 
 ### Changed
 - A SHACL `sh:detail` result no longer has details of its own: a failed `sh:node`, `sh:and`, `sh:or` or `sh:xone` keeps one level of causes, so reports stay small for long chains.
@@ -51,6 +52,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - A value of `sh:ignoredProperties` that is not a list is a parse error instead of meaning no ignored properties, and when a shape has several values, the members of all of them are ignored instead of those of one picked at random.
 - `Engine` has a new required method, `node_expr_state`, which returns the engine's own `NodeExprState`. An `Engine` implemented outside `shacl` must add it, for example over a `NodeExprState::default()` field.
 - SHACL parsing and validation have hard limits, each reported as an error: a SHACL path or node expression nests at most 64 levels; parsing all the SHACL paths, node expressions and lists of a shapes graph takes at most 4096 steps plus 16 per triple of the graph, each path step, expression, member of a list node expression and triple of a blank node expression counting as one, as does each member of a `sh:in`, `sh:languageIn`, `sh:and`, `sh:or`, `sh:xone` or `sh:ignoredProperties` list after the first 65,536; and evaluating a node expression for one focus node takes at most 1,000,000 steps, each expression evaluated counting as one.
+- `RDFRegex::new`, and so `sh:pattern`, accepts a regular expression that nests at most 64 levels, instead of the regex crate's 250, each group, repetition, bracketed class, alternation and concatenation counting as one, as compiling a deeper one overflowed the stack of a debug build. A deeper pattern is an error that says it exceeds the maximum number of nested parentheses/brackets.
 
 ## 0.3.35
 ### Added

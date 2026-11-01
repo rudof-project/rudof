@@ -1375,4 +1375,43 @@ prefix : <http://example.org/>
             });
         }
     }
+
+    #[test]
+    fn chain_of_patterns_at_the_nesting_limit_is_validated_on_a_small_stack() {
+        // 64 levels, the most RDFRegex accepts, of the repetitions that take the most stack to compile
+        let pattern = format!("a{}{}", "{2,}".repeat(13), "+".repeat(51));
+        // A chain of shapes, so that the pattern is compiled and matched at many depths of the stack
+        let mut graph = format!("{PREFIXES}:S0 sh:targetNode :a .\n:a :p \"b\" .\n");
+        for i in 0..100 {
+            graph.push_str(&format!(
+                ":S{i} sh:node :S{} ; sh:property [ sh:path :p ; sh:pattern \"{pattern}\" ] .\n",
+                i + 1
+            ));
+        }
+        for mode in [ShaclValidationMode::Native, ShaclValidationMode::Sparql] {
+            let graph = graph.clone();
+            on_small_stack(move || {
+                let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+                let mut validator: DataValidation = rdf.clone().into();
+                let schema_ir: IRSchema = ShaclParser::new(rdf).parse().unwrap().try_into().unwrap();
+                let report = validator.validate(&schema_ir, &mode, &ShaclConfig::default()).unwrap();
+                // :S0's own pattern, and sh:node :S1
+                assert_eq!(report.results().len(), 2, "{mode:?}: {:?}", report.results());
+            });
+        }
+    }
+
+    #[test]
+    fn deeply_nested_pattern_is_an_error_on_a_small_stack() {
+        on_small_stack(|| {
+            // 250 nested repetitions, the most the regex crate accepts by default
+            let pattern = format!("a{}", "*".repeat(250));
+            let graph = format!(
+                "{PREFIXES}:S sh:targetNode :a ; sh:property [ sh:path :p ; sh:pattern \"{pattern}\" ] .\n:a :p \"aa\" .\n"
+            );
+
+            let result = try_validate(&graph).map(|_| ());
+            assert!(matches!(&result, Err(e) if e.contains("nested")), "{result:?}");
+        });
+    }
 }
