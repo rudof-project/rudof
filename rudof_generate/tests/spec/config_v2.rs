@@ -414,3 +414,39 @@ fn the_configuration_in_the_readme_parses() {
     let block = &section[start..start + section[start..].find("```").unwrap()];
     parse(block);
 }
+
+// ---------------------------------------------------------------- fill of references
+
+const REF_SCHEMA: &str = r#"PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+ex:AShape { a [ex:A] ; ex:name xsd:string ; ex:likes @ex:BShape * ; ex:owns @ex:BShape }
+ex:BShape { a [ex:B] ; ex:name xsd:string }
+"#;
+
+async fn generate_refs(toml: &str) -> (String, String) {
+    let fixture = Fixture::shex(REF_SCHEMA);
+    let mut config = parse(toml);
+    config.output.path = fixture.output();
+    let map = fixture.dir.path().join("out.shapemap");
+    config.output.shapemap = Some(map.clone());
+    config.output.write_stats = false;
+    let data = generate(&fixture, config).await;
+    (data, std::fs::read_to_string(map).unwrap())
+}
+
+#[tokio::test]
+async fn fill_decides_optional_references_and_never_required_ones() {
+    let base = "version = 2\n[run]\nseed = 5\nscale = { per_shape = 100 }\n[defaults]\ncardinality = \"max\"\n";
+    let (full, _) = generate_refs(&format!("{base}fill = 1.0\n")).await;
+    let (none, map) = generate_refs(&format!("{base}fill = 0.0\n")).await;
+    let (some, _) = generate_refs(&format!("{base}fill = 0.3\n")).await;
+
+    assert_eq!(count(&full, "likes"), 100, "every A likes a B at fill 1");
+    assert_eq!(count(&none, "likes"), 0, "an optional reference follows the fill");
+    let partial = count(&some, "likes");
+    assert!(partial > 10 && partial < 60, "about 30% of the A nodes: {partial}");
+    // `owns` is required: every A keeps it whatever the fill.
+    assert_eq!(count(&none, "owns"), 100);
+    let verdict = validate_shex(&none, REF_SCHEMA, &map);
+    assert!(verdict.conforms(), "{}", verdict.report);
+}

@@ -667,6 +667,7 @@ impl ParallelGenerator {
                         let recursive = dependency.target_shape == *shape_id;
                         self.generate_relationships_for_dependency(
                             graph,
+                            shape_id,
                             from_entities,
                             to_entities,
                             dependency,
@@ -684,6 +685,7 @@ impl ParallelGenerator {
     fn generate_relationships_for_dependency(
         &self,
         graph: &mut OxigraphInMemory,
+        shape_id: &str,
         from_entities: &[String],
         to_entities: &[String],
         dependency: &crate::ir::shape_info::ShapeDependency,
@@ -693,9 +695,25 @@ impl ParallelGenerator {
         // form chains and cycles rather than self-loops (which are valid but hide
         // recursion). An entity still refers to itself when it is the only one.
         let offset = usize::from(recursive);
+        // An optional reference is an optional property: the fill decides whether an
+        // entity has it, as for literal properties. A required one is always linked.
+        let optional = dependency.min_cardinality.unwrap_or(0) <= 0;
+        let config = self.get_effective_config(shape_id);
+        let fill = config
+            .property_rule(shape_id, &dependency.property)
+            .and_then(|rule| rule.fill)
+            .unwrap_or(config.property_fill_probability);
+        let salt = format!("{shape_id}|{}", dependency.property);
         for (idx, from_iri) in from_entities.iter().enumerate() {
             if to_entities.is_empty() {
                 continue;
+            }
+            if optional && fill < 1.0 {
+                use rand::Rng;
+                let roll: f64 = self.derive_rng("reference_fill", &salt, idx).r#gen();
+                if fill <= 0.0 || roll > fill {
+                    continue;
+                }
             }
 
             // Calculate number of relationships based on cardinality strategy
