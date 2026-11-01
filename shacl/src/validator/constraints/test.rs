@@ -1174,4 +1174,31 @@ prefix : <http://example.org/>
 
         assert!(String::from_utf8(turtle).unwrap().contains("targetNode"));
     }
+
+    #[test]
+    fn qualified_value_shape_sibling_in_a_cycle_is_rejected() {
+        // :Q1 reaches :X only as a sibling, through :Q2, and :X reaches :Q1 again
+        let graph = format!(
+            "{PREFIXES}:P sh:targetNode :a ; sh:property :Q1, :Q2 .
+             :Q1 sh:path :p ; sh:qualifiedValueShape :S ; sh:qualifiedMinCount 1 ;
+                 sh:qualifiedValueShapesDisjoint true .
+             :Q2 sh:path :q ; sh:qualifiedValueShape :X .
+             :X sh:property :Q1 .\n"
+        );
+        let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        let schema = ShaclParser::new(rdf).parse().unwrap();
+
+        // Counting only the values that do not conform to :X is a negation, so no semantics accepts the cycle
+        for semantics in [
+            RecursionSemantics::None,
+            RecursionSemantics::Lfp,
+            RecursionSemantics::Gfp,
+        ] {
+            let error = IRSchema::compile_with_recursion(&schema, semantics).expect_err("expected a rejected cycle");
+            assert!(
+                error.to_string().contains("negative cycles") && error.to_string().contains(":X"),
+                "{error}"
+            );
+        }
+    }
 }

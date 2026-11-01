@@ -444,9 +444,10 @@ impl IRComponent {
             IRComponent::In(_) => {},
             IRComponent::QualifiedValueShape(qvs) => {
                 dg.add_edge(idx, *qvs.shape(), posneg);
-                // for sibling in qvs.siblings() {
-                //     dg.add_edge(idx, *sibling, posneg);
-                // }
+                // A value node is counted only if it does not conform to a sibling shape, as in sh:not
+                for sibling in qvs.siblings() {
+                    dg.add_edge(idx, *sibling, posneg.change());
+                }
             },
             IRComponent::Closed(_) => {},
             IRComponent::Deactivated(_) => {},
