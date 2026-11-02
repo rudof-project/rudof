@@ -16,7 +16,7 @@ pub struct Pattern {
 
 impl Pattern {
     pub fn new(pattern: String, flags: Option<String>) -> Result<Self, IRError> {
-        let regex = RDFRegex::new(&pattern, flags.as_deref())?;
+        let regex = crate::with_regex_stack(|| RDFRegex::new(&pattern, flags.as_deref()))?;
 
         Ok(Pattern { pattern, flags, regex })
     }

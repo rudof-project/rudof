@@ -60,6 +60,9 @@ pub enum ValidationError {
 
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,
+
+    #[error("Validating the shape {0} holds more than {1} results and evidences, the configured max_results")]
+    TooManyResults(String, usize),
 }
 
 impl ValidationError {

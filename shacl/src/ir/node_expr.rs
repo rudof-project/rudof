@@ -57,6 +57,11 @@ pub enum IRNodeExpr {
 
 impl IRNodeExpr {
     pub fn compile(expr: &ASTNodeExpr, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
+        // A debug build takes about 19 KiB of stack per level, so 64 levels would not fit in the red zone
+        crate::with_stack(|| Self::compile_level(expr, ast, ir))
+    }
+
+    fn compile_level(expr: &ASTNodeExpr, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
         let result = match expr.clone() {
             ASTNodeExpr::Iri(iri) => Self::Iri(Iri::new(convert_iri_ref(iri)?)),
             ASTNodeExpr::Literal(lit) => Self::Literal(Literal::new(lit)),
@@ -180,6 +185,42 @@ impl IRNodeExpr {
             IRNodeExpr::Iri(i) => Some(Object::Iri(i.iri().clone())),
             IRNodeExpr::Literal(l) => Some(Object::Literal(l.literal().clone())),
             _ => None,
+        }
+    }
+
+    /// Whether the value can differ between focus nodes.
+    pub(crate) fn reads_focus(&self) -> bool {
+        match self {
+            IRNodeExpr::Iri(_)
+            | IRNodeExpr::Literal(_)
+            | IRNodeExpr::Empty(_)
+            | IRNodeExpr::List(_)
+            | IRNodeExpr::InstancesOf(_)
+            | IRNodeExpr::NodesMatching(_) => false,
+            // The focus node, or a variable of the scope
+            IRNodeExpr::Var(_) => true,
+            IRNodeExpr::PathValues(pv) => pv.focus_nodes().is_none_or(Self::reads_focus),
+            IRNodeExpr::Exists(e) => e.exists().reads_focus(),
+            IRNodeExpr::IfExpression(ie) => [Some(ie.if_condition()), ie.then(), ie.else_expression()]
+                .into_iter()
+                .flatten()
+                .any(Self::reads_focus),
+            IRNodeExpr::Distinct(d) => d.distinct().reads_focus(),
+            IRNodeExpr::Intersection(i) => i.intersection().iter().any(Self::reads_focus),
+            IRNodeExpr::Concat(c) => c.concat().iter().any(Self::reads_focus),
+            IRNodeExpr::Remove(r) => r.nodes().reads_focus() || r.remove().reads_focus(),
+            IRNodeExpr::Limit(l) => l.nodes().reads_focus(),
+            IRNodeExpr::Offset(o) => o.nodes().reads_focus(),
+            IRNodeExpr::Count(c) => c.count().reads_focus(),
+            IRNodeExpr::Min(m) => m.min().reads_focus(),
+            IRNodeExpr::Max(m) => m.max().reads_focus(),
+            IRNodeExpr::Sum(s) => s.sum().reads_focus(),
+            // These take each of their nodes as the focus node of their shape or inner expression
+            IRNodeExpr::Filter(f) => f.nodes().reads_focus(),
+            IRNodeExpr::OrderBy(ob) => ob.nodes().reads_focus(),
+            IRNodeExpr::FlatMap(fm) => fm.nodes().as_ref().is_none_or(Self::reads_focus),
+            IRNodeExpr::FindFirst(ff) => ff.nodes().reads_focus(),
+            IRNodeExpr::MatchAll(ma) => ma.nodes().is_none_or(Self::reads_focus),
         }
     }
 

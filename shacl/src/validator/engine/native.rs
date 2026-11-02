@@ -3,7 +3,7 @@ use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::RecursionSemantics;
 use crate::validator::cache::SharedTyping;
 use crate::validator::constraints::{NativeValidator, ShaclComponent, ValidatorDeref};
-use crate::validator::engine::{Engine, NodeExprState};
+use crate::validator::engine::{Engine, NodeExprState, Retention};
 use crate::validator::index::ClassIndex;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationOutcome;
@@ -31,6 +31,7 @@ pub struct NativeEngine {
     /// shared across forks, unlike `cache`.
     chain: HashSet<(Object, ShapeLabelIdx)>,
     node_exprs: NodeExprState,
+    retention: Retention,
 }
 
 impl NativeEngine {
@@ -41,6 +42,7 @@ impl NativeEngine {
             recursion_semantics,
             chain: HashSet::new(),
             node_exprs: NodeExprState::default(),
+            retention: Retention::default(),
         }
     }
 
@@ -134,6 +136,7 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
             recursion_semantics: self.recursion_semantics,
             chain: HashSet::new(),
             node_exprs: NodeExprState::default(),
+            retention: self.retention,
         })
     }
 
@@ -212,6 +215,14 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
     fn node_expr_state(&mut self) -> &mut NodeExprState {
         &mut self.node_exprs
     }
+
+    fn retention(&self) -> Retention {
+        self.retention
+    }
+
+    fn set_retention(&mut self, retention: Retention) {
+        self.retention = retention;
+    }
 }
 
 #[cfg(feature = "sparql")]
@@ -227,6 +238,7 @@ impl<RDF: NeighsRDF + QueryRDF + Debug + 'static> Engine<RDF> for NativeEngine {
             recursion_semantics: self.recursion_semantics,
             chain: HashSet::new(),
             node_exprs: NodeExprState::default(),
+            retention: self.retention,
         })
     }
 
@@ -317,6 +329,14 @@ impl<RDF: NeighsRDF + QueryRDF + Debug + 'static> Engine<RDF> for NativeEngine {
 
     fn node_expr_state(&mut self) -> &mut NodeExprState {
         &mut self.node_exprs
+    }
+
+    fn retention(&self) -> Retention {
+        self.retention
+    }
+
+    fn set_retention(&mut self, retention: Retention) {
+        self.retention = retention;
     }
 }
 

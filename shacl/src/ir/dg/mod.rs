@@ -24,7 +24,10 @@ impl DependencyGraph {
     }
 
     pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
-        self.graph.add_edge(from, to, pos_neg);
+        // One edge per pair: a positive constraint between the same two shapes must not hide a negative one
+        if self.graph.edge_weight(from, to) != Some(&PosNeg::Neg) {
+            self.graph.add_edge(from, to, pos_neg);
+        }
     }
 
     /// Check if the dependency graph has any cycle (including positive cycles).
@@ -35,7 +38,9 @@ impl DependencyGraph {
 
     pub fn cycles(&self) -> Vec<Vec<ShapeLabelIdx>> {
         let scc = kosaraju_scc(&self.graph);
-        scc.into_iter().filter(|component| component.len() > 1).collect()
+        scc.into_iter()
+            .filter(|component| component.len() > 1 || self.graph.contains_edge(component[0], component[0]))
+            .collect()
     }
 
     pub fn all_edges(&self) -> DependencyGraphIter<'_> {

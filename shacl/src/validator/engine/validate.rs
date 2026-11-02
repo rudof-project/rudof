@@ -10,7 +10,7 @@ use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 /// Validate RDF data using SHACL
@@ -34,7 +34,17 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         source_shape: Option<&IRShape>,
         shapes_graph: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
-        crate::with_stack(|| self.validate_shape(store, runner, targets, source_shape, shapes_graph))
+        crate::with_stack(|| {
+            let mut entered_chain = Vec::new();
+            let outcome = self.validate_shape(store, runner, targets, source_shape, shapes_graph, &mut entered_chain);
+            // These nodes are no longer "in progress", even after an error
+            if let Some(idx) = shapes_graph.get_idx(self.id()) {
+                for obj in entered_chain {
+                    runner.chain_exit(&obj, *idx);
+                }
+            }
+            outcome
+        })
     }
 }
 
@@ -46,6 +56,7 @@ impl IRShape {
         targets: Option<&FocusNodes<RDF>>,
         source_shape: Option<&IRShape>,
         shapes_graph: &IRSchema,
+        entered_chain: &mut Vec<Object>,
     ) -> Result<ValidationOutcome, ValidationError> {
         // Get focus nodes
         let focus_nodes = match targets {
@@ -69,10 +80,11 @@ impl IRShape {
         // recursion semantics instead of recursing forever — see
         // `crate::validator::recursion`.
         let mut cached_outcome = ValidationOutcome::new();
-        let mut entered_chain = Vec::new();
+        // The results, details and evidences that this call holds, as max_results counts them
+        let mut held = 0;
         // Multi-node calls only ever occur for a *batch* of independent
-        // targets (this shape's own top-level targets, or several reifiers
-        // of one triple) — siblings, not ancestors of each other. Only a
+        // targets (this shape's own top-level targets, or the nodes of a
+        // node expression) — siblings, not ancestors of each other. Only a
         // single-node call represents one specific node's own place on the
         // recursive-descent path, so only those are chain-eligible: a
         // sibling batch must never poison another sibling by making it look
@@ -90,11 +102,12 @@ impl IRShape {
                     continue;
                 };
                 if let Some(outcome) = runner.get_cached_outcome(&obj, *idx) {
+                    check_max_results(self, &mut held, &outcome, runner)?;
                     cached_outcome.extend(outcome);
                     continue;
                 }
                 if runner.is_in_chain(&obj, *idx) {
-                    cached_outcome.extend(cut_outcome(runner.recursion_semantics(), self, &obj));
+                    cached_outcome.extend(kept(cut_outcome(runner.recursion_semantics(), self, &obj), runner));
                     continue;
                 }
                 if single_node_call {
@@ -131,6 +144,8 @@ impl IRShape {
                 self.path(),
                 shapes_graph,
             )?;
+            let outcome = kept(outcome, runner);
+            check_max_results(self, &mut held, &outcome, runner)?;
             component_outcome.extend(outcome);
         }
 
@@ -161,9 +176,15 @@ impl IRShape {
         for ps in self.property_shapes().iter() {
             let shape = shapes_graph.get_shape_from_idx_e(ps)?;
             for (orig, vn) in value_nodes.iter() {
-                let outcome = shape.validate(store, runner, Some(vn), Some(self), shapes_graph)?;
-                let orig_object = RDF::term_as_object(orig)?;
-                nested_by_focus.entry(orig_object).or_default().extend(outcome);
+                let outcome = nested_by_focus.entry(RDF::term_as_object(orig)?).or_default();
+                // One call per value node, so that each one joins the recursion chain
+                for node in vn.iter() {
+                    let node = FocusNodes::single(node.clone());
+                    let nested = shape.validate(store, runner, Some(&node), Some(self), shapes_graph)?;
+                    // Results are kept once per path to a node, so they can double at each level
+                    check_max_results(self, &mut held, &nested, runner)?;
+                    outcome.extend(nested);
+                }
             }
         }
 
@@ -187,14 +208,6 @@ impl IRShape {
         new_outcome.extend(component_outcome.clone());
         for outcome in nested_by_focus.values() {
             new_outcome.extend(outcome.clone());
-        }
-
-        // These nodes are no longer "in progress": a nested call reaching
-        // them now would be a fresh lookup, not a recursive reference.
-        if let Some(idx) = idx {
-            for obj in &entered_chain {
-                runner.chain_exit(obj, *idx);
-            }
         }
 
         // Record new outcome in the cache per focus node
@@ -244,7 +257,7 @@ impl IRShape {
             // even though ":e" has no violations (and possibly no other
             // evidence at all, if none of its constraints happened to
             // iterate any value).
-            if !self.targets().is_empty() {
+            if runner.retention().store_evidences && !self.targets().is_empty() {
                 for (node_object, node_outcome) in by_focus.iter_mut() {
                     if node_outcome.conforms() {
                         let evidence = Evidence::new_shape(node_object.clone(), self.id().clone());
@@ -261,8 +274,38 @@ impl IRShape {
 
         // Merge cached outcome with newly computed outcome
         cached_outcome.extend(new_outcome);
+        // Counted whole, with the cut references, reifier shapes and shape-level evidences
+        check_max_results(self, &mut 0, &cached_outcome, runner)?;
         Ok(cached_outcome)
     }
+}
+
+/// Drops the evidences of `outcome` unless the report keeps them, as nothing else reads them.
+fn kept<RDF: NeighsRDF>(outcome: ValidationOutcome, runner: &dyn Engine<RDF>) -> ValidationOutcome {
+    if runner.retention().store_evidences {
+        outcome
+    } else {
+        ValidationOutcome::from_violations(outcome.into_parts().0)
+    }
+}
+
+/// Adds the results of `outcome`, with their details, and its evidences to `held`, and fails once
+/// that is more than the engine's `max_results`.
+fn check_max_results<RDF: NeighsRDF>(
+    shape: &IRShape,
+    held: &mut usize,
+    outcome: &ValidationOutcome,
+    runner: &dyn Engine<RDF>,
+) -> Result<(), ValidationError> {
+    let Some(max) = runner.retention().max_results else {
+        return Ok(());
+    };
+    let results: usize = outcome.violations().iter().map(|v| 1 + v.details().len()).sum();
+    *held += results + outcome.evidences().len();
+    if *held > max {
+        return Err(ValidationError::TooManyResults(shape.id().to_string(), max));
+    }
+    Ok(())
 }
 
 /// Removes the focus nodes the shape is deactivated for.
@@ -277,6 +320,10 @@ fn get_active_focus_nodes<RDF: NeighsRDF + Debug>(
         return Ok(focus_nodes.clone());
     };
 
+    // An expression that does not read the focus node, such as one over shnex:nodesMatching, which
+    // lists all the nodes of the graph, has one value for the whole run, so it is evaluated once
+    let shared = shapes_graph.get_idx(shape.id()).filter(|_| !deactivated.reads_focus());
+
     // This shape may be validated for the shnex:nodesMatching of an expression being evaluated,
     // whose step count is put back after the ones counted here
     let outer_steps = runner.node_expr_state().steps;
@@ -284,10 +331,22 @@ fn get_active_focus_nodes<RDF: NeighsRDF + Debug>(
     let active: Result<Vec<_>, _> = focus_nodes
         .iter()
         .filter_map(|node| {
-            runner.node_expr_state().steps = 0;
-            match deactivated.evaluate(store, node, &scope, runner, shapes_graph) {
-                Ok(values) if node_expr_is_true::<RDF>(&values) => None,
-                Ok(_) => Some(Ok(node.clone())),
+            let off = match shared.and_then(|idx| runner.node_expr_state().deactivated.get(idx).copied()) {
+                Some(off) => Ok(off),
+                None => {
+                    runner.node_expr_state().steps = 0;
+                    let off = deactivated
+                        .evaluate(store, node, &scope, runner, shapes_graph)
+                        .map(|values| node_expr_is_true::<RDF>(&values));
+                    if let (Some(idx), Ok(off)) = (shared, &off) {
+                        runner.node_expr_state().deactivated.insert(*idx, *off);
+                    }
+                    off
+                },
+            };
+            match off {
+                Ok(true) => None,
+                Ok(false) => Some(Ok(node.clone())),
                 Err(e) => Some(Err(e)),
             }
         })
@@ -322,7 +381,10 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
         for reifier_shape in reifier_info.reifier_shape() {
             let pred = reifier_info.predicate();
             let pred_iri: RDF::IRI = pred.clone().into();
-            let subject = RDF::term_as_subject(node)?;
+            // A literal is the subject of no triple, so it has no reifiers
+            let Ok(subject) = RDF::term_as_subject(node) else {
+                continue;
+            };
             let triples = store
                 .triples_with_subject_predicate(&subject, &pred_iri)
                 .map_err(ValidationError::new_graph_error::<RDF>)?;
@@ -346,19 +408,11 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
                     outcome.push_violation(vr_single);
                     continue;
                 }
-                let reifier_nodes = reifier_subjects
-                    .iter()
-                    .map(RDF::subject_as_term)
-                    .collect::<HashSet<_>>();
                 let reifier_shape = shapes_graph.get_shape_from_idx_e(reifier_shape)?;
-                let inner_outcome = reifier_shape.validate(
-                    store,
-                    runner,
-                    Some(&FocusNodes::from_iter(reifier_nodes)),
-                    Some(shape),
-                    shapes_graph,
-                )?;
-                outcome.extend(inner_outcome)
+                for reifier in &reifier_subjects {
+                    let reifier = FocusNodes::single(RDF::subject_as_term(reifier));
+                    outcome.extend(reifier_shape.validate(store, runner, Some(&reifier), Some(shape), shapes_graph)?);
+                }
             }
         }
     }

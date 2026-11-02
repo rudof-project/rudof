@@ -23,14 +23,16 @@ use crate::rdf::parsers::node_expr::remove::remove;
 use crate::rdf::parsers::node_expr::sum::sum;
 use crate::rdf::parsers::node_expr::var::var;
 use crate::rdf::parsers::node_expr::{Neighs, to_object};
+use crate::rdf::parsers::utils::take_steps;
 use prefixmap::IriRef;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
-    MAX_PATH_DEPTH, MIN_PARSE_STEPS, NeighborhoodParser, PARSE_STEPS_PER_TRIPLE, ParseBudget, ValuesPropertyParser,
+    MAX_PATH_DEPTH, NeighborhoodParser, ParseBudget, ValuesPropertyParser,
 };
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
+use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -93,14 +95,7 @@ pub(crate) fn node_expr_from_term<RDF: FocusRDF>(
             msg: format!("{term} is a cyclic node expression, or nests more than {MAX_PATH_DEPTH} levels"),
         });
     }
-    let Some(left) = steps.checked_sub(1) else {
-        return Err(RDFError::DefaultError {
-            msg: format!(
-                "Parsing {term} takes more than {MIN_PARSE_STEPS} steps plus {PARSE_STEPS_PER_TRIPLE} per triple of the graph"
-            ),
-        });
-    };
-    *steps = left;
+    take_steps(term, steps, 1)?;
 
     match to_object::<RDF>(term)? {
         Object::Iri(iri) => Ok(ASTNodeExpr::Iri(IriRef::iri(iri))),
@@ -122,6 +117,8 @@ fn blank_node_expr<RDF: FocusRDF>(
     rdf.set_focus(term);
 
     let neighs: Neighs<RDF> = NeighborhoodParser::new().parse_focused(rdf)?;
+    // A step per arc, so that a shared node expression with many other triples cannot multiply the work
+    take_steps(term, steps, neighs.values().map(HashSet::len).sum())?;
     let expr_fns = [
         empty,
         var,

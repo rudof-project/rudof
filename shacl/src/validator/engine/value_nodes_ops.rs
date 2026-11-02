@@ -46,12 +46,9 @@ impl<RDF: NeighsRDF> ValueNodesOps<RDF> for IRPropertyShape {
         focus_nodes: &FocusNodes<RDF>,
         runner: &dyn Engine<RDF>,
     ) -> Result<ValueNodes<RDF>, ValidationError> {
-        let value_nodes = focus_nodes.iter().filter_map(|n| {
-            match runner.path(store, self, n) {
-                Ok(ts) => Some((n.clone(), ts)),
-                Err(_) => None, // TODO - Should we add a violation for this case?
-            }
-        });
-        Ok(ValueNodes::from_iter(value_nodes))
+        focus_nodes
+            .iter()
+            .map(|n| Ok((n.clone(), runner.path(store, self, n)?)))
+            .collect()
     }
 }

@@ -1,5 +1,6 @@
 use crate::ast::ASTNodeExpr;
 use crate::rdf::parsers::node_expr::{Neighs, to_object, values};
+use crate::rdf::parsers::utils::take_steps;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ListParser;
 use rudof_rdf::rdf_core::vocabs::RdfVocab;
@@ -10,12 +11,13 @@ pub(crate) fn list<RDF: FocusRDF>(
     rdf: &mut RDF,
     term: &RDF::Term,
     _: usize,
-    _: &mut usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     values::<RDF>(neighs, &RdfVocab::rdf_first())
         .map(|_| {
             rdf.set_focus(term);
             let members = ListParser::new().parse_focused(rdf)?;
+            take_steps(term, steps, members.len())?;
             let members = members
                 .iter()
                 .map(|member| to_object::<RDF>(member))

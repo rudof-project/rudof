@@ -311,12 +311,14 @@ impl IRPropertyShape {
             component.add_edges(idx, dg, posneg, ir, cache);
         }
 
-        for prop_shape_idx in &self.property_shapes {
-            if let Some(shape) = ir.get_shape_from_idx(prop_shape_idx) {
-                dg.add_edge(idx, *prop_shape_idx, posneg);
-                if !cache.contains(prop_shape_idx) {
-                    cache.insert(*prop_shape_idx);
-                    shape.add_edges(*prop_shape_idx, dg, posneg, ir, cache);
+        // A reifier that does not conform to a sh:reifierShape fails the shape, as in sh:node
+        let reifier_shapes = self.reifier_info.iter().flat_map(ReifierInfo::reifier_shape);
+        for shape_idx in self.property_shapes.iter().chain(reifier_shapes) {
+            if let Some(shape) = ir.get_shape_from_idx(shape_idx) {
+                dg.add_edge(idx, *shape_idx, posneg);
+                if !cache.contains(shape_idx) {
+                    cache.insert(*shape_idx);
+                    shape.add_edges(*shape_idx, dg, posneg, ir, cache);
                 }
             }
         }

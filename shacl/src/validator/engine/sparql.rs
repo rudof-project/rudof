@@ -3,7 +3,7 @@ use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::RecursionSemantics;
 use crate::validator::cache::SharedTyping;
 use crate::validator::constraints::{BasicSparqlValidator, ShaclComponent, ValidatorDeref, object_as_sparql};
-use crate::validator::engine::{Engine, NodeExprState, select};
+use crate::validator::engine::{Engine, NodeExprState, Retention, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationOutcome;
 use indoc::formatdoc;
@@ -22,6 +22,7 @@ pub struct SparqlEngine {
     /// engine's own call stack. Never shared across forks, unlike `cache`.
     chain: HashSet<(Object, ShapeLabelIdx)>,
     node_exprs: NodeExprState,
+    retention: Retention,
 }
 
 impl SparqlEngine {
@@ -31,6 +32,7 @@ impl SparqlEngine {
             recursion_semantics,
             chain: HashSet::new(),
             node_exprs: NodeExprState::default(),
+            retention: Retention::default(),
         }
     }
 }
@@ -166,12 +168,21 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         &mut self.node_exprs
     }
 
+    fn retention(&self) -> Retention {
+        self.retention
+    }
+
+    fn set_retention(&mut self, retention: Retention) {
+        self.retention = retention;
+    }
+
     fn fork(&self) -> Box<dyn Engine<S>> {
         Box::new(SparqlEngine {
             cache: self.cache.clone(),
             recursion_semantics: self.recursion_semantics,
             chain: HashSet::new(),
             node_exprs: NodeExprState::default(),
+            retention: self.retention,
         })
     }
 }

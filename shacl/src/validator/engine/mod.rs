@@ -121,6 +121,33 @@ pub trait Engine<S: NeighsRDF>: Send {
 
     /// This engine's own node expression state, never shared across forks.
     fn node_expr_state(&mut self) -> &mut NodeExprState;
+
+    /// What validating a shape keeps.
+    fn retention(&self) -> Retention {
+        Retention::default()
+    }
+
+    /// Sets [`Self::retention`], which an engine that does not keep it ignores.
+    fn set_retention(&mut self, _retention: Retention) {}
+}
+
+/// What validating a shape keeps, which the processor sets from `ShaclConfig`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Retention {
+    /// The most results and evidences that validating one shape may hold, `None` for no limit.
+    pub max_results: Option<usize>,
+    /// Whether validation keeps evidences, which only a report with evidences reads.
+    pub store_evidences: bool,
+}
+
+impl Default for Retention {
+    /// No limit, with evidences kept.
+    fn default() -> Self {
+        Self {
+            max_results: None,
+            store_evidences: true,
+        }
+    }
 }
 
 /// What evaluating node expressions keeps for one validation run.
@@ -130,6 +157,8 @@ pub struct NodeExprState {
     pub(crate) steps: usize,
     /// The nodes failing each `shnex:nodesMatching` shape, `None` while they are found.
     pub(crate) matching: HashMap<ShapeLabelIdx, Option<HashSet<Object>>>,
+    /// Whether each shape whose `sh:deactivated` does not read the focus node is deactivated.
+    pub(crate) deactivated: HashMap<ShapeLabelIdx, bool>,
 }
 
 #[cfg(feature = "sparql")]

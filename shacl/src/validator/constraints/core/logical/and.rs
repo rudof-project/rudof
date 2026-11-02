@@ -34,24 +34,16 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                 for idx in self.shapes().iter() {
                     let and_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results =
-                        and_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    match inner_results {
-                        Ok(results) => {
-                            if !results.conforms() {
-                                conforms = false;
-                                details = results
-                                    .violations()
-                                    .iter()
-                                    .cloned()
-                                    .map(ValidationResult::without_details)
-                                    .collect();
-                                break;
-                            }
-                        },
-                        Err(_) => {
-                            conforms = false;
-                            break;
-                        },
+                        and_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;
+                    if !inner_results.conforms() {
+                        conforms = false;
+                        details = inner_results
+                            .violations()
+                            .iter()
+                            .cloned()
+                            .map(ValidationResult::without_details)
+                            .collect();
+                        break;
                     }
                 }
 

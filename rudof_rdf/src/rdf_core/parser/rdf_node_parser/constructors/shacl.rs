@@ -13,18 +13,22 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 /// Real paths nest a few levels; each level is a stack frame here and in the derived impls of [`SHACLPath`].
 pub const MAX_PATH_DEPTH: usize = 64;
-/// Steps that parsing the SHACL paths and node expressions of a graph may take, however few triples it has.
+/// Steps that parsing the SHACL paths, node expressions and lists of a graph may take, however few triples it has.
 pub const MIN_PARSE_STEPS: usize = 4096;
 /// Further steps that parsing may take per triple of the graph. A path step or expression has triples
 /// of its own unless it is a blank node used more than once, which is what makes a parse outgrow its graph.
 pub const PARSE_STEPS_PER_TRIPLE: usize = 16;
+/// List members that parsing the SHACL lists of a graph may read before they take steps, so that many
+/// shapes can share one list. A member is read once for each shape that has the list.
+pub const FREE_LIST_MEMBERS: usize = 1 << 16;
 
-/// The steps that parsing SHACL paths and node expressions may take, shared by every parse it is
-/// handed to, so a path or expression shared by many shapes cannot multiply the work.
+/// The steps that parsing SHACL paths, node expressions and lists may take, shared by every parse it is
+/// handed to, so a path, expression or list shared by many shapes cannot multiply the work.
 /// Atomics rather than cells keep the parsers that hold it `Send` and `Sync`.
 #[derive(Debug)]
 pub struct ParseBudget {
     steps_left: AtomicUsize,
+    free_members_left: AtomicUsize,
     graph_counted: AtomicBool,
 }
 
@@ -32,6 +36,7 @@ impl Default for ParseBudget {
     fn default() -> Self {
         Self {
             steps_left: AtomicUsize::new(MIN_PARSE_STEPS),
+            free_members_left: AtomicUsize::new(FREE_LIST_MEMBERS),
             graph_counted: AtomicBool::new(false),
         }
     }
@@ -55,6 +60,13 @@ impl ParseBudget {
         }
         self.steps_left.store(steps, Ordering::Relaxed);
         out
+    }
+
+    /// Takes `n` list members from the free ones left, and returns how many of them must take steps.
+    pub fn take_free_members(&self, n: usize) -> usize {
+        let left = self.free_members_left.load(Ordering::Relaxed);
+        self.free_members_left.store(left.saturating_sub(n), Ordering::Relaxed);
+        n.saturating_sub(left)
     }
 }
 

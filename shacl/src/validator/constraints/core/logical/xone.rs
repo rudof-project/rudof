@@ -36,19 +36,17 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                 for idx in self.shapes().iter() {
                     let internal_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results =
-                        internal_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    if let Ok(results) = inner_results {
-                        if results.conforms() {
-                            conforming_shapes += 1;
-                        } else {
-                            details.extend(
-                                results
-                                    .violations()
-                                    .iter()
-                                    .cloned()
-                                    .map(ValidationResult::without_details),
-                            );
-                        }
+                        internal_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;
+                    if inner_results.conforms() {
+                        conforming_shapes += 1;
+                    } else {
+                        details.extend(
+                            inner_results
+                                .violations()
+                                .iter()
+                                .cloned()
+                                .map(ValidationResult::without_details),
+                        );
                     }
                 }
                 if conforming_shapes > 0 {
