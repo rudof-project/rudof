@@ -1,0 +1,91 @@
+// LUBM (Lehigh University Benchmark) in rudof's PG-Schema syntax, after the univ-bench
+// ontology (univ-bench.owl) and the classes and properties its generator (UBA) emits.
+// Adaptations, each forced by the syntax: an object property becomes one edge type per
+// source type, with a single target type (advisor and publicationAuthor point to
+// FullProfessor, the one professor type every department has); subclasses are separate
+// node types with their own label; GraduateCourse is not a subtype of Course.
+// researchInterest and telephone are OPTIONAL, so that the schema leaves some room for
+// structuredness; UBA always emits them.
+
+CREATE NODE TYPE ( UniversityType : University { name: STRING }) ;
+CREATE NODE TYPE ( DepartmentType : Department { name: STRING }) ;
+CREATE NODE TYPE ( ResearchGroupType : ResearchGroup { name: STRING }) ;
+CREATE NODE TYPE ( CourseType : Course { name: STRING }) ;
+CREATE NODE TYPE ( GraduateCourseType : GraduateCourse { name: STRING }) ;
+CREATE NODE TYPE ( FullProfessorType : FullProfessor {
+    name: STRING,
+    emailAddress: STRING,
+    OPTIONAL telephone: STRING,
+    OPTIONAL researchInterest: STRING
+}) ;
+CREATE NODE TYPE ( AssociateProfessorType : AssociateProfessor {
+    name: STRING,
+    emailAddress: STRING,
+    OPTIONAL telephone: STRING,
+    OPTIONAL researchInterest: STRING
+}) ;
+CREATE NODE TYPE ( AssistantProfessorType : AssistantProfessor {
+    name: STRING,
+    emailAddress: STRING,
+    OPTIONAL telephone: STRING,
+    OPTIONAL researchInterest: STRING
+}) ;
+CREATE NODE TYPE ( LecturerType : Lecturer {
+    name: STRING,
+    emailAddress: STRING,
+    OPTIONAL telephone: STRING
+}) ;
+CREATE NODE TYPE ( UndergraduateStudentType : UndergraduateStudent {
+    name: STRING,
+    emailAddress: STRING,
+    OPTIONAL telephone: STRING
+}) ;
+CREATE NODE TYPE ( GraduateStudentType : GraduateStudent {
+    name: STRING,
+    emailAddress: STRING,
+    OPTIONAL telephone: STRING
+}) ;
+CREATE NODE TYPE ( PublicationType : Publication { name: STRING }) ;
+
+CREATE EDGE TYPE (:@DepartmentType) -[DeptSubOrgType : subOrganizationOf]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@ResearchGroupType) -[GroupSubOrgType : subOrganizationOf]-> (:@DepartmentType) ;
+
+CREATE EDGE TYPE (:@FullProfessorType) -[FullWorksForType : worksFor]-> (:@DepartmentType) ;
+CREATE EDGE TYPE (:@FullProfessorType) -[FullHeadOfType : headOf]-> (:@DepartmentType) ;
+CREATE EDGE TYPE (:@FullProfessorType) -[FullTeacherOfType : teacherOf]-> (:@CourseType) ;
+CREATE EDGE TYPE (:@FullProfessorType) -[FullGradTeacherOfType : teacherOf]-> (:@GraduateCourseType) ;
+CREATE EDGE TYPE (:@FullProfessorType) -[FullUgDegreeType : undergraduateDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@FullProfessorType) -[FullMsDegreeType : mastersDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@FullProfessorType) -[FullPhdDegreeType : doctoralDegreeFrom]-> (:@UniversityType) ;
+
+CREATE EDGE TYPE (:@AssociateProfessorType) -[AssocWorksForType : worksFor]-> (:@DepartmentType) ;
+CREATE EDGE TYPE (:@AssociateProfessorType) -[AssocTeacherOfType : teacherOf]-> (:@CourseType) ;
+CREATE EDGE TYPE (:@AssociateProfessorType) -[AssocGradTeacherOfType : teacherOf]-> (:@GraduateCourseType) ;
+CREATE EDGE TYPE (:@AssociateProfessorType) -[AssocUgDegreeType : undergraduateDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@AssociateProfessorType) -[AssocMsDegreeType : mastersDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@AssociateProfessorType) -[AssocPhdDegreeType : doctoralDegreeFrom]-> (:@UniversityType) ;
+
+CREATE EDGE TYPE (:@AssistantProfessorType) -[AsstWorksForType : worksFor]-> (:@DepartmentType) ;
+CREATE EDGE TYPE (:@AssistantProfessorType) -[AsstTeacherOfType : teacherOf]-> (:@CourseType) ;
+CREATE EDGE TYPE (:@AssistantProfessorType) -[AsstGradTeacherOfType : teacherOf]-> (:@GraduateCourseType) ;
+CREATE EDGE TYPE (:@AssistantProfessorType) -[AsstUgDegreeType : undergraduateDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@AssistantProfessorType) -[AsstMsDegreeType : mastersDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@AssistantProfessorType) -[AsstPhdDegreeType : doctoralDegreeFrom]-> (:@UniversityType) ;
+
+CREATE EDGE TYPE (:@LecturerType) -[LectWorksForType : worksFor]-> (:@DepartmentType) ;
+CREATE EDGE TYPE (:@LecturerType) -[LectTeacherOfType : teacherOf]-> (:@CourseType) ;
+CREATE EDGE TYPE (:@LecturerType) -[LectUgDegreeType : undergraduateDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@LecturerType) -[LectMsDegreeType : mastersDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@LecturerType) -[LectPhdDegreeType : doctoralDegreeFrom]-> (:@UniversityType) ;
+
+CREATE EDGE TYPE (:@UndergraduateStudentType) -[UgMemberOfType : memberOf]-> (:@DepartmentType) ;
+CREATE EDGE TYPE (:@UndergraduateStudentType) -[UgTakesCourseType : takesCourse]-> (:@CourseType) ;
+CREATE EDGE TYPE (:@UndergraduateStudentType) -[UgAdvisorType : advisor]-> (:@FullProfessorType) ;
+
+CREATE EDGE TYPE (:@GraduateStudentType) -[GradMemberOfType : memberOf]-> (:@DepartmentType) ;
+CREATE EDGE TYPE (:@GraduateStudentType) -[GradTakesCourseType : takesCourse]-> (:@GraduateCourseType) ;
+CREATE EDGE TYPE (:@GraduateStudentType) -[GradAdvisorType : advisor]-> (:@FullProfessorType) ;
+CREATE EDGE TYPE (:@GraduateStudentType) -[GradUgDegreeType : undergraduateDegreeFrom]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@GraduateStudentType) -[GradTaOfType : teachingAssistantOf]-> (:@CourseType) ;
+
+CREATE EDGE TYPE (:@PublicationType) -[PubAuthorType : publicationAuthor]-> (:@FullProfessorType)

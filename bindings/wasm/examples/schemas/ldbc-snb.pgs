@@ -1,0 +1,73 @@
+// LDBC Social Network Benchmark (SNB) schema in rudof's PG-Schema syntax, after the
+// SNB specification's data schema. Adaptations, each forced by the syntax or the
+// validator: DateTime properties are DATE (no datetime type); 64-bit ids are INTEGER
+// (i32 in rudof); multi-valued `speaks`/`email` are STRING lists; Place and
+// Organisation subtypes are separate node types with their SNB labels.
+// Edge types with properties (knows, likes, hasMember, studyAt, workAt) are kept;
+// the generator leaves them out, which it reports, because it cannot yet generate
+// edge properties.
+
+CREATE NODE TYPE ( PersonType : Person {
+    id: INTEGER,
+    firstName: STRING,
+    lastName: STRING,
+    gender: STRING,
+    birthday: DATE,
+    creationDate: DATE,
+    locationIP: STRING,
+    browserUsed: STRING,
+    speaks: STRING *,
+    email: STRING *
+}) ;
+CREATE NODE TYPE ( ForumType : Forum { id: INTEGER, title: STRING, creationDate: DATE }) ;
+CREATE NODE TYPE ( PostType : Post {
+    id: INTEGER,
+    OPTIONAL imageFile: STRING,
+    creationDate: DATE,
+    locationIP: STRING,
+    browserUsed: STRING,
+    OPTIONAL language: STRING,
+    OPTIONAL content: STRING,
+    length: INTEGER
+}) ;
+CREATE NODE TYPE ( CommentType : Comment {
+    id: INTEGER,
+    creationDate: DATE,
+    locationIP: STRING,
+    browserUsed: STRING,
+    content: STRING,
+    length: INTEGER
+}) ;
+CREATE NODE TYPE ( TagType : Tag { id: INTEGER, name: STRING, url: STRING }) ;
+CREATE NODE TYPE ( TagClassType : TagClass { id: INTEGER, name: STRING, url: STRING }) ;
+CREATE NODE TYPE ( CityType : City { id: INTEGER, name: STRING, url: STRING }) ;
+CREATE NODE TYPE ( CountryType : Country { id: INTEGER, name: STRING, url: STRING }) ;
+CREATE NODE TYPE ( ContinentType : Continent { id: INTEGER, name: STRING, url: STRING }) ;
+CREATE NODE TYPE ( UniversityType : University { id: INTEGER, name: STRING, url: STRING }) ;
+CREATE NODE TYPE ( CompanyType : Company { id: INTEGER, name: STRING, url: STRING }) ;
+
+CREATE EDGE TYPE (:@PersonType) -[KnowsType : knows { creationDate: DATE }]-> (:@PersonType) ;
+CREATE EDGE TYPE (:@PersonType) -[PersonIsLocatedInType : isLocatedIn]-> (:@CityType) ;
+CREATE EDGE TYPE (:@PersonType) -[HasInterestType : hasInterest]-> (:@TagType) ;
+CREATE EDGE TYPE (:@PersonType) -[StudyAtType : studyAt { classYear: INTEGER }]-> (:@UniversityType) ;
+CREATE EDGE TYPE (:@PersonType) -[WorkAtType : workAt { workFrom: INTEGER }]-> (:@CompanyType) ;
+CREATE EDGE TYPE (:@PersonType) -[LikesPostType : likes { creationDate: DATE }]-> (:@PostType) ;
+CREATE EDGE TYPE (:@PersonType) -[LikesCommentType : likes { creationDate: DATE }]-> (:@CommentType) ;
+CREATE EDGE TYPE (:@ForumType) -[HasModeratorType : hasModerator]-> (:@PersonType) ;
+CREATE EDGE TYPE (:@ForumType) -[HasMemberType : hasMember { creationDate: DATE }]-> (:@PersonType) ;
+CREATE EDGE TYPE (:@ForumType) -[ContainerOfType : containerOf]-> (:@PostType) ;
+CREATE EDGE TYPE (:@ForumType) -[ForumHasTagType : hasTag]-> (:@TagType) ;
+CREATE EDGE TYPE (:@PostType) -[PostHasCreatorType : hasCreator]-> (:@PersonType) ;
+CREATE EDGE TYPE (:@PostType) -[PostHasTagType : hasTag]-> (:@TagType) ;
+CREATE EDGE TYPE (:@PostType) -[PostIsLocatedInType : isLocatedIn]-> (:@CountryType) ;
+CREATE EDGE TYPE (:@CommentType) -[CommentHasCreatorType : hasCreator]-> (:@PersonType) ;
+CREATE EDGE TYPE (:@CommentType) -[CommentHasTagType : hasTag]-> (:@TagType) ;
+CREATE EDGE TYPE (:@CommentType) -[CommentIsLocatedInType : isLocatedIn]-> (:@CountryType) ;
+CREATE EDGE TYPE (:@CommentType) -[ReplyOfPostType : replyOf]-> (:@PostType) ;
+CREATE EDGE TYPE (:@CommentType) -[ReplyOfCommentType : replyOf]-> (:@CommentType) ;
+CREATE EDGE TYPE (:@TagType) -[HasTypeType : hasType]-> (:@TagClassType) ;
+CREATE EDGE TYPE (:@TagClassType) -[IsSubclassOfType : isSubclassOf]-> (:@TagClassType) ;
+CREATE EDGE TYPE (:@CityType) -[CityIsPartOfType : isPartOf]-> (:@CountryType) ;
+CREATE EDGE TYPE (:@CountryType) -[CountryIsPartOfType : isPartOf]-> (:@ContinentType) ;
+CREATE EDGE TYPE (:@UniversityType) -[UniversityIsLocatedInType : isLocatedIn]-> (:@CityType) ;
+CREATE EDGE TYPE (:@CompanyType) -[CompanyIsLocatedInType : isLocatedIn]-> (:@CountryType)

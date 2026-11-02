@@ -1,0 +1,12 @@
+# facets.pgs in ShEx over its RDF encoding: a pattern and inclusive and exclusive ranges.
+PREFIX t: <http://rudof.example/pg/type/>
+PREFIX k: <http://rudof.example/pg/key/>
+PREFIX l: <http://rudof.example/pg/label/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+t:ItemType CLOSED {
+  a [ l:Item ] ;
+  k:code xsd:string /^[A-Z]{3}[0-9]{2}$/ ;
+  k:price xsd:integer MinInclusive 1 MaxInclusive 500 ;
+  k:stock xsd:integer MinExclusive 0 MaxExclusive 100
+}

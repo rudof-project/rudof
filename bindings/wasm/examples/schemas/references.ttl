@@ -1,0 +1,25 @@
+# chain.pgs translated to SHACL over its RDF encoding, keeping PG-Schema's defaults:
+# closed records become closed shapes, and keys without OPTIONAL get sh:minCount 1.
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix t: <http://rudof.example/pg/type/> .
+@prefix k: <http://rudof.example/pg/key/> .
+@prefix l: <http://rudof.example/pg/label/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+t:PersonType a sh:NodeShape ; sh:targetClass l:Person ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path k:age ; sh:datatype xsd:integer ; sh:minExclusive 17 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path <http://rudof.example/pg/edge/WorksForType/worksFor/conforming-source> ;
+                sh:node t:OrgType ] .
+
+t:OrgType a sh:NodeShape ; sh:targetClass l:Org ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path k:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path <http://rudof.example/pg/edge/LocatedInType/locatedIn/conforming-source> ;
+                sh:node t:CityType ] .
+
+t:CityType a sh:NodeShape ; sh:targetClass l:City ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .

@@ -1,0 +1,22 @@
+# chain.pgs translated to ShEx over its RDF encoding, keeping PG-Schema's defaults:
+# closed records become CLOSED shapes, and keys without OPTIONAL stay required.
+PREFIX t: <http://rudof.example/pg/type/>
+PREFIX k: <http://rudof.example/pg/key/>
+PREFIX l: <http://rudof.example/pg/label/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+t:PersonType CLOSED {
+  a [ l:Person ] ;
+  k:name xsd:string ;
+  k:age xsd:integer MinExclusive 17 ? ;
+  <http://rudof.example/pg/edge/WorksForType/worksFor/conforming-source> @t:OrgType *
+}
+t:OrgType CLOSED {
+  a [ l:Org ] ;
+  k:label xsd:string ;
+  <http://rudof.example/pg/edge/LocatedInType/locatedIn/conforming-source> @t:CityType *
+}
+t:CityType CLOSED {
+  a [ l:City ] ;
+  k:name xsd:string
+}

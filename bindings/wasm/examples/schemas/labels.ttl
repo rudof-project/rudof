@@ -1,0 +1,12 @@
+# labels.pgs in SHACL over its RDF encoding: a node with two labels has two rdf:type values.
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix t: <http://rudof.example/pg/type/> .
+@prefix k: <http://rudof.example/pg/key/> .
+@prefix l: <http://rudof.example/pg/label/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+t:StaffType a sh:NodeShape ; sh:targetClass l:Person ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path rdf:type ; sh:hasValue l:Employee ] ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
