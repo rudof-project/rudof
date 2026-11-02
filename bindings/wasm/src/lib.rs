@@ -29,7 +29,7 @@ pub use error::{Error, Result};
 #[cfg(feature = "generate")]
 pub use reports::GeneratedData;
 pub use reports::{
-    ExternalResolver, NeighborArc, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationEntry,
+    ExternalResolver, GraphDiff, NeighborArc, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationEntry,
     ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
 };
 #[cfg(feature = "pgschema")]

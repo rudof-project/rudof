@@ -6,6 +6,12 @@ use thiserror::Error;
 /// Maximum size limit for compiled regular expressions.
 const REGEX_SIZE_LIMIT: usize = 1_000_000;
 
+/// Maximum nesting of groups, repetitions, classes, alternations and concatenations.
+///
+/// Compiling a regex recurses once per level, in about 14 KiB per level in a debug build, so the
+/// regex crate's default of 250 takes about 3.5 MiB of stack, and 64 levels about 1 MiB.
+const REGEX_NEST_LIMIT: u32 = 64;
+
 /// A regular expression for RDF and SPARQL pattern matching.
 ///
 /// This type wraps the Rust [`Regex`] type with SPARQL/XPath-compatible flag
@@ -47,15 +53,16 @@ impl RDFRegex {
     ///
     /// # Size Limits
     ///
-    /// The compiled regex is limited to [`REGEX_SIZE_LIMIT`] bytes. Patterns
-    /// exceeding this limit will fail with an error.
+    /// The compiled regex is limited to [`REGEX_SIZE_LIMIT`] bytes, and the
+    /// pattern to [`REGEX_NEST_LIMIT`] levels of nesting. Patterns exceeding
+    /// these limits will fail with an error.
     ///
     /// # Errors
     ///
     /// Returns an error if:
     /// - The pattern syntax is invalid (e.g., unbalanced parentheses, invalid escape sequences)
     /// - An unsupported flag character is provided
-    /// - The compiled regex exceeds the size limit
+    /// - The compiled regex exceeds the size limit, or the pattern nests deeper than the nesting limit
     pub fn new(pattern: &str, flags: Option<&str>) -> Result<Self, RDFRegexError> {
         let mut pattern = Cow::Borrowed(pattern);
         let flags = flags.unwrap_or_default();
@@ -64,6 +71,7 @@ impl RDFRegex {
         }
         let mut regex_builder = RegexBuilder::new(&pattern);
         regex_builder.size_limit(REGEX_SIZE_LIMIT);
+        regex_builder.nest_limit(REGEX_NEST_LIMIT);
         for flag in flags.chars() {
             match flag {
                 's' => {

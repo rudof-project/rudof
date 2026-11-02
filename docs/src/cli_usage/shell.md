@@ -97,6 +97,19 @@ rudof> data
 
 `--merge` only exists in the shell, not in the top-level `rudof data` command.
 
+### Comparing the loaded data with another graph
+
+[`compare --data1 A --data2 B`](./compare.md#comparing-rdf-data) compares two RDF graphs, as in the top-level CLI. In the shell `--data1` can be left out, to compare the loaded data (the first graph, not modified) with `--data2`:
+
+```
+rudof> data examples/user.ttl
+11 triple(s) loaded
+rudof> compare --data2 other.ttl
+subgraph: the loaded data is contained in the given graph, but not the other way round (mode: injective)
+rudof> compare --data2 other.ttl --subgraph-mode entailment
+equivalent: the loaded data and the given graph contain each other, but are not isomorphic (mode: entailment)
+```
+
 ## Bare resource shorthand
 
 For `shex`, `shacl`, `shapemap`, `pgschema`, `dctap`, `service`, `materialize`, `generate`, `rdf-config`, a single argument with no other flags is shorthand for that command's `-s` flag. `node` works the same way with `-n`, and `sparql` with `-q`. This only applies inside the shell.

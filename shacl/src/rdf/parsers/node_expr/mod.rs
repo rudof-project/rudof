@@ -54,25 +54,43 @@ fn optional_expr<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     property: &IriS,
     rdf: &mut RDF,
+    depth: usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     match single::<RDF>(neighs, property)? {
         None => Ok(None),
-        Some(term) => Ok(Some(node_expr_from_term(&term, rdf)?)),
+        Some(term) => Ok(Some(node_expr_from_term(&term, rdf, depth, steps)?)),
     }
 }
 
 /// Parses a SHACL list of node expressions, starting at `head`.
-fn expr_list<RDF: FocusRDF>(head: &RDF::Term, rdf: &mut RDF) -> Result<Vec<ASTNodeExpr>, RDFError> {
+fn expr_list<RDF: FocusRDF>(
+    head: &RDF::Term,
+    rdf: &mut RDF,
+    depth: usize,
+    steps: &mut usize,
+) -> Result<Vec<ASTNodeExpr>, RDFError> {
     rdf.set_focus(head);
     let members = ListParser::new().parse_focused(rdf)?;
 
-    members.iter().map(|member| node_expr_from_term(member, rdf)).collect()
+    members
+        .iter()
+        .map(|member| node_expr_from_term(member, rdf, depth, steps))
+        .collect()
 }
 
 /// Parses `shnex:nodes`, which these expressions require.
-fn required_nodes<RDF: FocusRDF>(neighs: &Neighs<RDF>, rdf: &mut RDF, kind: &str) -> Result<ASTNodeExpr, RDFError> {
-    optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_nodes(), rdf)?.ok_or_else(|| RDFError::DefaultError {
-        msg: format!("{kind} requires shnex:nodes"),
+fn required_nodes<RDF: FocusRDF>(
+    neighs: &Neighs<RDF>,
+    rdf: &mut RDF,
+    kind: &str,
+    depth: usize,
+    steps: &mut usize,
+) -> Result<ASTNodeExpr, RDFError> {
+    optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_nodes(), rdf, depth, steps)?.ok_or_else(|| {
+        RDFError::DefaultError {
+            msg: format!("{kind} requires shnex:nodes"),
+        }
     })
 }
 

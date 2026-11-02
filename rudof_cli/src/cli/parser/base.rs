@@ -57,7 +57,7 @@ pub enum Command {
     DCTap(DCTapArgs),
     // Convert between different Data modeling technologies
     Convert(ConvertArgs),
-    /// Compare two shapes (which can be in different formats)
+    /// Compare two schemas or shapes (--schema1, --schema2), or two RDF graphs (--data1, --data2)
     Compare(CompareArgs),
     /// Show information about rdf config
     RdfConfig(RdfConfigArgs),

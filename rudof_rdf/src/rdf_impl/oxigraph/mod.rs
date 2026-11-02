@@ -7,11 +7,14 @@
 mod endpoint;
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 mod endpoint_error;
+mod graph_comparison;
+mod graph_diff;
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub(crate) mod http;
 mod in_memory;
 mod in_memory_error;
 mod oxrdf_impl;
+mod turtle_display;
 
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub use endpoint::{
@@ -20,5 +23,10 @@ pub use endpoint::{
 };
 #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
 pub use endpoint_error::OxigraphEndpointError;
+pub use graph_comparison::{
+    GraphRelation, SubgraphMode, compare_graphs, compare_graphs_with, is_isomorphic, is_subgraph, is_subgraph_with,
+};
+pub use graph_diff::{DEFAULT_EXACT_SEARCH_LIMIT, DiffOptions, GraphDiff, diff_graphs};
 pub use in_memory::{OxigraphInMemory, ReaderMode};
 pub use in_memory_error::OxigraphInMemoryError;
+pub use turtle_display::{show_term, show_triple, used_prefixes};

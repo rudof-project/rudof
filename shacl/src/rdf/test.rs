@@ -200,4 +200,139 @@ mod tests {
             shape.components()
         );
     }
+
+    /// Parsing the `sh:ignoredProperties` list must not leave the focus node on
+    /// it either, or the components declared after `sh:closed` are lost.
+    #[test]
+    fn test_ignored_properties() {
+        let shape = r#"
+            @prefix :    <http://example.org/> .
+            @prefix sh:  <http://www.w3.org/ns/shacl#> .
+
+            :TestShape a sh:NodeShape ;
+                sh:closed true ;
+                sh:ignoredProperties ( :p :q ) ;
+                sh:hasValue :a .
+        "#;
+
+        let shape = node_shape_of(shape, "http://example.org/TestShape");
+
+        let expected = ASTComponent::Closed {
+            is_closed: true,
+            ignored_properties: [iri!("http://example.org/p"), iri!("http://example.org/q")].into(),
+        };
+        assert!(shape.components().contains(&expected), "{:?}", shape.components());
+        assert!(
+            shape
+                .components()
+                .iter()
+                .any(|c| matches!(c, ASTComponent::HasValue(_))),
+            "components parsed after sh:ignoredProperties were lost: {:?}",
+            shape.components()
+        );
+
+        // Not a list, which used to mean no ignored properties
+        let err = parse_shapes(&format!(
+            "{PATH_PREFIXES}:S a sh:NodeShape ; sh:closed true ; sh:ignoredProperties :p ."
+        ))
+        .unwrap_err();
+        assert!(err.contains("rdf-syntax-ns#first"), "{err}");
+    }
+
+    const PATH_PREFIXES: &str = "@prefix : <http://example.org/> .
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n";
+
+    fn parse_shapes(shapes: &str) -> Result<(), String> {
+        let graph = OxigraphInMemory::from_str(shapes, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
+        ShaclParser::new(graph).parse().map(|_| ()).map_err(|e| e.to_string())
+    }
+
+    #[test]
+    fn long_alternative_path_is_parsed() {
+        let preds: String = (0..5000).map(|i| format!(" :p{i}")).collect();
+        parse_shapes(&format!(
+            "{PATH_PREFIXES}:S a sh:PropertyShape ; sh:path [ sh:alternativePath ({preds} ) ] ."
+        ))
+        .unwrap();
+    }
+
+    #[test]
+    fn shapes_share_one_budget_for_their_paths() {
+        // _:l10 is ( _:l9 _:l9 ) down to _:l1 = ( :q :q ), 2047 steps, and 2000 shapes parse it again each
+        let mut shapes = format!("{PATH_PREFIXES}_:l1 rdf:first :q ; rdf:rest ( :q ) .\n");
+        for n in 2..=10 {
+            let m = n - 1;
+            shapes.push_str(&format!("_:l{n} rdf:first _:l{m} ; rdf:rest ( _:l{m} ) .\n"));
+        }
+        for i in 0..2000 {
+            shapes.push_str(&format!(":S{i} a sh:PropertyShape ; sh:path _:l10 .\n"));
+        }
+
+        let err = parse_shapes(&shapes).unwrap_err();
+        assert!(err.contains("steps plus"), "{err}");
+    }
+
+    #[test]
+    fn node_expressions_take_a_step_per_list_member_and_arc() {
+        // _:d0 nests 11 shared shnex:concat, which reach _:x 2048 times
+        let mut dag = format!(
+            "{PATH_PREFIXES}@prefix shnex: <http://www.w3.org/ns/shacl-node-expr#> .\n\
+             :S sh:targetNode :a ; sh:deactivated _:d0 .\n_:d10 shnex:concat ( _:x _:x ) .\n"
+        );
+        for i in 0..10 {
+            dag.push_str(&format!("_:d{i} shnex:concat ( _:d{j} _:d{j} ) .\n", j = i + 1));
+        }
+        let members: String = (0..200).map(|j| format!(" :v{j}")).collect();
+        let arcs: String = (0..200).map(|j| format!(", {j}")).collect();
+        for x in [
+            format!("_:x rdf:first :v ; rdf:rest ({members} ) ."),
+            format!("_:x shnex:exists :p ; :j -1{arcs} ."),
+        ] {
+            let err = parse_shapes(&format!("{dag}{x}")).unwrap_err();
+            assert!(err.contains("steps plus"), "{x}: {err}");
+        }
+    }
+
+    #[test]
+    fn shapes_share_one_budget_for_their_lists() {
+        // 400 shapes each read the same 401-member list, 160,400 members in all: more than the free ones and the steps
+        let members: String = (0..400).map(|j| format!(" :v{j}")).collect();
+        for shape in [
+            "sh:targetNode :a ; sh:in _:l",
+            "sh:targetNode :a ; sh:languageIn _:l",
+            "sh:targetNode :a ; sh:and _:l",
+            "sh:targetNode :a ; sh:or _:l",
+            "sh:targetNode :a ; sh:xone _:l",
+            "sh:targetNode :a ; sh:closed true ; sh:ignoredProperties _:l",
+            // Not a shape, but each list is read when looking for the shapes in it
+            "sh:or [ rdf:first :v ; rdf:rest _:l ]",
+        ] {
+            let mut shapes = format!("{PATH_PREFIXES}_:l rdf:first :v ; rdf:rest ({members} ) .\n");
+            for i in 0..400 {
+                shapes.push_str(&format!(":S{i} {shape} .\n"));
+            }
+
+            let err = parse_shapes(&shapes).unwrap_err();
+            assert!(err.contains("steps plus"), "{shape}: {err}");
+        }
+    }
+
+    #[test]
+    fn long_lists_are_parsed() {
+        let members: String = (0..5000).map(|j| format!(" :v{j}")).collect();
+        for list in ["sh:in", "sh:deactivated", "sh:closed true ; sh:ignoredProperties"] {
+            parse_shapes(&format!("{PATH_PREFIXES}:S sh:targetNode :a ; {list} ({members} ) .")).unwrap();
+        }
+
+        // 200 shapes each read the same 201-member list, 40,200 members in all, within the free ones
+        let members: String = (0..200).map(|j| format!(" :v{j}")).collect();
+        let shapes: String = (0..200)
+            .map(|i| format!(":S{i} sh:targetNode :a ; sh:in _:l .\n"))
+            .collect();
+        parse_shapes(&format!(
+            "{PATH_PREFIXES}_:l rdf:first :v ; rdf:rest ({members} ) .\n{shapes}"
+        ))
+        .unwrap();
+    }
 }

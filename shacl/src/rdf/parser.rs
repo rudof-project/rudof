@@ -2,16 +2,17 @@ use crate::ast::{ASTNodeExpr, ASTSchema, ASTShape};
 use crate::rdf::State;
 use crate::rdf::error::ShaclParserError;
 use crate::rdf::parsers::node_expr::node_expr_from_term;
-use crate::rdf::parsers::{node_shape, property_shape};
+use crate::rdf::parsers::{list_with_budget, node_shape, property_shape};
 use itertools::Itertools;
 use rudof_rdf::rdf_core::parser::RDFParse;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ListParser, SuccessParser};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ParseBudget, SuccessParser};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclNodeExprVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{Any, FocusRDF, Matcher};
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 pub struct ShaclParser<RDF: FocusRDF> {
     rdf_parser: RDFParse<RDF>,
@@ -29,12 +30,15 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
     pub fn parse(&mut self) -> Result<ASTSchema, ShaclParserError> {
         let pm = self.rdf_parser.prefixmap().unwrap_or_default();
 
-        let mut state: State = self.shapes_candidates()?.into();
-
+        // A path, node expression or list shared by many shapes is parsed for each of them, so they share one budget
+        let budget = Arc::default();
+        let mut state: State = self.shapes_candidates(&budget)?.into();
+        let parser = shape(budget);
         while let Some(node) = state.pop_pending() {
             if !self.shapes.contains_key(&node) {
                 self.rdf_parser.rdf_mut().set_focus(&node.clone().into());
-                let shape = shape().parse_focused(self.rdf_parser.rdf_mut())?;
+                // rudof_rdf parses a SHACL path without a check, in about 300 KiB at the depth limit in a debug build
+                let shape = crate::with_stack(|| parser.parse_focused(self.rdf_parser.rdf_mut()))?;
                 self.shapes.insert(node, shape);
             }
         }
@@ -46,7 +50,9 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
 
     /// Parses a node expression from `term`.
     pub fn parse_node_expr(&mut self, term: &RDF::Term) -> Result<ASTNodeExpr, ShaclParserError> {
-        let expr = node_expr_from_term(term, self.rdf_parser.rdf_mut())?;
+        let expr = ParseBudget::default().spend(self.rdf_parser.rdf_mut(), |rdf, steps| {
+            node_expr_from_term(term, rdf, 0, steps)
+        })?;
 
         Ok(expr)
     }
@@ -59,7 +65,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
     /// - s is subject of a triple that has a parameter as predicate.
     /// - s is a value of a shape-expecting, non-list-taking parameter such as sh:node,
     ///   or a member of a SHACL list that is a value of a shape-expecting and list-taking parameter such as sh:or.
-    fn shapes_candidates(&mut self) -> Result<Vec<Object>, ShaclParserError> {
+    fn shapes_candidates(&mut self, budget: &Arc<ParseBudget>) -> Result<Vec<Object>, ShaclParserError> {
         // instances of `sh:NodeShape`
         let mut node_shapes_instances = self.get_triples::<_, RDF::IRI, RDF::Term>(
             &Any,
@@ -92,7 +98,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
             self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_node().into(), &Any)?;
         // Search shape expecting parameters: https://www.w3.org/TR/shacl12-core/#dfn-shape-expecting
         // elements of `sh:and` list
-        let sh_and_values = self.get_triples_list(&ShaclVocab::sh_and().into(), "sh:and", |v, ctx| {
+        let sh_and_values = self.get_triples_list(&ShaclVocab::sh_and().into(), "sh:and", budget, |v, ctx| {
             ShaclParserError::ValueNotExpected {
                 iri: ctx.to_string(),
                 expected: "subject".to_string(),
@@ -100,7 +106,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
             }
         })?;
         // elements of `sh:or` list
-        let sh_or_values = self.get_triples_list(&ShaclVocab::sh_or().into(), "sh:or", |v, ctx| {
+        let sh_or_values = self.get_triples_list(&ShaclVocab::sh_or().into(), "sh:or", budget, |v, ctx| {
             ShaclParserError::ValueNotExpected {
                 iri: ctx.to_string(),
                 expected: "object".to_string(),
@@ -117,7 +123,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         // elements of `sh:node` list
         let sh_node_values = self.objects_with_predicate(&ShaclVocab::sh_node().into())?;
         // elements of `sh:xone` list
-        let sh_xone_values = self.get_triples_list(&ShaclVocab::sh_xone().into(), "sh:xone", |v, ctx| {
+        let sh_xone_values = self.get_triples_list(&ShaclVocab::sh_xone().into(), "sh:xone", budget, |v, ctx| {
             ShaclParserError::ValueNotExpected {
                 iri: ctx.to_string(),
                 expected: "subject".to_string(),
@@ -178,13 +184,14 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         &mut self,
         pred: &RDF::IRI,
         context: &str,
+        budget: &Arc<ParseBudget>,
         err_fn: impl Fn(RDF::Term, &str) -> ShaclParserError,
     ) -> Result<HashSet<RDF::Subject>, ShaclParserError> {
         let mut rs = HashSet::new();
 
         for subject in self.objects_with_predicate(pred)? {
             self.rdf_parser.set_focus(&subject.into());
-            let vs = ListParser::new().parse_focused(self.rdf_parser.rdf_mut())?;
+            let vs = list_with_budget(budget.clone()).parse_focused(self.rdf_parser.rdf_mut())?;
             for v in vs {
                 if let Ok(subj) = term_to_subject::<RDF>(&v, context) {
                     rs.insert(subj);
@@ -218,8 +225,8 @@ fn term_to_subject<RDF: FocusRDF>(term: &RDF::Term, context: &str) -> Result<RDF
     })
 }
 
-fn shape<RDF: FocusRDF + 'static>() -> impl RDFNodeParse<RDF, Output = ASTShape> {
-    node_shape()
+fn shape<RDF: FocusRDF + 'static>(budget: Arc<ParseBudget>) -> impl RDFNodeParse<RDF, Output = ASTShape> {
+    node_shape(budget.clone())
         .then(move |ns| SuccessParser::new(ASTShape::NodeShape(Box::new(ns))))
-        .or(property_shape().then(|ps| SuccessParser::new(ASTShape::PropertyShape(Box::new(ps)))))
+        .or(property_shape(budget).then(|ps| SuccessParser::new(ASTShape::PropertyShape(Box::new(ps)))))
 }

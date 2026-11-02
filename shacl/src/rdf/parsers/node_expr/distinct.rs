@@ -7,10 +7,12 @@ pub(crate) fn distinct<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
     rdf: &mut RDF,
     _: &RDF::Term,
+    depth: usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
     single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_distinct())?
         .map(|term| {
-            let distinct = node_expr_from_term(&term, rdf)?;
+            let distinct = node_expr_from_term(&term, rdf, depth, steps)?;
             Ok(ASTNodeExpr::Distinct(distinct.into()))
         })
         .transpose()

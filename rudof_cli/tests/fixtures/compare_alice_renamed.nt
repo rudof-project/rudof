@@ -1,0 +1,2 @@
+<http://example.org/alice> <http://example.org/knows> _:someone .
+_:someone <http://example.org/name> "Bob" .

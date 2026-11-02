@@ -78,14 +78,17 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Patt
             "})
         };
 
-        validate_ask_with_opt(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query_fn,
-            &format!("Pattern({}) not satisfied", self.pattern()),
-            maybe_path,
-        )
+        // The query engine compiles the pattern again
+        crate::with_regex_stack(|| {
+            validate_ask_with_opt(
+                component,
+                shape,
+                store,
+                value_nodes,
+                query_fn,
+                &format!("Pattern({}) not satisfied", self.pattern()),
+                maybe_path,
+            )
+        })
     }
 }

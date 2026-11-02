@@ -10,7 +10,7 @@ use crate::error::ValidationError;
 use crate::ir::IRSchema;
 use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
-use crate::validator::engine::{Engine, Validate};
+use crate::validator::engine::{Engine, Retention, Validate};
 use crate::validator::report::{ValidationOutcome, ValidationReport};
 #[cfg(feature = "sparql")]
 pub use cached::CachedDataValidation;
@@ -75,8 +75,8 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
     /// * `shapes_graph` - A compiled SHACL shapes graph
     /// * `mode` - The validation mode to be applied during the validation process
     /// * `config` - Controls whether the returned report retains violations
-    ///   and/or evidence (both are always computed internally, regardless of
-    ///   this config, since the cache needs full detail for correctness)
+    ///   and/or evidence (violations are always computed internally, since
+    ///   conformance depends on them; evidence only when the report keeps it)
     fn validate(
         &mut self,
         shapes_graph: &IRSchema,
@@ -85,6 +85,10 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
     ) -> Result<ValidationReport, ValidationError> {
         self.prepare_store()?;
         let mut master_runner = Self::runner(mode, config);
+        master_runner.set_retention(Retention {
+            max_results: config.max_results(),
+            store_evidences: config.store_evidences(),
+        });
         self.before_validation(shapes_graph, master_runner.as_ref(), config)?;
         let store = self.store();
 

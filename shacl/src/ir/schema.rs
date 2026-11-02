@@ -223,7 +223,7 @@ impl IRSchema {
                 let label_idx = ShapeLabelIdx::new(self.get_next_idx());
                 self.labels_idx_map.insert(id.clone(), label_idx);
                 self.idx_labels_map.insert(label_idx, id.clone());
-                let compiled = IRShape::compile(shape, ast, self)?;
+                let compiled = crate::with_stack(|| IRShape::compile(shape, ast, self))?;
                 self.shapes.insert(label_idx, compiled);
                 Ok(label_idx)
             },
@@ -310,15 +310,13 @@ impl IRSchema {
         let mut cache = HashSet::new();
 
         // `self.shapes` is a `HashMap`, whose iteration order is randomized per process.
-        // The graph-building traversal below is order-sensitive (a shape's edges can be
-        // (re)visited with different polarity depending on which caller reaches it first),
+        // The order in which shapes enter the graph is the order cycles are listed in,
         // so we iterate over a deterministic, sorted order of shape indices to make the
         // resulting dependency graph reproducible across runs.
         let mut indices: Vec<ShapeLabelIdx> = self.shapes.keys().copied().collect();
         indices.sort_unstable();
 
         for idx in indices {
-            // Add edges, we start by positive edges, but the direction can change when there is some negation
             let shape = self.shapes.get(&idx).expect("index collected from self.shapes.keys()");
             shape.add_edges(idx, &mut dg, PosNeg::Pos, self, &mut cache);
         }
@@ -370,7 +368,8 @@ impl IRSchema {
         self.labels_idx_map.iter().try_for_each(|(_, idx)| {
             let shape = self.shapes.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;
 
-            shape.register(&mut graph, &self.shapes)
+            // rudof_rdf writes a SHACL path without a check, in about 410 KiB at the depth limit in a debug build
+            crate::with_stack(|| shape.register(&mut graph, &self.shapes))
         })?;
 
         Ok(graph)

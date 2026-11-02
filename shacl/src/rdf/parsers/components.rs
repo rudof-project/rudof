@@ -6,9 +6,13 @@ use crate::rdf::parsers::{
     min_length, node, node_kind, not, or, pattern, qualified_value_shape, subset_of, unique_lang, xone,
 };
 use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ParseBudget;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use std::sync::Arc;
 
-pub(crate) fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
+pub(crate) fn components<RDF: FocusRDF>(
+    budget: Arc<ParseBudget>,
+) -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     let parsers: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<ASTComponent>>>> = vec![
         // Value type
         Box::new(node_kind()),
@@ -26,7 +30,7 @@ pub(crate) fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec
         Box::new(max_length()),
         Box::new(pattern()),
         // single_line(), // TODO - SHACL 1.2
-        Box::new(language_in()),
+        Box::new(language_in(budget.clone())),
         Box::new(unique_lang()),
         // List constraint components - SHACL 1.2
         // member_shape(), // TODO - SHACL 1.2
@@ -38,26 +42,26 @@ pub(crate) fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec
         Box::new(disjoint()),
         Box::new(less_than()),
         Box::new(less_than_or_equals()),
-        Box::new(subset_of()),
+        Box::new(subset_of(budget.clone())),
         // Logical constraint components
         Box::new(not()),
-        Box::new(and()),
-        Box::new(or()),
-        Box::new(xone()),
+        Box::new(and(budget.clone())),
+        Box::new(or(budget.clone())),
+        Box::new(xone(budget.clone())),
         // Shape based constraint components
         Box::new(node()),
         // property is handled differently
         Box::new(qualified_value_shape()),
         // Other
-        Box::new(closed()),
+        Box::new(closed(budget.clone())),
         Box::new(has_value()),
-        Box::new(in_component()),
+        Box::new(in_component(budget.clone())),
         // Non-validating constraint components
 
         // SPARQL based constraints and SPARQL based constraint components
         Box::new(basic_sparql()),
         // TODO: deactivated is not a shape component...move this code elsewhere?
-        Box::new(deactivated()),
+        Box::new(deactivated(budget)),
     ];
 
     Box::new(class()).combine_many(parsers)

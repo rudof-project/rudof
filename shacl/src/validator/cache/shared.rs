@@ -22,8 +22,8 @@ impl SharedTyping {
     }
 
     /// Records the outcome of validating `(node, shape_idx)`. Converts the
-    /// paired `ValidationOutcome` (both violations and evidence, always
-    /// computed) into the cache's `Either`-based [`Verdict`]: a pair either
+    /// paired `ValidationOutcome` (violations, and evidence when the report
+    /// keeps it) into the cache's `Either`-based [`Verdict`]: a pair either
     /// conforms (evidence) or doesn't (violations), never both.
     pub fn record(&self, node: Object, shape_idx: ShapeLabelIdx, outcome: ValidationOutcome) {
         let (violations, evidences) = outcome.into_parts();

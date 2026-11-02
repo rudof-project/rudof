@@ -4,6 +4,8 @@ use crate::rdf_core::{
     term::{Object, Triple},
 };
 use std::collections::{HashMap, HashSet};
+use std::ptr;
+use std::rc::Rc;
 //----------------------------------------------------------------
 // Type aliases for common RDF navigation patterns
 //----------------------------------------------------------------
@@ -354,101 +356,7 @@ pub trait NeighsRDF: Rdf {
     /// * `subject` - The starting term for path navigation
     /// * `path` - The SHACL property path to follow
     fn objects_for_shacl_path(&self, subject: &Self::Term, path: &SHACLPath) -> Result<HashSet<Self::Term>, RDFError> {
-        match path {
-            SHACLPath::Predicate { pred } => {
-                let pred: Self::IRI = pred.clone().into();
-                self.objects_for(subject, &pred)
-            },
-            SHACLPath::Alternative { paths } => {
-                let mut all_objects = HashSet::new();
-                for path in paths {
-                    let objects = self.objects_for_shacl_path(subject, path)?;
-                    all_objects.extend(objects);
-                }
-                Ok(all_objects)
-            },
-            SHACLPath::Sequence { paths } => match paths.as_slice() {
-                [] => Ok(HashSet::from([subject.clone()])),
-                [first, rest @ ..] => {
-                    let first_objects = self.objects_for_shacl_path(subject, first)?;
-                    let mut all_objects = HashSet::new();
-                    for obj in first_objects {
-                        // A term that cannot be a subject (a literal) has no outgoing
-                        // arcs, so it cannot continue the sequence. Skipping it is not
-                        // merely an optimisation: `objects_for` starts with
-                        // `term_as_subject(..)?`, so recursing here would abort the
-                        // WHOLE path evaluation and lose every other value too.
-                        // When `rest` is empty the recursion terminates without any
-                        // lookup, so the term is still a legitimate endpoint and is
-                        // kept.
-                        if !rest.is_empty() && Self::term_as_subject(&obj).is_err() {
-                            continue;
-                        }
-                        let intermediate_objects =
-                            self.objects_for_shacl_path(&obj, &SHACLPath::Sequence { paths: rest.to_vec() })?;
-                        all_objects.extend(intermediate_objects);
-                    }
-                    Ok(all_objects)
-                },
-            },
-            SHACLPath::Inverse { path } => {
-                let pred: Self::IRI = path.pred().unwrap().clone().into();
-                let objects = self.subjects_for(&pred, subject)?;
-                Ok(objects)
-            },
-            SHACLPath::ZeroOrMore { path } => {
-                let mut all_objects = HashSet::new();
-                all_objects.insert(subject.clone());
-
-                let mut to_process = vec![subject.clone()];
-                while let Some(current) = to_process.pop() {
-                    let next_objects = self.objects_for_shacl_path(&current, path)?;
-                    for obj in next_objects {
-                        if all_objects.insert(obj.clone()) {
-                            // The term stays in the result -- a literal is a valid
-                            // path endpoint -- but is only followed further if it can
-                            // be a subject. See the note in the Sequence branch: this
-                            // guard is what stops one literal aborting the entire
-                            // path evaluation.
-                            if Self::term_as_subject(&obj).is_ok() {
-                                to_process.push(obj);
-                            }
-                        }
-                    }
-                }
-                Ok(all_objects)
-            },
-            SHACLPath::OneOrMore { path } => {
-                let mut all_objects = HashSet::new();
-                let first_objects = self.objects_for_shacl_path(subject, path)?;
-                all_objects.extend(first_objects.clone());
-
-                let mut to_process: Vec<Self::Term> = first_objects
-                    .into_iter()
-                    .filter(|t| Self::term_as_subject(t).is_ok())
-                    .collect();
-                while let Some(current) = to_process.pop() {
-                    let next_objects = self.objects_for_shacl_path(&current, path)?;
-                    for obj in next_objects {
-                        if all_objects.insert(obj.clone()) {
-                            // Kept in the result, followed only if it can be a
-                            // subject. See the Sequence branch.
-                            if Self::term_as_subject(&obj).is_ok() {
-                                to_process.push(obj);
-                            }
-                        }
-                    }
-                }
-                Ok(all_objects)
-            },
-            SHACLPath::ZeroOrOne { path } => {
-                let mut all_objects = HashSet::new();
-                all_objects.insert(subject.clone());
-                let next_objects = self.objects_for_shacl_path(subject, path)?;
-                all_objects.extend(next_objects);
-                Ok(all_objects)
-            },
-        }
+        path_objects(self, subject, path, &mut PathMemo::new())
     }
 
     /// Returns all objects for the given subject-predicate pair.
@@ -506,4 +414,143 @@ pub trait NeighsRDF: Rdf {
             .collect();
         Ok(values)
     }
+}
+
+/// The values of the sub-paths of one path, so nested repetitions such as `((:p*)*)*` take
+/// polynomial instead of exponential time.
+struct PathMemo<T> {
+    /// The values of each repeated sub-path, by its address and the node it starts from.
+    values: HashMap<(*const SHACLPath, T), HashSet<T>>,
+    /// The inverse of each `sh:inversePath` of a complex path, kept so its address stays a key.
+    inverses: HashMap<*const SHACLPath, Rc<SHACLPath>>,
+    /// How many repetitions are being evaluated, one inside the other.
+    depth: usize,
+}
+
+impl<T> PathMemo<T> {
+    fn new() -> Self {
+        Self {
+            values: HashMap::new(),
+            inverses: HashMap::new(),
+            depth: 0,
+        }
+    }
+}
+
+fn path_objects<R: NeighsRDF>(
+    rdf: &R,
+    subject: &R::Term,
+    path: &SHACLPath,
+    memo: &mut PathMemo<R::Term>,
+) -> Result<HashSet<R::Term>, RDFError> {
+    match path {
+        SHACLPath::Predicate { pred } => {
+            // A literal has no outgoing arcs
+            if R::term_as_subject(subject).is_err() {
+                return Ok(HashSet::new());
+            }
+            let pred: R::IRI = pred.clone().into();
+            rdf.objects_for(subject, &pred)
+        },
+        SHACLPath::Alternative { paths } => {
+            let mut all_objects = HashSet::new();
+            for path in paths {
+                let objects = path_objects(rdf, subject, path, memo)?;
+                all_objects.extend(objects);
+            }
+            Ok(all_objects)
+        },
+        SHACLPath::Sequence { paths } => {
+            let mut current = HashSet::from([subject.clone()]);
+            for path in paths {
+                let mut next = HashSet::new();
+                for obj in current {
+                    next.extend(path_objects(rdf, &obj, path, memo)?);
+                }
+                current = next;
+            }
+            Ok(current)
+        },
+        SHACLPath::Inverse { path } => match path.as_ref() {
+            SHACLPath::Predicate { pred } => {
+                let pred: R::IRI = pred.clone().into();
+                rdf.subjects_for(&pred, subject)
+            },
+            path => {
+                let inverse = memo
+                    .inverses
+                    .entry(ptr::from_ref(path))
+                    .or_insert_with(|| Rc::new(path.inverted()))
+                    .clone();
+                path_objects(rdf, subject, &inverse, memo)
+            },
+        },
+        SHACLPath::ZeroOrMore { path } => closure(rdf, HashSet::from([subject.clone()]), repeated(path), memo),
+        // (x*)+ is x* and (x+)+ is x+
+        SHACLPath::OneOrMore { path }
+            if matches!(**path, SHACLPath::ZeroOrMore { .. } | SHACLPath::OneOrMore { .. }) =>
+        {
+            path_objects(rdf, subject, path, memo)
+        },
+        SHACLPath::OneOrMore { path } => {
+            let first = path_objects(rdf, subject, path, memo)?;
+            closure(rdf, first, path, memo)
+        },
+        // (x*)? is x*
+        SHACLPath::ZeroOrOne { path } if matches!(**path, SHACLPath::ZeroOrMore { .. }) => {
+            path_objects(rdf, subject, path, memo)
+        },
+        SHACLPath::ZeroOrOne { path } => {
+            let mut all_objects = HashSet::new();
+            all_objects.insert(subject.clone());
+            let next_objects = path_objects(rdf, subject, path, memo)?;
+            all_objects.extend(next_objects);
+            Ok(all_objects)
+        },
+    }
+}
+
+/// The path that `path*` repeats, without the repetitions directly inside it: `(x*)*` and
+/// `(x+)*` are `x*`, and repeating `x` keeps one node per node reached instead of the whole
+/// closure of `x*` from each, which the memo would hold for every node.
+fn repeated(mut path: &SHACLPath) -> &SHACLPath {
+    while let SHACLPath::ZeroOrMore { path: inner } | SHACLPath::OneOrMore { path: inner } = path {
+        path = inner.as_ref();
+    }
+    path
+}
+
+/// `start` and every node reached from it by one or more `path` steps.
+fn closure<R: NeighsRDF>(
+    rdf: &R,
+    start: HashSet<R::Term>,
+    path: &SHACLPath,
+    memo: &mut PathMemo<R::Term>,
+) -> Result<HashSet<R::Term>, RDFError> {
+    // The outermost repetition steps from each node once, so only those inside it keep their values.
+    // An error ends the evaluation and drops the memo, so the depth need not be put back.
+    memo.depth += 1;
+    let mut to_process: Vec<R::Term> = start.iter().cloned().collect();
+    let mut all_objects = start;
+    while let Some(current) = to_process.pop() {
+        let unkept;
+        let next_objects = if memo.depth == 1 {
+            unkept = path_objects(rdf, &current, path, memo)?;
+            &unkept
+        } else {
+            let key = (ptr::from_ref(path), current);
+            if !memo.values.contains_key(&key) {
+                let next_objects = path_objects(rdf, &key.1, path, memo)?;
+                memo.values.insert(key.clone(), next_objects);
+            }
+            &memo.values[&key]
+        };
+        for obj in next_objects {
+            if all_objects.insert(obj.clone()) {
+                to_process.push(obj.clone());
+            }
+        }
+    }
+    memo.depth -= 1;
+    Ok(all_objects)
 }

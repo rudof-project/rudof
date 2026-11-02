@@ -1,5 +1,5 @@
 use crate::ast::{ASTNodeExpr, ASTSchema};
-use crate::error::IRError;
+use crate::error::{IRError, NodeExprEvalError};
 use crate::ir::node_exprs::{
     Concat, Count, Distinct, Empty, Exists, Filter, FindFirst, FlatMap, IfExpression, InstancesOf, Intersection, Iri,
     Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove, Sum, Var,
@@ -11,6 +11,9 @@ use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
+
+/// Expressions evaluated for one focus node.
+const MAX_EVAL_STEPS: usize = 1_000_000;
 
 #[derive(Debug, Clone)]
 pub enum IRNodeExpr {
@@ -54,6 +57,11 @@ pub enum IRNodeExpr {
 
 impl IRNodeExpr {
     pub fn compile(expr: &ASTNodeExpr, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
+        // A debug build takes about 19 KiB of stack per level, so 64 levels would not fit in the red zone
+        crate::with_stack(|| Self::compile_level(expr, ast, ir))
+    }
+
+    fn compile_level(expr: &ASTNodeExpr, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
         let result = match expr.clone() {
             ASTNodeExpr::Iri(iri) => Self::Iri(Iri::new(convert_iri_ref(iri)?)),
             ASTNodeExpr::Literal(lit) => Self::Literal(Literal::new(lit)),
@@ -180,6 +188,42 @@ impl IRNodeExpr {
         }
     }
 
+    /// Whether the value can differ between focus nodes.
+    pub(crate) fn reads_focus(&self) -> bool {
+        match self {
+            IRNodeExpr::Iri(_)
+            | IRNodeExpr::Literal(_)
+            | IRNodeExpr::Empty(_)
+            | IRNodeExpr::List(_)
+            | IRNodeExpr::InstancesOf(_)
+            | IRNodeExpr::NodesMatching(_) => false,
+            // The focus node, or a variable of the scope
+            IRNodeExpr::Var(_) => true,
+            IRNodeExpr::PathValues(pv) => pv.focus_nodes().is_none_or(Self::reads_focus),
+            IRNodeExpr::Exists(e) => e.exists().reads_focus(),
+            IRNodeExpr::IfExpression(ie) => [Some(ie.if_condition()), ie.then(), ie.else_expression()]
+                .into_iter()
+                .flatten()
+                .any(Self::reads_focus),
+            IRNodeExpr::Distinct(d) => d.distinct().reads_focus(),
+            IRNodeExpr::Intersection(i) => i.intersection().iter().any(Self::reads_focus),
+            IRNodeExpr::Concat(c) => c.concat().iter().any(Self::reads_focus),
+            IRNodeExpr::Remove(r) => r.nodes().reads_focus() || r.remove().reads_focus(),
+            IRNodeExpr::Limit(l) => l.nodes().reads_focus(),
+            IRNodeExpr::Offset(o) => o.nodes().reads_focus(),
+            IRNodeExpr::Count(c) => c.count().reads_focus(),
+            IRNodeExpr::Min(m) => m.min().reads_focus(),
+            IRNodeExpr::Max(m) => m.max().reads_focus(),
+            IRNodeExpr::Sum(s) => s.sum().reads_focus(),
+            // These take each of their nodes as the focus node of their shape or inner expression
+            IRNodeExpr::Filter(f) => f.nodes().reads_focus(),
+            IRNodeExpr::OrderBy(ob) => ob.nodes().reads_focus(),
+            IRNodeExpr::FlatMap(fm) => fm.nodes().as_ref().is_none_or(Self::reads_focus),
+            IRNodeExpr::FindFirst(ff) => ff.nodes().reads_focus(),
+            IRNodeExpr::MatchAll(ma) => ma.nodes().is_none_or(Self::reads_focus),
+        }
+    }
+
     pub fn evaluate<Rdf: NeighsRDF + Debug>(
         &self,
         store: &Rdf,
@@ -188,7 +232,7 @@ impl IRNodeExpr {
         runner: &mut dyn Engine<Rdf>,
         ir: &IRSchema,
     ) -> Result<Vec<Rdf::Term>, IRError> {
-        match self {
+        let out = match self {
             IRNodeExpr::Iri(i) => i.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::Literal(l) => l.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::Empty(e) => e.evaluate(store, focus, scope, runner, ir),
@@ -214,7 +258,17 @@ impl IRNodeExpr {
             IRNodeExpr::Sum(s) => s.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::InstancesOf(io) => io.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::NodesMatching(nm) => nm.evaluate(store, focus, scope, runner, ir),
+        }?;
+
+        // The data can fan an expression out exponentially, as nested shnex:flatMap over
+        // nodes with two values each does, so the work for one focus node is capped
+        let state = runner.node_expr_state();
+        state.steps += 1;
+        if state.steps > MAX_EVAL_STEPS {
+            return Err(NodeExprEvalError::TooManySteps(MAX_EVAL_STEPS).into());
         }
+
+        Ok(out)
     }
 }
 

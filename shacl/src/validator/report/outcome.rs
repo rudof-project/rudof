@@ -4,9 +4,10 @@ use crate::validator::report::{Evidence, ValidationResult};
 /// shape)` pair, threaded through the validator in place of a bare
 /// `Vec<ValidationResult>`.
 ///
-/// Both vectors are always populated internally regardless of the user's
-/// `store_errors`/`store_evidences` config — that config only filters what
-/// ends up in the final [`crate::validator::report::ValidationReport`].
+/// Violations are always kept regardless of the user's `store_errors`
+/// config, which only filters what ends up in the final
+/// [`crate::validator::report::ValidationReport`]. Evidences are dropped
+/// as they are made when `store_evidences` is off.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ValidationOutcome {
     violations: Vec<ValidationResult>,

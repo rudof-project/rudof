@@ -1,7 +1,7 @@
 use crate::ir::ShapeLabelIdx;
 pub(crate) use crate::ir::dg::iterator::DependencyGraphIter;
 pub(crate) use crate::ir::dg::pos_neg::PosNeg;
-use petgraph::algo::{is_cyclic_directed, tarjan_scc};
+use petgraph::algo::{kosaraju_scc, toposort};
 use petgraph::prelude::{EdgeRef, GraphMap};
 use petgraph::{Directed, Outgoing};
 use std::collections::HashMap;
@@ -24,17 +24,23 @@ impl DependencyGraph {
     }
 
     pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
-        self.graph.add_edge(from, to, pos_neg);
+        // One edge per pair: a positive constraint between the same two shapes must not hide a negative one
+        if self.graph.edge_weight(from, to) != Some(&PosNeg::Neg) {
+            self.graph.add_edge(from, to, pos_neg);
+        }
     }
 
     /// Check if the dependency graph has any cycle (including positive cycles).
     pub fn has_cycles(&self) -> bool {
-        is_cyclic_directed(&self.graph)
+        // Iterative, unlike is_cyclic_directed, which recurses once per shape along a chain
+        toposort(&self.graph, None).is_err()
     }
 
     pub fn cycles(&self) -> Vec<Vec<ShapeLabelIdx>> {
-        let scc = tarjan_scc(&self.graph);
-        scc.into_iter().filter(|component| component.len() > 1).collect()
+        let scc = kosaraju_scc(&self.graph);
+        scc.into_iter()
+            .filter(|component| component.len() > 1 || self.graph.contains_edge(component[0], component[0]))
+            .collect()
     }
 
     pub fn all_edges(&self) -> DependencyGraphIter<'_> {

@@ -3814,6 +3814,7 @@ dependencies = [
  "rudof_generate",
  "rudof_lib",
  "rudof_rdf",
+ "serde_json",
  "tokio",
 ]
 
@@ -5105,6 +5106,7 @@ dependencies = [
  "schemars 1.2.2",
  "serde",
  "sparql_service",
+ "stacker",
  "thiserror 2.0.20",
  "toml 0.9.12+spec-1.1.0",
  "tracing",

@@ -169,8 +169,9 @@ and the data `:a :p :b . :b :p :a .`, the report (`-r turtle`) contains:
 ```
 
 In the default `-r details` table, the nested results are listed under "Caused by
-(sh:detail)" in the Details column. Nested results can themselves have details, for chains
-of `sh:node` references.
+(sh:detail)" in the Details column. Nested results do not have details of their own, so a
+chain of `sh:node` references shows one level of causes and the report stays small for long
+chains.
 
 ## Recursive shapes
 
@@ -197,7 +198,7 @@ rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantic
 
   ```sh
   ❯ rudof shacl-validate --shapes recursive-shapes.ttl data.ttl --recursion-semantics none
-  Error: SHACL error: ... Dependency graph has cycles: [:Person, _:b0]
+  Error: SHACL error: ... Dependency graph has cycles: [_:b0, :Person]
   ```
 
 A shape with no cycles in it validates identically under all three, so there's no harm in

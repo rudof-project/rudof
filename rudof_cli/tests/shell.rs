@@ -1455,3 +1455,89 @@ fn shell_connect_load_and_query_cypher_round_trip_through_connection_file() {
     );
     assert_eq!(out.code, 0);
 }
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_compare_data_mode_compares_two_graphs() {
+    let (small, big) = (fixture("compare_alice.ttl"), fixture("compare_alice_more.ttl"));
+    let out = run_shell(&format!("compare --mode data --data1 {small} --data2 {big}\nexit\n"));
+    assert!(
+        out.stdout
+            .contains("subgraph: the first graph is contained in the second graph"),
+        "{}",
+        out.transcript()
+    );
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_compare_data_mode_with_only_data2_uses_the_loaded_data() {
+    let (loaded, renamed, big, bob) = (
+        fixture("compare_alice.ttl"),
+        fixture("compare_alice_renamed.nt"),
+        fixture("compare_alice_more.ttl"),
+        fixture("compare_alice_bob.ttl"),
+    );
+    let script = format!(
+        "data {loaded}\n\
+         compare --mode data --data2 {renamed} --format2 ntriples\n\
+         compare --mode data --data2 {big}\n\
+         compare --mode data --data2 {bob} --subgraph-mode entailment\n\
+         exit\n"
+    );
+    let out = run_shell(&script);
+    for expected in [
+        "isomorphic: the loaded data and the given graph are equal up to blank node renaming",
+        "subgraph: the loaded data is contained in the given graph",
+        "(mode: entailment)",
+    ] {
+        assert!(
+            out.stdout.contains(expected),
+            "missing {expected:?}:\n{}",
+            out.transcript()
+        );
+    }
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_compare_data_mode_with_only_data2_and_no_data_reports_it() {
+    let other = fixture("compare_alice.ttl");
+    let out = run_shell(&format!("compare --mode data --data2 {other}\nhelp\nexit\n"));
+    assert!(out.transcript().contains("loaded data"), "{}", out.transcript());
+    // The session kept going
+    assert!(out.stdout.contains("Shell-only commands:"), "{}", out.transcript());
+    assert_eq!(out.code, 0);
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_compare_help_shows_the_data_mode() {
+    let out = run_shell("compare --help\nexit\n");
+    assert!(out.stdout.contains("--subgraph-mode"), "{}", out.transcript());
+    assert!(out.stdout.contains("--data1 <INPUT>"), "{}", out.transcript());
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_compare_show_diff_with_the_loaded_data() {
+    let (bob, robert) = (fixture("compare_bob.ttl"), fixture("compare_robert.ttl"));
+    // --data2 alone: the data mode, with the loaded data as the first graph
+    let out = run_shell(&format!("data {bob}\ncompare --data2 {robert} --show-diff\nexit\n"));
+    for expected in [
+        "different: neither the loaded data nor the given graph is contained in the other",
+        "PREFIX : <http://example.org/>\n",
+        "Only in the loaded data (1):\n  _:b :name \"Bob\" .",
+        "Only in the given graph (1):\n  _:c :name \"Robert\" .",
+        "Blank nodes of the loaded data matched in the given graph:\n  _:b = _:c",
+    ] {
+        assert!(
+            out.stdout.contains(expected),
+            "missing {expected:?}:\n{}",
+            out.transcript()
+        );
+    }
+    assert_eq!(out.code, 0);
+}

@@ -17,4 +17,10 @@ pub enum NodeExprEvalError {
 
     #[error("Expected a numeric literal, but got: {0}")]
     NotNumeric(String),
+
+    #[error("Evaluating the node expression for one focus node took more than {0} steps")]
+    TooManySteps(usize),
+
+    #[error("{0} depends on itself through sh:deactivated")]
+    CyclicNodesMatching(String),
 }

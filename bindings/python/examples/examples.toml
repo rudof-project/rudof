@@ -237,6 +237,44 @@ expected_output = [
 ]
 
 [[example]]
+key = "compare_data"
+source_file = "rdf_data/compare_data.py"
+title = "Compare RDF Graphs"
+description = "Check whether two RDF graphs are isomorphic, equivalent or one is contained in the other, up to blank node renaming (injective, homomorphic or simple entailment) and including RDF 1.2 triple terms"
+category = "rdf"
+files = {}
+expected_output = [
+    "turtle vs n-triples: Isomorphic",
+    "subgraph: Subgraph",
+    "supergraph: Supergraph",
+    "rdf 1.2 annotation vs reification: Isomorphic",
+    "is different: True",
+    "Injective mode: Different",
+    "Homomorphic mode: Different",
+    "Entailment mode: Subgraph",
+    "loaded data: Subgraph",
+]
+
+[[example]]
+key = "diff_data"
+source_file = "rdf_data/diff_data.py"
+title = "Diff RDF Graphs"
+description = "Show the triples of each RDF graph that the other one does not have, up to blank node renaming, with the blank node mapping used"
+category = "rdf"
+files = {}
+expected_output = [
+    "relation: Different, exact: True",
+    "only in first: ['_:b <http://example.org/name> \"Bob\"']",
+    "only in second: ['_:c <http://example.org/name> \"Robert\"']",
+    "blank nodes: [('_:b', '_:c')]",
+    "entailment: True, extra: ['<http://example.org/bob> <http://example.org/age> \"30\"^^<http://www.w3.org/2001/XMLSchema#integer>']",
+    "PREFIX : <http://example.org/>",
+    "  _:b :name \"Bob\" .",
+    "  _:c :name \"Robert\" .",
+    "loaded data: GraphDiff(relation=different, only_in_first=1, only_in_second=1, exact=true)",
+]
+
+[[example]]
 key = "node_info"
 source_file = "rdf_data/node_info.py"
 title = "Node Info"

@@ -72,8 +72,9 @@ pub(crate) fn prefetch(
             }
             let shape = schema.get_shape_from_idx_e(&idx)?;
             let is_node_shape = shape.path().is_none();
+            // Following a path at the depth limit takes about 360 KiB in a debug build
             let values = match shape.path() {
-                Some(path) => path_values(store, &nodes, path)?,
+                Some(path) => crate::with_stack(|| path_values(store, &nodes, path))?,
                 None => nodes.clone(),
             };
 
@@ -115,7 +116,7 @@ pub(crate) fn prefetch(
                     IRComponent::LessThan(c) => outgoing(store, &nodes, c.iri())?,
                     IRComponent::LessThanOrEquals(c) => outgoing(store, &nodes, c.iri())?,
                     IRComponent::SubsetOf(c) => {
-                        path_values(store, &nodes, c.path())?;
+                        crate::with_stack(|| path_values(store, &nodes, c.path()))?;
                     },
                     _ => {},
                 }
@@ -208,7 +209,7 @@ fn path_values(store: &CachedRdfData, nodes: &[OxTerm], path: &SHACLPath) -> Res
         SHACLPath::Predicate { pred } => step(store, nodes, &pred.clone().into(), false)?,
         SHACLPath::Inverse { path } => match path.pred() {
             Some(pred) => step(store, nodes, &pred.clone().into(), true)?,
-            // Left to the lookups, which only support inverse predicates too.
+            // Left to the lookups.
             None => Vec::new(),
         },
         SHACLPath::Alternative { paths } => {
