@@ -11,6 +11,8 @@ pyenum! {
         ShEx  => ShEx,
         /// SHACL (Shapes Constraint Language).
         Shacl => Shacl,
+        /// PG-Schema (property graph schemas).
+        PgSchema => PgSchema,
     }
 }
 
@@ -21,6 +23,8 @@ pyenum! {
         Turtle   => Turtle,
         /// N-Triples - line-based RDF format with one triple per line.
         NTriples => NTriples,
+        /// Property graph in rudof's `.pg` format, with a type map (PG-Schema input only).
+        Pg       => Pg,
     }
 }
 

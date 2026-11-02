@@ -1,0 +1,15 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path ex:nick ; sh:maxCount 2 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path ex:age ; sh:minCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 18 ; sh:maxInclusive 65 ] ;
+  sh:property [ sh:path ex:status ; sh:minCount 1 ; sh:in ( "active" "retired" ) ] ;
+  sh:property [ sh:path ex:code ; sh:minCount 1 ; sh:datatype xsd:string ; sh:pattern "^[A-Z]{3}$" ] ;
+  sh:property [ sh:path ex:worksFor ; sh:minCount 1 ; sh:maxCount 1 ; sh:node ex:OrgShape ] .
+ex:OrgShape a sh:NodeShape ; sh:targetClass ex:Org ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:datatype xsd:string ] .

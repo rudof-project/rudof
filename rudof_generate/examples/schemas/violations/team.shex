@@ -1,0 +1,7 @@
+PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+# Without EXTRA, every ex:member must conform to PersonShape; with EXTRA (LooseTeamShape)
+# only the count of conforming members is constrained, as in a SHACL qualified value shape.
+ex:TeamShape { a [ex:Team] ; ex:member @ex:PersonShape {2,4} ; ex:name xsd:string }
+ex:LooseTeamShape EXTRA ex:member { a [ex:LooseTeam] ; ex:member @ex:PersonShape {2,4} ; ex:name xsd:string }
+ex:PersonShape { a [ex:Person] ; ex:name xsd:string }

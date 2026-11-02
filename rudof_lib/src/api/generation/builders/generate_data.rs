@@ -1,6 +1,8 @@
 use crate::{
     Result, Rudof,
     api::generation::GenerationOperations,
+    api::generation::implementations::{GenerationValidation, validate_generated},
+    errors::GenerationError,
     formats::{DataFormat, GenerationSchemaFormat, InputSpec},
 };
 use std::path::PathBuf;
@@ -19,6 +21,7 @@ pub struct GenerateDataBuilder<'a> {
     number_entities: Option<usize>,
     seed: Option<u64>,
     parallel: Option<usize>,
+    validate: bool,
 }
 
 impl<'a> GenerateDataBuilder<'a> {
@@ -42,6 +45,7 @@ impl<'a> GenerateDataBuilder<'a> {
             parallel: None,
             output: None,
             config_file: None,
+            validate: false,
         }
     }
 
@@ -83,8 +87,29 @@ impl<'a> GenerateDataBuilder<'a> {
         self
     }
 
+    /// Validate the generated data against the source schema after generating
+    /// it. Requires [`with_output`](Self::with_output). A ShapeMap associating
+    /// each node with the shape that generated it is written next to the
+    /// output (`<output>.shapemap`) and used as the ShEx validation targets.
+    pub fn with_validation(mut self, validate: bool) -> Self {
+        self.validate = validate;
+        self
+    }
+
     /// Execute data generation with the configured parameters.
     pub async fn execute(self) -> Result<()> {
+        self.execute_with_report().await.map(|_| ())
+    }
+
+    /// Execute data generation and, when [`with_validation`](Self::with_validation)
+    /// is set, return the outcome of validating the output against the schema.
+    pub async fn execute_with_report(self) -> Result<Option<GenerationValidation>> {
+        let shapemap = if self.validate {
+            let output = self.output.ok_or(GenerationError::ValidationNeedsOutput)?;
+            Some(output.with_extension("shapemap"))
+        } else {
+            None
+        };
         <Rudof as GenerationOperations>::generate_data(
             self.rudof,
             self.schema,
@@ -95,7 +120,27 @@ impl<'a> GenerateDataBuilder<'a> {
             self.number_entities,
             self.seed,
             self.parallel,
+            shapemap.as_ref(),
         )
-        .await
+        .await?;
+
+        let (Some(shapemap), Some(output)) = (shapemap, self.output) else {
+            return Ok(None);
+        };
+        let InputSpec::Path(schema) = self.schema else {
+            return Err(GenerationError::UnsupportedGenerationSchemaInput {
+                input: "non-file schema".to_string(),
+            })?;
+        };
+        let data_format = self.result_generation_format.copied().unwrap_or_default();
+        validate_generated(
+            self.rudof.config().execute(),
+            schema,
+            self.schema_format,
+            output,
+            &data_format,
+            &shapemap,
+        )
+        .map(Some)
     }
 }

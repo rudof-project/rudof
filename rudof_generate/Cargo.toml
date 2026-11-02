@@ -11,37 +11,44 @@ keywords.workspace = true
 categories.workspace = true
 authors.workspace = true
 
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
+# The library also builds for WebAssembly (rudof_wasm): generation from schema text into
+# strings, without files, threads or the clock.
+[dependencies]
 anyhow.workspace = true
-chrono.workspace = true
-
-# CLI and configuration
-clap.workspace = true
 futures.workspace = true
 rudof_iri.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 prefixmap = { workspace = true }
-
-# Data generation and utilities
 rand.workspace = true
-rayon.workspace = true
 regex.workspace = true
 rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+pgschema.workspace = true
 shacl.workspace = true
-shex_ast.workspace = true 
+shex_ast.workspace = true
 rudof_rdf.workspace = true
-tokio.workspace = true
 thiserror.workspace = true
-
-# Async and parallelism
 toml.workspace = true
-
-# Logging and error handling
 tracing.workspace = true
+tokio = { workspace = true, features = ["sync"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+chrono.workspace = true
+clap.workspace = true
+rayon.workspace = true
+tokio = { workspace = true, features = ["full"] }
 tracing-subscriber.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+# rand 0.8 draws entropy through getrandom 0.2, which needs its `js` backend in browsers.
+getrandom02 = { package = "getrandom", version = "0.2", features = ["js"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 regex.workspace = true
 tempfile.workspace = true
+# Parses generated Turtle into triple sets, to compare graphs generated from equivalent schemas.
+oxttl.workspace = true
+# Independent oracle for the conformance suite: rudof's own ShEx/SHACL validators.
+# Default features off keeps the lbug (C++/OpenSSL) graph database out of test builds.
+rudof_lib = { path = "../rudof_lib", default-features = false }

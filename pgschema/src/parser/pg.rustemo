@@ -150,7 +150,7 @@ DATE_NAME:
     "DATE" ;
 
 NUMBER:
-    /\d+/ ;
+    /-?\d+/ ;
 
 OPTIONAL:
     "OPTIONAL" ;

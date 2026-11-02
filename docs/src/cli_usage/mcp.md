@@ -54,6 +54,7 @@ ShEx and SHACL:
 |------|-------------|
 | `validate_shex` | Validate RDF data against a ShEx schema |
 | `check_shex` | Check if a ShEx schema is well-formed |
+| `generate_data` | `triple_count`, the generated `data` (Turtle), the `shapemap` of every generated node, ready for `validate_shex`; from a PG-Schema also `property_graph` and `type_map`; with violations, the `violations` report (and `rdf_violations` for the RDF reading of a property graph) |
 | `show_shex` | Serialize a ShEx schema, with optional statistics and dependencies |
 | `validate_shacl` | Validate RDF data against a SHACL schema |
 
@@ -64,6 +65,7 @@ Session management:
 | `reset_session_state` | Clear session state (all, or specific targets like data/shex/shacl/...) |
 | `get_rudof_version` | Report the rudof version this MCP server is running |
 | `manage_prefixes` | Show or manage the session's default prefixes (list/add/remove/rename/copy), mirroring the shell's `prefixes` command |
+| `generate_data` | Generate synthetic data from a ShEx, SHACL or PG-Schema schema, optionally with controlled violations and the report of what a validator must flag; the data is loaded into the session for validation |
 
 Data loaded in a session stays there until the session ends or `reset_session_state` clears it, and
 every `load_rdf_data_from_sources` call merges into it. A relative file path is resolved against

@@ -152,7 +152,7 @@ rudof generate -s education.ttl -n 10000 -p 8 -o huge_dataset.ttl
 
 ### Required Options
 
-- `-s, --schema <SCHEMA_FILE>` - Path to your schema file (ShEx or SHACL)
+- `-s, --schema <SCHEMA_FILE>` - Path to your schema file (ShEx, SHACL, or PG-Schema as a `.pgs` file)
 
 ### Common Options
 
@@ -162,7 +162,7 @@ rudof generate -s education.ttl -n 10000 -p 8 -o huge_dataset.ttl
 
 ### Advanced Options
 
-- `-f, --schema-format <FORMAT>` - Force schema format: `auto`, `shex`, or `shacl` (default: `auto`)
+- `-f, --schema-format <FORMAT>` - Force schema format: `auto`, `shex`, or `shacl` (default: `auto`; `auto` reads a `.pgs` file as PG-Schema)
 - `--seed <NUMBER>` - Random seed for reproducible results
 - `-p, --parallel <THREADS>` - Number of CPU threads to use (default: auto)
 - `--force-overwrite` - Overwrite output file if it exists
@@ -172,97 +172,134 @@ rudof generate -s education.ttl -n 10000 -p 8 -o huge_dataset.ttl
 
 ## Using Configuration Files (Advanced)
 
-`--generator-config <FILE>` loads the fine-grained generation settings below (`[generation]`, `[field_generators]`, `[output]`, `[parallel]`). `--entities`, `--result-format`, `--seed`, `--parallel` and `--output-file` on the command line override the matching setting in the file when both are given; everything else (entity distribution, cardinality strategy, per-field generators, ...) only comes from the file.
+`--generator-config <FILE>` loads the generation settings, a TOML (or JSON) file that
+starts with `version = 2`. Unknown keys are errors. `--entities`, `--result-format`,
+`--seed`, `--parallel` and `--output-file` on the command line override the matching
+setting in the file. The full format is described in the
+[rudof_generate README](https://github.com/rudof-project/rudof/tree/master/rudof_generate#configuration),
+with one example per use in `rudof_generate/examples/configs/`.
 
 ### Basic Configuration File
 
-Create a file called `generator_config.toml`:
-
 ```toml
-# How many entities to generate
-[generation]
-entity_count = 100
-seed = 12345                    # For reproducible results
-entity_distribution = "Equal"   # Equal distribution across shapes
-cardinality_strategy = "Balanced" # Balanced cardinality handling
+version = 2
 
-# Default settings for generated data
-[field_generators.default]
-locale = "en"      # Language for generated text
-quality = "Medium" # Data quality: Low, Medium, or High
+[run]
+seed = 42                       # same seed => same graph, whatever `threads` is
+threads = 4
+scale = { entities = 1000 }     # a total; or { per_shape = 1000 }
 
-# Where to save the output
-[output]
-path = "generated_data.ttl"
-format = "Turtle"  # Options: Turtle, NTriples
-compress = false
-write_stats = true # Generate a stats file
-
-# Performance settings
-[parallel]
-worker_threads = 4     # Number of CPU threads
-batch_size = 100      # Entities per batch
-parallel_shapes = true
-parallel_fields = true
-```
-
-**Use it:**
-```sh
-rudof generate --schema person.shex --generator-config generator_config.toml
-```
-
-### Minimal Configuration
-
-For a minimal configuration, you only need:
-
-```toml
-[generation]
-entity_count = 50
+[defaults]
+fill = 0.8                      # probability that an OPTIONAL property is generated
+cardinality = "balanced"        # "min" | "max" | "uniform" | "balanced"
 
 [output]
-path = "output.ttl"
+dir = "out"                     # writes out/data.ttl and out/data.shapemap
+formats = ["turtle"]            # "turtle" | "ntriples" | "pg"
 ```
 
-### Advanced Configuration with Custom Generators
-
-For power users who want fine-grained control:
+### Per-Shape and Per-Property Settings
 
 ```toml
-[generation]
-entity_count = 1000
-seed = 98765
+version = 2
 
-# Custom ranges for integer fields
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer"]
+[prefixes]
+ex = "http://example.org/"
+
+[[shape]]
+match = "ex:PersonShape"
+count = 300
+fill = 0.5
+
+[[property]]
+match = { shape = "ex:PersonShape", path = "ex:email" }
+fill = 1.0
+
+[values.datatypes."xsd:integer"]
 generator = "integer"
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer".parameters]
-min = 1
-max = 10000
+parameters = { min = 18, max = 65 }
+```
 
-# Custom date ranges
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date"]
-generator = "date"
-[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date".parameters]
-start_year = 1980
-end_year = 2024
+### Controlled Errors and Target Coherence
 
-# Custom email templates
-[field_generators.properties."http://example.org/email"]
-generator = "string"
-[field_generators.properties."http://example.org/email".parameters]
-templates = [
-    "{firstName}.{lastName}@example.com",
-    "{firstName}{number}@company.org"
-]
+```toml
+version = 2
+
+[violations]                    # break 10% of the entities; out/labels.jsonl lists what must fail
+rate = 0.1
+
+[targets]                       # search the fill until the output has this coherence
+coherence = 0.8
 
 [output]
-path = "custom_data.ttl"
-format = "Turtle"
-write_stats = true
+dir = "out"
+```
 
-[parallel]
-worker_threads = 8
-batch_size = 250
+`[violations]` breaks a share (`rate`) of the generated entities, one constraint each. The
+`operators` key chooses how; without it, every operator that applies to the schema is
+used:
+
+| Operator | What it does |
+|---|---|
+| `drop-required` | removes a required property |
+| `exceed-max` | adds a value beyond the maximum cardinality |
+| `wrong-datatype`, `ill-typed-literal` | a value of another datatype, or an invalid lexical form of the declared one |
+| `out-of-range`, `pattern-break`, `not-in-value-set` | a value outside a range, a pattern or a value set |
+| `dangling-reference` | a reference to a node that does not conform to the referenced shape |
+| `closed-extra` | a property that a closed shape does not allow |
+| `wrong-language`, `duplicate-language`, `lang-string-for-string` | language tags that break `sh:languageIn`, `sh:uniqueLang` or a plain string |
+
+`labels.jsonl` then says what a correct validator of the schema's language must report,
+one line per node:
+
+- `direct`: the node was broken, with the `operator` and the `property`;
+- `induced`: the node fails through a reference to a broken node, with its `cause`;
+- `trap`: the node was changed, but it still conforms. Examples are a language tag in
+  another case, or `030` for `30` under a range. A validator that reports a trap is wrong.
+
+### PG-Schema and Property Graphs
+
+A `.pgs` schema generates a property graph:
+
+```sh
+rudof generate -s persons.pgs --generator-config pg.toml
+```
+
+```toml
+version = 2
+
+[run]
+scale = { per_shape = 500 }
+
+[violations]
+rate = 0.2
+
+[violations.rdf]                # the report for the RDF copy of the graph
+closed = true                   # keep PG-Schema's closed records (false: open shapes)
+keys_required = true            # keep its required keys (false: optional keys)
+
+[output]
+dir = "out"
+formats = ["pg", "turtle"]      # out/data.pg, out/data.typemap, out/data.ttl, out/data.shapemap
+```
+
+`data.pg` is the graph in rudof's property graph format. `data.typemap` gives the type of
+every node and edge, for `rudof pgschema-validate`. With `turtle`, the graph is also written
+as RDF, in an encoding over which a ShEx or SHACL schema can say the same as the
+PG-Schema. With errors, `labels.jsonl` reports for PG-Schema, counting nodes and edges.
+`labels-rdf.jsonl` reports for ShEx and SHACL on the RDF copy, under the defaults that
+`[violations.rdf]` chooses.
+
+### Validating the Output
+
+`--validate` validates the generated data against the schema it came from, and exits with
+an error on violations:
+
+- ShEx: each node against the shape that generated it, through the ShapeMap;
+- SHACL: through the targets of the shapes.
+
+```sh
+rudof generate -s schema.shex -n 1000 -o out/data.ttl --validate
 ```
 
 ## Complete Examples
@@ -329,18 +366,17 @@ rudof generate -s courses.ttl -n 50 -o enrollment_data.ttl
 
 **Config (`large_config.toml`):**
 ```toml
-[generation]
-entity_count = 5000
+version = 2
+
+[run]
 seed = 12345
+threads = 8
+scale = { entities = 5000 }
 
 [output]
-path = "large_dataset.ttl"
-format = "NTriples"
-write_stats = true
-
-[parallel]
-worker_threads = 8
-batch_size = 250
+dir = "large_dataset"
+formats = ["ntriples"]
+stats = true
 ```
 
 **Generate:**
@@ -431,6 +467,8 @@ rudof generate -s schema.shex -n 50 --seed 3 -o dataset3.ttl
 ✅ Node kinds (IRI, Literal, BNode)
 ✅ Value constraints and enumerations
 ✅ References between shapes (@:ShapeName)
+✅ Closed shapes (CLOSED) and EXTRA
+✅ Language tags (language sets and stems)
 
 ### SHACL Features
 
@@ -439,8 +477,18 @@ rudof generate -s schema.shex -n 50 --seed 3 -o dataset3.ttl
 ✅ Cardinality (sh:minCount, sh:maxCount)
 ✅ Datatypes (sh:datatype)
 ✅ Node kinds (sh:nodeKind)
-✅ Value constraints (sh:in, sh:pattern)
-✅ References between shapes (sh:node)
+✅ Value constraints (sh:in, sh:hasValue, sh:pattern, ranges)
+✅ References between shapes (sh:node, sh:class, sh:qualifiedValueShape)
+✅ Closed shapes (sh:closed)
+✅ Language tags (sh:languageIn, sh:uniqueLang)
+
+### PG-Schema Features
+
+✅ Node types with one or more labels
+✅ Keys: required, `OPTIONAL` and lists (`T *`, `T {m,n}`)
+✅ `CHECK` ranges and `REGEX` patterns
+✅ Edge types between typed endpoints (`(:@T)`)
+❌ Edge types with properties (left out, with a warning)
 
 ## See Also
 

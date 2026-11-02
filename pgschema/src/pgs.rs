@@ -45,6 +45,28 @@ impl PropertyGraphSchema {
         self.edge_types.len()
     }
 
+    /// The node types, as (type name, spec), sorted by name.
+    pub fn node_types(&self) -> Vec<(&str, &LabelPropertySpec)> {
+        let mut types: Vec<_> = self
+            .node_names
+            .iter()
+            .filter_map(|(name, id)| self.node_types.get(id).map(|spec| (name.as_str(), spec)))
+            .collect();
+        types.sort_by_key(|(name, _)| *name);
+        types
+    }
+
+    /// The edge types, as (type name, edge type), sorted by name.
+    pub fn edge_types(&self) -> Vec<(&str, &EdgeType)> {
+        let mut types: Vec<_> = self
+            .edge_names
+            .iter()
+            .filter_map(|(name, id)| self.edge_types.get(id).map(|edge| (name.as_str(), edge)))
+            .collect();
+        types.sort_by_key(|(name, _)| *name);
+        types
+    }
+
     pub fn get_node_semantics(&self, type_name: &str) -> Result<&LabelPropertySpec, PgsError> {
         let node_id = self.node_names.get(type_name).ok_or(PgsError::MissingNodeLabel {
             label: type_name.to_string(),

@@ -60,18 +60,6 @@ impl PyGeneratorConfig {
         Ok(Self { inner })
     }
 
-    /// Saves this configuration to a TOML file.
-    ///
-    /// Args:
-    ///     path (str | os.PathLike): Path where the TOML file will be written.
-    ///
-    /// Raises:
-    ///     GenerateError: If writing to the file fails.
-    fn to_toml_file(&self, path: PathBuf) -> Result<()> {
-        self.inner.to_toml_file(&path).map_err(config_error)?;
-        Ok(())
-    }
-
     /// Sets the number of entities to generate.
     fn set_entity_count(&mut self, count: usize) {
         self.inner.generation.entity_count = count;
@@ -215,6 +203,131 @@ impl PyGeneratorConfig {
     /// Sets how realistic the generated values should be.
     fn set_data_quality(&mut self, quality: PyDataQuality) {
         self.inner.field_generators.default.quality = quality.into();
+    }
+
+    /// Loads configuration from a TOML string (v1, or v2 with `version = 2`).
+    ///
+    /// Args:
+    ///     content (str): The TOML document.
+    ///
+    /// Returns:
+    ///     GeneratorConfig: Loaded configuration object.
+    ///
+    /// Raises:
+    ///     GenerateError: If the document cannot be parsed.
+    #[staticmethod]
+    fn from_toml_str(content: &str) -> Result<Self> {
+        let inner = rudof_generate::GeneratorConfig::from_toml_str(content).map_err(config_error)?;
+        Ok(Self { inner })
+    }
+
+    /// Sets the probability of generating an optional property (0.0 to 1.0).
+    fn set_property_fill(&mut self, probability: f64) {
+        self.inner.generation.property_fill_probability = probability;
+    }
+
+    /// Sets where to write the ShapeMap (RDF output) or the type map (property graph
+    /// output) that associates every generated node with its shape or type.
+    fn set_shapemap_path(&mut self, path: Option<PathBuf>) {
+        self.inner.output.shapemap = path;
+    }
+
+    /// With property graph output: also write the same graph as RDF (Turtle), and its
+    /// ShapeMap, so that it can be validated against ShEx or SHACL translations.
+    ///
+    /// Args:
+    ///     path (str | os.PathLike): Where to write the RDF graph.
+    ///     shapemap (str | os.PathLike, optional): Where to write its ShapeMap.
+    #[pyo3(signature = (path, shapemap = None))]
+    fn set_rdf_output(&mut self, path: PathBuf, shapemap: Option<PathBuf>) {
+        self.inner.output.rdf = Some(path);
+        self.inner.output.rdf_shapemap = shapemap;
+    }
+
+    /// Breaks a share of the generated entities on purpose and writes the
+    /// ground-truth report: every node (and, for a property graph, edge) that a correct
+    /// validator must report, with the operator, the property and, for failures induced
+    /// through references, their cause.
+    ///
+    /// Args:
+    ///     rate (float): Probability that an entity receives one violation (0.0 to 1.0).
+    ///     labels (str | os.PathLike): Where to write the report (JSON Lines).
+    ///     operators (list[str], optional): Operator names, e.g. `["drop-required",
+    ///         "dangling-reference"]`; all of them when omitted.
+    ///
+    /// Raises:
+    ///     GenerateError: If the rate is out of range or an operator is unknown.
+    #[pyo3(signature = (rate, labels, operators = None))]
+    fn set_violations(&mut self, rate: f64, labels: PathBuf, operators: Option<Vec<String>>) -> Result<()> {
+        use rudof_generate::config::{ViolationOperator, ViolationsConfig};
+        if !(0.0..=1.0).contains(&rate) {
+            return Err(config_error(format!("violation rate must be between 0.0 and 1.0, got {rate}")).into());
+        }
+        let operators = match operators {
+            None => ViolationOperator::ALL.to_vec(),
+            Some(names) => names
+                .iter()
+                .map(|n| {
+                    ViolationOperator::from_name(n)
+                        .ok_or_else(|| config_error(format!("unknown violation operator `{n}`")))
+                })
+                .collect::<std::result::Result<Vec<_>, _>>()?,
+        };
+        let rdf = self.inner.generation.violations.take().and_then(|v| v.rdf);
+        self.inner.generation.violations = Some(ViolationsConfig {
+            rate,
+            operators,
+            shapes: Vec::new(),
+            labels: Some(labels),
+            rdf,
+        });
+        Ok(())
+    }
+
+    /// With a PG-Schema input: also write the report of the same broken graph read as
+    /// RDF, where a reference failure fails the node holding the reference, transitively.
+    /// `closed` and `keys_required` say whether the RDF translation keeps PG-Schema's
+    /// closed records and required keys (a SHACL modeller would usually drop both).
+    /// Call after `set_violations`.
+    ///
+    /// Raises:
+    ///     GenerateError: If no violations are configured.
+    #[pyo3(signature = (labels, closed = true, keys_required = true))]
+    fn set_rdf_labels(&mut self, labels: PathBuf, closed: bool, keys_required: bool) -> Result<()> {
+        let violations = self
+            .inner
+            .generation
+            .violations
+            .as_mut()
+            .ok_or_else(|| config_error("call set_violations before set_rdf_labels"))?;
+        violations.rdf = Some(rudof_generate::config::RdfReading {
+            labels,
+            closed,
+            keys_required,
+        });
+        Ok(())
+    }
+
+    /// Asks for the coherence (Duan et al., 2011) of the output: the generator searches
+    /// the default fill of optional properties, with the default cardinality at `max`,
+    /// until the coherence is within `tolerance` of `coherence`, and keeps the data valid.
+    /// `DataGenerator.target_report()` tells what was reached.
+    ///
+    /// Raises:
+    ///     GenerateError: If a value is out of range.
+    #[pyo3(signature = (coherence, tolerance = 0.01))]
+    fn set_target_coherence(&mut self, coherence: f64, tolerance: f64) -> Result<()> {
+        if !(0.0..=1.0).contains(&coherence) || tolerance <= 0.0 {
+            return Err(config_error(format!(
+                "coherence must be between 0.0 and 1.0 and tolerance positive, got {coherence} and {tolerance}"
+            ))
+            .into());
+        }
+        self.inner.generation.targets = Some(rudof_generate::config::TargetsConfig {
+            coherence: Some(coherence),
+            tolerance,
+        });
+        Ok(())
     }
 
     /// Validates the configuration.

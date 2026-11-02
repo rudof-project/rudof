@@ -20,6 +20,7 @@ pub trait GenerationOperations {
     ///   from `config_file` (or the generator's own default) in effect
     /// * `seed` - Optional random seed for reproducible generation (uses random seed if None)
     /// * `parallel` - Optional number of parallel threads (uses 2 by default)
+    /// * `shapemap` - Optional path for a ShapeMap associating each generated node with its shape
     ///
     /// # Errors
     ///
@@ -34,6 +35,7 @@ pub trait GenerationOperations {
         number_entities: Option<usize>,
         seed: Option<u64>,
         parallel: Option<usize>,
+        shapemap: Option<&PathBuf>,
     ) -> Result<()>;
 }
 
@@ -48,6 +50,7 @@ impl GenerationOperations for Rudof {
         number_entities: Option<usize>,
         seed: Option<u64>,
         parallel: Option<usize>,
+        shapemap: Option<&PathBuf>,
     ) -> Result<()> {
         generate_data(
             self,
@@ -59,6 +62,7 @@ impl GenerationOperations for Rudof {
             number_entities,
             seed,
             parallel,
+            shapemap,
         )
         .await
     }

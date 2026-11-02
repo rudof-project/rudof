@@ -1,0 +1,6 @@
+PREFIX ex: <http://example.org/>
+ex:PersonShape {
+  a [ex:Person] ;
+  ex:label [@en @es] ;
+  ex:motto [@fr~]
+}

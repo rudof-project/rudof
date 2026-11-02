@@ -1,0 +1,21 @@
+# From a PG-Schema: the property graph, its RDF encoding, and controlled errors.
+version = 2
+
+[run]
+seed = 7
+scale = { per_shape = 500 }
+
+[violations]
+rate = 0.2                      # share of entities that receive one error
+operators = ["drop-required", "out-of-range", "dangling-reference", "closed-extra"]
+
+[violations.rdf]                # how the RDF copy reads the PG-Schema defaults
+closed = true                   # records stay closed (a ShEx/SHACL modeller may open them)
+keys_required = true            # keys without OPTIONAL stay required
+
+[output]
+dir = "out"
+formats = ["pg", "turtle"]
+# writes out/data.pg, out/data.typemap, out/data.ttl, out/data.shapemap,
+# out/labels.jsonl (what a PG-Schema validator must report) and
+# out/labels-rdf.jsonl (what a ShEx or SHACL validator must report)

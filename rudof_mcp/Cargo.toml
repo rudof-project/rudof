@@ -17,6 +17,7 @@ base64.workspace = true
 clap.workspace = true
 rmcp.workspace = true
 rudof_lib.workspace = true
+rudof_generate.workspace = true
 schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -24,6 +25,7 @@ tokio.workspace = true
 tokio-util.workspace = true
 tracing.workspace = true
 chrono.workspace = true
+tempfile.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 # The crate itself only needs the server side; the tests drive a real client.

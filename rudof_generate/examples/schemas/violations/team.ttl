@@ -1,0 +1,10 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+# A qualified value shape counts conforming members only; other members are allowed.
+ex:TeamShape a sh:NodeShape ; sh:targetClass ex:Team ;
+  sh:property [ sh:path ex:member ; sh:qualifiedValueShape ex:PersonShape ;
+                sh:qualifiedMinCount 2 ; sh:qualifiedMaxCount 4 ] ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] .
+ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
+  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] .

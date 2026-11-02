@@ -1,0 +1,656 @@
+use crate::Result;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+
+pub mod v2;
+
+/// Main configuration structure for the data generator
+///
+/// Every field, and every field of the structs it nests, has a sensible
+/// default (see the respective `Default` impls), so a config file only
+/// needs to set what it wants to override — down to an empty file, which
+/// is equivalent to [`GeneratorConfig::default()`].
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct GeneratorConfig {
+    pub generation: GenerationConfig,
+    pub field_generators: FieldGeneratorConfig,
+    pub output: OutputConfig,
+    pub parallel: ParallelConfig,
+}
+
+/// Configuration for data generation parameters
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct GenerationConfig {
+    /// Number of entities to generate
+    pub entity_count: usize,
+    /// Random seed for reproducible generation
+    pub seed: Option<u64>,
+    /// Distribution strategy for entities across shapes
+    pub entity_distribution: EntityDistribution,
+    /// Cardinality generation strategy
+    pub cardinality_strategy: CardinalityStrategy,
+    /// Schema format specification
+    pub schema_format: Option<SchemaFormat>,
+
+    // --- Coherence Control Parameters ---
+    /// Probability (0.0 to 1.0) that a property will be included
+    pub property_fill_probability: f64,
+
+    /// Maximum number of properties per instance (0 = unlimited)
+    pub max_properties_per_instance: usize,
+
+    /// Strategy for selecting properties when count is limited
+    pub property_selection_strategy: PropertySelectionStrategy,
+
+    /// Variance in property count (0.0 to 1.0)
+    pub property_count_variance: f64,
+
+    /// List of properties to explicitly exclude
+    pub excluded_properties: Vec<String>,
+
+    /// Per-type coherence settings overrides
+    pub type_overrides: HashMap<String, TypeOverrideConfig>,
+
+    // --- Unbounded cardinalities ---
+    /// How many values to emit for a data property whose upper bound the schema
+    /// leaves open (ShEx `*` or `+`, or a SHACL shape with no `sh:maxCount`).
+    ///
+    /// Such a schema permits any number, so every setting here is conformant
+    /// and the choice is about how much data to produce rather than whether it
+    /// is valid. One is the default because it is the smallest conformant
+    /// answer; raise it to exercise multi-valued properties.
+    pub unbounded_property_values: usize,
+
+    /// The same for properties whose range is another shape. Kept separate
+    /// because a reference is additionally limited by how many entities of the
+    /// target shape exist to point at.
+    pub unbounded_reference_values: usize,
+
+    /// Per-property policies, from the `[[property]]` tables of a v2 config.
+    /// A rule scoped to a shape wins over one that matches the property in any
+    /// shape; both win over the shape and global settings.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub property_rules: Vec<PropertyRule>,
+
+    /// Deliberate, labelled constraint violations (see [`crate::violations`]).
+    /// `None` generates schema-valid data only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub violations: Option<ViolationsConfig>,
+
+    /// Statistics the output must reach; the generator searches its parameters for
+    /// them (see [`TargetsConfig`]). `None` uses the parameters as given.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub targets: Option<TargetsConfig>,
+}
+
+/// Statistics the generated graph must reach. Each metric is a field, so that a
+/// metric added later is one more field; the search keeps the output schema-valid,
+/// and moves only the default fill of optional properties (shape and property
+/// rules keep their own fill), with the default cardinality set to `max`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TargetsConfig {
+    /// Coherence (Duan et al., 2011), with every node typed by the shape that
+    /// generated it.
+    pub coherence: Option<f64>,
+    /// How far the reached value may be from the target.
+    pub tolerance: f64,
+}
+
+/// Which violations to inject, into which entities.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct ViolationsConfig {
+    /// Probability that an eligible entity receives one violation.
+    pub rate: f64,
+    /// Operators to use; an entity gets the first one that applies to its shape.
+    pub operators: Vec<ViolationOperator>,
+    /// Shapes whose entities may be broken; empty means every shape.
+    pub shapes: Vec<String>,
+    /// Where to write the ground-truth labels (JSON Lines).
+    pub labels: Option<PathBuf>,
+    /// With property graph output: label the same broken graph read as RDF too.
+    pub rdf: Option<RdfReading>,
+}
+
+/// How a PG-Schema reads once translated to ShEx or SHACL, for the labels of the
+/// same broken graph as RDF. A reference failure there fails the node that holds
+/// the reference and propagates to a fixpoint, instead of failing the edge. The
+/// defaults also differ between the languages: PG-Schema records are closed and
+/// keys required unless `OPTIONAL`, while ShEx and SHACL shapes are open and
+/// SHACL properties optional, so a translation may keep or drop either default.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RdfReading {
+    /// Where to write the RDF labels (JSON Lines).
+    pub labels: PathBuf,
+    /// Whether the translated shapes are closed, as PG-Schema records are.
+    pub closed: bool,
+    /// Whether keys without `OPTIONAL` stay required (`sh:minCount 1`, ShEx's
+    /// default `{1,1}`).
+    pub keys_required: bool,
+}
+
+impl Default for ViolationsConfig {
+    fn default() -> Self {
+        Self {
+            rate: 0.0,
+            operators: ViolationOperator::ALL.to_vec(),
+            shapes: Vec::new(),
+            labels: None,
+            rdf: None,
+        }
+    }
+}
+
+/// A way of breaking exactly one constraint of an entity.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ViolationOperator {
+    /// Remove every value of a required property.
+    DropRequired,
+    /// Add values beyond a finite maximum cardinality.
+    ExceedMax,
+    /// Replace a value with a literal of another datatype.
+    WrongDatatype,
+    /// Keep the declared datatype but give the literal an invalid lexical form
+    /// (e.g. `"not-a-number"^^xsd:integer`).
+    IllTypedLiteral,
+    /// Replace a numeric value with one outside its bounds.
+    OutOfRange,
+    /// Replace a value with one outside its value set.
+    NotInValueSet,
+    /// Replace a string with one that does not match its pattern.
+    PatternBreak,
+    /// Point a shape reference at a node with no data.
+    DanglingReference,
+    /// Add a property a closed shape does not allow.
+    ClosedExtra,
+    /// Give a language-constrained value a tag outside the admissible ones.
+    WrongLanguage,
+    /// Add a value with an already used tag to a `sh:uniqueLang` property.
+    DuplicateLanguage,
+    /// Replace a string with a language-tagged string of the same lexical form
+    /// where `xsd:string` is required (`rdf:langString` is a different datatype).
+    LangStringForString,
+    /// Retype a value with a datatype derived from the declared one
+    /// (`xsd:int` for `xsd:integer`); datatype tests compare IRIs, not the hierarchy.
+    DerivedDatatype,
+    /// Replace a value-set member with a different term of the same text
+    /// (the literal `"http://ex/A"` for the IRI `<http://ex/A>`, `"1"` for `1`).
+    LookalikeValue,
+    /// Add a value that matches none of the property's constraints, keeping the
+    /// count of matching values valid (in ShEx, only the rule that every value of
+    /// a mentioned predicate must match is broken).
+    UnmatchedValue,
+    /// Trap (not a violation): the same addition on a ShEx `EXTRA` predicate,
+    /// which allows unmatched values.
+    TrapExtraValue,
+    /// Trap (not a violation): change a tag's case (`en` -> `EN`); tags compare
+    /// case-insensitively, so a validator that reports it is wrong.
+    TrapLanguageCase,
+    /// Trap (not a violation): extend a tag with a subtag (`en` -> `en-zz`) where
+    /// the constraint matches language ranges.
+    TrapLanguageSubtag,
+    /// Trap (not a violation): rewrite an integer under a numeric range facet with
+    /// an equal but non-canonical lexical form (`18` -> `018`); facets compare values.
+    TrapNumericLexical,
+    /// Trap (not a violation): add a trailing fractional zero to a decimal under a
+    /// numeric range facet (`3.5` -> `3.50`); the value is unchanged.
+    TrapDecimalLexical,
+}
+
+impl ViolationOperator {
+    pub const ALL: [ViolationOperator; 20] = [
+        Self::DropRequired,
+        Self::ExceedMax,
+        Self::WrongDatatype,
+        Self::IllTypedLiteral,
+        Self::OutOfRange,
+        Self::NotInValueSet,
+        Self::PatternBreak,
+        Self::DanglingReference,
+        Self::ClosedExtra,
+        Self::WrongLanguage,
+        Self::DuplicateLanguage,
+        Self::LangStringForString,
+        Self::DerivedDatatype,
+        Self::LookalikeValue,
+        Self::UnmatchedValue,
+        Self::TrapLanguageCase,
+        Self::TrapLanguageSubtag,
+        Self::TrapNumericLexical,
+        Self::TrapDecimalLexical,
+        Self::TrapExtraValue,
+    ];
+
+    /// A trap changes the data without making it invalid.
+    pub fn is_trap(self) -> bool {
+        matches!(
+            self,
+            Self::TrapLanguageCase
+                | Self::TrapLanguageSubtag
+                | Self::TrapNumericLexical
+                | Self::TrapDecimalLexical
+                | Self::TrapExtraValue
+        )
+    }
+
+    /// Whether the operator means something in a property graph: `.pg` values
+    /// carry no datatype IRI, language tag or lexical form, and PG-Schema has
+    /// no value sets, so the other operators would not break anything there.
+    pub fn applies_to_property_graphs(self) -> bool {
+        matches!(
+            self,
+            Self::DropRequired
+                | Self::ExceedMax
+                | Self::WrongDatatype
+                | Self::OutOfRange
+                | Self::PatternBreak
+                | Self::DanglingReference
+                | Self::ClosedExtra
+        )
+    }
+
+    /// The name used in configs and labels.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::DropRequired => "drop-required",
+            Self::ExceedMax => "exceed-max",
+            Self::WrongDatatype => "wrong-datatype",
+            Self::IllTypedLiteral => "ill-typed-literal",
+            Self::OutOfRange => "out-of-range",
+            Self::NotInValueSet => "not-in-value-set",
+            Self::PatternBreak => "pattern-break",
+            Self::DanglingReference => "dangling-reference",
+            Self::ClosedExtra => "closed-extra",
+            Self::WrongLanguage => "wrong-language",
+            Self::DuplicateLanguage => "duplicate-language",
+            Self::TrapLanguageCase => "trap-language-case",
+            Self::TrapLanguageSubtag => "trap-language-subtag",
+            Self::TrapNumericLexical => "trap-numeric-lexical",
+            Self::LangStringForString => "lang-string-for-string",
+            Self::DerivedDatatype => "derived-datatype",
+            Self::LookalikeValue => "lookalike-value",
+            Self::TrapDecimalLexical => "trap-decimal-lexical",
+            Self::UnmatchedValue => "unmatched-value",
+            Self::TrapExtraValue => "trap-extra-value",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|op| op.name() == name)
+    }
+}
+
+/// Generation policy for one property, optionally restricted to one shape.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct PropertyRule {
+    /// Shape the rule applies to; `None` matches the property in every shape.
+    pub shape: Option<String>,
+    /// Property IRI.
+    pub path: String,
+    /// Probability that the property is emitted when it is optional. Required
+    /// properties are always emitted.
+    pub fill: Option<f64>,
+    /// Cardinality strategy for this property.
+    pub cardinality: Option<CardinalityStrategy>,
+    /// Number of values used when the schema leaves the maximum open.
+    pub unbounded_cap: Option<usize>,
+}
+
+impl GenerationConfig {
+    /// The most specific rule for `property` in `shape`, if any.
+    pub fn property_rule(&self, shape: &str, property: &str) -> Option<&PropertyRule> {
+        let mut unscoped = None;
+        for rule in self.property_rules.iter().filter(|r| r.path == property) {
+            match rule.shape.as_deref() {
+                Some(s) if s == shape => return Some(rule),
+                None if unscoped.is_none() => unscoped = Some(rule),
+                _ => {},
+            }
+        }
+        unscoped
+    }
+}
+
+impl Default for GenerationConfig {
+    fn default() -> Self {
+        Self {
+            entity_count: 1000,
+            seed: None,
+            entity_distribution: EntityDistribution::default(),
+            cardinality_strategy: CardinalityStrategy::default(),
+            schema_format: None,
+            property_fill_probability: 1.0,
+            max_properties_per_instance: 0,
+            property_selection_strategy: PropertySelectionStrategy::default(),
+            property_count_variance: 0.0,
+            excluded_properties: Vec::new(),
+            type_overrides: HashMap::new(),
+            unbounded_property_values: 1,
+            unbounded_reference_values: 1,
+            property_rules: Vec::new(),
+            violations: None,
+            targets: None,
+        }
+    }
+}
+
+/// Strategy for selecting which properties to keep when limiting count
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum PropertySelectionStrategy {
+    #[default]
+    All,
+    Random,
+    Weighted,
+}
+
+/// Overrides for coherence settings per type
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TypeOverrideConfig {
+    pub property_fill_probability: Option<f64>,
+    pub max_properties_per_instance: Option<usize>,
+    pub property_selection_strategy: Option<PropertySelectionStrategy>,
+    pub property_count_variance: Option<f64>,
+    pub excluded_properties: Option<Vec<String>>,
+}
+
+/// Schema format for the generator
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum SchemaFormat {
+    ShEx,
+    Shacl,
+    /// PG-Schema (rudof's `.pgs` syntax): generates a property graph.
+    PgSchema,
+}
+
+/// How to distribute entities across different shapes
+///
+/// In TOML/JSON, the payload-carrying variants are externally tagged, e.g.:
+/// ```toml
+/// [generation.entity_distribution]
+/// Weighted = { "http://example.org/Person" = 0.5, "http://example.org/Course" = 0.5 }
+/// ```
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub enum EntityDistribution {
+    /// Equal distribution across all shapes
+    #[default]
+    Equal,
+    /// Weighted distribution based on shape importance
+    Weighted(HashMap<String, f64>),
+    /// Custom distribution with explicit counts per shape
+    Custom(HashMap<String, usize>),
+    /// `default` entities of every shape, except the shapes with an explicit count
+    PerShape {
+        default: usize,
+        counts: HashMap<String, usize>,
+    },
+}
+
+/// Strategy for handling cardinalities in relationships
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum CardinalityStrategy {
+    /// Use minimum cardinalities
+    Minimum,
+    /// Use maximum cardinalities (with reasonable bounds)
+    Maximum,
+    /// Random within cardinality bounds
+    Random,
+    /// Balanced approach favoring realistic distributions
+    #[default]
+    Balanced,
+}
+
+/// Configuration for field value generators
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FieldGeneratorConfig {
+    /// Default generator settings
+    pub default: DefaultFieldConfig,
+    /// Per-datatype specific configurations
+    pub datatypes: HashMap<String, DatatypeConfig>,
+    /// Per-property specific configurations
+    pub properties: HashMap<String, PropertyConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DefaultFieldConfig {
+    /// Locale for text generation (e.g., "en", "es", "fr")
+    pub locale: String,
+    /// Quality level for generated data (low, medium, high)
+    pub quality: DataQuality,
+}
+
+impl Default for DefaultFieldConfig {
+    fn default() -> Self {
+        Self {
+            locale: "en".to_string(),
+            quality: DataQuality::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
+pub enum DataQuality {
+    Low, // Simple random data
+    #[default]
+    Medium, // Realistic patterns
+    High, // Complex realistic data with correlations
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DatatypeConfig {
+    /// Generator type to use for this datatype
+    pub generator: String,
+    /// Additional parameters for the generator
+    pub parameters: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PropertyConfig {
+    /// Generator type to use for this property
+    pub generator: String,
+    /// Additional parameters for the generator
+    pub parameters: HashMap<String, serde_json::Value>,
+    /// Value templates or patterns
+    pub templates: Option<Vec<String>>,
+}
+
+/// Output configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct OutputConfig {
+    /// Output file path
+    pub path: PathBuf,
+    /// Output format (turtle, ntriples, jsonld, etc.)
+    pub format: OutputFormat,
+    /// Whether to compress output
+    pub compress: bool,
+    /// Write statistics file
+    pub write_stats: bool,
+    /// Enable parallel writing to multiple files
+    pub parallel_writing: bool,
+    /// Number of parallel output files (when parallel_writing is true)
+    /// If set to 0, the system will automatically determine the optimal count
+    pub parallel_file_count: usize,
+    /// Where to write a ShEx ShapeMap associating every generated node with the
+    /// shape that generated it: the exact targets for validating the output.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shapemap: Option<PathBuf>,
+    /// With property graph output: also write the same graph as RDF (Turtle),
+    /// so that it can be validated against RDF translations of the schema.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rdf: Option<PathBuf>,
+    /// The ShapeMap of the RDF written to `rdf`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rdf_shapemap: Option<PathBuf>,
+}
+
+impl Default for OutputConfig {
+    fn default() -> Self {
+        Self {
+            path: PathBuf::from("output.ttl"),
+            format: OutputFormat::default(),
+            compress: false,
+            write_stats: true,
+            parallel_writing: false,
+            parallel_file_count: 0,
+            shapemap: None,
+            rdf: None,
+            rdf_shapemap: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
+pub enum OutputFormat {
+    #[default]
+    Turtle,
+    NTriples,
+    /// rudof's property graph format (`.pg`), for PG-Schema input; the type map
+    /// goes where the ShapeMap would (`output.shapemap`).
+    Pg,
+    // NOTE: Only Turtle and NTriples are supported for RDF.
+    // JsonLd and RdfXml removed to avoid serialization issues.
+}
+
+/// Parallelization configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ParallelConfig {
+    /// Number of worker threads (None = auto-detect)
+    pub worker_threads: Option<usize>,
+    /// Batch size for parallel processing
+    pub batch_size: usize,
+    /// Enable parallel shape processing
+    pub parallel_shapes: bool,
+    /// Enable parallel field generation
+    pub parallel_fields: bool,
+}
+
+impl Default for ParallelConfig {
+    fn default() -> Self {
+        Self {
+            worker_threads: None,
+            batch_size: 100,
+            parallel_shapes: true,
+            parallel_fields: true,
+        }
+    }
+}
+
+impl OutputConfig {
+    /// Calculate optimal parallel file count based on dataset size and system capabilities
+    pub fn get_optimal_file_count(&self, total_triples: usize) -> usize {
+        // If user explicitly set a count, use it
+        if self.parallel_file_count > 0 {
+            return self.parallel_file_count;
+        }
+
+        // If parallel writing is disabled, always use 1 file
+        if !self.parallel_writing {
+            return 1;
+        }
+
+        // Detect CPU cores (with fallback to 4)
+        let cpu_count = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+
+        // Calculate optimal file count based on dataset size
+        let optimal_count = match total_triples {
+            0..=1000 => 1,                          // Small datasets: single file
+            1001..=5000 => cpu_count.min(4),        // Small-medium: up to 4 files
+            5001..=50000 => (cpu_count * 2).min(8), // Medium: up to 2x CPU cores, max 8
+            _ => (cpu_count * 2).min(16),           // Large: up to 2x CPU cores, max 16
+        };
+
+        tracing::info!(
+            "Auto-detected optimal parallel file count: {} (CPU cores: {}, triples: {})",
+            optimal_count,
+            cpu_count,
+            total_triples
+        );
+
+        optimal_count
+    }
+}
+
+impl GeneratorConfig {
+    /// Load a configuration file (format v2, see [`v2`]).
+    pub fn from_toml_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let content = std::fs::read_to_string(path)?;
+        Self::from_toml_str(&content)
+    }
+
+    /// Parse a TOML configuration, strictly, as format v2 (see [`v2`]).
+    pub fn from_toml_str(content: &str) -> Result<Self> {
+        v2::ConfigV2::parse(content)?.lower()
+    }
+
+    /// Load a configuration written as JSON, with the same structure as the TOML format.
+    pub fn from_json_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let content = std::fs::read_to_string(path)?;
+        v2::ConfigV2::parse_json(&content)?.lower()
+    }
+
+    /// Merge with command-line overrides
+    pub fn merge_cli_overrides(
+        &mut self,
+        entity_count: Option<usize>,
+        output_path: Option<PathBuf>,
+        seed: Option<u64>,
+    ) {
+        if let Some(count) = entity_count {
+            self.generation.entity_count = count;
+        }
+        if let Some(path) = output_path {
+            self.output.path = path;
+        }
+        if let Some(seed_val) = seed {
+            self.generation.seed = Some(seed_val);
+        }
+    }
+
+    /// Validate configuration
+    pub fn validate(&self) -> Result<()> {
+        if self.generation.entity_count == 0 {
+            return Err(crate::DataGeneratorError::Config(
+                "entity_count must be greater than 0".to_string(),
+            ));
+        }
+
+        if self.parallel.batch_size == 0 {
+            return Err(crate::DataGeneratorError::Config(
+                "batch_size must be greater than 0".to_string(),
+            ));
+        }
+
+        // Validate entity distribution weights sum to reasonable values
+        if let EntityDistribution::Weighted(ref weights) = self.generation.entity_distribution {
+            let total: f64 = weights.values().sum();
+            if total <= 0.0 {
+                return Err(crate::DataGeneratorError::Config(
+                    "Weighted distribution weights must sum to a positive value".to_string(),
+                ));
+            }
+        }
+
+        // Validate coherence parameters
+        if self.generation.property_fill_probability < 0.0 || self.generation.property_fill_probability > 1.0 {
+            return Err(crate::DataGeneratorError::Config(
+                "property_fill_probability must be between 0.0 and 1.0".to_string(),
+            ));
+        }
+
+        if self.generation.property_count_variance < 0.0 || self.generation.property_count_variance > 1.0 {
+            return Err(crate::DataGeneratorError::Config(
+                "property_count_variance must be between 0.0 and 1.0".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+}

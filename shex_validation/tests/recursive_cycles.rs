@@ -122,3 +122,20 @@ fn a_cycle_next_to_a_failing_branch_keeps_its_conforming_nodes() {
         ["a", "b", "c"]
     );
 }
+
+#[test]
+fn a_cycle_of_thousands_of_nodes_does_not_overflow_the_stack() {
+    // The proof follows the chain of references, so its depth is the length of the
+    // cycle; with a fixed thread stack this overflowed at about a thousand nodes,
+    // or not, depending on the order a hash set handed out the dependencies.
+    // Run on a thread with the main thread's stack on Windows (1 MiB).
+    let handle = std::thread::Builder::new()
+        .stack_size(1024 * 1024)
+        .spawn(|| {
+            let (data, nodes) = ring(2000);
+            let first = vec![nodes[0].clone()];
+            conforming(KNOWS, &data, &first, ValidatorConfig::default())
+        })
+        .unwrap();
+    assert_eq!(handle.join().expect("no stack overflow"), ["n0"]);
+}

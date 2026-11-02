@@ -16,8 +16,9 @@ pub async fn generate_data(
     number_entities: Option<usize>,
     seed: Option<u64>,
     parallel: Option<usize>,
+    shapemap: Option<&PathBuf>,
 ) -> Result<()> {
-    let (config, schema_path) = init_defaults(
+    let (mut config, schema_path) = init_defaults(
         schema,
         result_generation_format,
         config_file,
@@ -26,6 +27,10 @@ pub async fn generate_data(
         parallel,
         number_entities,
     )?;
+
+    if let Some(shapemap) = shapemap {
+        config.output.shapemap = Some(shapemap.clone());
+    }
 
     let mut generator = DataGenerator::new(config)
         .map_err(|e| GenerationError::FailedCreatingDataGenerator { error: e.to_string() })?;
@@ -95,8 +100,10 @@ fn init_defaults(
         config.parallel.worker_threads = Some(threads);
     }
 
-    let result_generation_format = result_generation_format.copied().unwrap_or_default();
-    config.output.format = result_generation_format.into();
+    // Without a format, the configuration's own (Turtle by default) stays in effect.
+    if let Some(format) = result_generation_format {
+        config.output.format = (*format).into();
+    }
 
     let schema_path = match schema {
         InputSpec::Path(path) => path.clone(),

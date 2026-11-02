@@ -1,0 +1,5 @@
+PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+# As recursive.shex, but a person may know nobody: those persons cut the reference
+# cycle into chains, so a failure reaches only the persons before it in its chain.
+ex:PersonShape { a [ex:Person] ; ex:name xsd:string ; ex:knows @ex:PersonShape {0,2} }

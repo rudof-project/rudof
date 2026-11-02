@@ -1,0 +1,412 @@
+use crate::ir::{
+    NodeKind as UnifiedNodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
+    Value as UnifiedValue,
+};
+use crate::metrics::conformance::TranslationMetrics;
+use crate::{DataGeneratorError, Result};
+use rudof_rdf::rdf_core::{RDFFormat, term::Object, term::literal::ConcreteLiteral};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
+use shacl::ast::{ASTComponent, ASTNodeShape, ASTPropertyShape, ASTSchema, ASTShape};
+use shacl::rdf::ShaclParser;
+use shacl::types::{NodeKind, Target, Value};
+use std::path::Path;
+
+pub struct ShaclToUnified;
+
+impl Default for ShaclToUnified {
+    fn default() -> Self {
+        Self
+    }
+}
+
+impl ShaclToUnified {
+    pub async fn convert_file<P: AsRef<Path>>(
+        &self,
+        shacl_path: P,
+    ) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
+        let path = shacl_path.as_ref().to_path_buf();
+
+        let schema_data = crate::fs::read_to_string(&path)
+            .await
+            .map_err(|e| DataGeneratorError::Config(format!("Failed to read SHACL file: {e}")))?;
+
+        self.convert_schema(schema_data).await
+    }
+
+    pub async fn convert_schema(&self, schema_data: String) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
+        // Parse RDF data
+        let graph = OxigraphInMemory::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
+            .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
+        // Parse SHACL schema from RDF
+        let mut parser = ShaclParser::new(graph);
+        let schema = parser
+            .parse()
+            .map_err(|e| DataGeneratorError::Config(format!("Failed to parse SHACL: {e}")))?;
+
+        self.convert_shacl_schema(&schema).await
+    }
+
+    async fn convert_shacl_schema(&self, schema: &ASTSchema) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
+        let mut model = UnifiedConstraintModel::new();
+        let mut metrics = TranslationMetrics::default();
+
+        // Get all shapes from the schema
+        for (shape_ref, shape) in schema.iter() {
+            if let ASTShape::NodeShape(node_shape) = shape {
+                // An inline (blank node) shape without targets only describes the
+                // values of the property that uses it; it has no instances of its own.
+                if matches!(shape_ref, Object::BlankNode(_)) && node_shape.targets().is_empty() {
+                    continue;
+                }
+                let unified_shape = self.convert_node_shape(node_shape.as_ref(), schema, &mut metrics);
+                model.add_shape(unified_shape);
+            }
+        }
+
+        Ok((model, metrics))
+    }
+
+    fn convert_node_shape(
+        &self,
+        node_shape: &ASTNodeShape,
+        schema: &ASTSchema,
+        metrics: &mut TranslationMetrics,
+    ) -> UnifiedShape {
+        let shape_id = node_shape.id().to_string();
+        let mut properties = Vec::new();
+
+        // Extract target class if available
+        let mut target_class = node_shape.targets().first().and_then(|target| match target {
+            Target::Class(tc) => Some(tc.to_string()),
+            _ => None,
+        });
+
+        // Process property shapes
+        for prop_ref in node_shape.property_shapes() {
+            if let Some(ASTShape::PropertyShape(prop_shape)) = schema.get_shape(prop_ref) {
+                if target_class.is_none() {
+                    target_class = Self::target_class_from_type_constraint(prop_shape);
+                }
+                if let Some(unified_prop) = self.convert_property_shape(prop_shape, schema, metrics) {
+                    properties.push(unified_prop);
+                }
+            }
+        }
+
+        let properties = merge_same_path(properties);
+
+        let (closed, ignored_properties) = node_shape
+            .components()
+            .iter()
+            .find_map(|c| match c {
+                ASTComponent::Closed {
+                    is_closed,
+                    ignored_properties,
+                } => {
+                    let mut ignored: Vec<String> = ignored_properties.iter().map(|i| i.as_str().to_string()).collect();
+                    ignored.sort();
+                    Some((*is_closed, ignored))
+                },
+                _ => None,
+            })
+            .unwrap_or((false, Vec::new()));
+
+        UnifiedShape {
+            id: shape_id,
+            target_class,
+            properties,
+            closed,
+            ignored_properties,
+            labels: Vec::new(),
+        }
+    }
+
+    /// The class a shape expects on `rdf:type`, when it states one without
+    /// declaring a target.
+    ///
+    /// A shape may constrain `rdf:type` to a single value rather than declaring
+    /// `sh:targetClass`, which says just as clearly what its instances should
+    /// carry. Without this, such a shape falls back to being typed with its own
+    /// IRI and then fails the very `sh:in` it declares.
+    ///
+    /// Only a single-valued constraint yields a target, for the same reason as
+    /// on the ShEx side: a set of several classes does not determine which one
+    /// an instance should receive.
+    fn target_class_from_type_constraint(prop_shape: &ASTPropertyShape) -> Option<String> {
+        const RDF_TYPE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+
+        let path = prop_shape.path().to_string();
+        let path = path
+            .strip_prefix('<')
+            .and_then(|p| p.strip_suffix('>'))
+            .unwrap_or(&path);
+        if path != RDF_TYPE {
+            return None;
+        }
+
+        prop_shape.components().iter().find_map(|component| match component {
+            ASTComponent::In(values) => match values.as_slice() {
+                [Value::Iri(iri)] => Some(iri.to_string()),
+                _ => None,
+            },
+            ASTComponent::HasValue(Value::Iri(iri)) => Some(iri.to_string()),
+            _ => None,
+        })
+    }
+
+    fn convert_property_shape(
+        &self,
+        prop_shape: &ASTPropertyShape,
+        schema: &ASTSchema,
+        metrics: &mut TranslationMetrics,
+    ) -> Option<UnifiedPropertyConstraint> {
+        let property_iri = prop_shape.path().to_string();
+        let mut constraints = Vec::new();
+
+        metrics.original_schema_constraints += prop_shape.components().len();
+
+        if let Some(qualified) = Self::qualified_value_shape(&property_iri, prop_shape.components(), schema) {
+            metrics.represented_constraints_in_unified += 1;
+            return Some(qualified);
+        }
+
+        // Extract cardinality from components
+        let (min_cardinality, max_cardinality) = self.extract_cardinality(prop_shape.components());
+        if min_cardinality.is_some() {
+            metrics.represented_constraints_in_unified += 1;
+        }
+        if max_cardinality.is_some() {
+            metrics.represented_constraints_in_unified += 1;
+        }
+
+        // Process constraints from components
+        for component in prop_shape.components() {
+            if self.convert_component(component, &mut constraints) {
+                metrics.represented_constraints_in_unified += 1;
+            }
+        }
+
+        Some(UnifiedPropertyConstraint {
+            property_iri,
+            constraints,
+            min_cardinality,
+            max_cardinality,
+            counts_matching_values: false,
+            all_values_match: true,
+        })
+    }
+
+    /// A qualified value shape that names a node shape, as a count of the values
+    /// conforming to it (`sh:qualifiedMinCount`/`sh:qualifiedMaxCount`), with the
+    /// other values unconstrained: the ShEx reading of `ex:p @S {m,n}` under
+    /// `EXTRA ex:p`. An `sh:maxCount` on the same property shape counts every
+    /// value, so the maximum is then the smaller of the two over all values.
+    /// An inline (blank node) qualified shape is translated when it only names a
+    /// shape (`[ sh:node S ]`, the same as naming `S`) or a class
+    /// (`[ sh:class C ]`, which counts the values typed `C`).
+    fn qualified_value_shape(
+        property_iri: &str,
+        components: &[ASTComponent],
+        schema: &ASTSchema,
+    ) -> Option<UnifiedPropertyConstraint> {
+        let (shape, q_min, q_max) = components.iter().find_map(|c| match c {
+            ASTComponent::QualifiedValueShape {
+                shape,
+                q_min_count,
+                q_max_count,
+                ..
+            } => Some((shape, *q_min_count, *q_max_count)),
+            _ => None,
+        })?;
+        let constraint = match shape {
+            Object::Iri(iri) => UnifiedConstraint::ShapeReference(iri.to_string()),
+            Object::BlankNode(_) => match schema.get_shape(shape)? {
+                ASTShape::NodeShape(inline) if inline.property_shapes().is_empty() => {
+                    match inline.components().as_slice() {
+                        [ASTComponent::Node(target)] => UnifiedConstraint::ShapeReference(target.to_string()),
+                        [ASTComponent::Class(Object::Iri(class))] => UnifiedConstraint::Class(class.to_string()),
+                        _ => return None,
+                    }
+                },
+                _ => return None,
+            },
+            _ => return None,
+        };
+        let count = |n: Option<isize>| n.filter(|n| *n >= 0).map(|n| n as u32);
+        let (min_count, max_count) = components.iter().fold((None, None), |(min, max), c| match c {
+            ASTComponent::MinCount(n) if *n >= 0 => (Some(*n as u32), max),
+            ASTComponent::MaxCount(n) if *n >= 0 => (min, Some(*n as u32)),
+            _ => (min, max),
+        });
+        let min_cardinality = count(q_min).max(min_count);
+        let max_cardinality = match (count(q_max), max_count) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (a, b) => a.or(b),
+        };
+        Some(UnifiedPropertyConstraint {
+            property_iri: property_iri.to_string(),
+            constraints: vec![constraint],
+            min_cardinality,
+            max_cardinality,
+            counts_matching_values: max_count.is_none(),
+            all_values_match: false,
+        })
+    }
+
+    fn extract_cardinality(&self, components: &[ASTComponent]) -> (Option<u32>, Option<u32>) {
+        let mut min_cardinality = None;
+        let mut max_cardinality = None;
+
+        for component in components {
+            match component {
+                ASTComponent::MinCount(min) if *min >= 0 => {
+                    min_cardinality = Some(*min as u32);
+                },
+                ASTComponent::MaxCount(max) if *max >= 0 => {
+                    max_cardinality = Some(*max as u32);
+                },
+                _ => {},
+            }
+        }
+        // sh:hasValue requires the value to be present, so the property is required
+        // whatever sh:minCount says.
+        if components.iter().any(|c| matches!(c, ASTComponent::HasValue(_))) {
+            min_cardinality = Some(min_cardinality.unwrap_or(0).max(1));
+        }
+
+        (min_cardinality, max_cardinality)
+    }
+
+    fn convert_component(&self, component: &ASTComponent, constraints: &mut Vec<UnifiedConstraint>) -> bool {
+        match component {
+            ASTComponent::Datatype(datatype) => {
+                constraints.push(UnifiedConstraint::Datatype(datatype.to_string()));
+                true
+            },
+            ASTComponent::NodeKind(node_kind) => {
+                let unified_nk = match *node_kind {
+                    NodeKind::Iri => UnifiedNodeKind::Iri,
+                    NodeKind::BNode => UnifiedNodeKind::BlankNode,
+                    NodeKind::Lit => UnifiedNodeKind::Literal,
+                    NodeKind::BNodeOrIri => UnifiedNodeKind::BlankNodeOrIri,
+                    NodeKind::BNodeOrLit => UnifiedNodeKind::BlankNodeOrLiteral,
+                    NodeKind::IriOrLit => UnifiedNodeKind::IriOrLiteral,
+                };
+                constraints.push(UnifiedConstraint::NodeKind(unified_nk));
+                true
+            },
+            ASTComponent::Pattern { pattern, .. } => {
+                constraints.push(UnifiedConstraint::Pattern(pattern.clone()));
+                true
+            },
+            ASTComponent::LanguageIn(langs) => {
+                constraints.push(UnifiedConstraint::Language {
+                    tags: langs.iter().map(|l| l.as_str().to_string()).collect(),
+                    ranges: true,
+                });
+                true
+            },
+            ASTComponent::UniqueLang(true) => {
+                constraints.push(UnifiedConstraint::UniqueLang);
+                true
+            },
+            ASTComponent::MinLength(min_len) => {
+                constraints.push(UnifiedConstraint::MinLength(*min_len as u32));
+                true
+            },
+            ASTComponent::MaxLength(max_len) => {
+                constraints.push(UnifiedConstraint::MaxLength(*max_len as u32));
+                true
+            },
+            ASTComponent::MinInclusive(val) => {
+                let unified_val = self.convert_literal_to_value(val);
+                constraints.push(UnifiedConstraint::MinInclusive(unified_val));
+                true
+            },
+            ASTComponent::MaxInclusive(val) => {
+                let unified_val = self.convert_literal_to_value(val);
+                constraints.push(UnifiedConstraint::MaxInclusive(unified_val));
+                true
+            },
+            ASTComponent::MinExclusive(val) => {
+                let unified_val = self.convert_literal_to_value(val);
+                constraints.push(UnifiedConstraint::MinExclusive(unified_val));
+                true
+            },
+            ASTComponent::MaxExclusive(val) => {
+                let unified_val = self.convert_literal_to_value(val);
+                constraints.push(UnifiedConstraint::MaxExclusive(unified_val));
+                true
+            },
+            ASTComponent::HasValue(value) => {
+                let unified_val = self.convert_value_to_unified_value(value);
+                constraints.push(UnifiedConstraint::HasValue(unified_val));
+                true
+            },
+            ASTComponent::In(values) => {
+                let unified_vals: Vec<UnifiedValue> =
+                    values.iter().map(|v| self.convert_value_to_unified_value(v)).collect();
+                constraints.push(UnifiedConstraint::In(unified_vals));
+                true
+            },
+            ASTComponent::Node(shape) => {
+                constraints.push(UnifiedConstraint::ShapeReference(shape.to_string()));
+                true
+            },
+            ASTComponent::Class(Object::Iri(class)) => {
+                constraints.push(UnifiedConstraint::Class(class.to_string()));
+                true
+            },
+            ASTComponent::MinCount(_) | ASTComponent::MaxCount(_) => false,
+            _ => {
+                // For other components, we might add basic string datatype
+                // or handle them based on specific needs
+                false
+            },
+        }
+    }
+
+    fn convert_literal_to_value(&self, literal: &ConcreteLiteral) -> UnifiedValue {
+        // Simple conversion - in practice you'd want more sophisticated handling
+        UnifiedValue::Literal(literal.lexical_form().to_string(), Some(literal.datatype().to_string()))
+    }
+
+    fn convert_value_to_unified_value(&self, value: &Value) -> UnifiedValue {
+        match value {
+            Value::Iri(iri) => UnifiedValue::Iri(iri.to_string()),
+            Value::Literal(lit) => {
+                UnifiedValue::Literal(lit.lexical_form().to_string(), Some(lit.datatype().to_string()))
+            },
+        }
+    }
+}
+
+/// Property shapes of one node shape that share a path are one conjunction: every
+/// value must satisfy all their value constraints, and the count lies within all
+/// their bounds (DCAT-AP, for one, states `sh:class`, `sh:nodeKind` and
+/// `sh:maxCount` of a path in separate property shapes). Qualified value shapes
+/// count only their conforming values, so they stay separate.
+fn merge_same_path(properties: Vec<UnifiedPropertyConstraint>) -> Vec<UnifiedPropertyConstraint> {
+    let mut merged: Vec<UnifiedPropertyConstraint> = Vec::new();
+    for prop in properties {
+        let same = merged
+            .iter_mut()
+            .find(|m| m.all_values_match && prop.all_values_match && m.property_iri == prop.property_iri);
+        match same {
+            Some(m) => {
+                for c in prop.constraints {
+                    if !m.constraints.contains(&c) {
+                        m.constraints.push(c);
+                    }
+                }
+                m.min_cardinality = m.min_cardinality.max(prop.min_cardinality);
+                m.max_cardinality = match (m.max_cardinality, prop.max_cardinality) {
+                    (Some(a), Some(b)) => Some(a.min(b)),
+                    (a, b) => a.or(b),
+                };
+            },
+            None => merged.push(prop),
+        }
+    }
+    merged
+}

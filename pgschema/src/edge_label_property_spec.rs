@@ -16,6 +16,10 @@ impl EdgeLabelPropertySpec {
         EdgeLabelPropertySpec { label_property_spec }
     }
 
+    pub fn label_property_spec(&self) -> &LabelPropertySpec {
+        &self.label_property_spec
+    }
+
     pub fn semantics(&self, schema: &PropertyGraphSchema) -> Result<FormalBaseType, PgsError> {
         self.label_property_spec.semantics(schema)
     }

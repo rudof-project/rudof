@@ -31,6 +31,8 @@ pub(crate) mod utils;
 
 pub mod config;
 
+#[cfg(not(target_family = "wasm"))]
+pub use crate::api::generation::implementations::GenerationValidation;
 pub use crate::config::RudofConfig;
 pub use rudof::*;
 

@@ -1,0 +1,14 @@
+# keys.pgs in ShEx over its RDF encoding: required, optional and multi-valued keys.
+PREFIX t: <http://rudof.example/pg/type/>
+PREFIX k: <http://rudof.example/pg/key/>
+PREFIX l: <http://rudof.example/pg/label/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+t:PersonType CLOSED {
+  a [ l:Person ] ;
+  k:name xsd:string ;
+  k:nickname xsd:string ? ;
+  k:tags xsd:string {1,3} ;
+  k:birthDate xsd:date ;
+  k:active xsd:boolean
+}

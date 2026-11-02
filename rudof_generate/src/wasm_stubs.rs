@@ -1,5 +1,5 @@
 use crate::DataGeneratorError;
-use crate::output::OutputWriter;
+use crate::sinks::rdf::OutputWriter;
 
 impl OutputWriter {
     pub(super) async fn create_parallel_manifest(&self, _: usize) -> Result<(), DataGeneratorError> {

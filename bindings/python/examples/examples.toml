@@ -538,8 +538,8 @@ expected_output = ["locale: en"]
 [[example]]
 key = "generate_config_persistence"
 source_file = "generate/generate_config_persistence.py"
-title = "Generator Config Persistence"
-description = "Persist GeneratorConfig to TOML and load from TOML/JSON"
+title = "Generator Config Files"
+description = "Load GeneratorConfig from TOML and from JSON (format v2)"
 category = "generate"
 files = {}
 expected_output = [
@@ -571,6 +571,33 @@ files = { schema = "person.shex" }
 expected_output = [
     "run_with_format wrote output: True",
     "run wrote output: True",
+]
+
+[[example]]
+key = "generate_same_data"
+source_file = "generate/generate_same_data.py"
+title = "The Same Data from ShEx, SHACL and PG-Schema"
+description = "Generate from equivalent schemas in the three languages and compare the graphs"
+category = "generate"
+files = {}
+expected_output = [
+    "ShEx graph equals PG-Schema graph: True",
+    "SHACL graph equals PG-Schema graph: True",
+    "property graph valid (PG-Schema): True",
+    "RDF graph valid (SHACL): True",
+]
+
+[[example]]
+key = "generate_violations"
+source_file = "generate/generate_violations.py"
+title = "Controlled Violations and Their Report"
+description = "Break a generated property graph on purpose and check the report with a validator"
+category = "generate"
+files = {}
+expected_output = [
+    "property graph report:",
+    "RDF report:",
+    "PG-Schema validator reports exactly the report: True",
 ]
 
 [[example]]

@@ -1,0 +1,12 @@
+PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+# One shape per term kind, so every lookalike kind gets its share of entities.
+ex:IriShape { a [ex:IriThing] ; ex:kind [ex:A ex:B] }
+ex:IntShape { a [ex:IntThing] ; ex:level [1 2 3] }
+ex:StringShape { a [ex:StringThing] ; ex:status ["active" "retired"] }
+ex:TypedShape {
+  a [ex:TypedThing] ;
+  ex:name xsd:string ;
+  ex:count xsd:integer ;
+  ex:score xsd:decimal MININCLUSIVE 0 MAXINCLUSIVE 10
+}

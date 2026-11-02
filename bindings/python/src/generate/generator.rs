@@ -127,6 +127,14 @@ impl PyDataGenerator {
         self.run_with_format(py, schema_path, None)
     }
 
+    /// What the coherence search of the last run reached, when the configuration sets a
+    /// target: `(target, reached, within_tolerance, fill)`. `None` without a target.
+    fn target_report(&self) -> Option<(f64, f64, bool, f64)> {
+        self.inner
+            .target_report()
+            .map(|r| (r.target, r.reached, r.within_tolerance, r.fill))
+    }
+
     fn __repr__(&self) -> String {
         "DataGenerator()".to_string()
     }

@@ -1,0 +1,17 @@
+# The same number of entities of every shape, as benchmarks usually need,
+# with an exception for one shape.
+version = 2
+
+[prefixes]
+ex = "http://example.org/"
+
+[run]
+seed = 7
+scale = { per_shape = 1000 }    # 1,000 of every shape
+
+[[shape]]
+match = "ex:CourseShape"        # except this one
+count = 50
+
+[output]
+dir = "out"

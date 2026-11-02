@@ -1,0 +1,15 @@
+# keys.pgs in SHACL over its RDF encoding: required, optional and multi-valued keys.
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix t: <http://rudof.example/pg/type/> .
+@prefix k: <http://rudof.example/pg/key/> .
+@prefix l: <http://rudof.example/pg/label/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+t:PersonType a sh:NodeShape ; sh:targetClass l:Person ;
+  sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
+  sh:property [ sh:path k:name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path k:nickname ; sh:datatype xsd:string ; sh:maxCount 1 ] ;
+  sh:property [ sh:path k:tags ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 3 ] ;
+  sh:property [ sh:path k:birthDate ; sh:datatype xsd:date ; sh:minCount 1 ; sh:maxCount 1 ] ;
+  sh:property [ sh:path k:active ; sh:datatype xsd:boolean ; sh:minCount 1 ; sh:maxCount 1 ] .

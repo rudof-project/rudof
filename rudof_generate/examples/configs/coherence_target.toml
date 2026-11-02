@@ -1,0 +1,15 @@
+# Ask for the structuredness instead of setting it: the generator searches the fill
+# of optional properties until the output has the target coherence (Duan et al.,
+# 2011), and keeps the data valid. More metrics will be added as fields of [targets].
+version = 2
+
+[run]
+seed = 7
+scale = { per_shape = 1000 }
+
+[targets]
+coherence = 0.8
+tolerance = 0.01                # default
+
+[output]
+dir = "out"

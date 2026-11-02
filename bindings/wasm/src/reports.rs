@@ -341,6 +341,39 @@ impl From<&CoreTriple> for Triple {
     }
 }
 
+/// Data generated from a schema (see [`crate::generate`]).
+#[cfg(feature = "generate")]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratedData {
+    /// The graph as RDF (Turtle); from a PG-Schema, the RDF encoding of the property graph.
+    pub data: String,
+    /// A ShapeMap (compact syntax) with the shape of every generated node.
+    pub shapemap: String,
+    /// From a PG-Schema: the graph in rudof's property graph format.
+    pub property_graph: Option<String>,
+    /// From a PG-Schema: the type of every node and edge.
+    pub type_map: Option<String>,
+    /// With `[violations]`: what a validator of the schema's language must report (JSON Lines).
+    pub labels: Option<String>,
+    /// With `[violations]` and a PG-Schema: the same for the graph read as RDF.
+    pub rdf_labels: Option<String>,
+}
+
+#[cfg(feature = "generate")]
+impl From<rudof_generate::GeneratedData> for GeneratedData {
+    fn from(g: rudof_generate::GeneratedData) -> Self {
+        GeneratedData {
+            data: g.data,
+            shapemap: g.shapemap,
+            property_graph: g.property_graph,
+            type_map: g.type_map,
+            labels: g.labels,
+            rdf_labels: g.rdf_labels,
+        }
+    }
+}
+
 /// The differences between two RDF graphs, as returned by `diff_data`.
 /// Triples are in N-Triples, without the final `.`.
 #[derive(Debug, Clone, PartialEq, Serialize)]

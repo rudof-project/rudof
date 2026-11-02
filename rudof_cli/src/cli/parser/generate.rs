@@ -28,10 +28,9 @@ pub struct GenerateArgs {
         short = 'r',
         long = "result-format",
         ignore_case = true,
-        value_name = "Output RDF format",
-        default_value_t = DataFormatCli::Turtle
+        value_name = "Output RDF format (default: turtle, or the format of --generator-config)"
     )]
-    pub result_format: DataFormatCli,
+    pub result_format: Option<DataFormatCli>,
 
     #[arg(long = "seed", value_name = "Random seed for reproducible generation")]
     pub seed: Option<u64>,
@@ -48,6 +47,12 @@ pub struct GenerateArgs {
     /// override the matching setting in this file when both are given.
     #[arg(long = "generator-config", value_name = "Generator config file (TOML or JSON)")]
     pub generator_config: Option<PathBuf>,
+
+    /// Validate the generated data against the input schema (ShEx: each node
+    /// against the shape that generated it, via `<output>.shapemap`; SHACL: the
+    /// shapes' targets). Requires `--output`; exits with an error on violations.
+    #[arg(long = "validate")]
+    pub validate: bool,
 
     #[command(flatten)]
     pub common: CommonArgsNoBackend,
