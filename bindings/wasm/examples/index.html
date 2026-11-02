@@ -178,6 +178,11 @@ prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
             <button class="ghost" id="validate-shacl" style="margin-top:0.4rem">Validate with SHACL</button>
           </label>
         </div>
+        <div class="msg error" id="pg-warning" style="margin-top:0.6rem" hidden>
+          <b>conforms: false.</b> If you meant to validate the data you generated above, be sure to
+          click <b>Open in the validator below</b> in the Result first: it loads the generated data, its
+          ShapeMap and the matching schemas here. Otherwise you are validating whatever is in these
+          boxes, such as the sample, which is broken on purpose.</div>
         <pre class="out" id="pg-output" style="margin-top:0.6rem">Ready.</pre>
       </details>
     </section>
@@ -451,6 +456,7 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
         $("pg-shex").value = last.format === "shex" ? last.schema : none("ShEx");
       }
       $("pg-output").textContent = "Loaded the generated data. Validate with ShEx or SHACL.";
+      $("pg-warning").hidden = true;
       document.querySelector(".playground details").open = true;
       document.querySelector(".playground").scrollIntoView({ behavior: "smooth" });
     };
@@ -490,10 +496,18 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
 
     // ---------- playground ----------
     const show = (run) => {
-      try { $("pg-output").textContent = JSON.stringify(run(), null, 2); }
-      catch (e) { $("pg-output").textContent = `${e.name}: ${e.message}`; }
+      $("pg-warning").hidden = true;
+      try {
+        const r = run();
+        $("pg-warning").hidden = r.conforms !== false;
+        $("pg-output").textContent = JSON.stringify(r, null, 2);
+      } catch (e) { $("pg-output").textContent = `${e.name}: ${e.message}`; }
     };
-    const noSchema = (id) => $(id).value.startsWith("# No ") ? $(id).value.trim() : null;
+    const noSchema = (id) => {
+      if (!$(id).value.startsWith("# No ")) return null;
+      $("pg-warning").hidden = true;
+      return $(id).value.trim();
+    };
     $("validate-shex").onclick = () => noSchema("pg-shex") ? ($("pg-output").textContent = noSchema("pg-shex"))
       : show(() => validateShex($("pg-data").value, $("pg-shex").value, $("pg-shapemap").value));
     $("validate-shacl").onclick = () => noSchema("pg-shacl") ? ($("pg-output").textContent = noSchema("pg-shacl"))
