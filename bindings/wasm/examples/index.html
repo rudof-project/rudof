@@ -152,6 +152,9 @@
     <section class="card playground">
       <details>
         <summary><b>Validator playground</b>: validate any RDF data with ShEx or SHACL</summary>
+        <p class="hint" style="margin:0.5rem 0 0">The sample below is broken on purpose: <code>:bob</code>'s age
+          <code>"unknown"</code> is not an <code>xsd:integer</code>, so both validators reject <code>:bob</code>
+          (<code>conforms: false</code>). Use <b>Open in the validator below</b> in the Result to load generated data here.</p>
         <div class="grid2" style="margin-top:0.6rem">
           <label class="field">RDF data (Turtle)
             <textarea id="pg-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
