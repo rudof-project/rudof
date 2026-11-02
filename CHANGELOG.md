@@ -11,6 +11,13 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 
 ## [Unreleased]
 ### Added
+- `rudof compare` compares RDF data as well as schemas ([#925](https://github.com/rudof-project/rudof/issues/925)). With `--data1` and `--data2` it reports whether the two graphs are `isomorphic`, `equivalent`, or one is a `subgraph`/`supergraph` of the other, up to blank node renaming, or `different`. RDF 1.2 triple terms are supported. The mode is inferred from the options (`--schema1`/`--schema2` or `--data1`/`--data2`), or set with `--mode schema|data`. In the shell, `--data1` can be left out to compare the loaded data.
+- `--subgraph-mode` sets how blank nodes are mapped when checking whether one graph is contained in the other: `injective` (default, one-to-one), `homomorphic` (several blank nodes to the same one) or `entailment` (to any term, i.e. RDF simple entailment).
+- `--show-diff` lists the triples of each graph that the other does not have, written with the prefixes of the documents, and how their blank nodes were matched. The diff is exact when one graph is contained in the other; otherwise the best blank node mapping is searched for in at most `--exact-search-limit` steps (default 100000), and the diff is marked as approximate past that limit. `-r json` gives the result in JSON.
+- `rudof_rdf`: `is_isomorphic` (using Oxigraph's canonicalization), `is_subgraph_with`, `compare_graphs_with` and `diff_graphs`, with `GraphRelation`, `SubgraphMode` and `GraphDiff`; `show_term` and `show_triple` write terms in Turtle with prefixed names.
+- `rudof_lib`: `Rudof::compare_data` and `Rudof::compare_loaded_data`, whose builder returns a `GraphRelation` with `execute()` or a `DataDiff` with `execute_diff()`.
+- `pyrudof`: `compare_data`, `compare_loaded_data`, `diff_data` and `diff_loaded_data`, with `GraphRelation`, `SubgraphMode` and `GraphDiff`.
+- `rudof_wasm`: `compareData`, `compareLoadedData`, `diffData` and `diffLoadedData`.
 - `rudof_rdf`: `ParseBudget` holds the steps that parsing SHACL paths may take, and `ShaclPathParser::with_budget` takes them from a budget shared with other parsers, as `ShaclParser` does for the paths of a shapes graph.
 - `rudof_rdf`: `parse_path`, `MAX_PATH_DEPTH`, `MIN_PARSE_STEPS` and `PARSE_STEPS_PER_TRIPLE` are public, so that node expressions parse the paths inside them under the same limits.
 - `rudof_rdf`: `ParseBudget::take_free_members` and `FREE_LIST_MEMBERS` let the lists of a shapes graph read 65,536 members before they take steps from its budget.
@@ -51,6 +58,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - With `store_evidences` off, the default, SHACL validation drops evidence as it is made instead of keeping several copies of it for each conforming focus node, which the report then left out: validating 100,000 conforming focus nodes takes 165 MB instead of 870 MB. `max_results` counts evidences only when they are kept, so it no longer fails on many conforming focus nodes. An `Engine` keeps the setting in its `Retention`, which by default keeps evidence.
 
 ### Changed
+- `rudof compare` no longer requires `--schema2` when parsing its options, since data mode uses `--data1` and `--data2`. Schema comparison still needs `--schema1` and `--schema2`, and it reports an error when either is missing.
 - A SHACL `sh:detail` result no longer has details of its own: a failed `sh:node`, `sh:and`, `sh:or` or `sh:xone` keeps one level of causes, so reports stay small for long chains.
 - The shapes in a `Dependency graph has cycles` error can be listed in another order, as the cycles are now found without recursion.
 - A shapes graph whose cycle passes through the sibling shapes of `sh:qualifiedValueShapesDisjoint` is rejected as non-stratified under LFP and GFP, where it used to compile, such as a `:Tree` shape with two disjoint qualified properties on `:child`, one with `:Tree` and one with `:Leaf` as `sh:qualifiedValueShape`. So is one in which a disjoint qualified property shape in a cycle has a sibling shape that depends on another cycle, as with `sh:not`.
