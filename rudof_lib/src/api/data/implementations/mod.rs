@@ -2,6 +2,7 @@ mod add_triple;
 mod add_triples;
 mod begin_staging;
 mod commit_staging;
+mod compare_data;
 mod dereference;
 mod list_endpoints;
 mod load_data;
@@ -24,6 +25,7 @@ pub use add_triples::add_triples;
 pub(crate) use add_triples::apply_additions;
 pub use begin_staging::begin_staging;
 pub use commit_staging::commit_staging;
+pub use compare_data::{compare_data, diff_data};
 pub use dereference::dereference;
 pub use list_endpoints::list_endpoints;
 pub use load_data::load_data;
@@ -47,6 +49,7 @@ pub use triples::triples;
 
 #[cfg(test)]
 mod tests {
+    mod compare_data_tests;
     mod load_data_tests;
     mod load_service_description_tests;
     mod node_neighborhood_tests;

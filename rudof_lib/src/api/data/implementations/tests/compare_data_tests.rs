@@ -1,0 +1,343 @@
+//! Tests of the `compare_data` API. The comparison algorithms themselves are
+//! tested in `rudof_rdf` (`graph_comparison_tests`); these check the plumbing:
+//! inputs, formats, base IRIs, errors and the loaded data being left alone.
+
+use crate::{
+    Rudof, RudofConfig,
+    formats::{DataFormat, InputSpec},
+    types::{GraphRelation, SubgraphMode},
+};
+
+fn rudof() -> Rudof {
+    Rudof::new(RudofConfig::default())
+}
+
+const TTL: &str = r#"
+PREFIX : <http://example.org/>
+:alice :knows [ :name "Bob" ] .
+"#;
+
+#[test]
+fn compare_isomorphic_turtle_graphs() {
+    let rudof = rudof();
+    let data1 = InputSpec::str(TTL);
+    let data2 = InputSpec::str("PREFIX ex: <http://example.org/> _:x ex:name \"Bob\" . ex:alice ex:knows _:x .");
+    let relation = rudof.compare_data(&data1, &data2).execute().unwrap();
+    assert_eq!(relation, GraphRelation::Isomorphic);
+}
+
+#[test]
+fn compare_subgraph_and_supergraph() {
+    let rudof = rudof();
+    let small = InputSpec::str(TTL);
+    let big = InputSpec::str(&format!("{TTL}\n:alice :name \"Alice\" ."));
+    assert_eq!(
+        rudof.compare_data(&small, &big).execute().unwrap(),
+        GraphRelation::Subgraph
+    );
+    assert_eq!(
+        rudof.compare_data(&big, &small).execute().unwrap(),
+        GraphRelation::Supergraph
+    );
+}
+
+#[test]
+fn compare_different_graphs() {
+    let rudof = rudof();
+    let data1 = InputSpec::str(TTL);
+    let data2 = InputSpec::str("PREFIX : <http://example.org/> :alice :knows [ :name \"Carol\" ] .");
+    assert_eq!(
+        rudof.compare_data(&data1, &data2).execute().unwrap(),
+        GraphRelation::Different
+    );
+}
+
+#[test]
+fn compare_turtle_with_ntriples() {
+    let rudof = rudof();
+    let data1 = InputSpec::str(TTL);
+    let data2 = InputSpec::str(
+        "<http://example.org/alice> <http://example.org/knows> _:b0 .\n_:b0 <http://example.org/name> \"Bob\" .\n",
+    );
+    let relation = rudof
+        .compare_data(&data1, &data2)
+        .with_format2(&DataFormat::NTriples)
+        .execute()
+        .unwrap();
+    assert_eq!(relation, GraphRelation::Isomorphic);
+}
+
+#[test]
+fn compare_rdf12_triple_terms() {
+    let rudof = rudof();
+    let data1 = InputSpec::str("PREFIX : <http://example.org/> :s :p :o {| :source :w |} .");
+    let data2 = InputSpec::str(
+        "<http://example.org/s> <http://example.org/p> <http://example.org/o> .\n\
+         _:r <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> <<( <http://example.org/s> <http://example.org/p> <http://example.org/o> )>> .\n\
+         _:r <http://example.org/source> <http://example.org/w> .\n",
+    );
+    let relation = rudof
+        .compare_data(&data1, &data2)
+        .with_format2(&DataFormat::NTriples)
+        .execute()
+        .unwrap();
+    assert_eq!(relation, GraphRelation::Isomorphic);
+}
+
+#[test]
+fn bases_resolve_relative_iris_per_graph() {
+    let rudof = rudof();
+    let data1 = InputSpec::str("<a> <p> <b> .");
+    let data2 = InputSpec::str("<http://one.example/a> <http://one.example/p> <http://one.example/b> .");
+    let same = rudof
+        .compare_data(&data1, &data2)
+        .with_base1("http://one.example/")
+        .execute()
+        .unwrap();
+    assert_eq!(same, GraphRelation::Isomorphic);
+    let other = rudof
+        .compare_data(&data1, &data2)
+        .with_base1("http://two.example/")
+        .execute()
+        .unwrap();
+    assert_eq!(other, GraphRelation::Different);
+}
+
+#[test]
+fn invalid_rdf_is_an_error() {
+    let rudof = rudof();
+    let data1 = InputSpec::str(TTL);
+    let data2 = InputSpec::str(":not valid turtle");
+    assert!(rudof.compare_data(&data1, &data2).execute().is_err());
+}
+
+#[test]
+fn non_rdf_format_is_an_error() {
+    let rudof = rudof();
+    let data = InputSpec::str(TTL);
+    let result = rudof.compare_data(&data, &data).with_format(&DataFormat::Pg).execute();
+    assert!(result.is_err());
+}
+
+#[test]
+fn loaded_data_is_left_untouched() {
+    let mut rudof = rudof();
+    let loaded = [InputSpec::str("PREFIX : <http://example.org/> :x :y :z .")];
+    rudof.load_data().with_data(&loaded).execute().unwrap();
+    let before = rudof.triples().execute().unwrap().count();
+
+    let data1 = InputSpec::str(TTL);
+    rudof.compare_data(&data1, &data1).execute().unwrap();
+
+    assert_eq!(rudof.triples().execute().unwrap().count(), before);
+}
+
+// Subgraph modes
+
+#[test]
+fn mode_defaults_to_injective() {
+    let rudof = rudof();
+    let first = InputSpec::str("PREFIX : <http://example.org/> _:x :p _:y .");
+    let second = InputSpec::str("PREFIX : <http://example.org/> _:z :p _:z .");
+    assert_eq!(
+        rudof.compare_data(&first, &second).execute().unwrap(),
+        GraphRelation::Different
+    );
+    assert_eq!(
+        rudof
+            .compare_data(&first, &second)
+            .with_mode(&SubgraphMode::Homomorphic)
+            .execute()
+            .unwrap(),
+        GraphRelation::Subgraph
+    );
+}
+
+#[test]
+fn entailment_mode_instantiates_blank_nodes() {
+    let rudof = rudof();
+    let general = InputSpec::str("PREFIX : <http://example.org/> :alice :knows [ :name \"Bob\" ] .");
+    let specific = InputSpec::str("PREFIX : <http://example.org/> :alice :knows :bob . :bob :name \"Bob\" .");
+    let compare = |mode: SubgraphMode| {
+        rudof
+            .compare_data(&general, &specific)
+            .with_mode(&mode)
+            .execute()
+            .unwrap()
+    };
+    assert_eq!(compare(SubgraphMode::Injective), GraphRelation::Different);
+    assert_eq!(compare(SubgraphMode::Homomorphic), GraphRelation::Different);
+    assert_eq!(compare(SubgraphMode::Entailment), GraphRelation::Subgraph);
+}
+
+#[test]
+fn non_lean_graph_is_equivalent_with_homomorphic_mode() {
+    let rudof = rudof();
+    let lean = InputSpec::str("PREFIX : <http://example.org/> :a :p [] .");
+    let redundant = InputSpec::str("PREFIX : <http://example.org/> :a :p [], [] .");
+    let relation = rudof
+        .compare_data(&lean, &redundant)
+        .with_mode(&SubgraphMode::Homomorphic)
+        .execute()
+        .unwrap();
+    assert_eq!(relation, GraphRelation::Equivalent);
+}
+
+// Comparing with the loaded data
+
+#[test]
+fn compare_loaded_data_with_input() {
+    let mut rudof = rudof();
+    let loaded = [InputSpec::str(TTL)];
+    rudof.load_data().with_data(&loaded).execute().unwrap();
+    let bigger = InputSpec::str(&format!("{TTL}\n:alice :name \"Alice\" ."));
+    assert_eq!(
+        rudof.compare_loaded_data(&bigger).execute().unwrap(),
+        GraphRelation::Subgraph
+    );
+    let renamed = InputSpec::str("PREFIX ex: <http://example.org/> ex:alice ex:knows _:b . _:b ex:name \"Bob\" .");
+    assert_eq!(
+        rudof.compare_loaded_data(&renamed).execute().unwrap(),
+        GraphRelation::Isomorphic
+    );
+}
+
+#[test]
+fn compare_loaded_data_without_data_is_an_error() {
+    let rudof = rudof();
+    let other = InputSpec::str(TTL);
+    assert!(rudof.compare_loaded_data(&other).execute().is_err());
+}
+
+// Diffs
+
+#[test]
+fn diff_lists_the_triples_only_in_each_graph() {
+    let rudof = rudof();
+    let first = InputSpec::str("PREFIX : <http://example.org/> :alice :knows _:b . _:b :name \"Bob\" .");
+    let second = InputSpec::str("PREFIX : <http://example.org/> :alice :knows _:c . _:c :name \"Robert\" .");
+    let diff = rudof.compare_data(&first, &second).execute_diff().unwrap();
+    assert_eq!(diff.relation, GraphRelation::Different);
+    assert!(diff.exact);
+    let strings = |ts: &[oxrdf::Triple]| ts.iter().map(ToString::to_string).collect::<Vec<_>>();
+    assert_eq!(
+        strings(&diff.only_in_first),
+        vec!["_:b <http://example.org/name> \"Bob\"".to_string()]
+    );
+    assert_eq!(
+        strings(&diff.only_in_second),
+        vec!["_:c <http://example.org/name> \"Robert\"".to_string()]
+    );
+}
+
+#[test]
+fn diff_uses_the_mode_and_the_search_limit() {
+    let rudof = rudof();
+    let general = InputSpec::str("PREFIX : <http://example.org/> :alice :knows [ :name \"Bob\" ] .");
+    let specific = InputSpec::str("PREFIX : <http://example.org/> :alice :knows :bob . :bob :name \"Bob\" ; :age 3 .");
+    let diff = rudof
+        .compare_data(&general, &specific)
+        .with_mode(&SubgraphMode::Entailment)
+        .with_exact_search_limit(0)
+        .execute_diff()
+        .unwrap();
+    assert_eq!(diff.relation, GraphRelation::Subgraph);
+    assert!(diff.only_in_first.is_empty());
+    assert_eq!(diff.only_in_second.len(), 1);
+}
+
+#[test]
+fn diff_loaded_data_with_input() {
+    let mut rudof = rudof();
+    let loaded = [InputSpec::str(TTL)];
+    rudof.load_data().with_data(&loaded).execute().unwrap();
+    let bigger = InputSpec::str(&format!("{TTL}\n:alice :name \"Alice\" ."));
+    let diff = rudof.compare_loaded_data(&bigger).execute_diff().unwrap();
+    assert_eq!(diff.relation, GraphRelation::Subgraph);
+    assert_eq!(diff.only_in_second.len(), 1);
+}
+
+// Diff reports with prefixes
+
+#[test]
+fn diff_report_uses_the_prefixes_of_the_documents() {
+    let rudof = rudof();
+    let bob = InputSpec::str("PREFIX : <http://example.org/> :alice :knows _:b . _:b :name \"Bob\" ; :age 30 .");
+    let robert = InputSpec::str("PREFIX : <http://example.org/> :alice :knows _:c . _:c :name \"Robert\" ; :age 30 .");
+    let diff = rudof.compare_data(&bob, &robert).execute_diff().unwrap();
+    assert_eq!(
+        diff.to_string(),
+        "different: neither the first graph nor the second graph is contained in the other (mode: injective)\n\
+         PREFIX : <http://example.org/>\n\
+         Only in the first graph (1):\n  _:b :name \"Bob\" .\n\
+         Only in the second graph (1):\n  _:c :name \"Robert\" .\n\
+         Blank nodes of the first graph matched in the second graph:\n  _:b = _:c\n"
+    );
+}
+
+#[test]
+fn diff_report_uses_the_prefixes_of_both_documents() {
+    let rudof = rudof();
+    let first = InputSpec::str("PREFIX : <http://example.org/> :a :p 1 .");
+    let second = InputSpec::str(
+        "PREFIX ex: <http://example.org/> PREFIX schema: <http://schema.org/> ex:a ex:p 1 . ex:a schema:name \"A\" .",
+    );
+    let diff = rudof.compare_data(&first, &second).execute_diff().unwrap();
+    let report = diff.to_string();
+    // `ex:` maps the same IRI as `:` in the first document: `:` is used
+    assert!(
+        report.contains("PREFIX : <http://example.org/>\nPREFIX schema: <http://schema.org/>\n"),
+        "{report}"
+    );
+    assert!(report.contains("  :a schema:name \"A\" .\n"), "{report}");
+    assert!(!report.contains("ex:"), "{report}");
+}
+
+#[test]
+fn diff_report_without_prefixes_writes_full_iris() {
+    let rudof = rudof();
+    let first = InputSpec::str("<http://example.org/a> <http://example.org/p> \"1\" .");
+    let second = InputSpec::str("<http://example.org/a> <http://example.org/p> \"2\" .");
+    let nt = DataFormat::NTriples;
+    let diff = rudof
+        .compare_data(&first, &second)
+        .with_format(&nt)
+        .execute_diff()
+        .unwrap();
+    let report = diff.to_string();
+    assert!(!report.contains("PREFIX"), "{report}");
+    assert!(
+        report.contains("  <http://example.org/a> <http://example.org/p> \"1\" .\n"),
+        "{report}"
+    );
+}
+
+#[test]
+fn diff_report_names_the_loaded_data() {
+    let mut rudof = rudof();
+    let loaded = [InputSpec::str(TTL)];
+    rudof.load_data().with_data(&loaded).execute().unwrap();
+    let bigger = InputSpec::str(&format!("{TTL}\n:alice :name \"Alice\" ."));
+    let report = rudof.compare_loaded_data(&bigger).execute_diff().unwrap().to_string();
+    assert!(
+        report.starts_with("subgraph: the loaded data is contained in the given graph, but not the other way round"),
+        "{report}"
+    );
+    assert!(
+        report.contains("Only in the loaded data (0):\nOnly in the given graph (1):\n  :alice :name \"Alice\" .\n"),
+        "{report}"
+    );
+}
+
+#[test]
+fn describe_relation_explains_each_relation() {
+    use crate::types::describe_relation;
+    assert_eq!(
+        describe_relation(GraphRelation::Equivalent, SubgraphMode::Homomorphic, false),
+        "equivalent: the first graph and the second graph contain each other, but are not isomorphic (mode: homomorphic)"
+    );
+    assert_eq!(
+        describe_relation(GraphRelation::Supergraph, SubgraphMode::Injective, true),
+        "supergraph: the given graph is contained in the loaded data, but not the other way round (mode: injective)"
+    );
+}

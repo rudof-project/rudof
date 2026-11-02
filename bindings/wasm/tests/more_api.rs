@@ -26,6 +26,84 @@ fn session_with_data() -> Session {
     rudof
 }
 
+// Graph comparison
+
+#[test]
+fn compare_data_relations() {
+    let rudof = Session::new(None);
+    let small = "prefix : <http://example.org/> :alice :knows [ :name \"Bob\" ] .";
+    let renamed =
+        "<http://example.org/alice> <http://example.org/knows> _:x .\n_:x <http://example.org/name> \"Bob\" .\n";
+    let big = "prefix : <http://example.org/> :alice :knows [ :name \"Bob\" ] ; :name \"Alice\" .";
+    let compare =
+        |a: &str, b: &str, f2: Option<&str>| rudof.compare_data(a, b, None, f2, None, None, None, None).unwrap();
+    assert_eq!(compare(small, renamed, Some("ntriples")), "isomorphic");
+    assert_eq!(compare(small, big, None), "subgraph");
+    assert_eq!(compare(big, small, None), "supergraph");
+    assert_eq!(compare(small, DATA, None), "different");
+}
+
+#[test]
+fn compare_data_rdf12_and_errors() {
+    let rudof = Session::new(None);
+    let annotated = "prefix : <http://example.org/> :s :p :o {| :source :w |} .";
+    let reified = "prefix : <http://example.org/> prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \
+                   :s :p :o . _:r rdf:reifies <<( :s :p :o )>> ; :source :w .";
+    let relation = rudof
+        .compare_data(annotated, reified, None, None, None, None, None, None)
+        .unwrap();
+    assert_eq!(relation, "isomorphic");
+    assert!(
+        rudof
+            .compare_data(annotated, reified, Some("nope"), None, None, None, None, None)
+            .is_err()
+    );
+}
+
+#[test]
+fn compare_data_modes() {
+    let rudof = Session::new(None);
+    let general = "prefix : <http://example.org/> :alice :knows [] .";
+    let specific = "prefix : <http://example.org/> :alice :knows :bob .";
+    let compare = |mode: Option<&str>| {
+        rudof
+            .compare_data(general, specific, None, None, None, None, None, mode)
+            .unwrap()
+    };
+    assert_eq!(compare(None), "different");
+    assert_eq!(compare(Some("homomorphic")), "different");
+    assert_eq!(compare(Some("entailment")), "subgraph");
+    let redundant = "prefix : <http://example.org/> :alice :knows [], [] .";
+    let relation = rudof
+        .compare_data(general, redundant, None, None, None, None, None, Some("homomorphic"))
+        .unwrap();
+    assert_eq!(relation, "equivalent");
+    assert!(
+        rudof
+            .compare_data(general, specific, None, None, None, None, None, Some("subset"))
+            .is_err()
+    );
+}
+
+#[test]
+fn compare_loaded_data_with_other() {
+    let rudof = session_with_data();
+    let bigger = format!("{DATA}\n:carol :name \"Carol\" .");
+    assert_eq!(
+        rudof.compare_loaded_data(&bigger, None, None, None, None).unwrap(),
+        "subgraph"
+    );
+    assert_eq!(
+        rudof.compare_loaded_data(DATA, None, None, None, None).unwrap(),
+        "isomorphic"
+    );
+    assert!(
+        Session::new(None)
+            .compare_loaded_data(DATA, None, None, None, None)
+            .is_err()
+    );
+}
+
 // Node inspection
 
 #[test]
@@ -549,4 +627,41 @@ fn pg_data_serialization() {
     let json = rudof.serialize_data(Some("json")).unwrap();
     assert!(json.contains("\"source\": \"n1\""), "{json}");
     assert!(json.contains("\"Student\""), "{json}");
+}
+
+#[test]
+fn diff_data_lists_the_triples_only_in_each_graph() {
+    let rudof = Session::new(None);
+    let bob = "prefix : <http://example.org/> :alice :knows _:b . _:b :name \"Bob\" .";
+    let robert = "prefix : <http://example.org/> :alice :knows _:c . _:c :name \"Robert\" .";
+    let diff = rudof
+        .diff_data(bob, robert, None, None, None, None, None, None, None)
+        .unwrap();
+    assert_eq!(diff.relation, "different");
+    assert!(diff.exact);
+    assert_eq!(
+        diff.only_in_first,
+        vec!["_:b <http://example.org/name> \"Bob\"".to_string()]
+    );
+    assert_eq!(
+        diff.only_in_second,
+        vec!["_:c <http://example.org/name> \"Robert\"".to_string()]
+    );
+    assert_eq!(diff.first_to_second, vec![["_:b".to_string(), "_:c".to_string()]]);
+    assert!(
+        diff.report
+            .contains("PREFIX : <http://example.org/>\nOnly in the first graph (1):\n  _:b :name \"Bob\" .\n"),
+        "{}",
+        diff.report
+    );
+}
+
+#[test]
+fn diff_loaded_data_with_other() {
+    let rudof = session_with_data();
+    let bigger = format!("{DATA}\n:carol :name \"Carol\" .");
+    let diff = rudof.diff_loaded_data(&bigger, None, None, None, None, None).unwrap();
+    assert_eq!(diff.relation, "subgraph");
+    assert!(diff.only_in_first.is_empty());
+    assert_eq!(diff.only_in_second.len(), 1);
 }

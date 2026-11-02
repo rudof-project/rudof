@@ -110,6 +110,44 @@ impl OxigraphInMemory {
         self.graph.is_empty()
     }
 
+    /// Returns `true` if this graph and `other` are isomorphic (equal up to blank node renaming).
+    pub fn is_isomorphic(&self, other: &OxigraphInMemory) -> bool {
+        super::graph_comparison::is_isomorphic(&self.graph, &other.graph)
+    }
+
+    /// Returns `true` if this graph is isomorphic to a subgraph of `other`.
+    pub fn is_subgraph_of(&self, other: &OxigraphInMemory) -> bool {
+        super::graph_comparison::is_subgraph(&self.graph, &other.graph)
+    }
+
+    /// Returns the relation between this graph and `other`, see [`GraphRelation`](super::GraphRelation).
+    pub fn compare_with(&self, other: &OxigraphInMemory) -> super::GraphRelation {
+        super::graph_comparison::compare_graphs(&self.graph, &other.graph)
+    }
+
+    /// Returns `true` if this graph is contained in `other` according to `mode`,
+    /// see [`SubgraphMode`](super::SubgraphMode).
+    pub fn is_subgraph_of_with(&self, other: &OxigraphInMemory, mode: super::SubgraphMode) -> bool {
+        super::graph_comparison::is_subgraph_with(&self.graph, &other.graph, mode)
+    }
+
+    /// Returns the triples of this graph and of `other` that the other one does
+    /// not have, blank nodes being mapped according to `mode`; see [`GraphDiff`](super::GraphDiff).
+    pub fn diff_with(
+        &self,
+        other: &OxigraphInMemory,
+        mode: super::SubgraphMode,
+        options: &super::DiffOptions,
+    ) -> super::GraphDiff {
+        super::graph_diff::diff_graphs(&self.graph, &other.graph, mode, options)
+    }
+
+    /// Returns the relation between this graph and `other`, containment being
+    /// checked according to `mode`.
+    pub fn compare_with_mode(&self, other: &OxigraphInMemory, mode: super::SubgraphMode) -> super::GraphRelation {
+        super::graph_comparison::compare_graphs_with(&self.graph, &other.graph, mode)
+    }
+
     /// Mutable access to the graph, for every operation that changes it.
     ///
     /// Also drops the SPARQL store [`ensure_store`](Self::ensure_store) built from the

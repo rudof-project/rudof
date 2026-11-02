@@ -72,6 +72,22 @@ export interface PgSchemaValidationEntry {
   details: string;
 }
 
+/** The differences between two RDF graphs. Triples are in N-Triples, without the final `.`. */
+export interface GraphDiff {
+  relation: "isomorphic" | "equivalent" | "subgraph" | "supergraph" | "different";
+  mode: "injective" | "homomorphic" | "entailment";
+  /** `true` if the blank node mapping is proven to be the best one. */
+  exact: boolean;
+  onlyInFirst: string[];
+  onlyInSecond: string[];
+  /** `[blank node, term]` pairs from the first graph to the second one. */
+  firstToSecond: [string, string][];
+  /** `[blank node, term]` pairs from the second graph to the first one. */
+  secondToFirst: [string, string][];
+  /** A report for people, with the triples written with the prefixes of the documents. */
+  report: string;
+}
+
 /** The arcs around a node. */
 export interface NodeNeighborhood {
   arcs: NeighborArc[];
@@ -233,6 +249,115 @@ impl JsRudof {
         Ok(self
             .session
             .read_data(data, format.as_deref(), base.as_deref(), reader_mode.as_deref(), merge)?)
+    }
+
+    /// Compares two RDF graphs, given as strings, up to blank node renaming
+    /// (RDF 1.2 triple terms included). Formats default to `turtle`. The
+    /// loaded data is neither used nor modified.
+    ///
+    /// `mode` says how blank nodes may be mapped when checking containment:
+    /// `"injective"` (default), `"homomorphic"` or `"entailment"`.
+    ///
+    /// Returns `"isomorphic"`, `"equivalent"` (each contained in the other,
+    /// not isomorphic), `"subgraph"` (the first contained in the second),
+    /// `"supergraph"` or `"different"`.
+    #[wasm_bindgen(js_name = compareData)]
+    #[allow(clippy::too_many_arguments)]
+    pub fn compare_data(
+        &self,
+        data1: &str,
+        data2: &str,
+        format1: Option<String>,
+        format2: Option<String>,
+        base1: Option<String>,
+        base2: Option<String>,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+        mode: Option<String>,
+    ) -> Result<String, JsValue> {
+        Ok(self.session.compare_data(
+            data1,
+            data2,
+            format1.as_deref(),
+            format2.as_deref(),
+            base1.as_deref(),
+            base2.as_deref(),
+            reader_mode.as_deref(),
+            mode.as_deref(),
+        )?)
+    }
+
+    /// Compares the loaded RDF data (the first graph) with `other`, given as a
+    /// string; see `compareData`. The loaded data is not modified.
+    #[wasm_bindgen(js_name = compareLoadedData)]
+    pub fn compare_loaded_data(
+        &self,
+        other: &str,
+        format: Option<String>,
+        base: Option<String>,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+        mode: Option<String>,
+    ) -> Result<String, JsValue> {
+        Ok(self.session.compare_loaded_data(
+            other,
+            format.as_deref(),
+            base.as_deref(),
+            reader_mode.as_deref(),
+            mode.as_deref(),
+        )?)
+    }
+
+    /// Compares two RDF graphs like `compareData`, and also returns the triples
+    /// of each graph that the other one does not have: an object with
+    /// `relation`, `mode`, `exact`, `onlyInFirst`, `onlyInSecond` (triples in
+    /// N-Triples), `firstToSecond` and `secondToFirst` (`[blank node, term]` pairs).
+    #[wasm_bindgen(js_name = diffData, unchecked_return_type = "GraphDiff")]
+    #[allow(clippy::too_many_arguments)]
+    pub fn diff_data(
+        &self,
+        data1: &str,
+        data2: &str,
+        format1: Option<String>,
+        format2: Option<String>,
+        base1: Option<String>,
+        base2: Option<String>,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+        mode: Option<String>,
+        #[wasm_bindgen(js_name = "exactSearchLimit")] exact_search_limit: Option<usize>,
+    ) -> Result<JsValue, JsValue> {
+        let diff = self.session.diff_data(
+            data1,
+            data2,
+            format1.as_deref(),
+            format2.as_deref(),
+            base1.as_deref(),
+            base2.as_deref(),
+            reader_mode.as_deref(),
+            mode.as_deref(),
+            exact_search_limit,
+        )?;
+        to_js(&diff)
+    }
+
+    /// Like `diffData`, with the loaded RDF data as the first graph.
+    #[wasm_bindgen(js_name = diffLoadedData, unchecked_return_type = "GraphDiff")]
+    pub fn diff_loaded_data(
+        &self,
+        other: &str,
+        format: Option<String>,
+        base: Option<String>,
+        #[wasm_bindgen(js_name = "readerMode")] reader_mode: Option<String>,
+        mode: Option<String>,
+        #[wasm_bindgen(js_name = "exactSearchLimit")] exact_search_limit: Option<usize>,
+    ) -> Result<JsValue, JsValue> {
+        let diff = self.session.diff_loaded_data(
+            other,
+            format.as_deref(),
+            base.as_deref(),
+            reader_mode.as_deref(),
+            mode.as_deref(),
+            exact_search_limit,
+        )?;
+        to_js(&diff)
     }
 
     /// Serializes the current RDF data, by default in `compact` format.

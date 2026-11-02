@@ -24,11 +24,12 @@ use crate::{
             builders::{ConfigBuilder, ResetAllBuilder, UpdateConfigBuilder, VersionBuilder},
         },
         data::builders::{
-            AddTripleBuilder, AddTriplesBuilder, BeginStagingBuilder, CommitStagingBuilder, DereferenceBuilder,
-            ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder, NodeNeighborhoodBuilder,
-            RemoveTripleBuilder, RemoveTriplesBuilder, ResetDataBuilder, ResetServiceDescriptionBuilder,
-            RollbackStagingBuilder, SerializeDataBuilder, SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder,
-            StagingBuilder, StagingDepthBuilder, TriplesBuilder,
+            AddTripleBuilder, AddTriplesBuilder, BeginStagingBuilder, CommitStagingBuilder, CompareDataBuilder,
+            DereferenceBuilder, ListEndpointsBuilder, LoadDataBuilder, LoadServiceDescriptionBuilder,
+            NodeNeighborhoodBuilder, RemoveTripleBuilder, RemoveTriplesBuilder, ResetDataBuilder,
+            ResetServiceDescriptionBuilder, RollbackStagingBuilder, SerializeDataBuilder,
+            SerializeServiceDescriptionBuilder, ShowNodeInfoBuilder, StagingBuilder, StagingDepthBuilder,
+            TriplesBuilder,
         },
         map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
         materialize::builders::MaterializeBuilder,
@@ -476,6 +477,21 @@ impl Rudof {
     /// set walks the whole graph.
     pub fn triples<'a>(&'a self) -> TriplesBuilder<'a> {
         TriplesBuilder::new(self)
+    }
+
+    /// Returns a `CompareDataBuilder` that compares two RDF graphs up to blank
+    /// node renaming: isomorphic, equivalent, subgraph, supergraph or different.
+    ///
+    /// The graphs are read from `data1` and `data2`; the loaded data is not used.
+    pub fn compare_data<'a>(&'a self, data1: &'a InputSpec, data2: &'a InputSpec) -> CompareDataBuilder<'a> {
+        CompareDataBuilder::new(self, Some(data1), data2)
+    }
+
+    /// Returns a `CompareDataBuilder` that compares the loaded RDF data (which
+    /// must be an in-memory graph) with the graph read from `other`. The loaded
+    /// data is the first graph, so `Subgraph` means it is contained in `other`.
+    pub fn compare_loaded_data<'a>(&'a self, other: &'a InputSpec) -> CompareDataBuilder<'a> {
+        CompareDataBuilder::new(self, None, other)
     }
 
     /// Returns a `ListEndpointsBuilder` that enumerates known endpoints.

@@ -340,3 +340,47 @@ impl From<&CoreTriple> for Triple {
         }
     }
 }
+
+/// The differences between two RDF graphs, as returned by `diff_data`.
+/// Triples are in N-Triples, without the final `.`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphDiff {
+    /// `isomorphic`, `equivalent`, `subgraph`, `supergraph` or `different`.
+    pub relation: String,
+    /// `injective`, `homomorphic` or `entailment`.
+    pub mode: String,
+    /// `true` if the blank node mapping is proven to be the best one.
+    pub exact: bool,
+    /// Triples of the first graph not matched in the second one, sorted.
+    pub only_in_first: Vec<String>,
+    /// Triples of the second graph not matched in the first one, sorted.
+    pub only_in_second: Vec<String>,
+    /// `[blank node, term]` pairs from the first graph to the second one.
+    pub first_to_second: Vec<[String; 2]>,
+    /// `[blank node, term]` pairs from the second graph to the first one.
+    pub second_to_first: Vec<[String; 2]>,
+    /// The report: the relation, the `PREFIX` declarations used, the triples
+    /// only in each graph (with prefixed names) and the blank node mapping.
+    pub report: String,
+}
+
+impl From<rudof_lib::types::DataDiff> for GraphDiff {
+    fn from(data_diff: rudof_lib::types::DataDiff) -> Self {
+        let report = data_diff.to_string();
+        let d = data_diff.diff;
+        fn pairs<B: ToString, T: ToString>(ps: &[(B, T)]) -> Vec<[String; 2]> {
+            ps.iter().map(|(b, t)| [b.to_string(), t.to_string()]).collect()
+        }
+        GraphDiff {
+            relation: d.relation.to_string(),
+            mode: d.mode.to_string(),
+            exact: d.exact,
+            only_in_first: d.only_in_first.iter().map(ToString::to_string).collect(),
+            only_in_second: d.only_in_second.iter().map(ToString::to_string).collect(),
+            first_to_second: pairs(&d.first_to_second),
+            second_to_first: pairs(&d.second_to_first),
+            report,
+        }
+    }
+}

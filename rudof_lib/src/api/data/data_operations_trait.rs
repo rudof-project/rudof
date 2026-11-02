@@ -1,8 +1,8 @@
 use crate::{
     Result, Rudof,
     api::data::implementations::{
-        add_triple, add_triples, begin_staging, commit_staging, dereference, list_endpoints, load_data,
-        load_service_description, node_neighborhood, remove_triple, remove_triples, reset_data,
+        add_triple, add_triples, begin_staging, commit_staging, compare_data, dereference, diff_data, list_endpoints,
+        load_data, load_service_description, node_neighborhood, remove_triple, remove_triples, reset_data,
         reset_service_description, rollback_staging, serialize_data, serialize_service_description, show_node_info,
         staging, staging_depth, triples,
     },
@@ -10,7 +10,7 @@ use crate::{
         DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
         ResultServiceFormat,
     },
-    types::{NodeNeighborhood, StagingGuard, Triples},
+    types::{DataDiff, GraphRelation, NodeNeighborhood, StagingGuard, SubgraphMode, Triples},
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
 use rudof_viz::VizEngine;
@@ -342,6 +342,76 @@ pub trait DataOperations {
         iri_mode: IriNormalizationMode,
     ) -> Result<Triples<'a>>;
 
+    /// Compares two RDF graphs up to blank node renaming.
+    ///
+    /// The second graph is read from its input; the first one too, or is the
+    /// currently loaded data when `data1` is None. The loaded data is never
+    /// modified. RDF 1.2 triple terms are supported.
+    ///
+    /// # Arguments
+    ///
+    /// * `data1` - Input specification of the first graph (the loaded data if None,
+    ///   which must then be an in-memory graph; `format1` and `base1` are ignored)
+    /// * `data2` - Input specification of the second graph
+    /// * `format1` - Format of the first graph (Turtle if None)
+    /// * `format2` - Format of the second graph (Turtle if None)
+    /// * `base1` - Optional base IRI for the first graph (uses default if None)
+    /// * `base2` - Optional base IRI for the second graph (uses default if None)
+    /// * `reader_mode` - Parsing mode for both graphs (uses default if None)
+    /// * `mode` - How blank nodes may be mapped when checking containment
+    ///   ([`SubgraphMode::Injective`] if None)
+    ///
+    /// # Returns
+    ///
+    /// [`GraphRelation::Isomorphic`] if the graphs are isomorphic,
+    /// [`GraphRelation::Equivalent`] if each is contained in the other without being isomorphic
+    /// (only with the homomorphic and entailment modes),
+    /// [`GraphRelation::Subgraph`] if the first is contained in the second but not the other way round,
+    /// [`GraphRelation::Supergraph`] if the second is contained in the first but not the other way round,
+    /// and [`GraphRelation::Different`] otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an input cannot be read or parsed, or its format is not an RDF format.
+    #[allow(clippy::too_many_arguments)]
+    fn compare_data(
+        &self,
+        data1: Option<&InputSpec>,
+        data2: &InputSpec,
+        format1: Option<&DataFormat>,
+        format2: Option<&DataFormat>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&DataReaderMode>,
+        mode: Option<&SubgraphMode>,
+    ) -> Result<GraphRelation>;
+
+    /// Like [`compare_data`](Self::compare_data), but also returns the triples of
+    /// each graph that the other one does not have, the blank node mapping used,
+    /// and the prefixes of both documents to write them.
+    ///
+    /// When one graph is contained in the other the diff is exact. Otherwise the
+    /// best blank node mapping is searched for, in at most `exact_search_limit`
+    /// steps (100 000 if None); past it a heuristic mapping is used and the diff
+    /// is marked as not exact.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an input cannot be read or parsed, or its format is not an RDF format.
+    #[allow(clippy::too_many_arguments)]
+    fn diff_data(
+        &self,
+        data1: Option<&InputSpec>,
+        data2: &InputSpec,
+        format1: Option<&DataFormat>,
+        format2: Option<&DataFormat>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&DataReaderMode>,
+        mode: Option<&SubgraphMode>,
+        exact_search_limit: Option<usize>,
+    ) -> Result<DataDiff>;
+
     /// Lists the registered SPARQL endpoints.
     ///
     /// Returns:
@@ -524,6 +594,46 @@ impl DataOperations for Rudof {
 
     fn list_endpoints(&mut self) -> Result<Vec<(String, String)>> {
         list_endpoints(self)
+    }
+
+    fn compare_data(
+        &self,
+        data1: Option<&InputSpec>,
+        data2: &InputSpec,
+        format1: Option<&DataFormat>,
+        format2: Option<&DataFormat>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&DataReaderMode>,
+        mode: Option<&SubgraphMode>,
+    ) -> Result<GraphRelation> {
+        compare_data(self, data1, data2, format1, format2, base1, base2, reader_mode, mode)
+    }
+
+    fn diff_data(
+        &self,
+        data1: Option<&InputSpec>,
+        data2: &InputSpec,
+        format1: Option<&DataFormat>,
+        format2: Option<&DataFormat>,
+        base1: Option<&str>,
+        base2: Option<&str>,
+        reader_mode: Option<&DataReaderMode>,
+        mode: Option<&SubgraphMode>,
+        exact_search_limit: Option<usize>,
+    ) -> Result<DataDiff> {
+        diff_data(
+            self,
+            data1,
+            data2,
+            format1,
+            format2,
+            base1,
+            base2,
+            reader_mode,
+            mode,
+            exact_search_limit,
+        )
     }
 
     fn dereference(&mut self, uri: &str, reader_mode: Option<&DataReaderMode>, merge: Option<bool>) -> Result<()> {

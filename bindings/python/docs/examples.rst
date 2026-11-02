@@ -74,6 +74,142 @@ Read RDF data, merge extra triples, and serialize
 - **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
 
 
+Compare RDF Graphs
+^^^^^^^^^^^^^^^^^^
+
+Check whether two RDF graphs are isomorphic, equivalent or one is contained in the other, up to blank node renaming (injective, homomorphic or simple entailment) and including RDF 1.2 triple terms
+
+**Source**: `rdf_data/compare_data.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_data/compare_data.py>`_
+
+**Python code:**
+
+.. code-block:: python
+
+    """Compare two RDF graphs up to blank node renaming: isomorphic, equivalent,
+    subgraph, supergraph or different. RDF 1.2 triple terms are supported.
+
+    ``mode`` says how blank nodes may be mapped when checking containment:
+    ``Injective`` (the default), ``Homomorphic`` or ``Entailment``.
+    """
+
+    from pyrudof import GraphRelation, RDFFormat, Rudof, SubgraphMode
+
+    ALICE = """
+    PREFIX : <http://example.org/>
+    :alice :knows [ :name "Bob" ] .
+    """
+
+    # The same graph with another blank node label and another syntax
+    ALICE_NT = """
+    <http://example.org/alice> <http://example.org/knows> _:someone .
+    _:someone <http://example.org/name> "Bob" .
+    """
+
+    ALICE_MORE = ALICE + ':alice :name "Alice" .'
+
+    ANNOTATED = """
+    PREFIX : <http://example.org/>
+    :alice :knows :bob {| :source :facebook |} .
+    """
+
+    REIFIED = """
+    PREFIX : <http://example.org/>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    :alice :knows :bob .
+    _:r rdf:reifies <<( :alice :knows :bob )>> ; :source :facebook .
+    """
+
+    # Bob, named: an instance of ALICE, where the blank node is :bob
+    ALICE_BOB = """
+    PREFIX : <http://example.org/>
+    :alice :knows :bob . :bob :name "Bob" .
+    """
+
+
+    def main() -> None:
+        with Rudof() as rudof:
+            same = rudof.compare_data(ALICE, ALICE_NT, format2=RDFFormat.NTriples)
+            print(f"turtle vs n-triples: {same}")
+            print(f"subgraph: {rudof.compare_data(ALICE, ALICE_MORE)}")
+            print(f"supergraph: {rudof.compare_data(ALICE_MORE, ALICE)}")
+            print(f"rdf 1.2 annotation vs reification: {rudof.compare_data(ANNOTATED, REIFIED)}")
+            different = rudof.compare_data(ALICE, ANNOTATED)
+            print(f"is different: {different == GraphRelation.Different}")
+
+            # Blank nodes may be instantiated by any term with the entailment mode
+            for mode in SubgraphMode.all():
+                print(f"{mode} mode: {rudof.compare_data(ALICE, ALICE_BOB, mode=mode)}")
+
+            # The first graph can also be the loaded data
+            rudof.read_data(ALICE)
+            print(f"loaded data: {rudof.compare_loaded_data(ALICE_MORE)}")
+
+
+    if __name__ == "__main__":
+        main()
+
+
+Diff RDF Graphs
+^^^^^^^^^^^^^^^
+
+Show the triples of each RDF graph that the other one does not have, up to blank node renaming, with the blank node mapping used
+
+**Source**: `rdf_data/diff_data.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_data/diff_data.py>`_
+
+**Python code:**
+
+.. code-block:: python
+
+    """Show the triples of each RDF graph that the other one does not have, up to
+    blank node renaming. When one graph is contained in the other the diff is
+    exact; otherwise the best blank node mapping is searched for.
+    """
+
+    from pyrudof import GraphRelation, Rudof, SubgraphMode
+
+    BOB = """
+    PREFIX : <http://example.org/>
+    :alice :knows _:b .
+    _:b :name "Bob" .
+    """
+
+    ROBERT = """
+    PREFIX : <http://example.org/>
+    :alice :knows _:c .
+    _:c :name "Robert" .
+    """
+
+    NAMED_BOB = """
+    PREFIX : <http://example.org/>
+    :alice :knows :bob .
+    :bob :name "Bob" ; :age 30 .
+    """
+
+
+    def main() -> None:
+        with Rudof() as rudof:
+            diff = rudof.diff_data(BOB, ROBERT)
+            print(f"relation: {diff.relation}, exact: {diff.exact}")
+            print(f"only in first: {diff.only_in_first}")
+            print(f"only in second: {diff.only_in_second}")
+            print(f"blank nodes: {diff.first_to_second}")
+
+            # With simple entailment, _:b is :bob, so only the age is extra
+            diff = rudof.diff_data(BOB, NAMED_BOB, mode=SubgraphMode.Entailment)
+            print(f"entailment: {diff.relation == GraphRelation.Subgraph}, extra: {diff.only_in_second}")
+
+            # str(diff) is a report, with the prefixes of the documents
+            print(rudof.diff_data(BOB, ROBERT))
+
+            # The first graph can also be the loaded data
+            rudof.read_data(BOB)
+            print(f"loaded data: {rudof.diff_loaded_data(ROBERT)!r}")
+
+
+    if __name__ == "__main__":
+        main()
+
+
 Node Info
 ^^^^^^^^^
 
