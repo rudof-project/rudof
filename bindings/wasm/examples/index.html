@@ -151,9 +151,9 @@
 
     <section class="card playground">
       <details>
-        <summary><b>Validator playground</b>: validate any RDF data with ShEx or SHACL</summary>
-        <p class="hint" style="margin:0.5rem 0 0">The sample below is broken on purpose: <code>:bob</code>'s age
-          <code>"unknown"</code> is not an <code>xsd:integer</code>, so both validators reject <code>:bob</code>
+        <summary><b>Validator playground</b>: validate RDF data with ShEx or SHACL, and property graphs with PG-Schema</summary>
+        <p class="hint" style="margin:0.5rem 0 0">The samples below are broken on purpose: <code>bob</code>'s age
+          <code>"unknown"</code> is not an integer, so the three validators reject <code>bob</code>
           (<code>conforms: false</code>). Use <b>Open in the validator below</b> in the Result to load generated data here.</p>
         <div class="grid2" style="margin-top:0.6rem">
           <label class="field">RDF data (Turtle)
@@ -178,18 +178,49 @@ prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
             <button class="ghost" id="validate-shacl" style="margin-top:0.4rem">Validate with SHACL</button>
           </label>
         </div>
+        <div class="grid2" style="margin-top:0.6rem">
+          <label class="field">Property graph (rudof's PG format)
+            <textarea id="pg-graph" spellcheck="false">(alice {Person} [ name: "Alice", age: 23 ])
+(bob {Person} [ name: "Bob", age: "unknown" ])</textarea>
+          </label>
+          <label class="field">PG-Schema
+            <textarea id="pg-pgschema" spellcheck="false">CREATE NODE TYPE ( PersonType : Person {
+    name: STRING,
+    age: INTEGER
+})</textarea>
+          </label>
+          <label class="field">Type map (node or edge: type)
+            <textarea id="pg-typemap" spellcheck="false">alice: PersonType,
+bob: PersonType</textarea>
+            <button class="ghost" id="validate-pgschema" style="margin-top:0.4rem">Validate with PG-Schema</button>
+          </label>
+        </div>
         <div class="msg error" id="pg-warning" style="margin-top:0.6rem" hidden>
-          <b>conforms: false.</b> If you meant to validate the data you generated above, be sure to
-          click <b>Open in the validator below</b> in the Result first: it loads the generated data, its
-          ShapeMap and the matching schemas here. Otherwise you are validating whatever is in these
-          boxes, such as the sample, which is broken on purpose.</div>
+          <b>conforms: false.</b> If you meant to validate data generated above to be valid, be sure that
+          <b>With errors + report</b> is not selected (that scenario breaks 20% of the entities on purpose),
+          and that you clicked <b>Open in the validator below</b> in the Result: it loads the generated
+          data, its ShapeMap, type map and the matching schemas here. Otherwise you are validating
+          whatever is in these boxes, such as the sample, which is broken on purpose.</div>
         <pre class="out" id="pg-output" style="margin-top:0.6rem">Ready.</pre>
       </details>
     </section>
   </main>
 
   <script type="module">
-    import init, { validateShex, validateShacl, generate } from "../pkg/web/rudof_wasm.js";
+    import init, { validateShex, validateShacl, generate, Rudof } from "../pkg/web/rudof_wasm.js";
+
+    // PG-Schema validation goes through a rudof session: the graph, the schema and the type map.
+    function validatePg(graph, schema, typeMap) {
+      const r = new Rudof();
+      try {
+        r.readData(graph, "pg");
+        r.readPgschema(schema);
+        r.readTypemap(typeMap);
+        return r.validatePgschema();
+      } finally {
+        r.free();
+      }
+    }
 
     const $ = (id) => document.getElementById(id);
     const EXT = { shacl: "ttl", shex: "shex", pgschema: "pgs" };
@@ -270,7 +301,6 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
 
     let example = "references", lang = "shacl", scenario = "valid", tab = "data", last = null;
     const cache = new Map();
-    let shexOfExample = null; // the ShEx version, used to validate PG-Schema data
 
     async function schemaText(id, l) {
       if (id === "custom") return CUSTOM[l];
@@ -291,7 +321,6 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
       press($("examples"), "id", example);
       press($("langs"), "lang", lang);
       $("schema").value = await schemaText(example, lang);
-      shexOfExample = example === "custom" ? null : await schemaText(example, "shex");
       $("schema-hint").textContent = example === "custom"
         ? "A template: edit it as you like."
         : `${LANG[lang]} version. The other two generate the same graph.`;
@@ -336,18 +365,21 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
     }
 
     function validate(g, format, schema) {
-      // RDF data is validated with the schema's own language; PG-Schema data through the
-      // ShEx version of the example, over the RDF encoding.
+      // The data is validated with the schema's own language: RDF with ShEx or SHACL, the
+      // property graph with PG-Schema (nodes and edges, through the type map).
       const started = performance.now();
+      if (format === "pgschema") {
+        const r = validatePg(g.propertyGraph, schema, g.typeMap);
+        return { validator: "PG-Schema", pg: true, failing: new Set(r.violations.map((e) => e.nodeId)),
+                 conforms: r.conforms, report: r, ms: performance.now() - started };
+      }
       if (format === "shacl") {
         const r = validateShacl(g.data, schema);
         return { validator: "SHACL", failing: new Set(r.entries.filter((e) => e.severity === "Violation").map((e) => strip(e.focusNode))),
                  conforms: r.conforms, report: r, ms: performance.now() - started };
       }
-      const shex = format === "shex" ? schema : shexOfExample;
-      if (!shex) return null;
-      const r = validateShex(g.data, shex, g.shapemap);
-      return { validator: format === "shex" ? "ShEx" : "ShEx (RDF encoding)",
+      const r = validateShex(g.data, schema, g.shapemap);
+      return { validator: "ShEx",
                failing: new Set(r.violations.map((e) => strip(e.node))), checked: r.entries.length,
                conforms: r.conforms, report: r, ms: performance.now() - started };
     }
@@ -361,9 +393,10 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
       const assoc = associations(g.shapemap);
       const perShape = new Map();
       for (const a of assoc) perShape.set(short(a.shape), (perShape.get(short(a.shape)) || 0) + 1);
-      // What an RDF validator must report, and the report shown: the property graph one for a PG-Schema.
-      const labels = jsonl(g.rdfLabels ?? g.labels);
-      const shown = format === "pgschema" ? jsonl(g.labels) : labels;
+      // What the validator must report: the property graph report for PG-Schema (nodes and
+      // edges), else the report of the RDF copy when the generator wrote one.
+      const labels = jsonl(format === "pgschema" ? g.labels : (g.rdfLabels ?? g.labels));
+      const shown = labels;
       const expected = new Set(labels.filter((l) => l.kind !== "trap").map((l) => strip(l.node)));
       const lines = g.data.split("\n").filter((l) => l.trim() && !/^\s*(@?prefix|PREFIX)/i.test(l)).length;
 
@@ -378,8 +411,9 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
         if (labels.length) {
           const tp = [...v.failing].filter((n) => expected.has(n)).length;
           const exact = tp === expected.size && tp === v.failing.size;
-          cards += stat(fmt(expected.size), "nodes the report says fail");
-          cards += stat(fmt(v.failing.size), `nodes ${v.validator} rejects`, exact ? "ok" : "bad");
+          const what = v.pg ? "nodes and edges" : "nodes";
+          cards += stat(fmt(expected.size), `${what} the report says fail`);
+          cards += stat(fmt(v.failing.size), `${what} ${v.validator} rejects`, exact ? "ok" : "bad");
           cards += stat(exact ? "exact" : `${fmt(tp)} common`, "validator vs report", exact ? "ok" : "bad");
         } else {
           const bad = v.failing.size;
@@ -407,7 +441,7 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
       if (tab === "labels") {
         const rows = shown;
         hint = `${fmt(rows.length)} entries. direct: the error was injected here; induced: fails through a reference to a broken node; trap: changed but still valid.`
-          + (format === "pgschema" ? " Property graph report; the RDF one drives the validation figures." : "");
+          + (format === "pgschema" ? " Property graph report: nodes and edges." : "");
         html = `<div class="tablewrap"><table><thead><tr><th>Node or edge</th><th>Shape</th><th>Kind</th><th>Error</th><th>Property</th></tr></thead><tbody>`
           + rows.slice(0, 1000).map((l) => `<tr><td>${esc(short(l.node))}</td><td>${esc(short(l.shape))}</td><td>${esc(l.kind)}</td>`
             + `<td>${esc(l.operator || (l.cause ? "via " + short(l.cause) : ""))}</td><td>${esc(short(l.property))}</td></tr>`).join("")
@@ -451,11 +485,16 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
       if (last.example !== "custom") {
         $("pg-shacl").value = await schemaText(last.example, "shacl");
         $("pg-shex").value = await schemaText(last.example, "shex");
+        $("pg-pgschema").value = await schemaText(last.example, "pgschema");
       } else {
         $("pg-shacl").value = last.format === "shacl" ? last.schema : none("SHACL");
         $("pg-shex").value = last.format === "shex" ? last.schema : none("ShEx");
+        $("pg-pgschema").value = last.format === "pgschema" ? last.schema : none("PG-Schema");
       }
-      $("pg-output").textContent = "Loaded the generated data. Validate with ShEx or SHACL.";
+      // The property graph and its type map, when the generator wrote one.
+      $("pg-graph").value = last.g.propertyGraph ?? "# No property graph: this data is RDF only.\n";
+      $("pg-typemap").value = last.g.typeMap ?? "";
+      $("pg-output").textContent = "Loaded the generated data. Validate with ShEx, SHACL or PG-Schema.";
       $("pg-warning").hidden = true;
       document.querySelector(".playground details").open = true;
       document.querySelector(".playground").scrollIntoView({ behavior: "smooth" });
@@ -512,6 +551,11 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
       : show(() => validateShex($("pg-data").value, $("pg-shex").value, $("pg-shapemap").value));
     $("validate-shacl").onclick = () => noSchema("pg-shacl") ? ($("pg-output").textContent = noSchema("pg-shacl"))
       : show(() => validateShacl($("pg-data").value, $("pg-shacl").value));
+    $("validate-pgschema").onclick = () => {
+      const missing = noSchema("pg-pgschema") || noSchema("pg-graph");
+      if (missing) { $("pg-output").textContent = missing; return; }
+      show(() => validatePg($("pg-graph").value, $("pg-pgschema").value, $("pg-typemap").value));
+    };
 
     await loadSchema().catch(showError);
     await init();
