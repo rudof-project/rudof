@@ -13,7 +13,7 @@
       };
 
       pname = "rudof-workspace";
-      version = "0.3.36";
+      version = "0.3.37";
       strictDeps = true;
       doCheck = false;
 
