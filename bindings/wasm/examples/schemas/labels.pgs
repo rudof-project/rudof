@@ -1,3 +1,0 @@
-CREATE NODE TYPE ( StaffType : Person & Employee {
-    name: STRING
-})

@@ -3,564 +3,63 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>rudof generate</title>
+  <title>rudof wasm validation</title>
   <style>
-    :root {
-      --bg: #f7f7f5; --surface: #ffffff; --ink: #1f1f1d; --muted: #6b6a66; --line: #dddcd6;
-      --accent: #2a62c9; --accent-ink: #ffffff; --soft: #eef2fb; --ok: #1d7a4f; --bad: #b3361e;
-      --code: #f2f1ed;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #161615; --surface: #1f1f1d; --ink: #ecebe6; --muted: #a3a29c; --line: #3a3936;
-        --accent: #7aa5f0; --accent-ink: #10131a; --soft: #232c3d; --ok: #5cc994; --bad: #f08a70;
-        --code: #262624;
-      }
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--ink);
-           font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-    main { max-width: 1180px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
-    h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
-    h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
-    p.lead { margin: 0 0 1.5rem; color: var(--muted); max-width: 52rem; }
-    code, textarea, pre, input[type=number] { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
-    section.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
-                   padding: 1rem; margin-bottom: 1rem; }
-    .step { display: inline-block; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--accent);
-            color: var(--accent-ink); text-align: center; font-size: 0.85rem; line-height: 1.5rem; margin-right: 0.4rem; }
-    .examples { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.6rem; }
-    .example { text-align: left; border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
-               color: var(--ink); padding: 0.6rem 0.7rem; cursor: pointer; font: inherit; }
-    .example:hover { border-color: var(--accent); }
-    .example[aria-pressed=true] { border-color: var(--accent); background: var(--soft); box-shadow: inset 0 0 0 1px var(--accent); }
-    .example b { display: block; font-size: 0.95rem; }
-    .example span { display: block; color: var(--muted); font-size: 0.82rem; line-height: 1.35; margin-top: 0.15rem; }
-    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-    .seg button { border: 0; background: transparent; color: var(--ink); padding: 0.35rem 0.8rem; cursor: pointer; font: inherit; }
-    .seg button + button { border-left: 1px solid var(--line); }
-    .seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 0.9rem 0 0.6rem; }
-    .hint { color: var(--muted); font-size: 0.85rem; }
-    textarea { width: 100%; min-height: 15rem; padding: 0.6rem; border: 1px solid var(--line); border-radius: 8px;
-               background: var(--code); color: var(--ink); font-size: 0.82rem; line-height: 1.45; resize: vertical; tab-size: 2; }
-    .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; }
-    label.field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
-    input[type=number], select { padding: 0.4rem 0.5rem; border: 1px solid var(--line); border-radius: 6px;
-                                 background: var(--surface); color: var(--ink); font-size: 0.9rem; }
-    .scenarios { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.25rem 0 0.75rem; }
-    .scenario { border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink);
-                padding: 0.3rem 0.8rem; cursor: pointer; font: inherit; font-size: 0.88rem; }
-    .scenario[aria-pressed=true] { background: var(--soft); border-color: var(--accent); color: var(--accent); }
-    details summary { cursor: pointer; color: var(--muted); font-size: 0.88rem; margin: 0.25rem 0; }
-    details textarea { min-height: 9rem; margin-top: 0.4rem; }
-    .go { display: flex; align-items: center; gap: 1rem; margin-top: 0.9rem; flex-wrap: wrap; }
-    button.primary { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px;
-                     padding: 0.6rem 1.4rem; font: inherit; font-weight: 600; cursor: pointer; }
-    button.primary:disabled { opacity: 0.6; cursor: progress; }
-    button.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); border-radius: 6px;
-                   padding: 0.3rem 0.7rem; font: inherit; font-size: 0.85rem; cursor: pointer; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 0.6rem; margin-bottom: 0.9rem; }
-    .stat { border: 1px solid var(--line); border-radius: 8px; padding: 0.55rem 0.7rem; }
-    .stat .v { font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .stat .k { color: var(--muted); font-size: 0.8rem; }
-    .stat.ok .v { color: var(--ok); } .stat.bad .v { color: var(--bad); }
-    .tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; border-bottom: 1px solid var(--line); margin-bottom: 0.6rem; }
-    .tabs button { border: 0; background: transparent; color: var(--muted); padding: 0.45rem 0.75rem; cursor: pointer;
-                   font: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-    .tabs button[aria-selected=true] { color: var(--ink); border-bottom-color: var(--accent); }
-    .tabs button[hidden] { display: none; }
-    pre.out { background: var(--code); border-radius: 8px; padding: 0.7rem; margin: 0; max-height: 28rem; overflow: auto;
-              font-size: 0.8rem; line-height: 1.45; white-space: pre; }
-    table { border-collapse: collapse; width: 100%; font-size: 0.82rem; }
-    th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
-    .tablewrap { max-height: 28rem; overflow: auto; }
-    .shapes { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
-    .chip { border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.8rem; }
-    .chip b { font-variant-numeric: tabular-nums; }
-    .msg { padding: 0.6rem 0.8rem; border-radius: 8px; background: var(--code); }
-    .msg.error { color: var(--bad); }
-    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
-    .playground textarea { min-height: 10rem; }
-    .playground input { width: 100%; padding: 0.4rem; border: 1px solid var(--line); border-radius: 6px;
-                        background: var(--surface); color: var(--ink); font-family: ui-monospace, Consolas, monospace; }
-    [hidden] { display: none !important; }
+    body { font-family: system-ui, sans-serif; margin: 1rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
+    textarea { width: 100%; box-sizing: border-box; height: 12rem; font-family: monospace; }
+    input { width: 100%; box-sizing: border-box; font-family: monospace; }
+    pre { background: #f4f4f4; padding: 0.5rem; overflow-x: auto; }
   </style>
 </head>
 <body>
   <!-- Serve the bindings/wasm directory over HTTP after running ./build.sh,
        e.g. `python3 -m http.server`, and open /examples/index.html -->
-  <main>
-    <h1>rudof generate</h1>
-    <p class="lead">Synthetic data from a schema, in your browser (WebAssembly). Pick a model, pick the
-      schema language (SHACL, ShEx or PG-Schema; the examples say the same thing in all three
-      and generate the same graph), choose what kind of data you want, and generate. The data is
-      validated against its schema right away.</p>
-
-    <section class="card">
-      <h2><span class="step">1</span>Choose a model</h2>
-      <div class="examples" id="examples"></div>
-      <div class="toolbar">
-        <div class="seg" id="langs" role="group" aria-label="Schema language">
-          <button data-lang="shacl">SHACL</button>
-          <button data-lang="shex">ShEx</button>
-          <button data-lang="pgschema">PG-Schema</button>
-        </div>
-        <span class="hint" id="schema-hint"></span>
-      </div>
-      <textarea id="schema" spellcheck="false" aria-label="Schema"></textarea>
-    </section>
-
-    <section class="card">
-      <h2><span class="step">2</span>Choose the data</h2>
-      <div class="scenarios" id="scenarios"></div>
-      <div class="settings">
-        <label class="field">Entities <input id="entities" type="number" min="1" max="200000" value="60"></label>
-        <label class="field">Seed <input id="seed" type="number" min="0" value="7"></label>
-      </div>
-      <details>
-        <summary>Configuration (TOML, <code>version = 2</code>): the scenario writes it; edit freely</summary>
-        <textarea id="config" spellcheck="false" aria-label="Configuration"></textarea>
-      </details>
-      <div class="go">
-        <button class="primary" id="generate" disabled>Loading rudof…</button>
-        <span class="hint" id="status"></span>
-      </div>
-    </section>
-
-    <section class="card" id="results" hidden>
-      <h2><span class="step">3</span>Result</h2>
-      <div class="stats" id="stats"></div>
-      <div class="shapes" id="shapes"></div>
-      <div class="tabs" role="tablist" id="tabs">
-        <button role="tab" data-tab="data">RDF data (Turtle)</button>
-        <button role="tab" data-tab="pg">Property graph</button>
-        <button role="tab" data-tab="typemap">Type map</button>
-        <button role="tab" data-tab="shapemap">ShapeMap</button>
-        <button role="tab" data-tab="labels">Error report</button>
-        <button role="tab" data-tab="validation">Validation</button>
-      </div>
-      <div class="toolbar" style="margin-top:0">
-        <button class="ghost" id="download">Download this tab</button>
-        <button class="ghost" id="to-playground">Open in the validator below</button>
-        <span class="hint" id="tab-hint"></span>
-      </div>
-      <div id="panel"></div>
-    </section>
-
-    <section class="card playground">
-      <details>
-        <summary><b>Validator playground</b>: validate RDF data with ShEx or SHACL, and property graphs with PG-Schema</summary>
-        <p class="hint" style="margin:0.5rem 0 0">The samples below are broken on purpose: <code>bob</code>'s age
-          <code>"unknown"</code> is not an integer, so the three validators reject <code>bob</code>
-          (<code>conforms: false</code>). Use <b>Open in the validator below</b> in the Result to load generated data here.</p>
-        <div class="grid2" style="margin-top:0.6rem">
-          <label class="field">RDF data (Turtle)
-            <textarea id="pg-data" spellcheck="false">prefix : &lt;http://example.org/&gt;
+  <h1>rudof: ShEx and SHACL validation in WebAssembly</h1>
+  <div class="grid">
+    <label>RDF data (Turtle)
+      <textarea id="data">prefix : <http://example.org/>
 :alice :name "Alice" ; :age 23 .
 :bob   :name "Bob"   ; :age "unknown" .</textarea>
-          </label>
-          <label class="field">ShEx schema (ShExC)
-            <textarea id="pg-shex" spellcheck="false">prefix : &lt;http://example.org/&gt;
-prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+    </label>
+    <label>ShEx schema (ShExC)
+      <textarea id="shex">prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person { :name xsd:string ; :age xsd:integer }</textarea>
-            ShapeMap <input id="pg-shapemap" value=":alice@:Person, :bob@:Person">
-            <button class="ghost" id="validate-shex" style="margin-top:0.4rem">Validate with ShEx</button>
-          </label>
-          <label class="field">SHACL shapes (Turtle)
-            <textarea id="pg-shacl" spellcheck="false">prefix : &lt;http://example.org/&gt;
-prefix sh: &lt;http://www.w3.org/ns/shacl#&gt;
-prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+      Shapemap <input id="shapemap" value=":alice@:Person, :bob@:Person">
+      <button id="validate-shex">Validate with ShEx</button>
+    </label>
+    <label>SHACL shapes (Turtle)
+      <textarea id="shacl">prefix : <http://example.org/>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :PersonShape a sh:NodeShape ;
   sh:targetSubjectsOf :name ;
   sh:property [ sh:path :age ; sh:datatype xsd:integer ] .</textarea>
-            <button class="ghost" id="validate-shacl" style="margin-top:0.4rem">Validate with SHACL</button>
-          </label>
-        </div>
-        <div class="grid2" style="margin-top:0.6rem">
-          <label class="field">Property graph (rudof's PG format)
-            <textarea id="pg-graph" spellcheck="false">(alice {Person} [ name: "Alice", age: 23 ])
-(bob {Person} [ name: "Bob", age: "unknown" ])</textarea>
-          </label>
-          <label class="field">PG-Schema
-            <textarea id="pg-pgschema" spellcheck="false">CREATE NODE TYPE ( PersonType : Person {
-    name: STRING,
-    age: INTEGER
-})</textarea>
-          </label>
-          <label class="field">Type map (node or edge: type)
-            <textarea id="pg-typemap" spellcheck="false">alice: PersonType,
-bob: PersonType</textarea>
-            <button class="ghost" id="validate-pgschema" style="margin-top:0.4rem">Validate with PG-Schema</button>
-          </label>
-        </div>
-        <div class="msg error" id="pg-warning" style="margin-top:0.6rem" hidden>
-          <b>conforms: false.</b> If you meant to validate data generated above to be valid, be sure that
-          <b>With errors + report</b> is not selected (that scenario breaks 20% of the entities on purpose),
-          and that you clicked <b>Open in the validator below</b> in the Result: it loads the generated
-          data, its ShapeMap, type map and the matching schemas here. Otherwise you are validating
-          whatever is in these boxes, such as the sample, which is broken on purpose.</div>
-        <pre class="out" id="pg-output" style="margin-top:0.6rem">Ready.</pre>
-      </details>
-    </section>
-  </main>
+      <button id="validate-shacl">Validate with SHACL</button>
+    </label>
+  </div>
+  <h2>Result</h2>
+  <pre id="output">Loading…</pre>
 
   <script type="module">
-    import init, { validateShex, validateShacl, generate, Rudof } from "../pkg/web/rudof_wasm.js";
-
-    // PG-Schema validation goes through a rudof session: the graph, the schema and the type map.
-    function validatePg(graph, schema, typeMap) {
-      const r = new Rudof();
-      try {
-        r.readData(graph, "pg");
-        r.readPgschema(schema);
-        r.readTypemap(typeMap);
-        return r.validatePgschema();
-      } finally {
-        r.free();
-      }
-    }
+    import init, { validateShex, validateShacl } from "../pkg/web/rudof_wasm.js";
 
     const $ = (id) => document.getElementById(id);
-    const EXT = { shacl: "ttl", shex: "shex", pgschema: "pgs" };
-    const LANG = { shacl: "SHACL", shex: "ShEx", pgschema: "PG-Schema" };
-
-    // The examples are written in the three languages over the same vocabulary (the RDF
-    // encoding of the property graph), so the three versions generate the same graph.
-    const EXAMPLES = [
-      { id: "references", title: "Persons, organisations, cities",
-        text: "A person works for an organisation located in a city: references between node types." },
-      { id: "keys", title: "Keys and values",
-        text: "Required, optional and multi-valued keys; strings, dates and booleans." },
-      { id: "facets", title: "Value facets",
-        text: "A code pattern and inclusive and exclusive numeric ranges." },
-      { id: "labels", title: "Several labels",
-        text: "Staff nodes that are both Person and Employee." },
-      { id: "lubm", title: "LUBM university",
-        text: "The Lehigh University Benchmark model: 12 node types, 35 edge types." },
-      { id: "ldbc-snb", title: "LDBC Social Network",
-        text: "LDBC SNB: persons, forums, posts and places; 11 node types, cycles." },
-      { id: "custom", title: "Your own schema",
-        text: "Start from a small template and write your own." },
-    ];
-    const CUSTOM = {
-      shacl: `prefix : <http://example.org/>
-prefix sh: <http://www.w3.org/ns/shacl#>
-prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-
-:PersonShape a sh:NodeShape ; sh:targetClass :Person ;
-  sh:property [ sh:path :name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
-  sh:property [ sh:path :age ; sh:datatype xsd:integer ; sh:minInclusive 18 ; sh:maxCount 1 ] ;
-  sh:property [ sh:path :worksFor ; sh:node :OrgShape ; sh:minCount 1 ; sh:maxCount 1 ] .
-
-:OrgShape a sh:NodeShape ; sh:targetClass :Org ;
-  sh:property [ sh:path :label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
-`,
-      shex: `prefix : <http://example.org/>
-prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-
-:Person {
-  a [:Person] ;
-  :name xsd:string ;
-  :age xsd:integer MinInclusive 18 ? ;
-  :worksFor @:Org
-}
-:Org {
-  a [:Org] ;
-  :label xsd:string
-}
-`,
-      pgschema: `CREATE NODE TYPE ( PersonType : Person {
-    name: STRING,
-    OPTIONAL age: INTEGER CHECK >= 18
-}) ;
-CREATE NODE TYPE ( OrgType : Org {
-    label: STRING
-}) ;
-CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
-`,
-    };
-
-    const SCENARIOS = [
-      { id: "valid", title: "Valid data", hint: "Every node conforms to its shape.",
-        config: () => `version = 2\n` },
-      { id: "dense", title: "Dense", hint: "Every optional property, at the maximum cardinality.",
-        config: () => `version = 2\n\n[defaults]\nfill = 1.0\ncardinality = "max"\n` },
-      { id: "sparse", title: "Sparse", hint: "Optional properties and references on 10% of the nodes; still valid.",
-        config: () => `version = 2\n\n[defaults]\nfill = 0.1\n` },
-      { id: "coherence", title: "Coherence 0.85", hint: "Searches the fill until the graph's coherence is 0.85.",
-        config: () => `version = 2\n\n[targets]\ncoherence = 0.85\ntolerance = 0.01\n` },
-      { id: "broken", title: "With errors + report", hint: "20% of the entities get one error; the report says what a validator must flag.",
-        // A property graph (from a PG-Schema, or from an example written over its RDF
-        // encoding) gets a report for its RDF copy too, which the RDF validators are checked against.
-        config: (pg) => `version = 2\n\n[violations]\nrate = 0.2\n` + (pg
-          ? `\n[violations.rdf]                # the RDF copy keeps PG-Schema's closed records and required keys\n`
-            + `closed = true\nkeys_required = true\n\n[output]\nformats = ["pg", "turtle"]\n` : "") },
-    ];
-
-    let example = "references", lang = "shacl", scenario = "valid", tab = "data", last = null;
-    const cache = new Map();
-
-    async function schemaText(id, l) {
-      if (id === "custom") return CUSTOM[l];
-      const key = `${id}.${EXT[l]}`;
-      if (!cache.has(key)) {
-        const r = await fetch(`schemas/${key}`);
-        if (!r.ok) throw new Error(`could not load schemas/${key}`);
-        cache.set(key, await r.text());
-      }
-      return cache.get(key);
-    }
-
-    function press(container, attr, value) {
-      for (const b of container.querySelectorAll("button")) b.setAttribute("aria-pressed", b.dataset[attr] === value);
-    }
-
-    async function loadSchema() {
-      press($("examples"), "id", example);
-      press($("langs"), "lang", lang);
-      $("schema").value = await schemaText(example, lang);
-      $("schema-hint").textContent = example === "custom"
-        ? "A template: edit it as you like."
-        : `${LANG[lang]} version. The other two generate the same graph.`;
-      writeConfig();
-    }
-
-    function writeConfig() {
-      press($("scenarios"), "id", scenario);
-      $("config").value = SCENARIOS.find((s) => s.id === scenario).config(example !== "custom" || lang === "pgschema");
-      $("status").textContent = SCENARIOS.find((s) => s.id === scenario).hint;
-    }
-
-    $("examples").innerHTML = EXAMPLES.map((e) =>
-      `<button class="example" data-id="${e.id}"><b>${e.title}</b><span>${e.text}</span></button>`).join("");
-    $("examples").onclick = (ev) => {
-      const b = ev.target.closest("button"); if (!b) return;
-      example = b.dataset.id; loadSchema().catch(showError);
-    };
-    $("langs").onclick = (ev) => {
-      const b = ev.target.closest("button"); if (!b) return;
-      lang = b.dataset.lang; loadSchema().catch(showError);
-    };
-    $("scenarios").innerHTML = SCENARIOS.map((s) =>
-      `<button class="scenario" data-id="${s.id}" title="${s.hint}">${s.title}</button>`).join("");
-    $("scenarios").onclick = (ev) => {
-      const b = ev.target.closest("button"); if (!b) return;
-      scenario = b.dataset.id; writeConfig();
-    };
-
-    // ---------- results ----------
-    const strip = (t) => (t || "").trim().replace(/^<(.*)>$/, "$1");
-    const short = (t) => strip(t).replace(/^.*[/#]/, "");
-    const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const jsonl = (s) => (s || "").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
-    const fmt = (n) => n.toLocaleString("en-US");
-
-    function associations(shapemap) {
-      return shapemap.split(",").map((a) => a.trim()).filter((a) => a.includes("@")).map((a) => {
-        const at = a.lastIndexOf("@");
-        return { node: strip(a.slice(0, at)), shape: strip(a.slice(at + 1)) };
-      });
-    }
-
-    function validate(g, format, schema) {
-      // The data is validated with the schema's own language: RDF with ShEx or SHACL, the
-      // property graph with PG-Schema (nodes and edges, through the type map).
-      const started = performance.now();
-      if (format === "pgschema") {
-        const r = validatePg(g.propertyGraph, schema, g.typeMap);
-        return { validator: "PG-Schema", pg: true, failing: new Set(r.violations.map((e) => e.nodeId)),
-                 conforms: r.conforms, report: r, ms: performance.now() - started };
-      }
-      if (format === "shacl") {
-        const r = validateShacl(g.data, schema);
-        return { validator: "SHACL", failing: new Set(r.entries.filter((e) => e.severity === "Violation").map((e) => strip(e.focusNode))),
-                 conforms: r.conforms, report: r, ms: performance.now() - started };
-      }
-      const r = validateShex(g.data, schema, g.shapemap);
-      return { validator: "ShEx",
-               failing: new Set(r.violations.map((e) => strip(e.node))), checked: r.entries.length,
-               conforms: r.conforms, report: r, ms: performance.now() - started };
-    }
-
-    function stat(value, key, cls = "") {
-      return `<div class="stat ${cls}"><div class="v">${value}</div><div class="k">${key}</div></div>`;
-    }
-
-    function render() {
-      const { g, format, v, ms } = last;
-      const assoc = associations(g.shapemap);
-      const perShape = new Map();
-      for (const a of assoc) perShape.set(short(a.shape), (perShape.get(short(a.shape)) || 0) + 1);
-      // What the validator must report: the property graph report for PG-Schema (nodes and
-      // edges), else the report of the RDF copy when the generator wrote one.
-      const labels = jsonl(format === "pgschema" ? g.labels : (g.rdfLabels ?? g.labels));
-      const shown = labels;
-      const expected = new Set(labels.filter((l) => l.kind !== "trap").map((l) => strip(l.node)));
-      const lines = g.data.split("\n").filter((l) => l.trim() && !/^\s*(@?prefix|PREFIX)/i.test(l)).length;
-
-      let cards = stat(fmt(assoc.length), "nodes generated") + stat(fmt(perShape.size), "shapes / node types")
-        + stat(fmt(lines), "lines of Turtle");
-      if (g.propertyGraph) {
-        const pgLines = g.propertyGraph.split("\n").filter((l) => l.trim());
-        const edges = pgLines.filter((l) => l.includes(")->")).length;
-        cards += stat(`${fmt(pgLines.length - edges)} / ${fmt(edges)}`, "PG nodes / edges");
-      }
-      if (v) {
-        if (labels.length) {
-          const tp = [...v.failing].filter((n) => expected.has(n)).length;
-          const exact = tp === expected.size && tp === v.failing.size;
-          const what = v.pg ? "nodes and edges" : "nodes";
-          cards += stat(fmt(expected.size), `${what} the report says fail`);
-          cards += stat(fmt(v.failing.size), `${what} ${v.validator} rejects`, exact ? "ok" : "bad");
-          cards += stat(exact ? "exact" : `${fmt(tp)} common`, "validator vs report", exact ? "ok" : "bad");
-        } else {
-          const bad = v.failing.size;
-          cards += stat(bad === 0 ? "valid" : `${fmt(bad)} invalid`, `${v.validator} validation`, bad === 0 ? "ok" : "bad");
-        }
-      }
-      cards += stat(ms < 1000 ? `${Math.max(1, Math.round(ms))} ms` : `${(ms / 1000).toFixed(2)} s`, "generation time");
-      $("stats").innerHTML = cards;
-      $("shapes").innerHTML = [...perShape].sort((a, b) => b[1] - a[1])
-        .map(([s, n]) => `<span class="chip">${esc(s)} <b>${fmt(n)}</b></span>`).join("");
-
-      for (const b of $("tabs").querySelectorAll("button")) {
-        const t = b.dataset.tab;
-        b.hidden = (t === "pg" || t === "typemap") ? !g.propertyGraph : t === "labels" ? !g.labels : t === "validation" ? !v : false;
-      }
-      if ($("tabs").querySelector(`[data-tab="${tab}"]`).hidden) tab = "data";
-      for (const b of $("tabs").querySelectorAll("button")) b.setAttribute("aria-selected", b.dataset.tab === tab);
-
-      const pre = (s) => `<pre class="out">${esc(s)}</pre>`;
-      let html = "", hint = "";
-      if (tab === "data") { html = pre(g.data); hint = format === "pgschema" ? "The RDF encoding of the property graph." : ""; }
-      if (tab === "pg") { html = pre(g.propertyGraph); hint = "rudof's property graph format."; }
-      if (tab === "typemap") html = pre(g.typeMap);
-      if (tab === "shapemap") { html = pre(g.shapemap.split(",").map((s) => s.trim()).join(",\n")); hint = "The shape of every generated node."; }
-      if (tab === "labels") {
-        const rows = shown;
-        hint = `${fmt(rows.length)} entries. direct: the error was injected here; induced: fails through a reference to a broken node; trap: changed but still valid.`
-          + (format === "pgschema" ? " Property graph report: nodes and edges." : "");
-        html = `<div class="tablewrap"><table><thead><tr><th>Node or edge</th><th>Shape</th><th>Kind</th><th>Error</th><th>Property</th></tr></thead><tbody>`
-          + rows.slice(0, 1000).map((l) => `<tr><td>${esc(short(l.node))}</td><td>${esc(short(l.shape))}</td><td>${esc(l.kind)}</td>`
-            + `<td>${esc(l.operator || (l.cause ? "via " + short(l.cause) : ""))}</td><td>${esc(short(l.property))}</td></tr>`).join("")
-          + `</tbody></table></div>`;
-      }
-      if (tab === "validation" && v) {
-        const failing = v.report.violations ?? v.report.entries;
-        hint = `${v.validator}, ${(v.ms / 1000).toFixed(2)} s. ` + (v.failing.size ? `${fmt(v.failing.size)} nodes fail.` : "Every node conforms.");
-        html = failing.length ? pre(JSON.stringify(failing.slice(0, 200), null, 2) + (failing.length > 200 ? `\n… ${failing.length - 200} more` : ""))
-                              : `<div class="msg">No violations.</div>`;
-      }
-      $("panel").innerHTML = html;
-      $("tab-hint").textContent = hint;
-    }
-
-    $("tabs").onclick = (ev) => {
-      const b = ev.target.closest("button"); if (!b || !last) return;
-      tab = b.dataset.tab; render();
-    };
-
-    $("download").onclick = () => {
-      if (!last) return;
-      const { g } = last;
-      const files = { data: ["data.ttl", g.data], pg: ["data.pg", g.propertyGraph], typemap: ["data.typemap", g.typeMap],
-                      shapemap: ["data.shapemap", g.shapemap],
-                      labels: ["labels.jsonl", last.format === "pgschema" ? g.labels : (g.rdfLabels ?? g.labels)],
-                      validation: ["validation.json", last.v && JSON.stringify(last.v.report, null, 2)] };
-      const [name, text] = files[tab];
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([text || ""], { type: "text/plain" }));
-      a.download = name; a.click(); URL.revokeObjectURL(a.href);
-    };
-
-    $("to-playground").onclick = async () => {
-      if (!last) return;
-      $("pg-data").value = last.g.data;
-      $("pg-shapemap").value = last.g.shapemap.trim();
-      // Both boxes get the schema of the generated data, so either button validates it:
-      // an example's version in each language, or the user's schema and a note for the other.
-      const none = (l) => `# No ${l} version of this schema: validate with the other language.\n`;
-      if (last.example !== "custom") {
-        $("pg-shacl").value = await schemaText(last.example, "shacl");
-        $("pg-shex").value = await schemaText(last.example, "shex");
-        $("pg-pgschema").value = await schemaText(last.example, "pgschema");
-      } else {
-        $("pg-shacl").value = last.format === "shacl" ? last.schema : none("SHACL");
-        $("pg-shex").value = last.format === "shex" ? last.schema : none("ShEx");
-        $("pg-pgschema").value = last.format === "pgschema" ? last.schema : none("PG-Schema");
-      }
-      // The property graph and its type map, when the generator wrote one.
-      $("pg-graph").value = last.g.propertyGraph ?? "# No property graph: this data is RDF only.\n";
-      $("pg-typemap").value = last.g.typeMap ?? "";
-      $("pg-output").textContent = "Loaded the generated data. Validate with ShEx, SHACL or PG-Schema.";
-      $("pg-warning").hidden = true;
-      document.querySelector(".playground details").open = true;
-      document.querySelector(".playground").scrollIntoView({ behavior: "smooth" });
-    };
-
-    function showError(e) {
-      $("results").hidden = false;
-      $("stats").innerHTML = ""; $("shapes").innerHTML = "";
-      $("panel").innerHTML = `<div class="msg error">${esc(e.name || "Error")}: ${esc(e.message || e)}</div>`;
-      $("status").textContent = "";
-    }
-
-    $("generate").onclick = async () => {
-      const btn = $("generate");
-      btn.disabled = true; btn.textContent = "Generating…";
-      await new Promise((r) => setTimeout(r, 30)); // let the button repaint before the work blocks
-      try {
-        const schema = $("schema").value, format = lang;
-        const config = $("config").value.trim() || undefined;
-        const started = performance.now();
-        const g = generate(schema, format, config, Number($("entities").value), Number($("seed").value));
-        const ms = performance.now() - started;
-        btn.textContent = "Validating…";
-        await new Promise((r) => setTimeout(r, 30));
-        let v = null;
-        try { v = validate(g, format, schema); } catch (e) { console.warn("validation failed", e); }
-        last = { g, format, v, ms, schema, example };
-        $("results").hidden = false;
-        $("status").textContent = "";
-        render();
-        $("results").scrollIntoView({ behavior: "smooth", block: "start" });
-      } catch (e) {
-        showError(e);
-      } finally {
-        btn.disabled = false; btn.textContent = "Generate";
-      }
-    };
-
-    // ---------- playground ----------
     const show = (run) => {
-      $("pg-warning").hidden = true;
       try {
-        const r = run();
-        $("pg-warning").hidden = r.conforms !== false;
-        $("pg-output").textContent = JSON.stringify(r, null, 2);
-      } catch (e) { $("pg-output").textContent = `${e.name}: ${e.message}`; }
-    };
-    const noSchema = (id) => {
-      if (!$(id).value.startsWith("# No ")) return null;
-      $("pg-warning").hidden = true;
-      return $(id).value.trim();
-    };
-    $("validate-shex").onclick = () => noSchema("pg-shex") ? ($("pg-output").textContent = noSchema("pg-shex"))
-      : show(() => validateShex($("pg-data").value, $("pg-shex").value, $("pg-shapemap").value));
-    $("validate-shacl").onclick = () => noSchema("pg-shacl") ? ($("pg-output").textContent = noSchema("pg-shacl"))
-      : show(() => validateShacl($("pg-data").value, $("pg-shacl").value));
-    $("validate-pgschema").onclick = () => {
-      const missing = noSchema("pg-pgschema") || noSchema("pg-graph");
-      if (missing) { $("pg-output").textContent = missing; return; }
-      show(() => validatePg($("pg-graph").value, $("pg-pgschema").value, $("pg-typemap").value));
+        $("output").textContent = JSON.stringify(run(), null, 2);
+      } catch (e) {
+        $("output").textContent = `${e.name}: ${e.message}`;
+      }
     };
 
-    await loadSchema().catch(showError);
     await init();
-    $("generate").disabled = false;
-    $("generate").textContent = "Generate";
+    $("output").textContent = "Ready.";
+    $("validate-shex").onclick = () =>
+      show(() => validateShex($("data").value, $("shex").value, $("shapemap").value));
+    $("validate-shacl").onclick = () =>
+      show(() => validateShacl($("data").value, $("shacl").value));
   </script>
 </body>
 </html>

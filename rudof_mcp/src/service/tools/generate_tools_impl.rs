@@ -240,13 +240,23 @@ async fn generate(request: &GenerateDataRequest, dir: &Path) -> ToolResult<Gener
     })?;
     generator.generate().await.map_err(generation_error)?;
 
-    let read = |path: &Path| std::fs::read_to_string(path).map_err(generation_error);
+    async fn read(path: &Path) -> ToolResult<String> {
+        tokio::fs::read_to_string(path).await.map_err(generation_error)
+    }
+    let (property_graph, type_map) = if pg {
+        (
+            Some(read(&dir.join("graph.pg")).await?),
+            Some(read(&dir.join("graph.typemap")).await?),
+        )
+    } else {
+        (None, None)
+    };
     let violations = config.generation.violations.as_ref();
     Ok(Generated {
-        data: read(&dir.join("data.ttl"))?,
-        shapemap: read(&dir.join("data.shapemap"))?,
-        property_graph: pg.then(|| read(&dir.join("graph.pg"))).transpose()?,
-        type_map: pg.then(|| read(&dir.join("graph.typemap"))).transpose()?,
+        data: read(&dir.join("data.ttl")).await?,
+        shapemap: read(&dir.join("data.shapemap")).await?,
+        property_graph,
+        type_map,
         violations: violations
             .and_then(|v| v.labels.as_deref())
             .map(read_labels)

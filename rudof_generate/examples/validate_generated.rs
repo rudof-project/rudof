@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     generator.run_with_format(&schema, Some(format)).await?;
     let secs = started.elapsed().as_secs_f64();
 
-    let schema_text = std::fs::read_to_string(&schema)?;
+    let schema_text = tokio::fs::read_to_string(&schema).await?;
     if format == SchemaFormat::PgSchema {
         let type_map = type_map.ok_or("a type map path is needed")?;
         return validate_property_graph(&schema_text, &output, &type_map, entities, secs);
@@ -92,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // with a target class, which also checks a node typed with several
             // classes against every one of their shapes.
             let shapemap = match type_map.as_ref().filter(|p| p.exists()) {
-                Some(path) => std::fs::read_to_string(path)?,
+                Some(path) => tokio::fs::read_to_string(path).await?,
                 None => {
                     let (model, _) = ShExToUnified.convert_schema(schema_text.clone()).await?;
                     model
@@ -119,7 +119,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .execute()?;
             let report = String::from_utf8(buf)?;
             if let Ok(path) = std::env::var("VALIDATION_REPORT") {
-                std::fs::write(path, &report)?;
+                tokio::fs::write(path, &report).await?;
             }
             let mut lines = report.lines().peekable();
             while let Some(line) = lines.next() {
@@ -162,7 +162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .execute()?;
             let report = String::from_utf8(buf)?;
             if let Ok(path) = std::env::var("VALIDATION_REPORT") {
-                std::fs::write(path, &report)?;
+                tokio::fs::write(path, &report).await?;
             }
             for line in report.lines() {
                 if line.contains("<http://www.w3.org/ns/shacl#resultSeverity>") {

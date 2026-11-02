@@ -3,7 +3,6 @@ use crate::metrics::conformance::ConformanceMetrics;
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF, RDFFormat};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
-use std::fs::File;
 use std::path::PathBuf;
 
 /// Handles writing generated data to various output formats

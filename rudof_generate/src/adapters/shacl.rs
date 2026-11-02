@@ -9,7 +9,6 @@ use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 use shacl::ast::{ASTComponent, ASTNodeShape, ASTPropertyShape, ASTSchema, ASTShape};
 use shacl::rdf::ShaclParser;
 use shacl::types::{NodeKind, Target, Value};
-use std::fs;
 use std::path::Path;
 
 pub struct ShaclToUnified;
