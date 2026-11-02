@@ -27,7 +27,8 @@ impl ShaclToUnified {
     ) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let path = shacl_path.as_ref().to_path_buf();
 
-        let schema_data = fs::read_to_string(&path)
+        let schema_data = crate::fs::read_to_string(&path)
+            .await
             .map_err(|e| DataGeneratorError::Config(format!("Failed to read SHACL file: {e}")))?;
 
         self.convert_schema(schema_data).await

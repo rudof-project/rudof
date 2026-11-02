@@ -102,7 +102,8 @@ struct NodeParts {
 
 impl PgSchemaToUnified {
     pub async fn convert_file<P: AsRef<Path>>(&self, path: P) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
-        let text = std::fs::read_to_string(path.as_ref())
+        let text = crate::fs::read_to_string(path.as_ref())
+            .await
             .map_err(|e| DataGeneratorError::Config(format!("Failed to read PG-Schema file: {e}")))?;
         self.convert_schema(&text)
     }

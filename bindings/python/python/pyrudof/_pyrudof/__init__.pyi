@@ -183,11 +183,6 @@ class DataGenerator:
         Raises:
             GenerateError: If schema loading or generation fails.
         """
-    def target_report(self) -> typing.Optional[tuple[builtins.float, builtins.float, builtins.bool, builtins.float]]:
-        r"""
-        What the coherence search of the last run reached, when the configuration sets a
-        target: `(target, reached, within_tolerance, fill)`. `None` without a target.
-        """
     def run(self, schema_path: builtins.str | os.PathLike | pathlib.Path) -> None:
         r"""
         Runs the whole pipeline with automatic schema format detection.
@@ -197,6 +192,11 @@ class DataGenerator:
         
         Raises:
             GenerateError: If schema loading or generation fails.
+        """
+    def target_report(self) -> typing.Optional[tuple[builtins.float, builtins.float, builtins.bool, builtins.float]]:
+        r"""
+        What the coherence search of the last run reached, when the configuration sets a
+        target: `(target, reached, within_tolerance, fill)`. `None` without a target.
         """
     def __repr__(self) -> builtins.str: ...
 
@@ -239,13 +239,6 @@ class GeneratorConfig:
         
         Raises:
             GenerateError: If the file cannot be read or parsed.
-        """
-    def set_target_coherence(self, coherence: builtins.float, tolerance: builtins.float = 0.01) -> None:
-        r"""
-        Asks for the coherence (Duan et al., 2011) of the output: the generator searches
-        the default fill of optional properties, with the default cardinality at `max`,
-        until the coherence is within `tolerance` of `coherence`, and keeps the data valid.
-        `DataGenerator.target_report()` tells what was reached.
         """
     def set_entity_count(self, count: builtins.int) -> None:
         r"""
@@ -367,6 +360,15 @@ class GeneratorConfig:
     def from_toml_str(content: builtins.str) -> GeneratorConfig:
         r"""
         Loads configuration from a TOML string (v1, or v2 with `version = 2`).
+        
+        Args:
+            content (str): The TOML document.
+        
+        Returns:
+            GeneratorConfig: Loaded configuration object.
+        
+        Raises:
+            GenerateError: If the document cannot be parsed.
         """
     def set_property_fill(self, probability: builtins.float) -> None:
         r"""
@@ -381,19 +383,47 @@ class GeneratorConfig:
         r"""
         With property graph output: also write the same graph as RDF (Turtle), and its
         ShapeMap, so that it can be validated against ShEx or SHACL translations.
+        
+        Args:
+            path (str | os.PathLike): Where to write the RDF graph.
+            shapemap (str | os.PathLike, optional): Where to write its ShapeMap.
         """
     def set_violations(self, rate: builtins.float, labels: builtins.str | os.PathLike | pathlib.Path, operators: typing.Optional[typing.Sequence[builtins.str]] = None) -> None:
         r"""
-        Breaks a share of the generated entities on purpose and writes the ground-truth
-        report: every node (and, for a property graph, edge) that a correct validator
-        must report, with the operator, the property and, for failures induced through
-        references, their cause.
+        Breaks a share of the generated entities on purpose and writes the
+        ground-truth report: every node (and, for a property graph, edge) that a correct
+        validator must report, with the operator, the property and, for failures induced
+        through references, their cause.
+        
+        Args:
+            rate (float): Probability that an entity receives one violation (0.0 to 1.0).
+            labels (str | os.PathLike): Where to write the report (JSON Lines).
+            operators (list[str], optional): Operator names, e.g. `["drop-required",
+                "dangling-reference"]`; all of them when omitted.
+        
+        Raises:
+            GenerateError: If the rate is out of range or an operator is unknown.
         """
     def set_rdf_labels(self, labels: builtins.str | os.PathLike | pathlib.Path, closed: builtins.bool = True, keys_required: builtins.bool = True) -> None:
         r"""
         With a PG-Schema input: also write the report of the same broken graph read as
-        RDF. `closed` and `keys_required` say whether the RDF translation keeps
-        PG-Schema's closed records and required keys. Call after `set_violations`.
+        RDF, where a reference failure fails the node holding the reference, transitively.
+        `closed` and `keys_required` say whether the RDF translation keeps PG-Schema's
+        closed records and required keys (a SHACL modeller would usually drop both).
+        Call after `set_violations`.
+        
+        Raises:
+            GenerateError: If no violations are configured.
+        """
+    def set_target_coherence(self, coherence: builtins.float, tolerance: builtins.float = 0.01) -> None:
+        r"""
+        Asks for the coherence (Duan et al., 2011) of the output: the generator searches
+        the default fill of optional properties, with the default cardinality at `max`,
+        until the coherence is within `tolerance` of `coherence`, and keeps the data valid.
+        `DataGenerator.target_report()` tells what was reached.
+        
+        Raises:
+            GenerateError: If a value is out of range.
         """
     def validate(self) -> None:
         r"""

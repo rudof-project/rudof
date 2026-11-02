@@ -182,7 +182,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "format={format:?} entities={entities} secs={secs:.3} load_secs={load_secs:.3} validate_secs={validate_secs:.3} conformant={conformant} violations={violations}"
     );
     let mut top: Vec<_> = reasons.into_iter().collect();
-    top.sort_by(|a, b| b.1.cmp(&a.1));
+    top.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
     for (reason, count) in top.into_iter().take(8) {
         println!("  {count:>7}  {reason}");
     }

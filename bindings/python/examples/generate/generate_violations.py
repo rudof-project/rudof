@@ -25,13 +25,13 @@ SCHEMA = (
 )
 
 
-def kinds(path: Path) -> Counter:
+def kinds(path: Path) -> Counter[str]:
     return Counter(json.loads(line)["kind"] for line in path.read_text(encoding="utf-8").splitlines() if line)
 
 
 def main() -> None:
-    with TemporaryDirectory() as tmp:
-        tmp = Path(tmp)
+    with TemporaryDirectory() as tmp_dir:
+        tmp = Path(tmp_dir)
         config = GeneratorConfig()
         config.set_entity_count(300)
         config.set_seed(11)

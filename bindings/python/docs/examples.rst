@@ -1859,10 +1859,10 @@ Configure locale, quality and distribution settings
         main()
 
 
-Generator Config Persistence
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Generator Config Files
+^^^^^^^^^^^^^^^^^^^^^^
 
-Persist GeneratorConfig to TOML and load from TOML/JSON
+Load GeneratorConfig from TOML and from JSON (format v2)
 
 **Source**: `generate/generate_config_persistence.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_config_persistence.py>`_
 
@@ -1870,7 +1870,7 @@ Persist GeneratorConfig to TOML and load from TOML/JSON
 
 .. code-block:: python
 
-    """Persist a GeneratorConfig to TOML, and load one back from TOML and from JSON."""
+    """Load a GeneratorConfig from TOML and from JSON: the same format (version 2) in both."""
 
     import json
     from pathlib import Path
@@ -1878,18 +1878,24 @@ Persist GeneratorConfig to TOML and load from TOML/JSON
 
     from pyrudof import GeneratorConfig
 
+    TOML = """
+    version = 2
+
+    [run]
+    seed = 11
+    scale = { entities = 3 }
+
+    [output]
+    dir = "out"
+    """
+
 
     def main() -> None:
-        base = GeneratorConfig()
-        base.set_entity_count(3)
-        base.set_seed(11)
-        base.set_output_path("persist_output.ttl")
-
         with TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
 
             toml_path = tmp_path / "generator.toml"
-            base.to_toml_file(toml_path)
+            toml_path.write_text(TOML, encoding="utf-8")
             loaded_toml = GeneratorConfig.from_toml_file(toml_path)
             loaded_toml.validate()
             print(f"from TOML, entity_count: {loaded_toml.get_entity_count()}")
@@ -1899,28 +1905,10 @@ Persist GeneratorConfig to TOML and load from TOML/JSON
             json_path.write_text(
                 json.dumps(
                     {
-                        "generation": {
-                            "entity_count": 4,
-                            "seed": 5,
-                            "schema_format": "ShEx",
-                            "cardinality_strategy": "Minimum",
-                            "entity_distribution": "Equal",
-                        },
-                        "output": {
-                            "path": str(tmp_path / "out.nt"),
-                            "format": "NTriples",
-                            "compress": False,
-                            "write_stats": False,
-                            "parallel_writing": False,
-                            "parallel_file_count": 1,
-                        },
-                        "parallel": {
-                            "worker_threads": 1,
-                            "batch_size": 8,
-                            "parallel_shapes": False,
-                            "parallel_fields": False,
-                        },
-                        "field_generators": {"default": {"locale": "en", "quality": "Low"}},
+                        "version": 2,
+                        "run": {"seed": 5, "scale": {"entities": 4}},
+                        "defaults": {"cardinality": "min"},
+                        "output": {"dir": str(tmp_path / "out"), "formats": ["ntriples"]},
                     }
                 ),
                 encoding="utf-8",
@@ -2054,6 +2042,176 @@ Use run_with_format and run to execute generation
 **Referenced files:**
 
 - **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.shex>`_
+
+
+The Same Data from ShEx, SHACL and PG-Schema
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Generate from equivalent schemas in the three languages and compare the graphs
+
+**Source**: `generate/generate_same_data.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_same_data.py>`_
+
+**Python code:**
+
+.. code-block:: python
+
+    """Generate the same data from equivalent ShEx, SHACL and PG-Schema schemas.
+
+    The three schemas of ``rudof_generate/examples/schemas/equivalence/references`` describe
+    the same graph (a person works for an organisation located in a city). With the same
+    seed, the generator writes the same triples from each; the PG-Schema run also writes the
+    graph as a property graph, and every output is valid against its schema.
+    """
+
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    from pyrudof import (
+        DataGenerator,
+        GeneratorConfig,
+        OutputFormat,
+        PgSchemaFormat,
+        RDFFormat,
+        ResultDataFormat,
+        Rudof,
+        SchemaFormat,
+        ShaclFormat,
+        ShaclValidationMode,
+    )
+
+    SCHEMAS = (
+        Path(__file__).resolve().parents[4] / "rudof_generate" / "examples" / "schemas" / "equivalence"
+    )
+
+
+    def generate(schema: Path, fmt: SchemaFormat, out: Path, pg: bool = False) -> None:
+        config = GeneratorConfig()
+        config.set_entity_count(30)
+        config.set_seed(7)
+        config.set_write_stats(False)
+        if pg:
+            config.set_output_format(OutputFormat.Pg)
+            config.set_output_path(out.with_suffix(".pg"))
+            config.set_shapemap_path(out.with_suffix(".map"))
+            config.set_rdf_output(out)
+        else:
+            config.set_output_format(OutputFormat.NTriples)
+            config.set_output_path(out)
+        DataGenerator(config).run_with_format(schema, fmt)
+
+
+    def triples(path: Path) -> set[str]:
+        """The triples of an RDF file, as N-Triples lines."""
+        with Rudof() as rudof:
+            rudof.read_data(path.read_text(encoding="utf-8"), RDFFormat.Turtle)
+            ntriples = rudof.serialize_data(ResultDataFormat.NTriples)
+        return {line for line in ntriples.splitlines() if line.strip()}
+
+
+    def main() -> None:
+        with TemporaryDirectory() as tmp_dir:
+            tmp = Path(tmp_dir)
+            generate(SCHEMAS / "references.pgs", SchemaFormat.PgSchema, tmp / "pg.ttl", pg=True)
+            generate(SCHEMAS / "references.shex", SchemaFormat.ShEx, tmp / "shex.nt")
+            generate(SCHEMAS / "references.ttl", SchemaFormat.Shacl, tmp / "shacl.nt")
+
+            base = triples(tmp / "pg.ttl")
+            print(f"triples: {len(base)}")
+            print(f"ShEx graph equals PG-Schema graph: {triples(tmp / 'shex.nt') == base}")
+            print(f"SHACL graph equals PG-Schema graph: {triples(tmp / 'shacl.nt') == base}")
+
+            with Rudof() as rudof:
+                rudof.read_data((tmp / "pg.pg").read_text(encoding="utf-8"), RDFFormat.Pg)
+                rudof.read_pgschema((SCHEMAS / "references.pgs").read_text(encoding="utf-8"), PgSchemaFormat.PgSchemaC)
+                rudof.read_typemap((tmp / "pg.map").read_text(encoding="utf-8"))
+                print(f"property graph valid (PG-Schema): {rudof.validate_pgschema().conforms}")
+
+            with Rudof() as rudof:
+                rudof.read_shacl((SCHEMAS / "references.ttl").read_text(encoding="utf-8"), ShaclFormat.Turtle)
+                rudof.read_data((tmp / "pg.ttl").read_text(encoding="utf-8"), RDFFormat.Turtle)
+                print(f"RDF graph valid (SHACL): {rudof.validate_shacl(ShaclValidationMode.Native).conforms}")
+
+
+    if __name__ == "__main__":
+        main()
+
+
+Controlled Violations and Their Report
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Break a generated property graph on purpose and check the report with a validator
+
+**Source**: `generate/generate_violations.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_violations.py>`_
+
+**Python code:**
+
+.. code-block:: python
+
+    """Break a generated graph on purpose and read the report of what a validator must flag.
+
+    From the PG-Schema of ``rudof_generate/examples/schemas/equivalence/references.pgs``, a
+    fifth of the entities receive one violation each. The generator writes two reports for
+    the same broken graph: one for the property graph, where a broken organisation fails the
+    edges that require it to conform, and one for its RDF reading, where it also fails the
+    persons who work for it. A validator of each language must report exactly the failing
+    nodes (and edges) of its report.
+    """
+
+    import json
+    from collections import Counter
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    from pyrudof import DataGenerator, GeneratorConfig, OutputFormat, PgSchemaFormat, RDFFormat, Rudof, SchemaFormat
+
+    SCHEMA = (
+        Path(__file__).resolve().parents[4]
+        / "rudof_generate"
+        / "examples"
+        / "schemas"
+        / "equivalence"
+        / "references.pgs"
+    )
+
+
+    def kinds(path: Path) -> Counter[str]:
+        return Counter(json.loads(line)["kind"] for line in path.read_text(encoding="utf-8").splitlines() if line)
+
+
+    def main() -> None:
+        with TemporaryDirectory() as tmp_dir:
+            tmp = Path(tmp_dir)
+            config = GeneratorConfig()
+            config.set_entity_count(300)
+            config.set_seed(11)
+            config.set_write_stats(False)
+            config.set_output_format(OutputFormat.Pg)
+            config.set_output_path(tmp / "data.pg")
+            config.set_shapemap_path(tmp / "data.map")
+            config.set_rdf_output(tmp / "data.ttl", tmp / "data.shapemap")
+            config.set_violations(0.2, tmp / "labels.jsonl")
+            config.set_rdf_labels(tmp / "rdf_labels.jsonl")
+            DataGenerator(config).run_with_format(SCHEMA, SchemaFormat.PgSchema)
+
+            pg, rdf = kinds(tmp / "labels.jsonl"), kinds(tmp / "rdf_labels.jsonl")
+            print(f"property graph report: direct={pg['direct']} induced={pg['induced']}")
+            print(f"RDF report: direct={rdf['direct']} induced={rdf['induced']}")
+
+            expected = {
+                json.loads(line)["node"]
+                for line in (tmp / "labels.jsonl").read_text(encoding="utf-8").splitlines()
+                if line and json.loads(line)["kind"] != "trap"
+            }
+            with Rudof() as rudof:
+                rudof.read_data((tmp / "data.pg").read_text(encoding="utf-8"), RDFFormat.Pg)
+                rudof.read_pgschema(SCHEMA.read_text(encoding="utf-8"), PgSchemaFormat.PgSchemaC)
+                rudof.read_typemap((tmp / "data.map").read_text(encoding="utf-8"))
+                reported = {v.node_id for v in rudof.validate_pgschema().violations}
+            print(f"PG-Schema validator reports exactly the report: {reported == expected}")
+
+
+    if __name__ == "__main__":
+        main()
 
 
 Utility & Introspection

@@ -47,12 +47,13 @@ def triples(path: Path) -> set[str]:
     """The triples of an RDF file, as N-Triples lines."""
     with Rudof() as rudof:
         rudof.read_data(path.read_text(encoding="utf-8"), RDFFormat.Turtle)
-        return {line for line in rudof.serialize_data(ResultDataFormat.NTriples).splitlines() if line.strip()}
+        ntriples = rudof.serialize_data(ResultDataFormat.NTriples)
+    return {line for line in ntriples.splitlines() if line.strip()}
 
 
 def main() -> None:
-    with TemporaryDirectory() as tmp:
-        tmp = Path(tmp)
+    with TemporaryDirectory() as tmp_dir:
+        tmp = Path(tmp_dir)
         generate(SCHEMAS / "references.pgs", SchemaFormat.PgSchema, tmp / "pg.ttl", pg=True)
         generate(SCHEMAS / "references.shex", SchemaFormat.ShEx, tmp / "shex.nt")
         generate(SCHEMAS / "references.ttl", SchemaFormat.Shacl, tmp / "shacl.nt")

@@ -48,14 +48,15 @@ impl OutputWriter {
 
         // Create output directory if it doesn't exist
         if let Some(parent) = self.config.path.parent() {
-            std::fs::create_dir_all(parent)?;
+            tokio::fs::create_dir_all(parent).await?;
         }
 
-        // Write the graph
-        let mut file = File::create(&self.config.path)?;
+        // Write the graph: serialized in memory, then written without blocking the runtime
+        let mut serialized = Vec::new();
         graph
-            .serialize(&format, &mut file)
+            .serialize(&format, &mut serialized)
             .map_err(|e| DataGeneratorError::OutputWriting(format!("Failed to serialize graph: {e}")))?;
+        tokio::fs::write(&self.config.path, serialized).await?;
 
         tracing::info!("Graph written to: {}", self.config.path.display());
 
@@ -84,7 +85,7 @@ impl OutputWriter {
 
         // Create output directory if it doesn't exist
         if let Some(parent) = self.config.path.parent() {
-            std::fs::create_dir_all(parent)?;
+            tokio::fs::create_dir_all(parent).await?;
         }
 
         // Collect all triples first
@@ -170,10 +171,11 @@ impl OutputWriter {
         }
 
         // Write the chunk to file
-        let mut file = File::create(&output_path)?;
+        let mut serialized = Vec::new();
         chunk_graph
-            .serialize(&format, &mut file)
+            .serialize(&format, &mut serialized)
             .map_err(|e| DataGeneratorError::OutputWriting(format!("Failed to serialize chunk: {e}")))?;
+        tokio::fs::write(&output_path, serialized).await?;
 
         tracing::debug!("Chunk written to: {}", output_path.display());
         Ok(())
@@ -247,7 +249,7 @@ impl OutputWriter {
         }
 
         let stats_json = serde_json::to_string_pretty(&stats)?;
-        std::fs::write(stats_path, stats_json)?;
+        tokio::fs::write(stats_path, stats_json).await?;
 
         Ok(())
     }

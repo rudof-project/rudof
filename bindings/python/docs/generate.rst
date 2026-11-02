@@ -90,8 +90,7 @@ Configuration
     config.set_parallel_writing(True)
 
 A configuration can also be loaded from a file with
-:meth:`GeneratorConfig.from_toml_file` or :meth:`GeneratorConfig.from_json_file`, and
-written back out with :meth:`GeneratorConfig.to_toml_file`.
+:meth:`GeneratorConfig.from_toml_file` or :meth:`GeneratorConfig.from_json_file`.
 :meth:`GeneratorConfig.validate` checks it before use, and :meth:`GeneratorConfig.show`
 renders it for logging.
 

@@ -2,6 +2,7 @@ pub mod adapters;
 pub mod config;
 pub mod engine;
 pub mod errors;
+mod fs;
 pub mod ir;
 pub mod metrics;
 pub mod sinks;
@@ -194,7 +195,7 @@ impl DataGenerator {
             .write_graph_with_timing(&graph, Some(generation_time), conformance_metrics.as_ref())
             .await?;
         if let Some(path) = &self.config.output.shapemap {
-            std::fs::write(path, self.shape_map().await)?;
+            tokio::fs::write(path, self.shape_map().await).await?;
         }
         Ok(())
     }
@@ -323,9 +324,9 @@ impl DataGenerator {
             .collect();
         let entities = self.generator.entity_shapes().await;
         let (pg, type_map) = sinks::pg::property_graph(&triples, model, &entities);
-        std::fs::write(&self.config.output.path, pg)?;
+        tokio::fs::write(&self.config.output.path, pg).await?;
         if let Some(path) = &self.config.output.shapemap {
-            std::fs::write(path, type_map)?;
+            tokio::fs::write(path, type_map).await?;
         }
         // The same graph as RDF, for validation against RDF translations of the schema.
         if let Some(path) = &self.config.output.rdf {
@@ -333,10 +334,10 @@ impl DataGenerator {
             graph
                 .serialize(&rudof_rdf::rdf_core::RDFFormat::Turtle, &mut turtle)
                 .map_err(|e| DataGeneratorError::OutputWriting(e.to_string()))?;
-            std::fs::write(path, turtle)?;
+            tokio::fs::write(path, turtle).await?;
         }
         if let Some(path) = &self.config.output.rdf_shapemap {
-            std::fs::write(path, self.shape_map().await)?;
+            tokio::fs::write(path, self.shape_map().await).await?;
         }
         Ok(())
     }
