@@ -436,13 +436,21 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
       a.download = name; a.click(); URL.revokeObjectURL(a.href);
     };
 
-    $("to-playground").onclick = () => {
+    $("to-playground").onclick = async () => {
       if (!last) return;
       $("pg-data").value = last.g.data;
       $("pg-shapemap").value = last.g.shapemap.trim();
-      if (last.format === "shacl") $("pg-shacl").value = last.schema;
-      else if (last.format === "shex") $("pg-shex").value = last.schema;
-      else if (shexOfExample) $("pg-shex").value = shexOfExample;
+      // Both boxes get the schema of the generated data, so either button validates it:
+      // an example's version in each language, or the user's schema and a note for the other.
+      const none = (l) => `# No ${l} version of this schema: validate with the other language.\n`;
+      if (last.example !== "custom") {
+        $("pg-shacl").value = await schemaText(last.example, "shacl");
+        $("pg-shex").value = await schemaText(last.example, "shex");
+      } else {
+        $("pg-shacl").value = last.format === "shacl" ? last.schema : none("SHACL");
+        $("pg-shex").value = last.format === "shex" ? last.schema : none("ShEx");
+      }
+      $("pg-output").textContent = "Loaded the generated data. Validate with ShEx or SHACL.";
       document.querySelector(".playground details").open = true;
       document.querySelector(".playground").scrollIntoView({ behavior: "smooth" });
     };
@@ -468,7 +476,7 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
         await new Promise((r) => setTimeout(r, 30));
         let v = null;
         try { v = validate(g, format, schema); } catch (e) { console.warn("validation failed", e); }
-        last = { g, format, v, ms, schema };
+        last = { g, format, v, ms, schema, example };
         $("results").hidden = false;
         $("status").textContent = "";
         render();
@@ -485,8 +493,11 @@ CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
       try { $("pg-output").textContent = JSON.stringify(run(), null, 2); }
       catch (e) { $("pg-output").textContent = `${e.name}: ${e.message}`; }
     };
-    $("validate-shex").onclick = () => show(() => validateShex($("pg-data").value, $("pg-shex").value, $("pg-shapemap").value));
-    $("validate-shacl").onclick = () => show(() => validateShacl($("pg-data").value, $("pg-shacl").value));
+    const noSchema = (id) => $(id).value.startsWith("# No ") ? $(id).value.trim() : null;
+    $("validate-shex").onclick = () => noSchema("pg-shex") ? ($("pg-output").textContent = noSchema("pg-shex"))
+      : show(() => validateShex($("pg-data").value, $("pg-shex").value, $("pg-shapemap").value));
+    $("validate-shacl").onclick = () => noSchema("pg-shacl") ? ($("pg-output").textContent = noSchema("pg-shacl"))
+      : show(() => validateShacl($("pg-data").value, $("pg-shacl").value));
 
     await loadSchema().catch(showError);
     await init();
