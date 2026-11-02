@@ -152,7 +152,7 @@ rudof generate -s education.ttl -n 10000 -p 8 -o huge_dataset.ttl
 
 ### Required Options
 
-- `-s, --schema <SCHEMA_FILE>` - Path to your schema file (ShEx or SHACL)
+- `-s, --schema <SCHEMA_FILE>` - Path to your schema file (ShEx, SHACL, or PG-Schema as a `.pgs` file)
 
 ### Common Options
 
@@ -233,6 +233,73 @@ coherence = 0.8
 
 [output]
 dir = "out"
+```
+
+`[violations]` breaks a share (`rate`) of the generated entities, one constraint each. The
+`operators` key chooses how; without it, every operator that applies to the schema is
+used:
+
+| Operator | What it does |
+|---|---|
+| `drop-required` | removes a required property |
+| `exceed-max` | adds a value beyond the maximum cardinality |
+| `wrong-datatype`, `ill-typed-literal` | a value of another datatype, or an invalid lexical form of the declared one |
+| `out-of-range`, `pattern-break`, `not-in-value-set` | a value outside a range, a pattern or a value set |
+| `dangling-reference` | a reference to a node that does not conform to the referenced shape |
+| `closed-extra` | a property that a closed shape does not allow |
+| `wrong-language`, `duplicate-language`, `lang-string-for-string` | language tags that break `sh:languageIn`, `sh:uniqueLang` or a plain string |
+
+`labels.jsonl` then says what a correct validator of the schema's language must report,
+one line per node:
+
+- `direct`: the node was broken, with the `operator` and the `property`;
+- `induced`: the node fails through a reference to a broken node, with its `cause`;
+- `trap`: the node was changed, but it still conforms. Examples are a language tag in
+  another case, or `030` for `30` under a range. A validator that reports a trap is wrong.
+
+### PG-Schema and Property Graphs
+
+A `.pgs` schema generates a property graph:
+
+```sh
+rudof generate -s persons.pgs --generator-config pg.toml
+```
+
+```toml
+version = 2
+
+[run]
+scale = { per_shape = 500 }
+
+[violations]
+rate = 0.2
+
+[violations.rdf]                # the report for the RDF copy of the graph
+closed = true                   # keep PG-Schema's closed records (false: open shapes)
+keys_required = true            # keep its required keys (false: optional keys)
+
+[output]
+dir = "out"
+formats = ["pg", "turtle"]      # out/data.pg, out/data.typemap, out/data.ttl, out/data.shapemap
+```
+
+`data.pg` is the graph in rudof's property graph format. `data.typemap` gives the type of
+every node and edge, for `rudof pgschema-validate`. With `turtle`, the graph is also written
+as RDF, in an encoding over which a ShEx or SHACL schema can say the same as the
+PG-Schema. With errors, `labels.jsonl` reports for PG-Schema, counting nodes and edges.
+`labels-rdf.jsonl` reports for ShEx and SHACL on the RDF copy, under the defaults that
+`[violations.rdf]` chooses.
+
+### Validating the Output
+
+`--validate` validates the generated data against the schema it came from, and exits with
+an error on violations:
+
+- ShEx: each node against the shape that generated it, through the ShapeMap;
+- SHACL: through the targets of the shapes.
+
+```sh
+rudof generate -s schema.shex -n 1000 -o out/data.ttl --validate
 ```
 
 ## Complete Examples
@@ -400,6 +467,8 @@ rudof generate -s schema.shex -n 50 --seed 3 -o dataset3.ttl
 ✅ Node kinds (IRI, Literal, BNode)
 ✅ Value constraints and enumerations
 ✅ References between shapes (@:ShapeName)
+✅ Closed shapes (CLOSED) and EXTRA
+✅ Language tags (language sets and stems)
 
 ### SHACL Features
 
@@ -408,8 +477,18 @@ rudof generate -s schema.shex -n 50 --seed 3 -o dataset3.ttl
 ✅ Cardinality (sh:minCount, sh:maxCount)
 ✅ Datatypes (sh:datatype)
 ✅ Node kinds (sh:nodeKind)
-✅ Value constraints (sh:in, sh:pattern)
-✅ References between shapes (sh:node)
+✅ Value constraints (sh:in, sh:hasValue, sh:pattern, ranges)
+✅ References between shapes (sh:node, sh:class, sh:qualifiedValueShape)
+✅ Closed shapes (sh:closed)
+✅ Language tags (sh:languageIn, sh:uniqueLang)
+
+### PG-Schema Features
+
+✅ Node types with one or more labels
+✅ Keys: required, `OPTIONAL` and lists (`T *`, `T {m,n}`)
+✅ `CHECK` ranges and `REGEX` patterns
+✅ Edge types between typed endpoints (`(:@T)`)
+❌ Edge types with properties (left out, with a warning)
 
 ## See Also
 
