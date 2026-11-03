@@ -745,7 +745,10 @@ impl Session {
 
     /// Adds a triple to the loaded RDF data. The terms are written as text:
     /// `<http://example.org/alice>`, `ex:alice`, `_:b1`, `"Alice"`, `"Alice"@en`,
-    /// `23`, `"23"^^xsd:integer`.
+    /// `23`, `"23"^^xsd:integer`, `<<( ex:alice ex:name "Alice" )>>`.
+    ///
+    /// The terms a triple from `triples` carries are written the same way, so a
+    /// triple read from the graph is added back unedited, `strictIris` either way.
     pub fn add_triple(
         &mut self,
         subject: &str,
@@ -832,6 +835,10 @@ impl Session {
     /// The triples of the loaded RDF data matching a pattern. Every position left
     /// out matches any term, so no pattern at all walks the whole graph. With
     /// `limit`, at most that many triples are returned.
+    ///
+    /// Each triple carries its three terms as text, written as `addTriple` reads
+    /// them: a triple read from the graph goes back into `addTriple` and
+    /// `removeTriple` unedited.
     pub fn triples(
         &self,
         subject: Option<&str>,
