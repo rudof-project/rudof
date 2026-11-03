@@ -2161,14 +2161,16 @@ class Triple:
     
     Unpacks into its three terms, so ``for s, p, o in rudof.triples()`` works as well as
     reading :attr:`subject`, :attr:`predicate` and :attr:`object`.
+    
+    The three terms are written in the syntax :meth:`Rudof.add_triple` and
+    :meth:`Rudof.remove_triple` read (an IRI in angle brackets, a literal with the
+    lexical form it was written with) so a triple read from the graph goes back into
+    them unedited.
     """
     @property
     def subject(self) -> builtins.str:
         r"""
         The subject of the triple, an IRI or a blank node.
-        
-        Raises:
-            InternalError: If the term has no string rendering yet.
         """
     @property
     def predicate(self) -> builtins.str:
@@ -2178,10 +2180,7 @@ class Triple:
     @property
     def object(self) -> builtins.str:
         r"""
-        The object of the triple, an IRI, a blank node or a literal.
-        
-        Raises:
-            InternalError: As :attr:`subject`.
+        The object of the triple, an IRI, a blank node, a literal or a triple term.
         """
     def __iter__(self) -> typing.Iterator[builtins.str]:
         r"""

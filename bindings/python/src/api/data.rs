@@ -620,7 +620,7 @@ impl PyRudof {
         let predicate = predicate.map(str::to_owned);
         let object = object.map(str::to_owned);
 
-        let triples = guard::detached(py, move || {
+        let triples = guard::detached(py, move || -> Result<Vec<_>> {
             let mut b = self.inner.triples();
             if let Some(s) = &subject {
                 b = b.with_subject(s);

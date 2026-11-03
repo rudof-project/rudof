@@ -1,4 +1,3 @@
-use crate::{error::Result, guard};
 use pyo3::prelude::*;
 use rudof_lib::types::Triple;
 
@@ -6,6 +5,11 @@ use rudof_lib::types::Triple;
 ///
 /// Unpacks into its three terms, so ``for s, p, o in rudof.triples()`` works as well as
 /// reading :attr:`subject`, :attr:`predicate` and :attr:`object`.
+///
+/// The three terms are written in the syntax :meth:`Rudof.add_triple` and
+/// :meth:`Rudof.remove_triple` read (an IRI in angle brackets, a literal with the
+/// lexical form it was written with) so a triple read from the graph goes back into
+/// them unedited.
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass)]
 #[pyclass(frozen, from_py_object, name = "Triple", module = "pyrudof._pyrudof")]
 #[derive(Clone)]
@@ -18,12 +22,9 @@ pub struct PyTriple {
 #[pymethods]
 impl PyTriple {
     /// The subject of the triple, an IRI or a blank node.
-    ///
-    /// Raises:
-    ///     InternalError: If the term has no string rendering yet.
     #[getter]
-    fn subject(&self) -> Result<String> {
-        guard::catch_value(|| self.inner.subject.to_string())
+    fn subject(&self) -> String {
+        self.inner.subject.to_string()
     }
 
     /// The predicate IRI.
@@ -32,19 +33,16 @@ impl PyTriple {
         self.inner.predicate.to_string()
     }
 
-    /// The object of the triple, an IRI, a blank node or a literal.
-    ///
-    /// Raises:
-    ///     InternalError: As :attr:`subject`.
+    /// The object of the triple, an IRI, a blank node, a literal or a triple term.
     #[getter]
-    fn object(&self) -> Result<String> {
-        guard::catch_value(|| self.inner.object.to_string())
+    fn object(&self) -> String {
+        self.inner.object.to_string()
     }
 
     /// The three terms, so that a triple can be unpacked like a tuple.
     #[gen_stub(override_return_type(type_repr = "typing.Iterator[builtins.str]"))]
     fn __iter__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let terms = (self.subject()?, self.predicate(), self.object()?);
+        let terms = (self.subject(), self.predicate(), self.object());
         Ok(terms.into_pyobject(py)?.as_any().try_iter()?.into_any())
     }
 
@@ -52,22 +50,14 @@ impl PyTriple {
         3
     }
 
-    // `repr()` has to work unconditionally (it is what `print`, logging and debuggers
-    // call) so an unformattable term degrades to a placeholder here instead of raising the
-    // `InternalError` the getters raise.
     fn __repr__(&self) -> String {
         format!(
             "Triple(subject='{}', predicate='{}', object='{}')",
-            or_placeholder(self.subject()),
+            self.subject(),
             self.predicate(),
-            or_placeholder(self.object())
+            self.object()
         )
     }
-}
-
-/// The rendered term, or a marker for one `rudof_rdf` cannot render yet.
-fn or_placeholder(term: Result<String>) -> String {
-    term.unwrap_or_else(|_| "<unrenderable>".to_string())
 }
 
 /// Iterator over the triples of the loaded RDF data matching a pattern.
