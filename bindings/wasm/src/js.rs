@@ -682,7 +682,8 @@ impl JsRudof {
         to_js(&self.session.list_endpoints()?)
     }
 
-    /// Describes the nodes selected by `nodeSelector` (e.g. `:alice`), with
+    /// Describes the nodes selected by `nodeSelector` (a term, e.g. `:alice` or
+    /// `<<( :alice :name "Alice" )>>`, or a selector such as `{FOCUS :knows _}`), with
     /// their outgoing and/or incoming arcs (`mode`: `outgoing`, `incoming` or
     /// `both`).
     #[wasm_bindgen(js_name = nodeInfo)]
@@ -725,9 +726,10 @@ impl JsRudof {
         )?)
     }
 
-    /// Adds a triple to the loaded RDF data. The terms are written as text:
-    /// `<http://example.org/alice>`, `ex:alice`, `_:b1`, `"Alice"`, `"Alice"@en`,
-    /// `23`, `"23"^^xsd:integer`.
+    /// Adds a triple to the loaded RDF data. The terms are written as text, in RDF 1.2
+    /// Turtle syntax: `<http://example.org/alice>`, `ex:alice`, `_:b1`, `"Alice"`,
+    /// `"Alice"@en`, `"Shalom"@he--rtl`, `23`, `"23"^^xsd:integer`, and the triple term
+    /// `<<( ex:alice ex:name "Alice" )>>`.
     #[wasm_bindgen(js_name = addTriple)]
     pub fn add_triple(
         &mut self,

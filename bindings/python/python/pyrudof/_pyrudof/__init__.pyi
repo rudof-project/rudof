@@ -1012,14 +1012,18 @@ class Rudof:
             subject (str): The subject, as an IRI (``"<http://example.org/alice>"``,
                 ``"ex:alice"``) or a blank node (``"_:b1"``).
             predicate (str): The predicate, as an angle-bracketed IRI or a prefixed name.
-            object (str): The object, as an IRI, a blank node or a literal (``'"Alice"'``,
-                ``'"Alice"@en'``, ``"23"``, ``'"23"^^xsd:integer'``).
+            object (str): The object, as an IRI, a blank node, a literal (``'"Alice"'``,
+                ``'"Alice"@en'``, ``'"Shalom"@he--rtl'``, ``"23"``, ``'"23"^^xsd:integer'``)
+                or an RDF 1.2 triple term (``'<<( ex:alice ex:name "Alice" )>>'``, which may
+                nest another one).
             strict_iris (bool, optional): Require angle-bracketed IRIs instead of
                 auto-wrapping bare ones. Defaults to ``False``.
         
-        Prefixed names are resolved against the prefixes of the loaded data, supplemented
-        by the session's default prefixes (see :meth:`add_prefix`). Adding a triple the
-        data already contains changes nothing, an RDF graph being a set of triples.
+        Terms are read in RDF 1.2 Turtle syntax, so an IRI written inside a triple term has
+        to be bracketed or prefixed whatever ``strict_iris`` says. Prefixed names are
+        resolved against the prefixes of the loaded data, supplemented by the session's
+        default prefixes (see :meth:`add_prefix`). Adding a triple the data already
+        contains changes nothing, an RDF graph being a set of triples.
         
         Raises:
             DataError: If no RDF data is loaded, if a term cannot be parsed or its prefix
@@ -1207,6 +1211,8 @@ class Rudof:
                 - Full IRI: ``<http://example.org/alice>``
                 - Prefixed name: ``:alice``
                 - Blank node: ``_:b1``
+                - Triple term: ``<<( :alice :name "Alice" )>>``
+                - Node selector: ``{FOCUS :knows _}``, ``SPARQL "…"``
             predicates (list[str], optional): Filter by specific predicates. Empty list means all predicates.
             mode (str, optional): Node inspection mode — ``"outgoing"``, ``"incoming"`` or ``"both"``. Defaults to ``"both"``.
             show_colors (bool, optional): Use ANSI terminal colors in output. Defaults to ``True``.
