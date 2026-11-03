@@ -1,6 +1,6 @@
 # IRI normalization
 
-Several commands (`node`, `shex-validate`) and MCP tools (`node_info`, `validate_shex`) accept a node or shape label as a plain string. Internally these strings must be parsed by the ShapeMap parser, which requires IRIs to be enclosed in angle brackets: `<http://example.org/Alice>`.
+Several commands (`node`, `shex-validate`) and MCP tools (`node_info`, `validate_shex`), and the triple API of `rudof_lib`, accept a node, term or shape label as a plain string. Internally these strings are parsed by the ShapeMap parser (shape labels and node selectors) or by the RDF 1.2 Turtle term parser (terms), both of which require IRIs to be enclosed in angle brackets: `<http://example.org/Alice>`.
 
 To avoid burdening users with this detail, `rudof` applies a normalization step before handing the string to the parser. Two modes are available, controlled by the `--strict-iris` CLI flag or the `strict_iris` MCP field.
 
@@ -26,6 +26,8 @@ The `://` check is a heuristic. There are RFC 3987 absolute IRI schemes that do 
 | `data:` | `data:text/plain;base64,SGVsbG8=` | Not wrapped → parse error |
 
 There is also a false-positive risk: a prefixed local name whose local part contains `://` (e.g. `ex:path//resource`) would be incorrectly treated as a full IRI.
+
+Normalization looks at the whole string, so a bare IRI written *inside* a term is never wrapped: in a triple term (`<<( ex:alice ex:name "Alice" )>>`) every IRI has to be bracketed or prefixed in both modes.
 
 For any of these inputs, users must wrap the IRI explicitly: `<urn:isbn:0451450523>`.
 

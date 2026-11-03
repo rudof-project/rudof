@@ -139,7 +139,9 @@ pub trait DataOperations {
     ///
     /// # Arguments
     ///
-    /// * `node` - Node identifier (IRI, prefixed name, or blank node) whose neighborhood is traversed
+    /// * `node` - The node whose neighborhood is traversed: a term, written as in
+    ///   [`add_triple`](Self::add_triple), or a node selector (`{FOCUS ex:knows _}`,
+    ///   `SPARQL "…"`) selecting the nodes to start from
     /// * `predicates` - Optional list of predicates; when given, only arcs with these predicates are followed
     /// * `mode - Optional inspection mode selecting the arc directions
     /// * `depth`- Optional maximum transversal depth (default is 1)
@@ -164,13 +166,16 @@ pub trait DataOperations {
     /// * `subject` - The subject, as an IRI (`<http://example.org/alice>`, `ex:alice`)
     ///   or a blank node (`_:b1`)
     /// * `predicate` - The predicate, as an angle-bracketed IRI or a prefixed name
-    /// * `object` - The object, as an IRI, a blank node or a literal (`"Alice"`,
-    ///   `"Alice"@en`, `23`, `"23"^^xsd:integer`)
+    /// * `object` - The object, as an IRI, a blank node, a literal (`"Alice"`,
+    ///   `"Alice"@en`, `"Shalom"@he--rtl`, `23`, `"23"^^xsd:integer`) or an RDF 1.2
+    ///   triple term (`<<( ex:alice ex:name "Alice" )>>`, which may nest another one)
     /// * `iri_mode` - IRI normalization mode to apply when parsing the terms
     ///
-    /// Prefixed names are resolved against the prefixes of the loaded data,
-    /// supplemented by the session's default prefixes. Adding a triple the data
-    /// already contains changes nothing, an RDF graph being a set of triples.
+    /// Terms are read in RDF 1.2 Turtle syntax, so an IRI written inside a triple term
+    /// has to be bracketed or prefixed even in the lax mode, which wraps a bare IRI only
+    /// when the whole term is one. Prefixed names are resolved against the prefixes of
+    /// the loaded data, supplemented by the session's default prefixes. Adding a triple
+    /// the data already contains changes nothing, an RDF graph being a set of triples.
     ///
     /// # Errors
     ///
