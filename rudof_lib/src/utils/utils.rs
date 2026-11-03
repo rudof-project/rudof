@@ -7,10 +7,10 @@ use crate::{
 #[cfg(not(target_family = "wasm"))]
 use crossterm::terminal;
 use oxrdf::Triple as OxTriple;
-use prefixmap::{DerefIri, IriRef, PrefixMap};
+use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
-use rudof_rdf::rdf_core::{NeighsRDF, Rdf, query::SparqlQuery, term::Object, term::literal::ConcreteLiteral};
-use shex_ast::{ObjectValue, ShapeMapParser, shapemap::NodeSelector};
+use rudof_rdf::rdf_core::{NeighsRDF, Rdf, query::SparqlQuery, term::parse_term as parse_rdf_term};
+use shex_ast::{ShapeMapParser, shapemap::NodeSelector};
 use sparql_service::RdfData;
 #[cfg(not(target_family = "wasm"))]
 use std::env;
@@ -24,7 +24,8 @@ pub type RdfTerm = <RdfData as Rdf>::Term;
 /// A term of the loaded RDF data in subject position: an IRI or a blank node.
 pub type RdfSubject = <RdfData as Rdf>::Subject;
 
-/// Normalizes a node/shape IRI string for `ShapeMapParser` according to `mode`.
+/// Normalizes a node/shape IRI string for the term and node selector parsers, according
+/// to `mode`.
 ///
 /// - `Lax`: wraps strings that look like bare absolute IRIs (contain `://`, no leading `<`, `_`,
 ///   `{` or `"`) in angle brackets. Heuristic — see [`IriNormalizationMode`] docs for edge cases.
@@ -211,7 +212,7 @@ where
 }
 
 /// Resolves `iri` against `base` when there is one, and checks that what comes out is
-/// an absolute IRI. [`parse_term`] gets both from `DerefIri` and [`absolute_iri`].
+/// an absolute IRI. [`parse_term`] gets both from the Turtle parser it reads terms with.
 fn resolve_absolute_iri(iri: &IriS, base: Option<&IriS>) -> Result<IriS> {
     match base {
         Some(base) => base.resolve_str(iri.as_str()).map_err(|error| {
@@ -339,57 +340,43 @@ pub fn resolution_prefixmap(rudof: &Rudof, rdf: &RdfData) -> PrefixMap {
 /// Parses a term written as text into an RDF term, resolving prefixed names against
 /// `prefixmap` and relative IRIs against `base`.
 ///
-/// Terms are parsed with the same parser as node selectors, so the syntax is the one
-/// the rest of the API accepts, but only a single concrete node is a term: a triple
-/// pattern or a SPARQL query selects nodes from the data instead of denoting one, and
-/// is rejected.
+/// Terms are read with [`rudof_rdf`]'s RDF 1.2 Turtle term parser, so the syntax is the
+/// one Turtle gives an object. A node selector is not a term: a triple pattern or a
+/// SPARQL query selects nodes from the data instead of naming one, and is rejected.
 pub fn parse_term(
     term: &str,
     base: Option<&IriS>,
     prefixmap: &PrefixMap,
     iri_mode: IriNormalizationMode,
 ) -> Result<RdfTerm> {
-    let selector = parse_node_selector(term, iri_mode)?
-        .deref_iri(base, Some(prefixmap))
-        .map_err(|e| {
-            Box::new(DataError::FailedTermResolution {
-                term: term.trim().to_string(),
-                error: e.to_string(),
-            })
-        })?;
+    if is_selector_shape(term) {
+        return Err(Box::new(DataError::NotATerm {
+            term: term.trim().to_string(),
+        })
+        .into());
+    }
 
-    let object = match selector {
-        NodeSelector::Node(ObjectValue::IriRef(iri_ref)) => {
-            let iri = iri_ref.get_iri().map_err(|e| {
-                Box::new(DataError::FailedTermResolution {
-                    term: term.trim().to_string(),
-                    error: e.to_string(),
-                })
-            })?;
-            Object::Iri(absolute_iri(iri)?)
-        },
-        NodeSelector::Node(ObjectValue::Literal(literal)) => {
-            // The datatype of a literal is an IRI that reaches the graph as well.
-            if let ConcreteLiteral::DatatypeLiteral { datatype, .. } = &literal {
-                let datatype = datatype.get_iri().map_err(|e| {
-                    Box::new(DataError::FailedTermResolution {
-                        term: term.trim().to_string(),
-                        error: e.to_string(),
-                    })
-                })?;
-                absolute_iri(datatype)?;
-            }
-            Object::Literal(literal)
-        },
-        NodeSelector::BNode(label) => Object::BlankNode(label),
-        _ => {
-            return Err(Box::new(DataError::NotATerm {
-                term: term.trim().to_string(),
-            })
-            .into());
-        },
-    };
-    Ok(object.into())
+    let normalized = normalize_iri_str(term, iri_mode);
+    let term = parse_rdf_term(&normalized, base, prefixmap).map_err(|error| {
+        Box::new(DataError::FailedTermParse {
+            error: error.to_string(),
+        })
+    })?;
+    Ok(term)
+}
+
+/// Whether `text` is a node selector rather than a term: a triple pattern (`{…}`) or a
+/// SPARQL selector, both of which select nodes of the data instead of naming one.
+fn is_selector_shape(text: &str) -> bool {
+    let text = text.trim_start();
+    if text.starts_with('{') {
+        return true;
+    }
+    // The keyword is followed by the query as a string, so a prefixed name whose alias
+    // merely starts with it is not a selector.
+    text.get(..6)
+        .is_some_and(|keyword| keyword.eq_ignore_ascii_case("SPARQL"))
+        && text[6..].starts_with(|c: char| c.is_whitespace() || c == '"' || c == '\'')
 }
 
 /// Checks that `iri`, already resolved against the base IRI, is an absolute IRI.
@@ -436,7 +423,10 @@ fn parse_iri_ref(iri: &str) -> Result<IriRef> {
 mod tests {
     use super::*;
     use crate::formats::IriNormalizationMode::{Lax, Strict};
-    use rudof_rdf::rdf_core::term::literal::Lang;
+    use rudof_rdf::rdf_core::term::{
+        Object,
+        literal::{ConcreteLiteral, Lang},
+    };
 
     fn prefixmap() -> PrefixMap {
         let mut pm = PrefixMap::new();
@@ -513,7 +503,6 @@ mod tests {
         for text in [
             "other:alice",
             "ex:alice basura",
-            "\"Hola\"@es--rtl",
             "{FOCUS ex:p ex:alice}",
             "SPARQL 'SELECT ?x WHERE { ?x ?p ?o }'",
         ] {

@@ -355,7 +355,7 @@ fn test_triple_operations_reject_terms_that_are_not_terms() {
         .with_iri_mode(IriNormalizationMode::Strict)
         .execute()
         .unwrap_err();
-    assert!(err.to_string().contains("Unexpected trailing input"), "{err}");
+    assert!(err.to_string().contains("has not been declared"), "{err}");
 
     // A selector that picks nodes out of the data is not a term.
     let err = rudof
@@ -367,25 +367,22 @@ fn test_triple_operations_reject_terms_that_are_not_terms() {
 }
 
 #[test]
-fn test_triple_operations_reject_terms_with_trailing_input() {
+fn test_triple_operations_reject_malformed_terms() {
     let mut rudof = session();
 
-    let err = rudof
-        .add_triple(":carol", ":greeting", "\"Hola\"@es--rtl")
-        .execute()
-        .unwrap_err();
-    assert!(err.to_string().contains("Unexpected trailing input: --rtl"), "{err}");
+    // Text left over after the term is not truncated away: it makes the term invalid.
     let err = rudof
         .add_triple(":carol", ":name", "\"Carol\" and trailing garbage")
         .execute()
         .unwrap_err();
-    assert!(err.to_string().contains("Unexpected trailing input"), "{err}");
+    assert!(err.to_string().contains("not valid RDF 1.2 Turtle syntax"), "{err}");
 
     let err = rudof
         .add_triple(":carol basura", ":name", "\"Carol\"")
         .execute()
         .unwrap_err();
-    assert!(err.to_string().contains("Unexpected trailing input: basura"), "{err}");
+    assert!(err.to_string().contains("not valid RDF 1.2 Turtle syntax"), "{err}");
+    // A predicate is read as an IRI reference rather than as a term.
     let err = rudof
         .add_triple(":carol", ":name basura", "\"Carol\"")
         .execute()
@@ -393,13 +390,13 @@ fn test_triple_operations_reject_terms_with_trailing_input() {
     assert!(err.to_string().contains("Unexpected trailing input: basura"), "{err}");
 
     let err = rudof
-        .remove_triple(":alice", ":name", "\"Alice\"@es--rtl")
+        .remove_triple(":alice", ":name", "\"Alice\"@es--sideways")
         .execute()
         .unwrap_err();
-    assert!(err.to_string().contains("Unexpected trailing input: --rtl"), "{err}");
+    assert!(err.to_string().contains("not valid RDF 1.2 Turtle syntax"), "{err}");
 
     let err = rudof.triples().with_object("\"Alice\" basura").execute().unwrap_err();
-    assert!(err.to_string().contains("Unexpected trailing input: basura"), "{err}");
+    assert!(err.to_string().contains("not valid RDF 1.2 Turtle syntax"), "{err}");
 
     // Nothing of this changed the data.
     assert_eq!(all(&rudof).len(), 4);
