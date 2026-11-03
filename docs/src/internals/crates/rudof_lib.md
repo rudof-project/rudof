@@ -182,7 +182,9 @@ Only a single term is accepted, so text standing for several triples is refused 
 
 A relative IRI (`<alice>`, and the datatype of `"23"^^<integer>`) is resolved against the session's base IRI, the one `load_data` reads a document relative to: `base_iri` in the configuration, and failing that the current directory. An IRI that cannot be made absolute (a relative one where there is no base to resolve it against, as on WebAssembly with none configured) is an error, rather than being stored as it was written and serialized afterwards as something that is not valid RDF on its own. The node and the predicates of `node_neighborhood` are resolved the same way, and its node is a term too — unless it is a node selector (`{FOCUS ex:knows _}`, `SPARQL "…"`), which selects the nodes to start from instead of naming one.
 
-`triples` takes a pattern: every position left unset matches any term, so a builder with none of them set walks the whole graph. Like `node_neighborhood` it borrows the loaded data, which therefore cannot be modified while the triples are being walked, and yields one `Result<Triple>` per match.
+`triples` takes a pattern: every position left unset matches any term, so a builder with none of them set walks the whole graph. Like `node_neighborhood` it borrows the loaded data, which therefore cannot be modified while the triples are being walked, and yields one `Triple` per match.
+
+A `Triple` is the triple the graph holds, `oxrdf::Triple`, which it dereferences to: the same type the term parser produces, rather than a rendering of it. So the text of its three terms (`triple.subject.to_string()`, and `Display` for the triple itself) is the text `add_triple`, `remove_triple` and the patterns read, and a triple read from the graph goes back into them unedited. That text is the Turtle an N-Triples line is written with: an IRI in angle brackets (the predicate too, which no IRI mode normalizes), a literal with the lexical form it was written with and its datatype as an absolute IRI, a blank node label, and a triple term as `<<( … )>>`. It is deliberately not the prefixed, abbreviated Turtle of the CLI's output, which is written against a prefix map that the caller holding the text has no way to pin down.
 
 Only the in-memory graph can be modified. A SPARQL endpoint and the QLever backend are read-only, and so is data federated with SPARQL endpoints: the local graph of such a session is deliberately not written to instead, since `triples` reads it and the endpoints' as one. `triples` itself works on all of them, but an unconstrained pattern against a remote backend pulls its whole graph.
 
@@ -208,11 +210,11 @@ rudof.remove_triple("ex:alice", "ex:name", "\"Alice\"").execute().unwrap();
 
 // Walk the triples matching a pattern (here: everything ex:bob is the subject of)
 for triple in rudof.triples().with_subject("ex:bob").execute().unwrap() {
-    println!("{}", triple.unwrap());
+    println!("{triple}");
 }
 
 // Prints:
-// http://example.org/bob <http://example.org/name> "Bob" .
+// <http://example.org/bob> <http://example.org/name> "Bob" .
 ```
 
 #### 2.4 Staging
