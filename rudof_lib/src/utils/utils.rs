@@ -568,6 +568,53 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_term_reads_the_rdf_12_terms() {
+        // A triple term, nested in another one, and a dir-lang string.
+        let triple_term = term("<<( ex:alice ex:name \"Alice\" )>>");
+        assert_eq!(
+            triple_term.to_string(),
+            "<<( <http://example.org/alice> <http://example.org/name> \"Alice\" )>>"
+        );
+        assert_eq!(
+            triple_term,
+            term("<<( <http://example.org/alice> ex:name \"Alice\" )>>")
+        );
+        assert_ne!(triple_term, term("<<( ex:alice ex:name \"Bob\" )>>"));
+        assert!(
+            term("<<( ex:bob ex:believes <<( ex:alice ex:name \"Alice\" )>> )>>")
+                .to_string()
+                .contains("<<( <http://example.org/alice>")
+        );
+        assert_eq!(term("\"Shalom\"@he--rtl").to_string(), "\"Shalom\"@he--rtl".to_string());
+        assert_ne!(term("\"Shalom\"@he--rtl"), term("\"Shalom\"@he"));
+
+        // A triple term is an object and nothing else, and its IRIs reach the graph, so
+        // a relative one with no base is refused as it is in the flat positions.
+        assert!(parse_subject("<<( ex:alice ex:name \"Alice\" )>>", None, &prefixmap(), Lax).is_err());
+        assert!(parse_term("<<( <alice> ex:name \"Alice\" )>>", None, &prefixmap(), Lax).is_err());
+        assert_eq!(
+            term_with_base("<<( <alice> <name> \"Alice\" )>>"),
+            term("<<( ex:alice ex:name \"Alice\" )>>")
+        );
+    }
+
+    #[test]
+    fn test_a_bare_iri_inside_a_triple_term_is_not_wrapped() {
+        // The lax mode wraps a whole term that is a bare IRI, not one written inside a
+        // triple term, where it has to be bracketed or prefixed.
+        assert!(
+            parse_term(
+                "<<( http://example.org/alice ex:name \"A\" )>>",
+                None,
+                &prefixmap(),
+                Lax
+            )
+            .is_err()
+        );
+        assert!(parse_term("<<( ex:alice ex:name \"A\" )>>", None, &prefixmap(), Lax).is_ok());
+    }
+
+    #[test]
     fn test_normalize_iri_str_wraps_only_bare_iris() {
         assert_eq!(normalize_iri_str("http://example.org/a", Lax), "<http://example.org/a>");
         assert_eq!(

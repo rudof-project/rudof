@@ -218,6 +218,17 @@ fn test_a_batch_with_an_unparsable_triple_changes_nothing() {
         .unwrap_err();
     assert!(err.to_string().contains("Iri ref"), "{err}");
     assert_eq!(all(&rudof).len(), 4);
+
+    // A triple term that does not close is a malformed term, not a shorter one.
+    let err = rudof
+        .add_triples(&[
+            (":carol", ":name", "\"Carol\""),
+            (":carol", ":believes", "<<( :alice :name \"Alice\" )>"),
+        ])
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("not valid RDF 1.2 Turtle syntax"), "{err}");
+    assert_eq!(all(&rudof).len(), 4);
 }
 
 #[test]
@@ -482,4 +493,68 @@ fn test_a_base_direction_tells_two_triples_apart() {
     let rendered: Vec<String> = triples.iter().map(|triple| triple.object.to_string()).collect();
     assert!(rendered.contains(&"\"Shalom\"@he--rtl".to_string()), "{rendered:?}");
     assert!(rendered.contains(&"\"Shalom\"@he".to_string()), "{rendered:?}");
+}
+
+#[test]
+fn test_add_remove_and_match_a_triple_term() {
+    let mut rudof = session();
+    let term = "<<( :alice :name \"Alice\" )>>";
+
+    rudof.add_triple(":bob", ":believes", term).execute().unwrap();
+    assert_eq!(all(&rudof).len(), 5);
+
+    // The triple term is a term of the data like any other: it matches as an object
+    // pattern, and the triple holding it is found by it.
+    let found = triples(&rudof, None, None, Some(term));
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(found[0].subject, node("bob"));
+
+    // A triple term holding another one is a term too.
+    rudof
+        .add_triple(":carol", ":believes", &format!("<<( :bob :believes {term} )>>"))
+        .execute()
+        .unwrap();
+    assert_eq!(triples(&rudof, Some(":carol"), None, None).len(), 1);
+
+    rudof.remove_triple(":bob", ":believes", term).execute().unwrap();
+    assert!(triples(&rudof, None, None, Some(term)).is_empty());
+}
+
+#[test]
+fn test_add_and_match_a_dir_lang_string() {
+    let mut rudof = session();
+
+    rudof
+        .add_triple(":alice", ":greeting", "\"Shalom\"@he--rtl")
+        .execute()
+        .unwrap();
+    rudof
+        .add_triple(":alice", ":greeting", "\"Shalom\"@he")
+        .execute()
+        .unwrap();
+    assert_eq!(triples(&rudof, Some(":alice"), Some(":greeting"), None).len(), 2);
+
+    // The base direction is part of the term, so each pattern matches only its own.
+    let directional = triples(&rudof, None, None, Some("\"Shalom\"@he--rtl"));
+    assert_eq!(directional.len(), 1, "{directional:?}");
+    assert_eq!(directional[0].object.to_string(), "\"Shalom\"@he--rtl");
+
+    rudof
+        .remove_triple(":alice", ":greeting", "\"Shalom\"@he--rtl")
+        .execute()
+        .unwrap();
+    assert_eq!(triples(&rudof, Some(":alice"), Some(":greeting"), None).len(), 1);
+}
+
+#[test]
+fn test_a_triple_term_cannot_be_a_subject() {
+    let mut rudof = session();
+
+    // RDF 1.2 gives a triple term object position only.
+    let err = rudof
+        .add_triple("<<( :alice :name \"Alice\" )>>", ":said", ":bob")
+        .execute()
+        .unwrap_err();
+    assert!(err.to_string().contains("cannot be the subject"), "{err}");
+    assert_eq!(all(&rudof).len(), 4);
 }
