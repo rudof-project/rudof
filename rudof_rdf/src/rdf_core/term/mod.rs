@@ -16,5 +16,6 @@ pub use triple::{ConcreteTriple, Object, Subject, Triple};
 
 #[cfg(test)]
 mod tests {
+    mod parse_tests;
     mod schema_tests;
 }
