@@ -14,8 +14,12 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - The data API reads terms in RDF 1.2 Turtle syntax: triple terms (`<<( :a :b "c" )>>`, nested too) and dir-lang strings (`"Shalom"@he--rtl`), in `add_triple`, `remove_triple`, the patterns of `triples` and node info, and so in Python and JavaScript ([#880](https://github.com/rudof-project/rudof/issues/880)).
 - `rudof_rdf`: `parse_term` reads a term written as text, with `TermParseError` ([#880](https://github.com/rudof-project/rudof/issues/880)).
 
+### Fixed
+- The terms `triples` returns go back into `add_triple` and `remove_triple` unedited: IRIs come back bracketed and literals keep their lexical form ([#879](https://github.com/rudof-project/rudof/issues/879)).
+
 ### Changed
 - A malformed term reports the Turtle parser's error instead of `Unexpected trailing input` ([#880](https://github.com/rudof-project/rudof/issues/880)).
+- `triples` yields a `Triple`, not a `Result<Triple>`, and `Triple` derefs to the `oxrdf::Triple` of the graph ([#879](https://github.com/rudof-project/rudof/issues/879)).
 
 ## 0.3.37
 ### Added
