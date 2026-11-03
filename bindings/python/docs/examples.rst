@@ -286,7 +286,9 @@ Walk the loaded data triple by triple with a pattern, and add and remove triples
 
     Terms are written as text, in RDF 1.2 Turtle syntax: ``<IRI>``, ``ex:alice``, ``_:b1``,
     ``"Alice"``, ``"Alice"@en``, ``"Shalom"@he--rtl``, ``23``, ``"23"^^xsd:integer``, and the
-    triple term ``<<( :alice :name "Alice" )>>``.
+    triple term ``<<( :alice :name "Alice" )>>``. The terms a triple is read back in are
+    written the same way, so a triple that comes out of ``triples`` goes into ``add_triple``
+    and ``remove_triple`` unedited.
     """
 
     from pathlib import Path
@@ -347,6 +349,17 @@ Walk the loaded data triple by triple with a pattern, and add and remove triples
             print(f"found by the triple term: {len(list(rudof.triples(object=triple_term)))}")
             print(f"greetings: {len(list(rudof.triples(predicate=':greeting')))}")
             print(f"directional only: {len(list(rudof.triples(object='\"Shalom\"@he--rtl')))}")
+
+            # A triple read from the graph goes back in as it came out, with no editing and
+            # whatever its terms are: an IRI comes back bracketed and a literal with the
+            # lexical form it was written with, which is what `strict_iris=True` demands.
+            read = list(rudof.triples())
+            for subject, predicate, obj in read:
+                rudof.remove_triple(subject, predicate, obj, strict_iris=True)
+            print(f"triples after removing every one of them: {len(list(rudof.triples()))}")
+            for subject, predicate, obj in read:
+                rudof.add_triple(subject, predicate, obj, strict_iris=True)
+            print(f"triples after adding them back: {len(list(rudof.triples()))}")
 
 
     if __name__ == "__main__":

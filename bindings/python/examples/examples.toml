@@ -300,7 +300,7 @@ description = "Walk the loaded data triple by triple with a pattern, and add and
 category = "rdf"
 files = { data = "person.ttl" }
 expected_output = [
-    "http://example.org/alice http://example.org/name \"Alice\"",
+    "<http://example.org/alice> <http://example.org/name> \"Alice\"",
     "names: ['\"Alice\"']",
     "alice's triples: 3",
     "bob's triples: 2",
@@ -314,6 +314,8 @@ expected_output = [
     "found by the triple term: 1",
     "greetings: 2",
     "directional only: 1",
+    "triples after removing every one of them: 0",
+    "triples after adding them back: 8",
 ]
 
 [[example]]
