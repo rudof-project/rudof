@@ -106,3 +106,51 @@ fn test_node_neighborhood_resolves_relative_iris_against_the_base() {
     assert_eq!(arcs[0].predicate, iri("p"));
     assert_eq!(arcs[0].neighbor, node("b"));
 }
+
+#[test]
+fn test_node_neighborhood_of_a_triple_term() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    // The annotation makes `<<( :a :p :b )>>` a term of the graph, reified by a blank
+    // node that carries the annotation's own triple.
+    let data = InputSpec::from_str(
+        r#"
+            prefix : <http://example.org/>
+            :a :p :b {| :since 2020 |} .
+        "#,
+    )
+    .unwrap();
+    rudof.load_data().with_data(&[data]).execute().unwrap();
+
+    let arcs: Vec<NeighborArc> = rudof
+        .node_neighborhood("<<( :a :p :b )>>")
+        .with_mode(&NodeInspectionMode::Incoming)
+        .execute()
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+
+    assert_eq!(arcs.len(), 1, "{arcs:?}");
+    assert_eq!(arcs[0].direction, ArcDirection::Incoming);
+    assert_eq!(
+        arcs[0].predicate,
+        IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies")
+    );
+}
+
+#[test]
+fn test_node_neighborhood_still_takes_a_node_selector() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let data = InputSpec::from_str(GRAPH).unwrap();
+    rudof.load_data().with_data(&[data]).execute().unwrap();
+
+    for selector in ["{FOCUS :p :b}", "SPARQL \"SELECT ?focus WHERE { ?focus :p :b }\""] {
+        let arcs: Vec<NeighborArc> = rudof
+            .node_neighborhood(selector)
+            .with_mode(&NodeInspectionMode::Outgoing)
+            .execute()
+            .unwrap_or_else(|e| panic!("{selector} should be read as a selector: {e}"))
+            .map(Result::unwrap)
+            .collect();
+        assert!(arcs.iter().all(|arc| arc.root == node("a")), "{selector} gave {arcs:?}");
+    }
+}
