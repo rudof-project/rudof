@@ -131,8 +131,8 @@ fn triples() {
     assert_eq!(names.triples.len(), 2, "{names:?}");
     let alice_name = rudof.triples(Some(":alice"), Some(":name"), None, None, None).unwrap();
     assert_eq!(alice_name.triples.len(), 1, "{alice_name:?}");
-    assert_eq!(alice_name.triples[0].subject, "http://example.org/alice");
-    assert_eq!(alice_name.triples[0].predicate, "http://example.org/name");
+    assert_eq!(alice_name.triples[0].subject, "<http://example.org/alice>");
+    assert_eq!(alice_name.triples[0].predicate, "<http://example.org/name>");
     assert_eq!(alice_name.triples[0].object, "\"Alice\"");
 
     // A pattern nothing matches is empty, not an error.
@@ -182,7 +182,11 @@ fn triples_of_rdf_12_terms() {
 
     let believed = rudof.triples(None, None, Some(triple_term), None, None).unwrap();
     assert_eq!(believed.triples.len(), 1, "{believed:?}");
-    assert_eq!(believed.triples[0].subject, "http://example.org/bob");
+    assert_eq!(believed.triples[0].subject, "<http://example.org/bob>");
+    assert_eq!(
+        believed.triples[0].object,
+        "<<( <http://example.org/alice> <http://example.org/name> \"Alice\" )>>"
+    );
 
     let greetings = rudof.triples(None, Some(":greeting"), None, None, None).unwrap();
     assert_eq!(greetings.triples.len(), 2, "{greetings:?}");
@@ -203,6 +207,39 @@ fn triples_of_rdf_12_terms() {
     // A triple term is an object: RDF 1.2 gives it no other position.
     let err = rudof.add_triple(triple_term, ":said", ":bob", None).unwrap_err();
     assert!(err.to_string().contains("cannot be the subject"), "{err}");
+}
+
+/// What `triples` returns is what `addTriple` and `removeTriple` read, so a triple read
+/// from the graph goes back into them unedited, in either IRI mode.
+#[test]
+fn the_terms_of_a_triple_go_back_into_the_triple_api() {
+    for strict_iris in [None, Some(true)] {
+        let mut rudof = session_with_data();
+        rudof
+            .add_triple(":alice", ":greeting", "\"Shalom\"@he--rtl", None)
+            .unwrap();
+        rudof
+            .add_triple(":bob", ":believes", "<<( :alice :name \"Alice\" )>>", None)
+            .unwrap();
+        let read = rudof.triples(None, None, None, None, None).unwrap().triples;
+
+        for triple in &read {
+            rudof
+                .remove_triple(&triple.subject, &triple.predicate, &triple.object, strict_iris)
+                .unwrap_or_else(|e| panic!("{triple:?} was not accepted back: {e:?}"));
+        }
+        assert!(rudof.triples(None, None, None, None, None).unwrap().triples.is_empty());
+
+        for triple in &read {
+            rudof
+                .add_triple(&triple.subject, &triple.predicate, &triple.object, strict_iris)
+                .unwrap_or_else(|e| panic!("{triple:?} was not accepted back: {e:?}"));
+        }
+        assert_eq!(
+            rudof.triples(None, None, None, None, None).unwrap().triples.len(),
+            read.len()
+        );
+    }
 }
 
 #[test]
