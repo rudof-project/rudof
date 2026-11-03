@@ -9,87 +9,90 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
-## [Unreleased]
+## 0.3.37
 ### Added
-- `rudof compare` compares RDF data as well as schemas ([#925](https://github.com/rudof-project/rudof/issues/925)). With `--data1` and `--data2` it reports whether the two graphs are `isomorphic`, `equivalent`, or one is a `subgraph`/`supergraph` of the other, up to blank node renaming, or `different`. RDF 1.2 triple terms are supported. The mode is inferred from the options (`--schema1`/`--schema2` or `--data1`/`--data2`), or set with `--mode schema|data`. In the shell, `--data1` can be left out to compare the loaded data.
-- `--subgraph-mode` sets how blank nodes are mapped when checking whether one graph is contained in the other: `injective` (default, one-to-one), `homomorphic` (several blank nodes to the same one) or `entailment` (to any term, i.e. RDF simple entailment).
-- `--show-diff` lists the triples of each graph that the other does not have, written with the prefixes of the documents, and how their blank nodes were matched. The diff is exact when one graph is contained in the other; otherwise the best blank node mapping is searched for in at most `--exact-search-limit` steps (default 100000), and the diff is marked as approximate past that limit. `-r json` gives the result in JSON.
-- `rudof_rdf`: `is_isomorphic` (using Oxigraph's canonicalization), `is_subgraph_with`, `compare_graphs_with` and `diff_graphs`, with `GraphRelation`, `SubgraphMode` and `GraphDiff`; `show_term` and `show_triple` write terms in Turtle with prefixed names.
-- `rudof_lib`: `Rudof::compare_data` and `Rudof::compare_loaded_data`, whose builder returns a `GraphRelation` with `execute()` or a `DataDiff` with `execute_diff()`.
-- `pyrudof`: `compare_data`, `compare_loaded_data`, `diff_data` and `diff_loaded_data`, with `GraphRelation`, `SubgraphMode` and `GraphDiff`.
-- `rudof_wasm`: `compareData`, `compareLoadedData`, `diffData` and `diffLoadedData`.
-- `rudof_rdf`: `ParseBudget` holds the steps that parsing SHACL paths may take, and `ShaclPathParser::with_budget` takes them from a budget shared with other parsers, as `ShaclParser` does for the paths of a shapes graph.
-- `rudof_rdf`: `parse_path`, `MAX_PATH_DEPTH`, `MIN_PARSE_STEPS` and `PARSE_STEPS_PER_TRIPLE` are public, so that node expressions parse the paths inside them under the same limits.
-- `rudof_rdf`: `ParseBudget::take_free_members` and `FREE_LIST_MEMBERS` let the lists of a shapes graph read 65,536 members before they take steps from its budget.
-- `shacl`: the `max_results` option (`ShaclConfig::with_max_results`, or `max_results` under `[shacl]`), unset by default, makes validation fail with an error once validating one shape holds more results, each counted with its `sh:detail` results, and evidences than it allows. A nested `sh:property` shape reports a result once per path to its node, so over a chain of diamonds in the data the results double at each diamond, and under LFP so do the cut references of a recursive shape over nodes that all link to each other. An `Engine` keeps the limit in a `Retention`, through `retention` and `set_retention`, which by default keep none.
-- `rudof generate` reads PG-Schema as well as ShEx and SHACL, and writes a property graph (`.pg`, with a type map) and its RDF encoding ([#921](https://github.com/rudof-project/rudof/issues/921)). The three languages are read into one intermediate representation, so equivalent schemas generate the same graph, triple for triple.
-- `rudof generate` generates closed shapes, language tags (`sh:languageIn`, `sh:uniqueLang`, ShEx language sets and stems), ShEx `EXTRA`, SHACL qualified value shapes, `sh:class`, `sh:hasValue` and nodes with several PG-Schema labels ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- Controlled errors: `[violations]` breaks a share (`rate`) of the generated entities, one constraint each, with the `operators` chosen (`drop-required`, `exceed-max`, `wrong-datatype`, `ill-typed-literal`, `out-of-range`, `not-in-value-set`, `pattern-break`, `dangling-reference`, `closed-extra`, the language operators and others), and writes what a correct validator of the schema's language must report, `labels.jsonl`: the broken nodes, the nodes that fail through a reference to them, and *traps*, changes that leave the data valid ([#921](https://github.com/rudof-project/rudof/issues/921)). From a PG-Schema, `[violations.rdf]` also writes the report for the RDF copy, with PG-Schema's closed records and required keys or with open shapes and optional keys.
-- Generator configuration v2, in TOML or JSON ([#921](https://github.com/rudof-project/rudof/issues/921)): `[run]` (`seed`, `threads`, `scale` as `entities` or `per_shape`), `[defaults]` (`fill`, `cardinality`, `unbounded_cap`), `[[shape]]` and `[[property]]` rules, `[output]` (`dir`, `formats`, `stats`), `[violations]` and `[targets]`. Unknown keys are errors.
-- `[targets] coherence` asks for a graph with that coherence (Duan et al., SIGMOD 2011), within `tolerance`: the generator searches the fill of optional properties until it reaches it ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- `rudof generate --validate` validates the generated data against the schema it came from, with the exact ShapeMap of the generated nodes ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- `rudof_generate` builds for WebAssembly, with an in-memory API (`load_schema_str`, `generate_in_memory`). `rudof_wasm`: `generate`, under the `generate` feature (on by default), returns the data, its ShapeMap and, as they apply, the property graph, its type map and the reports ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- `pyrudof`: generation from PG-Schema, controlled errors, `set_target_coherence` and `DataGenerator.target_report`, with a demo notebook in `bindings/python/examples/generate/` ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- `rudof_mcp`: the `generate_data` tool generates data from a ShEx, SHACL or PG-Schema schema, optionally with errors and their report, and loads it for validation ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `rudof generate` reads PG-Schema as well as ShEx and SHACL, and writes a property graph (`.pg` with a type map) and its RDF encoding; all three share one intermediate representation ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `rudof generate` supports closed shapes, language tags, ShEx `EXTRA`, SHACL qualified value shapes, `sh:class`, `sh:hasValue` and nodes with several PG-Schema labels ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- Controlled errors: `[violations]` breaks a share of the generated entities and writes the expected report, traps included, to `labels.jsonl`; `[violations.rdf]` does the same for a PG-Schema's RDF copy ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- Generator configuration v2, in TOML or JSON: `[run]`, `[defaults]`, `[[shape]]`, `[[property]]`, `[output]`, `[violations]` and `[targets]`. Unknown keys are errors ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `[targets] coherence` searches the fill of optional properties for a graph with the coherence asked for, within `tolerance` ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `rudof generate --validate` validates the generated data against its own schema, with the ShapeMap of the generated nodes ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `rudof_generate` builds for WebAssembly (`load_schema_str`, `generate_in_memory`), and `rudof_wasm` exposes `generate` under the `generate` feature ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `pyrudof`: PG-Schema generation, controlled errors, `set_target_coherence` and `DataGenerator.target_report`, with a demo notebook ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `rudof_mcp`: the `generate_data` tool, which also loads the data for validation ([#921](https://github.com/rudof-project/rudof/issues/921)).
 - `pgschema`: `PropertyGraphSchema::node_types` and `edge_types`, and `EdgeLabelPropertySpec::label_property_spec` ([#921](https://github.com/rudof-project/rudof/issues/921)).
 
 ### Fixed
-- A cyclic SHACL path, such as `_:p sh:zeroOrMorePath _:p`, is an invalid path error instead of a stack overflow.
-- A SHACL path nested more than 64 levels deep is an invalid path error instead of a stack overflow. Parsing the SHACL paths of a shapes graph takes at most 4096 steps plus 16 per triple in all, so a blank node shared by nested sequences, or a long path shared by many shapes, is an invalid path error instead of an exponential expansion.
-- An invalid part of a SHACL path is reported with its own error instead of `Unsupported SHACL path construct`.
-- Long RDF lists (`sh:in`, `sh:or`, sequence paths and others) are parsed in linear time and without a stack overflow.
-- `sh:inversePath` over a path that is not a single predicate is evaluated instead of panicking ([#920](https://github.com/rudof-project/rudof/issues/920)).
-- Long sequence paths are evaluated in linear time and without a stack overflow.
-- Nested repetition paths, such as `((:p*)*)*`, are evaluated in polynomial time instead of a time exponential in the nesting.
-- Literals typed `xsd:long`, `xsd:short`, `xsd:byte`, the unsigned types and the (non)positive/negative integer types keep their lexical form, so `sh:hasValue`, `sh:in` and ShEx value sets match `"01"^^xsd:long` in the data, and reports show it unchanged.
-- A range constraint that mixes these types with `xsd:integer`, such as `sh:minInclusive "3"^^xsd:long` on `5`, compares the values instead of failing.
-- On native targets, deeply nested or long chains of SHACL shapes, and recursive shapes over long data chains (such as 10,000 nodes linked by `:next`), are compiled and validated instead of overflowing the stack.
-- A long chain of `owl:imports` under `sh:prefixes` is followed without a stack overflow.
-- Reading a validation report keeps one level of `sh:detail`, as the validator writes, so a cyclic or deep `sh:detail` no longer overflows the stack.
-- A node expression, as in `sh:deactivated`, that is cyclic or nests more than 64 levels is a parse error instead of a stack overflow. Node expressions take their steps from the same parse budget as SHACL paths, so a blank node shared by nested `shnex:concat` is a parse error instead of an exponential expansion.
-- `shnex:filterShape`, `shnex:findFirst`, `shnex:matchAll` and triple term node expressions are parse errors instead of panics.
-- `shnex:nodesMatching` finds the nodes of its shape once per shape that is validated, instead of once per focus node, and a shape deactivated through its own `shnex:nodesMatching` is an error instead of an endless recursion.
-- Evaluating a node expression for one focus node fails after 1,000,000 steps, as nested `shnex:flatMap` can fan out exponentially over the data.
-- A blank node `sh:targetNode` targets nothing, an invalid tag or an IRI in `sh:languageIn` is skipped, a triple term in `sh:hasValue` is a parse error and in `sh:in` is skipped like the other members it cannot read, and a literal focus node of `sh:disjoint` conforms, instead of panicking. Writing the shapes graph writes an ill-formed target back as it was read.
-- A recursive shape over a data cycle in which a node has several values, such as `_:p sh:path :next ; sh:property _:p` over `:a :next :a, :b`, or in which a triple has several reifiers, is validated instead of recursing without end: nested property shapes and `sh:reifierShape` are validated once per value node, so each node is cut when it is reached again.
-- An error while validating a shape inside `sh:not`, `sh:and`, `sh:xone` or `sh:qualifiedValueShape`, or a sibling shape of `sh:qualifiedValueShapesDisjoint`, such as a node expression that takes more than 1,000,000 steps or a shape over `max_results`, makes validation fail with that error, as it does inside `sh:node` and `sh:or`. It used to count as the node not conforming to that shape, so `sh:not` conformed.
-- An error while following the SHACL path of a property shape from a focus node, such as a SPARQL endpoint that fails or cannot be reached, makes validation fail with that error. It used to leave the focus node out, so its constraints were never checked and a shape with `sh:minCount 1` conformed.
-- On native targets, a debug build compiles and validates a long chain of shapes whose SHACL paths and node expressions nest close to the 64-level limit, such as 50 shapes linked by `sh:node`, each with a 64-deep `sh:path` and `sh:deactivated` expression, on a 2 MiB thread, instead of crashing with a stack overflow or a bus error.
-- Parsing a shapes graph also takes a step from its parse budget for each member of a list node expression and for each triple of a blank node expression, every time one is read, and for each member of a `sh:in`, `sh:languageIn`, `sh:and`, `sh:or`, `sh:xone` or `sh:ignoredProperties` list once 65,536 have been read, a list shared by K shapes being read K times. A list or node expression shared by many shapes, or by nested `shnex:concat`, is then a parse error instead of taking time or memory quadratic in the size of the shapes graph, such as 1.9 GB for 27 KB of Turtle.
-- A cycle of shapes that passes through the sibling shapes of `sh:qualifiedValueShapesDisjoint` is rejected as a negative cycle under every recursion semantics, as `sh:not` is. It used to be missed, so `recursion_semantics = "none"` accepted it and then followed it along the data, and under LFP a node could conform because its cut reference was assumed not to.
-- A cycle of shapes that passes through `sh:xone`, or through a `sh:qualifiedValueShape` with `sh:qualifiedMaxCount`, is rejected as a negative cycle under every recursion semantics, as `sh:not` is. LFP and GFP used to accept it as positive and then cut it the wrong way round: for `:S sh:property [ sh:path :p ; sh:qualifiedValueShape :S ; sh:qualifiedMaxCount 0 ]` over `:a :p :a`, LFP reported `:a` as conforming and GFP as violating, and over `:a :p :b . :b :p :a` which node violated depended on the order of the targets.
-- A cycle of shapes that passes through `sh:not`, such as `:S sh:not :S` or `:S sh:not :T . :T sh:node :S`, is rejected as a negative cycle under every recursion semantics, and a cycle error names a shape that refers to itself, which it used to leave out of the list. LFP and GFP used to accept these cycles, as the dependency graph turned the edge of `sh:not` positive when it reached it through another `sh:not`, or when a `sh:node` linked the same two shapes: for `:S sh:targetNode :a ; sh:not :S`, LFP reported `:a` as conforming and GFP as violating. A cycle that is only negated from outside, as in `:A sh:not :X . :X sh:node :Y . :Y sh:node :X`, is still accepted.
-- A cycle of shapes that passes through `sh:reifierShape`, such as `_:q sh:path :x ; sh:reifierShape _:q`, is rejected under `recursion_semantics = "none"`, and one that also passes through `sh:not` is rejected as a negative cycle under every recursion semantics. `sh:reifierShape` added no edge to the dependency graph, so these cycles were missed: `"none"` accepted them and then followed them along the data, and LFP and GFP gave different results for the one through `sh:not`.
-- On native targets, a debug build parses a shape whose SHACL path nests to the 64-level limit on a 256 KiB thread, instead of crashing with a stack overflow: each shape is parsed with the same stack check as it is compiled and validated.
-- A shape with `sh:ignoredProperties` keeps its `sh:hasValue`, `sh:in`, SPARQL constraints and `sh:deactivated`, which were dropped because reading the list left the focus node at its end instead of on the shape.
-- On native targets, a debug build reads a validation report back, writes a report or a shapes graph as RDF, and prefetches the data of a shape with `FetchStrategy::ByShape`, when a SHACL path in it nests to the 64-level limit, on a 256 KiB thread, instead of crashing with a stack overflow: each of these follows the path with the same stack check as validation.
-- On native targets, a debug build compiles an `sh:pattern` nested up to 64 levels, and reports a deeper one, such as `a` followed by 250 `*`, as an error, on a 256 KiB thread, instead of crashing with a stack overflow or a bus error while compiling it: the pattern is compiled on a stack of its own when less than 2 MiB is left, in `RDFRegex::new` and, in SPARQL mode, in the query engine.
-- A `sh:deactivated` node expression that does not read the focus node, such as `[ shnex:exists [ shnex:nodesMatching :T ] ]`, is evaluated once per shape in a validation instead of once per focus node, as each `shnex:nodesMatching` listed all the nodes of the data graph. A shape with 10,000 focus nodes is validated in 0.1 s instead of 28 s.
-- With `store_evidences` off, the default, SHACL validation drops evidence as it is made instead of keeping several copies of it for each conforming focus node, which the report then left out: validating 100,000 conforming focus nodes takes 165 MB instead of 870 MB. `max_results` counts evidences only when they are kept, so it no longer fails on many conforming focus nodes. An `Engine` keeps the setting in its `Retention`, which by default keeps evidence.
-- On native targets, ShEx validation of a long chain or cycle of references, such as 2,000 nodes linked by `:knows @<Person>`, no longer overflows the stack. Whether it did depended on the order in which a hash set returned the dependencies, so the same input failed in some runs and not in others; the dependencies are now proved in a fixed order ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- ShEx validation of a long chain or cycle of references no longer overflows the stack, and proves dependencies in a fixed order ([#921](https://github.com/rudof-project/rudof/issues/921)).
 - `pgschema` reads negative integers in `.pg` data ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- `rudof generate` no longer drops the values of SHACL value sets, translates ShEx value sets, and keeps the required properties of a shape when `max_properties` is set ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `rudof generate` keeps SHACL and ShEx value sets, and a shape's required properties under `max_properties` ([#921](https://github.com/rudof-project/rudof/issues/921)).
 
 ### Changed
-- `rudof compare` no longer requires `--schema2` when parsing its options, since data mode uses `--data1` and `--data2`. Schema comparison still needs `--schema1` and `--schema2`, and it reports an error when either is missing.
-- A SHACL `sh:detail` result no longer has details of its own: a failed `sh:node`, `sh:and`, `sh:or` or `sh:xone` keeps one level of causes, so reports stay small for long chains.
-- The shapes in a `Dependency graph has cycles` error can be listed in another order, as the cycles are now found without recursion.
-- A shapes graph whose cycle passes through the sibling shapes of `sh:qualifiedValueShapesDisjoint` is rejected as non-stratified under LFP and GFP, where it used to compile, such as a `:Tree` shape with two disjoint qualified properties on `:child`, one with `:Tree` and one with `:Leaf` as `sh:qualifiedValueShape`. So is one in which a disjoint qualified property shape in a cycle has a sibling shape that depends on another cycle, as with `sh:not`.
-- A shapes graph whose cycle passes through `sh:xone`, or through a `sh:qualifiedValueShape` with `sh:qualifiedMaxCount`, is rejected as non-stratified under LFP and GFP, where it used to compile. A cycle through a `sh:qualifiedValueShape` with only `sh:qualifiedMinCount` still compiles. So is one in which a shape in a cycle has such a `sh:xone` or `sh:qualifiedValueShape` on a shape that depends on another cycle, as with `sh:not`.
-- A shapes graph whose cycle passes through a `sh:not` that the dependency graph used to turn positive, such as `:S sh:not :S` or `:S sh:not :T . :T sh:node :S`, is rejected as non-stratified under LFP and GFP, where it used to compile.
-- A shapes graph whose cycle passes through `sh:reifierShape` and a negation, such as `:S sh:not :T . :T sh:property [ sh:path :x ; sh:reifierShape :S ]`, is rejected as non-stratified under LFP and GFP, where it used to compile.
-- A value of `sh:ignoredProperties` that is not a list is a parse error instead of meaning no ignored properties, and when a shape has several values, the members of all of them are ignored instead of those of one picked at random.
-- `Engine` has a new required method, `node_expr_state`, which returns the engine's own `NodeExprState`. An `Engine` implemented outside `shacl` must add it, for example over a `NodeExprState::default()` field.
-- SHACL parsing and validation have hard limits, each reported as an error: a SHACL path or node expression nests at most 64 levels; parsing all the SHACL paths, node expressions and lists of a shapes graph takes at most 4096 steps plus 16 per triple of the graph, each path step, expression, member of a list node expression and triple of a blank node expression counting as one, as does each member of a `sh:in`, `sh:languageIn`, `sh:and`, `sh:or`, `sh:xone` or `sh:ignoredProperties` list after the first 65,536; and evaluating a node expression for one focus node takes at most 1,000,000 steps, each expression evaluated counting as one.
-- `RDFRegex::new`, and so `sh:pattern`, accepts a regular expression that nests at most 64 levels, instead of the regex crate's 250, each group, repetition, bracketed class, alternation and concatenation counting as one, as compiling a deeper one overflowed the stack of a debug build. A deeper pattern is an error that says it exceeds the maximum number of nested parentheses/brackets.
-- `rudof generate -r` has no default: without it, the format of the configuration applies, Turtle by default ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- `[output]` takes a folder, `dir`, and the `formats` to write; the files in it have fixed names (`data.ttl`, `data.nt`, `data.pg`, `data.typemap`, `data.shapemap`, `labels.jsonl`, `labels-rdf.jsonl`, `stats.json`) ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- `fill`, the probability of generating an optional property, also applies to optional references to other shapes; required references are always generated. With the default, 1.0, the output is unchanged ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `rudof generate -r` has no default: the configuration's format applies, Turtle by default ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `[output]` takes a folder, `dir`, and the `formats` to write; the files in it have fixed names ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- `fill` also applies to optional shape references; required ones are always generated ([#921](https://github.com/rudof-project/rudof/issues/921)).
 
 ### Removed
 - Generator configuration v1: a configuration needs `version = 2` ([#921](https://github.com/rudof-project/rudof/issues/921)).
-- The `labels` options of `[violations]` and `[violations.rdf]`, now fixed file names, and `ignore_min_cardinality`, whose job `[violations]` does ([#921](https://github.com/rudof-project/rudof/issues/921)).
+- The `labels` options of `[violations]` and `[violations.rdf]`, now fixed file names, and `ignore_min_cardinality` ([#921](https://github.com/rudof-project/rudof/issues/921)).
 - `pyrudof`: `GeneratorConfig.to_toml_file` ([#921](https://github.com/rudof-project/rudof/issues/921)).
+
+## 0.3.36
+### Added
+- `rudof compare` compares RDF data as well as schemas, with `--data1` and `--data2`: `isomorphic`, `equivalent`, `subgraph`/`supergraph` or `different`, up to blank node renaming. RDF 1.2 triple terms included ([#925](https://github.com/rudof-project/rudof/issues/925)).
+- `--subgraph-mode` sets how blank nodes are mapped: `injective` (default), `homomorphic` or `entailment`.
+- `--show-diff` lists the triples each graph is missing and how their blank nodes were matched, searching at most `--exact-search-limit` steps (default 100000) before the diff is marked approximate.
+- `rudof_rdf`: `is_isomorphic`, `is_subgraph_with`, `compare_graphs_with` and `diff_graphs`, with `GraphRelation`, `SubgraphMode` and `GraphDiff`; `show_term` and `show_triple` write terms with prefixed names.
+- `rudof_lib`: `Rudof::compare_data` and `compare_loaded_data`, whose builder runs with `execute()` or `execute_diff()`.
+- `pyrudof`: `compare_data`, `compare_loaded_data`, `diff_data` and `diff_loaded_data`.
+- `rudof_wasm`: `compareData`, `compareLoadedData`, `diffData` and `diffLoadedData`.
+- `rudof_rdf`: `ParseBudget` bounds SHACL path parsing, shared between parsers through `ShaclPathParser::with_budget`.
+- `rudof_rdf`: `parse_path`, `MAX_PATH_DEPTH`, `MIN_PARSE_STEPS` and `PARSE_STEPS_PER_TRIPLE` are public.
+- `rudof_rdf`: `ParseBudget::take_free_members` and `FREE_LIST_MEMBERS` give the lists of a shapes graph 65,536 free members.
+- `shacl`: `max_results`, unset by default, fails validation once one shape holds more results and evidences than it allows; an `Engine` keeps it in its `Retention`.
+
+### Fixed
+- A cyclic SHACL path is an invalid path error instead of a stack overflow.
+- A SHACL path nested more than 64 levels, or one shared through a blank node past the parse budget, is an invalid path error instead of a stack overflow or an exponential expansion.
+- An invalid part of a SHACL path is reported with its own error instead of `Unsupported SHACL path construct`.
+- Long RDF lists (`sh:in`, `sh:or`, sequence paths) are parsed in linear time, without a stack overflow.
+- `sh:inversePath` over a path that is not a single predicate is evaluated instead of panicking ([#920](https://github.com/rudof-project/rudof/issues/920)).
+- Long sequence paths are evaluated in linear time, without a stack overflow.
+- Nested repetition paths, such as `((:p*)*)*`, are evaluated in polynomial time.
+- Literals typed `xsd:long`, `xsd:short`, `xsd:byte` and the other integer types keep their lexical form, so `sh:hasValue`, `sh:in` and ShEx value sets match `"01"^^xsd:long`.
+- A range constraint that mixes those types with `xsd:integer` compares the values instead of failing.
+- Deeply nested or long chains of SHACL shapes, and recursive shapes over long data chains, are compiled and validated instead of overflowing the stack.
+- A long chain of `owl:imports` under `sh:prefixes` is followed without a stack overflow.
+- Reading a validation report keeps one level of `sh:detail`, so a cyclic or deep `sh:detail` no longer overflows the stack.
+- A node expression that is cyclic, nests more than 64 levels or exceeds the parse budget is a parse error instead of a stack overflow.
+- `shnex:filterShape`, `shnex:findFirst`, `shnex:matchAll` and triple term node expressions are parse errors instead of panics.
+- `shnex:nodesMatching` runs once per validated shape instead of once per focus node, and a shape deactivated through its own `shnex:nodesMatching` is an error instead of endless recursion.
+- Evaluating a node expression for one focus node fails after 1,000,000 steps, as nested `shnex:flatMap` can fan out exponentially.
+- Ill-formed terms in `sh:targetNode`, `sh:languageIn`, `sh:hasValue`, `sh:in` and `sh:disjoint` are skipped or reported instead of panicking, and are written back as they were read.
+- A recursive shape over a data cycle whose node has several values, or whose triple has several reifiers, is validated instead of recursing without end: each node is cut when it is reached again.
+- An error inside `sh:not`, `sh:and`, `sh:xone`, `sh:qualifiedValueShape` or a `sh:qualifiedValueShapesDisjoint` sibling fails validation instead of counting as non-conformance.
+- An error while following a property shape's SHACL path, such as an endpoint that cannot be reached, fails validation instead of leaving the focus node unchecked.
+- Parsing a shapes graph charges the parse budget for list members and blank node expression triples, so a list shared by many shapes is a parse error instead of taking quadratic memory (1.9 GB for 27 KB of Turtle).
+- A cycle through the sibling shapes of `sh:qualifiedValueShapesDisjoint` is rejected as a negative cycle, as `sh:not` is; it used to be missed.
+- A cycle through `sh:xone`, or a `sh:qualifiedValueShape` with `sh:qualifiedMaxCount`, is rejected as a negative cycle; LFP and GFP used to take it as positive and cut it the wrong way round.
+- A cycle through `sh:not`, such as `:S sh:not :S` or `:S sh:not :T . :T sh:node :S`, is rejected as a negative cycle, and the error names the self-referring shape. A cycle negated only from outside is still accepted.
+- A cycle through `sh:reifierShape` is rejected, as the dependency graph now has its edge.
+- A shape with `sh:ignoredProperties` keeps its `sh:hasValue`, `sh:in`, SPARQL constraints and `sh:deactivated`.
+- On native targets, a debug build no longer crashes on input at the 64-level depth limit: parsing, compiling, validating, report reading, RDF writing, `ByShape` prefetching and `sh:pattern` compilation share one stack check.
+- A `sh:deactivated` node expression that does not read the focus node is evaluated once per shape instead of once per focus node: 10,000 focus nodes take 0.1 s instead of 28 s.
+- With `store_evidences` off, the default, validation drops evidence as it is made instead of keeping copies the report left out: 100,000 conforming focus nodes take 165 MB instead of 870 MB.
+
+### Changed
+- `rudof compare` no longer requires `--schema2`, since data mode uses `--data1` and `--data2`.
+- A SHACL `sh:detail` result has no details of its own, so reports stay small for long chains.
+- The shapes in a `Dependency graph has cycles` error can be listed in another order, as cycles are now found without recursion.
+- A shapes graph whose cycle passes through `sh:qualifiedValueShapesDisjoint` siblings, `sh:xone`, a `sh:qualifiedMaxCount` qualified shape, `sh:not` or a negated `sh:reifierShape` is rejected as non-stratified under LFP and GFP, where it used to compile. A cycle through `sh:qualifiedMinCount` alone still compiles.
+- A value of `sh:ignoredProperties` that is not a list is a parse error, and several values ignore the members of all of them instead of one picked at random.
+- `Engine` has a new required method, `node_expr_state`.
+- SHACL parsing and validation have hard limits, each reported as an error: 64 nesting levels for a path or node expression, 4096 parse steps plus 16 per triple, and 1,000,000 node expression steps per focus node.
+- `RDFRegex::new`, and so `sh:pattern`, accepts a regular expression nested at most 64 levels instead of the regex crate's 250, as a deeper one overflowed the stack of a debug build.
+
+### Removed
 
 ## 0.3.35
 ### Added
