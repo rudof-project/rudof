@@ -855,12 +855,10 @@ impl Session {
         }
         let triples = b.execute()?;
         // One triple past `limit`, to tell whether the result was truncated.
-        let mut triples = match limit {
-            Some(limit) => triples
-                .take(limit.saturating_add(1))
-                .collect::<std::result::Result<Vec<_>, _>>(),
+        let mut triples: Vec<_> = match limit {
+            Some(limit) => triples.take(limit.saturating_add(1)).collect(),
             None => triples.collect(),
-        }?;
+        };
         let truncated = limit.is_some_and(|limit| triples.len() > limit);
         if let Some(limit) = limit {
             triples.truncate(limit);

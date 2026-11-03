@@ -635,14 +635,12 @@ impl PyRudof {
                 b = b.with_iri_mode(IriNormalizationMode::Strict);
             }
             let triples = b.execute()?;
-            match limit {
+            Ok(match limit {
                 // One triple past `limit`, so the iterator can report `truncated`
                 // without needing a second pass over the data.
-                Some(limit) => triples
-                    .take(limit.saturating_add(1))
-                    .collect::<std::result::Result<Vec<_>, _>>(),
+                Some(limit) => triples.take(limit.saturating_add(1)).collect(),
                 None => triples.collect(),
-            }
+            })
         })?;
 
         Ok(PyTriples::new(triples, limit))

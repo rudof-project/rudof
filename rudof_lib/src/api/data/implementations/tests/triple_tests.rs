@@ -1,10 +1,9 @@
 use crate::{
-    Result, Rudof, RudofConfig,
+    Rudof, RudofConfig,
     formats::{InputSpec, IriNormalizationMode},
     types::{QueryResult, Triple},
 };
-use rudof_iri::IriS;
-use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
+use oxrdf::{Literal as OxLiteral, NamedNode as OxNamedNode, Term as OxTerm, Triple as OxTriple};
 use std::{collections::HashSet, str::FromStr};
 
 const GRAPH: &str = r#"
@@ -23,16 +22,20 @@ fn session() -> Rudof {
     rudof
 }
 
-fn iri(local: &str) -> IriS {
-    IriS::new_unchecked(&format!("http://example.org/{local}"))
+fn named(local: &str) -> OxNamedNode {
+    OxNamedNode::new_unchecked(format!("http://example.org/{local}"))
 }
 
-fn node(local: &str) -> Object {
-    Object::iri(iri(local))
+fn node(local: &str) -> OxTerm {
+    named(local).into()
 }
 
-fn literal(value: &str) -> Object {
-    Object::Literal(ConcreteLiteral::str(value))
+fn literal(value: &str) -> OxTerm {
+    OxLiteral::new_simple_literal(value).into()
+}
+
+fn triple(subject: &str, predicate: &str, object: OxTerm) -> Triple {
+    OxTriple::new(named(subject), named(predicate), object).into()
 }
 
 /// The triples matching a pattern, sorted so the assertions do not depend on the
@@ -48,7 +51,7 @@ fn triples(rudof: &Rudof, subject: Option<&str>, predicate: Option<&str>, object
     if let Some(object) = object {
         builder = builder.with_object(object);
     }
-    let mut triples: Vec<Triple> = builder.execute().unwrap().collect::<Result<_>>().unwrap();
+    let mut triples: Vec<Triple> = builder.execute().unwrap().collect();
     triples.sort_by_key(|triple| triple.to_string());
     triples
 }
@@ -85,17 +88,10 @@ fn test_triples_patterns() {
 fn test_triples_are_the_terms_of_the_data() {
     let rudof = session();
     let triples = triples(&rudof, Some(":alice"), Some(":knows"), None);
-    assert_eq!(
-        triples,
-        vec![Triple {
-            subject: node("alice"),
-            predicate: iri("knows"),
-            object: node("bob"),
-        }]
-    );
+    assert_eq!(triples, vec![triple("alice", "knows", node("bob"))]);
     assert_eq!(
         triples[0].to_string(),
-        "http://example.org/alice <http://example.org/knows> http://example.org/bob ."
+        "<http://example.org/alice> <http://example.org/knows> <http://example.org/bob> ."
     );
 }
 
@@ -107,11 +103,7 @@ fn test_add_triple() {
     assert_eq!(all(&rudof).len(), 5);
     assert_eq!(
         triples(&rudof, Some(":carol"), None, None),
-        vec![Triple {
-            subject: node("carol"),
-            predicate: iri("name"),
-            object: literal("Carol"),
-        }]
+        vec![triple("carol", "name", literal("Carol"))]
     );
 
     // A graph is a set of triples, so adding one it already has changes nothing.
@@ -270,16 +262,8 @@ fn test_a_relative_iri_is_resolved_against_the_base() {
     assert_eq!(
         triples(&rudof, Some("<carol>"), None, None),
         vec![
-            Triple {
-                subject: node("carol"),
-                predicate: iri("knows"),
-                object: node("alice"),
-            },
-            Triple {
-                subject: node("carol"),
-                predicate: iri("name"),
-                object: literal("Carol"),
-            },
+            triple("carol", "knows", node("alice")),
+            triple("carol", "name", literal("Carol")),
         ]
     );
 
@@ -507,7 +491,7 @@ fn test_add_remove_and_match_a_triple_term() {
     // pattern, and the triple holding it is found by it.
     let found = triples(&rudof, None, None, Some(term));
     assert_eq!(found.len(), 1, "{found:?}");
-    assert_eq!(found[0].subject, node("bob"));
+    assert_eq!(found[0].subject, named("bob").into());
 
     // A triple term holding another one is a term too.
     rudof
