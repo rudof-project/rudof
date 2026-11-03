@@ -310,6 +310,10 @@ expected_output = [
     # the count and the truncation flag rather than the triples themselves.
     "showing 2 triples, more available: True",
     "showing 5 triples, more available: False",
+    "what bob believes: 1",
+    "found by the triple term: 1",
+    "greetings: 2",
+    "directional only: 1",
 ]
 
 [[example]]

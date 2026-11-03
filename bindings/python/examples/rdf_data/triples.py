@@ -5,8 +5,9 @@ arguments at all walks the whole graph. ``add_triple`` and ``remove_triple`` cha
 graph in place, which is what building a graph programmatically (or applying what a
 validation report says is missing) takes, with no serialize-edit-reload round trip.
 
-Terms are written as text, in the syntax the rest of the API accepts: ``<IRI>``,
-``ex:alice``, ``_:b1``, ``"Alice"``, ``"Alice"@en``, ``23``, ``"23"^^xsd:integer``.
+Terms are written as text, in RDF 1.2 Turtle syntax: ``<IRI>``, ``ex:alice``, ``_:b1``,
+``"Alice"``, ``"Alice"@en``, ``"Shalom"@he--rtl``, ``23``, ``"23"^^xsd:integer``, and the
+triple term ``<<( :alice :name "Alice" )>>``.
 """
 
 from pathlib import Path
@@ -55,6 +56,18 @@ def main() -> None:
         print(f"showing {len(list(capped))} triples, more available: {capped.truncated}")
         whole = rudof.triples(limit=100)
         print(f"showing {len(list(whole))} triples, more available: {whole.truncated}")
+
+        # The RDF 1.2 terms are written as text too: a triple term, and a string with a
+        # base direction, which tells it apart from the same string without one.
+        triple_term = '<<( :alice :name "Alice" )>>'
+        rudof.add_triple(":bob", ":believes", triple_term)
+        rudof.add_triple(":alice", ":greeting", '"Shalom"@he--rtl')
+        rudof.add_triple(":alice", ":greeting", '"Shalom"@he')
+        print(f"what bob believes: {len(list(rudof.triples(subject=':bob', predicate=':believes')))}")
+        # The triple term is a term of the graph, so it matches as a pattern of its own.
+        print(f"found by the triple term: {len(list(rudof.triples(object=triple_term)))}")
+        print(f"greetings: {len(list(rudof.triples(predicate=':greeting')))}")
+        print(f"directional only: {len(list(rudof.triples(object='\"Shalom\"@he--rtl')))}")
 
 
 if __name__ == "__main__":

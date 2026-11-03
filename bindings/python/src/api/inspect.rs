@@ -16,6 +16,8 @@ impl PyRudof {
     ///         - Full IRI: ``<http://example.org/alice>``
     ///         - Prefixed name: ``:alice``
     ///         - Blank node: ``_:b1``
+    ///         - Triple term: ``<<( :alice :name "Alice" )>>``
+    ///         - Node selector: ``{FOCUS :knows _}``, ``SPARQL "…"``
     ///     predicates (list[str], optional): Filter by specific predicates. Empty list means all predicates.
     ///     mode (str, optional): Node inspection mode — ``"outgoing"``, ``"incoming"`` or ``"both"``. Defaults to ``"both"``.
     ///     show_colors (bool, optional): Use ANSI terminal colors in output. Defaults to ``True``.

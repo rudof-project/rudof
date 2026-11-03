@@ -3,7 +3,10 @@ use crate::{
     errors::DataError,
     formats::{IriNormalizationMode, NodeInspectionMode},
     types::{Data, NodeNeighborhood},
-    utils::{convert_predicate_strings_to_iris, parse_node_selector, session_base_iri},
+    utils::{
+        convert_predicate_strings_to_iris, is_selector_shape, parse_node_selector, parse_term, resolution_prefixmap,
+        session_base_iri,
+    },
 };
 use prefixmap::DerefIri;
 use rudof_rdf::rdf_core::Rdf;
@@ -25,17 +28,28 @@ pub fn node_neighborhood<'a>(
 
     let base = session_base_iri(rudof)?;
 
-    let node_selector = parse_node_selector(node, iri_mode)?
-        .deref_iri(base.as_ref(), Some(&rdf.prefixmap().unwrap_or_default()))
-        .map_err(|e| {
-            Box::new(DataError::FailedTermResolution {
-                term: node.trim().to_string(),
-                error: e.to_string(),
-            })
-        })?;
-    let roots = node_selector
-        .nodes(rdf)
-        .map_err(|e| Box::new(DataError::FailedArcRetrieval { error: e.to_string() }))?;
+    // A selector picks the roots out of the data; anything else names one of them, and is
+    // read with the term parser so that every term RDF 1.2 defines can be inspected.
+    let roots = if is_selector_shape(node) {
+        let node_selector = parse_node_selector(node, iri_mode)?
+            .deref_iri(base.as_ref(), Some(&rdf.prefixmap().unwrap_or_default()))
+            .map_err(|e| {
+                Box::new(DataError::FailedTermResolution {
+                    term: node.trim().to_string(),
+                    error: e.to_string(),
+                })
+            })?;
+        node_selector
+            .nodes(rdf)
+            .map_err(|e| Box::new(DataError::FailedArcRetrieval { error: e.to_string() }))?
+    } else {
+        vec![parse_term(
+            node,
+            base.as_ref(),
+            &resolution_prefixmap(rudof, rdf),
+            iri_mode,
+        )?]
+    };
 
     let predicates = convert_predicate_strings_to_iris(predicates.unwrap_or_default(), base.as_ref(), rdf)?;
     let directions = mode.copied().unwrap_or_default().directions();

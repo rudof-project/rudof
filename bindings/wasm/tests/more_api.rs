@@ -168,6 +168,44 @@ fn triples() {
 }
 
 #[test]
+fn triples_of_rdf_12_terms() {
+    let mut rudof = session_with_data();
+
+    // The RDF 1.2 terms are written as text like any other: a triple term, and a string
+    // with a base direction, which is a different term from the same string without one.
+    let triple_term = "<<( :alice :name \"Alice\" )>>";
+    rudof.add_triple(":bob", ":believes", triple_term, None).unwrap();
+    rudof
+        .add_triple(":alice", ":greeting", "\"Shalom\"@he--rtl", None)
+        .unwrap();
+    rudof.add_triple(":alice", ":greeting", "\"Shalom\"@he", None).unwrap();
+
+    let believed = rudof.triples(None, None, Some(triple_term), None, None).unwrap();
+    assert_eq!(believed.triples.len(), 1, "{believed:?}");
+    assert_eq!(believed.triples[0].subject, "http://example.org/bob");
+
+    let greetings = rudof.triples(None, Some(":greeting"), None, None, None).unwrap();
+    assert_eq!(greetings.triples.len(), 2, "{greetings:?}");
+    let directional = rudof
+        .triples(None, None, Some("\"Shalom\"@he--rtl"), None, None)
+        .unwrap();
+    assert_eq!(directional.triples.len(), 1, "{directional:?}");
+
+    rudof.remove_triple(":bob", ":believes", triple_term, None).unwrap();
+    assert!(
+        rudof
+            .triples(None, None, Some(triple_term), None, None)
+            .unwrap()
+            .triples
+            .is_empty()
+    );
+
+    // A triple term is an object: RDF 1.2 gives it no other position.
+    let err = rudof.add_triple(triple_term, ":said", ":bob", None).unwrap_err();
+    assert!(err.to_string().contains("cannot be the subject"), "{err}");
+}
+
+#[test]
 fn staging() {
     let mut rudof = session_with_data();
     let count = |rudof: &Session| rudof.triples(None, None, None, None, None).unwrap().triples.len();

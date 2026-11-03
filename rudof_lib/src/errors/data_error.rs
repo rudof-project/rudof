@@ -123,13 +123,18 @@ pub enum DataError {
     #[error("Failed resolving the IRIs of '{term}': {error}")]
     FailedTermResolution { term: String, error: String },
 
+    /// Failed to read a term given as text with the RDF 1.2 Turtle term parser. The error
+    /// it carries names the term itself.
+    #[error("Failed parsing a term: {error}")]
+    FailedTermParse { error: String },
+
     /// Failed to retrieve arcs for a node.
     #[error("Failed retrieving arcs for node: {error}")]
     FailedArcRetrieval { error: String },
 
     /// A term was expected, but the text denotes a set of nodes of the data.
     #[error(
-        "'{term}' is not a term: a term is an IRI ('<http://example.org/alice>', 'ex:alice'), a blank node ('_:b1') or a literal ('\"Alice\"', '\"Alice\"@en', '23'), not a triple pattern or a SPARQL query"
+        "'{term}' is not a term: a term is an IRI ('<http://example.org/alice>', 'ex:alice'), a blank node ('_:b1'), a literal ('\"Alice\"', '\"Alice\"@en', '23') or a triple term ('<<( ex:alice ex:name \"Alice\" )>>'), not a triple pattern or a SPARQL query"
     )]
     NotATerm { term: String },
 
