@@ -542,3 +542,106 @@ fn test_a_triple_term_cannot_be_a_subject() {
     assert!(err.to_string().contains("cannot be the subject"), "{err}");
     assert_eq!(all(&rudof).len(), 4);
 }
+
+/// One triple of every kind of term, to read back and write again.
+const EVERY_KIND_OF_TERM: &str = r#"
+        prefix :    <http://example.org/>
+        prefix xsd:  <http://www.w3.org/2001/XMLSchema#>
+        :alice :name     "Alice" ;
+               :label    "Alice"@en ;
+               :greeting "Shalom"@he--rtl ;
+               :age      "23"^^xsd:integer ;
+               :born     "2024-01-01T00:00:00.000Z"^^xsd:dateTime ;
+               :knows    :bob ;
+               :friend   _:b1 .
+        _:b1   :name     "Blank" .
+        :bob   :believes <<( :alice :name "Alice" )>> .
+    "#;
+
+fn session_with_every_kind_of_term() -> Rudof {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let data = InputSpec::from_str(EVERY_KIND_OF_TERM).unwrap();
+    rudof.load_data().with_data(&[data]).execute().unwrap();
+    rudof
+}
+
+/// The three terms of a triple, as text.
+fn terms(triple: &Triple) -> (String, String, String) {
+    (
+        triple.subject.to_string(),
+        triple.predicate.to_string(),
+        triple.object.to_string(),
+    )
+}
+
+/// What `triples` hands out is what `add_triple` and `remove_triple` read, so a triple
+/// read from the graph goes back into them unedited, in either IRI mode.
+fn round_trip_every_term(iri_mode: IriNormalizationMode) {
+    let mut rudof = session_with_every_kind_of_term();
+    let read = all(&rudof);
+    assert_eq!(read.len(), 9, "{read:?}");
+
+    // Every triple of the graph is removed by its own text, so none is left.
+    for triple in &read {
+        let (subject, predicate, object) = terms(triple);
+        rudof
+            .remove_triple(&subject, &predicate, &object)
+            .with_iri_mode(iri_mode)
+            .execute()
+            .unwrap_or_else(|e| panic!("{triple} was not accepted back in {iri_mode:?} mode: {e}"));
+    }
+    assert!(all(&rudof).is_empty(), "{:?}", all(&rudof));
+
+    // And added back by it, naming the same terms it came from.
+    for triple in &read {
+        let (subject, predicate, object) = terms(triple);
+        rudof
+            .add_triple(&subject, &predicate, &object)
+            .with_iri_mode(iri_mode)
+            .execute()
+            .unwrap_or_else(|e| panic!("{triple} was not accepted back in {iri_mode:?} mode: {e}"));
+    }
+    assert_eq!(all(&rudof), read);
+}
+
+#[test]
+fn test_the_terms_of_a_triple_go_back_into_the_triple_api() {
+    round_trip_every_term(IriNormalizationMode::Lax);
+    round_trip_every_term(IriNormalizationMode::Strict);
+}
+
+#[test]
+fn test_the_terms_of_a_triple_are_written_as_the_term_parser_reads_them() {
+    let rudof = session_with_every_kind_of_term();
+    let term = |predicate: &str| {
+        let found = triples(&rudof, Some(":alice"), Some(predicate), None);
+        assert_eq!(found.len(), 1, "{found:?}");
+        terms(&found[0])
+    };
+
+    // An IRI is bracketed, in the subject and in the predicate as well, which is what
+    // the strict mode requires and what the lax mode leaves alone.
+    let (subject, predicate, object) = term(":knows");
+    assert_eq!(subject, "<http://example.org/alice>");
+    assert_eq!(predicate, "<http://example.org/knows>");
+    assert_eq!(object, "<http://example.org/bob>");
+
+    // A typed literal keeps the lexical form it was written with, rather than the
+    // canonical form of its value: the two are different RDF terms.
+    assert_eq!(
+        term(":born").2,
+        "\"2024-01-01T00:00:00.000Z\"^^<http://www.w3.org/2001/XMLSchema#dateTime>"
+    );
+    assert_eq!(term(":age").2, "\"23\"^^<http://www.w3.org/2001/XMLSchema#integer>");
+
+    // A language tag and a base direction are part of the literal, so they are written.
+    assert_eq!(term(":label").2, "\"Alice\"@en");
+    assert_eq!(term(":greeting").2, "\"Shalom\"@he--rtl");
+
+    // A blank node is written as its label, and a triple term in RDF 1.2 syntax.
+    assert!(term(":friend").2.starts_with("_:"), "{}", term(":friend").2);
+    assert_eq!(
+        triples(&rudof, Some(":bob"), None, None)[0].object.to_string(),
+        "<<( <http://example.org/alice> <http://example.org/name> \"Alice\" )>>"
+    );
+}
