@@ -367,7 +367,7 @@ pub fn parse_term(
 
 /// Whether `text` is a node selector rather than a term: a triple pattern (`{…}`) or a
 /// SPARQL selector, both of which select nodes of the data instead of naming one.
-fn is_selector_shape(text: &str) -> bool {
+pub(crate) fn is_selector_shape(text: &str) -> bool {
     let text = text.trim_start();
     if text.starts_with('{') {
         return true;
