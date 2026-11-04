@@ -329,6 +329,12 @@ pub trait DataOperations {
     /// All three `None` walks the whole graph. The iterator borrows the data, which
     /// therefore cannot be modified while its triples are being walked.
     ///
+    /// Each [`Triple`](crate::types::Triple) it yields holds the terms of the data
+    /// itself, so their text is the text this operation,
+    /// [`add_triple`](Self::add_triple) and [`remove_triple`](Self::remove_triple)
+    /// read: a triple read from the graph goes back into them unedited, in either IRI
+    /// mode.
+    ///
     /// # Errors
     ///
     /// Returns an error if no RDF data is loaded, or if a term of the pattern cannot

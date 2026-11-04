@@ -1,20 +1,51 @@
-use crate::{Result, errors::DataError};
-use rudof_iri::IriS;
-use rudof_rdf::rdf_core::{Rdf, term::Object, term::Triple as TripleTrait};
+use oxrdf::Triple as OxTriple;
+use rudof_rdf::rdf_core::Rdf;
 use sparql_service::RdfData;
-use std::{fmt::Display, iter::FusedIterator, vec::IntoIter};
+use std::{fmt::Display, iter::FusedIterator, ops::Deref, vec::IntoIter};
 
 /// A triple of the loaded RDF data.
+///
+/// Wraps the triple the graph holds and dereferences to it, so its three terms are read
+/// as `triple.subject`, `triple.predicate` and `triple.object`. They are the terms of
+/// the data itself rather than a rendering of them, so written out as text they come
+/// back in the syntax [`add_triple`](crate::api::data::DataOperations::add_triple),
+/// [`remove_triple`](crate::api::data::DataOperations::remove_triple) and the patterns
+/// of [`triples`](crate::api::data::DataOperations::triples) read: a triple read from
+/// the graph goes back into them unedited.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Triple {
-    pub subject: Object,
-    pub predicate: IriS,
-    pub object: Object,
+pub struct Triple(OxTriple);
+
+impl Triple {
+    /// The triple it wraps.
+    pub fn into_inner(self) -> OxTriple {
+        self.0
+    }
+}
+
+impl Deref for Triple {
+    type Target = OxTriple;
+
+    fn deref(&self) -> &OxTriple {
+        &self.0
+    }
+}
+
+impl From<OxTriple> for Triple {
+    fn from(triple: OxTriple) -> Self {
+        Self(triple)
+    }
+}
+
+impl From<Triple> for OxTriple {
+    fn from(triple: Triple) -> Self {
+        triple.0
+    }
 }
 
 impl Display for Triple {
+    /// The triple in N-Triples syntax, the final `.` included.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} <{}> {} .", self.subject, self.predicate, self.object)
+        write!(f, "{} .", self.0)
     }
 }
 
@@ -27,7 +58,6 @@ pub struct Triples<'a> {
     /// The data the triples come from, borrowed for as long as they are iterated.
     _rdf: &'a RdfData,
     triples: IntoIter<<RdfData as Rdf>::Triple>,
-    finished: bool,
 }
 
 impl<'a> Triples<'a> {
@@ -35,26 +65,15 @@ impl<'a> Triples<'a> {
         Self {
             _rdf: rdf,
             triples: triples.into_iter(),
-            finished: false,
         }
     }
 }
 
 impl Iterator for Triples<'_> {
-    type Item = Result<Triple>;
+    type Item = Triple;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.finished {
-            return None;
-        }
-        let triple = self.triples.next()?;
-        match to_triple(triple) {
-            Ok(triple) => Some(Ok(triple)),
-            Err(e) => {
-                self.finished = true;
-                Some(Err(Box::new(e).into()))
-            },
-        }
+        self.triples.next().map(Triple::from)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -62,14 +81,6 @@ impl Iterator for Triples<'_> {
     }
 }
 
-impl FusedIterator for Triples<'_> {}
+impl ExactSizeIterator for Triples<'_> {}
 
-fn to_triple(triple: <RdfData as Rdf>::Triple) -> std::result::Result<Triple, DataError> {
-    let (subject, predicate, object) = triple.into_components();
-    let qualification = |e: rudof_rdf::rdf_core::RDFError| DataError::FailedQualification { error: e.to_string() };
-    Ok(Triple {
-        subject: RdfData::term_as_object(&RdfData::subject_as_term(&subject)).map_err(qualification)?,
-        predicate: predicate.into(),
-        object: RdfData::term_as_object(&object).map_err(qualification)?,
-    })
-}
+impl FusedIterator for Triples<'_> {}

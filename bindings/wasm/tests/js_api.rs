@@ -116,8 +116,8 @@ fn more_reports_are_plain_objects() {
         .unwrap();
     assert_eq!(get(&triples, "truncated"), JsValue::FALSE);
     let triple = array(&get(&triples, "triples")).get(0);
-    assert_eq!(get(&triple, "subject"), "http://example.org/alice");
-    assert_eq!(get(&triple, "object"), "http://example.org/bob");
+    assert_eq!(get(&triple, "subject"), "<http://example.org/alice>");
+    assert_eq!(get(&triple, "object"), "<http://example.org/bob>");
 
     #[cfg(feature = "pgschema")]
     pgschema_report_is_a_plain_object();

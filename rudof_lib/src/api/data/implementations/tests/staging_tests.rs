@@ -37,7 +37,7 @@ fn session() -> Rudof {
 /// The triples of the loaded data, sorted so the assertions do not depend on the
 /// iteration order of the graph.
 fn all(rudof: &Rudof) -> Vec<String> {
-    let mut triples: Vec<Triple> = rudof.triples().execute().unwrap().collect::<Result<_>>().unwrap();
+    let mut triples: Vec<Triple> = rudof.triples().execute().unwrap().collect();
     triples.sort_by_key(|triple| triple.to_string());
     triples.iter().map(Triple::to_string).collect()
 }

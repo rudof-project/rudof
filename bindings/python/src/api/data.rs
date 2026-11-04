@@ -399,6 +399,10 @@ impl PyRudof {
     /// default prefixes (see :meth:`add_prefix`). Adding a triple the data already
     /// contains changes nothing, an RDF graph being a set of triples.
     ///
+    /// The terms a :class:`Triple` from :meth:`triples` carries are written in this same
+    /// syntax, so a triple read from the graph is added back unedited, ``strict_iris``
+    /// either way.
+    ///
     /// Raises:
     ///     DataError: If no RDF data is loaded, if a term cannot be parsed or its prefix
     ///         resolved, or if the data cannot be modified (only the in-memory graph
@@ -592,7 +596,9 @@ impl PyRudof {
     ///
     /// Returns:
     ///     TripleIterator: The matching triples, each unpacking into ``(subject,
-    ///     predicate, object)``.
+    ///     predicate, object)``, written as :meth:`add_triple` reads them: an IRI in
+    ///     angle brackets, a literal with the lexical form it was written with, a
+    ///     triple term as ``<<( … )>>``.
     ///
     /// Raises:
     ///     DataError: If no RDF data is loaded, or if a term of the pattern cannot be
@@ -620,7 +626,7 @@ impl PyRudof {
         let predicate = predicate.map(str::to_owned);
         let object = object.map(str::to_owned);
 
-        let triples = guard::detached(py, move || {
+        let triples = guard::detached(py, move || -> Result<Vec<_>> {
             let mut b = self.inner.triples();
             if let Some(s) = &subject {
                 b = b.with_subject(s);
@@ -635,14 +641,12 @@ impl PyRudof {
                 b = b.with_iri_mode(IriNormalizationMode::Strict);
             }
             let triples = b.execute()?;
-            match limit {
+            Ok(match limit {
                 // One triple past `limit`, so the iterator can report `truncated`
                 // without needing a second pass over the data.
-                Some(limit) => triples
-                    .take(limit.saturating_add(1))
-                    .collect::<std::result::Result<Vec<_>, _>>(),
+                Some(limit) => triples.take(limit.saturating_add(1)).collect(),
                 None => triples.collect(),
-            }
+            })
         })?;
 
         Ok(PyTriples::new(triples, limit))

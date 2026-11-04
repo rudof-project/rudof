@@ -112,11 +112,17 @@ export interface Triples {
   truncated: boolean;
 }
 
+/**
+ * A triple of the loaded RDF data. Its three terms are written in the syntax
+ * `addTriple` and `removeTriple` read (an IRI in angle brackets, a literal with the
+ * lexical form it was written with) so a triple read from the graph goes back into
+ * them unedited.
+ */
 export interface Triple {
   /** An IRI or a blank node. */
   subject: string;
   predicate: string;
-  /** An IRI, a blank node or a literal. */
+  /** An IRI, a blank node, a literal or a triple term. */
   object: string;
 }
 
