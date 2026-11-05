@@ -1,4 +1,4 @@
-use super::http::{self, HttpClient, Instant, SendError};
+use super::http::{self, HttpClient, HttpResponse, Instant, SendError};
 use crate::{
     cancellation,
     rdf_core::{
@@ -1576,6 +1576,43 @@ fn http_status_error(url: &Url, status: u16, body: &str) -> OxigraphEndpointErro
 /// for longer than that. `http::sleep` still lets Ctrl-C cut any wait short (natively).
 const MAX_HONOURED_RETRY_AFTER_SECS: u64 = 300;
 
+/// How many times a request is retried before its error is propagated.
+const MAX_RETRIES: u32 = 3;
+
+/// The wait a `Retry-After` header asks for, capped at
+/// [`MAX_HONOURED_RETRY_AFTER_SECS`].
+fn retry_after_secs(response: &HttpResponse) -> Option<u64> {
+    response
+        .retry_after
+        .as_deref()
+        .and_then(|s| s.trim().parse::<u64>().ok())
+        .map(|secs| secs.min(MAX_HONOURED_RETRY_AFTER_SECS))
+}
+
+/// Raises `rate_limit_ms` after a `429`: the server just told us to slow down,
+/// so every future request through this endpoint waits longer too, not just
+/// the retry of this one.
+fn raise_rate_limit(url: &Url, rate_limit_ms: &std::sync::atomic::AtomicU64) {
+    let current = rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed);
+    // Floored at the default so that an endpoint configured with a low (or
+    // zero) interval still actually backs off.
+    let raised = (current.saturating_mul(3) / 2)
+        .clamp(DEFAULT_MIN_REQUEST_INTERVAL_MS, MAX_RATE_LIMIT_MS)
+        .max(current);
+    if raised > current
+        && rate_limit_ms
+            .compare_exchange(
+                current,
+                raised,
+                std::sync::atomic::Ordering::Relaxed,
+                std::sync::atomic::Ordering::Relaxed,
+            )
+            .is_ok()
+    {
+        debug!(endpoint = %url, from_ms = current, to_ms = raised, "429 from server: raising proactive rate limit");
+    }
+}
+
 /// Sends an HTTP GET request (a SPARQL query, or an entity dereference under
 /// [`EndpointStrategy::Dereference`]) with `client`, retrying on 429 (Too Many
 /// Requests), on transient upstream-gateway errors (502/503/504), and on
@@ -1599,7 +1636,6 @@ async fn http_get_with_retry(
     // The proactive rate limiter in `enforce_rate_limit` already prevents most 429s.
     // These retries handle the rare cases where bursts still slip through, plus
     // one-off 502/503/504 blips (or a stalled connection) from the endpoint's own backend.
-    const MAX_RETRIES: u32 = 3;
     debug!(url = %url, "HTTP request");
     for retry in 0..=MAX_RETRIES {
         if cancellation::is_cancelled() {
@@ -1624,46 +1660,17 @@ async fn http_get_with_retry(
 
         if is_retryable_status(status) {
             if status == TOO_MANY_REQUESTS {
-                // The server just told us to slow down; make every future request
-                // through this endpoint wait longer too, not just this retry.
-                let current = rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed);
-                // Floored at the default so that an endpoint configured with a
-                // low (or zero) interval still actually backs off.
-                let raised = (current.saturating_mul(3) / 2)
-                    .clamp(DEFAULT_MIN_REQUEST_INTERVAL_MS, MAX_RATE_LIMIT_MS)
-                    .max(current);
-                if raised > current
-                    && rate_limit_ms
-                        .compare_exchange(
-                            current,
-                            raised,
-                            std::sync::atomic::Ordering::Relaxed,
-                            std::sync::atomic::Ordering::Relaxed,
-                        )
-                        .is_ok()
-                {
-                    debug!(endpoint = %url, from_ms = current, to_ms = raised, "429 from server: raising proactive rate limit");
-                }
+                raise_rate_limit(url, rate_limit_ms);
             }
 
             if retry == MAX_RETRIES {
                 warn!(url = %url, status, "HTTP request failed: max retries reached, giving up");
                 return Err(http_status_error(url, status, &response.body));
             }
-            // Honour Retry-After in full when present — Wikidata's throttling policy
-            // is explicit that clients should wait out the full duration it names,
-            // not a client-side guess, on pain of escalating to a much longer ban.
             // Only the exponential-backoff *fallback* (used when the header is
             // absent, e.g. for 502/503/504 blips that aren't rate-limit responses)
             // is our own guess, so that one stays capped at 5 s.
-            let delay_secs = match response
-                .retry_after
-                .as_deref()
-                .and_then(|s| s.trim().parse::<u64>().ok())
-            {
-                Some(secs) => secs.min(MAX_HONOURED_RETRY_AFTER_SECS),
-                None => (1u64 << retry).min(5),
-            };
+            let delay_secs = retry_after_secs(&response).unwrap_or((1u64 << retry).min(5));
             warn!(url = %url, status, delay_secs, retry, "HTTP request failed: retrying after delay");
             http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
             continue;
