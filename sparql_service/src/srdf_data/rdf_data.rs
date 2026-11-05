@@ -101,8 +101,9 @@ impl RdfData {
                         err: Box::new(e),
                     },
                 )?;
-            let sparql_endpoint =
-                sparql_endpoint.with_limits(&rdf_data_config.endpoint_limits_for(endpoint_description));
+            let sparql_endpoint = sparql_endpoint
+                .with_limits(&rdf_data_config.endpoint_limits_for(endpoint_description))
+                .with_update_iri(endpoint_description.update_url().cloned());
             self.add_endpoint(name, sparql_endpoint);
         }
         Ok(self)
@@ -680,5 +681,22 @@ mod tests {
             )
             .unwrap();
         assert_eq!(rdf_data.backend().as_in_memory().unwrap().triples().unwrap().count(), 1);
+    }
+
+    #[test]
+    #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
+    fn the_configured_update_url_reaches_the_endpoint() {
+        use rudof_rdf::rdf_core::EndpointDescription;
+
+        let description = EndpointDescription::new_unchecked("local", "http://localhost:7878/query")
+            .with_update_query(Some(iri!("http://localhost:7878/update")));
+        let config = RdfDataConfig::new().with_endpoints(HashMap::from([("local".to_string(), description)]));
+
+        let rdf_data = RdfData::new().with_rdf_data_config(&config).unwrap();
+
+        assert_eq!(
+            rdf_data.endpoints()["local"].update_iri().as_str(),
+            "http://localhost:7878/update"
+        );
     }
 }
