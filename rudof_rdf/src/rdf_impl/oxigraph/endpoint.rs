@@ -56,6 +56,10 @@ pub struct OxigraphEndpoint {
     /// The IRI of the SPARQL endpoint.
     endpoint_iri: IriS,
 
+    /// Where SPARQL Updates are sent, when the server exposes them at a
+    /// different path from its query service. `None` means `endpoint_iri`.
+    update_iri: Option<IriS>,
+
     /// Prefix map for qualifying IRIs.
     prefixmap: Arc<PrefixMap>,
 
@@ -220,6 +224,7 @@ impl OxigraphEndpoint {
     pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<OxigraphEndpoint> {
         Ok(OxigraphEndpoint {
             endpoint_iri: iri.clone(),
+            update_iri: None,
             prefixmap: Arc::new(prefixmap.clone()),
             client: HttpClient::new(SPARQL_RESULTS_JSON)?,
             construct_clients: Arc::new(std::sync::RwLock::new(HashMap::new())),
@@ -536,6 +541,20 @@ impl OxigraphEndpoint {
     /// Returns a reference to the endpoint IRI.
     pub fn iri(&self) -> &IriS {
         &self.endpoint_iri
+    }
+
+    /// Sets where SPARQL Updates are sent, for a server whose update service
+    /// is at a different path from its query service (`rudof.toml`'s
+    /// `update_url`). `None` leaves them going to the query IRI.
+    pub fn with_update_iri(mut self, iri: Option<IriS>) -> OxigraphEndpoint {
+        self.update_iri = iri;
+        self
+    }
+
+    /// The IRI SPARQL Updates are sent to: the configured one, or the query
+    /// IRI if none was configured.
+    pub fn update_iri(&self) -> &IriS {
+        self.update_iri.as_ref().unwrap_or(&self.endpoint_iri)
     }
 
     /// Returns a reference to the prefix map.
