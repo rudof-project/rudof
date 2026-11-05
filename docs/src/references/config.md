@@ -116,7 +116,7 @@ resolve the same endpoint. `rudof` pre-registers three by default — `Wikidata`
 |---|---|---|---|
 | `name` | string | *(required)* | The endpoint's display name — also what it's matched against (case-insensitively) by `-e`/`--endpoint`/the shell's `endpoint` command. |
 | `query_url` | IRI string | *(required)* | URL of the SPARQL query endpoint. |
-| `update_url` | IRI string, optional | unset | URL for SPARQL update operations, if the endpoint supports them. |
+| `update_url` | IRI string, optional | unset | URL SPARQL Updates are sent to, for a server whose update service is at a different path. Unset, they go to `query_url`. |
 | `prefixmap` | table (`alias = "iri"`) | empty | Prefixes to abbreviate IRIs in this endpoint's query results. |
 | `min_request_interval_ms` | integer, optional | unset | Minimum interval, in milliseconds, between two requests sent to this endpoint. Overrides `[rdf] min_request_interval_ms`. See [Request rate limiting](#request-rate-limiting). |
 | `max_concurrent_requests` | integer, optional | unset | Overrides `[rdf] max_concurrent_requests` for this endpoint. |

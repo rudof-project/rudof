@@ -76,7 +76,7 @@ Every backend exposes the same trait surface (`Rdf`, `NeighsRDF`, `QueryRDF`, `F
 Both backends live under `rdf_impl/oxigraph/`.
 
 - `OxigraphInMemory`: `oxrdf::Graph` plus an optional Oxigraph `Store` for SPARQL evaluation. Default backend everywhere.
-- `OxigraphEndpoint`: read-only client for a remote SPARQL endpoint. Caches HTTP clients per `QueryResultFormat`.
+- `OxigraphEndpoint`: client for a remote SPARQL endpoint. Reads with GET, caching HTTP clients per `QueryResultFormat`; `update` POSTs a SPARQL Update to `update_iri` (natively only).
 
 The `oxrdf_impl` submodule provides the `oxrdf`-typed implementations of the `rdf_core` traits that both Oxigraph backends share.
 
