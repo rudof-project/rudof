@@ -9,7 +9,11 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
-## [Unreleased]
+## 0.3.39
+### Added
+- `rudof_rdf`: `OxigraphEndpoint::update` sends a SPARQL Update to the endpoint's `update_url`, falling back to its query URL ([#942](https://github.com/rudof-project/rudof/issues/942)).
+
+## 0.3.38
 ### Added
 - The data API reads terms in RDF 1.2 Turtle syntax: triple terms (`<<( :a :b "c" )>>`, nested too) and dir-lang strings (`"Shalom"@he--rtl`), in `add_triple`, `remove_triple`, the patterns of `triples` and node info, and so in Python and JavaScript ([#880](https://github.com/rudof-project/rudof/issues/880)).
 - `rudof_rdf`: `parse_term` reads a term written as text, with `TermParseError` ([#880](https://github.com/rudof-project/rudof/issues/880)).
