@@ -63,6 +63,7 @@
   - [`rudof_cli`](./internals/crates/rudof_cli.md)
   - [`rudof_lib`](./internals/crates/rudof_lib.md)
   - [`rudof_rdf`](./internals/crates/rudof_rdf.md)
+  - [`rudof_rdf_sink`](./internals/crates/rudof_rdf_sink.md)
   - [`rudof_viz`](./internals/crates/rudof_viz.md)
   - [`rudof_mcp`](./internals/crates/rudof_mcp.md)
 - [ADRs](./internals/ADRs.md)
