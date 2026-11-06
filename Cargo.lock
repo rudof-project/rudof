@@ -4490,6 +4490,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rudof_rdf_sink"
+version = "0.3.38"
+dependencies = [
+ "oxrdf",
+ "prefixmap",
+ "proptest",
+ "rudof_iri",
+ "rudof_rdf",
+ "thiserror 2.0.20",
+ "tracing",
+]
+
+[[package]]
 name = "rudof_typing"
 version = "0.3.38"
 dependencies = [
