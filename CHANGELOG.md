@@ -12,6 +12,8 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ## 0.3.39
 ### Added
 - `rudof_rdf`: `OxigraphEndpoint::update` sends a SPARQL Update to the endpoint's `update_url`, falling back to its query URL ([#942](https://github.com/rudof-project/rudof/issues/942)).
+- `rudof_rdf_sink`: the `RdfSink` trait, with sinks that keep the triples in a graph, count them, stream them to a writer as N-Triples, N-Quads, Turtle or TriG, or send them to an endpoint through batched SPARQL Update ([#940](https://github.com/rudof-project/rudof/issues/940)).
+- `rudof_rdf_sink`: `BuildRdfSink::upload_to` sends a kept graph to an endpoint ([#940](https://github.com/rudof-project/rudof/issues/940)).
 
 ## 0.3.38
 ### Added
