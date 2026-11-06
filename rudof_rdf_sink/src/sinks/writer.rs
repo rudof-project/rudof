@@ -81,14 +81,17 @@ impl<W> WriterSink<W> {
         }
     }
 
-    /// Whether the prelude has already gone out, in which case `what` cannot
-    /// be declared any more.
-    fn declarations_are_closed(&self, what: &str) -> bool {
-        let closed = self.serializer.is_some();
-        if closed {
-            tracing::warn!(what, "declared after the first triple was written: ignored");
+    /// Whether `what` can still be declared: the sink has to be open, and the
+    /// prelude not written yet.
+    fn ensure_declarable(&self, what: &'static str) -> Result<(), RdfSinkError> {
+        if self.finished {
+            return Err(RdfSinkError::Finished);
         }
-        closed
+
+        if self.serializer.is_some() && self.format.has_prelude() {
+            return Err(RdfSinkError::DeclaredTooLate { what });
+        }
+        Ok(())
     }
 }
 
@@ -123,26 +126,23 @@ fn declare_prefix<S: Clone>(
 impl<W: Write> RdfSink for WriterSink<W> {
     /// Declared in the output's prelude, if the format has one (Turtle and
     /// TriG) and the first triple has not gone out yet.
-    fn declare_prefix(&mut self, alias: &str, iri: &IriS) {
-        if self.declarations_are_closed("prefix") {
-            return;
-        }
+    fn declare_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), RdfSinkError> {
+        self.ensure_declarable("prefix")?;
         self.prefixes.add_prefix(alias, iri.clone());
+        Ok(())
     }
 
-    fn declare_prefixes(&mut self, prefixes: PrefixMap) {
-        if self.declarations_are_closed("prefixes") {
-            return;
-        }
+    fn declare_prefixes(&mut self, prefixes: PrefixMap) -> Result<(), RdfSinkError> {
+        self.ensure_declarable("prefixes")?;
         self.prefixes.merge(prefixes);
+        Ok(())
     }
 
-    /// Declared like a prefix, and under the same condition.
-    fn declare_base(&mut self, base: &IriS) {
-        if self.declarations_are_closed("base IRI") {
-            return;
-        }
+    /// Declared like a prefix, and under the same conditions.
+    fn declare_base(&mut self, base: &IriS) -> Result<(), RdfSinkError> {
+        self.ensure_declarable("base IRI")?;
         self.base = Some(base.clone());
+        Ok(())
     }
 
     fn push(&mut self, triple: Triple) -> Result<(), RdfSinkError> {
@@ -190,6 +190,12 @@ enum StreamFormat {
 }
 
 impl StreamFormat {
+    /// Whether the format opens the document with the prefix and base
+    /// declarations, which is what makes a later one too late.
+    fn has_prelude(self) -> bool {
+        matches!(self, Self::Turtle | Self::TriG)
+    }
+
     fn of(format: &RDFFormat) -> Result<Self, RdfSinkError> {
         match format {
             RDFFormat::NTriples => Ok(Self::NTriples),
@@ -297,7 +303,8 @@ mod tests {
     #[test]
     fn turtle_declares_the_prefixes_and_groups_by_subject() {
         let mut sink = WriterSink::new(Vec::new()).with_format(&RDFFormat::Turtle).unwrap();
-        sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"));
+        sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"))
+            .unwrap();
         sink.push(Triple::new(iri("alice"), iri("knows"), iri("bob"))).unwrap();
         sink.push(Triple::new(iri("alice"), iri("knows"), iri("carol")))
             .unwrap();
@@ -314,7 +321,8 @@ mod tests {
     #[test]
     fn n_triples_ignores_the_prefixes_it_has_no_syntax_for() {
         let mut sink = WriterSink::new(Vec::new());
-        sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"));
+        sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"))
+            .unwrap();
         sink.push(Triple::new(iri("alice"), iri("knows"), iri("bob"))).unwrap();
         sink.finish().unwrap();
 
@@ -326,16 +334,60 @@ mod tests {
     }
 
     #[test]
-    fn a_prefix_declared_after_the_first_triple_is_ignored() {
+    fn a_prefix_declared_after_the_first_triple_is_reported() {
         let mut sink = WriterSink::new(Vec::new()).with_format(&RDFFormat::Turtle).unwrap();
         sink.push(Triple::new(iri("alice"), iri("knows"), iri("bob"))).unwrap();
-        sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"));
-        sink.finish().unwrap();
 
-        // The output is still valid Turtle, just unqualified.
+        let too_late = sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"));
+        assert!(matches!(
+            too_late,
+            Err(RdfSinkError::DeclaredTooLate { what: "prefix" })
+        ));
+
+        // Nothing is corrupted by the refusal: the output is valid Turtle,
+        // just unqualified.
+        sink.finish().unwrap();
         let text = String::from_utf8(sink.into_writer()).unwrap();
         assert!(!text.contains("@prefix"), "{text}");
         assert_eq!(parsed(&RDFFormat::Turtle, &text).len(), 1, "{text}");
+    }
+
+    #[test]
+    fn the_base_iri_and_the_whole_map_are_reported_too() {
+        let mut sink = WriterSink::new(Vec::new()).with_format(&RDFFormat::Turtle).unwrap();
+        sink.push(Triple::new(iri("alice"), iri("knows"), iri("bob"))).unwrap();
+
+        assert!(matches!(
+            sink.declare_base(&IriS::new_unchecked("http://example.org/")),
+            Err(RdfSinkError::DeclaredTooLate { what: "base IRI" })
+        ));
+        assert!(matches!(
+            sink.declare_prefixes(PrefixMap::new()),
+            Err(RdfSinkError::DeclaredTooLate { what: "prefixes" })
+        ));
+    }
+
+    #[test]
+    fn declaring_after_finish_says_the_sink_is_finished() {
+        let mut sink = WriterSink::new(Vec::new()).with_format(&RDFFormat::Turtle).unwrap();
+        sink.finish().unwrap();
+
+        assert!(matches!(
+            sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/")),
+            Err(RdfSinkError::Finished)
+        ));
+    }
+
+    /// N-Triples has no prefix syntax, so a declaration is useless there.
+    #[test]
+    fn a_format_with_no_prefix_syntax_accepts_the_declaration_anyway() {
+        let mut sink = WriterSink::new(Vec::new());
+        sink.push(Triple::new(iri("alice"), iri("knows"), iri("bob"))).unwrap();
+
+        assert!(
+            sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"))
+                .is_ok()
+        );
     }
 
     #[test]

@@ -13,13 +13,33 @@ impl CountingSink {
     pub fn new() -> Self {
         Self::default()
     }
-}
 
-impl RdfSink for CountingSink {
-    fn push(&mut self, _triple: Triple) -> Result<(), RdfSinkError> {
+    /// `Err(Finished)` once the sink is finished.
+    fn ensure_open(&self) -> Result<(), RdfSinkError> {
         if self.finished {
             return Err(RdfSinkError::Finished);
         }
+        Ok(())
+    }
+}
+
+impl RdfSink for CountingSink {
+    /// Dropped: there is nothing here to declare it to.
+    fn declare_prefix(&mut self, _alias: &str, _iri: &rudof_iri::IriS) -> Result<(), RdfSinkError> {
+        self.ensure_open()
+    }
+
+    fn declare_prefixes(&mut self, _prefixes: prefixmap::PrefixMap) -> Result<(), RdfSinkError> {
+        self.ensure_open()
+    }
+
+    /// Dropped, for the same reason.
+    fn declare_base(&mut self, _base: &rudof_iri::IriS) -> Result<(), RdfSinkError> {
+        self.ensure_open()
+    }
+
+    fn push(&mut self, _triple: Triple) -> Result<(), RdfSinkError> {
+        self.ensure_open()?;
         self.triples += 1;
         Ok(())
     }
@@ -30,9 +50,7 @@ impl RdfSink for CountingSink {
     }
 
     fn finish(&mut self) -> Result<SinkReport, RdfSinkError> {
-        if self.finished {
-            return Err(RdfSinkError::Finished);
-        }
+        self.ensure_open()?;
         self.finished = true;
         Ok(self.report())
     }

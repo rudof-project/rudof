@@ -40,6 +40,14 @@ impl<B> BuildRdfSink<B> {
     pub fn into_graph(self) -> B {
         self.graph
     }
+
+    /// `Err(Finished)` once the sink is finished.
+    fn ensure_open(&self) -> Result<(), RdfSinkError> {
+        if self.finished {
+            return Err(RdfSinkError::Finished);
+        }
+        Ok(())
+    }
 }
 
 impl<B> RdfSink for BuildRdfSink<B>
@@ -49,22 +57,28 @@ where
     OxNamedNode: Into<B::IRI>,
     OxTerm: Into<B::Term>,
 {
-    fn declare_prefix(&mut self, alias: &str, iri: &IriS) {
+    /// The graph takes a prefix at any point, so this only fails once the sink
+    /// is finished.
+    fn declare_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), RdfSinkError> {
+        self.ensure_open()?;
         self.graph.add_prefix(alias, iri);
+        Ok(())
     }
 
-    fn declare_prefixes(&mut self, prefixes: PrefixMap) {
+    fn declare_prefixes(&mut self, prefixes: PrefixMap) -> Result<(), RdfSinkError> {
+        self.ensure_open()?;
         self.graph.merge_prefixes(prefixes);
+        Ok(())
     }
 
-    fn declare_base(&mut self, base: &IriS) {
+    fn declare_base(&mut self, base: &IriS) -> Result<(), RdfSinkError> {
+        self.ensure_open()?;
         self.graph.add_base(&Some(base.clone()));
+        Ok(())
     }
 
     fn push(&mut self, triple: Triple) -> Result<(), RdfSinkError> {
-        if self.finished {
-            return Err(RdfSinkError::Finished);
-        }
+        self.ensure_open()?;
         let Triple {
             subject,
             predicate,
@@ -85,9 +99,7 @@ where
     }
 
     fn finish(&mut self) -> Result<SinkReport, RdfSinkError> {
-        if self.finished {
-            return Err(RdfSinkError::Finished);
-        }
+        self.ensure_open()?;
         self.finished = true;
         Ok(self.report())
     }
@@ -161,7 +173,8 @@ mod tests {
     #[test]
     fn declared_prefixes_come_out_in_the_turtle() {
         let mut sink = graph_sink();
-        sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"));
+        sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"))
+            .unwrap();
         sink.push(triple("alice", "name", "Alice")).unwrap();
 
         let turtle = turtle(&sink);
@@ -175,7 +188,7 @@ mod tests {
         let mut prefixes = PrefixMap::new();
         prefixes.add_prefix("ex", IriS::new_unchecked("http://example.org/"));
         prefixes.add_prefix("schema", IriS::new_unchecked("https://schema.org/"));
-        sink.declare_prefixes(prefixes);
+        sink.declare_prefixes(prefixes).unwrap();
 
         let prefixmap = sink.graph().prefixmap();
         assert_eq!(prefixmap.find("ex"), Some(&IriS::new_unchecked("http://example.org/")));
@@ -195,5 +208,20 @@ mod tests {
             Err(RdfSinkError::Finished)
         ));
         assert!(matches!(sink.finish(), Err(RdfSinkError::Finished)));
+    }
+
+    #[test]
+    fn declaring_after_finish_says_the_sink_is_finished() {
+        let mut sink = graph_sink();
+        sink.finish().unwrap();
+
+        assert!(matches!(
+            sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/")),
+            Err(RdfSinkError::Finished)
+        ));
+        assert!(matches!(
+            sink.declare_base(&IriS::new_unchecked("http://example.org/")),
+            Err(RdfSinkError::Finished)
+        ));
     }
 }

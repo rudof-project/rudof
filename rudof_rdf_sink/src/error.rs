@@ -15,6 +15,11 @@ pub enum RdfSinkError {
     #[error("{format} cannot be written one triple at a time")]
     NotStreamable { format: RDFFormat },
 
+    /// A declaration reached a sink that would have used it, but had already
+    /// written the prelude it belonged in.
+    #[error("the {what} was declared after the sink had written its first triple")]
+    DeclaredTooLate { what: &'static str },
+
     #[error("the sink is finished and takes no more triples")]
     Finished,
 }

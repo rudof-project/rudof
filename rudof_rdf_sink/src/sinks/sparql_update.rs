@@ -60,6 +60,14 @@ impl SparqlUpdateSink {
         update
     }
 
+    /// `Err(Finished)` once the sink is finished.
+    fn ensure_open(&self) -> Result<(), RdfSinkError> {
+        if self.finished {
+            return Err(RdfSinkError::Finished);
+        }
+        Ok(())
+    }
+
     /// Sends the batch, if there is one, and empties it. A batch the endpoint
     /// rejected is kept, so it is not silently dropped.
     fn send_batch(&mut self) -> Result<(), RdfSinkError> {
@@ -76,10 +84,23 @@ impl SparqlUpdateSink {
 }
 
 impl RdfSink for SparqlUpdateSink {
+    /// Dropped: the request writes absolute IRIs, and a store keeps no prefix
+    /// map from an `INSERT DATA`.
+    fn declare_prefix(&mut self, _alias: &str, _iri: &rudof_iri::IriS) -> Result<(), RdfSinkError> {
+        self.ensure_open()
+    }
+
+    fn declare_prefixes(&mut self, _prefixes: prefixmap::PrefixMap) -> Result<(), RdfSinkError> {
+        self.ensure_open()
+    }
+
+    /// Dropped, for the same reason.
+    fn declare_base(&mut self, _base: &rudof_iri::IriS) -> Result<(), RdfSinkError> {
+        self.ensure_open()
+    }
+
     fn push(&mut self, triple: Triple) -> Result<(), RdfSinkError> {
-        if self.finished {
-            return Err(RdfSinkError::Finished);
-        }
+        self.ensure_open()?;
         self.batch.push(triple);
         self.triples += 1;
         if self.batch.len() >= self.batch_size {
@@ -94,9 +115,7 @@ impl RdfSink for SparqlUpdateSink {
     }
 
     fn finish(&mut self) -> Result<SinkReport, RdfSinkError> {
-        if self.finished {
-            return Err(RdfSinkError::Finished);
-        }
+        self.ensure_open()?;
         self.send_batch()?;
         self.finished = true;
         Ok(self.report())

@@ -7,21 +7,33 @@ use crate::{RdfSinkError, SinkReport};
 /// Where a producer of RDF triples puts them. The producer pushes; the caller
 /// chose what happens to them.
 pub trait RdfSink {
-    /// Declares a namespace prefix. Only the sink that keeps a graph has any
-    /// use for one; the sinks that write absolute IRIs, or nothing at all,
-    /// ignore it.
-    fn declare_prefix(&mut self, _alias: &str, _iri: &IriS) {}
+    /// Declares a namespace prefix. A sink whose destination has no syntax for
+    /// one drops it and answers `Ok`: the declaration is useless there, which is not a
+    /// failure.
+    ///
+    /// # Errors
+    ///
+    /// [`RdfSinkError::DeclaredTooLate`] when the sink *would* have used it but
+    /// can no longer: a Turtle writer has already written its prelude.
+    /// [`RdfSinkError::Finished`] after [`Self::finish`].
+    fn declare_prefix(&mut self, _alias: &str, _iri: &IriS) -> Result<(), RdfSinkError> {
+        Ok(())
+    }
 
     /// Declares every prefix of `prefixes` at once, so a producer that already
     /// holds a prefix map hands it over whole.
-    fn declare_prefixes(&mut self, prefixes: PrefixMap) {
+    fn declare_prefixes(&mut self, prefixes: PrefixMap) -> Result<(), RdfSinkError> {
         for (alias, iri) in prefixes.iter() {
-            self.declare_prefix(alias, iri);
+            self.declare_prefix(alias, iri)?;
         }
+        Ok(())
     }
 
-    /// Declares the base IRI. Ignored by the same sinks, for the same reason.
-    fn declare_base(&mut self, _base: &IriS) {}
+    /// Declares the base IRI, and fails for the same reasons as
+    /// [`Self::declare_prefix`].
+    fn declare_base(&mut self, _base: &IriS) -> Result<(), RdfSinkError> {
+        Ok(())
+    }
 
     /// Consumes one triple.
     fn push(&mut self, triple: Triple) -> Result<(), RdfSinkError>;
