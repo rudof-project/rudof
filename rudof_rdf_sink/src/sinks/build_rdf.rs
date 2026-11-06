@@ -109,6 +109,36 @@ where
     }
 }
 
+#[cfg(all(feature = "sparql-update", not(target_family = "wasm")))]
+impl<B> BuildRdfSink<B>
+where
+    B: rudof_rdf::rdf_core::NeighsRDF + rudof_rdf::rdf_core::Rdf<Triple = Triple>,
+{
+    /// Sends every triple of the graph to `endpoint`, `batch_size` triples per
+    /// `INSERT DATA`, and reports what went out.
+    ///
+    /// `usize::MAX` sends the whole graph in one request, which is the only
+    /// way to keep every blank node in one scope — at the cost of a body the
+    /// endpoint may refuse for being too large. [`DEFAULT_BATCH_TRIPLES`] is
+    /// the safe choice for a graph of unknown size.
+    ///
+    /// [`DEFAULT_BATCH_TRIPLES`]: crate::DEFAULT_BATCH_TRIPLES
+    pub fn upload_to(
+        &self,
+        endpoint: &rudof_rdf::rdf_impl::OxigraphEndpoint,
+        batch_size: usize,
+    ) -> Result<SinkReport, RdfSinkError> {
+        let triples = self.graph.triples().map_err(|error| RdfSinkError::Store {
+            error: error.to_string(),
+        })?;
+        let mut sink = crate::SparqlUpdateSink::new(endpoint.clone()).with_batch_size(batch_size);
+        for triple in triples {
+            sink.push(triple)?;
+        }
+        sink.finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -223,5 +253,41 @@ mod tests {
             sink.declare_base(&IriS::new_unchecked("http://example.org/")),
             Err(RdfSinkError::Finished)
         ));
+    }
+    #[cfg(all(feature = "sparql-update", not(target_family = "wasm")))]
+    mod upload {
+        use super::*;
+        use rudof_rdf::rdf_impl::{EndpointStrategy, OxigraphEndpoint};
+
+        /// An endpoint whose updates fail without touching the network: the
+        /// `Dereference` strategy rejects an UPDATE outright.
+        fn offline_endpoint() -> OxigraphEndpoint {
+            OxigraphEndpoint::new(&IriS::new_unchecked("http://example.org/sparql"), &PrefixMap::new())
+                .unwrap()
+                .with_strategy(EndpointStrategy::Dereference)
+                .clone()
+        }
+
+        #[test]
+        fn an_empty_graph_sends_no_request() {
+            let sink = graph_sink();
+
+            assert_eq!(sink.upload_to(&offline_endpoint(), usize::MAX).unwrap().triples, 0);
+        }
+
+        #[test]
+        fn a_graph_with_triples_is_sent_and_left_alone() {
+            let mut sink = graph_sink();
+            sink.push(triple("alice", "name", "Alice")).unwrap();
+            sink.finish().unwrap();
+
+            // The send is attempted — and this endpoint refuses it.
+            assert!(matches!(
+                sink.upload_to(&offline_endpoint(), usize::MAX),
+                Err(RdfSinkError::Store { .. })
+            ));
+            // Uploading reads the graph; it does not consume it.
+            assert_eq!(sink.graph().triples().unwrap().count(), 1);
+        }
     }
 }
