@@ -4494,6 +4494,7 @@ name = "rudof_rdf_sink"
 version = "0.3.38"
 dependencies = [
  "oxrdf",
+ "oxttl",
  "prefixmap",
  "proptest",
  "rudof_iri",
