@@ -18,6 +18,11 @@ pub const DEFAULT_BATCH_TRIPLES: usize = 1000;
 ///   batches becomes two nodes in the store. A producer that emits blank node
 ///   structures (an RDF list, a SHACL result) has to keep each structure
 ///   within one batch, or use another sink.
+///
+/// Two ways to keep a structure in one scope: `with_batch_size(usize::MAX)`,
+/// which sends everything in a single request at `finish` (one scope, at the
+/// cost of holding every triple), or a large batch size plus a
+/// [`flush`](RdfSink::flush) at the producer's own boundary.
 pub struct SparqlUpdateSink {
     endpoint: OxigraphEndpoint,
     batch: Vec<Triple>,
