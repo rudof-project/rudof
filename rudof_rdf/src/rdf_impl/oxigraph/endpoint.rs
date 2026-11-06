@@ -1,4 +1,4 @@
-use super::http::{self, HttpClient, Instant, SendError};
+use super::http::{self, HttpClient, HttpResponse, Instant, SendError};
 use crate::{
     cancellation,
     rdf_core::{
@@ -55,6 +55,10 @@ impl FromStr for EndpointStrategy {
 pub struct OxigraphEndpoint {
     /// The IRI of the SPARQL endpoint.
     endpoint_iri: IriS,
+
+    /// Where SPARQL Updates are sent, when the server exposes them at a
+    /// different path from its query service. `None` means `endpoint_iri`.
+    update_iri: Option<IriS>,
 
     /// Prefix map for qualifying IRIs.
     prefixmap: Arc<PrefixMap>,
@@ -220,6 +224,7 @@ impl OxigraphEndpoint {
     pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<OxigraphEndpoint> {
         Ok(OxigraphEndpoint {
             endpoint_iri: iri.clone(),
+            update_iri: None,
             prefixmap: Arc::new(prefixmap.clone()),
             client: HttpClient::new(SPARQL_RESULTS_JSON)?,
             construct_clients: Arc::new(std::sync::RwLock::new(HashMap::new())),
@@ -538,6 +543,20 @@ impl OxigraphEndpoint {
         &self.endpoint_iri
     }
 
+    /// Sets where SPARQL Updates are sent, for a server whose update service
+    /// is at a different path from its query service (`rudof.toml`'s
+    /// `update_url`). `None` leaves them going to the query IRI.
+    pub fn with_update_iri(mut self, iri: Option<IriS>) -> OxigraphEndpoint {
+        self.update_iri = iri;
+        self
+    }
+
+    /// The IRI SPARQL Updates are sent to: the configured one, or the query
+    /// IRI if none was configured.
+    pub fn update_iri(&self) -> &IriS {
+        self.update_iri.as_ref().unwrap_or(&self.endpoint_iri)
+    }
+
     /// Returns a reference to the prefix map.
     pub fn prefixmap(&self) -> &PrefixMap {
         &self.prefixmap
@@ -777,6 +796,43 @@ impl OxigraphEndpoint {
         }
         self.enforce_rate_limit().await?;
         make_sparql_query_ask_async(query, &self.client, &self.endpoint_iri, &self.rate_limit_ms).await
+    }
+
+    /// Sends `update` (a SPARQL Update request, e.g. `INSERT DATA { ... }`) to
+    /// [`Self::update_iri`] as `application/sparql-update`.
+    ///
+    /// An empty update sends nothing. A server that rejects the update answers
+    /// with a non-success status, which comes back as
+    /// [`OxigraphEndpointError::HTTPStatusError`] with the body it explained
+    /// itself in.
+    ///
+    /// Only a request that provably never arrived is retried (see
+    /// [`http_post_update_with_retry`]), so an update that is not idempotent
+    /// is never applied twice.
+    #[cfg(not(target_family = "wasm"))]
+    pub async fn update_async(&self, update: &str) -> Result<()> {
+        if self.strategy == EndpointStrategy::Dereference {
+            return Err(OxigraphEndpointError::UnsupportedForDereferenceStrategy { operation: "UPDATE" });
+        }
+        if cancellation::is_cancelled() {
+            return Err(OxigraphEndpointError::Cancelled);
+        }
+        if update.trim().is_empty() {
+            return Ok(());
+        }
+        let url = Url::parse(self.update_iri().as_str())?;
+        self.enforce_rate_limit().await?;
+        http_post_update_with_retry(&self.client, &url, update, &self.rate_limit_ms).await
+    }
+
+    /// Sends a SPARQL Update synchronously.
+    ///
+    /// This is a blocking wrapper around [`Self::update_async`], and the one a
+    /// caller with a synchronous interface (a sink of triples, say) uses.
+    #[cfg(not(target_family = "wasm"))]
+    pub fn update(&self, update: &str) -> Result<()> {
+        let (this, update) = (self.clone(), update.to_string());
+        http::block_on(async move { this.update_async(&update).await })
     }
 
     /// Dereferences `subject`'s IRI over HTTP (`Accept: text/turtle`, following
@@ -1576,6 +1632,43 @@ fn http_status_error(url: &Url, status: u16, body: &str) -> OxigraphEndpointErro
 /// for longer than that. `http::sleep` still lets Ctrl-C cut any wait short (natively).
 const MAX_HONOURED_RETRY_AFTER_SECS: u64 = 300;
 
+/// How many times a request is retried before its error is propagated.
+const MAX_RETRIES: u32 = 3;
+
+/// The wait a `Retry-After` header asks for, capped at
+/// [`MAX_HONOURED_RETRY_AFTER_SECS`].
+fn retry_after_secs(response: &HttpResponse) -> Option<u64> {
+    response
+        .retry_after
+        .as_deref()
+        .and_then(|s| s.trim().parse::<u64>().ok())
+        .map(|secs| secs.min(MAX_HONOURED_RETRY_AFTER_SECS))
+}
+
+/// Raises `rate_limit_ms` after a `429`: the server just told us to slow down,
+/// so every future request through this endpoint waits longer too, not just
+/// the retry of this one.
+fn raise_rate_limit(url: &Url, rate_limit_ms: &std::sync::atomic::AtomicU64) {
+    let current = rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed);
+    // Floored at the default so that an endpoint configured with a low (or
+    // zero) interval still actually backs off.
+    let raised = (current.saturating_mul(3) / 2)
+        .clamp(DEFAULT_MIN_REQUEST_INTERVAL_MS, MAX_RATE_LIMIT_MS)
+        .max(current);
+    if raised > current
+        && rate_limit_ms
+            .compare_exchange(
+                current,
+                raised,
+                std::sync::atomic::Ordering::Relaxed,
+                std::sync::atomic::Ordering::Relaxed,
+            )
+            .is_ok()
+    {
+        debug!(endpoint = %url, from_ms = current, to_ms = raised, "429 from server: raising proactive rate limit");
+    }
+}
+
 /// Sends an HTTP GET request (a SPARQL query, or an entity dereference under
 /// [`EndpointStrategy::Dereference`]) with `client`, retrying on 429 (Too Many
 /// Requests), on transient upstream-gateway errors (502/503/504), and on
@@ -1599,7 +1692,6 @@ async fn http_get_with_retry(
     // The proactive rate limiter in `enforce_rate_limit` already prevents most 429s.
     // These retries handle the rare cases where bursts still slip through, plus
     // one-off 502/503/504 blips (or a stalled connection) from the endpoint's own backend.
-    const MAX_RETRIES: u32 = 3;
     debug!(url = %url, "HTTP request");
     for retry in 0..=MAX_RETRIES {
         if cancellation::is_cancelled() {
@@ -1624,46 +1716,17 @@ async fn http_get_with_retry(
 
         if is_retryable_status(status) {
             if status == TOO_MANY_REQUESTS {
-                // The server just told us to slow down; make every future request
-                // through this endpoint wait longer too, not just this retry.
-                let current = rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed);
-                // Floored at the default so that an endpoint configured with a
-                // low (or zero) interval still actually backs off.
-                let raised = (current.saturating_mul(3) / 2)
-                    .clamp(DEFAULT_MIN_REQUEST_INTERVAL_MS, MAX_RATE_LIMIT_MS)
-                    .max(current);
-                if raised > current
-                    && rate_limit_ms
-                        .compare_exchange(
-                            current,
-                            raised,
-                            std::sync::atomic::Ordering::Relaxed,
-                            std::sync::atomic::Ordering::Relaxed,
-                        )
-                        .is_ok()
-                {
-                    debug!(endpoint = %url, from_ms = current, to_ms = raised, "429 from server: raising proactive rate limit");
-                }
+                raise_rate_limit(url, rate_limit_ms);
             }
 
             if retry == MAX_RETRIES {
                 warn!(url = %url, status, "HTTP request failed: max retries reached, giving up");
                 return Err(http_status_error(url, status, &response.body));
             }
-            // Honour Retry-After in full when present — Wikidata's throttling policy
-            // is explicit that clients should wait out the full duration it names,
-            // not a client-side guess, on pain of escalating to a much longer ban.
             // Only the exponential-backoff *fallback* (used when the header is
             // absent, e.g. for 502/503/504 blips that aren't rate-limit responses)
             // is our own guess, so that one stays capped at 5 s.
-            let delay_secs = match response
-                .retry_after
-                .as_deref()
-                .and_then(|s| s.trim().parse::<u64>().ok())
-            {
-                Some(secs) => secs.min(MAX_HONOURED_RETRY_AFTER_SECS),
-                None => (1u64 << retry).min(5),
-            };
+            let delay_secs = retry_after_secs(&response).unwrap_or((1u64 << retry).min(5));
             warn!(url = %url, status, delay_secs, retry, "HTTP request failed: retrying after delay");
             http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
             continue;
@@ -1673,6 +1736,63 @@ async fn http_get_with_retry(
             return Err(http_status_error(url, status, &response.body));
         }
         return Ok(response.body);
+    }
+    unreachable!()
+}
+
+/// The media type a SPARQL Update is sent.
+#[cfg(not(target_family = "wasm"))]
+const SPARQL_UPDATE: &str = "application/sparql-update";
+
+/// POSTs `update` to `url` as a SPARQL Update.
+///
+/// Retried only when the update provably never reached the server: a failure
+/// to connect, and a `429` (which the server answers *instead of* processing
+/// the request, and which also raises the proactive rate limiter). A timeout
+/// or a `5xx` is **not** retried — the update may have been applied, and a
+/// second POST would apply it again.
+#[cfg(not(target_family = "wasm"))]
+async fn http_post_update_with_retry(
+    client: &HttpClient,
+    url: &Url,
+    update: &str,
+    rate_limit_ms: &std::sync::atomic::AtomicU64,
+) -> Result<()> {
+    debug!(url = %url, "SPARQL Update");
+    for retry in 0..=MAX_RETRIES {
+        if cancellation::is_cancelled() {
+            return Err(OxigraphEndpointError::Cancelled);
+        }
+        trace!(url = %url, retry, "HTTP POST attempt");
+        let response = match client.post(url, SPARQL_UPDATE, update.to_string()).await {
+            Ok(response) => response,
+            Err(SendError::Transient(err)) if retry < MAX_RETRIES => {
+                let delay_secs = (1u64 << retry).min(5);
+                warn!(url = %url, error = %err, delay_secs, retry, "SPARQL Update could not be sent: retrying after delay");
+                http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
+                continue;
+            },
+            Err(SendError::Transient(err) | SendError::Fatal(err)) => return Err(err),
+        };
+        let status = response.status;
+        trace!(url = %url, status, "HTTP response");
+
+        if status == TOO_MANY_REQUESTS {
+            raise_rate_limit(url, rate_limit_ms);
+            if retry < MAX_RETRIES {
+                let delay_secs = retry_after_secs(&response).unwrap_or((1u64 << retry).min(5));
+                warn!(url = %url, delay_secs, retry, "SPARQL Update rate limited: retrying after delay");
+                http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
+                continue;
+            }
+            warn!(url = %url, "SPARQL Update rate limited: max retries reached, giving up");
+        }
+
+        if !(200..300).contains(&status) {
+            return Err(http_status_error(url, status, &response.body));
+        }
+        // A successful SPARQL Update response carries nothing worth reading.
+        return Ok(());
     }
     unreachable!()
 }
@@ -2085,5 +2205,152 @@ mod prefetch_tests {
         let pred = OxNamedNode::new_unchecked(P);
         endpoint.prefetch_outgoing_arcs(&subjects(6), &[pred]).unwrap();
         assert_eq!(max_in_flight.load(Ordering::SeqCst), 1);
+    }
+}
+
+#[cfg(all(test, not(target_family = "wasm")))]
+mod update_tests {
+    use super::*;
+    use std::io::{BufRead, BufReader, Read, Write};
+    use std::net::TcpListener;
+    use std::sync::Mutex;
+
+    const UPDATE: &str = "INSERT DATA { <http://example.org/a> <http://example.org/p> 1 }";
+
+    /// What the stub server was asked.
+    #[derive(Debug)]
+    struct Request {
+        line: String,
+        content_type: Option<String>,
+        body: String,
+    }
+
+    /// A server answering each request with the next entry of `script`
+    /// (status, extra header lines, body), repeating the last one, and
+    /// recording what it was asked. Returns its base IRI and the log.
+    fn serve(script: Vec<(u16, &'static str, &'static str)>) -> (IriS, Arc<Mutex<Vec<Request>>>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let requests = Arc::new(Mutex::new(Vec::new()));
+        {
+            let requests = Arc::clone(&requests);
+            std::thread::spawn(move || {
+                for (n, stream) in listener.incoming().flatten().enumerate() {
+                    let mut reader = BufReader::new(stream.try_clone().unwrap());
+                    let mut line = String::new();
+                    reader.read_line(&mut line).unwrap();
+                    let request_line = line.trim_end().to_string();
+
+                    let (mut content_type, mut length) = (None, 0usize);
+                    loop {
+                        line.clear();
+                        if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
+                            break;
+                        }
+                        let (name, value) = line.split_once(':').unwrap();
+                        match name.to_ascii_lowercase().as_str() {
+                            "content-type" => content_type = Some(value.trim().to_string()),
+                            "content-length" => length = value.trim().parse().unwrap(),
+                            _ => {},
+                        }
+                    }
+                    let mut body = vec![0; length];
+                    reader.read_exact(&mut body).unwrap();
+                    requests.lock().unwrap().push(Request {
+                        line: request_line,
+                        content_type,
+                        body: String::from_utf8(body).unwrap(),
+                    });
+
+                    let (status, headers, body) = script[n.min(script.len() - 1)];
+                    let response = format!(
+                        "HTTP/1.1 {status} X\r\n{headers}Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                        body.len()
+                    );
+                    let _ = (&stream).write_all(response.as_bytes());
+                }
+            });
+        }
+        (IriS::new_unchecked(&format!("http://{addr}")), requests)
+    }
+
+    fn endpoint(iri: &IriS) -> OxigraphEndpoint {
+        OxigraphEndpoint::new(iri, &PrefixMap::new()).unwrap()
+    }
+
+    #[test]
+    fn an_update_is_posted_to_the_update_url() {
+        let (base, requests) = serve(vec![(204, "", "")]);
+        let endpoint = endpoint(&IriS::new_unchecked(&format!("{base}/query")))
+            .with_update_iri(Some(IriS::new_unchecked(&format!("{base}/update"))));
+
+        endpoint.update(UPDATE).unwrap();
+
+        let requests = requests.lock().unwrap();
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].line, "POST /update HTTP/1.1");
+        assert_eq!(requests[0].content_type.as_deref(), Some(SPARQL_UPDATE));
+        assert_eq!(requests[0].body, UPDATE);
+    }
+
+    #[test]
+    fn without_an_update_url_an_update_goes_to_the_query_url() {
+        let (base, requests) = serve(vec![(200, "", "")]);
+        let endpoint = endpoint(&IriS::new_unchecked(&format!("{base}/sparql")));
+        assert_eq!(endpoint.update_iri().as_str(), format!("{base}/sparql"));
+
+        endpoint.update(UPDATE).unwrap();
+
+        assert_eq!(requests.lock().unwrap()[0].line, "POST /sparql HTTP/1.1");
+    }
+
+    #[test]
+    fn a_rejected_update_reports_the_status_and_the_body() {
+        let (base, _) = serve(vec![(400, "", "Unexpected token at 'INSERT'")]);
+        let endpoint = endpoint(&IriS::new_unchecked(&format!("{base}/update")));
+
+        let err = endpoint.update(UPDATE).unwrap_err();
+
+        match err {
+            OxigraphEndpointError::HTTPStatusError { status, body, .. } => {
+                assert_eq!(status, 400);
+                assert_eq!(body, "Unexpected token at 'INSERT'");
+            },
+            other => panic!("expected an HTTP status error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_rate_limited_update_is_retried_and_slows_the_endpoint_down() {
+        let (base, requests) = serve(vec![(429, "Retry-After: 0\r\n", ""), (204, "", "")]);
+        let endpoint = endpoint(&IriS::new_unchecked(&format!("{base}/update")));
+        // Loopback hosts start with no interval.
+        assert_eq!(endpoint.min_request_interval_ms(), 0);
+
+        endpoint.update(UPDATE).unwrap();
+
+        assert_eq!(requests.lock().unwrap().len(), 2);
+        assert_eq!(endpoint.min_request_interval_ms(), DEFAULT_MIN_REQUEST_INTERVAL_MS);
+    }
+
+    #[test]
+    fn a_server_error_is_not_retried() {
+        let (base, requests) = serve(vec![(503, "", "overloaded")]);
+        let endpoint = endpoint(&IriS::new_unchecked(&format!("{base}/update")));
+
+        // The update may have been applied, so it is not sent again.
+        endpoint.update(UPDATE).unwrap_err();
+
+        assert_eq!(requests.lock().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn an_empty_update_sends_nothing() {
+        let (base, requests) = serve(vec![(204, "", "")]);
+        let endpoint = endpoint(&IriS::new_unchecked(&format!("{base}/update")));
+
+        endpoint.update("   \n").unwrap();
+
+        assert!(requests.lock().unwrap().is_empty());
     }
 }

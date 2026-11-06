@@ -1,6 +1,8 @@
-//! Platform layer of [`OxigraphEndpoint`](super::OxigraphEndpoint): HTTP GET
+//! Platform layer of [`OxigraphEndpoint`](super::OxigraphEndpoint): HTTP
 //! requests, timers, and the bridge from the synchronous RDF traits
 //! (`NeighsRDF`, `QueryRDF`) to the asynchronous requests.
+//!
+//! Reads are GET on every platform; POST (SPARQL Update) is native only.
 //!
 //! The protocol logic (rate limiting, retries, parsing) lives in `endpoint.rs`
 //! and is shared by every platform. Only what is below differs:
@@ -68,7 +70,7 @@ pub(crate) use wasm::{HttpClient, Instant, block_on, sleep};
 mod native {
     use super::{HttpResponse, REQUEST_TIMEOUT, SendError};
     use crate::{cancellation, rdf_impl::OxigraphEndpointError};
-    use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
+    use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderValue, USER_AGENT};
     use std::{future::Future, sync::Arc, time::Duration};
     use url::Url;
 
@@ -131,6 +133,48 @@ mod native {
             let response = match sent {
                 Ok(response) => response,
                 Err(err) if err.is_timeout() || err.is_connect() => return Err(SendError::Transient(err.into())),
+                Err(err) => return Err(SendError::Fatal(err.into())),
+            };
+            let status = response.status().as_u16();
+            let retry_after = response
+                .headers()
+                .get("Retry-After")
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_string);
+            let body = response.text().await.map_err(|err| SendError::Fatal(err.into()))?;
+            Ok(HttpResponse {
+                status,
+                retry_after,
+                body,
+            })
+        }
+
+        /// Sends `body` as `content_type` with POST. Used for SPARQL Updates.
+        ///
+        /// Unlike in [`Self::get`], only a failure to connect comes back as
+        /// [`SendError::Transient`]: a request that did reach the server (a
+        /// timeout waiting for its response, a reset mid-response) may already
+        /// have been applied, and must not be sent again.
+        pub(crate) async fn post(
+            &self,
+            url: &Url,
+            content_type: &'static str,
+            body: String,
+        ) -> Result<HttpResponse, SendError> {
+            let sent = tokio::select! {
+                biased;
+                _ = cancellation::cancelled() => return Err(SendError::Fatal(OxigraphEndpointError::Cancelled)),
+                sent = self
+                    .client
+                    .post(url.as_str())
+                    .header(CONTENT_TYPE, content_type)
+                    .body(body)
+                    .timeout(REQUEST_TIMEOUT)
+                    .send() => sent,
+            };
+            let response = match sent {
+                Ok(response) => response,
+                Err(err) if err.is_connect() => return Err(SendError::Transient(err.into())),
                 Err(err) => return Err(SendError::Fatal(err.into())),
             };
             let status = response.status().as_u16();
