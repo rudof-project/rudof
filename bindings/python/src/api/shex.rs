@@ -3,6 +3,7 @@ use crate::{
     error::Result,
     formats::{
         PyReaderMode, PyResultShexValidationFormat, PyShExFormat, PyShExValidationReport, PyShexValidationSortMode,
+        ReadTriples,
     },
     guard,
     input::InputArg,
@@ -11,6 +12,9 @@ use crate::{
 use pyo3::prelude::*;
 use rudof_lib::errors::RudofError as CoreError;
 use rudof_lib::formats::{DataReaderMode, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode};
+use rudof_lib::types::{GraphSink, RdfSink, ShExReadSink};
+use rudof_rdf::rdf_impl::OxigraphInMemory;
+use std::sync::{Arc, Mutex};
 use std::{io::BufWriter, path::PathBuf};
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
@@ -210,6 +214,11 @@ impl PyRudof {
 
     /// Validates the current RDF data against the loaded ShEx schema using the current ShapeMap.
     ///
+    /// Args:
+    ///     read_triples (bool, optional): Also record the triples the validation reads, for
+    ///         ``.triples_read``, ``.distinct_triples_read`` and ``.serialize_read_triples()``.
+    ///         Defaults to ``False``.
+    ///
     /// Returns:
     ///     ShExValidationReport: A snapshot of the result — ``.conforms``,
     ///     ``.violations``, ``len()`` and iteration. Unaffected by later calls on the
@@ -217,8 +226,32 @@ impl PyRudof {
     ///
     /// Raises:
     ///     ValidationError: If no schema, data, or ShapeMap is loaded.
-    fn validate_shex(&mut self, py: Python<'_>) -> Result<PyShExValidationReport> {
-        guard::detached(py, || self.inner.validate_shex().execute())?;
+    #[pyo3(signature = (read_triples = false))]
+    fn validate_shex(&mut self, py: Python<'_>, read_triples: bool) -> Result<PyShExValidationReport> {
+        let read = guard::detached(py, || -> std::result::Result<_, CoreError> {
+            if !read_triples {
+                self.inner.validate_shex().execute()?;
+                return Ok(None);
+            }
+            let mut sink = GraphSink::new(OxigraphInMemory::new());
+            let generic = |e: &dyn std::fmt::Display| CoreError::Generic { error: e.to_string() };
+            sink.declare_prefixes(self.inner.prefixes().execute())
+                .map_err(|e| generic(&e))?;
+            let sink = Arc::new(Mutex::new(sink));
+            self.inner
+                .validate_shex()
+                .with_read_sink(ShExReadSink::new(sink.clone()))
+                .execute()?;
+            let mut sink = Arc::try_unwrap(sink)
+                .map_err(|_| generic(&"the read sink is still shared"))?
+                .into_inner()
+                .map_err(|e| generic(&e))?;
+            let reads = sink.finish().map_err(|e| generic(&e))?.triples;
+            Ok(Some(ReadTriples {
+                reads,
+                graph: sink.into_graph(),
+            }))
+        })?;
         let results = self
             .inner
             .shex_validation_results()
@@ -228,7 +261,7 @@ impl PyRudof {
             })?;
         // Guarded for the same reason as `validate_shacl`: building the report renders every
         // node and shape label to a string.
-        guard::catch_value(|| PyShExValidationReport::new(results))
+        guard::catch_value(|| PyShExValidationReport::new(results, read))
     }
 
     /// Serializes the results of the most recent :meth:`validate_shex` call.
