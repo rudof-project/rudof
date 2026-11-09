@@ -58,7 +58,7 @@ impl<RDF> RDFNodeParse<RDF> for NodeExprsPropertyParser<RDF>
 where
     RDF: FocusRDF,
 {
-    type Output = Vec<ASTNodeExpr>;
+    type Output = Vec<(Object, ASTNodeExpr)>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let focus = rdf.get_focus().cloned();
@@ -67,8 +67,11 @@ where
         let exprs = values
             .iter()
             .map(|value| {
-                self.budget
-                    .spend(rdf, |rdf, steps| node_expr_from_term(value, rdf, 0, steps))
+                let source = to_object::<RDF>(value)?;
+                let expr = self
+                    .budget
+                    .spend(rdf, |rdf, steps| node_expr_from_term(value, rdf, 0, steps))?;
+                Ok((source, expr))
             })
             .collect();
 

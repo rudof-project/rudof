@@ -10,5 +10,5 @@ pub(crate) fn deactivated<RDF: FocusRDF>(
     budget: Arc<ParseBudget>,
 ) -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     NodeExprsPropertyParser::new(ShaclVocab::sh_deactivated(), budget)
-        .map(|ns| ns.into_iter().map(ASTComponent::Deactivated).collect())
+        .map(|ns| ns.into_iter().map(|(_, expr)| ASTComponent::Deactivated(expr)).collect())
 }
