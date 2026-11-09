@@ -95,6 +95,10 @@ Two things to know:
 - **Batching splits blank node scope.** Each `INSERT DATA` mints fresh labels for the blank nodes it mentions, so a blank node appearing in two batches becomes two nodes in the store. To keep a structure in one scope: `with_batch_size(usize::MAX)`, which sends everything in one request at `finish`, or a large batch size plus a `flush` at the producer's own boundary — per entity, per validation result.
 - RDF 1.2 triple terms are written `<<( ... )>>`, which a SPARQL 1.1 endpoint rejects. Pushing them is the caller's call.
 
+## Producers
+
+- ShEx validation: `ValidatorConfig::with_read_sink` (in `rudof_lib`, `validate_shex().with_read_sink(..)`) receives every triple `Engine::neighs` reads. `rudof shex-validate --statistics` and `--validated-graph` use a `GraphSink`.
+
 ## Dependencies
 
 - Internal: [`rudof_rdf`](./rudof_rdf.md), [`rudof_iri`](./rudof_iri.md), [`prefixmap`](./prefixmap.md)
