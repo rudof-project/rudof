@@ -9,6 +9,15 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
+## [Unreleased]
+### Added
+- `rudof shex-validate --statistics` (and `rudof validate`) prints how many triples the validation read, and how many are distinct ([#945](https://github.com/rudof-project/rudof/issues/945)).
+- `rudof shex-validate --validated-graph FILE` (and `rudof validate`) writes the triples the validation read ([#945](https://github.com/rudof-project/rudof/issues/945)).
+- `shex_validation`: `ValidatorConfig::with_read_sink` takes an `RdfSink` that receives every triple the validator reads; `rudof_lib`: `validate_shex().with_read_sink(..)` ([#945](https://github.com/rudof-project/rudof/issues/945)).
+
+### Changed
+- `ShExOperations::validate_shex` takes an `Option<ReadSink>` ([#945](https://github.com/rudof-project/rudof/issues/945)).
+
 ## 0.3.39
 ### Added
 - `rudof_rdf`: `OxigraphEndpoint::update` sends a SPARQL Update to the endpoint's `update_url`, falling back to its query URL ([#942](https://github.com/rudof-project/rudof/issues/942)).
