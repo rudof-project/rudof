@@ -4,8 +4,9 @@ use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Context, Result, anyhow};
 use rudof_lib::Rudof;
-use rudof_lib::formats::{BackendSpec, InputSpec, IriNormalizationMode, ShExFormat};
+use rudof_lib::formats::{BackendSpec, DataFormat, InputSpec, IriNormalizationMode, ShExFormat};
 use rudof_lib::types::{GraphSink, RdfSink, ShExReadSink};
+use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -171,10 +172,13 @@ impl Command for ShexValidateCommand {
             node_shape.execute()?;
         }
 
-        let read_sink = self
-            .args
-            .statistics
-            .then(|| Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new()))));
+        let read_sink = if self.args.statistics || self.args.validated_graph.is_some() {
+            let mut sink = GraphSink::new(OxigraphInMemory::new());
+            sink.declare_prefixes(ctx.rudof.prefixes().execute())?;
+            Some(Arc::new(Mutex::new(sink)))
+        } else {
+            None
+        };
 
         let mut validation = ctx.rudof.validate_shex();
         if let Some(sink) = &read_sink {
@@ -198,6 +202,16 @@ impl Command for ShexValidateCommand {
                     report.triples,
                     sink.graph().len()
                 )?;
+            }
+            if let Some(path) = &self.args.validated_graph {
+                let format = RDFFormat::try_from(DataFormat::from(self.args.validated_graph_format))?;
+                let file = File::create(path)
+                    .with_context(|| format!("Failed to create validated graph file '{}'", path.display()))?;
+                let mut writer = BufWriter::new(file);
+                sink.graph()
+                    .serialize(&format, &mut writer)
+                    .map_err(|e| anyhow!("Failed to write validated graph: {e}"))?;
+                writer.flush()?;
             }
         }
 

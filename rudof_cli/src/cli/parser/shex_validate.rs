@@ -184,6 +184,22 @@ pub struct ShexValidateArgs {
     )]
     pub statistics: bool,
 
+    #[arg(
+        long = "validated-graph",
+        value_name = "FILE",
+        help = "Write the triples the validation read to FILE"
+    )]
+    pub validated_graph: Option<PathBuf>,
+
+    #[arg(
+        long = "validated-graph-format",
+        ignore_case = true,
+        value_name = "FORMAT",
+        help = "RDF format of --validated-graph",
+        default_value_t = DataFormatCli::Turtle
+    )]
+    pub validated_graph_format: DataFormatCli,
+
     #[command(flatten)]
     pub common: CommonArgsAll,
 }
