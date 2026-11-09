@@ -5241,6 +5241,7 @@ dependencies = [
  "either",
  "indexmap 2.14.2",
  "itertools 0.14.0",
+ "oxrdf",
  "prefixmap",
  "rbe",
  "rudof_config",
