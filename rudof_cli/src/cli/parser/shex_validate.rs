@@ -178,6 +178,12 @@ pub struct ShexValidateArgs {
     )]
     pub show_intermediate_results: bool,
 
+    #[arg(
+        long = "statistics",
+        help = "Print how many triples the validation read, and how many of them are distinct"
+    )]
+    pub statistics: bool,
+
     #[command(flatten)]
     pub common: CommonArgsAll,
 }

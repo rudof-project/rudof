@@ -142,6 +142,12 @@ pub struct ValidateArgs {
     pub show_intermediate_results: bool,
 
     #[arg(
+        long = "statistics",
+        help = "ShEx only: print how many triples the validation read, and how many of them are distinct"
+    )]
+    pub statistics: bool,
+
+    #[arg(
         long = "no-errors",
         help = "SHACL only: don't retain violations in the validation report (default: violations are kept)"
     )]
