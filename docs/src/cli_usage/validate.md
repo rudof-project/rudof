@@ -55,6 +55,13 @@ Options:
           MapState file name
       --show-intermediate-results
           Print each (node, shape) result as soon as it's computed, instead of only the final report
+      --statistics
+          ShEx only: print how many triples the validation read, and how many of them are distinct
+      --validated-graph <FILE>
+          ShEx only: write the triples the validation read to FILE
+      --validated-graph-format <FORMAT>
+          ShEx only: RDF format of --validated-graph
+          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
       --no-errors
           SHACL only: don't retain violations in the validation report (default: violations are kept)
       --with-evidences
