@@ -1,5 +1,5 @@
 use crate::error::ValidationError;
-use crate::ir::components::{Expression, VALUE_VAR};
+use crate::ir::components::{Expression, EXPR_VALUE_VAR};
 use crate::ir::{IRComponent, IRSchema, IRShape, node_expr_is_true};
 use crate::types::MessageMap;
 use crate::validator::constraints::Validator;
@@ -65,7 +65,7 @@ impl Expression {
                 let node_obj = S::term_as_object(node)?;
                 // The focus node of the shape is the focus node, and the value node is bound
                 // to the scope variable `value`
-                let scope = HashMap::from([(VALUE_VAR.to_string(), node.clone())]);
+                let scope = HashMap::from([(EXPR_VALUE_VAR.to_string(), node.clone())]);
 
                 engine.node_expr_state().steps = 0;
                 let values = self.expr().evaluate(store, fnode, &scope, engine, shapes_graph)?;

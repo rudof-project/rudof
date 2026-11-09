@@ -53,6 +53,11 @@ pub enum ASTComponent {
         siblings: Vec<Object>,
     },
     Deactivated(ASTNodeExpr),
+    Expression {
+        expr: ASTNodeExpr,
+        source: Object,
+    },
+    NodeByExpression(ASTNodeExpr),
     BasicSparql {
         select: String,
         message: Option<MessageMap>,
@@ -141,6 +146,8 @@ impl Display for ASTComponent {
                 )
             },
             ASTComponent::Deactivated(b) => write!(f, "deactivated({b})"),
+            ASTComponent::Expression { expr, .. } => write!(f, "expression({expr})"),
+            ASTComponent::NodeByExpression(e) => write!(f, "nodeByExpression({e})"),
             ASTComponent::BasicSparql {
                 prefixes,
                 message,
@@ -201,6 +208,8 @@ impl From<ASTComponent> for IriS {
             ASTComponent::In(_) => ShaclVocab::sh_in(),
             ASTComponent::QualifiedValueShape { .. } => ShaclVocab::sh_qualified_value_shape(),
             ASTComponent::Deactivated(_) => ShaclVocab::sh_deactivated(),
+            ASTComponent::Expression { .. } => ShaclVocab::sh_expression(),
+            ASTComponent::NodeByExpression(_) => ShaclVocab::sh_node_by_expression(),
             ASTComponent::BasicSparql { .. } => ShaclVocab::sh_sparql(),
         }
     }

@@ -1,8 +1,8 @@
 use crate::ast::{ASTComponent, ASTSchema};
 use crate::ir::components::{
-    And, BasicSparql, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan,
-    LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength,
-    Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, SubsetOf, UniqueLang, Xone,
+    And, BasicSparql, Class, Closed, Datatype, Deactivated, Disjoint, Equals, Expression, HasValue, In, LanguageIn,
+    LessThan, LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive,
+    MinLength, Node, NodeByExpression, Nodekind, Not, Or, Pattern, QualifiedValueShape, SubsetOf, UniqueLang, Xone,
 };
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
@@ -52,6 +52,8 @@ pub enum IRComponent {
     QualifiedValueShape(QualifiedValueShape),
     Closed(Closed),
     Deactivated(Deactivated),
+    Expression(Expression),
+    NodeByExpression(NodeByExpression),
     BasicSparql(BasicSparql),
 }
 
@@ -141,6 +143,14 @@ impl IRComponent {
             ASTComponent::Deactivated(d) => {
                 let d = IRNodeExpr::compile(&d, ast, ir)?;
                 IRComponent::Deactivated(Deactivated::new(d))
+            },
+            ASTComponent::Expression { expr, source } => {
+                let expr = IRNodeExpr::compile(&expr, ast, ir)?;
+                IRComponent::Expression(Expression::new(expr, source))
+            },
+            ASTComponent::NodeByExpression(expr) => {
+                let expr = IRNodeExpr::compile(&expr, ast, ir)?;
+                IRComponent::NodeByExpression(NodeByExpression::new(expr))
             },
             ASTComponent::BasicSparql {
                 select,
@@ -315,6 +325,14 @@ impl IRComponent {
                 }
                 Ok(())
             },
+            // The expression's own triples are not written back: see the sh:deactivated TODO above
+            IRComponent::Expression(expression) => {
+                register_term(&expression.source().clone().into(), ShaclVocab::sh_expression(), id, graph)
+            },
+            IRComponent::NodeByExpression(nbe) => match nbe.expr().as_constant() {
+                Some(shape) => register_term(&shape.into(), ShaclVocab::sh_node_by_expression(), id, graph),
+                None => Ok(()),
+            },
             IRComponent::BasicSparql(sparql) => {
                 // Create a blank node to hold the constraint properties
                 let bn = graph
@@ -459,6 +477,9 @@ impl IRComponent {
             },
             IRComponent::Closed(_) => {},
             IRComponent::Deactivated(_) => {},
+            // The shapes these reach are only known once their node expression is evaluated
+            IRComponent::Expression(_) => {},
+            IRComponent::NodeByExpression(_) => {},
             IRComponent::BasicSparql(_) => {},
         }
     }
@@ -543,6 +564,8 @@ impl From<&IRComponent> for IriS {
             IRComponent::QualifiedValueShape(_) => ShaclVocab::sh_qualified_value_shape_constraint_component(),
             IRComponent::Closed(_) => ShaclVocab::sh_closed_constraint_component(),
             IRComponent::Deactivated(_) => ShaclVocab::sh_deactivated_constraint_component(),
+            IRComponent::Expression(_) => ShaclVocab::sh_expression_constraint_component(),
+            IRComponent::NodeByExpression(_) => ShaclVocab::sh_node_by_expression_constraint_component(),
             IRComponent::BasicSparql(_) => ShaclVocab::sh_sparql_constraint_component(),
         }
     }
@@ -580,6 +603,8 @@ impl Display for IRComponent {
             IRComponent::QualifiedValueShape(qvs) => write!(f, " {qvs}"),
             IRComponent::Closed(closed) => write!(f, "{closed}"),
             IRComponent::Deactivated(deactivated) => write!(f, "{deactivated}"),
+            IRComponent::Expression(expression) => write!(f, " {expression}"),
+            IRComponent::NodeByExpression(nbe) => write!(f, " {nbe}"),
             IRComponent::BasicSparql(sparql) => write!(f, " {sparql}"),
         }
     }

@@ -379,6 +379,8 @@ impl Shacl2ShEx {
             IRComponent::In(_) => Err(Shacl2ShExError::not_implemented("sh:in")),
             IRComponent::QualifiedValueShape(_) => Err(Shacl2ShExError::not_implemented("sh:qualifiedValueShape")),
             IRComponent::Deactivated(_) => Err(Shacl2ShExError::not_implemented("sh:deactivated")),
+            IRComponent::Expression(_) => Err(Shacl2ShExError::not_implemented("sh:expression")),
+            IRComponent::NodeByExpression(_) => Err(Shacl2ShExError::not_implemented("sh:nodeByExpression")),
             IRComponent::BasicSparql(_) => Err(Shacl2ShExError::not_implemented("sh:sparql")),
         }
     }
