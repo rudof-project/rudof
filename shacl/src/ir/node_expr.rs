@@ -15,6 +15,14 @@ use std::ops::Deref;
 /// Expressions evaluated for one focus node.
 const MAX_EVAL_STEPS: usize = 1_000_000;
 
+/// The node a shape-taking node expression refers its shape by, as a shape id.
+fn shape_id(node: IriOrBlankNode) -> Object {
+    match node {
+        IriOrBlankNode::Iri(iri) => Object::iri(iri),
+        IriOrBlankNode::BlankNode(label) => Object::bnode(label),
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum IRNodeExpr {
     // Constants
@@ -118,7 +126,7 @@ impl IRNodeExpr {
             },
             ASTNodeExpr::Filter { nodes, filter_shape } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
-                let f = ir.register_shape(filter_shape.id(), Some(&filter_shape), ast)?;
+                let f = ir.register_shape(&shape_id(filter_shape), None, ast)?;
                 Self::Filter(Filter::new(f, n))
             },
             ASTNodeExpr::Limit { nodes, limit } => {
@@ -141,12 +149,12 @@ impl IRNodeExpr {
             },
             ASTNodeExpr::FindFirst { nodes, find_first } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
-                let f = ir.register_shape(find_first.id(), Some(&find_first), ast)?;
+                let f = ir.register_shape(&shape_id(find_first), None, ast)?;
                 Self::FindFirst(FindFirst::new(f, n))
             },
             ASTNodeExpr::MatchAll { nodes, match_all } => {
                 let n = IRNodeExpr::compile(nodes.as_ref(), ast, ir)?;
-                let m = ir.register_shape(match_all.id(), Some(&match_all), ast)?;
+                let m = ir.register_shape(&shape_id(match_all), None, ast)?;
                 Self::MatchAll(MatchAll::new(m).with_nodes(Some(n)))
             },
             ASTNodeExpr::Count(count) => {
@@ -167,11 +175,7 @@ impl IRNodeExpr {
             },
             ASTNodeExpr::InstancesOf(instances) => Self::InstancesOf(InstancesOf::new(convert_iri_ref(instances)?)),
             ASTNodeExpr::NodesMatching(node) => {
-                let id = match node {
-                    IriOrBlankNode::Iri(iri) => Object::iri(iri),
-                    IriOrBlankNode::BlankNode(label) => Object::bnode(label),
-                };
-                let idx = ir.register_shape(&id, None, ast)?;
+                let idx = ir.register_shape(&shape_id(node), None, ast)?;
                 Self::NodesMatching(NodesMatching::new(idx))
             },
         };

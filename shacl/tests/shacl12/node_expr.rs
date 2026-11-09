@@ -9,12 +9,15 @@ mod tests {
         distinct => "distinct",
         empty => "empty",
         exists => "exists",
+        filter_shape => "filterShape",
+        find_first => "findFirst",
         flat_map => "flatMap",
         if_expr => "if",
         instances_of => "instancesOf",
         intersection => "intersection",
         limit => "limit",
         list => "list",
+        match_all => "matchAll",
         max => "max",
         min => "min",
         nodes_matching => "nodesMatching",
@@ -24,18 +27,5 @@ mod tests {
         remove => "remove",
         sum => "sum",
         var => "var",
-
-        // These three take a shape. The AST holds an inline `ASTShape`, so the
-        // node expression parser would have to call the shape parser, which calls
-        // the component parsers, which call the node expression parser — a cycle
-        // the combinator types cannot express. The suite always references the
-        // shape by IRI, so the fix is to hold a shape reference and resolve it
-        // through the pending-shapes worklist, as `sh:node` does.
-        #[ignore = "filter shape expressions are not parsed yet (shape reference needed)"]
-        filter_shape => "filterShape",
-        #[ignore = "find first expressions are not parsed yet (shape reference needed)"]
-        find_first => "findFirst",
-        #[ignore = "match all expressions are not parsed yet (shape reference needed)"]
-        match_all => "matchAll",
     }
 }

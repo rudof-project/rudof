@@ -140,8 +140,6 @@ fn blank_node_expr<RDF: FocusRDF>(
         instances_of,
         nodes_matching,
         list,
-        // TODO - These three take a shape, and parsing an inline shape from here would
-        // TODO - make the shape parser and this parser mutually recursive.
         filter_shape,
         find_first,
         match_all,

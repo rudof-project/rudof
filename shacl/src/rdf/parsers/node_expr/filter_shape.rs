@@ -1,19 +1,24 @@
 use crate::ast::ASTNodeExpr;
-use crate::rdf::parsers::node_expr::{Neighs, values};
+use crate::rdf::parsers::node_expr::{Neighs, required_nodes, single};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::utils::term_to_iri_or_blanknode;
 use rudof_rdf::rdf_core::vocabs::ShaclNodeExprVocab;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 
 pub(crate) fn filter_shape<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
-    _: &mut RDF,
+    rdf: &mut RDF,
     _: &RDF::Term,
-    _: usize,
-    _: &mut usize,
+    depth: usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
-    if values::<RDF>(neighs, &ShaclNodeExprVocab::shnex_filter_shape()).is_some() {
-        return Err(RDFError::DefaultError {
-            msg: "shnex:filterShape is not supported yet".to_string(),
-        });
-    }
-    Ok(None)
+    single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_filter_shape())?
+        .map(|term| {
+            let filter_shape = term_to_iri_or_blanknode::<RDF>(&term)?;
+            let nodes = required_nodes::<RDF>(neighs, rdf, ShaclNodeExprVocab::SHNEX_FILTER_SHAPE, depth, steps)?;
+            Ok(ASTNodeExpr::Filter {
+                filter_shape,
+                nodes: nodes.into(),
+            })
+        })
+        .transpose()
 }

@@ -1057,18 +1057,6 @@ prefix : <http://example.org/>
                 ),
                 (deep, "cyclic node expression"),
                 (shared, "steps plus"),
-                (
-                    "_:e0 shnex:filterShape :T ; shnex:nodes :a .\n".to_string(),
-                    "not supported",
-                ),
-                (
-                    "_:e0 shnex:findFirst :T ; shnex:nodes :a .\n".to_string(),
-                    "not implemented",
-                ),
-                (
-                    "_:e0 shnex:matchAll :T ; shnex:nodes :a .\n".to_string(),
-                    "not yet implemented",
-                ),
                 ("_:e0 shnex:distinct <<( :a :p :b )>> .\n".to_string(), "not supported"),
             ] {
                 let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:deactivated _:e0 .\n{expr}");

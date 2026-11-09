@@ -1,4 +1,3 @@
-use crate::ast::ASTShape;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
@@ -35,7 +34,7 @@ pub enum ASTNodeExpr {
         nodes: Box<ASTNodeExpr>,
     },
     Filter {
-        filter_shape: ASTShape,
+        filter_shape: IriOrBlankNode,
         nodes: Box<ASTNodeExpr>,
     },
     Limit {
@@ -58,11 +57,11 @@ pub enum ASTNodeExpr {
         nodes: Box<ASTNodeExpr>,
     },
     FindFirst {
-        find_first: ASTShape,
+        find_first: IriOrBlankNode,
         nodes: Box<ASTNodeExpr>,
     },
     MatchAll {
-        match_all: ASTShape,
+        match_all: IriOrBlankNode,
         nodes: Box<ASTNodeExpr>,
     },
 

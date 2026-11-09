@@ -1,19 +1,25 @@
 use crate::ast::ASTNodeExpr;
-use crate::rdf::parsers::node_expr::{Neighs, values};
+use crate::rdf::parsers::node_expr::{Neighs, optional_expr, single};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::utils::term_to_iri_or_blanknode;
 use rudof_rdf::rdf_core::vocabs::ShaclNodeExprVocab;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 
 pub(crate) fn find_first<RDF: FocusRDF>(
     neighs: &Neighs<RDF>,
-    _: &mut RDF,
+    rdf: &mut RDF,
     _: &RDF::Term,
-    _: usize,
-    _: &mut usize,
+    depth: usize,
+    steps: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
-    if values::<RDF>(neighs, &ShaclNodeExprVocab::shnex_find_first()).is_some() {
-        return Err(RDFError::DefaultError {
-            msg: "shnex:findFirst is not implemented yet".to_string(),
-        });
-    }
-    Ok(None)
+    single::<RDF>(neighs, &ShaclNodeExprVocab::shnex_find_first())?
+        .map(|term| {
+            let find_first = term_to_iri_or_blanknode::<RDF>(&term)?;
+            let nodes = optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_nodes(), rdf, depth, steps)?
+                .unwrap_or_else(|| ASTNodeExpr::Var("focusNode".to_string()));
+            Ok(ASTNodeExpr::FindFirst {
+                find_first,
+                nodes: nodes.into(),
+            })
+        })
+        .transpose()
 }
