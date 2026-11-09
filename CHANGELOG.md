@@ -15,6 +15,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `rudof shex-validate --validated-graph FILE` (and `rudof validate`) writes the triples the validation read ([#945](https://github.com/rudof-project/rudof/issues/945)).
 - `shex_validation`: `ValidatorConfig::with_read_sink` takes an `RdfSink` that receives every triple the validator reads; `rudof_lib`: `validate_shex().with_read_sink(..)` ([#945](https://github.com/rudof-project/rudof/issues/945)).
 - `pyrudof`: `validate_shex(read_triples=True)`, with `triples_read`, `distinct_triples_read` and `serialize_read_triples` on the report ([#945](https://github.com/rudof-project/rudof/issues/945)).
+- `rudof_wasm`: `validateShex(readTriples, readTriplesFormat)`, with `triplesRead`, `distinctTriplesRead` and `readTriples` in the report ([#945](https://github.com/rudof-project/rudof/issues/945)).
 
 ### Changed
 - `ShExOperations::validate_shex` takes an `Option<ReadSink>` ([#945](https://github.com/rudof-project/rudof/issues/945)).
