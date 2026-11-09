@@ -1,3 +1,4 @@
+use crate::ReadSink;
 use crate::Reason;
 use crate::ValidatorConfig;
 use crate::atom;
@@ -91,6 +92,12 @@ impl Validator {
 
     pub fn schema(&self) -> &SchemaIR {
         &self.schema
+    }
+
+    /// Installs the sink that receives the triples read by the next
+    /// validations, or removes it with `None`.
+    pub fn set_read_sink(&mut self, sink: Option<ReadSink>) {
+        self.config.read_sink = sink;
     }
 
     /// The config to hand `Engine::new`: same as `self.config`, except that
