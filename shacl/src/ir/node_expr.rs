@@ -1,8 +1,9 @@
 use crate::ast::{ASTNodeExpr, ASTSchema};
 use crate::error::{IRError, NodeExprEvalError};
 use crate::ir::node_exprs::{
-    Concat, Count, Distinct, Empty, Exists, Filter, FindFirst, FlatMap, IfExpression, InstancesOf, Intersection, Iri,
-    Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove, Sum, Var,
+    Concat, ConformsToShape, Count, Distinct, Empty, Exists, Filter, FindFirst, FlatMap, IfExpression, InstancesOf,
+    Intersection, Iri, Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove,
+    Sum, TripleTerm, Var,
 };
 use crate::ir::{IRSchema, convert_iri_ref};
 use crate::validator::engine::Engine;
@@ -28,6 +29,7 @@ pub enum IRNodeExpr {
     // Constants
     Iri(Iri),
     Literal(Literal),
+    TripleTerm(TripleTerm),
 
     // Basic Expressions
     Empty(Empty),
@@ -61,6 +63,7 @@ pub enum IRNodeExpr {
     // Miscellaneous Expressions
     InstancesOf(InstancesOf),
     NodesMatching(NodesMatching),
+    ConformsToShape(ConformsToShape),
 }
 
 impl IRNodeExpr {
@@ -73,6 +76,7 @@ impl IRNodeExpr {
         let result = match expr.clone() {
             ASTNodeExpr::Iri(iri) => Self::Iri(Iri::new(convert_iri_ref(iri)?)),
             ASTNodeExpr::Literal(lit) => Self::Literal(Literal::new(lit)),
+            ASTNodeExpr::TripleTerm(triple) => Self::TripleTerm(TripleTerm::new(triple)),
             ASTNodeExpr::Empty => Self::Empty(Empty),
             ASTNodeExpr::Var(var) => Self::Var(Var::new(var)),
             ASTNodeExpr::List(list) => Self::List(List::new(list)),
@@ -178,6 +182,12 @@ impl IRNodeExpr {
                 let idx = ir.register_shape(&shape_id(node), None, ast)?;
                 Self::NodesMatching(NodesMatching::new(idx))
             },
+            ASTNodeExpr::ConformsToShape { node, shape } => {
+                let n = IRNodeExpr::compile(node.as_ref(), ast, ir)?;
+                // The shape is only known once the expression is evaluated, so it is resolved there
+                let s = IRNodeExpr::compile(shape.as_ref(), ast, ir)?;
+                Self::ConformsToShape(ConformsToShape::new(n, s))
+            },
         };
 
         Ok(result)
@@ -188,6 +198,7 @@ impl IRNodeExpr {
         match self {
             IRNodeExpr::Iri(i) => Some(Object::Iri(i.iri().clone())),
             IRNodeExpr::Literal(l) => Some(Object::Literal(l.literal().clone())),
+            IRNodeExpr::TripleTerm(t) => Some(t.triple().clone()),
             _ => None,
         }
     }
@@ -197,6 +208,7 @@ impl IRNodeExpr {
         match self {
             IRNodeExpr::Iri(_)
             | IRNodeExpr::Literal(_)
+            | IRNodeExpr::TripleTerm(_)
             | IRNodeExpr::Empty(_)
             | IRNodeExpr::List(_)
             | IRNodeExpr::InstancesOf(_)
@@ -219,6 +231,7 @@ impl IRNodeExpr {
             IRNodeExpr::Min(m) => m.min().reads_focus(),
             IRNodeExpr::Max(m) => m.max().reads_focus(),
             IRNodeExpr::Sum(s) => s.sum().reads_focus(),
+            IRNodeExpr::ConformsToShape(cts) => cts.node().reads_focus() || cts.shape().reads_focus(),
             // These take each of their nodes as the focus node of their shape or inner expression
             IRNodeExpr::Filter(f) => f.nodes().reads_focus(),
             IRNodeExpr::OrderBy(ob) => ob.nodes().reads_focus(),
@@ -239,6 +252,7 @@ impl IRNodeExpr {
         let out = match self {
             IRNodeExpr::Iri(i) => i.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::Literal(l) => l.evaluate(store, focus, scope, runner, ir),
+            IRNodeExpr::TripleTerm(t) => t.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::Empty(e) => e.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::Var(v) => v.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::List(l) => l.evaluate(store, focus, scope, runner, ir),
@@ -262,6 +276,7 @@ impl IRNodeExpr {
             IRNodeExpr::Sum(s) => s.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::InstancesOf(io) => io.evaluate(store, focus, scope, runner, ir),
             IRNodeExpr::NodesMatching(nm) => nm.evaluate(store, focus, scope, runner, ir),
+            IRNodeExpr::ConformsToShape(cts) => cts.evaluate(store, focus, scope, runner, ir),
         }?;
 
         // The data can fan an expression out exponentially, as nested shnex:flatMap over
@@ -281,6 +296,7 @@ impl Display for IRNodeExpr {
         match self {
             IRNodeExpr::Iri(i) => write!(f, "{i}"),
             IRNodeExpr::Literal(l) => write!(f, "{l}"),
+            IRNodeExpr::TripleTerm(t) => write!(f, "{t}"),
             IRNodeExpr::Empty(e) => write!(f, "{e}"),
             IRNodeExpr::Var(v) => write!(f, "{v}"),
             IRNodeExpr::List(l) => write!(f, "{l}"),
@@ -304,6 +320,7 @@ impl Display for IRNodeExpr {
             IRNodeExpr::Sum(s) => write!(f, "{s}"),
             IRNodeExpr::InstancesOf(io) => write!(f, "{io}"),
             IRNodeExpr::NodesMatching(nm) => write!(f, "{nm}"),
+            IRNodeExpr::ConformsToShape(cts) => write!(f, "{cts}"),
         }
     }
 }

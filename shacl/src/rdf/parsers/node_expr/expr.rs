@@ -1,5 +1,6 @@
 use crate::ast::ASTNodeExpr;
 use crate::rdf::parsers::node_expr::concat::concat;
+use crate::rdf::parsers::node_expr::conforms_to_shape::conforms_to_shape;
 use crate::rdf::parsers::node_expr::count::count;
 use crate::rdf::parsers::node_expr::distinct::distinct;
 use crate::rdf::parsers::node_expr::empty::empty;
@@ -104,9 +105,7 @@ pub(crate) fn node_expr_from_term<RDF: FocusRDF>(
         Object::Iri(iri) => Ok(ASTNodeExpr::Iri(IriRef::iri(iri))),
         Object::Literal(lit) => Ok(ASTNodeExpr::Literal(lit)),
         Object::BlankNode(_) => crate::with_stack(|| blank_node_expr(term, rdf, depth, steps)),
-        Object::Triple { .. } => Err(RDFError::DefaultError {
-            msg: "Triple term expressions are not supported yet".to_string(),
-        }),
+        triple @ Object::Triple { .. } => Ok(ASTNodeExpr::TripleTerm(triple)),
     }
 }
 
@@ -142,6 +141,7 @@ fn blank_node_expr<RDF: FocusRDF>(
         sum,
         instances_of,
         nodes_matching,
+        conforms_to_shape,
         list,
         filter_shape,
         find_first,

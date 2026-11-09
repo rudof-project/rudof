@@ -9,6 +9,8 @@ pub enum ASTNodeExpr {
     // Constants
     Iri(IriRef),
     Literal(ConcreteLiteral),
+    /// Always an [`Object::Triple`]
+    TripleTerm(Object),
 
     // Basic expressions
     Empty,
@@ -74,7 +76,10 @@ pub enum ASTNodeExpr {
     // Miscellaneous expressions
     InstancesOf(IriRef),
     NodesMatching(IriOrBlankNode),
-    // ConformsToShape // TODO - Docs are a little bit unclear clear about the parameters
+    ConformsToShape {
+        node: Box<ASTNodeExpr>,
+        shape: Box<ASTNodeExpr>,
+    },
 }
 
 impl Display for ASTNodeExpr {
@@ -82,6 +87,7 @@ impl Display for ASTNodeExpr {
         match self {
             ASTNodeExpr::Iri(i) => write!(f, "iri({i})"),
             ASTNodeExpr::Literal(l) => write!(f, "literal({l})"),
+            ASTNodeExpr::TripleTerm(t) => write!(f, "tripleTerm({t})"),
             ASTNodeExpr::Empty => write!(f, "empty"),
             ASTNodeExpr::Var(v) => write!(f, "var({v})"),
             ASTNodeExpr::List(l) => write!(
@@ -139,6 +145,7 @@ impl Display for ASTNodeExpr {
             ASTNodeExpr::Sum(s) => write!(f, "sum({s})"),
             ASTNodeExpr::InstancesOf(i) => write!(f, "instancesOf({i})"),
             ASTNodeExpr::NodesMatching(n) => write!(f, "nodesMatching({n})"),
+            ASTNodeExpr::ConformsToShape { node, shape } => write!(f, "conformsToShape({node}, {shape})"),
         }
     }
 }

@@ -1,4 +1,5 @@
 mod concat;
+mod conforms_to_shape;
 mod count;
 mod distinct;
 mod empty;
@@ -22,9 +23,11 @@ mod order_by;
 mod path_values;
 mod remove;
 mod sum;
+mod triple_term;
 mod var;
 
 pub use concat::Concat;
+pub use conforms_to_shape::ConformsToShape;
 pub use count::Count;
 pub use distinct::Distinct;
 pub use empty::Empty;
@@ -48,4 +51,5 @@ pub use order_by::OrderBy;
 pub use path_values::PathValues;
 pub use remove::Remove;
 pub use sum::Sum;
+pub use triple_term::TripleTerm;
 pub use var::Var;

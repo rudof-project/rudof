@@ -41,5 +41,6 @@ vocab_term!(ShaclNodeExprVocab, SHNEX_SUM, "sum");
 // Miscellaneous Node Expressions
 vocab_term!(ShaclNodeExprVocab, SHNEX_INSTANCES_OF, "instancesOf");
 vocab_term!(ShaclNodeExprVocab, SHNEX_NODES_MATCHING, "nodesMatching");
+vocab_term!(ShaclNodeExprVocab, SHNEX_CONFORMS_TO_SHAPE, "conformsToShape");
 
 vocab_term!(ShaclNodeExprVocab, SHNEX_NODES, "nodes");

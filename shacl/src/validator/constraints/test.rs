@@ -1041,7 +1041,7 @@ prefix : <http://example.org/>
     }
 
     #[test]
-    fn cyclic_deep_shared_and_unsupported_node_expressions_are_errors() {
+    fn cyclic_deep_and_shared_node_expressions_are_errors() {
         on_small_stack(|| {
             let shared: String = (0..40)
                 .map(|i| format!("_:e{i} shnex:concat ( _:e{j} _:e{j} ) .\n", j = i + 1))
@@ -1057,7 +1057,6 @@ prefix : <http://example.org/>
                 ),
                 (deep, "cyclic node expression"),
                 (shared, "steps plus"),
-                ("_:e0 shnex:distinct <<( :a :p :b )>> .\n".to_string(), "not supported"),
             ] {
                 let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:deactivated _:e0 .\n{expr}");
                 let result = try_validate(&graph).map(|_| ());
@@ -1227,6 +1226,57 @@ prefix : <http://example.org/>
 
         let result = try_validate(&graph).map(|_| ());
         assert!(matches!(&result, Err(e) if e.contains("steps")), "{result:?}");
+    }
+
+    #[test]
+    fn a_triple_term_expression_evaluates_to_itself() {
+        for (expr, conforms) in [
+            ("shnex:exists <<( :a :p :b )>>", true),
+            // The triple term is removed from itself by term equality, leaving no node
+            (
+                "shnex:exists [ shnex:remove <<( :a :p :b )>> ; shnex:nodes <<( :a :p :b )>> ]",
+                false,
+            ),
+            // A different triple term is kept
+            (
+                "shnex:exists [ shnex:remove <<( :a :p :c )>> ; shnex:nodes <<( :a :p :b )>> ]",
+                true,
+            ),
+        ] {
+            let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ {expr} ] .\n");
+            assert_eq!(try_validate(&graph).unwrap().conforms(), conforms, "{expr}");
+        }
+    }
+
+    #[test]
+    fn conforms_to_shape_validates_its_node_against_its_shape() {
+        let data = ":T a sh:NodeShape ; sh:class :C .\n:a a :C ; :p :a, :b .\n";
+        for (args, conforms) in [
+            ("[ shnex:var \"value\" ] :T", true),
+            (":b :T", false),
+            // The empty list is not ( true ), as either argument without a value gives no output node
+            ("[] :T", false),
+            ("[ shnex:var \"value\" ] []", false),
+        ] {
+            let graph =
+                format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( {args} ) ] .\n{data}");
+            assert_eq!(try_validate(&graph).unwrap().conforms(), conforms, "{args}");
+        }
+
+        for (args, error) in [
+            // The shape is not a shape of the shapes graph
+            ("[ shnex:var \"value\" ] :Missing", "Not found shape"),
+            // Each argument must produce at most one output node
+            ("[ shnex:pathValues :p ] :T", "at most one node"),
+            ("[ shnex:var \"value\" ] ( :T :T )", "at most one node"),
+            // The arguments are a list of exactly two node expressions
+            (":a", "list of two node expressions"),
+        ] {
+            let graph =
+                format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( {args} ) ] .\n{data}");
+            let result = try_validate(&graph).map(|_| ());
+            assert!(matches!(&result, Err(e) if e.contains(error)), "{args}: {result:?}");
+        }
     }
 
     #[test]
