@@ -5246,6 +5246,7 @@ dependencies = [
  "rudof_config",
  "rudof_iri",
  "rudof_rdf",
+ "rudof_rdf_sink",
  "rudof_typing",
  "serde",
  "serde_json",

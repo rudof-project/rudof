@@ -6,6 +6,7 @@ use shex_ast::shapemap::ShapemapConfig;
 use std::sync::Arc;
 
 use crate::ShExConfig;
+use crate::read_sink::ReadSink;
 use crate::typing::TypingObserver;
 
 /// This struct can be used to customize the behavour of ShEx validators
@@ -51,6 +52,12 @@ pub struct ValidatorConfig {
     #[serde(skip)]
     pub(crate) typing_observer: Option<Arc<TypingObserver>>,
 
+    /// Sink that receives every triple the validator reads from the data.
+    /// Cannot be loaded from TOML — install it programmatically via
+    /// [`Self::with_read_sink`].
+    #[serde(skip)]
+    pub(crate) read_sink: Option<ReadSink>,
+
     /// Whether to print each `(node, shape)` result as soon as it's cached,
     /// instead of only showing the final report (default: false). When set
     /// and no [`Self::with_typing_observer`] was installed explicitly, the
@@ -95,6 +102,7 @@ impl ValidatorConfig {
             check_negation_requirement: Self::default_check_negation_requirement(),
             external_resolvers: ExternalShapeResolverRegistry::default(),
             typing_observer: None,
+            read_sink: None,
             show_intermediate_results: Self::default_show_intermediate_results(),
             conformant_color: Self::default_conformant_color(),
             non_conformant_color: Self::default_non_conformant_color(),
@@ -156,6 +164,12 @@ impl ValidatorConfig {
         self
     }
 
+    /// Install a sink that receives every triple the validator reads.
+    pub fn with_read_sink(mut self, sink: ReadSink) -> Self {
+        self.read_sink = Some(sink);
+        self
+    }
+
     pub fn with_show_intermediate_results(mut self, flag: bool) -> Self {
         self.show_intermediate_results = flag;
         self
@@ -203,6 +217,10 @@ impl ValidatorConfig {
 
     pub fn typing_observer(&self) -> Option<Arc<TypingObserver>> {
         self.typing_observer.clone()
+    }
+
+    pub fn read_sink(&self) -> Option<&ReadSink> {
+        self.read_sink.as_ref()
     }
 
     pub fn show_intermediate_results(&self) -> bool {

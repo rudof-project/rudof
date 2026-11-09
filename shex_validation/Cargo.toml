@@ -26,6 +26,7 @@ serde.workspace = true
 serde_json.workspace = true
 shex_ast.workspace = true
 rudof_rdf.workspace = true
+rudof_rdf_sink.workspace = true
 termtree.workspace = true
 thiserror.workspace = true
 toml.workspace = true
