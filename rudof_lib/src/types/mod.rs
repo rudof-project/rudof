@@ -16,6 +16,7 @@ pub use query::{QueryResult, QueryResultKind};
 pub use rudof_rdf::rdf_core::ArcDirection;
 pub use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 pub use rudof_rdf::rdf_impl::{DEFAULT_EXACT_SEARCH_LIMIT, DiffOptions, GraphDiff, GraphRelation, SubgraphMode};
+pub use rudof_rdf_sink::{GraphSink, RdfSink, RdfSinkError, SinkReport};
 pub(crate) use shex_statistics::ShExStatistics;
 pub(crate) use staging::{StagingFrame, UndoEntry};
 pub use staging_guard::StagingGuard;
@@ -32,3 +33,4 @@ pub use shacl::validator::report::{
 pub use shex_ast::ir::shape_label::ShapeLabel as ShExShapeLabel;
 pub use shex_ast::node::Node as ShExNode;
 pub use shex_ast::shapemap::{ResultShapeMap, ValidationStatus as ShExValidationStatus};
+pub use shex_validation::ReadSink as ShExReadSink;

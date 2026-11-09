@@ -82,7 +82,7 @@ fn test_validate_shex_success() {
     .unwrap();
 
     // Validate
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     assert!(rudof.shex_validation_results.is_some());
 
@@ -104,7 +104,7 @@ fn test_validate_shex_no_data_error() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Try to validate without data
-    let result = validate_shex(&mut rudof);
+    let result = validate_shex(&mut rudof, None);
 
     assert!(result.is_err());
 }
@@ -133,7 +133,7 @@ fn test_validate_shex_no_schema_error() {
     .unwrap();
 
     // Try to validate without schema
-    let result = validate_shex(&mut rudof);
+    let result = validate_shex(&mut rudof, None);
 
     assert!(result.is_err());
 }
@@ -170,7 +170,7 @@ fn test_validate_shex_no_shapemap_error() {
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Try to validate without shapemap
-    let result = validate_shex(&mut rudof);
+    let result = validate_shex(&mut rudof, None);
 
     assert!(result.is_err());
 }
@@ -217,7 +217,7 @@ fn test_validate_shex_validation_failure() {
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
     // Validate - should succeed but with validation failure result
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     assert!(rudof.shex_validation_results.is_some());
 
@@ -269,7 +269,7 @@ fn test_serialize_validation_results_compact() {
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     // Test compact format
     let serialized =
@@ -324,7 +324,7 @@ fn test_serialize_validation_results_json() {
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     // Test JSON format
     let serialized = serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Json));
@@ -377,7 +377,7 @@ fn test_serialize_validation_results_csv() {
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     // Test CSV format
     let serialized = serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Csv));
@@ -430,7 +430,7 @@ fn test_serialize_validation_results_details() {
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     // Test details format
     let serialized =
@@ -505,7 +505,7 @@ fn test_validate_shex_multiple_nodes() {
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
     // Validate
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     assert!(rudof.shex_validation_results.is_some());
 
@@ -568,7 +568,7 @@ fn test_validate_shex_iri_pattern_with_base_schema() {
     )
     .unwrap();
 
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
     assert!(
@@ -607,7 +607,7 @@ fn test_validate_shex_bnode_focus_in_shapemap() {
     let shapemap = InputSpec::str(r#"_:abcd@<http://a.example/S1>"#);
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
     assert!(
@@ -698,7 +698,7 @@ fn validate_shapemap_against_mock_endpoint(limits: rudof_rdf::rdf_core::Endpoint
     )
     .unwrap();
 
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     let results = rudof.shex_validation_results.as_ref().unwrap();
     let mut seen = 0;
@@ -828,7 +828,7 @@ fn validate_instance_of_class_with_superclasses(shape: &str) -> (bool, u64) {
     )
     .unwrap();
 
-    validate_shex(&mut rudof).unwrap();
+    validate_shex(&mut rudof, None).unwrap();
 
     let results = rudof.shex_validation_results.as_ref().unwrap();
     let (_, _, status) = results.iter().next().unwrap();
