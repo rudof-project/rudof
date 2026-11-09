@@ -842,3 +842,51 @@ fn test_validate_shex_endpoint_or_does_not_follow_the_branch_it_does_not_need() 
     // <q5> is in [ <q5> ]: its superclasses are never asked for.
     assert_eq!(validate_instance_of_class_with_superclasses("Person2"), (true, 1));
 }
+
+#[test]
+fn test_validate_shex_read_sink_is_removed_after_the_run() {
+    use rudof_rdf::rdf_impl::OxigraphInMemory;
+    use rudof_rdf_sink::{GraphSink, RdfSink};
+    use shex_validation::ReadSink;
+    use std::sync::{Arc, Mutex};
+
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let data = InputSpec::str(r#"<alice> <name> "Alice" ; <age> 30 ."#);
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        Some("http://example.org/"),
+        None,
+        None,
+        None,
+        None,
+        EndpointStrategy::default(),
+    )
+    .unwrap();
+    let schema = InputSpec::str(r#"<PersonShape> { <name> . ; <age> . }"#);
+    load_shex_schema(
+        &mut rudof,
+        &schema,
+        Some(&ShExFormat::ShExC),
+        Some("http://example.org/"),
+        None,
+    )
+    .unwrap();
+    let shapemap = InputSpec::str(r#"<alice>@<PersonShape>"#);
+    load_shapemap(
+        &mut rudof,
+        &shapemap,
+        Some(&ShapeMapFormat::Compact),
+        Some("http://example.org/"),
+        Some("http://example.org/"),
+    )
+    .unwrap();
+
+    let sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
+    validate_shex(&mut rudof, Some(ReadSink::new(sink.clone()))).unwrap();
+    assert_eq!(sink.lock().unwrap().report().triples, 2);
+
+    validate_shex(&mut rudof, None).unwrap();
+    assert_eq!(sink.lock().unwrap().report().triples, 2);
+}
