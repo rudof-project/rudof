@@ -20,6 +20,16 @@ pub struct ShExValidationReport {
     pub entries: Vec<ShExValidationEntry>,
     /// The entries that are not conformant.
     pub violations: Vec<ShExValidationEntry>,
+    /// How many triples the validation read, duplicates included. Only
+    /// present when the validation was asked to read triples.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub triples_read: Option<usize>,
+    /// How many distinct triples the validation read.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct_triples_read: Option<usize>,
+    /// The distinct triples the validation read, serialized.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_triples: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -52,6 +62,9 @@ impl From<&ResultShapeMap> for ShExValidationReport {
             conforms: violations.is_empty(),
             entries,
             violations,
+            triples_read: None,
+            distinct_triples_read: None,
+            read_triples: None,
         }
     }
 }

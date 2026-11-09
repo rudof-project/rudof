@@ -36,13 +36,13 @@ generate = ["dep:rudof_generate", "dep:futures"]
 # JavaScript Promise Integration), so a module built with this feature only
 # loads in runtimes with JSPI and exnref (e.g. Chrome 137+, Node.js 25+).
 # Not a default feature for that reason.
-endpoints = ["rudof_lib/jspi", "dep:rudof_rdf", "rudof_rdf/jspi"]
+endpoints = ["rudof_lib/jspi", "rudof_rdf/jspi"]
 
 [dependencies]
 # A path dependency, because workspace inheritance can't switch off default
 # features.
 rudof_lib = { path = "../../rudof_lib", default-features = false, features = ["sparql"] }
-rudof_rdf = { path = "../../rudof_rdf", default-features = false, optional = true }
+rudof_rdf = { path = "../../rudof_rdf", default-features = false }
 serde.workspace = true
 rudof_generate = { path = "../../rudof_generate", optional = true }
 futures = { workspace = true, optional = true }

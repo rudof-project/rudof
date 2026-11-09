@@ -74,7 +74,7 @@ fn rudof_class_workflow() {
     rudof.read_data(DATA, None, None, None, None).unwrap();
     rudof.read_shex(SHEX_SCHEMA, None, None, None).unwrap();
     rudof.read_shapemap("<alice>@:Person", None, None, None).unwrap();
-    let report = rudof.validate_shex().unwrap();
+    let report = rudof.validate_shex(None, None).unwrap();
     assert_eq!(get(&report, "conforms"), JsValue::TRUE);
 
     rudof.read_shacl(Some(SHACL_SHAPES.into()), None, None, None).unwrap();

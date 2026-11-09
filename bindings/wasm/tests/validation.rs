@@ -177,7 +177,7 @@ fn session_shex_workflow() {
         .read_shapemap(":alice@:Person, :bob@:Person", None, None, None)
         .unwrap();
 
-    let report = rudof.validate_shex().unwrap();
+    let report = rudof.validate_shex(false, None).unwrap();
     assert!(!report.conforms);
     assert_eq!(report.entries.len(), 2);
 
@@ -201,7 +201,7 @@ fn session_shex_workflow() {
     // Validating again with another ShapeMap reuses the data and schema.
     rudof.reset_shapemap();
     rudof.read_shapemap(":alice@:Person", None, None, None).unwrap();
-    assert!(rudof.validate_shex().unwrap().conforms);
+    assert!(rudof.validate_shex(false, None).unwrap().conforms);
 }
 
 #[test]
@@ -370,7 +370,7 @@ fn session_prefixes() {
 fn session_errors_without_loaded_state() {
     let mut rudof = Session::new(None);
     rudof.read_data(DATA, None, None, None, None).unwrap();
-    let err = rudof.validate_shex().unwrap_err();
+    let err = rudof.validate_shex(false, None).unwrap_err();
     assert_eq!(err.name(), "ShExError", "{err}");
     rudof.reset_all();
     assert!(rudof.validate_shacl(None, None).is_err());

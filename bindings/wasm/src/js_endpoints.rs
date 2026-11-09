@@ -108,8 +108,18 @@ impl JsRudof {
     /// Like `validateShex`, but can validate data from a remote SPARQL
     /// endpoint (see `useEndpoint`).
     #[wasm_bindgen(jspi, js_name = validateShexAsync, unchecked_return_type = "ShExValidationReport")]
-    pub fn validate_shex_async(&mut self) -> Result<JsValue, JsValue> {
-        run_suspendable(|| to_js(&self.session.validate_shex()?))
+    pub fn validate_shex_async(
+        &mut self,
+        #[wasm_bindgen(js_name = "readTriples")] read_triples: Option<bool>,
+        #[wasm_bindgen(js_name = "readTriplesFormat")] read_triples_format: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        run_suspendable(|| {
+            to_js(
+                &self
+                    .session
+                    .validate_shex(read_triples.unwrap_or(false), read_triples_format.as_deref())?,
+            )
+        })
     }
 
     /// Like `validateShacl`, but can validate data from a remote SPARQL
