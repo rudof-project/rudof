@@ -43,6 +43,12 @@ export interface ShaclValidationReport {
   entries: ShaclValidationEntry[];
   /** Alias of `entries`. */
   violations: ShaclValidationEntry[];
+  /** How many triples the validation read, duplicates included (with `readTriples`). */
+  triplesRead?: number;
+  /** How many distinct triples the validation read (with `readTriples`). */
+  distinctTriplesRead?: number;
+  /** The distinct triples the validation read, serialized (with `readTriples`). */
+  readTriples?: string;
 }
 
 export interface ShaclValidationEntry {
@@ -504,18 +510,24 @@ impl JsRudof {
     /// Validates the current data against the SHACL shapes graph, with the
     /// `native` (default) or `sparql` engine. `fetchStrategy` (`on-demand`,
     /// the default, or `by-shape`) selects how the data of a SPARQL endpoint
-    /// is fetched; see `validateShaclAsync`.
+    /// is fetched; see `validateShaclAsync`. With `readTriples` (native
+    /// engine only), the report also carries `triplesRead`,
+    /// `distinctTriplesRead` and `readTriples`, serialized in
+    /// `readTriplesFormat` (default `turtle`).
     #[wasm_bindgen(js_name = validateShacl, unchecked_return_type = "ShaclValidationReport")]
     pub fn validate_shacl(
         &mut self,
         mode: Option<String>,
         #[wasm_bindgen(js_name = "fetchStrategy")] fetch_strategy: Option<String>,
+        #[wasm_bindgen(js_name = "readTriples")] read_triples: Option<bool>,
+        #[wasm_bindgen(js_name = "readTriplesFormat")] read_triples_format: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        to_js(
-            &self
-                .session
-                .validate_shacl(mode.as_deref(), fetch_strategy.as_deref())?,
-        )
+        to_js(&self.session.validate_shacl(
+            mode.as_deref(),
+            fetch_strategy.as_deref(),
+            read_triples.unwrap_or(false),
+            read_triples_format.as_deref(),
+        )?)
     }
 
     /// Serializes the results of the most recent SHACL validation.
