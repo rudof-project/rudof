@@ -3,7 +3,7 @@ use crate::{
     error::Result,
     formats::{
         PyReaderMode, PyResultShaclValidationFormat, PyShaclFetchStrategy, PyShaclFormat, PyShaclValidationMode,
-        PyShaclValidationReport, PyShaclValidationSortMode,
+        PyShaclValidationReport, PyShaclValidationSortMode, ReadTriples,
     },
     guard,
     input::InputArg,
@@ -15,6 +15,9 @@ use rudof_lib::formats::{
     DataReaderMode, ResultShaclValidationFormat, ShaclFetchStrategy, ShaclFormat, ShaclValidationMode,
     ShaclValidationSortByMode,
 };
+use rudof_lib::types::{GraphSink, RdfSink, TriplesSink};
+use rudof_rdf::rdf_impl::OxigraphInMemory;
+use std::sync::{Arc, Mutex};
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
 #[pymethods]
@@ -97,6 +100,9 @@ impl PyRudof {
     ///         No effect on data in memory.
     ///         - ``OnDemand``: Fetch each focus node's data when the validation needs it
     ///         - ``ByShape``: Fetch the data shape by shape before validating, many nodes per query
+    ///     read_triples (bool, optional): Also record the triples the validation reads, for
+    ///         ``.triples_read``, ``.distinct_triples_read`` and ``.serialize_read_triples()``.
+    ///         Needs the native mode. Defaults to ``False``.
     ///
     /// Returns:
     ///     ShaclValidationReport: A snapshot of the result — ``.conforms``,
@@ -105,17 +111,27 @@ impl PyRudof {
     ///
     /// Raises:
     ///     ValidationError: If no data or schema is loaded, or validation fails.
-    #[pyo3(signature = (mode = None, fetch_strategy = None))]
+    #[pyo3(signature = (mode = None, fetch_strategy = None, read_triples = false))]
     fn validate_shacl(
         &mut self,
         py: Python<'_>,
         mode: Option<&PyShaclValidationMode>,
         fetch_strategy: Option<&PyShaclFetchStrategy>,
+        read_triples: bool,
     ) -> Result<PyShaclValidationReport> {
         let mode: Option<ShaclValidationMode> = mode.map(Into::into);
         let fetch_strategy: Option<ShaclFetchStrategy> = fetch_strategy.map(Into::into);
 
-        guard::detached(py, || {
+        let read = guard::detached(py, || -> std::result::Result<_, CoreError> {
+            let generic = |e: &dyn std::fmt::Display| CoreError::Generic { error: e.to_string() };
+            let sink = if read_triples {
+                let mut sink = GraphSink::new(OxigraphInMemory::new());
+                sink.declare_prefixes(self.inner.prefixes().execute())
+                    .map_err(|e| generic(&e))?;
+                Some(Arc::new(Mutex::new(sink)))
+            } else {
+                None
+            };
             let mut b = self.inner.validate_shacl();
             if let Some(m) = &mode {
                 b = b.with_shacl_validation_mode(m);
@@ -123,7 +139,22 @@ impl PyRudof {
             if let Some(s) = fetch_strategy {
                 b = b.with_fetch_strategy(s);
             }
-            b.execute()
+            if let Some(sink) = &sink {
+                b = b.with_read_sink(TriplesSink::new(sink.clone()));
+            }
+            b.execute()?;
+            let Some(sink) = sink else {
+                return Ok(None);
+            };
+            let mut sink = Arc::try_unwrap(sink)
+                .map_err(|_| generic(&"the read sink is still shared"))?
+                .into_inner()
+                .map_err(|e| generic(&e))?;
+            let reads = sink.finish().map_err(|e| generic(&e))?.triples;
+            Ok(Some(ReadTriples {
+                reads,
+                graph: sink.into_graph(),
+            }))
         })?;
 
         let report = self
@@ -135,7 +166,7 @@ impl PyRudof {
             })?;
         // Guarded because building the report renders every focus node and value to a
         // string, which panics on a term `rudof_rdf` cannot format yet.
-        guard::catch_value(|| PyShaclValidationReport::new(report))
+        guard::catch_value(|| PyShaclValidationReport::new(report, read))
     }
 
     /// Serializes the results of the most recent :meth:`validate_shacl` call.

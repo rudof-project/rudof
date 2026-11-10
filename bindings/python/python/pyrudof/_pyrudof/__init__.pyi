@@ -1743,7 +1743,7 @@ class Rudof:
         Raises:
             ShaclError: If no shapes are loaded or serialization fails.
         """
-    def validate_shacl(self, mode: typing.Optional[ShaclValidationMode] = None, fetch_strategy: typing.Optional[ShaclFetchStrategy] = None) -> ShaclValidationReport:
+    def validate_shacl(self, mode: typing.Optional[ShaclValidationMode] = None, fetch_strategy: typing.Optional[ShaclFetchStrategy] = None, read_triples: builtins.bool = False) -> ShaclValidationReport:
         r"""
         Validates the current RDF data against the loaded SHACL shapes.
         
@@ -1756,6 +1756,9 @@ class Rudof:
                 No effect on data in memory.
                 - ``OnDemand``: Fetch each focus node's data when the validation needs it
                 - ``ByShape``: Fetch the data shape by shape before validating, many nodes per query
+            read_triples (bool, optional): Also record the triples the validation reads, for
+                ``.triples_read``, ``.distinct_triples_read`` and ``.serialize_read_triples()``.
+                Needs the native mode. Defaults to ``False``.
         
         Returns:
             ShaclValidationReport: A snapshot of the result — ``.conforms``,
@@ -2139,6 +2142,33 @@ class ShaclValidationReport:
     def violations(self) -> builtins.list[ShaclValidationEntry]:
         r"""
         Every violation in the report. Alias of iterating the report.
+        """
+    @property
+    def triples_read(self) -> typing.Optional[builtins.int]:
+        r"""
+        How many triples the validation read, duplicates included.
+        
+        ``None`` unless :meth:`Rudof.validate_shacl` was called with ``read_triples=True``.
+        """
+    @property
+    def distinct_triples_read(self) -> typing.Optional[builtins.int]:
+        r"""
+        How many distinct triples the validation read.
+        
+        ``None`` unless :meth:`Rudof.validate_shacl` was called with ``read_triples=True``.
+        """
+    def serialize_read_triples(self, format: typing.Optional[RDFFormat] = None) -> builtins.str:
+        r"""
+        Serializes the distinct triples the validation read.
+        
+        Args:
+            format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
+        
+        Returns:
+            str: The serialized triples.
+        
+        Raises:
+            RudofError: If :meth:`Rudof.validate_shacl` was not called with ``read_triples=True``.
         """
     def __len__(self) -> builtins.int: ...
     def __iter__(self) -> ShaclValidationEntryIterator: ...
