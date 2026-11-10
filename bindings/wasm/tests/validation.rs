@@ -248,6 +248,28 @@ fn session_shacl_fetch_strategy() {
 }
 
 #[test]
+fn session_shacl_reports_the_triples_read() {
+    let mut rudof = Session::new(None);
+    rudof.read_data(DATA, None, None, None, None).unwrap();
+    rudof.read_shacl(Some(SHACL_SHAPES), None, None, None).unwrap();
+
+    let report = rudof.validate_shacl(None, None, true, Some("ntriples")).unwrap();
+    assert!(!report.conforms);
+    // :name for the targets, then :age for each of them.
+    assert_eq!(report.distinct_triples_read, Some(4));
+    assert!(report.triples_read.unwrap() >= 4);
+    let triples = report.read_triples.unwrap();
+    assert!(
+        triples.contains(r#"<http://example.org/bob> <http://example.org/age> "unknown" ."#),
+        "{triples}"
+    );
+
+    let report = rudof.validate_shacl(None, None, false, None).unwrap();
+    assert_eq!(report.triples_read, None);
+    assert!(rudof.validate_shacl(Some("sparql"), None, true, None).is_err());
+}
+
+#[test]
 fn session_shacl_workflow() {
     let mut rudof = Session::new(None);
     rudof.read_data(DATA, None, None, None, None).unwrap();
