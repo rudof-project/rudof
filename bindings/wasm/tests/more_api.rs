@@ -316,7 +316,7 @@ prefix Map: <http://shex.io/extensions/Map/>
     let mut rudof = session_with_data();
     rudof.read_shex(schema, None, None, None).unwrap();
     rudof.read_shapemap(":alice@:Person", None, None, None).unwrap();
-    assert!(rudof.validate_shex().unwrap().conforms);
+    assert!(rudof.validate_shex(false, None).unwrap().conforms);
     let graph = rudof.materialize(Some("ntriples"), None).unwrap();
     assert!(graph.contains("\"Alice\""), "{graph}");
     assert!(graph.contains("<http://example.org/name>"), "{graph}");
@@ -653,10 +653,10 @@ fn reset_validation_results() {
     let mut rudof = session_with_data();
     rudof.read_shex(SHEX_SCHEMA, None, None, None).unwrap();
     rudof.read_shapemap(":alice@:Person", None, None, None).unwrap();
-    rudof.validate_shex().unwrap();
+    rudof.validate_shex(false, None).unwrap();
     rudof.reset_validation_results();
     assert!(rudof.serialize_shex_validation_results(None, None).is_err());
-    assert!(rudof.validate_shex().is_err());
+    assert!(rudof.validate_shex(false, None).is_err());
 }
 
 // Operations that need the network, which is not available on wasm

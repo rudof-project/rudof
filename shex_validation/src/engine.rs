@@ -1944,7 +1944,35 @@ impl Engine {
             }
         }
 
+        self.record_read(node, &result)?;
         Ok((result, reminder_preds))
+    }
+
+    /// Pushes the arcs `neighs` read into the read sink, if one is installed:
+    /// an outgoing arc as `(node, pred, value)`, an incoming one as
+    /// `(value, pred, node)`.
+    fn record_read(&self, node: &Node, arcs: &[(Pred, Node)]) -> Result<()> {
+        let Some(sink) = self.config.read_sink() else {
+            return Ok(());
+        };
+        let failed = |error: String| ValidatorError::ReadSinkFailed { error };
+        let mut triples = Vec::with_capacity(arcs.len());
+        for (pred, value) in arcs {
+            let (subject, object) = if pred.is_direct() { (node, value) } else { (value, node) };
+            let subject: oxrdf::NamedOrBlankNode = subject
+                .as_object()
+                .clone()
+                .try_into()
+                .map_err(|e| failed(format!("{e}")))?;
+            let predicate: oxrdf::NamedNode = pred.iri().clone().into();
+            let object: oxrdf::Term = object.as_object().clone().into();
+            triples.push(oxrdf::Triple::new(subject, predicate, object));
+        }
+        let mut sink = sink.0.lock().map_err(|e| failed(e.to_string()))?;
+        for triple in triples {
+            sink.push(triple).map_err(|e| failed(e.to_string()))?;
+        }
+        Ok(())
     }
 
     fn cnv_err<S>(&self, err: S::Err) -> ValidatorError

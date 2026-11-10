@@ -46,6 +46,20 @@ $ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http:/
 ╰──────┴───────┴────────┴───────────────────────╯
 ```
 
+### Show the triples the validation read
+
+`--statistics` prints how many triples the validation read, duplicates included, and how many of them are distinct. `--validated-graph <FILE>` writes those triples, in `--validated-graph-format`(default `turtle`). Only the arcs the validator asked the data for are counted.
+
+```sh
+$ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http://example.org/User" examples/user.ttl --statistics --validated-graph a.ttl
+
+╭──────┬───────┬────────┬───────────────────────╮
+│ Node │ Shape │ Status │ Details               │
+├──────┼───────┼────────┼───────────────────────┤
+│ :a   │ :User │ OK     │ Shape passed :a@:User │
+╰──────┴───────┴────────┴───────────────────────╯
+Triples read: 12 (distinct: 9)
+```
 
 ## Precompiled schemas
 
@@ -223,6 +237,10 @@ Options:
       --strategy <STRATEGY>       How -e/--endpoint answers lookups [default: sparql] [possible values: sparql, dereference]
       --external-resolver <SPEC>  External-shape resolver spec. Repeatable. Syntax: <kind>[:<arg>]. Built-in kinds: 'reject-all', 'schema:<path>'. Use --list-external-resolvers to enumerate.
       --list-external-resolvers   Print the available external-shape resolver kinds and exit
+      --show-intermediate-results Print each (node, shape) result as soon as it's computed, instead of only the final report
+      --statistics Print how many triples the validation read, and how many of them are distinct
+      --validated-graph <FILE> Write the triples the validation read to FILE
+      --validated-graph-format <FORMAT>  RDF format of --validated-graph [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
   -c, --config-file <FILE>        Config file name
   -o, --output-file <FILE>        Output file name, default = terminal
       --force-overwrite           Force overwrite to output file if it already exists

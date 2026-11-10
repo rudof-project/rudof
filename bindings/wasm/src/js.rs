@@ -21,6 +21,12 @@ export interface ShExValidationReport {
   entries: ShExValidationEntry[];
   /** The entries that are not conformant. */
   violations: ShExValidationEntry[];
+  /** How many triples the validation read, duplicates included (with `readTriples`). */
+  triplesRead?: number;
+  /** How many distinct triples the validation read (with `readTriples`). */
+  distinctTriplesRead?: number;
+  /** The distinct triples the validation read, serialized (with `readTriples`). */
+  readTriples?: string;
 }
 
 export interface ShExValidationEntry {
@@ -441,10 +447,20 @@ impl JsRudof {
     }
 
     /// Validates the current data against the ShEx schema, for the
-    /// associations in the current ShapeMap.
+    /// associations in the current ShapeMap. With `readTriples`, the report
+    /// also carries `triplesRead`, `distinctTriplesRead` and `readTriples`,
+    /// serialized in `readTriplesFormat` (default `turtle`).
     #[wasm_bindgen(js_name = validateShex, unchecked_return_type = "ShExValidationReport")]
-    pub fn validate_shex(&mut self) -> Result<JsValue, JsValue> {
-        to_js(&self.session.validate_shex()?)
+    pub fn validate_shex(
+        &mut self,
+        #[wasm_bindgen(js_name = "readTriples")] read_triples: Option<bool>,
+        #[wasm_bindgen(js_name = "readTriplesFormat")] read_triples_format: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        to_js(
+            &self
+                .session
+                .validate_shex(read_triples.unwrap_or(false), read_triples_format.as_deref())?,
+        )
     }
 
     /// Serializes the results of the most recent ShEx validation.

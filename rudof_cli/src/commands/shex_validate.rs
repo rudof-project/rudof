@@ -2,12 +2,16 @@ use crate::cli::parser::ShexValidateArgs;
 use crate::cli::prefix_expand::resolve_prefixed_resource;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use rudof_lib::Rudof;
-use rudof_lib::formats::{BackendSpec, InputSpec, IriNormalizationMode, ShExFormat};
+use rudof_lib::formats::{BackendSpec, DataFormat, InputSpec, IriNormalizationMode, ShExFormat};
+use rudof_lib::types::{GraphSink, RdfSink, TriplesSink};
+use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
+use rudof_rdf::rdf_impl::OxigraphInMemory;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 
 /// Implementation of the `shex-validate` command.
 ///
@@ -168,13 +172,48 @@ impl Command for ShexValidateCommand {
             node_shape.execute()?;
         }
 
-        ctx.rudof.validate_shex().execute()?;
+        let read_sink = if self.args.statistics || self.args.validated_graph.is_some() {
+            let mut sink = GraphSink::new(OxigraphInMemory::new());
+            sink.declare_prefixes(ctx.rudof.prefixes().execute())?;
+            Some(Arc::new(Mutex::new(sink)))
+        } else {
+            None
+        };
+
+        let mut validation = ctx.rudof.validate_shex();
+        if let Some(sink) = &read_sink {
+            validation = validation.with_read_sink(TriplesSink::new(sink.clone()));
+        }
+        validation.execute()?;
 
         ctx.rudof
             .serialize_shex_validation_results(&mut ctx.writer)
             .with_shex_validation_sort_order_mode(&sort_order)
             .with_result_shex_validation_format(&result_format)
             .execute()?;
+
+        if let Some(sink) = &read_sink {
+            let mut sink = sink.lock().map_err(|e| anyhow!("{e}"))?;
+            let report = sink.finish()?;
+            if self.args.statistics {
+                writeln!(
+                    ctx.writer,
+                    "Triples read: {} (distinct: {})",
+                    report.triples,
+                    sink.graph().len()
+                )?;
+            }
+            if let Some(path) = &self.args.validated_graph {
+                let format = RDFFormat::try_from(DataFormat::from(self.args.validated_graph_format))?;
+                let file = File::create(path)
+                    .with_context(|| format!("Failed to create validated graph file '{}'", path.display()))?;
+                let mut writer = BufWriter::new(file);
+                sink.graph()
+                    .serialize(&format, &mut writer)
+                    .map_err(|e| anyhow!("Failed to write validated graph: {e}"))?;
+                writer.flush()?;
+            }
+        }
 
         if let Some(map_state_path) = map_state {
             ctx.rudof

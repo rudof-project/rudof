@@ -88,6 +88,21 @@ expected_output = [
 ]
 
 [[example]]
+key = "shex_read_triples"
+source_file = "shex/shex_read_triples.py"
+title = "ShEx Read Triples"
+description = "Count and serialize the triples a ShEx validation read"
+category = "shex"
+files = {}
+expected_output = [
+    "conforms: True",
+    "triples read: 2",
+    "distinct: 2",
+    '<http://example.org/alice> <http://example.org/name> "Alice" .',
+    "<http://example.org/bob> <http://example.org/knows> <http://example.org/alice> .",
+]
+
+[[example]]
 key = "shex_serialize"
 source_file = "shex/shex_serialize.py"
 title = "ShEx Serialize"

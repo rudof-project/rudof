@@ -51,6 +51,9 @@ impl ValidateCommand {
             external_resolvers: Vec::new(),
             list_external_resolvers: false,
             show_intermediate_results: self.args.show_intermediate_results,
+            statistics: self.args.statistics,
+            validated_graph: self.args.validated_graph.clone(),
+            validated_graph_format: self.args.validated_graph_format,
             common: self.args.common.clone(),
         })
     }

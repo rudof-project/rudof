@@ -19,6 +19,7 @@ indexmap.workspace = true   # { version = "2" }
 rudof_config.workspace = true
 rudof_iri.workspace = true
 itertools.workspace = true
+oxrdf.workspace = true
 prefixmap.workspace = true
 rbe.workspace = true
 rudof_typing.workspace = true
@@ -26,6 +27,7 @@ serde.workspace = true
 serde_json.workspace = true
 shex_ast.workspace = true
 rudof_rdf.workspace = true
+rudof_rdf_sink.workspace = true
 termtree.workspace = true
 thiserror.workspace = true
 toml.workspace = true

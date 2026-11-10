@@ -4,10 +4,25 @@ use crate::{
     types::Data,
 };
 use rudof_rdf::rdf_core::Rdf;
+use rudof_rdf_sink::TriplesSink;
 use shex_ast::{ir::schema_ir::SchemaIR as ShExSchemaIR, shapemap::NodeSelector, shapemap::QueryShapeMap};
 use shex_validation::Validator as ShExValidator;
 
-pub fn validate_shex(rudof: &mut Rudof) -> Result<()> {
+/// Validates with `read_sink` installed in the session's validator for this
+/// run only: it is removed afterwards, whether the validation succeeded or not.
+pub fn validate_shex(rudof: &mut Rudof, read_sink: Option<TriplesSink>) -> Result<()> {
+    let has_sink = read_sink.is_some();
+    if has_sink && let Some(validator) = rudof.shex_validator.as_mut() {
+        validator.set_read_sink(read_sink);
+    }
+    let result = run_validation(rudof);
+    if has_sink && let Some(validator) = rudof.shex_validator.as_mut() {
+        validator.set_read_sink(None);
+    }
+    result
+}
+
+fn run_validation(rudof: &mut Rudof) -> Result<()> {
     let (data, shex_schema, shapemap, shex_validator) = prepare_loaded_data_schema_and_shapemap(rudof)?;
     let rdf_data = data.unwrap_rdf_mut();
 

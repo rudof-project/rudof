@@ -10,6 +10,7 @@ use crate::{
         ShExValidationSortByMode, ShapeMapFormat,
     },
 };
+use rudof_rdf_sink::TriplesSink;
 use rudof_viz::VizEngine;
 use std::io;
 
@@ -149,10 +150,14 @@ pub trait ShExOperations {
 
     /// Validates the current RDF data using the loaded ShEx schema and shape map.
     ///
+    /// # Arguments
+    ///
+    /// * `read_sink` - Optional sink that receives every triple the validator reads, for this run only
+    ///
     /// # Errors
     ///
-    /// Returns an error if no schema or shape map is loaded.
-    fn validate_shex(&mut self) -> Result<()>;
+    /// Returns an error if no schema or shape map is loaded, or if the sink refuses a triple.
+    fn validate_shex(&mut self, read_sink: Option<TriplesSink>) -> Result<()>;
 
     /// Serializes the ShEx validation results to a writer.
     ///
@@ -287,8 +292,8 @@ impl ShExOperations for crate::Rudof {
         reset_shapemap(self)
     }
 
-    fn validate_shex(&mut self) -> Result<()> {
-        validate_shex(self)
+    fn validate_shex(&mut self, read_sink: Option<TriplesSink>) -> Result<()> {
+        validate_shex(self, read_sink)
     }
 
     fn serialize_shex_validation_results<W: io::Write>(

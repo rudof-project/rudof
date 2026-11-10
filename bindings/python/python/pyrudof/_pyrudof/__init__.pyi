@@ -1884,9 +1884,14 @@ class Rudof:
             InputError: If the path cannot be resolved.
             ShExError: If the cache file is invalid.
         """
-    def validate_shex(self) -> ShExValidationReport:
+    def validate_shex(self, read_triples: builtins.bool = False) -> ShExValidationReport:
         r"""
         Validates the current RDF data against the loaded ShEx schema using the current ShapeMap.
+        
+        Args:
+            read_triples (bool, optional): Also record the triples the validation reads, for
+                ``.triples_read``, ``.distinct_triples_read`` and ``.serialize_read_triples()``.
+                Defaults to ``False``.
         
         Returns:
             ShExValidationReport: A snapshot of the result — ``.conforms``,
@@ -2024,6 +2029,33 @@ class ShExValidationReport:
     def violations(self) -> builtins.list[ShExValidationEntry]:
         r"""
         The entries that are **not** conformant.
+        """
+    @property
+    def triples_read(self) -> typing.Optional[builtins.int]:
+        r"""
+        How many triples the validation read, duplicates included.
+        
+        ``None`` unless :meth:`Rudof.validate_shex` was called with ``read_triples=True``.
+        """
+    @property
+    def distinct_triples_read(self) -> typing.Optional[builtins.int]:
+        r"""
+        How many distinct triples the validation read.
+        
+        ``None`` unless :meth:`Rudof.validate_shex` was called with ``read_triples=True``.
+        """
+    def serialize_read_triples(self, format: typing.Optional[RDFFormat] = None) -> builtins.str:
+        r"""
+        Serializes the distinct triples the validation read.
+        
+        Args:
+            format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
+        
+        Returns:
+            str: The serialized triples.
+        
+        Raises:
+            RudofError: If :meth:`Rudof.validate_shex` was not called with ``read_triples=True``.
         """
     def __len__(self) -> builtins.int: ...
     def __iter__(self) -> ShExValidationEntryIterator: ...
