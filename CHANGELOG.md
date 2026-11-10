@@ -17,6 +17,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `rudof shacl-validate --statistics` and `--validated-graph` (and `rudof validate`), native engine only ([#947](https://github.com/rudof-project/rudof/issues/947)).
 - `shacl`: `ShaclConfig::with_read_sink`; `rudof_lib`: `validate_shacl().with_read_sink(..)` ([#947](https://github.com/rudof-project/rudof/issues/947)).
 - `pyrudof`: `validate_shex(read_triples=True)`, with `triples_read`, `distinct_triples_read` and `serialize_read_triples` on the report ([#945](https://github.com/rudof-project/rudof/issues/945)).
+- `pyrudof`: `validate_shacl(read_triples=True)`, with the same report fields as `validate_shex` ([#947](https://github.com/rudof-project/rudof/issues/947)).
 - `rudof_wasm`: `validateShex(readTriples, readTriplesFormat)`, with `triplesRead`, `distinctTriplesRead` and `readTriples` in the report ([#945](https://github.com/rudof-project/rudof/issues/945)).
 
 ### Changed
