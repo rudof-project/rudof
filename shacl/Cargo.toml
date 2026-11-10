@@ -50,3 +50,7 @@ required-features = ["sparql"]
 [[test]]
 name = "shacl_testsuite"
 required-features = ["sparql"]
+
+[[test]]
+name = "read_sink"
+required-features = ["sparql"]
