@@ -9,6 +9,10 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
+## [Unreleased]
+### Fixed
+- `shex_ast`: dropped csv color format on shex validation ([#949](https://github.com/rudof-project/rudof/issues/949))
+
 ## 0.3.39
 ### Added
 - `rudof_rdf`: `OxigraphEndpoint::update` sends a SPARQL Update to the endpoint's `update_url`, falling back to its query URL ([#942](https://github.com/rudof-project/rudof/issues/942)).
