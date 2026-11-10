@@ -86,6 +86,13 @@ impl ShaclProcessor<ReadRecorder<RdfData>> for GraphValidation {
         self.store.set_sink(sink);
         Ok(())
     }
+
+    /// Not while recording: the index reads the whole graph up front, and
+    /// then answers class lookups without reading the `rdf:type` and
+    /// `rdfs:subClassOf` triples behind them.
+    fn use_class_index(&self) -> bool {
+        !self.store.is_recording()
+    }
 }
 
 #[cfg(not(feature = "sparql"))]
@@ -103,6 +110,13 @@ impl ShaclProcessor<ReadRecorder<OxigraphInMemory>> for GraphValidation {
     fn set_read_sink(&mut self, sink: Option<TriplesSink>) -> Result<(), ValidationError> {
         self.store.set_sink(sink);
         Ok(())
+    }
+
+    /// Not while recording: the index reads the whole graph up front, and
+    /// then answers class lookups without reading the `rdf:type` and
+    /// `rdfs:subClassOf` triples behind them.
+    fn use_class_index(&self) -> bool {
+        !self.store.is_recording()
     }
 }
 
