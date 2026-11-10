@@ -213,9 +213,7 @@ impl ResultShapeMap {
             // CSV is read by other programs, so the status is written without color: `colored`
             // decides by the process' stdout, which would put escape codes in a piped report
             let (details, status_label) = match status {
-                ValidationStatus::Conformant(conformant_info) => {
-                    (conformant_info.to_string(), self.ok_text().clone())
-                },
+                ValidationStatus::Conformant(conformant_info) => (conformant_info.to_string(), self.ok_text().clone()),
                 ValidationStatus::NonConformant(non_conformant_info) => {
                     (non_conformant_info.to_string(), self.fail_text().clone())
                 },
