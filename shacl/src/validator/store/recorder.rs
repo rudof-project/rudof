@@ -185,3 +185,61 @@ impl<S: QueryRDF> QueryRDF for ReadRecorder<S> {
         self.inner.query_ask(query).map_err(ReadRecorderError::Store)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oxrdf::NamedNode;
+    use rudof_rdf::rdf_core::{Any, RDFFormat};
+    use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
+    use rudof_rdf_sink::{CountingSink, RdfSink};
+    use std::sync::{Arc, Mutex};
+
+    const DATA: &str = r#"
+        prefix : <http://example.org/>
+        :alice :name "Alice" ; :knows :bob, :carol .
+    "#;
+
+    fn ex(local: &str) -> NamedNode {
+        NamedNode::new_unchecked(format!("http://example.org/{local}"))
+    }
+
+    fn recorder() -> (ReadRecorder<OxigraphInMemory>, Arc<Mutex<CountingSink>>) {
+        let graph = OxigraphInMemory::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
+        let sink = Arc::new(Mutex::new(CountingSink::new()));
+        let mut recorder = ReadRecorder::new(graph);
+        recorder.set_sink(Some(TriplesSink::new(sink.clone())));
+        (recorder, sink)
+    }
+
+    fn reads(sink: &Arc<Mutex<CountingSink>>) -> u64 {
+        sink.lock().unwrap().report().triples
+    }
+
+    #[test]
+    fn records_every_triple_a_lookup_returns() {
+        let (recorder, sink) = recorder();
+        let alice: oxrdf::NamedOrBlankNode = ex("alice").into();
+        let found = recorder.triples_matching(&alice, &ex("knows"), &Any).unwrap().count();
+        assert_eq!(found, 2);
+        assert_eq!(reads(&sink), 2);
+    }
+
+    #[test]
+    fn contains_records_only_the_triple_that_answers() {
+        let (recorder, sink) = recorder();
+        assert!(recorder.contains(&Any, &ex("knows"), &Any).unwrap());
+        assert_eq!(reads(&sink), 1);
+        assert!(!recorder.contains(&Any, &ex("age"), &Any).unwrap());
+        assert_eq!(reads(&sink), 1);
+    }
+
+    #[test]
+    fn records_nothing_without_a_sink() {
+        let (mut recorder, sink) = recorder();
+        recorder.set_sink(None);
+        assert!(!recorder.is_recording());
+        assert_eq!(recorder.triples().unwrap().count(), 3);
+        assert_eq!(reads(&sink), 0);
+    }
+}
