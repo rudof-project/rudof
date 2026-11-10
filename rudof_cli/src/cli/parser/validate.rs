@@ -143,7 +143,7 @@ pub struct ValidateArgs {
 
     #[arg(
         long = "statistics",
-        help = "ShEx only: print how many triples the validation read, and how many of them are distinct"
+        help = "Print how many triples the validation read, and how many of them are distinct"
     )]
     pub statistics: bool,
 

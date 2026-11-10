@@ -143,6 +143,12 @@ pub struct ShaclValidateArgs {
     )]
     pub fetch_strategy: Option<FetchStrategyCli>,
 
+    #[arg(
+        long = "statistics",
+        help = "Print how many triples the validation read, and how many of them are distinct"
+    )]
+    pub statistics: bool,
+
     #[command(flatten)]
     pub common: CommonArgsAll,
 }
