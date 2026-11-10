@@ -9,6 +9,10 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
+## [Unreleased]
+### Fixed
+- `shex_ast`: dropped csv color format on shex validation ([#949](https://github.com/rudof-project/rudof/issues/949))
+
 ## 0.3.39
 ### Added
 - `rudof_rdf`: `OxigraphEndpoint::update` sends a SPARQL Update to the endpoint's `update_url`, falling back to its query URL ([#942](https://github.com/rudof-project/rudof/issues/942)).
@@ -27,9 +31,6 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Changed
 - `ShExOperations::validate_shex` takes an `Option<TriplesSink>` ([#945](https://github.com/rudof-project/rudof/issues/945)).
 - `shacl`: `GraphValidation` and `CachedDataValidation` read through `ReadRecorder`, which changes their `ShaclProcessor` store type ([#947](https://github.com/rudof-project/rudof/issues/947)).
-
-### Fixed
-- `shex_ast`: dropped csv color format on shex validation ([#949](https://github.com/rudof-project/rudof/issues/949))
 
 ## 0.3.38
 ### Added
