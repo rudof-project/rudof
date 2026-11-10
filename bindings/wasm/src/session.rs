@@ -470,9 +470,20 @@ impl Session {
         &mut self,
         mode: Option<&str>,
         fetch_strategy: Option<&str>,
+        read_triples: bool,
+        read_triples_format: Option<&str>,
     ) -> Result<ShaclValidationReport> {
         let mode: Option<ShaclValidationMode> = parse(mode, "SHACL validation mode")?;
         let fetch_strategy: Option<ShaclFetchStrategy> = parse(fetch_strategy, "SHACL fetch strategy")?;
+        let format: Option<DataFormat> = parse(read_triples_format, "RDF format")?;
+        let sink = if read_triples {
+            let mut sink = GraphSink::new(OxigraphInMemory::new());
+            sink.declare_prefixes(self.rudof.prefixes().execute())
+                .map_err(|e| Error::from(RudofError::Generic { error: e.to_string() }))?;
+            Some(Arc::new(Mutex::new(sink)))
+        } else {
+            None
+        };
         let mut b = self.rudof.validate_shacl();
         if let Some(m) = &mode {
             b = b.with_shacl_validation_mode(m);
@@ -480,12 +491,28 @@ impl Session {
         if let Some(s) = fetch_strategy {
             b = b.with_fetch_strategy(s);
         }
+        if let Some(sink) = &sink {
+            b = b.with_read_sink(TriplesSink::new(sink.clone()));
+        }
         b.execute()?;
         let report = self
             .rudof
             .shacl_validation_results()
             .ok_or_else(|| Error::new("ValidationError", "SHACL validation produced no results"))?;
-        Ok(report.into())
+        let mut report: ShaclValidationReport = report.into();
+        if let Some(sink) = sink {
+            let format = RDFFormat::try_from(format.unwrap_or(DataFormat::Turtle))
+                .map_err(|e| Error::from(RudofError::from(e)))?;
+            let generic = |e: &dyn Display| Error::from(RudofError::Generic { error: e.to_string() });
+            let mut sink = sink.lock().map_err(|e| generic(&e))?;
+            let reads = sink.finish().map_err(|e| generic(&e))?.triples;
+            let mut buffer = Vec::new();
+            sink.graph().serialize(&format, &mut buffer).map_err(|e| generic(&e))?;
+            report.triples_read = Some(reads as usize);
+            report.distinct_triples_read = Some(sink.graph().len());
+            report.read_triples = Some(String::from_utf8_lossy(&buffer).into_owned());
+        }
+        Ok(report)
     }
 
     /// Serializes the results of the most recent SHACL validation.

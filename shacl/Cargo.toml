@@ -12,7 +12,7 @@ repository.workspace = true
 
 [features]
 default = ["sparql"]
-sparql = ["dep:sparql_service", "sparql_service/sparql", "rudof_rdf/sparql", "dep:oxrdf"]
+sparql = ["dep:sparql_service", "sparql_service/sparql", "rudof_rdf/sparql"]
 
 [dependencies]
 anyhow.workspace = true
@@ -24,8 +24,9 @@ petgraph.workspace = true
 prefixmap.workspace = true
 rayon.workspace = true
 rudof_rdf.workspace = true
+rudof_rdf_sink.workspace = true
 rudof_config.workspace = true
-oxrdf = { workspace = true, optional = true }
+oxrdf.workspace = true
 rudof_iri.workspace = true
 rudof_typing.workspace = true
 rust_decimal.workspace = true
@@ -48,4 +49,8 @@ required-features = ["sparql"]
 
 [[test]]
 name = "shacl_testsuite"
+required-features = ["sparql"]
+
+[[test]]
+name = "read_sink"
 required-features = ["sparql"]

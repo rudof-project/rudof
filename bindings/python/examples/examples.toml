@@ -204,6 +204,20 @@ expected_output = [
 ]
 
 [[example]]
+key = "shacl_read_triples"
+source_file = "shacl/shacl_read_triples.py"
+title = "SHACL Read Triples"
+description = "Count and serialize the triples a SHACL validation read"
+category = "shacl"
+files = {}
+expected_output = [
+    "conforms: True",
+    "triples read: 1",
+    "distinct: 1",
+    '<http://example.org/alice> <http://example.org/name> "Alice" .',
+]
+
+[[example]]
 key = "shacl_validate_file"
 source_file = "shacl/shacl_validate_file.py"
 title = "SHACL Validate Files"

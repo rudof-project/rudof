@@ -4,24 +4,30 @@ use crate::{
     formats::{ShaclFetchStrategy, ShaclValidationMode},
     types::Data,
 };
+use rudof_rdf_sink::TriplesSink;
 use shacl::ir::IRSchema;
 use shacl::validator::processor::{CachedDataValidation, GraphValidation, ShaclProcessor};
 use shacl::validator::store::Graph;
 
 pub fn validate_shacl(rudof: &mut Rudof, mode: Option<&ShaclValidationMode>) -> Result<()> {
-    validate_shacl_with(rudof, mode, None)
+    validate_shacl_with(rudof, mode, None, None)
 }
 
 /// Like [`validate_shacl`], with `fetch_strategy`, if given, overriding the
-/// configured `[shacl] fetch_strategy` for this call.
+/// configured `[shacl] fetch_strategy` for this call, and `read_sink`, if
+/// given, receiving every triple this validation reads.
 pub fn validate_shacl_with(
     rudof: &mut Rudof,
     mode: Option<&ShaclValidationMode>,
     fetch_strategy: Option<ShaclFetchStrategy>,
+    read_sink: Option<TriplesSink>,
 ) -> Result<()> {
     let mut shacl_config = rudof.config().execute().shacl().clone();
     if let Some(strategy) = fetch_strategy {
         shacl_config = shacl_config.with_fetch_strategy(strategy);
+    }
+    if let Some(sink) = read_sink {
+        shacl_config = shacl_config.with_read_sink(sink);
     }
 
     let (data, shacl_schema_ir) = validate_loaded_data_schema_and_shapes(rudof)?;

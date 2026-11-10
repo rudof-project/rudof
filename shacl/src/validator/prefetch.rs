@@ -24,7 +24,7 @@ use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, ShapeLabelIdx};
 use crate::validator::engine::Engine;
 use crate::validator::engine::focus_nodes_ops::FocusNodesOps;
-use crate::validator::store::CachedRdfData;
+use crate::validator::store::{CachedRdfData, ReadRecorder};
 use oxrdf::{NamedNode as OxNamedNode, Term as OxTerm};
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
@@ -36,20 +36,21 @@ use tracing::debug;
 /// demand during validation.
 pub const DEFAULT_PREFETCH_MAX_ROUNDS: usize = 16;
 
-/// Fills `store`'s cache with the data validating `schema` needs. See the
+/// Fills `recorder`'s cache with the data validating `schema` needs. See the
 /// [module documentation](self).
 pub(crate) fn prefetch(
-    store: &CachedRdfData,
+    recorder: &ReadRecorder<CachedRdfData>,
     schema: &IRSchema,
-    runner: &dyn Engine<CachedRdfData>,
+    runner: &dyn Engine<ReadRecorder<CachedRdfData>>,
     max_rounds: usize,
 ) -> Result<(), ValidationError> {
+    let store = recorder.inner();
     let mut frontier: HashMap<ShapeLabelIdx, Vec<OxTerm>> = HashMap::new();
     for (id, shape) in schema.iter_with_targets() {
         let Some(idx) = schema.get_idx(id) else {
             continue;
         };
-        let focus_nodes: Vec<OxTerm> = shape.focus_nodes(store, runner).iter().cloned().collect();
+        let focus_nodes: Vec<OxTerm> = shape.focus_nodes(recorder, runner).iter().cloned().collect();
         frontier.entry(*idx).or_default().extend(focus_nodes);
     }
 
