@@ -1,4 +1,3 @@
-#[cfg(any(not(target_family = "wasm"), feature = "sparql"))]
 use crate::error::ValidationError;
 use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
