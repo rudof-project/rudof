@@ -1,9 +1,14 @@
 #![allow(clippy::clone_on_copy)]
 
+use crate::error::Result;
+use crate::formats::{PyRDFFormat, ReadTriples};
 use pyo3::prelude::*;
+use rudof_lib::errors::RudofError as CoreError;
 use rudof_lib::formats::{
-    ResultShaclValidationFormat, ShaclFetchStrategy, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
+    DataFormat, ResultShaclValidationFormat, ShaclFetchStrategy, ShaclFormat, ShaclValidationMode,
+    ShaclValidationSortByMode,
 };
+use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 
 pyenum! {
     /// SHACL shapes graph serialization formats.
@@ -224,16 +229,18 @@ pub struct PyShaclValidationReport {
     pub(crate) inner: ShaclValidationReport,
     pub(crate) conforms: bool,
     pub(crate) entries: Vec<PyShaclValidationEntry>,
+    pub(crate) read: Option<ReadTriples>,
 }
 
 impl PyShaclValidationReport {
-    pub(crate) fn new(inner: ShaclValidationReport) -> Self {
+    pub(crate) fn new(inner: ShaclValidationReport, read: Option<ReadTriples>) -> Self {
         let conforms = inner.conforms();
         let entries = inner.results().iter().map(Into::into).collect();
         Self {
             inner,
             conforms,
             entries,
+            read,
         }
     }
 }
@@ -253,6 +260,45 @@ impl PyShaclValidationReport {
     #[getter]
     fn violations(&self) -> Vec<PyShaclValidationEntry> {
         self.entries.clone()
+    }
+
+    /// How many triples the validation read, duplicates included.
+    ///
+    /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``read_triples=True``.
+    #[getter]
+    fn triples_read(&self) -> Option<u64> {
+        self.read.as_ref().map(|r| r.reads)
+    }
+
+    /// How many distinct triples the validation read.
+    ///
+    /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``read_triples=True``.
+    #[getter]
+    fn distinct_triples_read(&self) -> Option<usize> {
+        self.read.as_ref().map(|r| r.graph.len())
+    }
+
+    /// Serializes the distinct triples the validation read.
+    ///
+    /// Args:
+    ///     format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
+    ///
+    /// Returns:
+    ///     str: The serialized triples.
+    ///
+    /// Raises:
+    ///     RudofError: If :meth:`Rudof.validate_shacl` was not called with ``read_triples=True``.
+    #[pyo3(signature = (format = None))]
+    fn serialize_read_triples(&self, format: Option<&PyRDFFormat>) -> Result<String> {
+        let read = self.read.as_ref().ok_or(CoreError::Generic {
+            error: "validate_shacl was not called with read_triples=True".into(),
+        })?;
+        let format = RDFFormat::try_from(format.map(DataFormat::from).unwrap_or(DataFormat::Turtle))?;
+        let mut buffer = Vec::new();
+        read.graph
+            .serialize(&format, &mut buffer)
+            .map_err(|e| CoreError::Generic { error: e.to_string() })?;
+        Ok(String::from_utf8_lossy(&buffer).into_owned())
     }
 
     fn __len__(&self) -> usize {

@@ -92,7 +92,14 @@ impl Store<OxigraphInMemory> for Graph {
 
 #[cfg(feature = "sparql")]
 impl Graph {
-    pub(crate) fn store_mut(&mut self) -> &mut RdfData {
-        &mut self.store
+    pub(crate) fn into_store(self) -> RdfData {
+        self.store
+    }
+}
+
+#[cfg(not(feature = "sparql"))]
+impl Graph {
+    pub(crate) fn into_store(self) -> OxigraphInMemory {
+        self.store
     }
 }

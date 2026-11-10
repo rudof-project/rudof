@@ -91,6 +91,16 @@ pub struct ShaclValidationReport {
     pub entries: Vec<ShaclValidationEntry>,
     /// Alias of `entries`, as in the Python bindings.
     pub violations: Vec<ShaclValidationEntry>,
+    /// How many triples the validation read, duplicates included. Only
+    /// present when the validation was asked to read triples.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub triples_read: Option<usize>,
+    /// How many distinct triples the validation read.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct_triples_read: Option<usize>,
+    /// The distinct triples the validation read, serialized.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_triples: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -149,6 +159,9 @@ impl From<&CoreShaclReport> for ShaclValidationReport {
             conforms: report.conforms(),
             violations: entries.clone(),
             entries,
+            triples_read: None,
+            distinct_triples_read: None,
+            read_triples: None,
         }
     }
 }

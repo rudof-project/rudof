@@ -1,6 +1,7 @@
 use crate::validator::{FetchStrategy, RecursionSemantics};
 use rudof_config::TomlConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
+use rudof_rdf_sink::TriplesSink;
 use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define the configuration of SHACL
@@ -58,6 +59,12 @@ pub struct ShaclConfig {
     /// are held, and so counted, only with `store_evidences`.
     #[serde(rename = "max_results", skip_serializing_if = "Option::is_none")]
     pub(crate) max_results: Option<usize>,
+
+    /// Sink that receives every triple the native engine reads from the
+    /// data. Cannot be loaded from TOML — install it with
+    /// [`Self::with_read_sink`].
+    #[serde(skip)]
+    pub(crate) read_sink: Option<TriplesSink>,
 }
 
 impl ShaclConfig {
@@ -72,6 +79,7 @@ impl ShaclConfig {
             prefetch_batch_size: Self::default_prefetch_batch_size(),
             prefetch_max_rounds: Self::default_prefetch_max_rounds(),
             max_results: Self::default_max_results(),
+            read_sink: None,
         }
     }
 
@@ -119,6 +127,12 @@ impl ShaclConfig {
         self.max_results = max;
         self
     }
+
+    /// Installs a sink that receives every triple the native engine reads.
+    pub fn with_read_sink(mut self, sink: TriplesSink) -> Self {
+        self.read_sink = Some(sink);
+        self
+    }
 }
 
 impl ShaclConfig {
@@ -156,6 +170,10 @@ impl ShaclConfig {
 
     pub fn max_results(&self) -> Option<usize> {
         self.max_results
+    }
+
+    pub fn read_sink(&self) -> Option<&TriplesSink> {
+        self.read_sink.as_ref()
     }
 }
 
@@ -196,6 +214,7 @@ mod tests {
         assert!(!c.evidence_shapes_only());
         assert_eq!(c.recursion_semantics(), crate::validator::RecursionSemantics::Lfp);
         assert_eq!(c.max_results(), None);
+        assert!(c.read_sink().is_none());
     }
 
     #[test]
