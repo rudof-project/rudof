@@ -128,6 +128,16 @@ It has no effect without `--with-evidences`, and never affects violations.
 
 These keys can be set persistently in `rudof.toml` — see [`[shacl]`](../references/config.md#shacl--shacl-validation) in the config reference.
 
+## Show the triples the validation read
+
+`--statistics` prints how many triples the validation read, duplicates included, and how many of them are distinct. `--validated-graph <FILE>` writes those triples, in `--validated-graph-format` (default `turtle`). Both need the native engine: with `--mode sparql` the validation fails. Data the engine reads through SPARQL queries (`sh:sparql` constraints) and data fetched in advance with `--fetch-strategy by-shape` are not counted.
+
+```sh
+$ rudof shacl-validate --shapes examples/book.ttl examples/book_conformant.ttl --statistics --validated-graph read.ttl
+No Errors found
+Triples read: 12 (distinct: 11)
+```
+
 ## Which shape caused a violation
 
 Each validation result names, in `sh:sourceShape`, the shape whose constraint failed. That
