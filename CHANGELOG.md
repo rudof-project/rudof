@@ -26,6 +26,9 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `rudof_rdf_sink`: the `RdfSink` trait, with sinks that keep the triples in a graph, count them, stream them to a writer as N-Triples, N-Quads, Turtle or TriG, or send them to an endpoint through batched SPARQL Update ([#940](https://github.com/rudof-project/rudof/issues/940)).
 - `rudof_rdf_sink`: `BuildRdfSink::upload_to` sends a kept graph to an endpoint ([#940](https://github.com/rudof-project/rudof/issues/940)).
 
+### Fixed
+- `shex_ast`: dropped csv color format on shex validation ([#949](https://github.com/rudof-project/rudof/issues/949))
+
 ## 0.3.38
 ### Added
 - The data API reads terms in RDF 1.2 Turtle syntax: triple terms (`<<( :a :b "c" )>>`, nested too) and dir-lang strings (`"Shalom"@he--rtl`), in `add_triple`, `remove_triple`, the patterns of `triples` and node info, and so in Python and JavaScript ([#880](https://github.com/rudof-project/rudof/issues/880)).
