@@ -32,7 +32,7 @@ use rudof_lib::formats::{PgSchemaFormat, ResultPgSchemaValidationFormat};
 #[cfg(feature = "rdf-config")]
 use rudof_lib::formats::{RdfConfigFormat, ResultRdfConfigFormat};
 use rudof_lib::types::SubgraphMode;
-use rudof_lib::types::{GraphSink, RdfSink, ShExReadSink};
+use rudof_lib::types::{GraphSink, RdfSink, TriplesSink};
 use rudof_lib::{Rudof, RudofConfig};
 use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
@@ -386,7 +386,7 @@ impl Session {
         let sink = Arc::new(Mutex::new(sink));
         self.rudof
             .validate_shex()
-            .with_read_sink(ShExReadSink::new(sink.clone()))
+            .with_read_sink(TriplesSink::new(sink.clone()))
             .execute()?;
         let mut sink = sink.lock().map_err(|e| generic(&e))?;
         let reads = sink.finish().map_err(|e| generic(&e))?.triples;

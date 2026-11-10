@@ -6,8 +6,8 @@ use shex_ast::shapemap::ShapemapConfig;
 use std::sync::Arc;
 
 use crate::ShExConfig;
-use crate::read_sink::ReadSink;
 use crate::typing::TypingObserver;
+use rudof_rdf_sink::TriplesSink;
 
 /// This struct can be used to customize the behavour of ShEx validators
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,7 +56,7 @@ pub struct ValidatorConfig {
     /// Cannot be loaded from TOML — install it programmatically via
     /// [`Self::with_read_sink`].
     #[serde(skip)]
-    pub(crate) read_sink: Option<ReadSink>,
+    pub(crate) read_sink: Option<TriplesSink>,
 
     /// Whether to print each `(node, shape)` result as soon as it's cached,
     /// instead of only showing the final report (default: false). When set
@@ -165,7 +165,7 @@ impl ValidatorConfig {
     }
 
     /// Install a sink that receives every triple the validator reads.
-    pub fn with_read_sink(mut self, sink: ReadSink) -> Self {
+    pub fn with_read_sink(mut self, sink: TriplesSink) -> Self {
         self.read_sink = Some(sink);
         self
     }
@@ -219,7 +219,7 @@ impl ValidatorConfig {
         self.typing_observer.clone()
     }
 
-    pub fn read_sink(&self) -> Option<&ReadSink> {
+    pub fn read_sink(&self) -> Option<&TriplesSink> {
         self.read_sink.as_ref()
     }
 

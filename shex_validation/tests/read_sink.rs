@@ -1,11 +1,11 @@
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
-use rudof_rdf_sink::{GraphSink, RdfSink};
+use rudof_rdf_sink::{GraphSink, RdfSink, TriplesSink};
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_registry::SemanticActionsRegistry};
 use shex_ast::{Node, ResolveMethod, ShExParser, ir::ast2ir::AST2IR};
-use shex_validation::{ReadSink, Validator, ValidatorConfig};
+use shex_validation::{Validator, ValidatorConfig};
 use std::sync::{Arc, Mutex};
 
 const SCHEMA: &str = r#"
@@ -45,7 +45,7 @@ fn compile(config: &ValidatorConfig) -> SchemaIR {
 /// Validates `:alice@:Person` `runs` times with the same sink and returns it.
 fn validate_alice(runs: usize) -> Arc<Mutex<GraphSink>> {
     let sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
-    let config = ValidatorConfig::default().with_read_sink(ReadSink::new(sink.clone()));
+    let config = ValidatorConfig::default().with_read_sink(TriplesSink::new(sink.clone()));
     let compiled = compile(&config);
     let mut validator = Validator::new(&compiled, &config).expect("validator");
     let graph = OxigraphInMemory::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::Strict).expect("parse graph");

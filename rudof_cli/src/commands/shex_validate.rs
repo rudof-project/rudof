@@ -5,7 +5,7 @@ use crate::commands::base::{Command, CommandContext};
 use anyhow::{Context, Result, anyhow};
 use rudof_lib::Rudof;
 use rudof_lib::formats::{BackendSpec, DataFormat, InputSpec, IriNormalizationMode, ShExFormat};
-use rudof_lib::types::{GraphSink, RdfSink, ShExReadSink};
+use rudof_lib::types::{GraphSink, RdfSink, TriplesSink};
 use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use std::fs::File;
@@ -182,7 +182,7 @@ impl Command for ShexValidateCommand {
 
         let mut validation = ctx.rudof.validate_shex();
         if let Some(sink) = &read_sink {
-            validation = validation.with_read_sink(ShExReadSink::new(sink.clone()));
+            validation = validation.with_read_sink(TriplesSink::new(sink.clone()));
         }
         validation.execute()?;
 

@@ -12,7 +12,7 @@ use crate::{
 use pyo3::prelude::*;
 use rudof_lib::errors::RudofError as CoreError;
 use rudof_lib::formats::{DataReaderMode, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode};
-use rudof_lib::types::{GraphSink, RdfSink, ShExReadSink};
+use rudof_lib::types::{GraphSink, RdfSink, TriplesSink};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use std::sync::{Arc, Mutex};
 use std::{io::BufWriter, path::PathBuf};
@@ -240,7 +240,7 @@ impl PyRudof {
             let sink = Arc::new(Mutex::new(sink));
             self.inner
                 .validate_shex()
-                .with_read_sink(ShExReadSink::new(sink.clone()))
+                .with_read_sink(TriplesSink::new(sink.clone()))
                 .execute()?;
             let mut sink = Arc::try_unwrap(sink)
                 .map_err(|_| generic(&"the read sink is still shared"))?

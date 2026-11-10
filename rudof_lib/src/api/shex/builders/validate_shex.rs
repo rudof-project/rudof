@@ -1,5 +1,5 @@
 use crate::{Result, Rudof, api::shex::ShExOperations};
-use shex_validation::ReadSink;
+use rudof_rdf_sink::TriplesSink;
 
 /// Builder for `validate_shex` operation.
 ///
@@ -7,7 +7,7 @@ use shex_validation::ReadSink;
 /// operations.
 pub struct ValidateShexBuilder<'a> {
     rudof: &'a mut Rudof,
-    read_sink: Option<ReadSink>,
+    read_sink: Option<TriplesSink>,
 }
 
 impl<'a> ValidateShexBuilder<'a> {
@@ -21,7 +21,7 @@ impl<'a> ValidateShexBuilder<'a> {
 
     /// Pushes every triple the validator reads into `read_sink`, for this run
     /// only.
-    pub fn with_read_sink(mut self, read_sink: ReadSink) -> Self {
+    pub fn with_read_sink(mut self, read_sink: TriplesSink) -> Self {
         self.read_sink = Some(read_sink);
         self
     }

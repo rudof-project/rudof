@@ -1,4 +1,3 @@
-use crate::ReadSink;
 use crate::Reason;
 use crate::ValidatorConfig;
 use crate::atom;
@@ -7,6 +6,7 @@ use crate::validator_error::*;
 use colored::Color;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};
+use rudof_rdf_sink::TriplesSink;
 use serde_json::{Value, json};
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
@@ -96,7 +96,7 @@ impl Validator {
 
     /// Installs the sink that receives the triples read by the next
     /// validations, or removes it with `None`.
-    pub fn set_read_sink(&mut self, sink: Option<ReadSink>) {
+    pub fn set_read_sink(&mut self, sink: Option<TriplesSink>) {
         self.config.read_sink = sink;
     }
 

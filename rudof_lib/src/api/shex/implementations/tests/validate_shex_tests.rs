@@ -846,8 +846,8 @@ fn test_validate_shex_endpoint_or_does_not_follow_the_branch_it_does_not_need() 
 #[test]
 fn test_validate_shex_read_sink_is_removed_after_the_run() {
     use rudof_rdf::rdf_impl::OxigraphInMemory;
+    use rudof_rdf_sink::TriplesSink;
     use rudof_rdf_sink::{GraphSink, RdfSink};
-    use shex_validation::ReadSink;
     use std::sync::{Arc, Mutex};
 
     let mut rudof = Rudof::new(RudofConfig::default());
@@ -884,7 +884,7 @@ fn test_validate_shex_read_sink_is_removed_after_the_run() {
     .unwrap();
 
     let sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
-    validate_shex(&mut rudof, Some(ReadSink::new(sink.clone()))).unwrap();
+    validate_shex(&mut rudof, Some(TriplesSink::new(sink.clone()))).unwrap();
     assert_eq!(sink.lock().unwrap().report().triples, 2);
 
     validate_shex(&mut rudof, None).unwrap();
