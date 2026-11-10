@@ -150,7 +150,7 @@ pub struct ValidateArgs {
     #[arg(
         long = "validated-graph",
         value_name = "FILE",
-        help = "ShEx only: write the triples the validation read to FILE"
+        help = "Write the triples the validation read to FILE"
     )]
     pub validated_graph: Option<PathBuf>,
 
@@ -158,7 +158,7 @@ pub struct ValidateArgs {
         long = "validated-graph-format",
         ignore_case = true,
         value_name = "FORMAT",
-        help = "ShEx only: RDF format of --validated-graph",
+        help = "RDF format of --validated-graph",
         default_value_t = DataFormatCli::Turtle
     )]
     pub validated_graph_format: DataFormatCli,
