@@ -11,6 +11,7 @@ use crate::validator::store::{Graph, ReadRecorder};
 use rudof_rdf::rdf_core::RDFFormat;
 #[cfg(not(feature = "sparql"))]
 use rudof_rdf::rdf_impl::OxigraphInMemory;
+use rudof_rdf_sink::TriplesSink;
 #[cfg(feature = "sparql")]
 use sparql_service::RdfData;
 #[cfg(not(target_family = "wasm"))]
@@ -80,6 +81,11 @@ impl ShaclProcessor<ReadRecorder<RdfData>> for GraphValidation {
     fn prepare_store(&mut self) -> Result<(), ValidationError> {
         self.store.inner_mut().check_store().map_err(ValidationError::from)
     }
+
+    fn set_read_sink(&mut self, sink: Option<TriplesSink>) -> Result<(), ValidationError> {
+        self.store.set_sink(sink);
+        Ok(())
+    }
 }
 
 #[cfg(not(feature = "sparql"))]
@@ -92,6 +98,11 @@ impl ShaclProcessor<ReadRecorder<OxigraphInMemory>> for GraphValidation {
         match mode {
             ShaclValidationMode::Native => Box::new(NativeEngine::new(config.recursion_semantics())),
         }
+    }
+
+    fn set_read_sink(&mut self, sink: Option<TriplesSink>) -> Result<(), ValidationError> {
+        self.store.set_sink(sink);
+        Ok(())
     }
 }
 

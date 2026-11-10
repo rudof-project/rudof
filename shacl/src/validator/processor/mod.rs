@@ -21,6 +21,7 @@ use rayon::prelude::*;
 #[cfg(feature = "sparql")]
 pub use rdf_data::DataValidation;
 use rudof_rdf::rdf_core::NeighsRDF;
+use rudof_rdf_sink::TriplesSink;
 use std::fmt::Debug;
 
 /// The basic operations of the SHACL Processor.
@@ -46,6 +47,16 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
     /// remote SPARQL endpoint it would ask for the whole endpoint.
     fn use_class_index(&self) -> bool {
         true
+    }
+
+    /// Installs the sink that receives every triple the validation reads, or
+    /// removes it with `None`. Processors that cannot record their reads
+    /// refuse a sink.
+    fn set_read_sink(&mut self, sink: Option<TriplesSink>) -> Result<(), ValidationError> {
+        match sink {
+            Some(_) => Err(ValidationError::ReadSinkNotSupported),
+            None => Ok(()),
+        }
     }
 
     /// Called once before validation begins, after [`Self::prepare_store`],
@@ -90,39 +101,24 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
             store_evidences: config.store_evidences(),
         });
         self.before_validation(shapes_graph, master_runner.as_ref(), config)?;
+
+        // Installed after `before_validation`, so data fetched in advance is
+        // not counted as read.
+        let read_sink = config.read_sink();
+        if let Some(sink) = read_sink {
+            self.set_read_sink(Some(sink.clone()))?;
+        }
+        let outcome = validate_levels(
+            self.store(),
+            master_runner.as_mut(),
+            shapes_graph,
+            self.use_class_index(),
+        );
+        if read_sink.is_some() {
+            self.set_read_sink(None)?;
+        }
+        let all_outcome = outcome?;
         let store = self.store();
-
-        // Build shared indexes once. Forked engines share
-        // the data, avoiding redundant scans.
-        if self.use_class_index() {
-            master_runner.build_indexes(store)?;
-        }
-
-        // Group shapes-with-targets by topological level so that dependencies
-        // are always validated before the shapes that reference them.
-        let levels = shapes_graph.shapes_with_targets_by_level();
-
-        let mut all_outcome = ValidationOutcome::new();
-
-        for level in levels {
-            // Fork one engine per shape in this level. Each fork shares the
-            // pre-built class index and cache.
-            let mut forked_runners: Vec<Box<dyn Engine<S>>> = level.iter().map(|_| master_runner.fork()).collect();
-
-            // Validate all shapes in the level in parallel.
-            let level_results: Vec<Result<ValidationOutcome, ValidationError>> = forked_runners
-                .par_iter_mut()
-                .zip(level.par_iter())
-                .map(|(runner, idx)| {
-                    let shape = shapes_graph.get_shape_from_idx_e(idx)?;
-                    shape.validate(store, runner.as_mut(), None, Some(shape), shapes_graph)
-                })
-                .collect();
-
-            for result in level_results {
-                all_outcome.extend(result?);
-            }
-        }
 
         let mut pm = shapes_graph.prefix_map().clone();
         if let Some(store_pm) = store.prefixmap() {
@@ -147,4 +143,47 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
 
         Ok(report)
     }
+}
+
+/// Validates the shapes with targets level by level: see
+/// [`ShaclProcessor::validate`].
+fn validate_levels<S: NeighsRDF + Debug + Send + Sync>(
+    store: &S,
+    master_runner: &mut dyn Engine<S>,
+    shapes_graph: &IRSchema,
+    use_class_index: bool,
+) -> Result<ValidationOutcome, ValidationError> {
+    // Build shared indexes once. Forked engines share
+    // the data, avoiding redundant scans.
+    if use_class_index {
+        master_runner.build_indexes(store)?;
+    }
+
+    // Group shapes-with-targets by topological level so that dependencies
+    // are always validated before the shapes that reference them.
+    let levels = shapes_graph.shapes_with_targets_by_level();
+
+    let mut all_outcome = ValidationOutcome::new();
+
+    for level in levels {
+        // Fork one engine per shape in this level. Each fork shares the
+        // pre-built class index and cache.
+        let mut forked_runners: Vec<Box<dyn Engine<S>>> = level.iter().map(|_| master_runner.fork()).collect();
+
+        // Validate all shapes in the level in parallel.
+        let level_results: Vec<Result<ValidationOutcome, ValidationError>> = forked_runners
+            .par_iter_mut()
+            .zip(level.par_iter())
+            .map(|(runner, idx)| {
+                let shape = shapes_graph.get_shape_from_idx_e(idx)?;
+                shape.validate(store, runner.as_mut(), None, Some(shape), shapes_graph)
+            })
+            .collect();
+
+        for result in level_results {
+            all_outcome.extend(result?);
+        }
+    }
+
+    Ok(all_outcome)
 }

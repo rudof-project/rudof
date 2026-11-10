@@ -4,6 +4,7 @@ use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
 use crate::validator::store::{CachedRdfData, ReadRecorder};
 use crate::validator::{FetchStrategy, ShaclConfig, ShaclValidationMode, prefetch};
+use rudof_rdf_sink::TriplesSink;
 use sparql_service::RdfData;
 
 /// Validation of data that comes, at least partly, from remote SPARQL
@@ -46,6 +47,11 @@ impl ShaclProcessor<ReadRecorder<CachedRdfData>> for CachedDataValidation {
             .inner_mut()
             .check_store()
             .map_err(ValidationError::from)
+    }
+
+    fn set_read_sink(&mut self, sink: Option<TriplesSink>) -> Result<(), ValidationError> {
+        self.store.set_sink(sink);
+        Ok(())
     }
 
     fn use_class_index(&self) -> bool {

@@ -63,6 +63,9 @@ pub enum ValidationError {
 
     #[error("Validating the shape {0} holds more than {1} results and evidences, the configured max_results")]
     TooManyResults(String, usize),
+
+    #[error("This SHACL processor cannot record the triples it reads: no read sink is supported")]
+    ReadSinkNotSupported,
 }
 
 impl ValidationError {
