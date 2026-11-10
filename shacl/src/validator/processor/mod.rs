@@ -94,6 +94,9 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         mode: &ShaclValidationMode,
         config: &ShaclConfig,
     ) -> Result<ValidationReport, ValidationError> {
+        if config.read_sink().is_some() && *mode != ShaclValidationMode::Native {
+            return Err(ValidationError::ReadSinkNeedsNativeEngine);
+        }
         self.prepare_store()?;
         let mut master_runner = Self::runner(mode, config);
         master_runner.set_retention(Retention {

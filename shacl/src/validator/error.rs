@@ -66,6 +66,9 @@ pub enum ValidationError {
 
     #[error("This SHACL processor cannot record the triples it reads: no read sink is supported")]
     ReadSinkNotSupported,
+
+    #[error("The SPARQL engine reads the data through queries, not triples: a read sink needs the native engine")]
+    ReadSinkNeedsNativeEngine,
 }
 
 impl ValidationError {
