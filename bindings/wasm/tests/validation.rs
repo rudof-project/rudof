@@ -169,6 +169,28 @@ fn errors_have_categories() {
 // Sessions
 
 #[test]
+fn session_shex_reports_the_triples_read() {
+    let mut rudof = Session::new(None);
+    rudof.read_data(DATA, None, None, None, None).unwrap();
+    rudof.read_shex(SHEX_SCHEMA, None, None, None).unwrap();
+    rudof.read_shapemap(":alice@:Person", None, None, None).unwrap();
+
+    let report = rudof.validate_shex(true, Some("ntriples")).unwrap();
+    assert!(report.conforms);
+    assert_eq!(report.triples_read, Some(2));
+    assert_eq!(report.distinct_triples_read, Some(2));
+    let triples = report.read_triples.unwrap();
+    assert!(
+        triples.contains(r#"<http://example.org/alice> <http://example.org/name> "Alice" ."#),
+        "{triples}"
+    );
+    assert!(!triples.contains("bob"), "{triples}");
+
+    let report = rudof.validate_shex(false, None).unwrap();
+    assert_eq!(report.triples_read, None);
+}
+
+#[test]
 fn session_shex_workflow() {
     let mut rudof = Session::new(None);
     rudof.read_data(DATA, None, None, None, None).unwrap();
@@ -177,7 +199,7 @@ fn session_shex_workflow() {
         .read_shapemap(":alice@:Person, :bob@:Person", None, None, None)
         .unwrap();
 
-    let report = rudof.validate_shex().unwrap();
+    let report = rudof.validate_shex(false, None).unwrap();
     assert!(!report.conforms);
     assert_eq!(report.entries.len(), 2);
 
@@ -201,7 +223,7 @@ fn session_shex_workflow() {
     // Validating again with another ShapeMap reuses the data and schema.
     rudof.reset_shapemap();
     rudof.read_shapemap(":alice@:Person", None, None, None).unwrap();
-    assert!(rudof.validate_shex().unwrap().conforms);
+    assert!(rudof.validate_shex(false, None).unwrap().conforms);
 }
 
 #[test]
@@ -211,15 +233,40 @@ fn session_shacl_fetch_strategy() {
     rudof.read_shacl(Some(SHACL_SHAPES), None, None, None).unwrap();
     // The fetch strategy only changes how an endpoint's data is fetched:
     // over data in memory, every strategy gives the same report.
-    let expected = rudof.validate_shacl(None, None).unwrap().conforms;
+    let expected = rudof.validate_shacl(None, None, false, None).unwrap().conforms;
     for strategy in ["on-demand", "by-shape", "BY-SHAPE"] {
         assert_eq!(
-            rudof.validate_shacl(None, Some(strategy)).unwrap().conforms,
+            rudof
+                .validate_shacl(None, Some(strategy), false, None)
+                .unwrap()
+                .conforms,
             expected,
             "{strategy}"
         );
     }
-    assert!(rudof.validate_shacl(None, Some("everything")).is_err());
+    assert!(rudof.validate_shacl(None, Some("everything"), false, None).is_err());
+}
+
+#[test]
+fn session_shacl_reports_the_triples_read() {
+    let mut rudof = Session::new(None);
+    rudof.read_data(DATA, None, None, None, None).unwrap();
+    rudof.read_shacl(Some(SHACL_SHAPES), None, None, None).unwrap();
+
+    let report = rudof.validate_shacl(None, None, true, Some("ntriples")).unwrap();
+    assert!(!report.conforms);
+    // :name for the targets, then :age for each of them.
+    assert_eq!(report.distinct_triples_read, Some(4));
+    assert!(report.triples_read.unwrap() >= 4);
+    let triples = report.read_triples.unwrap();
+    assert!(
+        triples.contains(r#"<http://example.org/bob> <http://example.org/age> "unknown" ."#),
+        "{triples}"
+    );
+
+    let report = rudof.validate_shacl(None, None, false, None).unwrap();
+    assert_eq!(report.triples_read, None);
+    assert!(rudof.validate_shacl(Some("sparql"), None, true, None).is_err());
 }
 
 #[test]
@@ -227,7 +274,7 @@ fn session_shacl_workflow() {
     let mut rudof = Session::new(None);
     rudof.read_data(DATA, None, None, None, None).unwrap();
     rudof.read_shacl(Some(SHACL_SHAPES), None, None, None).unwrap();
-    assert!(!rudof.validate_shacl(None, None).unwrap().conforms);
+    assert!(!rudof.validate_shacl(None, None, false, None).unwrap().conforms);
 
     let shapes = rudof.serialize_shacl(Some("ntriples")).unwrap();
     assert!(shapes.contains("http://www.w3.org/ns/shacl#datatype"), "{shapes}");
@@ -261,7 +308,12 @@ fn session_shacl_workflow() {
             None,
         )
         .unwrap();
-    assert!(rudof.validate_shacl(Some("sparql"), None).unwrap().conforms);
+    assert!(
+        rudof
+            .validate_shacl(Some("sparql"), None, false, None)
+            .unwrap()
+            .conforms
+    );
 }
 
 #[test]
@@ -271,7 +323,7 @@ fn session_shacl_shapes_from_data() {
         .read_data(&format!("{DATA}\n{SHACL_SHAPES}"), None, None, None, None)
         .unwrap();
     rudof.read_shacl(None, None, None, None).unwrap();
-    let report = rudof.validate_shacl(None, None).unwrap();
+    let report = rudof.validate_shacl(None, None, false, None).unwrap();
     assert_eq!(report.entries.len(), 1, "{report:?}");
 }
 
@@ -370,10 +422,10 @@ fn session_prefixes() {
 fn session_errors_without_loaded_state() {
     let mut rudof = Session::new(None);
     rudof.read_data(DATA, None, None, None, None).unwrap();
-    let err = rudof.validate_shex().unwrap_err();
+    let err = rudof.validate_shex(false, None).unwrap_err();
     assert_eq!(err.name(), "ShExError", "{err}");
     rudof.reset_all();
-    assert!(rudof.validate_shacl(None, None).is_err());
+    assert!(rudof.validate_shacl(None, None, false, None).is_err());
 }
 
 #[test]

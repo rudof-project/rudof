@@ -21,6 +21,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Failed to record a triple read by the validator: {error}")]
+    ReadSinkFailed { error: String },
+
     #[error("Parent shape {idx} failed for node {node} with errors: {errors}")]
     ParentShapeFailed {
         node: Box<Node>,
@@ -434,6 +437,7 @@ impl ValidatorError {
             ValidatorError::ErrorSerializationError { .. } => "Serialization of error failed".to_string(),
             ValidatorError::NegCycleError { .. } => "Negation cycle error".to_string(),
             ValidatorError::SRDFError { .. } => "SRDF error".to_string(),
+            ValidatorError::ReadSinkFailed { .. } => "Recording a read triple failed".to_string(),
             ValidatorError::NotFoundShapeLabel { .. } => "Shape label not found".to_string(),
             ValidatorError::NotFoundShapeLabelWithIndex { .. } => "Shape label not found with index".to_string(),
             ValidatorError::ConversionObjectIri { .. } => "Conversion of object IRI failed".to_string(),
@@ -599,6 +603,7 @@ impl ValidatorError {
             | ValidatorError::ErrorSerializationError { .. }
             | ValidatorError::NegCycleError { .. }
             | ValidatorError::SRDFError { .. }
+            | ValidatorError::ReadSinkFailed { .. }
             | ValidatorError::NotFoundShapeLabel { .. }
             | ValidatorError::NotFoundShapeLabelWithIndex { .. }
             | ValidatorError::ConversionObjectIri { .. }

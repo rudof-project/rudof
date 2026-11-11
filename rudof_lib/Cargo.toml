@@ -57,6 +57,7 @@ rdf_config = { workspace = true, optional = true }
 reqwest.workspace = true
 regex.workspace = true
 rudof_rdf.workspace = true
+rudof_rdf_sink.workspace = true
 rudof_viz.workspace = true
 semver.workspace = true
 schemars.workspace = true

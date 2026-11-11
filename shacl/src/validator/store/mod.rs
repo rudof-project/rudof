@@ -4,6 +4,7 @@ mod cached;
 mod endpoint;
 mod graph;
 mod manager;
+mod recorder;
 
 #[cfg(feature = "sparql")]
 pub use cached::{CachedRdfData, DEFAULT_PREFETCH_BATCH_SIZE};
@@ -11,6 +12,7 @@ pub use cached::{CachedRdfData, DEFAULT_PREFETCH_BATCH_SIZE};
 pub use endpoint::Endpoint;
 pub use graph::Graph;
 pub use manager::ShaclDataManager;
+pub use recorder::{ReadRecorder, ReadRecorderError};
 
 pub trait Store<S> {
     fn store(&self) -> &S;

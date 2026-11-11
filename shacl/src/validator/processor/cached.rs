@@ -2,8 +2,9 @@ use crate::error::ValidationError;
 use crate::ir::IRSchema;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
-use crate::validator::store::CachedRdfData;
+use crate::validator::store::{CachedRdfData, ReadRecorder};
 use crate::validator::{FetchStrategy, ShaclConfig, ShaclValidationMode, prefetch};
+use rudof_rdf_sink::TriplesSink;
 use sparql_service::RdfData;
 
 /// Validation of data that comes, at least partly, from remote SPARQL
@@ -13,27 +14,27 @@ use sparql_service::RdfData;
 /// advance, many nodes per query (see [`prefetch`]).
 #[derive(Debug)]
 pub struct CachedDataValidation {
-    store: CachedRdfData,
+    store: ReadRecorder<CachedRdfData>,
 }
 
 impl CachedDataValidation {
     pub fn new(data: RdfData) -> Self {
         Self {
-            store: CachedRdfData::new(data),
+            store: ReadRecorder::new(CachedRdfData::new(data)),
         }
     }
 
     pub fn store(&self) -> &CachedRdfData {
-        &self.store
+        self.store.inner()
     }
 }
 
-impl ShaclProcessor<CachedRdfData> for CachedDataValidation {
-    fn store(&self) -> &CachedRdfData {
+impl ShaclProcessor<ReadRecorder<CachedRdfData>> for CachedDataValidation {
+    fn store(&self) -> &ReadRecorder<CachedRdfData> {
         &self.store
     }
 
-    fn runner(mode: &ShaclValidationMode, config: &ShaclConfig) -> Box<dyn Engine<CachedRdfData>> {
+    fn runner(mode: &ShaclValidationMode, config: &ShaclConfig) -> Box<dyn Engine<ReadRecorder<CachedRdfData>>> {
         match mode {
             ShaclValidationMode::Native => Box::new(NativeEngine::new(config.recursion_semantics())),
             ShaclValidationMode::Sparql => Box::new(SparqlEngine::new(config.recursion_semantics())),
@@ -41,7 +42,16 @@ impl ShaclProcessor<CachedRdfData> for CachedDataValidation {
     }
 
     fn prepare_store(&mut self) -> Result<(), ValidationError> {
-        self.store.inner_mut().check_store().map_err(ValidationError::from)
+        self.store
+            .inner_mut()
+            .inner_mut()
+            .check_store()
+            .map_err(ValidationError::from)
+    }
+
+    fn set_read_sink(&mut self, sink: Option<TriplesSink>) -> Result<(), ValidationError> {
+        self.store.set_sink(sink);
+        Ok(())
     }
 
     fn use_class_index(&self) -> bool {
@@ -51,12 +61,12 @@ impl ShaclProcessor<CachedRdfData> for CachedDataValidation {
     fn before_validation(
         &mut self,
         shapes_graph: &IRSchema,
-        runner: &mut dyn Engine<CachedRdfData>,
+        runner: &mut dyn Engine<ReadRecorder<CachedRdfData>>,
         config: &ShaclConfig,
     ) -> Result<(), ValidationError> {
         if config.fetch_strategy() == FetchStrategy::ByShape {
-            let store = std::mem::replace(&mut self.store, CachedRdfData::new(RdfData::new()));
-            self.store = store.with_batch_size(config.prefetch_batch_size());
+            let store = std::mem::replace(self.store.inner_mut(), CachedRdfData::new(RdfData::new()));
+            *self.store.inner_mut() = store.with_batch_size(config.prefetch_batch_size());
             prefetch::prefetch(&self.store, shapes_graph, runner, config.prefetch_max_rounds())?;
         }
         Ok(())

@@ -68,7 +68,7 @@ pub fn validate_shex(
     session.read_data(data, data_format, base, None, None)?;
     session.read_shex(schema, None, base, None)?;
     session.read_shapemap(shapemap, None, base, base)?;
-    session.validate_shex()
+    session.validate_shex(false, None)
 }
 
 /// Validates RDF `data` against a SHACL shapes graph `shapes`, with the
@@ -90,7 +90,7 @@ pub fn validate_shacl(
     let mut session = Session::new(None);
     session.read_data(data, data_format, base, None, None)?;
     session.read_shacl(Some(shapes), shapes_format, base, None)?;
-    session.validate_shacl(mode, None)
+    session.validate_shacl(mode, None, false, None)
 }
 
 /// Generates synthetic data from a `schema` given as text, in `schema_format`

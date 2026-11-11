@@ -883,6 +883,56 @@ Validate RDF data from files against a ShEx schema and ShapeMap
 - **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.sm>`_
 
 
+ShEx Read Triples
+^^^^^^^^^^^^^^^^^
+
+Count and serialize the triples a ShEx validation read
+
+**Source**: `shex/shex_read_triples.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shex/shex_read_triples.py>`_
+
+**Python code:**
+
+.. code-block:: python
+
+    """Count and serialize the triples a ShEx validation read."""
+
+    from pyrudof import RDFFormat, Rudof, ShapeMapFormat, ShExFormat
+
+    SCHEMA = """
+    PREFIX : <http://example.org/>
+
+    :Person { :name . ; ^:knows . * }
+    """
+
+    DATA = """
+    PREFIX : <http://example.org/>
+
+    :alice :name "Alice" .
+    :bob :knows :alice .
+    :carol :name "Carol" .
+    """
+
+    SHAPEMAP = ":alice@:Person"
+
+
+    def main() -> None:
+        with Rudof() as rudof:
+            rudof.read_shex(SCHEMA, ShExFormat.ShExC)
+            rudof.read_data(DATA, RDFFormat.Turtle)
+            rudof.read_shapemap(SHAPEMAP, ShapeMapFormat.Compact)
+
+            report = rudof.validate_shex(read_triples=True)
+
+            print(f"conforms: {report.conforms}")
+            print(f"triples read: {report.triples_read}")
+            print(f"distinct: {report.distinct_triples_read}")
+            print(report.serialize_read_triples(RDFFormat.NTriples))
+
+
+    if __name__ == "__main__":
+        main()
+
+
 ShEx Serialize
 ^^^^^^^^^^^^^^
 
@@ -1318,6 +1368,55 @@ Validate inline RDF data with inline SHACL shapes and read the violation off the
             for entry in report:
                 print(f"{entry.severity} on {entry.focus_node} (path {entry.path})")
                 print(f"  {entry.message}")
+
+
+    if __name__ == "__main__":
+        main()
+
+
+SHACL Read Triples
+^^^^^^^^^^^^^^^^^^
+
+Count and serialize the triples a SHACL validation read
+
+**Source**: `shacl/shacl_read_triples.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shacl/shacl_read_triples.py>`_
+
+**Python code:**
+
+.. code-block:: python
+
+    """Count and serialize the triples a SHACL validation read."""
+
+    from pyrudof import RDFFormat, Rudof, ShaclFormat
+
+    SHAPES = """
+    PREFIX : <http://example.org/>
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+
+    :PersonShape a sh:NodeShape ;
+      sh:targetNode :alice ;
+      sh:property [ sh:path :name ; sh:minCount 1 ] .
+    """
+
+    DATA = """
+    PREFIX : <http://example.org/>
+
+    :alice :name "Alice" ; :age 30 .
+    :carol :name "Carol" .
+    """
+
+
+    def main() -> None:
+        with Rudof() as rudof:
+            rudof.read_shacl(SHAPES, ShaclFormat.Turtle)
+            rudof.read_data(DATA, RDFFormat.Turtle)
+
+            report = rudof.validate_shacl(read_triples=True)
+
+            print(f"conforms: {report.conforms}")
+            print(f"triples read: {report.triples_read}")
+            print(f"distinct: {report.distinct_triples_read}")
+            print(report.serialize_read_triples(RDFFormat.NTriples))
 
 
     if __name__ == "__main__":

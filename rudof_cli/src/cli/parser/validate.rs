@@ -142,6 +142,28 @@ pub struct ValidateArgs {
     pub show_intermediate_results: bool,
 
     #[arg(
+        long = "statistics",
+        help = "Print how many triples the validation read, and how many of them are distinct"
+    )]
+    pub statistics: bool,
+
+    #[arg(
+        long = "validated-graph",
+        value_name = "FILE",
+        help = "Write the triples the validation read to FILE"
+    )]
+    pub validated_graph: Option<PathBuf>,
+
+    #[arg(
+        long = "validated-graph-format",
+        ignore_case = true,
+        value_name = "FORMAT",
+        help = "RDF format of --validated-graph",
+        default_value_t = DataFormatCli::Turtle
+    )]
+    pub validated_graph_format: DataFormatCli,
+
+    #[arg(
         long = "no-errors",
         help = "SHACL only: don't retain violations in the validation report (default: violations are kept)"
     )]

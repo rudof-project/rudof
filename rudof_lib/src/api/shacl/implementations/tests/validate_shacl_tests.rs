@@ -1302,3 +1302,69 @@ fn test_validate_shacl_endpoint_strategies_agree_with_in_memory() {
         assert_eq!(result_keys(&report), expected, "{strategy}");
     }
 }
+
+fn rudof_with_alice() -> Rudof {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let schema = InputSpec::str(
+        r#"
+        @prefix ex: <http://example.org/> .
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        ex:S sh:targetNode ex:Alice ; sh:property [ sh:path ex:name ; sh:minCount 1 ] .
+        "#,
+    );
+    load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
+    let data = InputSpec::str(
+        r#"
+        @prefix ex: <http://example.org/> .
+        ex:Alice ex:name "Alice" ; ex:age 30 .
+        "#,
+    );
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        None,
+        None,
+        None,
+        None,
+        None,
+        EndpointStrategy::default(),
+    )
+    .unwrap();
+    rudof
+}
+
+#[test]
+fn test_validate_shacl_read_sink_is_for_that_run_only() {
+    use rudof_rdf::rdf_impl::OxigraphInMemory;
+    use rudof_rdf_sink::{GraphSink, RdfSink, TriplesSink};
+    use std::sync::{Arc, Mutex};
+
+    let mut rudof = rudof_with_alice();
+    let sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
+
+    rudof
+        .validate_shacl()
+        .with_read_sink(TriplesSink::new(sink.clone()))
+        .execute()
+        .unwrap();
+    assert_eq!(sink.lock().unwrap().report().triples, 1);
+
+    rudof.validate_shacl().execute().unwrap();
+    assert_eq!(sink.lock().unwrap().report().triples, 1);
+}
+
+#[test]
+fn test_validate_shacl_read_sink_needs_the_native_mode() {
+    use rudof_rdf_sink::{CountingSink, TriplesSink};
+    use std::sync::{Arc, Mutex};
+
+    let mut rudof = rudof_with_alice();
+    let result = rudof
+        .validate_shacl()
+        .with_shacl_validation_mode(&ShaclValidationMode::Sparql)
+        .with_read_sink(TriplesSink::new(Arc::new(Mutex::new(CountingSink::new()))))
+        .execute();
+
+    assert!(result.is_err());
+}

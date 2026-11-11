@@ -6,6 +6,7 @@ use crate::validator_error::*;
 use colored::Color;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};
+use rudof_rdf_sink::TriplesSink;
 use serde_json::{Value, json};
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
@@ -91,6 +92,12 @@ impl Validator {
 
     pub fn schema(&self) -> &SchemaIR {
         &self.schema
+    }
+
+    /// Installs the sink that receives the triples read by the next
+    /// validations, or removes it with `None`.
+    pub fn set_read_sink(&mut self, sink: Option<TriplesSink>) {
+        self.config.read_sink = sink;
     }
 
     /// The config to hand `Engine::new`: same as `self.config`, except that

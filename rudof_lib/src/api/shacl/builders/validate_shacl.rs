@@ -3,6 +3,7 @@ use crate::{
     api::shacl::ShaclOperations,
     formats::{ShaclFetchStrategy, ShaclValidationMode},
 };
+use rudof_rdf_sink::TriplesSink;
 
 /// Builder for `validate_shacl` operation.
 ///
@@ -12,6 +13,7 @@ pub struct ValidateShaclBuilder<'a> {
     rudof: &'a mut Rudof,
     mode: Option<&'a ShaclValidationMode>,
     fetch_strategy: Option<ShaclFetchStrategy>,
+    read_sink: Option<TriplesSink>,
 }
 
 impl<'a> ValidateShaclBuilder<'a> {
@@ -24,6 +26,7 @@ impl<'a> ValidateShaclBuilder<'a> {
             rudof,
             mode: None,
             fetch_strategy: None,
+            read_sink: None,
         }
     }
 
@@ -51,13 +54,23 @@ impl<'a> ValidateShaclBuilder<'a> {
         self
     }
 
+    /// Pushes every triple the validation reads into `read_sink`, for this
+    /// run only. Needs the native validation mode.
+    pub fn with_read_sink(mut self, read_sink: TriplesSink) -> Self {
+        self.read_sink = Some(read_sink);
+        self
+    }
+
     /// Executes the SHACL validation operation with the configured parameters.
     pub fn execute(self) -> Result<()> {
-        match self.fetch_strategy {
-            None => <Rudof as ShaclOperations>::validate_shacl(self.rudof, self.mode),
-            Some(strategy) => {
-                crate::api::shacl::implementations::validate_shacl_with(self.rudof, self.mode, Some(strategy))
-            },
+        if self.fetch_strategy.is_none() && self.read_sink.is_none() {
+            return <Rudof as ShaclOperations>::validate_shacl(self.rudof, self.mode);
         }
+        crate::api::shacl::implementations::validate_shacl_with(
+            self.rudof,
+            self.mode,
+            self.fetch_strategy,
+            self.read_sink,
+        )
     }
 }

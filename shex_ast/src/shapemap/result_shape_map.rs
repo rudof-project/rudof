@@ -210,24 +210,23 @@ impl ResultShapeMap {
         for (node, label, status) in self.iter_sorted(&sort_mode) {
             let node_label = show_node(node, self.nodes_prefixmap());
             let shape_label = show_shapelabel(label, self.shapes_prefixmap());
+            // CSV is read by other programs, so the status is written without color: `colored`
+            // decides by the process' stdout, which would put escape codes in a piped report
             let (details, status_label) = match status {
-                ValidationStatus::Conformant(conformant_info) => {
-                    (conformant_info.to_string(), self.ok_text().color(*self.ok_color()))
+                ValidationStatus::Conformant(conformant_info) => (conformant_info.to_string(), self.ok_text().clone()),
+                ValidationStatus::NonConformant(non_conformant_info) => {
+                    (non_conformant_info.to_string(), self.fail_text().clone())
                 },
-                ValidationStatus::NonConformant(non_conformant_info) => (
-                    non_conformant_info.to_string(),
-                    self.fail_text().color(*self.fail_color()),
-                ),
-                ValidationStatus::Pending => ("".to_owned(), "Pending".color(*self.pending_color())),
+                ValidationStatus::Pending => ("".to_owned(), "Pending".to_owned()),
                 ValidationStatus::Inconsistent(ci, nci) => (
                     format!("Conformant: {ci}, Non-conformant: {nci}"),
-                    "Inconsistent".color(*self.pending_color()),
+                    "Inconsistent".to_owned(),
                 ),
             };
             if with_details {
-                wtr.write_record([node_label, shape_label, status_label.to_string(), details])?;
+                wtr.write_record([node_label, shape_label, status_label, details])?;
             } else {
-                wtr.write_record([node_label, shape_label, status_label.to_string()])?;
+                wtr.write_record([node_label, shape_label, status_label])?;
             }
         }
         wtr.flush()?;

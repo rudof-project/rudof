@@ -14,6 +14,7 @@ use crate::reports::{
     ExternalResolver, GraphDiff, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationReport,
     ShaclValidationReport, Triples,
 };
+use rudof_lib::errors::RudofError;
 #[cfg(feature = "comparison")]
 use rudof_lib::formats::{ComparisonFormat, ComparisonMode};
 #[cfg(feature = "conversion")]
@@ -31,9 +32,13 @@ use rudof_lib::formats::{PgSchemaFormat, ResultPgSchemaValidationFormat};
 #[cfg(feature = "rdf-config")]
 use rudof_lib::formats::{RdfConfigFormat, ResultRdfConfigFormat};
 use rudof_lib::types::SubgraphMode;
+use rudof_lib::types::{GraphSink, RdfSink, TriplesSink};
 use rudof_lib::{Rudof, RudofConfig};
+use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
+use rudof_rdf::rdf_impl::OxigraphInMemory;
 use std::fmt::Display;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 
 pub struct Session {
     rudof: Rudof,
@@ -342,13 +347,56 @@ impl Session {
 
     /// Validates the current data against the ShEx schema, for the
     /// associations in the current ShapeMap.
-    pub fn validate_shex(&mut self) -> Result<ShExValidationReport> {
-        self.rudof.validate_shex().execute()?;
+    ///
+    /// With `read_triples`, the report also carries the triples the
+    /// validation read, serialized in `read_triples_format` (default Turtle).
+    pub fn validate_shex(
+        &mut self,
+        read_triples: bool,
+        read_triples_format: Option<&str>,
+    ) -> Result<ShExValidationReport> {
+        let format: Option<DataFormat> = parse(read_triples_format, "RDF format")?;
+        let read = if read_triples {
+            Some(self.validate_shex_reading(format.unwrap_or(DataFormat::Turtle))?)
+        } else {
+            self.rudof.validate_shex().execute()?;
+            None
+        };
         let results = self
             .rudof
             .shex_validation_results()
             .ok_or_else(|| Error::new("ValidationError", "ShEx validation produced no results"))?;
-        Ok(results.into())
+        let mut report: ShExValidationReport = results.into();
+        if let Some((reads, distinct, serialized)) = read {
+            report.triples_read = Some(reads);
+            report.distinct_triples_read = Some(distinct);
+            report.read_triples = Some(serialized);
+        }
+        Ok(report)
+    }
+
+    /// Validates with a `GraphSink` as read sink and returns how many triples
+    /// were read, how many are distinct, and the distinct ones in `format`.
+    fn validate_shex_reading(&mut self, format: DataFormat) -> Result<(usize, usize, String)> {
+        let format = RDFFormat::try_from(format).map_err(|e| Error::from(RudofError::from(e)))?;
+        let generic = |e: &dyn Display| Error::from(RudofError::Generic { error: e.to_string() });
+        let mut sink = GraphSink::new(OxigraphInMemory::new());
+        sink.declare_prefixes(self.rudof.prefixes().execute())
+            .map_err(|e| generic(&e))?;
+        let sink = Arc::new(Mutex::new(sink));
+        self.rudof
+            .validate_shex()
+            .with_read_sink(TriplesSink::new(sink.clone()))
+            .execute()?;
+        let mut sink = sink.lock().map_err(|e| generic(&e))?;
+        let reads = sink.finish().map_err(|e| generic(&e))?.triples;
+        let mut buffer = Vec::new();
+        sink.graph().serialize(&format, &mut buffer).map_err(|e| generic(&e))?;
+        Ok((
+            reads as usize,
+            sink.graph().len(),
+            String::from_utf8_lossy(&buffer).into_owned(),
+        ))
     }
 
     /// Serializes the results of the most recent ShEx validation.
@@ -422,9 +470,20 @@ impl Session {
         &mut self,
         mode: Option<&str>,
         fetch_strategy: Option<&str>,
+        read_triples: bool,
+        read_triples_format: Option<&str>,
     ) -> Result<ShaclValidationReport> {
         let mode: Option<ShaclValidationMode> = parse(mode, "SHACL validation mode")?;
         let fetch_strategy: Option<ShaclFetchStrategy> = parse(fetch_strategy, "SHACL fetch strategy")?;
+        let format: Option<DataFormat> = parse(read_triples_format, "RDF format")?;
+        let sink = if read_triples {
+            let mut sink = GraphSink::new(OxigraphInMemory::new());
+            sink.declare_prefixes(self.rudof.prefixes().execute())
+                .map_err(|e| Error::from(RudofError::Generic { error: e.to_string() }))?;
+            Some(Arc::new(Mutex::new(sink)))
+        } else {
+            None
+        };
         let mut b = self.rudof.validate_shacl();
         if let Some(m) = &mode {
             b = b.with_shacl_validation_mode(m);
@@ -432,12 +491,28 @@ impl Session {
         if let Some(s) = fetch_strategy {
             b = b.with_fetch_strategy(s);
         }
+        if let Some(sink) = &sink {
+            b = b.with_read_sink(TriplesSink::new(sink.clone()));
+        }
         b.execute()?;
         let report = self
             .rudof
             .shacl_validation_results()
             .ok_or_else(|| Error::new("ValidationError", "SHACL validation produced no results"))?;
-        Ok(report.into())
+        let mut report: ShaclValidationReport = report.into();
+        if let Some(sink) = sink {
+            let format = RDFFormat::try_from(format.unwrap_or(DataFormat::Turtle))
+                .map_err(|e| Error::from(RudofError::from(e)))?;
+            let generic = |e: &dyn Display| Error::from(RudofError::Generic { error: e.to_string() });
+            let mut sink = sink.lock().map_err(|e| generic(&e))?;
+            let reads = sink.finish().map_err(|e| generic(&e))?.triples;
+            let mut buffer = Vec::new();
+            sink.graph().serialize(&format, &mut buffer).map_err(|e| generic(&e))?;
+            report.triples_read = Some(reads as usize);
+            report.distinct_triples_read = Some(sink.graph().len());
+            report.read_triples = Some(String::from_utf8_lossy(&buffer).into_owned());
+        }
+        Ok(report)
     }
 
     /// Serializes the results of the most recent SHACL validation.
