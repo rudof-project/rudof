@@ -113,6 +113,10 @@ vocab_term!(
 );
 vocab_term!(ShaclVocab, SH_REIFICATION_REQUIRED, "reificationRequired"); // SHACL 1.2
 vocab_term!(ShaclVocab, SH_REIFIER_SHAPE, "reifierShape"); // SHACL 1.2
+vocab_term!(ShaclVocab, SH_NODE_BY_EXPRESSION, "nodeByExpression"); // SHACL 1.2
+
+// Node expression based
+vocab_term!(ShaclVocab, SH_EXPRESSION, "expression"); // SHACL 1.2
 
 // TODO - For node expressions, do not delete
 // vocab_term!(ShaclVocab, SH_DEFAULT_VALUE, "defaultValue");
@@ -123,6 +127,7 @@ vocab_term!(ShaclVocab, SH_TARGET_NODE, "targetNode");
 vocab_term!(ShaclVocab, SH_TARGET_CLASS, "targetClass");
 vocab_term!(ShaclVocab, SH_TARGET_SUBJECTS_OF, "targetSubjectsOf");
 vocab_term!(ShaclVocab, SH_TARGET_OBJECTS_OF, "targetObjectsOf");
+vocab_term!(ShaclVocab, SH_TARGET_WHERE, "targetWhere");
 
 // SPARQL
 vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT, "sourceConstraint");
@@ -284,6 +289,16 @@ vocab_term!(
     ShaclVocab,
     SH_REIFIER_SHAPE_CONSTRAINT_COMPONENT,
     "ReifierShapeConstraintComponent"
+); // SHACL 1.2
+vocab_term!(
+    ShaclVocab,
+    SH_NODE_BY_EXPRESSION_CONSTRAINT_COMPONENT,
+    "NodeByExpressionConstraintComponent"
+); // SHACL 1.2
+vocab_term!(
+    ShaclVocab,
+    SH_EXPRESSION_CONSTRAINT_COMPONENT,
+    "ExpressionConstraintComponent"
 ); // SHACL 1.2
 
 vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT_COMPONENT, "sourceConstraintComponent");

@@ -54,9 +54,11 @@ pub enum ValidationError {
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBNode,
 
-    // TODO - Drop after supporting all types of node expressions on Target Nodes
-    #[error("TargetNode node expressions that are not a constant IRI or literal are not supported yet: {0}")]
-    TargetNodeExprNotConstant(String),
+    #[error("A sh:targetNode node expression has no focus node to read, but {0} reads one")]
+    TargetNodeExprReadsFocus(String),
+
+    #[error("sh:targetWhere must be a shape, and {0} is not one")]
+    TargetWhereNotShape(String),
 
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,

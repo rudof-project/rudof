@@ -41,7 +41,7 @@ pub const DEFAULT_PREFETCH_MAX_ROUNDS: usize = 16;
 pub(crate) fn prefetch(
     recorder: &ReadRecorder<CachedRdfData>,
     schema: &IRSchema,
-    runner: &dyn Engine<ReadRecorder<CachedRdfData>>,
+    runner: &mut dyn Engine<ReadRecorder<CachedRdfData>>,
     max_rounds: usize,
 ) -> Result<(), ValidationError> {
     let store = recorder.inner();
@@ -50,7 +50,7 @@ pub(crate) fn prefetch(
         let Some(idx) = schema.get_idx(id) else {
             continue;
         };
-        let focus_nodes: Vec<OxTerm> = shape.focus_nodes(recorder, runner).iter().cloned().collect();
+        let focus_nodes: Vec<OxTerm> = shape.focus_nodes(recorder, runner, schema)?.iter().cloned().collect();
         frontier.entry(*idx).or_default().extend(focus_nodes);
     }
 

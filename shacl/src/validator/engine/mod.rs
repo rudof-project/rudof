@@ -5,8 +5,7 @@ mod sparql;
 mod validate;
 mod value_nodes_ops;
 
-use crate::ir::{IRComponent, IRPropertyShape, IRSchema, IRShape, IRTarget, ShapeLabelIdx};
-use crate::types::Target;
+use crate::ir::{IRComponent, IRPropertyShape, IRSchema, IRShape, ShapeLabelIdx};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
@@ -47,31 +46,6 @@ pub trait Engine<S: NeighsRDF>: Send {
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError>;
-
-    fn focus_nodes(&self, store: &S, targets: &[IRTarget]) -> Result<FocusNodes<S>, ValidationError> {
-        let targets_iter: Vec<_> = targets
-            .iter()
-            .flat_map(|target| match target {
-                // TODO - Try to figure how to compute all types of node expressions
-                Target::Node(e) => match e.as_constant() {
-                    Some(node) => self.target_node(store, &node),
-                    None => Err(ValidationError::TargetNodeExprNotConstant(e.to_string())),
-                },
-                Target::Class(c) => self.target_class(store, c),
-                Target::SubjectsOf(p) => self.target_subject_of(store, p),
-                Target::ObjectsOf(p) => self.target_object_of(store, p),
-                Target::ImplicitClass(n) => self.implicit_target_class(store, n),
-                Target::WrongNode(node) => self.target_node(store, node),
-                Target::WrongClass(_) | Target::WrongImplicitClass(_) => Err(ValidationError::TargetClassNotIri),
-                Target::WrongSubjectsOf(o) | Target::WrongObjectsOf(o) => {
-                    Err(ValidationError::CastError(o.to_string(), "an IRI".to_string()))
-                },
-            })
-            .flatten()
-            .collect();
-
-        Ok(FocusNodes::from_iter(targets_iter))
-    }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.

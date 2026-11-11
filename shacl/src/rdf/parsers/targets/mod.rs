@@ -1,25 +1,30 @@
 use crate::ast::ASTTarget;
 use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ParseBudget;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use std::sync::Arc;
 
 mod class;
 mod implicit_class;
 mod node;
 mod objects_of;
 mod subjects_of;
+mod where_shape;
 
 pub(crate) use class::targets_class;
 pub(crate) use implicit_class::targets_implicit_class;
 pub(crate) use node::targets_node;
 pub(crate) use objects_of::targets_objects_of;
 pub(crate) use subjects_of::targets_subjects_of;
+pub(crate) use where_shape::targets_where;
 
-pub(crate) fn targets<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTTarget>> {
+pub(crate) fn targets<RDF: FocusRDF>(budget: Arc<ParseBudget>) -> impl RDFNodeParse<RDF, Output = Vec<ASTTarget>> {
     let others: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<ASTTarget>>>> = vec![
-        Box::new(targets_node()),
+        Box::new(targets_node(budget)),
         Box::new(targets_implicit_class()),
         Box::new(targets_subjects_of()),
         Box::new(targets_objects_of()),
+        Box::new(targets_where()),
     ];
 
     Box::new(targets_class()).combine_many(others)

@@ -1,9 +1,10 @@
 use crate::ast::ASTComponent;
 use crate::rdf::parsers::basic_sparql;
 use crate::rdf::parsers::{
-    and, class, closed, datatype, deactivated, disjoint, equals, has_value, in_component, language_in, less_than,
-    less_than_or_equals, max_count, max_exclusive, max_inclusive, max_length, min_count, min_exclusive, min_inclusive,
-    min_length, node, node_kind, not, or, pattern, qualified_value_shape, subset_of, unique_lang, xone,
+    and, class, closed, datatype, deactivated, disjoint, equals, expression, has_value, in_component, language_in,
+    less_than, less_than_or_equals, max_count, max_exclusive, max_inclusive, max_length, min_count, min_exclusive,
+    min_inclusive, min_length, node, node_by_expression, node_kind, not, or, pattern, qualified_value_shape, subset_of,
+    unique_lang, xone,
 };
 use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ParseBudget;
@@ -52,6 +53,9 @@ pub(crate) fn components<RDF: FocusRDF>(
         Box::new(node()),
         // property is handled differently
         Box::new(qualified_value_shape()),
+        // Node expression based constraint components - SHACL 1.2
+        Box::new(expression(budget.clone())),
+        Box::new(node_by_expression(budget.clone())),
         // Other
         Box::new(closed(budget.clone())),
         Box::new(has_value()),

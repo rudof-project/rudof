@@ -1,4 +1,5 @@
 mod concat;
+mod conforms_to_shape;
 mod count;
 mod distinct;
 mod empty;

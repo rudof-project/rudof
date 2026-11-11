@@ -24,7 +24,10 @@ pub(crate) fn node_shape<RDF: FocusRDF>(budget: Arc<ParseBudget>) -> impl RDFNod
                     .optional()
                     .flat_map(move |msg| Ok(ns.clone().with_message(msg)))
             })
-            .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
+            .then({
+                let budget = budget.clone();
+                move |ns| targets(budget.clone()).flat_map(move |ts| Ok(ns.clone().with_targets(ts)))
+            })
             .then(move |ns| {
                 let budget = budget.clone();
                 property()

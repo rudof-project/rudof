@@ -2,6 +2,7 @@ mod cardinality;
 mod components;
 mod logical;
 pub(crate) mod node_expr;
+mod node_expr_based;
 mod non_shape;
 mod other;
 mod property_pair;
@@ -17,6 +18,7 @@ mod value_type;
 
 pub(crate) use cardinality::{max_count, min_count};
 pub(crate) use logical::{and, not, or, xone};
+pub(crate) use node_expr_based::{expression, node_by_expression};
 pub(crate) use non_shape::{deactivated, severity};
 pub(crate) use other::{closed, has_value, in_component};
 pub(crate) use property_pair::{disjoint, equals, less_than, less_than_or_equals, subset_of};

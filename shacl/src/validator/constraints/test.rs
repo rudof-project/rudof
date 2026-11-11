@@ -1041,7 +1041,7 @@ prefix : <http://example.org/>
     }
 
     #[test]
-    fn cyclic_deep_shared_and_unsupported_node_expressions_are_errors() {
+    fn cyclic_deep_and_shared_node_expressions_are_errors() {
         on_small_stack(|| {
             let shared: String = (0..40)
                 .map(|i| format!("_:e{i} shnex:concat ( _:e{j} _:e{j} ) .\n", j = i + 1))
@@ -1057,19 +1057,6 @@ prefix : <http://example.org/>
                 ),
                 (deep, "cyclic node expression"),
                 (shared, "steps plus"),
-                (
-                    "_:e0 shnex:filterShape :T ; shnex:nodes :a .\n".to_string(),
-                    "not supported",
-                ),
-                (
-                    "_:e0 shnex:findFirst :T ; shnex:nodes :a .\n".to_string(),
-                    "not implemented",
-                ),
-                (
-                    "_:e0 shnex:matchAll :T ; shnex:nodes :a .\n".to_string(),
-                    "not yet implemented",
-                ),
-                ("_:e0 shnex:distinct <<( :a :p :b )>> .\n".to_string(), "not supported"),
             ] {
                 let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:deactivated _:e0 .\n{expr}");
                 let result = try_validate(&graph).map(|_| ());
@@ -1163,7 +1150,33 @@ prefix : <http://example.org/>
             let graph = format!("{PREFIXES}{SHNEX}{shapes}\n:a :p :b .\n");
             let result = try_validate(&graph).map(|_| ());
             assert!(
-                matches!(&result, Err(e) if e.contains("depends on itself")),
+                matches!(&result, Err(e) if e.contains("negative cycles")),
+                "{shapes}: {result:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn node_expression_cycles_are_rejected_by_the_dependency_graph() {
+        for shapes in [
+            // One shape-taking node expression per kind
+            ":S sh:targetNode :a ; sh:expression [ shnex:nodesMatching :S ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:filterShape :S ; shnex:nodes ( :a ) ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:findFirst :S ; shnex:nodes ( :a ) ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:matchAll :S ; shnex:nodes ( :a ) ] .",
+            // Nested inside another expression
+            ":S sh:targetNode :a ; sh:expression [ shnex:count [ shnex:nodesMatching :S ] ] .",
+            // Through a second shape, and through a node expression based target
+            ":S sh:targetNode :a ; sh:expression [ shnex:nodesMatching :T ] .\n:T sh:node :S .",
+            ":S sh:targetNode [ shnex:nodesMatching :S ] ; sh:class :C .",
+            ":S sh:targetWhere :T ; sh:class :C .\n:T sh:node :S .",
+            // The expression of a sh:nodeByExpression
+            ":S sh:targetNode :a ; sh:nodeByExpression [ shnex:findFirst :S ; shnex:nodes ( :a ) ] .",
+        ] {
+            let graph = format!("{PREFIXES}{SHNEX}{shapes}\n:a :p :b .\n");
+            let result = try_validate(&graph).map(|_| ());
+            assert!(
+                matches!(&result, Err(e) if e.contains("negative cycles")),
                 "{shapes}: {result:?}"
             );
         }
@@ -1242,6 +1255,59 @@ prefix : <http://example.org/>
     }
 
     #[test]
+    fn a_triple_term_expression_evaluates_to_itself() {
+        for (expr, conforms) in [
+            ("shnex:exists <<( :a :p :b )>>", true),
+            // The triple term is removed from itself by term equality, leaving no node
+            (
+                "shnex:exists [ shnex:remove <<( :a :p :b )>> ; shnex:nodes <<( :a :p :b )>> ]",
+                false,
+            ),
+            // A different triple term is kept
+            (
+                "shnex:exists [ shnex:remove <<( :a :p :c )>> ; shnex:nodes <<( :a :p :b )>> ]",
+                true,
+            ),
+        ] {
+            let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ {expr} ] .\n");
+            assert_eq!(try_validate(&graph).unwrap().conforms(), conforms, "{expr}");
+        }
+    }
+
+    #[test]
+    fn conforms_to_shape_validates_its_node_against_its_shape() {
+        let data = ":T a sh:NodeShape ; sh:class :C .\n:a a :C ; :p :a, :b .\n";
+        for (args, conforms) in [
+            ("[ shnex:var \"value\" ] :T", true),
+            (":b :T", false),
+            // The empty list is not ( true ), as either argument without a value gives no output node
+            ("[] :T", false),
+            ("[ shnex:var \"value\" ] []", false),
+        ] {
+            let graph = format!(
+                "{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( {args} ) ] .\n{data}"
+            );
+            assert_eq!(try_validate(&graph).unwrap().conforms(), conforms, "{args}");
+        }
+
+        for (args, error) in [
+            // The shape is not a shape of the shapes graph
+            ("[ shnex:var \"value\" ] :Missing", "Not found shape"),
+            // Each argument must produce at most one output node
+            ("[ shnex:pathValues :p ] :T", "at most one node"),
+            ("[ shnex:var \"value\" ] ( :T :T )", "at most one node"),
+            // The arguments are a list of exactly two node expressions
+            (":a", "list of two node expressions"),
+        ] {
+            let graph = format!(
+                "{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( {args} ) ] .\n{data}"
+            );
+            let result = try_validate(&graph).map(|_| ());
+            assert!(matches!(&result, Err(e) if e.contains(error)), "{args}: {result:?}");
+        }
+    }
+
+    #[test]
     fn ill_formed_terms_are_errors_not_panics() {
         for (shapes, conforms) in [
             (":S sh:targetNode _:b ; sh:class :C .", true),
@@ -1259,8 +1325,60 @@ prefix : <http://example.org/>
 
     #[test]
     fn ill_formed_target_is_written_back() {
-        let graph = format!("{PREFIXES}:S sh:targetNode _:b ; sh:class :C .\n");
-        let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+        // `_:b` is not a well-formed node expression, so it is not a well-formed target
+        let graph = format!("{PREFIXES}:S sh:targetNode _:b ; sh:class :C .\n_:b :foo 1 .\n");
+
+        assert!(serialize_shapes(&graph).contains("targetNode"));
+    }
+
+    #[test]
+    fn target_node_expressions_target_their_output_nodes() {
+        const DATA: &str = ":a :p :b .\n:b a :C .\n:T a sh:NodeShape ; sh:class :C .\n";
+
+        for (target, results) in [
+            // The constant expressions of SHACL Core
+            (":a", 1),
+            ("\"x\"", 1),
+            // A blank node with no arcs is the empty expression, so there is no target at all
+            ("[ ]", 0),
+            ("[ shnex:instancesOf :C ]", 1),
+            ("[ shnex:nodesMatching :T ]", 1),
+            ("[ shnex:distinct ( :a :a ) ]", 1),
+        ] {
+            let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode {target} ; sh:class :D .\n{DATA}");
+            let report = try_validate(&graph).unwrap_or_else(|e| panic!("{target}: {e}"));
+
+            assert_eq!(report.results().len(), results, "{target}: {:?}", report.results());
+        }
+
+        // A target is declared before there is any focus node for the expression to read
+        let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode [ shnex:var \"focusNode\" ] ; sh:class :D .\n{DATA}");
+        let error = try_validate(&graph).expect_err("expected a rejected target node expression");
+        assert!(error.contains("no focus node to read"), "{error}");
+    }
+
+    #[test]
+    fn target_where_targets_the_nodes_conforming_to_its_shape() {
+        const DATA: &str = ":a :p :b .\n:b a :C .\n:T a sh:NodeShape ; sh:class :C .\n";
+
+        for (target, results) in [(":T", 1), ("[ sh:class :C ]", 1), ("[ sh:class :D ]", 0)] {
+            let graph = format!("{PREFIXES}:S sh:targetWhere {target} ; sh:class :D .\n{DATA}");
+            let report = try_validate(&graph).unwrap_or_else(|e| panic!("{target}: {e}"));
+            assert_eq!(report.results().len(), results, "{target}: {:?}", report.results());
+
+            let round_tripped = format!("{PREFIXES}{}\n{DATA}", serialize_shapes(&graph));
+            let after = try_validate(&round_tripped).unwrap_or_else(|e| panic!("{target}: {e}\n{round_tripped}"));
+            assert_eq!(after.results().len(), results, "{target} was lost:\n{round_tripped}");
+        }
+
+        let graph = format!("{PREFIXES}:S sh:targetWhere 1 ; sh:class :D .\n{DATA}");
+        let error = try_validate(&graph).expect_err("expected a rejected sh:targetWhere");
+        assert!(error.contains("must be a shape"), "{error}");
+    }
+
+    /// Parses and compiles `graph`, and serializes its shapes back to Turtle.
+    fn serialize_shapes(graph: &str) -> String {
+        let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let schema = ShaclParser::new(rdf).parse().unwrap();
         let schema_ir = IRSchema::compile_with_recursion(&schema, RecursionSemantics::default()).unwrap();
         let mut writer = crate::rdf::ShaclWriter::<rudof_rdf::rdf_impl::OxigraphInMemory>::new();
@@ -1268,7 +1386,70 @@ prefix : <http://example.org/>
         let mut turtle = Vec::new();
         writer.serialize(&RDFFormat::Turtle, &mut turtle).unwrap();
 
-        assert!(String::from_utf8(turtle).unwrap().contains("targetNode"));
+        String::from_utf8(turtle).unwrap()
+    }
+
+    #[test]
+    fn node_expressions_survive_a_serialization_round_trip() {
+        const DATA: &str = ":a :p 1, 2, 3 ; :q :b .\n:b a :C ; :p 4 .\n:T a sh:NodeShape ; sh:class :C .\n";
+
+        for shape in [
+            // The expression itself, which is not `( true )` in any of these
+            ":S sh:targetNode :a ; sh:expression [ ] .",
+            ":S sh:targetNode :a ; sh:expression :a .",
+            ":S sh:targetNode :a ; sh:expression 1 .",
+            ":S sh:targetNode :a ; sh:expression ( 1 2 ) .",
+            ":S sh:targetNode :a ; sh:expression <<( :a :p 1 )>> .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:var \"value\" ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:pathValues :p ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:pathValues ( :q :p ) ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:pathValues :p ; shnex:focusNode :b ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:exists [ shnex:pathValues :zzz ] ] .",
+            ":S sh:targetNode :a ; sh:expression
+                 [ shnex:if [ shnex:exists [ shnex:pathValues :zzz ] ] ; shnex:then true ; shnex:else false ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:distinct [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:intersection ( [ shnex:pathValues :p ] ( 1 2 ) ) ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:concat ( ( 1 ) ( 2 ) ) ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:remove ( 1 ) ; shnex:nodes [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:limit 1 ; shnex:nodes [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:offset 1 ; shnex:nodes [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:orderBy [ shnex:var \"focusNode\" ] ; shnex:desc true ;
+                 shnex:nodes [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression
+                 [ shnex:flatMap [ shnex:pathValues :p ] ; shnex:nodes [ shnex:pathValues :q ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:count [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:min [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:max [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:sum [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:instancesOf :C ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:nodesMatching :T ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:filterShape :T ; shnex:nodes [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:findFirst :T ; shnex:nodes [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:matchAll :T ; shnex:nodes [ shnex:pathValues :p ] ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( :a :T ) ] .",
+            // A blank node shape, which is written back by its own label
+            ":S sh:targetNode :a ; sh:expression [ shnex:nodesMatching [ sh:class :C ] ] .",
+            // The expression of a node expression based constraint component
+            ":S sh:targetNode :a ; sh:nodeByExpression :T .",
+            ":S sh:targetNode :a ; sh:nodeByExpression [ shnex:if true ; shnex:then :T ] .",
+            ":S sh:targetNode :a ; sh:deactivated [ shnex:exists [ shnex:pathValues :zzz ] ] ; sh:class :C .",
+            // The expression of a target declaration
+            ":S sh:targetNode [ shnex:instancesOf :C ] ; sh:class :D .",
+        ] {
+            let graph = format!("{PREFIXES}{SHNEX}{shape}\n{DATA}");
+            let before = try_validate(&graph).unwrap_or_else(|e| panic!("{shape}: {e}"));
+            assert_eq!(before.results().len(), 1, "{shape}: {:?}", before.results());
+
+            // The writer only writes the shapes, so the data is read again with them
+            let round_tripped = format!("{PREFIXES}{SHNEX}{}\n{DATA}", serialize_shapes(&graph));
+            let after = try_validate(&round_tripped).unwrap_or_else(|e| panic!("{shape}: {e}\n{round_tripped}"));
+
+            assert_eq!(
+                after.results().len(),
+                before.results().len(),
+                "{shape} was lost on the round trip:\n{round_tripped}"
+            );
+        }
     }
 
     #[test]

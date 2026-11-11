@@ -1,28 +1,51 @@
-use crate::ast::{ASTNodeExpr, ASTTarget};
+use crate::ast::ASTTarget;
+use crate::rdf::parsers::node_expr::node_expr_from_term;
 use crate::types::Target;
-use prefixmap::IriRef;
-use rudof_rdf::rdf_core::FocusRDF;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ObjectsPropertyParser;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::RDFNodeParse;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ParseBudget, ValuesPropertyParser};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
+use rudof_rdf::rdf_core::{FocusRDF, RDFError};
+use std::marker::PhantomData;
+use std::sync::Arc;
 
-pub(crate) fn targets_node<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTTarget>> {
-    ObjectsPropertyParser::new(ShaclVocab::sh_target_node()).flat_map(|ts| {
-        let result = ts.into_iter().map(target_node).collect();
-        Ok(result)
-    })
+pub(crate) fn targets_node<RDF: FocusRDF>(budget: Arc<ParseBudget>) -> impl RDFNodeParse<RDF, Output = Vec<ASTTarget>> {
+    TargetsNodeParser {
+        budget,
+        _marker: PhantomData,
+    }
 }
 
-// An IRI or a literal value for `sh:targetNode` is a well-formed node expression.
-// TODO - A blank node would have to be parsed as a nested node expression
-// TODO - A triple term as a triple term expression
-// TODO - Neither has a parser yet
-// TODO - Both are kept as malformed targets
-fn target_node(object: Object) -> ASTTarget {
-    match object {
-        Object::Iri(iri) => Target::Node(ASTNodeExpr::Iri(IriRef::iri(iri))),
-        Object::Literal(lit) => Target::Node(ASTNodeExpr::Literal(lit)),
-        other => Target::WrongNode(other),
+struct TargetsNodeParser<RDF> {
+    budget: Arc<ParseBudget>,
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF: FocusRDF> RDFNodeParse<RDF> for TargetsNodeParser<RDF> {
+    type Output = Vec<ASTTarget>;
+
+    fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
+        let focus = rdf.get_focus().cloned();
+        let values = ValuesPropertyParser::new(ShaclVocab::sh_target_node()).parse_focused(rdf)?;
+
+        let mut targets = Vec::with_capacity(values.len());
+        for value in values.iter() {
+            let expr = self
+                .budget
+                .spend(rdf, |rdf, steps| node_expr_from_term(value, rdf, 0, steps));
+
+            targets.push(match expr {
+                Ok(expr) => Target::Node(expr),
+                // An ill-formed target is kept, to report a violation for it instead of
+                // failing the whole parse
+                Err(_) => Target::WrongNode(RDF::term_as_object(value)?),
+            });
+        }
+
+        // The node expressions move the focus to the nodes they are written on
+        if let Some(focus) = &focus {
+            rdf.set_focus(focus);
+        }
+
+        Ok(targets)
     }
 }

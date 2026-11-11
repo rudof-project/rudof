@@ -15,6 +15,9 @@ pub enum NodeExprEvalError {
     #[error("The focus node expression for ({0}) must evaluate to exactly one node, but got {1}")]
     MultipleFocusNodes(String, usize),
 
+    #[error("The {arg} argument of {expr} must evaluate to at most one node, but got {found}")]
+    MultipleArgumentNodes { expr: String, arg: String, found: usize },
+
     #[error("Expected a numeric literal, but got: {0}")]
     NotNumeric(String),
 

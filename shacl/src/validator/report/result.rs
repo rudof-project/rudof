@@ -21,6 +21,9 @@ pub struct ValidationResult {
     path: Option<SHACLPath>,
     value: Option<Object>,
     source: Option<Object>,
+    /// The constraint the result comes from, serialized as `sh:sourceConstraint`: the node a
+    /// `sh:expression` is written on, or the shape a `sh:nodeByExpression` produced.
+    source_constraint: Option<Object>,
     /// Nested results that caused this one, serialized as `sh:detail`
     /// (e.g. the violations that made a value node fail its `sh:node` shape).
     details: Vec<ValidationResult>,
@@ -37,6 +40,7 @@ impl ValidationResult {
             path: None,
             value: None,
             source: None,
+            source_constraint: None,
             details: Vec::new(),
             message: Default::default(),
         }
@@ -53,6 +57,10 @@ impl ValidationResult {
     }
     pub fn with_source(mut self, source: Option<Object>) -> Self {
         self.source = source;
+        self
+    }
+    pub fn with_source_constraint(mut self, source_constraint: Option<Object>) -> Self {
+        self.source_constraint = source_constraint;
         self
     }
     pub fn with_details(mut self, details: Vec<ValidationResult>) -> Self {
@@ -84,6 +92,10 @@ impl ValidationResult {
 
     pub fn source(&self) -> Option<&Object> {
         self.source.as_ref()
+    }
+
+    pub fn source_constraint(&self) -> Option<&Object> {
+        self.source_constraint.as_ref()
     }
 
     pub fn value(&self) -> Option<&Object> {
@@ -201,6 +213,15 @@ impl ValidationResult {
                 .map_err(error_mapper::<RDF>("Error adding source to validation result"))?;
         }
 
+        if let Some(source_constraint) = &self.source_constraint {
+            let term: RDF::Term = source_constraint.clone().into();
+            writer
+                .add_triple(report_node.clone(), ShaclVocab::sh_source_constraint(), term)
+                .map_err(error_mapper::<RDF>(
+                    "Error adding source constraint to validation result",
+                ))?;
+        }
+
         if let Some(path) = &self.path {
             // rudof_rdf writes a SHACL path without a check, in about 410 KiB at the depth limit in a debug build
             let result_path = crate::with_stack(|| writer.add_shacl_path(path))
@@ -238,7 +259,7 @@ impl Display for ValidationResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "ValidationResult(focus_node: {}, constraint_component: {}, severity: {}, message: {:?}, path: {:?}, value: {:?}, source: {:?}, details: {:?})",
+            "ValidationResult(focus_node: {}, constraint_component: {}, severity: {}, message: {:?}, path: {:?}, value: {:?}, source: {:?}, source_constraint: {:?}, details: {:?})",
             self.focus_node,
             self.constraint_component,
             self.severity,
@@ -246,6 +267,7 @@ impl Display for ValidationResult {
             self.path,
             self.value,
             self.source,
+            self.source_constraint,
             self.details
         )
     }

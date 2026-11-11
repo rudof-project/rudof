@@ -12,6 +12,7 @@ pub mod components;
 pub mod dg;
 pub(crate) mod error;
 mod node_expr;
+mod node_expr_register;
 pub mod node_exprs;
 mod node_shape;
 mod order_value;
@@ -39,6 +40,26 @@ pub use shape_label_idx::ShapeLabelIdx;
 
 /// A target declaration in the IR. Related [`Target`](Target)
 pub type IRTarget = Target<IRNodeExpr>;
+
+/// Records that the shape at `from` refers to the one at `to`, and walks the latter's own
+/// references the first time it is reached.
+pub(crate) fn add_shape_edge(
+    from: ShapeLabelIdx,
+    to: ShapeLabelIdx,
+    dg: &mut dg::DependencyGraph,
+    posneg: dg::PosNeg,
+    ir: &IRSchema,
+    cache: &mut std::collections::HashSet<ShapeLabelIdx>,
+) {
+    let Some(shape) = ir.get_shape_from_idx(&to) else {
+        return;
+    };
+
+    dg.add_edge(from, to, posneg);
+    if cache.insert(to) {
+        shape.add_edges(to, dg, posneg, ir, cache);
+    }
+}
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, IRError> {
     let iri = iri_ref.get_iri()?;

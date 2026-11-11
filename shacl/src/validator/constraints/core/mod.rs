@@ -1,5 +1,6 @@
 mod cardinality;
 mod logical;
+mod node_expr_based;
 mod non_shape;
 mod other;
 mod property_pair;

@@ -1,5 +1,6 @@
 use crate::ast::ASTNodeExpr;
 use crate::rdf::parsers::node_expr::concat::concat;
+use crate::rdf::parsers::node_expr::conforms_to_shape::conforms_to_shape;
 use crate::rdf::parsers::node_expr::count::count;
 use crate::rdf::parsers::node_expr::distinct::distinct;
 use crate::rdf::parsers::node_expr::empty::empty;
@@ -58,7 +59,7 @@ impl<RDF> RDFNodeParse<RDF> for NodeExprsPropertyParser<RDF>
 where
     RDF: FocusRDF,
 {
-    type Output = Vec<ASTNodeExpr>;
+    type Output = Vec<(Object, ASTNodeExpr)>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let focus = rdf.get_focus().cloned();
@@ -67,8 +68,11 @@ where
         let exprs = values
             .iter()
             .map(|value| {
-                self.budget
-                    .spend(rdf, |rdf, steps| node_expr_from_term(value, rdf, 0, steps))
+                let source = to_object::<RDF>(value)?;
+                let expr = self
+                    .budget
+                    .spend(rdf, |rdf, steps| node_expr_from_term(value, rdf, 0, steps))?;
+                Ok((source, expr))
             })
             .collect();
 
@@ -101,9 +105,7 @@ pub(crate) fn node_expr_from_term<RDF: FocusRDF>(
         Object::Iri(iri) => Ok(ASTNodeExpr::Iri(IriRef::iri(iri))),
         Object::Literal(lit) => Ok(ASTNodeExpr::Literal(lit)),
         Object::BlankNode(_) => crate::with_stack(|| blank_node_expr(term, rdf, depth, steps)),
-        Object::Triple { .. } => Err(RDFError::DefaultError {
-            msg: "Triple term expressions are not supported yet".to_string(),
-        }),
+        triple @ Object::Triple { .. } => Ok(ASTNodeExpr::TripleTerm(triple)),
     }
 }
 
@@ -139,9 +141,8 @@ fn blank_node_expr<RDF: FocusRDF>(
         sum,
         instances_of,
         nodes_matching,
+        conforms_to_shape,
         list,
-        // TODO - These three take a shape, and parsing an inline shape from here would
-        // TODO - make the shape parser and this parser mutually recursive.
         filter_shape,
         find_first,
         match_all,

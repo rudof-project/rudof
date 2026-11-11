@@ -65,7 +65,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
     fn before_validation(
         &mut self,
         _shapes_graph: &IRSchema,
-        _runner: &dyn Engine<S>,
+        _runner: &mut dyn Engine<S>,
         _config: &ShaclConfig,
     ) -> Result<(), ValidationError> {
         Ok(())
@@ -103,7 +103,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
             max_results: config.max_results(),
             store_evidences: config.store_evidences(),
         });
-        self.before_validation(shapes_graph, master_runner.as_ref(), config)?;
+        self.before_validation(shapes_graph, master_runner.as_mut(), config)?;
 
         // Installed after `before_validation`, so data fetched in advance is
         // not counted as read.

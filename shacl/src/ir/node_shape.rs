@@ -230,8 +230,7 @@ impl IRNodeShape {
 
         self.targets
             .iter()
-            .try_for_each(|t| t.register(&self.id, graph))
-            .map_err(|e| IRError::from_rdf_err::<RDF>("add target to graph", e))?;
+            .try_for_each(|t| t.register(&self.id, graph, shapes_map))?;
 
         self.property_shapes.iter().try_for_each(|idx| {
             let ps = shapes_map.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;
@@ -268,6 +267,10 @@ impl IRNodeShape {
     ) {
         for component in &self.components {
             component.add_edges(idx, dg, posneg, ir, cache);
+        }
+
+        for target in &self.targets {
+            target.add_edges(idx, dg, posneg, ir, cache);
         }
 
         for prop_shape_idx in &self.property_shapes {

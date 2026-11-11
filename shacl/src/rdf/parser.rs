@@ -96,6 +96,9 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         // subjects of sh:targetNode
         let subjects_target_node =
             self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_node().into(), &Any)?;
+        // subjects of sh:targetWhere
+        let subjects_target_where =
+            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_where().into(), &Any)?;
         // Search shape expecting parameters: https://www.w3.org/TR/shacl12-core/#dfn-shape-expecting
         // elements of `sh:and` list
         let sh_and_values = self.get_triples_list(&ShaclVocab::sh_and().into(), "sh:and", budget, |v, ctx| {
@@ -132,6 +135,8 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         })?;
         // elements of `sh:reifierShape` list
         let sh_reifier_shape_values = self.objects_with_predicate(&ShaclVocab::sh_reifier_shape().into())?;
+        // values of `sh:targetWhere`
+        let sh_target_where_values = self.objects_with_predicate(&ShaclVocab::sh_target_where().into())?;
         // SHACL 1.2 node expressions
         let shnex_nodes_matching_values =
             self.objects_with_predicate(&ShaclNodeExprVocab::shnex_nodes_matching().into())?;
@@ -146,6 +151,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         node_shapes_instances.extend(subjects_target_subjects_of);
         node_shapes_instances.extend(subjects_target_objects_of);
         node_shapes_instances.extend(subjects_target_node);
+        node_shapes_instances.extend(subjects_target_where);
         node_shapes_instances.extend(sh_and_values);
         node_shapes_instances.extend(sh_or_values);
         node_shapes_instances.extend(sh_not_values);
@@ -154,6 +160,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         node_shapes_instances.extend(sh_node_values);
         node_shapes_instances.extend(sh_xone_values);
         node_shapes_instances.extend(sh_reifier_shape_values);
+        node_shapes_instances.extend(sh_target_where_values);
         node_shapes_instances.extend(shnex_nodes_matching_values);
         node_shapes_instances.extend(shnex_filter_shape_values);
         node_shapes_instances.extend(shnex_find_first_values);

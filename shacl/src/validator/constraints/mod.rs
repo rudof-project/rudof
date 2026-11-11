@@ -5,8 +5,8 @@ mod test;
 
 use crate::error::ValidationError;
 use crate::ir::components::{
-    And, Datatype, Deactivated, HasValue, In, LanguageIn, MaxCount, MinCount, Node, Not, Or, QualifiedValueShape,
-    SubsetOf, UniqueLang, Xone,
+    And, Datatype, Deactivated, Expression, HasValue, In, LanguageIn, MaxCount, MinCount, Node, NodeByExpression, Not,
+    Or, QualifiedValueShape, SubsetOf, UniqueLang, Xone,
 };
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
@@ -146,6 +146,8 @@ impl_validators_via_validate!(LanguageIn);
 impl_validators_via_validate!(UniqueLang);
 impl_validators_via_validate!(Datatype);
 impl_validators_via_validate!(SubsetOf);
+impl_validators_via_validate!(Expression);
+impl_validators_via_validate!(NodeByExpression);
 
 // TODO - move to crate::shacl_component
 pub(crate) struct ShaclComponent<'a, S> {
@@ -204,6 +206,8 @@ impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<
             IRComponent::QualifiedValueShape(inner) => inner,
             IRComponent::Closed(inner) => inner,
             IRComponent::Deactivated(inner) => inner,
+            IRComponent::Expression(inner) => inner,
+            IRComponent::NodeByExpression(inner) => inner,
             IRComponent::BasicSparql(inner) => inner,
         }
     }
@@ -244,6 +248,8 @@ impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn Basic
             IRComponent::QualifiedValueShape(inner) => inner,
             IRComponent::Closed(inner) => inner,
             IRComponent::Deactivated(inner) => inner,
+            IRComponent::Expression(inner) => inner,
+            IRComponent::NodeByExpression(inner) => inner,
             IRComponent::BasicSparql(inner) => inner,
         }
     }
