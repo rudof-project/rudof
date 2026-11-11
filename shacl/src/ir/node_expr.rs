@@ -1,12 +1,12 @@
 use crate::ast::{ASTNodeExpr, ASTSchema};
 use crate::error::{IRError, NodeExprEvalError};
+use crate::ir::dg::{DependencyGraph, PosNeg};
+use crate::ir::node_expr_register::{NodeExprRegister, Shapes};
 use crate::ir::node_exprs::{
     Concat, ConformsToShape, Count, Distinct, Empty, Exists, Filter, FindFirst, FlatMap, IfExpression, InstancesOf,
     Intersection, Iri, Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove,
     Sum, TripleTerm, Var,
 };
-use crate::ir::dg::{DependencyGraph, PosNeg};
-use crate::ir::node_expr_register::{NodeExprRegister, Shapes};
 use crate::ir::{IRSchema, ShapeLabelIdx, add_shape_edge, convert_iri_ref};
 use crate::validator::engine::Engine;
 use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
@@ -327,7 +327,10 @@ impl IRNodeExpr {
             IRNodeExpr::Limit(l) => vec![l.nodes()],
             IRNodeExpr::Offset(o) => vec![o.nodes()],
             IRNodeExpr::OrderBy(ob) => vec![ob.order_by(), ob.nodes()],
-            IRNodeExpr::FlatMap(fm) => [Some(fm.flat_map()), fm.nodes().as_ref()].into_iter().flatten().collect(),
+            IRNodeExpr::FlatMap(fm) => [Some(fm.flat_map()), fm.nodes().as_ref()]
+                .into_iter()
+                .flatten()
+                .collect(),
             IRNodeExpr::FindFirst(ff) => vec![ff.nodes()],
             IRNodeExpr::MatchAll(ma) => [ma.nodes()].into_iter().flatten().collect(),
             IRNodeExpr::Count(c) => vec![c.count()],

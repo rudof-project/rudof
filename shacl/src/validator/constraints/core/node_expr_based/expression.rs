@@ -1,5 +1,5 @@
 use crate::error::ValidationError;
-use crate::ir::components::{Expression, EXPR_VALUE_VAR};
+use crate::ir::components::{EXPR_VALUE_VAR, Expression};
 use crate::ir::{IRComponent, IRSchema, IRShape, node_expr_is_true};
 use crate::types::MessageMap;
 use crate::validator::constraints::Validator;

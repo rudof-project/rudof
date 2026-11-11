@@ -1284,8 +1284,9 @@ prefix : <http://example.org/>
             ("[] :T", false),
             ("[ shnex:var \"value\" ] []", false),
         ] {
-            let graph =
-                format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( {args} ) ] .\n{data}");
+            let graph = format!(
+                "{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( {args} ) ] .\n{data}"
+            );
             assert_eq!(try_validate(&graph).unwrap().conforms(), conforms, "{args}");
         }
 
@@ -1298,8 +1299,9 @@ prefix : <http://example.org/>
             // The arguments are a list of exactly two node expressions
             (":a", "list of two node expressions"),
         ] {
-            let graph =
-                format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( {args} ) ] .\n{data}");
+            let graph = format!(
+                "{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:expression [ shnex:conformsToShape ( {args} ) ] .\n{data}"
+            );
             let result = try_validate(&graph).map(|_| ());
             assert!(matches!(&result, Err(e) if e.contains(error)), "{args}: {result:?}");
         }
@@ -1359,11 +1361,7 @@ prefix : <http://example.org/>
     fn target_where_targets_the_nodes_conforming_to_its_shape() {
         const DATA: &str = ":a :p :b .\n:b a :C .\n:T a sh:NodeShape ; sh:class :C .\n";
 
-        for (target, results) in [
-            (":T", 1),
-            ("[ sh:class :C ]", 1),
-            ("[ sh:class :D ]", 0),
-        ] {
+        for (target, results) in [(":T", 1), ("[ sh:class :C ]", 1), ("[ sh:class :D ]", 0)] {
             let graph = format!("{PREFIXES}:S sh:targetWhere {target} ; sh:class :D .\n{DATA}");
             let report = try_validate(&graph).unwrap_or_else(|e| panic!("{target}: {e}"));
             assert_eq!(report.results().len(), results, "{target}: {:?}", report.results());

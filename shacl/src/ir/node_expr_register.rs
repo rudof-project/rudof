@@ -22,11 +22,7 @@ impl<'a, RDF: BuildRDF> NodeExprRegister<'a, RDF> {
             .map_err(|e| IRError::from_rdf_err::<RDF>("add a node expression blank node", e))?
             .into();
 
-        Ok(Self {
-            graph,
-            shapes,
-            subject,
-        })
+        Ok(Self { graph, shapes, subject })
     }
 
     /// The term that denotes the expression written on it.

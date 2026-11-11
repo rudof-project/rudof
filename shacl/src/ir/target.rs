@@ -1,7 +1,7 @@
 use crate::ast::{ASTSchema, ASTTarget};
+use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::node_expr::IRNodeExpr;
-use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::{IRSchema, IRShape, IRTarget, ShapeLabelIdx, add_shape_edge};
 use crate::types::Target;
 use rudof_rdf::rdf_core::BuildRDF;

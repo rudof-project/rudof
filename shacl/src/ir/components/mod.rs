@@ -39,7 +39,7 @@ pub use datatype::Datatype;
 pub use deactivated::Deactivated;
 pub use disjoint::Disjoint;
 pub use equals::Equals;
-pub use expression::{Expression, EXPR_VALUE_VAR};
+pub use expression::{EXPR_VALUE_VAR, Expression};
 pub use has_value::HasValue;
 pub use in_component::In;
 pub use language_in::LanguageIn;
