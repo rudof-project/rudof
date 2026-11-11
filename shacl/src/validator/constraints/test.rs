@@ -1329,6 +1329,29 @@ prefix : <http://example.org/>
         assert!(error.contains("no focus node to read"), "{error}");
     }
 
+    #[test]
+    fn target_where_targets_the_nodes_conforming_to_its_shape() {
+        const DATA: &str = ":a :p :b .\n:b a :C .\n:T a sh:NodeShape ; sh:class :C .\n";
+
+        for (target, results) in [
+            (":T", 1),
+            ("[ sh:class :C ]", 1),
+            ("[ sh:class :D ]", 0),
+        ] {
+            let graph = format!("{PREFIXES}:S sh:targetWhere {target} ; sh:class :D .\n{DATA}");
+            let report = try_validate(&graph).unwrap_or_else(|e| panic!("{target}: {e}"));
+            assert_eq!(report.results().len(), results, "{target}: {:?}", report.results());
+
+            let round_tripped = format!("{PREFIXES}{}\n{DATA}", serialize_shapes(&graph));
+            let after = try_validate(&round_tripped).unwrap_or_else(|e| panic!("{target}: {e}\n{round_tripped}"));
+            assert_eq!(after.results().len(), results, "{target} was lost:\n{round_tripped}");
+        }
+
+        let graph = format!("{PREFIXES}:S sh:targetWhere 1 ; sh:class :D .\n{DATA}");
+        let error = try_validate(&graph).expect_err("expected a rejected sh:targetWhere");
+        assert!(error.contains("must be a shape"), "{error}");
+    }
+
     /// Parses and compiles `graph`, and serializes its shapes back to Turtle.
     fn serialize_shapes(graph: &str) -> String {
         let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();

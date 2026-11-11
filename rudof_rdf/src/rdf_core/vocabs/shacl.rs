@@ -127,6 +127,7 @@ vocab_term!(ShaclVocab, SH_TARGET_NODE, "targetNode");
 vocab_term!(ShaclVocab, SH_TARGET_CLASS, "targetClass");
 vocab_term!(ShaclVocab, SH_TARGET_SUBJECTS_OF, "targetSubjectsOf");
 vocab_term!(ShaclVocab, SH_TARGET_OBJECTS_OF, "targetObjectsOf");
+vocab_term!(ShaclVocab, SH_TARGET_WHERE, "targetWhere");
 
 // SPARQL
 vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT, "sourceConstraint");

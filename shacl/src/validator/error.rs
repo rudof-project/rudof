@@ -57,6 +57,9 @@ pub enum ValidationError {
     #[error("A sh:targetNode node expression has no focus node to read, but {0} reads one")]
     TargetNodeExprReadsFocus(String),
 
+    #[error("sh:targetWhere must be a shape, and {0} is not one")]
+    TargetWhereNotShape(String),
+
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,
 

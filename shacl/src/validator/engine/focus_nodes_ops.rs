@@ -1,4 +1,6 @@
-use crate::error::ValidationError;
+use crate::ast::error::ASTError;
+use crate::error::{IRError, ValidationError};
+use crate::ir::node_exprs::NodesMatching;
 use crate::ir::{IRNodeExpr, IRSchema, IRShape, IRTarget};
 use crate::types::Target;
 use crate::validator::engine::Engine;
@@ -47,12 +49,32 @@ fn target_nodes<RDF: NeighsRDF + Debug>(
         Target::SubjectsOf(p) => runner.target_subject_of(store, p),
         Target::ObjectsOf(p) => runner.target_object_of(store, p),
         Target::ImplicitClass(n) => runner.implicit_target_class(store, n),
+        Target::Where(shape) => target_where(shape, store, runner, shapes_graph),
         Target::WrongNode(node) => runner.target_node(store, node),
         Target::WrongClass(_) | Target::WrongImplicitClass(_) => Err(ValidationError::TargetClassNotIri),
         Target::WrongSubjectsOf(o) | Target::WrongObjectsOf(o) => {
             Err(ValidationError::CastError(o.to_string(), "an IRI".to_string()))
         },
+        Target::WrongWhere(o) => Err(ValidationError::TargetWhereNotShape(o.to_string())),
     }
+}
+
+/// The nodes of the data graph that conform to a `sh:targetWhere` shape.
+fn target_where<RDF: NeighsRDF + Debug>(
+    shape: &Object,
+    store: &RDF,
+    runner: &mut dyn Engine<RDF>,
+    shapes_graph: &IRSchema,
+) -> Result<FocusNodes<RDF>, ValidationError> {
+    let idx = *shapes_graph
+        .get_idx(shape)
+        .ok_or_else(|| IRError::from(ASTError::from(shape.clone())))?;
+
+    let focus = RDF::object_as_term(&Object::iri(RdfVocab::rdf_nil()));
+    runner.node_expr_state().steps = 0;
+    let nodes = NodesMatching::new(idx).evaluate(store, &focus, &HashMap::new(), runner, shapes_graph)?;
+
+    Ok(FocusNodes::from_iter(nodes))
 }
 
 /// Evaluates a `sh:targetNode` node expression, whose output nodes are the target.

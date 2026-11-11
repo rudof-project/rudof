@@ -16,11 +16,17 @@ impl IRTarget {
             Target::SubjectsOf(p) => Target::SubjectsOf(p.clone()),
             Target::ObjectsOf(p) => Target::ObjectsOf(p.clone()),
             Target::ImplicitClass(c) => Target::ImplicitClass(c.clone()),
+            Target::Where(shape) => {
+                // The shape is compiled here, and looked up by its id when the target is computed
+                ir.register_shape(shape, None, ast)?;
+                Target::Where(shape.clone())
+            },
             Target::WrongNode(o) => Target::WrongNode(o.clone()),
             Target::WrongClass(o) => Target::WrongClass(o.clone()),
             Target::WrongSubjectsOf(o) => Target::WrongSubjectsOf(o.clone()),
             Target::WrongObjectsOf(o) => Target::WrongObjectsOf(o.clone()),
             Target::WrongImplicitClass(o) => Target::WrongImplicitClass(o.clone()),
+            Target::WrongWhere(o) => Target::WrongWhere(o.clone()),
         };
 
         Ok(out)
@@ -47,6 +53,7 @@ impl IRTarget {
             },
             Target::WrongSubjectsOf(o) => (ShaclVocab::sh_target_subjects_of(), RDF::object_as_term(o)),
             Target::WrongObjectsOf(o) => (ShaclVocab::sh_target_objects_of(), RDF::object_as_term(o)),
+            Target::Where(o) | Target::WrongWhere(o) => (ShaclVocab::sh_target_where(), RDF::object_as_term(o)),
         };
 
         graph

@@ -13,6 +13,7 @@ pub enum Target<E> {
     SubjectsOf(IriS),
     ObjectsOf(IriS),
     ImplicitClass(Object),
+    Where(Object),
 
     // The following target declaration are not well-formed, but we keep them
     // to generate violation errors for them
@@ -21,6 +22,7 @@ pub enum Target<E> {
     WrongSubjectsOf(Object),
     WrongObjectsOf(Object),
     WrongImplicitClass(Object),
+    WrongWhere(Object),
 }
 
 impl<E: Display> Display for Target<E> {
@@ -31,11 +33,13 @@ impl<E: Display> Display for Target<E> {
             Target::SubjectsOf(iri) => write!(f, "targetSubjectsOf({iri})"),
             Target::ObjectsOf(iri) => write!(f, "targetObjectsOf({iri})"),
             Target::ImplicitClass(o) => write!(f, "targetImplicitClass({o})"),
+            Target::Where(o) => write!(f, "targetWhere({o})"),
             Target::WrongNode(o) => write!(f, "targetNode({o})"),
             Target::WrongClass(o) => write!(f, "targetClass({o})"),
             Target::WrongSubjectsOf(iri) => write!(f, "targetSubjectsOf({iri})"),
             Target::WrongObjectsOf(iri) => write!(f, "targetObjectsOf({iri})"),
             Target::WrongImplicitClass(o) => write!(f, "targetImplicitClass({o})"),
+            Target::WrongWhere(o) => write!(f, "targetWhere({o})"),
         }
     }
 }

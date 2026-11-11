@@ -146,11 +146,13 @@ impl Shacl2ShEx {
             IRTarget::SubjectsOf(_) => Ok(None),
             IRTarget::ObjectsOf(_) => Ok(None),
             IRTarget::ImplicitClass(_) => Ok(None),
+            IRTarget::Where(_) => Err(Shacl2ShExError::not_implemented("sh:targetWhere")),
             IRTarget::WrongNode(_)
             | IRTarget::WrongClass(_)
             | IRTarget::WrongSubjectsOf(_)
             | IRTarget::WrongObjectsOf(_)
-            | IRTarget::WrongImplicitClass(_) => Err(Shacl2ShExError::not_implemented("malformed targets")),
+            | IRTarget::WrongImplicitClass(_)
+            | IRTarget::WrongWhere(_) => Err(Shacl2ShExError::not_implemented("malformed targets")),
         }
     }
 
