@@ -10,8 +10,22 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 -->
 
 ## [Unreleased]
+### Added
+- `shacl`: the shape-taking node expressions (`shnex:filterShape`, `shnex:findFirst`, `shnex:matchAll`, `shnex:nodesMatching`), triple terms and `shnex:conformsToShape`, which completes SHACL 1.2 node expressions ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `shacl`: the `sh:expression` and `sh:nodeByExpression` constraint components ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `shacl`: a validation result reports the node its constraint comes from as `sh:sourceConstraint` ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `shacl`: a `sh:targetNode` node expression other than a constant targets the nodes it outputs ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `shacl`: the `sh:targetWhere` target, which targets the nodes conforming to its shape ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `shacl`: The whole SHACL 1.2 core test suite is wired, with an `#[ignore]` naming the missing feature for each test that does not pass ([#868](https://github.com/rudof-project/rudof/issues/868)).
+
 ### Fixed
 - `shex_ast`: dropped csv color format on shex validation ([#949](https://github.com/rudof-project/rudof/issues/949))
+- `shacl`: serializing a shapes graph writes its node expressions back, instead of dropping them and panicking on a composite `sh:targetNode` ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `shacl`: a target that cannot be resolved fails validation instead of being skipped ([#868](https://github.com/rudof-project/rudof/issues/868)).
+
+### Changed
+- `shacl`: a shape cycle that closes through a node expression is rejected when the schema compiles, not during validation ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `shacl`: `ShaclProcessor::before_validation` takes `&mut dyn Engine`, and `Engine::focus_nodes` is gone: a target is resolved by the shape, which an engine no longer has to implement ([#868](https://github.com/rudof-project/rudof/issues/868)).
 
 ## 0.3.39
 ### Added
