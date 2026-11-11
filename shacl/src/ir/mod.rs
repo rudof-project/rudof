@@ -12,6 +12,7 @@ pub mod components;
 pub mod dg;
 pub(crate) mod error;
 mod node_expr;
+mod node_expr_register;
 pub mod node_exprs;
 mod node_shape;
 mod order_value;

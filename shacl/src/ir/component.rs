@@ -317,21 +317,16 @@ impl IRComponent {
                     .try_for_each(|iri| register_iri(iri, ShaclVocab::sh_ignored_properties(), id, graph))
             },
             IRComponent::Deactivated(deactivated) => {
-                // TODO - Add full Node Expr serialization
-                if let IRNodeExpr::Literal(lit) = deactivated.is_deactivated()
-                    && let ConcreteLiteral::BooleanLiteral(flag) = lit.literal()
-                {
-                    return register_boolean(*flag, ShaclVocab::sh_deactivated(), id, graph);
-                }
-                Ok(())
+                let value = deactivated.is_deactivated().register(graph, shape_map)?;
+                register_term(&value, ShaclVocab::sh_deactivated(), id, graph)
             },
-            // The expression's own triples are not written back: see the sh:deactivated TODO above
             IRComponent::Expression(expression) => {
-                register_term(&expression.source().clone().into(), ShaclVocab::sh_expression(), id, graph)
+                let value = expression.expr().register(graph, shape_map)?;
+                register_term(&value, ShaclVocab::sh_expression(), id, graph)
             },
-            IRComponent::NodeByExpression(nbe) => match nbe.expr().as_constant() {
-                Some(shape) => register_term(&shape.into(), ShaclVocab::sh_node_by_expression(), id, graph),
-                None => Ok(()),
+            IRComponent::NodeByExpression(nbe) => {
+                let value = nbe.expr().register(graph, shape_map)?;
+                register_term(&value, ShaclVocab::sh_node_by_expression(), id, graph)
             },
             IRComponent::BasicSparql(sparql) => {
                 // Create a blank node to hold the constraint properties

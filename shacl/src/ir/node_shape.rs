@@ -230,8 +230,7 @@ impl IRNodeShape {
 
         self.targets
             .iter()
-            .try_for_each(|t| t.register(&self.id, graph))
-            .map_err(|e| IRError::from_rdf_err::<RDF>("add target to graph", e))?;
+            .try_for_each(|t| t.register(&self.id, graph, shapes_map))?;
 
         self.property_shapes.iter().try_for_each(|idx| {
             let ps = shapes_map.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;

@@ -5,10 +5,12 @@ use crate::ir::node_exprs::{
     Intersection, Iri, Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove,
     Sum, TripleTerm, Var,
 };
+use crate::ir::node_expr_register::{NodeExprRegister, Shapes};
 use crate::ir::{IRSchema, convert_iri_ref};
 use crate::validator::engine::Engine;
-use rudof_rdf::rdf_core::NeighsRDF;
 use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
+use rudof_rdf::rdf_core::vocabs::ShaclNodeExprVocab;
+use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF};
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
@@ -193,7 +195,103 @@ impl IRNodeExpr {
         Ok(result)
     }
 
-    // TODO - Maybe this can be removed when implemented NodeExpr serialization
+    /// Writes the expression to `graph`, and returns the term that denotes it: the constant
+    /// itself for a constant expression, the head of the list for a list one, and a fresh
+    /// blank node for every other one.
+    pub fn register<RDF: BuildRDF>(&self, graph: &mut RDF, shapes: &Shapes) -> Result<RDF::Term, IRError> {
+        crate::with_stack(|| self.register_level(graph, shapes))
+    }
+
+    fn register_level<RDF: BuildRDF>(&self, graph: &mut RDF, shapes: &Shapes) -> Result<RDF::Term, IRError> {
+        // A constant denotes itself
+        if let Some(constant) = self.as_constant() {
+            return Ok(RDF::object_as_term(&constant));
+        }
+
+        // A list node expression is the RDF list itself. An empty one is `rdf:nil`, which is
+        // read back as the IRI expression: the syntax has no other term for it.
+        if let IRNodeExpr::List(l) = self {
+            let items = l.list().iter().map(RDF::object_as_term).collect();
+            return graph
+                .add_rdf_list(items)
+                .map_err(|e| IRError::from_rdf_err::<RDF>("add a node expression list", e));
+        }
+
+        let mut register = NodeExprRegister::new(graph, shapes)?;
+        let term = register.term();
+
+        match self {
+            // Written above, before the blank node is taken
+            IRNodeExpr::Iri(_) | IRNodeExpr::Literal(_) | IRNodeExpr::TripleTerm(_) | IRNodeExpr::List(_) => {
+                unreachable!("a constant or list expression denotes itself")
+            },
+            // A blank node with no arcs at all
+            IRNodeExpr::Empty(_) => Ok(()),
+            IRNodeExpr::Var(v) => register.string(ShaclNodeExprVocab::shnex_var(), v.var()),
+            IRNodeExpr::PathValues(pv) => {
+                register.path(ShaclNodeExprVocab::shnex_path_values(), pv.path())?;
+                register.optional_expr(ShaclNodeExprVocab::shnex_focus_node(), pv.focus_nodes())
+            },
+            IRNodeExpr::Exists(e) => register.expr(ShaclNodeExprVocab::shnex_exists(), e.exists()),
+            IRNodeExpr::IfExpression(ie) => {
+                register.expr(ShaclNodeExprVocab::shnex_if(), ie.if_condition())?;
+                register.optional_expr(ShaclNodeExprVocab::shnex_then(), ie.then())?;
+                register.optional_expr(ShaclNodeExprVocab::shnex_else(), ie.else_expression())
+            },
+            IRNodeExpr::Distinct(d) => register.expr(ShaclNodeExprVocab::shnex_distinct(), d.distinct()),
+            IRNodeExpr::Intersection(i) => {
+                register.expr_list(ShaclNodeExprVocab::shnex_intersection(), i.intersection())
+            },
+            IRNodeExpr::Concat(c) => register.expr_list(ShaclNodeExprVocab::shnex_concat(), c.concat()),
+            IRNodeExpr::Remove(r) => {
+                register.expr(ShaclNodeExprVocab::shnex_remove(), r.remove())?;
+                register.nodes(r.nodes())
+            },
+            IRNodeExpr::Filter(f) => {
+                register.shape(ShaclNodeExprVocab::shnex_filter_shape(), f.filter_shape())?;
+                register.nodes(f.nodes())
+            },
+            IRNodeExpr::Limit(l) => {
+                register.integer(ShaclNodeExprVocab::shnex_limit(), l.limit())?;
+                register.nodes(l.nodes())
+            },
+            IRNodeExpr::Offset(o) => {
+                register.integer(ShaclNodeExprVocab::shnex_offset(), o.offset())?;
+                register.nodes(o.nodes())
+            },
+            IRNodeExpr::OrderBy(ob) => {
+                register.expr(ShaclNodeExprVocab::shnex_order_by(), ob.order_by())?;
+                if let Some(desc) = ob.desc() {
+                    register.boolean(ShaclNodeExprVocab::shnex_desc(), desc)?;
+                }
+                register.nodes(ob.nodes())
+            },
+            IRNodeExpr::FlatMap(fm) => {
+                register.expr(ShaclNodeExprVocab::shnex_flat_map(), fm.flat_map())?;
+                register.optional_expr(ShaclNodeExprVocab::shnex_nodes(), fm.nodes().as_ref())
+            },
+            IRNodeExpr::FindFirst(ff) => {
+                register.shape(ShaclNodeExprVocab::shnex_find_first(), ff.find_first())?;
+                register.nodes(ff.nodes())
+            },
+            IRNodeExpr::MatchAll(ma) => {
+                register.shape(ShaclNodeExprVocab::shnex_match_all(), ma.match_all())?;
+                register.optional_expr(ShaclNodeExprVocab::shnex_nodes(), ma.nodes())
+            },
+            IRNodeExpr::Count(c) => register.expr(ShaclNodeExprVocab::shnex_count(), c.count()),
+            IRNodeExpr::Min(m) => register.expr(ShaclNodeExprVocab::shnex_min(), m.min()),
+            IRNodeExpr::Max(m) => register.expr(ShaclNodeExprVocab::shnex_max(), m.max()),
+            IRNodeExpr::Sum(s) => register.expr(ShaclNodeExprVocab::shnex_sum(), s.sum()),
+            IRNodeExpr::InstancesOf(io) => register.iri(ShaclNodeExprVocab::shnex_instances_of(), io.iri()),
+            IRNodeExpr::NodesMatching(nm) => register.shape(ShaclNodeExprVocab::shnex_nodes_matching(), nm.shape()),
+            IRNodeExpr::ConformsToShape(cts) => {
+                register.expr_list(ShaclNodeExprVocab::shnex_conforms_to_shape(), [cts.node(), cts.shape()])
+            },
+        }?;
+
+        Ok(term)
+    }
+
     pub fn as_constant(&self) -> Option<Object> {
         match self {
             IRNodeExpr::Iri(i) => Some(Object::Iri(i.iri().clone())),

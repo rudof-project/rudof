@@ -277,16 +277,7 @@ impl IRPropertyShape {
 
         self.targets
             .iter()
-            .try_for_each(|target| target.register(&self.id, graph))
-            .map_err(|e| IRError::from_rdf_err::<RDF>("add target to graph", e))?;
-
-        if let Some(deactivated) = self.deactivated()
-            && let Some(lit) = deactivated.as_constant()
-        {
-            graph
-                .add_triple(id.clone(), ShaclVocab::sh_deactivated(), lit)
-                .map_err(IRError::add_triple::<RDF>)?;
-        }
+            .try_for_each(|target| target.register(&self.id, graph, shapes_map))?;
 
         if let Some(severity) = &self.severity {
             graph
