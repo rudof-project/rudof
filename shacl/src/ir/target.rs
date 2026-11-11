@@ -1,12 +1,13 @@
 use crate::ast::{ASTSchema, ASTTarget};
 use crate::ir::error::IRError;
 use crate::ir::node_expr::IRNodeExpr;
-use crate::ir::{IRSchema, IRShape, IRTarget, ShapeLabelIdx};
+use crate::ir::dg::{DependencyGraph, PosNeg};
+use crate::ir::{IRSchema, IRShape, IRTarget, ShapeLabelIdx, add_shape_edge};
 use crate::types::Target;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab, ShaclVocab};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 impl IRTarget {
     pub fn compile(target: &ASTTarget, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
@@ -30,6 +31,26 @@ impl IRTarget {
         };
 
         Ok(out)
+    }
+
+    /// Records the shapes the target declaration refers to as dependencies of the shape at `idx`.
+    pub(crate) fn add_edges(
+        &self,
+        idx: ShapeLabelIdx,
+        dg: &mut DependencyGraph,
+        posneg: PosNeg,
+        ir: &IRSchema,
+        cache: &mut HashSet<ShapeLabelIdx>,
+    ) {
+        match self {
+            Target::Node(expr) => expr.add_edges(idx, dg, posneg, ir, cache),
+            Target::Where(shape) => {
+                if let Some(to) = ir.get_idx(shape) {
+                    add_shape_edge(idx, *to, dg, posneg.change(), ir, cache);
+                }
+            },
+            _ => {},
+        }
     }
 
     pub fn register<RDF: BuildRDF>(

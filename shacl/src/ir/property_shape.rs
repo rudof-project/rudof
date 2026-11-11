@@ -302,6 +302,10 @@ impl IRPropertyShape {
             component.add_edges(idx, dg, posneg, ir, cache);
         }
 
+        for target in &self.targets {
+            target.add_edges(idx, dg, posneg, ir, cache);
+        }
+
         // A reifier that does not conform to a sh:reifierShape fails the shape, as in sh:node
         let reifier_shapes = self.reifier_info.iter().flat_map(ReifierInfo::reifier_shape);
         for shape_idx in self.property_shapes.iter().chain(reifier_shapes) {

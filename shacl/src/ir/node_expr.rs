@@ -5,13 +5,14 @@ use crate::ir::node_exprs::{
     Intersection, Iri, Limit, List, Literal, MatchAll, Max, Min, NodesMatching, Offset, OrderBy, PathValues, Remove,
     Sum, TripleTerm, Var,
 };
+use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::node_expr_register::{NodeExprRegister, Shapes};
-use crate::ir::{IRSchema, convert_iri_ref};
+use crate::ir::{IRSchema, ShapeLabelIdx, add_shape_edge, convert_iri_ref};
 use crate::validator::engine::Engine;
 use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use rudof_rdf::rdf_core::vocabs::ShaclNodeExprVocab;
 use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
 
@@ -299,6 +300,73 @@ impl IRNodeExpr {
             IRNodeExpr::TripleTerm(t) => Some(t.triple().clone()),
             _ => None,
         }
+    }
+
+    /// The expressions this one is built from, in no particular order.
+    fn nested(&self) -> Vec<&IRNodeExpr> {
+        match self {
+            IRNodeExpr::Iri(_)
+            | IRNodeExpr::Literal(_)
+            | IRNodeExpr::TripleTerm(_)
+            | IRNodeExpr::Empty(_)
+            | IRNodeExpr::Var(_)
+            | IRNodeExpr::List(_)
+            | IRNodeExpr::InstancesOf(_)
+            | IRNodeExpr::NodesMatching(_) => Vec::new(),
+            IRNodeExpr::PathValues(pv) => pv.focus_nodes().into_iter().collect(),
+            IRNodeExpr::Exists(e) => vec![e.exists()],
+            IRNodeExpr::IfExpression(ie) => [Some(ie.if_condition()), ie.then(), ie.else_expression()]
+                .into_iter()
+                .flatten()
+                .collect(),
+            IRNodeExpr::Distinct(d) => vec![d.distinct()],
+            IRNodeExpr::Intersection(i) => i.intersection().iter().collect(),
+            IRNodeExpr::Concat(c) => c.concat().iter().collect(),
+            IRNodeExpr::Remove(r) => vec![r.remove(), r.nodes()],
+            IRNodeExpr::Filter(f) => vec![f.nodes()],
+            IRNodeExpr::Limit(l) => vec![l.nodes()],
+            IRNodeExpr::Offset(o) => vec![o.nodes()],
+            IRNodeExpr::OrderBy(ob) => vec![ob.order_by(), ob.nodes()],
+            IRNodeExpr::FlatMap(fm) => [Some(fm.flat_map()), fm.nodes().as_ref()].into_iter().flatten().collect(),
+            IRNodeExpr::FindFirst(ff) => vec![ff.nodes()],
+            IRNodeExpr::MatchAll(ma) => [ma.nodes()].into_iter().flatten().collect(),
+            IRNodeExpr::Count(c) => vec![c.count()],
+            IRNodeExpr::Min(m) => vec![m.min()],
+            IRNodeExpr::Max(m) => vec![m.max()],
+            IRNodeExpr::Sum(s) => vec![s.sum()],
+            IRNodeExpr::ConformsToShape(cts) => vec![cts.node(), cts.shape()],
+        }
+    }
+
+    /// The shape the expression refers to, when it is known before the expression is evaluated.
+    fn referred_shape(&self) -> Option<ShapeLabelIdx> {
+        match self {
+            IRNodeExpr::Filter(f) => Some(*f.filter_shape()),
+            IRNodeExpr::FindFirst(ff) => Some(*ff.find_first()),
+            IRNodeExpr::MatchAll(ma) => Some(*ma.match_all()),
+            IRNodeExpr::NodesMatching(nm) => Some(*nm.shape()),
+            _ => None,
+        }
+    }
+
+    /// Records the shapes the expression refers to as dependencies of the shape at `idx`.
+    pub(crate) fn add_edges(
+        &self,
+        idx: ShapeLabelIdx,
+        dg: &mut DependencyGraph,
+        posneg: PosNeg,
+        ir: &IRSchema,
+        cache: &mut HashSet<ShapeLabelIdx>,
+    ) {
+        crate::with_stack(|| {
+            if let Some(shape) = self.referred_shape() {
+                add_shape_edge(idx, shape, dg, posneg.change(), ir, cache);
+            }
+
+            for nested in self.nested() {
+                nested.add_edges(idx, dg, posneg, ir, cache);
+            }
+        })
     }
 
     /// Whether the value can differ between focus nodes.

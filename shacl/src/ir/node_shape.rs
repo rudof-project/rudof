@@ -269,6 +269,10 @@ impl IRNodeShape {
             component.add_edges(idx, dg, posneg, ir, cache);
         }
 
+        for target in &self.targets {
+            target.add_edges(idx, dg, posneg, ir, cache);
+        }
+
         for prop_shape_idx in &self.property_shapes {
             if let Some(shape) = ir.get_shape_from_idx(prop_shape_idx) {
                 dg.add_edge(idx, *prop_shape_idx, posneg);

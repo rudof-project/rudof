@@ -1150,7 +1150,33 @@ prefix : <http://example.org/>
             let graph = format!("{PREFIXES}{SHNEX}{shapes}\n:a :p :b .\n");
             let result = try_validate(&graph).map(|_| ());
             assert!(
-                matches!(&result, Err(e) if e.contains("depends on itself")),
+                matches!(&result, Err(e) if e.contains("negative cycles")),
+                "{shapes}: {result:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn node_expression_cycles_are_rejected_by_the_dependency_graph() {
+        for shapes in [
+            // One shape-taking node expression per kind
+            ":S sh:targetNode :a ; sh:expression [ shnex:nodesMatching :S ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:filterShape :S ; shnex:nodes ( :a ) ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:findFirst :S ; shnex:nodes ( :a ) ] .",
+            ":S sh:targetNode :a ; sh:expression [ shnex:matchAll :S ; shnex:nodes ( :a ) ] .",
+            // Nested inside another expression
+            ":S sh:targetNode :a ; sh:expression [ shnex:count [ shnex:nodesMatching :S ] ] .",
+            // Through a second shape, and through a node expression based target
+            ":S sh:targetNode :a ; sh:expression [ shnex:nodesMatching :T ] .\n:T sh:node :S .",
+            ":S sh:targetNode [ shnex:nodesMatching :S ] ; sh:class :C .",
+            ":S sh:targetWhere :T ; sh:class :C .\n:T sh:node :S .",
+            // The expression of a sh:nodeByExpression
+            ":S sh:targetNode :a ; sh:nodeByExpression [ shnex:findFirst :S ; shnex:nodes ( :a ) ] .",
+        ] {
+            let graph = format!("{PREFIXES}{SHNEX}{shapes}\n:a :p :b .\n");
+            let result = try_validate(&graph).map(|_| ());
+            assert!(
+                matches!(&result, Err(e) if e.contains("negative cycles")),
                 "{shapes}: {result:?}"
             );
         }

@@ -471,10 +471,9 @@ impl IRComponent {
                 }
             },
             IRComponent::Closed(_) => {},
-            IRComponent::Deactivated(_) => {},
-            // The shapes these reach are only known once their node expression is evaluated
-            IRComponent::Expression(_) => {},
-            IRComponent::NodeByExpression(_) => {},
+            IRComponent::Deactivated(d) => d.is_deactivated().add_edges(idx, dg, posneg, ir, cache),
+            IRComponent::Expression(e) => e.expr().add_edges(idx, dg, posneg, ir, cache),
+            IRComponent::NodeByExpression(nbe) => nbe.expr().add_edges(idx, dg, posneg, ir, cache),
             IRComponent::BasicSparql(_) => {},
         }
     }
