@@ -1303,6 +1303,32 @@ prefix : <http://example.org/>
         assert!(serialize_shapes(&graph).contains("targetNode"));
     }
 
+    #[test]
+    fn target_node_expressions_target_their_output_nodes() {
+        const DATA: &str = ":a :p :b .\n:b a :C .\n:T a sh:NodeShape ; sh:class :C .\n";
+
+        for (target, results) in [
+            // The constant expressions of SHACL Core
+            (":a", 1),
+            ("\"x\"", 1),
+            // A blank node with no arcs is the empty expression, so there is no target at all
+            ("[ ]", 0),
+            ("[ shnex:instancesOf :C ]", 1),
+            ("[ shnex:nodesMatching :T ]", 1),
+            ("[ shnex:distinct ( :a :a ) ]", 1),
+        ] {
+            let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode {target} ; sh:class :D .\n{DATA}");
+            let report = try_validate(&graph).unwrap_or_else(|e| panic!("{target}: {e}"));
+
+            assert_eq!(report.results().len(), results, "{target}: {:?}", report.results());
+        }
+
+        // A target is declared before there is any focus node for the expression to read
+        let graph = format!("{PREFIXES}{SHNEX}:S sh:targetNode [ shnex:var \"focusNode\" ] ; sh:class :D .\n{DATA}");
+        let error = try_validate(&graph).expect_err("expected a rejected target node expression");
+        assert!(error.contains("no focus node to read"), "{error}");
+    }
+
     /// Parses and compiles `graph`, and serializes its shapes back to Turtle.
     fn serialize_shapes(graph: &str) -> String {
         let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
@@ -1360,6 +1386,8 @@ prefix : <http://example.org/>
             ":S sh:targetNode :a ; sh:nodeByExpression :T .",
             ":S sh:targetNode :a ; sh:nodeByExpression [ shnex:if true ; shnex:then :T ] .",
             ":S sh:targetNode :a ; sh:deactivated [ shnex:exists [ shnex:pathValues :zzz ] ] ; sh:class :C .",
+            // The expression of a target declaration
+            ":S sh:targetNode [ shnex:instancesOf :C ] ; sh:class :D .",
         ] {
             let graph = format!("{PREFIXES}{SHNEX}{shape}\n{DATA}");
             let before = try_validate(&graph).unwrap_or_else(|e| panic!("{shape}: {e}"));

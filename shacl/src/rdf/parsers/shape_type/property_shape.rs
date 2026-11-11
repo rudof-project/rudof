@@ -45,7 +45,10 @@ pub(crate) fn property_shape<RDF: FocusRDF + 'static>(
                     .flat_map(move |desc| Ok(ps.clone().with_description(desc)))
             })
             .then(|ps| reifier_shape().flat_map(move |r_shape| Ok(ps.clone().with_reifier_shape(r_shape))))
-            .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
+            .then({
+                let budget = budget.clone();
+                move |ps| targets(budget.clone()).flat_map(move |ts| Ok(ps.clone().with_targets(ts)))
+            })
             .then(move |ps| {
                 let budget = budget.clone();
                 property()

@@ -60,7 +60,7 @@ impl IRShape {
     ) -> Result<ValidationOutcome, ValidationError> {
         // Get focus nodes
         let focus_nodes = match targets {
-            None => &self.focus_nodes(store, runner),
+            None => &self.focus_nodes(store, runner, shapes_graph)?,
             Some(targets) => targets,
         };
 

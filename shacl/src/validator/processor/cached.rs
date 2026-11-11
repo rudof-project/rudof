@@ -51,7 +51,7 @@ impl ShaclProcessor<CachedRdfData> for CachedDataValidation {
     fn before_validation(
         &mut self,
         shapes_graph: &IRSchema,
-        runner: &dyn Engine<CachedRdfData>,
+        runner: &mut dyn Engine<CachedRdfData>,
         config: &ShaclConfig,
     ) -> Result<(), ValidationError> {
         if config.fetch_strategy() == FetchStrategy::ByShape {

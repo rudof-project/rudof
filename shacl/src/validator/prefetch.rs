@@ -41,7 +41,7 @@ pub const DEFAULT_PREFETCH_MAX_ROUNDS: usize = 16;
 pub(crate) fn prefetch(
     store: &CachedRdfData,
     schema: &IRSchema,
-    runner: &dyn Engine<CachedRdfData>,
+    runner: &mut dyn Engine<CachedRdfData>,
     max_rounds: usize,
 ) -> Result<(), ValidationError> {
     let mut frontier: HashMap<ShapeLabelIdx, Vec<OxTerm>> = HashMap::new();
@@ -49,7 +49,7 @@ pub(crate) fn prefetch(
         let Some(idx) = schema.get_idx(id) else {
             continue;
         };
-        let focus_nodes: Vec<OxTerm> = shape.focus_nodes(store, runner).iter().cloned().collect();
+        let focus_nodes: Vec<OxTerm> = shape.focus_nodes(store, runner, schema)?.iter().cloned().collect();
         frontier.entry(*idx).or_default().extend(focus_nodes);
     }
 
