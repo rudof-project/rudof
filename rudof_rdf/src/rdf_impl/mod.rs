@@ -40,6 +40,9 @@ mod tests {
     mod shacl_path_writer_tests;
     mod turtle_display_tests;
 
+    #[cfg(all(feature = "sparql", not(target_family = "wasm")))]
+    mod service_tests;
+
     #[cfg(feature = "qlever-docker-tests")]
     mod qlever_docker;
 }
