@@ -11,8 +11,9 @@ The crate exposes two engines selected via `ShaclValidationMode`:
 - **`Native`** — designed for in-memory graphs. Constraints are evaluated with Rust
   logic. When the `sparql` Cargo feature is enabled, inline `sh:sparql`
   (SHACL-SPARQL) constraints are routed to the SPARQL execution path so that in-memory
-  validation validates them as well. This is the recommended mode whenever the data already
-  lives in the process.
+  validation validates them as well. A `SERVICE` clause in such a constraint only reaches
+  the endpoint it names with the `http-client` Cargo feature (native only, off by default).
+  This is the recommended mode whenever the data already lives in the process.
 
 - **`Sparql`** — designed for validating against a remote SPARQL endpoint. Every
   constraint is translated to SPARQL queries (`SELECT`/`ASK`). Use this mode when

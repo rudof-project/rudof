@@ -62,10 +62,13 @@ This crate is a foundational dependency for many other Rudof crates, including:
 | Feature              | Pulls in                                                                            | Notes                                                                                                                            |
 |----------------------|-------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | `sparql` (default)   | `oxigraph`, `reqwest`, `tokio`, `spargebra`, `sparesults`                           | Enables `OxigraphEndpoint` (remote SPARQL client).                                                                               |
+| `http-client`        | implies `sparql`; adds oxigraph's `http-client-rustls-native`                       | `SERVICE` in queries against `OxigraphInMemory` reaches the endpoint it names. Without it, such a query is refused. Native only. |
 | `qlever`             | implies `sparql`; adds `testcontainers`, `bollard`, `nix`, `futures`, `tracing`     | Enables the `qlever` submodule and re-exports (`QleverGraphContainer`, `QleverConfig`, `QleverError`, …).                        |
 | `qlever-docker-tests`| implies `qlever`                                                                    | Gates the Docker-dependent integration tests under `rdf_impl/tests/qlever_docker.rs`. Compiles without Docker; running needs it. |
 
 The `qlever` family of features is gated on `cfg(not(target_family = "wasm"))`.
+
+`http-client` is off by default, so that an application linking rudof never makes outbound requests it did not ask for: oxigraph installs its HTTP `SERVICE` handler in every evaluator of the build once its client is compiled. Remote endpoints (`OxigraphEndpoint`) go through `reqwest` and do not need it. `sparql_service`, `shacl` and `rudof_lib` forward it under the same name; the `rudof` CLI, `pyrudof`, `rudof_mcp` and the Emacs bindings turn it on. It does not build on wasm.
 
 ## Backends in `rdf_impl`
 
