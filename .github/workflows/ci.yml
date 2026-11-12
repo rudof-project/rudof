@@ -47,6 +47,8 @@ jobs:
       # rudof_lib without its optional subsystems (see its Cargo features)
       - name: Run cargo check on rudof_lib without optional features
         run: cargo check -p rudof_lib --all-targets --no-default-features --features sparql
+      - name: Run cargo check on rudof_lib with oxigraph's HTTP client
+        run: cargo check -p rudof_lib --all-targets --features http-client
 
   check-wasm:
     name: Check wasm
@@ -117,6 +119,10 @@ jobs:
         # libpython, which the runner doesn't have. Its Python tests run in the
         # Python workflow, against the built wheels.
         run: cargo test --workspace --exclude pyrudof --features qlever
+      # Feature unification turns `http-client` on in the workspace run above
+      # (the CLI asks for it), so test SERVICE without it separately.
+      - name: Run the SERVICE tests without oxigraph's HTTP client
+        run: cargo test -p rudof_rdf --lib service_tests
 
   wasm-test:
     name: Test Suite on Wasm
