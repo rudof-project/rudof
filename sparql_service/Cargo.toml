@@ -15,6 +15,9 @@ sparql = ["dep:oxigraph", "dep:sparesults", "rudof_rdf/sparql"]
 qlever = ["sparql", "rudof_rdf/qlever"]
 # Remote SPARQL endpoints on wasm (see the `jspi` feature of rudof_rdf).
 jspi = ["sparql", "rudof_rdf/jspi"]
+# `SERVICE` in queries against in-memory data reaches remote endpoints (see
+# the `http-client` feature of rudof_rdf). Native only.
+http-client = ["sparql", "rudof_rdf/http-client"]
 
 [dependencies]
 colored.workspace = true
