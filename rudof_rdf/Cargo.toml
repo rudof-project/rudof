@@ -33,6 +33,9 @@ qlever-docker-tests = ["qlever"]
 # (WebAssembly JS Promise Integration). Only has an effect on wasm, where it
 # needs a runtime with JSPI and exnref. Without it, endpoints are native only.
 jspi = ["sparql", "dep:js-sys", "dep:wasm-bindgen"]
+# oxigraph's HTTP client, so that a `SERVICE` clause in a query against the
+# in-memory graph reaches the remote endpoint it names.
+http-client = ["sparql", "oxigraph/http-client-rustls-native"]
 
 [dependencies]
 colored.workspace = true
@@ -75,7 +78,7 @@ bollard = { workspace = true, optional = true }
 nix = { workspace = true, optional = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-oxigraph = { workspace = true, features = ["http-client-rustls-native"] }
+oxigraph.workspace = true
 tempfile.workspace = true
 tokio = { workspace = true, features = ["full"] }
 

@@ -41,6 +41,10 @@ sparql = [ "shacl/sparql", "sparql_service/sparql", "rudof_rdf/sparql" ]
 # the `jspi` feature of rudof_rdf). No effect on native builds, which always
 # support endpoints.
 jspi = [ "sparql", "sparql_service/jspi", "rudof_rdf/jspi" ]
+# `SERVICE` in queries and SHACL-SPARQL constraints evaluated on in-memory
+# data reaches remote endpoints, through oxigraph's HTTP client (see the
+# `http-client` feature of rudof_rdf). Native only; off by default.
+http-client = [ "sparql", "shacl/http-client", "sparql_service/http-client", "rudof_rdf/http-client" ]
 
 [dependencies]
 tokio = { workspace = true, optional = true }

@@ -13,6 +13,9 @@ repository.workspace = true
 [features]
 default = ["sparql"]
 sparql = ["dep:sparql_service", "sparql_service/sparql", "rudof_rdf/sparql"]
+# `SERVICE` in SHACL-SPARQL constraints validated in memory reaches remote
+# endpoints (see the `http-client` feature of rudof_rdf). Native only.
+http-client = ["sparql", "sparql_service/http-client", "rudof_rdf/http-client"]
 
 [dependencies]
 anyhow.workspace = true

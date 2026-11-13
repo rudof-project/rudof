@@ -17,6 +17,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `shacl`: a `sh:targetNode` node expression other than a constant targets the nodes it outputs ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `shacl`: the `sh:targetWhere` target, which targets the nodes conforming to its shape ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `shacl`: The whole SHACL 1.2 core test suite is wired, with an `#[ignore]` naming the missing feature for each test that does not pass ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `rudof_rdf`, `sparql_service`, `shacl`, `rudof_lib`: the `http-client` feature, which compiles oxigraph's HTTP client so that `SERVICE` in queries and SHACL-SPARQL constraints evaluated in memory reaches the endpoint it names. Native only; the `rudof` CLI, `pyrudof`, `rudof_mcp` and the Emacs bindings turn it on ([#918](https://github.com/rudof-project/rudof/issues/918)).
 
 ### Fixed
 - `shex_ast`: dropped csv color format on shex validation ([#949](https://github.com/rudof-project/rudof/issues/949))
@@ -26,6 +27,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Changed
 - `shacl`: a shape cycle that closes through a node expression is rejected when the schema compiles, not during validation ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `shacl`: `ShaclProcessor::before_validation` takes `&mut dyn Engine`, and `Engine::focus_nodes` is gone: a target is resolved by the shape, which an engine no longer has to implement ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `rudof_rdf` no longer compiles oxigraph's HTTP client unless its `http-client` feature is on, so a crate linking `rudof_rdf`, `sparql_service`, `shacl` or `rudof_lib` makes no `SERVICE` requests and keeps the client out of every oxigraph in its build. Without the feature, `SERVICE` in a query against in-memory data is refused ([#918](https://github.com/rudof-project/rudof/issues/918)).
 
 ## 0.3.39
 ### Added

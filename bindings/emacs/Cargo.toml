@@ -26,7 +26,7 @@ harness = false
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 anyhow.workspace = true
 emacs = { version = "0.21", features = ["emacs-28"] }
-rudof_lib.workspace = true
+rudof_lib = { workspace = true, features = ["http-client"] }
 
 [dev-dependencies]
 libtest-mimic = "0.8"
