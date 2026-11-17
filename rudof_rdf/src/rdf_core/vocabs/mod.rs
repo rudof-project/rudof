@@ -20,6 +20,7 @@ mod xsd;
 mod earl;
 mod doap;
 mod foaf;
+mod dct;
 
 pub use owl::OwlVocab;
 pub use rdf::RdfVocab;
@@ -33,6 +34,7 @@ pub use xsd::XsdVocab;
 pub use earl::EarlVocab;
 pub use doap::DoapVocab;
 pub use foaf::FoafVocab;
+pub use dct::DctVocab;
 
 #[macro_export]
 macro_rules! vocab_term {
