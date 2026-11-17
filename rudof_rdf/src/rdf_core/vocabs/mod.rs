@@ -18,6 +18,7 @@ mod shexr;
 mod test_manifest;
 mod xsd;
 mod earl;
+mod doap;
 
 pub use owl::OwlVocab;
 pub use rdf::RdfVocab;
@@ -29,6 +30,7 @@ pub use shexr::ShexRVocab;
 pub use test_manifest::TestManifestVocab;
 pub use xsd::XsdVocab;
 pub use earl::EarlVocab;
+pub use doap::DoapVocab;
 
 #[macro_export]
 macro_rules! vocab_term {
