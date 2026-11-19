@@ -16,8 +16,9 @@ fn a_submission_report_matches_the_published_shape() {
 
     assert!(
         built.is_isomorphic(&expected),
-        "the built report is not isomorphic to tests/fixtures/submission.ttl.\n\
-         If the change is deliberate, update the fixture and review the diff.\n\
+        "the built report is not isomorphic to the expected one, the REPORT const in \
+         tests/common/report.rs.\n\
+         If the change is deliberate, update that const and review the diff.\n\
          --- built ({} triples) ---\n{}\n--- expected ({} triples) ---\n{}",
         built.len(),
         turtle(&built),
