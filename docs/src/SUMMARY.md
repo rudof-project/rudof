@@ -66,6 +66,7 @@
   - [`rudof_rdf_sink`](./internals/crates/rudof_rdf_sink.md)
   - [`rudof_viz`](./internals/crates/rudof_viz.md)
   - [`rudof_mcp`](./internals/crates/rudof_mcp.md)
+  - [`rudof_earl`](./internals/crates/rudof_earl.md)
 - [ADRs](./internals/ADRs.md)
 - [IRI normalization](./internals/iri-normalization.md)
 - [Feasibility model](./internals/feasibility-model.md)
