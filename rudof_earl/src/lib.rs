@@ -6,16 +6,16 @@
 //! criterion, and with what outcome.
 
 mod error;
+pub mod model;
 pub mod report;
 mod software;
-pub mod model;
 
+use crate::error::graph_error;
 pub use error::EarlError;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::{DctVocab, DoapVocab, EarlVocab, FoafVocab};
 pub use software::{Release, Software};
-use crate::error::graph_error;
 
 pub(crate) fn earl_prefixes() -> [(&'static str, rudof_iri::IriS); 4] {
     [

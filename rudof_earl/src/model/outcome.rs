@@ -1,8 +1,8 @@
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
+use crate::EarlError;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::EarlVocab;
-use crate::EarlError;
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 /// The outcome of carrying out a test
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]

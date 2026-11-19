@@ -2,15 +2,15 @@
 
 mod assertor;
 
-pub use assertor::Assertor;
 use crate::error::{EarlError, graph_error};
+use crate::model::{Assertion, Outcome};
+use crate::{Software, earl_prefixes, new_subject};
+pub use assertor::Assertor;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, XsdDateTime};
 use rudof_rdf::rdf_core::vocabs::{DctVocab, FoafVocab};
-use crate::{earl_prefixes, new_subject, Software};
-use crate::model::{Assertion, Outcome};
 
 /// An EARL report, ready to be written as RDF.
 ///

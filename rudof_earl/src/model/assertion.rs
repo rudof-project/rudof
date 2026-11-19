@@ -1,10 +1,10 @@
+use crate::error::graph_error;
+use crate::model::{Outcome, TestResult};
+use crate::{EarlError, new_subject};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::EarlVocab;
-use crate::{new_subject, EarlError};
-use crate::error::graph_error;
-use crate::model::{Outcome, TestResult};
 
 /// A statement that a subject was tested against a criterion, with a given result.
 #[derive(Debug, Clone, PartialEq)]

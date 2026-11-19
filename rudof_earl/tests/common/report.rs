@@ -1,18 +1,18 @@
+use rudof_earl::model::{Assertion, TestResult};
 use rudof_earl::report::EarlReport;
 use rudof_earl::{Release, Software};
-use rudof_earl::model::{Assertion, TestResult};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::RDFFormat;
-use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, XsdDateTime};
 use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, XsdDateTime};
 use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 
-pub const TOOL: &'static str = "https://github.com/rudof-project/rudof";
-pub const ORG: &'static str = "https://github.com/rudof-project";
-pub const DOCUMENT: &'static str = "https://rudof-project.github.io/reports/rudof-shacl-earl.ttl";
-pub const TEST: &'static str = "urn:x-shacl-test:/core/node/disjoint-001";
+pub const TOOL: &str = "https://github.com/rudof-project/rudof";
+pub const ORG: &str = "https://github.com/rudof-project";
+pub const DOCUMENT: &str = "https://rudof-project.github.io/reports/rudof-shacl-earl.ttl";
+pub const TEST: &str = "urn:x-shacl-test:/core/node/disjoint-001";
 
-const REPORT: &'static str = r#"
+const REPORT: &str = r#"
 @prefix dct:  <http://purl.org/dc/terms/> .
 @prefix doap: <http://usefulinc.com/ns/doap#> .
 @prefix earl: <http://www.w3.org/ns/earl#> .
@@ -86,7 +86,7 @@ pub fn submission_report() -> EarlReport {
                 Object::iri(IriS::new_unchecked("urn:x-shacl-test:/core/node/disjoint-001")),
                 TestResult::passed(),
             )
-                .with_asserted_by(Object::iri(IriS::new_unchecked(ORG))),
+            .with_asserted_by(Object::iri(IriS::new_unchecked(ORG))),
         )
         .with_assertion(
             Assertion::new(
@@ -94,6 +94,6 @@ pub fn submission_report() -> EarlReport {
                 Object::iri(IriS::new_unchecked("urn:x-shacl-test:/core/node/class-002")),
                 TestResult::failed().with_info(ConcreteLiteral::str("expected sh:conforms false, got true")),
             )
-                .with_asserted_by(Object::iri(IriS::new_unchecked(ORG))),
+            .with_asserted_by(Object::iri(IriS::new_unchecked(ORG))),
         )
 }

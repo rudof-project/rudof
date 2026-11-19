@@ -3,13 +3,13 @@
 mod release;
 
 use crate::error::{EarlError, graph_error};
+use crate::{new_subject, subject_for};
+pub use release::Release;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::{DoapVocab, EarlVocab};
-use crate::{new_subject, subject_for};
-pub use release::Release;
 
 /// A `doap:Project` that is also an `earl:Software` and an `earl:TestSubject`
 #[derive(Debug, Clone, PartialEq)]

@@ -1,8 +1,8 @@
+use crate::EarlError;
+use crate::error::graph_error;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::{DoapVocab, XsdVocab};
-use crate::EarlError;
-use crate::error::graph_error;
 
 /// Which release of the software was tested.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -70,8 +70,7 @@ impl Release {
         }
 
         if let Some(created) = &self.created {
-            let date =
-                ConcreteLiteral::lit_datatype(created, &XsdVocab::xsd_date().into());
+            let date = ConcreteLiteral::lit_datatype(created, &XsdVocab::xsd_date().into());
             writer
                 .add_triple::<_, _, RDF::Literal>(node, DoapVocab::doap_created(), date.into())
                 .map_err(graph_error::<RDF>("Error adding the creation date to the release"))?;

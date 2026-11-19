@@ -2,8 +2,8 @@
 
 mod common;
 
-use crate::common::{DOCUMENT, TOOL, submission_report, submission_report_graph, turtle};
 use common::graph_of;
+use common::{DOCUMENT, TOOL, submission_report, submission_report_graph, turtle};
 use rudof_earl::model::{Assertion, TestResult};
 use rudof_earl::report::EarlReport;
 use rudof_iri::IriS;

@@ -8,6 +8,10 @@ use rudof_iri::IriS;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
+mod dct;
+mod doap;
+mod earl;
+mod foaf;
 mod owl;
 mod rdf;
 mod rdfs;
@@ -17,11 +21,11 @@ mod shacl_test;
 mod shexr;
 mod test_manifest;
 mod xsd;
-mod earl;
-mod doap;
-mod foaf;
-mod dct;
 
+pub use dct::DctVocab;
+pub use doap::DoapVocab;
+pub use earl::EarlVocab;
+pub use foaf::FoafVocab;
 pub use owl::OwlVocab;
 pub use rdf::RdfVocab;
 pub use rdfs::RdfsVocab;
@@ -31,10 +35,6 @@ pub use shacl_test::ShaclTestVocab;
 pub use shexr::ShexRVocab;
 pub use test_manifest::TestManifestVocab;
 pub use xsd::XsdVocab;
-pub use earl::EarlVocab;
-pub use doap::DoapVocab;
-pub use foaf::FoafVocab;
-pub use dct::DctVocab;
 
 #[macro_export]
 macro_rules! vocab_term {

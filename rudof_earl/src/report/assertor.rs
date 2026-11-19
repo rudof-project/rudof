@@ -1,10 +1,10 @@
+use crate::error::graph_error;
+use crate::{EarlError, subject_for};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
-use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::{EarlVocab, FoafVocab};
-use crate::{subject_for, EarlError};
-use crate::error::graph_error;
 
 /// Who asserted the results
 #[derive(Debug, Clone, PartialEq)]

@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{ORG, TEST, TOOL, submission_report};
+use common::{ORG, TEST, TOOL, submission_report};
 use common::{count_predicate, serialize, triples_of};
 use rudof_earl::model::{Assertion, Outcome, TestMode, TestResult};
 use rudof_earl::report::{Assertor, EarlReport};
@@ -179,7 +179,10 @@ fn info_and_extra_triples_reach_the_result() {
         Object::iri(IriS::new_unchecked(TEST)),
         TestResult::failed()
             .with_info(ConcreteLiteral::str("Less than 1 values"))
-            .with_extra_item(IriS::new_unchecked("http://www.w3.org/ns/shacl#resultSeverity"), Object::iri(severity)),
+            .with_extra_item(
+                IriS::new_unchecked("http://www.w3.org/ns/shacl#resultSeverity"),
+                Object::iri(severity),
+            ),
     ));
     let triples = triples_of(&report);
 
@@ -205,7 +208,9 @@ fn document_metadata_needs_a_named_document() {
         .with_title("rudof SHACL report");
     assert_eq!(count_predicate(&without, "<http://purl.org/dc/terms/title>"), 0);
 
-    let with = without.clone().with_document(IriS::new_unchecked("https://example.org/report.ttl"));
+    let with = without
+        .clone()
+        .with_document(IriS::new_unchecked("https://example.org/report.ttl"));
     assert_eq!(count_predicate(&with, "<http://purl.org/dc/terms/title>"), 1);
     assert_eq!(count_predicate(&with, "<http://xmlns.com/foaf/0.1/maker>"), 1);
 }

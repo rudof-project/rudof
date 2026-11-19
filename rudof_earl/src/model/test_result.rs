@@ -1,11 +1,11 @@
-use rudof_iri::IriS;
-use rudof_rdf::rdf_core::BuildRDF;
-use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, XsdDateTime};
-use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::vocabs::{DctVocab, EarlVocab};
 use crate::EarlError;
 use crate::error::graph_error;
 use crate::model::{Outcome, TestMode};
+use rudof_iri::IriS;
+use rudof_rdf::rdf_core::BuildRDF;
+use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, XsdDateTime};
+use rudof_rdf::rdf_core::vocabs::{DctVocab, EarlVocab};
 
 /// What carrying out the test produced
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -92,7 +92,6 @@ impl TestResult {
         &self.extra
     }
 }
-
 
 impl TestResult {
     /// Writes this result onto `node`

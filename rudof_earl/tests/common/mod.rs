@@ -1,8 +1,10 @@
 //! Helpers for the EARL report tests
 
+#![allow(dead_code, unused_imports)]
+
 mod report;
 
-pub use report::{TOOL, ORG, DOCUMENT, TEST, submission_report_graph, submission_report};
+pub use report::{DOCUMENT, ORG, TEST, TOOL, submission_report, submission_report_graph};
 use rudof_earl::report::EarlReport;
 use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
