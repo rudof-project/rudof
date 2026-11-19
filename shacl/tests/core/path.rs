@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     suite_tests! {
-        crate::common::runner::validate_runner,
+        shacl_testsuite::runner::validate_runner,
         "tests/data-shapes/data-shapes-test-suite/tests/core/path/",
         path_alternative_001 => "path-alternative-001",
         path_complex_001 => "path-complex-001",

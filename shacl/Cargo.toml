@@ -45,6 +45,7 @@ stacker.workspace = true
 
 [dev-dependencies]
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+shacl_testsuite.workspace = true
 
 [[example]]
 name = "endpoint_validation"

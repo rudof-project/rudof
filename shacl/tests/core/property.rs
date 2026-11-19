@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     suite_tests! {
-        crate::common::runner::validate_runner,
+        shacl_testsuite::runner::validate_runner,
         "tests/data-shapes/data-shapes-test-suite/tests/core/property/",
         and_001 => "and-001",
         class_001 => "class-001",

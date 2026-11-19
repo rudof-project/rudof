@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     suite_tests! {
-        crate::common::runner::validate_runner,
+        shacl_testsuite::runner::validate_runner,
         "tests/data-shapes/shacl12-test-suite/tests/core/node/",
         and_001 => "and-001",
         and_002 => "and-002",

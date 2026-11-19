@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     suite_tests! {
-        crate::common::runner::validate_runner,
+        shacl_testsuite::runner::validate_runner,
         "tests/data-shapes/data-shapes-test-suite/tests/sparql/pre-binding/",
         #[ignore]
         pre_binding_001 => "pre-binding-001",

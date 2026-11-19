@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     suite_tests! {
-        crate::common::runner::node_expr_runner,
+        shacl_testsuite::runner::node_expr_runner,
         "tests/data-shapes/shacl12-test-suite/tests/node-expr/shnex/",
         concat => "concat",
         constant => "constant",
