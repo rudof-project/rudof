@@ -1,4 +1,4 @@
-use crate::common::TestSuiteError;
+use crate::TestSuiteError;
 use std::marker::PhantomData;
 use std::path::Path;
 
@@ -7,13 +7,13 @@ mod graph;
 mod node_expr;
 mod validate;
 
-pub(crate) use entry::ManifestEntry;
-pub(crate) use graph::ManifestGraph;
-pub(crate) use node_expr::NodeExprManifest;
-pub(crate) use validate::ValidateManifest;
+pub use entry::ManifestEntry;
+pub use graph::ManifestGraph;
+pub use node_expr::NodeExprManifest;
+pub use validate::ValidateManifest;
 
 /// A test manifest of kind `T`
-pub(crate) struct Manifest<T> {
+pub struct Manifest<T> {
     graph: ManifestGraph,
     _entry: PhantomData<T>,
 }

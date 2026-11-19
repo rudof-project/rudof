@@ -1,5 +1,5 @@
-use crate::common::TestSuiteError;
-use crate::common::manifest::ValidateManifest;
+use crate::TestSuiteError;
+use crate::manifest::ValidateManifest;
 use shacl::error::IRError;
 use shacl::validator::processor::{DataValidation, ShaclProcessor};
 use shacl::validator::{ShaclConfig, ShaclValidationMode};
@@ -7,7 +7,7 @@ use std::path::Path;
 
 /// Runs a `sht:Validate` manifest with both [`Native`](ShaclValidationMode::Native) and
 /// [`Sparql`](ShaclValidationMode::Sparql)
-pub(crate) fn validate_runner(path: String) -> Result<(), TestSuiteError> {
+pub fn validate_runner(path: String) -> Result<(), TestSuiteError> {
     test(path.clone(), ShaclValidationMode::Native)?;
     test(path, ShaclValidationMode::Sparql)
 }

@@ -1,9 +1,9 @@
-use crate::common::TestSuiteError;
-use crate::common::manifest::NodeExprManifest;
+use crate::TestSuiteError;
+use crate::manifest::NodeExprManifest;
 use std::path::Path;
 
 /// Runs every `sht:EvalNodeExpr` entry of a node expression test manifest
-pub(crate) fn node_expr_runner(path: String) -> Result<(), TestSuiteError> {
+pub fn node_expr_runner(path: String) -> Result<(), TestSuiteError> {
     let mut manifest = NodeExprManifest::new(Path::new(&path))?;
     let tests = manifest.collect_tests()?;
 
