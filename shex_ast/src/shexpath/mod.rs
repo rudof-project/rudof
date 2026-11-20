@@ -19,3 +19,13 @@ pub use error::*;
 pub use item::*;
 pub use parser::*;
 pub use shexj::*;
+
+#[cfg(test)]
+mod tests {
+    mod parser_filters_tests;
+    mod parser_helpers;
+    mod parser_iris_tests;
+    mod parser_junctions_tests;
+    mod parser_shortcuts_tests;
+    mod parser_steps_tests;
+}
