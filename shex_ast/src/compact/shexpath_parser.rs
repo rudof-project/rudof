@@ -4,6 +4,8 @@ use crate::compact::shexpath_grammar::{shape_path, ws};
 use crate::shexpath::ShExPath;
 use crate::{ParseError, Span};
 use nom::{Err, Parser, sequence::terminated};
+use prefixmap::{DerefIri, PrefixMap};
+use rudof_iri::IriS;
 
 type Result<A> = std::result::Result<A, ParseError>;
 
@@ -12,7 +14,15 @@ pub struct ShExPathParser;
 
 impl ShExPathParser {
     /// Parses `src`, which must be a whole ShExPath, with whitespace and comments allowed around it.
-    pub fn parse(src: &str) -> Result<ShExPath> {
+    ///
+    /// The IRIs in the path are resolved: an `IRIREF` against `base` and a prefixed name with
+    /// `prefixmap`. A prefix that `prefixmap` does not declare is an error.
+    pub fn parse(src: &str, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<ShExPath> {
+        Ok(Self::parse_syntax(src)?.deref_iri(base, prefixmap)?)
+    }
+
+    /// Parses `src`, leaving its IRIs as they are written.
+    pub(crate) fn parse_syntax(src: &str) -> Result<ShExPath> {
         let (rest, path) = terminated(shape_path, ws).parse(Span::new(src)).map_err(|e| match e {
             Err::Incomplete(needed) => ParseError::Custom {
                 msg: format!("Incomplete ShExPath: needed {needed:?}"),
@@ -43,7 +53,7 @@ mod tests {
     }
 
     fn parse(src: &str) -> ShExPath {
-        match ShExPathParser::parse(src) {
+        match ShExPathParser::parse_syntax(src) {
             Ok(path) => path,
             Err(e) => panic!("{src} is not parsed: {e}"),
         }
@@ -73,14 +83,14 @@ mod tests {
 
     #[test]
     fn an_axis_needs_its_double_colon() {
-        assert!(ShExPathParser::parse("/self").is_err());
-        assert!(ShExPathParser::parse("/parent").is_err());
-        assert!(ShExPathParser::parse("/thisShapeExpr:").is_err());
+        assert!(ShExPathParser::parse_syntax("/self").is_err());
+        assert!(ShExPathParser::parse_syntax("/parent").is_err());
+        assert!(ShExPathParser::parse_syntax("/thisShapeExpr:").is_err());
     }
 
     #[test]
     fn descendant_has_no_spelling() {
-        assert!(ShExPathParser::parse("/descendant::").is_err());
+        assert!(ShExPathParser::parse_syntax("/descendant::").is_err());
     }
 
     #[test]
@@ -209,8 +219,8 @@ mod tests {
 
     #[test]
     fn functions_are_case_sensitive() {
-        assert!(ShExPathParser::parse("/*[INDEX() = 1]").is_err());
-        assert!(ShExPathParser::parse("/*[Count()]").is_err());
+        assert!(ShExPathParser::parse_syntax("/*[INDEX() = 1]").is_err());
+        assert!(ShExPathParser::parse_syntax("/*[Count()]").is_err());
     }
 
     #[test]
@@ -330,13 +340,103 @@ mod tests {
             "/*[id = ]",
             "/*[=1]",
         ] {
-            assert!(ShExPathParser::parse(src).is_err(), "{src}");
+            assert!(ShExPathParser::parse_syntax(src).is_err(), "{src}");
         }
+    }
+
+    fn example_prefixmap() -> PrefixMap {
+        let mut prefixmap = PrefixMap::new();
+        prefixmap.add_prefix("", IriS::new_unchecked("http://ex.example/ns#"));
+        prefixmap.add_prefix("foaf", IriS::new_unchecked("http://xmlns.com/foaf/0.1/"));
+        prefixmap
+    }
+
+    fn example_base() -> IriS {
+        IriS::new_unchecked("http://ex.example/schema")
+    }
+
+    fn resolve(src: &str) -> ShExPath {
+        let prefixmap = example_prefixmap();
+        match ShExPathParser::parse(src, Some(&example_base()), Some(&prefixmap)) {
+            Ok(path) => path,
+            Err(e) => panic!("{src} is not parsed: {e}"),
+        }
+    }
+
+    fn compares(attribute: Attribute, rvalue: RValue) -> ShExPath {
+        ShExPath::path([any().with_filter(Filter::compare(path_of(attribute), Comparator::Equal, rvalue))])
+    }
+
+    #[test]
+    fn a_relative_iri_is_resolved_against_the_base() {
+        assert_eq!(
+            resolve("/*[id = <#IssueShape>]"),
+            compares(Attribute::Id, iri("http://ex.example/schema#IssueShape"))
+        );
+    }
+
+    #[test]
+    fn an_absolute_iri_is_kept() {
+        assert_eq!(
+            resolve("/*[id = <http://a.example/S1>]"),
+            compares(Attribute::Id, iri("http://a.example/S1"))
+        );
+    }
+
+    #[test]
+    fn a_prefixed_name_is_resolved_with_the_prefixes() {
+        assert_eq!(
+            resolve("/*[predicate = :name]"),
+            compares(Attribute::Predicate, iri("http://ex.example/ns#name"))
+        );
+        assert_eq!(
+            resolve("/*[predicate = foaf:mbox]"),
+            compares(Attribute::Predicate, iri("http://xmlns.com/foaf/0.1/mbox"))
+        );
+        assert_eq!(
+            resolve("/*[predicate = foaf:]"),
+            compares(Attribute::Predicate, iri("http://xmlns.com/foaf/0.1/"))
+        );
+    }
+
+    #[test]
+    fn iris_in_nested_filters_are_resolved() {
+        assert_eq!(
+            resolve("/*[expressions/*[predicate = :name]]"),
+            ShExPath::path([any().with_filter(Filter::test(Operand::Path(ShExPath::path([
+                child(Attribute::Expressions),
+                any().with_filter(Filter::compare(
+                    path_of(Attribute::Predicate),
+                    Comparator::Equal,
+                    iri("http://ex.example/ns#name")
+                ))
+            ]))))])
+        );
+    }
+
+    #[test]
+    fn an_unknown_prefix_is_an_error() {
+        let prefixmap = example_prefixmap();
+        let err = ShExPathParser::parse("/*[predicate = pre999:lname]", None, Some(&prefixmap)).unwrap_err();
+        assert!(err.to_string().contains("pre999"), "{err}");
+    }
+
+    #[test]
+    fn a_prefixed_name_without_prefixes_is_an_error() {
+        assert!(ShExPathParser::parse("/*[predicate = :name]", None, None).is_err());
+    }
+
+    #[test]
+    fn a_relative_iri_without_a_base_is_kept() {
+        assert_eq!(
+            ShExPathParser::parse("/*[id = <#S>]", None, None).expect("parses"),
+            compares(Attribute::Id, iri("#S"))
+        );
     }
 
     #[test]
     fn shape_decl_is_not_a_term_type() {
-        assert!(ShExPathParser::parse("/ShapeDecl").is_err());
+        assert!(ShExPathParser::parse_syntax("/ShapeDecl").is_err());
     }
 
     #[test]
@@ -403,14 +503,14 @@ mod tests {
 
     #[test]
     fn attributes_are_case_sensitive() {
-        assert!(ShExPathParser::parse("/Shapes").is_err());
-        assert!(ShExPathParser::parse("/VALUEEXPR").is_err());
+        assert!(ShExPathParser::parse_syntax("/Shapes").is_err());
+        assert!(ShExPathParser::parse_syntax("/VALUEEXPR").is_err());
     }
 
     #[test]
     fn a_word_that_is_not_an_attribute_is_an_error() {
-        assert!(ShExPathParser::parse("/asdf").is_err());
-        assert!(ShExPathParser::parse("/abstract").is_err());
+        assert!(ShExPathParser::parse_syntax("/asdf").is_err());
+        assert!(ShExPathParser::parse_syntax("/abstract").is_err());
     }
 
     #[test]
@@ -435,13 +535,13 @@ mod tests {
 
     #[test]
     fn an_empty_path_is_an_error() {
-        assert!(ShExPathParser::parse("").is_err());
-        assert!(ShExPathParser::parse("/").is_err());
+        assert!(ShExPathParser::parse_syntax("").is_err());
+        assert!(ShExPathParser::parse_syntax("/").is_err());
     }
 
     #[test]
     fn trailing_input_is_an_error() {
-        let err = ShExPathParser::parse("/shapes ]").unwrap_err();
+        let err = ShExPathParser::parse_syntax("/shapes ]").unwrap_err();
         assert!(err.to_string().contains("Unexpected trailing input: ]"), "{err}");
     }
 }

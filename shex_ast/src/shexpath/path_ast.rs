@@ -3,7 +3,9 @@
 //! The types follow the nonterminals of the spec's grammar, which are those of the reference
 //! implementation's parser, `ShapePathParser.jison`.
 
-use prefixmap::IriRef;
+use prefixmap::error::DerefError;
+use prefixmap::{DerefIri, IriRef, PrefixMap};
+use rudof_iri::IriS;
 use std::fmt;
 
 /// A ShExPath.
@@ -200,6 +202,66 @@ pub enum Comparator {
 pub enum RValue {
     Integer(i64),
     Iri(IriRef),
+}
+
+/// Resolves the IRIs of a path: an `IRIREF` against the base and a prefixed name with the prefixes.
+impl DerefIri for ShExPath {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+        match self {
+            ShExPath::Path(steps) => Ok(ShExPath::Path(steps.deref_iri(base, prefixmap)?)),
+        }
+    }
+}
+
+impl DerefIri for Step {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+        Ok(Step {
+            selector: self.selector,
+            filters: self.filters.deref_iri(base, prefixmap)?,
+        })
+    }
+}
+
+impl DerefIri for Filter {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+        match self {
+            Filter::TermType(term_type) => Ok(Filter::TermType(term_type)),
+            Filter::Test {
+                assert,
+                operand,
+                comparison,
+            } => Ok(Filter::Test {
+                assert,
+                operand: operand.deref_iri(base, prefixmap)?,
+                comparison: comparison
+                    .map(|c| -> Result<Comparison, DerefError> {
+                        Ok(Comparison {
+                            comparator: c.comparator,
+                            rvalue: c.rvalue.deref_iri(base, prefixmap)?,
+                        })
+                    })
+                    .transpose()?,
+            }),
+        }
+    }
+}
+
+impl DerefIri for Operand {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+        match self {
+            Operand::Path(path) => Ok(Operand::Path(path.deref_iri(base, prefixmap)?)),
+            other => Ok(other),
+        }
+    }
+}
+
+impl DerefIri for RValue {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+        match self {
+            RValue::Iri(iri) => Ok(RValue::Iri(iri.deref_iri(base, prefixmap)?)),
+            other => Ok(other),
+        }
+    }
 }
 
 /// `attributeOrAny ::= "*" | attribute`
