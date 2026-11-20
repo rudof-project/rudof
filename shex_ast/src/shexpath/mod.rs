@@ -5,17 +5,17 @@
 //! evaluated over the ShExJ form of a schema, a [`ShExJDocument`], and selects
 //! [`ShExPathItem`]s: the nodes of that document, each with its [`Location`].
 
+mod ast;
 mod document;
 mod eval;
 mod item;
 mod parser;
-mod path_ast;
 mod shexj_view;
 mod shexpath_error;
 
+pub use ast::*;
 pub use document::*;
 pub use item::*;
 pub use parser::*;
-pub use path_ast::*;
 pub use shexj_view::*;
 pub use shexpath_error::*;
