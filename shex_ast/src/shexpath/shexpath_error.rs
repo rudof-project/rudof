@@ -15,6 +15,13 @@ pub enum ShExPathError {
     #[error("Error writing the schema as ShExJ: {msg}")]
     Serialization { msg: String },
 
+    /// A filter `[assert expr]` whose `expr` does not hold: the path is in error.
+    ///
+    /// # Fields
+    /// - `location`: Where the item the assertion failed on is
+    #[error("ShExPath assertion failed on the item at \"{location}\"")]
+    AssertionFailed { location: String },
+
     /// The path uses something the evaluator does not evaluate.
     ///
     /// # Fields
