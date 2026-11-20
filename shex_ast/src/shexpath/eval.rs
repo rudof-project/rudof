@@ -1,21 +1,31 @@
 //! Evaluation of a ShExPath over a ShExJ document.
 
 use crate::shexpath::{
-    AttributeOrAny, Axis, Comparator, Comparison, Filter, Operand, RValue, Segment, Selector, ShExPath, ShExPathError,
-    ShExPathItem, Step,
+    Attribute, AttributeOrAny, Axis, Comparator, Comparison, Filter, Location, Operand, RValue, Segment, Selector,
+    ShExPath, ShExPathError, ShExPathItem, Step,
 };
 use prefixmap::IriRef;
 use serde_json::Value;
 use std::borrow::Cow;
+use std::cell::OnceCell;
+use std::collections::{HashMap, HashSet};
+
+/// The ShExJ types of triple expressions.
+const TRIPLE_EXPR_TYPES: [&str; 3] = ["EachOf", "OneOf", "TripleConstraint"];
 
 /// Evaluates paths over one document.
 pub(crate) struct Evaluator<'a> {
     root: &'a Value,
+    /// The triple expressions declared with a label, by label, built when first needed.
+    triple_exprs: OnceCell<HashMap<&'a str, ShExPathItem<'a>>>,
 }
 
 impl<'a> Evaluator<'a> {
     pub(crate) fn new(root: &'a Value) -> Self {
-        Evaluator { root }
+        Evaluator {
+            root,
+            triple_exprs: OnceCell::new(),
+        }
     }
 
     /// The value `path` produces from `items`.
@@ -42,6 +52,10 @@ impl<'a> Evaluator<'a> {
                 Selector::Axis(Axis::Itself) => selected.push(item),
                 Selector::Axis(Axis::Parent) => selected.extend(self.parent(&item)),
                 Selector::Axis(Axis::Ancestor) => selected.extend(self.ancestors(&item)),
+                Selector::Axis(Axis::ThisShapeExpr) => selected.extend(this_shape_expr(&item)),
+                Selector::Axis(Axis::ThisTripleExpr) => {
+                    selected.extend(self.this_triple_expr(&item, &mut HashSet::new()))
+                },
                 _ => {
                     return Err(ShExPathError::NotImplemented {
                         feature: "axes".to_string(),
@@ -71,6 +85,65 @@ impl<'a> Evaluator<'a> {
     /// `ancestor::`: the parent, its parent, and so on up to the schema, nearest first.
     fn ancestors(&self, item: &ShExPathItem<'a>) -> Vec<ShExPathItem<'a>> {
         std::iter::successors(self.parent(item), |parent| self.parent(parent)).collect()
+    }
+
+    /// `thisTripleExpr::`: the item and, if it is an `EachOf` or `OneOf`, the triple expressions it
+    /// groups, transitively. A label among them is an inclusion, and the walk goes on into the
+    /// expression it names; a label nothing declares selects nothing. An expression the walk has
+    /// already reported (`seen`) is not reported again.
+    fn this_triple_expr(&self, item: &ShExPathItem<'a>, seen: &mut HashSet<Location>) -> Vec<ShExPathItem<'a>> {
+        match item.value() {
+            Value::Array(_) => children(item, &AttributeOrAny::Any)
+                .iter()
+                .flat_map(|member| self.this_triple_expr(member, seen))
+                .collect(),
+            Value::String(label) => match self.triple_expr(label) {
+                Some(expr) => self.this_triple_expr(&expr, seen),
+                None => Vec::new(),
+            },
+            Value::Object(map) => {
+                if !seen.insert(item.location().clone()) {
+                    return Vec::new();
+                }
+                match map.get("type").and_then(Value::as_str) {
+                    Some("EachOf" | "OneOf") => {
+                        let mut walk = vec![item.clone()];
+                        for expressions in children(item, &AttributeOrAny::Attribute(Attribute::Expressions)) {
+                            walk.extend(self.this_triple_expr(&expressions, seen));
+                        }
+                        walk
+                    },
+                    Some("TripleConstraint") => vec![item.clone()],
+                    _ => Vec::new(),
+                }
+            },
+            _ => Vec::new(),
+        }
+    }
+
+    /// The triple expression declared with `label`, if the schema has one.
+    ///
+    /// ShExJ has no top-level list of triple expressions the way it has `shapes`, so this looks
+    /// through the whole document, once.
+    fn triple_expr(&self, label: &str) -> Option<ShExPathItem<'a>> {
+        self.triple_exprs
+            .get_or_init(|| {
+                let mut index = HashMap::new();
+                for item in descendants(&ShExPathItem::new(self.root, Location::root())) {
+                    if let Some(id) = item.value().get("id").and_then(Value::as_str)
+                        && item
+                            .value()
+                            .get("type")
+                            .and_then(Value::as_str)
+                            .is_some_and(|ty| TRIPLE_EXPR_TYPES.contains(&ty))
+                    {
+                        index.entry(id).or_insert(item);
+                    }
+                }
+                index
+            })
+            .get(label)
+            .cloned()
     }
 
     /// The items of `items` that `filter` keeps. It is evaluated once per item, and knows the item,
@@ -163,6 +236,47 @@ fn children<'a>(item: &ShExPathItem<'a>, attribute: &AttributeOrAny) -> Vec<ShEx
             .collect(),
         _ => Vec::new(),
     }
+}
+
+/// `thisShapeExpr::`: the item and, if it is a `ShapeAnd`, `ShapeOr` or `ShapeNot`, the shape
+/// expressions it combines, transitively. It stops at a shape reference, which is an IRI rather
+/// than an expression, and yields nothing for a `ShapeExternal` or a `ShapeDecl`.
+fn this_shape_expr<'a>(item: &ShExPathItem<'a>) -> Vec<ShExPathItem<'a>> {
+    match item.value() {
+        Value::Array(_) => children(item, &AttributeOrAny::Any)
+            .iter()
+            .flat_map(this_shape_expr)
+            .collect(),
+        Value::Object(map) => {
+            let combined = match map.get("type").and_then(Value::as_str) {
+                Some("ShapeAnd" | "ShapeOr") => Attribute::ShapeExprs,
+                Some("ShapeNot") => Attribute::ShapeExpr,
+                Some("Shape" | "NodeConstraint") => return vec![item.clone()],
+                _ => return Vec::new(),
+            };
+            std::iter::once(item.clone())
+                .chain(
+                    children(item, &AttributeOrAny::Attribute(combined))
+                        .iter()
+                        .flat_map(this_shape_expr),
+                )
+                .collect()
+        },
+        _ => Vec::new(),
+    }
+}
+
+/// Every object and array below `item`, at any depth, in document order, not including `item`.
+fn descendants<'a>(item: &ShExPathItem<'a>) -> Vec<ShExPathItem<'a>> {
+    let mut found = Vec::new();
+    for child in children(item, &AttributeOrAny::Any) {
+        if child.value().is_object() || child.value().is_array() {
+            let below = descendants(&child);
+            found.push(child);
+            found.extend(below);
+        }
+    }
+    found
 }
 
 /// The effective boolean value of a value: false for an empty value; true for a value of more than

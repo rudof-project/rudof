@@ -474,3 +474,225 @@ mod self_parent_and_ancestor {
         );
     }
 }
+
+/// What each item is, as `type` or `type(predicate or id)`, with `http://a.example/` written `:`.
+fn described(items: &[ShExPathItem<'_>]) -> Vec<String> {
+    items
+        .iter()
+        .map(|item| {
+            let value = item.value();
+            let short = |v: &serde_json::Value| v.as_str().map(|s| s.replace("http://a.example/", ":"));
+            match value.as_str() {
+                Some(s) => format!("{:?}", s.replace("http://a.example/", ":")),
+                None => {
+                    let ty = value["type"].as_str().unwrap_or("?").to_string();
+                    match short(&value["predicate"]).or_else(|| short(&value["id"])) {
+                        Some(name) => format!("{ty}({name})"),
+                        None => ty,
+                    }
+                },
+            }
+        })
+        .collect()
+}
+
+mod this_shape_expr {
+    use super::*;
+
+    #[test]
+    fn the_node_constraint_half_of_user_shape() {
+        assert_eq!(
+            selects(&issue(), "@<#UserShape>/shapeExprs/*/thisShapeExpr::NodeConstraint"),
+            ["/shapes/1/shapeExpr/shapeExprs/0"]
+        );
+    }
+
+    #[test]
+    fn the_item_and_the_shape_expressions_a_conjunction_combines() {
+        assert_eq!(
+            selects(&issue(), "@<#UserShape>/thisShapeExpr::"),
+            [
+                "/shapes/1/shapeExpr",
+                "/shapes/1/shapeExpr/shapeExprs/0",
+                "/shapes/1/shapeExpr/shapeExprs/1"
+            ]
+        );
+        assert_eq!(
+            selects(&issue(), "@<#UserShape>/thisShapeExpr::Shape"),
+            ["/shapes/1/shapeExpr/shapeExprs/1"]
+        );
+    }
+
+    #[test]
+    fn transitively_and_through_negation() {
+        let doc = document(
+            "PREFIX : <http://a.example/>
+             :S { :p . } OR NOT ( @:T AND { :q . } )
+             :T { }",
+        );
+        assert_eq!(
+            described(&select(&doc, "@:S/thisShapeExpr::")),
+            ["ShapeOr", "Shape", "ShapeNot", "ShapeAnd", "Shape"]
+        );
+    }
+
+    #[test]
+    fn it_stops_at_a_shape_reference() {
+        let doc = document(
+            "PREFIX : <http://a.example/>
+             :S @:T AND { :p . }
+             :T { }",
+        );
+        assert_eq!(described(&select(&doc, "@:S/thisShapeExpr::")), ["ShapeAnd", "Shape"]);
+    }
+
+    #[test]
+    fn it_yields_nothing_for_a_shape_external_or_a_shape_decl() {
+        let doc = document("PREFIX : <http://a.example/> :S EXTERNAL");
+        assert!(select(&doc, "/shapes/*/shapeExpr/thisShapeExpr::").is_empty());
+        assert!(select(&issue(), "/shapes/*/thisShapeExpr::").is_empty());
+    }
+
+    #[test]
+    fn it_does_not_enter_a_shapes_expression() {
+        assert_eq!(
+            selects(&issue(), "@<#IssueShape>/thisShapeExpr::"),
+            ["/shapes/0/shapeExpr"]
+        );
+    }
+}
+
+/// The schema of the reference implementation's `inclusions-test.ts`.
+fn inclusions() -> ShExJDocument {
+    document(
+        "PREFIX : <http://a.example/>
+         BASE <http://a.example/>
+         <S1> { &<grp> ; :p9 . }
+         <Holder> { $<grp> ( :p1 . ; :p2 . ) }
+         <Cycle> { $<loop> ( &<loop> | :p3 . ) }",
+    )
+}
+
+mod this_triple_expr {
+    use super::*;
+
+    #[test]
+    fn the_item_and_the_triple_expressions_it_groups_transitively() {
+        assert_eq!(
+            described(&select(
+                &issue(),
+                "@<#UserShape>/thisShapeExpr::Shape/expression/thisTripleExpr::"
+            ))
+            .into_iter()
+            .map(|d| d.replace("http://xmlns.com/foaf/0.1/", "foaf:"))
+            .collect::<Vec<_>>(),
+            [
+                "EachOf",
+                "OneOf",
+                "TripleConstraint(foaf:name)",
+                "EachOf",
+                "TripleConstraint(foaf:givenName)",
+                "TripleConstraint(foaf:familyName)",
+                "TripleConstraint(foaf:mbox)"
+            ]
+        );
+    }
+
+    #[test]
+    fn it_does_not_enter_a_constraints_value_expression() {
+        let all: Vec<String> = (0..4)
+            .map(|n| format!("/shapes/0/shapeExpr/expression/expressions/{n}"))
+            .collect();
+        assert_eq!(
+            selects(&issue(), "@<#IssueShape>/expression/thisTripleExpr::TripleConstraint"),
+            all
+        );
+    }
+
+    #[test]
+    fn it_reaches_a_constraint_the_shape_includes_by_reference() {
+        assert_eq!(
+            described(&select(&inclusions(), "@<S1>~:p1")),
+            ["TripleConstraint(:p1)"]
+        );
+        assert_eq!(
+            selects(&inclusions(), "@<S1>~:p1"),
+            ["/shapes/1/shapeExpr/expression/expressions/0"]
+        );
+    }
+
+    #[test]
+    fn it_still_reaches_the_constraints_written_in_the_shape() {
+        assert_eq!(
+            described(&select(&inclusions(), "@<S1>~:p9")),
+            ["TripleConstraint(:p9)"]
+        );
+    }
+
+    #[test]
+    fn the_axis_itself_walks_into_the_included_expression() {
+        assert_eq!(
+            described(&select(
+                &inclusions(),
+                "@<S1>/expression/thisTripleExpr::TripleConstraint"
+            )),
+            [
+                "TripleConstraint(:p1)",
+                "TripleConstraint(:p2)",
+                "TripleConstraint(:p9)"
+            ]
+        );
+    }
+
+    #[test]
+    fn it_gives_the_included_group_as_well_as_its_constraints() {
+        assert_eq!(
+            described(&select(&inclusions(), "@<S1>/expression/thisTripleExpr::")),
+            [
+                "EachOf",
+                "EachOf(:grp)",
+                "TripleConstraint(:p1)",
+                "TripleConstraint(:p2)",
+                "TripleConstraint(:p9)"
+            ]
+        );
+    }
+
+    #[test]
+    fn it_follows_a_label_once_so_a_cycle_terminates() {
+        assert_eq!(
+            described(&select(
+                &inclusions(),
+                "@<Cycle>/expression/thisTripleExpr::TripleConstraint"
+            )),
+            ["TripleConstraint(:p3)"]
+        );
+    }
+
+    #[test]
+    fn an_expression_included_twice_is_reported_once() {
+        let doc = document(
+            "PREFIX : <http://a.example/>
+             BASE <http://a.example/>
+             <Twice> { &<grp> ; &<grp> }
+             <Holder> { $<grp> ( :p1 . ; :p2 . ) }",
+        );
+        assert_eq!(
+            described(&select(&doc, "@<Twice>/expression/thisTripleExpr::TripleConstraint")),
+            ["TripleConstraint(:p1)", "TripleConstraint(:p2)"]
+        );
+    }
+
+    #[test]
+    fn an_inclusion_of_a_label_nothing_declares_selects_nothing() {
+        let doc = document(
+            "PREFIX : <http://a.example/>
+             BASE <http://a.example/>
+             <S1> { &<nope> ; :p9 . }",
+        );
+        assert_eq!(
+            described(&select(&doc, "@<S1>/expression/thisTripleExpr::TripleConstraint")),
+            ["TripleConstraint(:p9)"]
+        );
+    }
+}
