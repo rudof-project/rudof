@@ -9,7 +9,8 @@ use crate::compact::shex_grammar::iri;
 use crate::compact::{IRes, Span};
 use crate::shex_parser_error::ParseError;
 use crate::shexpath::{
-    Attribute, AttributeOrAny, Axis, Comparator, Comparison, Filter, Operand, RValue, ShExPath, Step, TermType,
+    Attribute, AttributeOrAny, Axis, Comparator, Comparison, Filter, Operand, RValue, Selector, ShExPath, Step,
+    TermType,
 };
 use nom::{
     Parser,
@@ -17,14 +18,39 @@ use nom::{
     bytes::complete::{is_not, tag, take_until, take_while1},
     character::complete::{char, digit1, multispace1, one_of},
     combinator::{map, map_opt, map_res, opt, recognize, value, verify},
-    multi::many0,
+    multi::{many0, separated_list1},
     sequence::{delimited, pair, preceded, terminated},
 };
 use prefixmap::IriRef;
 
 /// `shapePath ::= sequenceStep ("," sequenceStep)*`
 pub(crate) fn shape_path(i: Span) -> IRes<ShExPath> {
-    intersection_step(i)
+    map(separated_list1(token(","), sequence_step), |paths| {
+        junction(paths, ShExPath::Sequence)
+    })
+    .parse(i)
+}
+
+/// `sequenceStep ::= unionStep ("union" unionStep)*`
+fn sequence_step(i: Span) -> IRes<ShExPath> {
+    map(separated_list1(keyword_no_case("union"), union_step), |paths| {
+        junction(paths, ShExPath::Union)
+    })
+    .parse(i)
+}
+
+/// `unionStep ::= intersectionStep ("intersection" intersectionStep)*`
+fn union_step(i: Span) -> IRes<ShExPath> {
+    map(
+        separated_list1(keyword_no_case("intersection"), intersection_step),
+        |paths| junction(paths, ShExPath::Intersection),
+    )
+    .parse(i)
+}
+
+/// A junction of `paths`, or the path itself if there is only one.
+fn junction(mut paths: Vec<ShExPath>, make: fn(Vec<ShExPath>) -> ShExPath) -> ShExPath {
+    if paths.len() == 1 { paths.remove(0) } else { make(paths) }
 }
 
 /// `intersectionStep ::= startStep nextStep*`
@@ -116,9 +142,18 @@ fn separator(i: Span) -> IRes<Span> {
 /// step ::= "child::"? termType filter*
 ///        | "child::"? attributeOrAny termType? filter*
 ///        | nonChildAxis termType? filter*
+///        | "(" shapePath ")" termType? filter*
 /// ```
 fn step(i: Span) -> IRes<Step> {
     alt((
+        map(
+            (
+                delimited(token("("), shape_path, token(")")),
+                opt(term_type),
+                many0(filter),
+            ),
+            |(path, term_type, filters)| with_filters(Step::new(Selector::Path(Box::new(path))), term_type, filters),
+        ),
         map(
             (non_child_axis, opt(term_type), many0(filter)),
             |(axis, term_type, filters)| with_filters(Step::axis(axis), term_type, filters),

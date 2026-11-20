@@ -10,11 +10,23 @@ use std::fmt;
 
 /// A ShExPath.
 ///
-/// `shapePath ::= sequenceStep ("," sequenceStep)*`
+/// ```text
+/// shapePath        ::= sequenceStep ("," sequenceStep)*
+/// sequenceStep     ::= unionStep ("union" unionStep)*
+/// unionStep        ::= intersectionStep ("intersection" intersectionStep)*
+/// intersectionStep ::= startStep nextStep*
+/// ```
+///
+/// A junction holds at least two operands; a single operand is that operand.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShExPath {
-    /// `intersectionStep ::= startStep nextStep*`: steps applied left to right, each to every item
-    /// the previous one produced.
+    /// `,`: every item each operand selected, in order, keeping duplicates.
+    Sequence(Vec<ShExPath>),
+    /// `union`: every item either operand selected, with duplicates removed.
+    Union(Vec<ShExPath>),
+    /// `intersection`: the items every operand selected.
+    Intersection(Vec<ShExPath>),
+    /// Steps applied left to right, each to every item the previous one produced.
     Path(Vec<Step>),
 }
 
@@ -32,6 +44,7 @@ impl ShExPath {
 /// step ::= "child::"? termType filter*
 ///        | "child::"? attributeOrAny termType? filter*
 ///        | nonChildAxis termType? filter*
+///        | "(" shapePath ")" termType? filter*
 /// ```
 ///
 /// A term type is kept as the first filter, since it is "exactly the filter `[type = T]`".
@@ -74,6 +87,8 @@ pub enum Selector {
     Child(AttributeOrAny),
     /// Any other axis.
     Axis(Axis),
+    /// `"(" shapePath ")"`: a parenthesized path.
+    Path(Box<ShExPath>),
 }
 
 /// The axes other than `child::`.
@@ -208,6 +223,9 @@ pub enum RValue {
 impl DerefIri for ShExPath {
     fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
+            ShExPath::Sequence(paths) => Ok(ShExPath::Sequence(paths.deref_iri(base, prefixmap)?)),
+            ShExPath::Union(paths) => Ok(ShExPath::Union(paths.deref_iri(base, prefixmap)?)),
+            ShExPath::Intersection(paths) => Ok(ShExPath::Intersection(paths.deref_iri(base, prefixmap)?)),
             ShExPath::Path(steps) => Ok(ShExPath::Path(steps.deref_iri(base, prefixmap)?)),
         }
     }
@@ -215,8 +233,12 @@ impl DerefIri for ShExPath {
 
 impl DerefIri for Step {
     fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+        let selector = match self.selector {
+            Selector::Path(path) => Selector::Path(path.deref_iri(base, prefixmap)?),
+            other => other,
+        };
         Ok(Step {
-            selector: self.selector,
+            selector,
             filters: self.filters.deref_iri(base, prefixmap)?,
         })
     }
