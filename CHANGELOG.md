@@ -20,6 +20,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `shacl`: the `sh:targetWhere` target, which targets the nodes conforming to its shape ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `shacl`: The whole SHACL 1.2 core test suite is wired, with an `#[ignore]` naming the missing feature for each test that does not pass ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `rudof_rdf`, `sparql_service`, `shacl`, `rudof_lib`: the `http-client` feature, which compiles oxigraph's HTTP client so that `SERVICE` in queries and SHACL-SPARQL constraints evaluated in memory reaches the endpoint it names. Native only; the `rudof` CLI, `pyrudof`, `rudof_mcp` and the Emacs bindings turn it on ([#918](https://github.com/rudof-project/rudof/issues/918)).
+- `shex_ast`, `rudof_lib`, `rudof_cli`, `pyrudof`, `rudof_wasm`: [ShExPath](https://shexspec.github.io/spec/ShExPath), a path language that addresses the elements of a ShEx schema. `shex_ast` parses and evaluates paths over the ShExJ form of a schema; `Rudof::evaluate_shex_path`, the `shex-path` command, `Rudof.evaluate_shex_path` in Python and `evaluateShexPath` in JavaScript return what a path selects in the loaded schema, each element with its location as a JSON Pointer ([#958](https://github.com/rudof-project/rudof/issues/958)).
 
 ### Fixed
 - `shex_ast`: dropped csv color format on shex validation ([#949](https://github.com/rudof-project/rudof/issues/949))
