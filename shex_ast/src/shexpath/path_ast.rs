@@ -22,20 +22,45 @@ impl ShExPath {
     }
 }
 
-/// A step of a path.
+/// A step of a path: which items are reachable from each item it is applied to, and the filters
+/// that keep some of them.
 ///
-/// `step ::= "child::"? attributeOrAny`
+/// ```text
+/// step ::= "child::"? termType filter*
+///        | "child::"? attributeOrAny termType? filter*
+///        | nonChildAxis termType? filter*
+/// ```
+///
+/// A term type is kept as the first filter, since it is "exactly the filter `[type = T]`".
 #[derive(Debug, Clone, PartialEq)]
 pub struct Step {
     pub selector: Selector,
+    pub filters: Vec<Filter>,
 }
 
 impl Step {
-    /// A `child::` step.
-    pub fn child(attribute: AttributeOrAny) -> Self {
+    /// A step without filters.
+    pub fn new(selector: Selector) -> Self {
         Step {
-            selector: Selector::Child(attribute),
+            selector,
+            filters: Vec::new(),
         }
+    }
+
+    /// A `child::` step without filters.
+    pub fn child(attribute: AttributeOrAny) -> Self {
+        Step::new(Selector::Child(attribute))
+    }
+
+    /// A step on `axis` without filters.
+    pub fn axis(axis: Axis) -> Self {
+        Step::new(Selector::Axis(axis))
+    }
+
+    /// This step with `filter` added after its filters.
+    pub fn with_filter(mut self, filter: Filter) -> Self {
+        self.filters.push(filter);
+        self
     }
 }
 
@@ -44,6 +69,47 @@ impl Step {
 pub enum Selector {
     /// `child::attribute` or `child::*`.
     Child(AttributeOrAny),
+    /// Any other axis.
+    Axis(Axis),
+}
+
+/// The axes other than `child::`.
+///
+/// `nonChildAxis ::= "thisShapeExpr::" | "thisTripleExpr::" | "self::" | "parent::" | "ancestor::"`
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Axis {
+    /// `thisShapeExpr::`: the item and, if it is a `ShapeAnd`, `ShapeOr` or `ShapeNot`, the shape
+    /// expressions it combines, transitively.
+    ThisShapeExpr,
+    /// `thisTripleExpr::`: the item and, if it is an `EachOf` or `OneOf`, the triple expressions
+    /// it groups, transitively, an inclusion among them.
+    ThisTripleExpr,
+    /// `self::`: the item itself.
+    Itself,
+    /// `parent::`: the item that has this one as a property value or array member.
+    Parent,
+    /// `ancestor::`: the parent, its parent, and so on up to the schema.
+    Ancestor,
+    /// Every item below this one, at any depth. Used by the `$` shortcut; it has no spelling.
+    Descendant,
+}
+
+impl Axis {
+    /// The axes that have a spelling, with it.
+    pub const SPELLED: &'static [(Axis, &'static str)] = &[
+        (Axis::ThisShapeExpr, "thisShapeExpr::"),
+        (Axis::ThisTripleExpr, "thisTripleExpr::"),
+        (Axis::Itself, "self::"),
+        (Axis::Parent, "parent::"),
+        (Axis::Ancestor, "ancestor::"),
+    ];
+}
+
+/// A filter of a step.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Filter {
+    /// A term type: keeps the items whose ShExJ `type` is that one.
+    TermType(TermType),
 }
 
 /// `attributeOrAny ::= "*" | attribute`
@@ -94,6 +160,44 @@ macro_rules! keywords {
             }
         }
     };
+}
+
+keywords! {
+    /// A ShExJ `type` a step can test for. A term type is a keyword, not an IRI.
+    ///
+    /// ```text
+    /// termType       ::= shapeExprType | tripleExprType | valueType
+    ///                  | "Schema" | "SemAct" | "Annotation"
+    /// shapeExprType  ::= "ShapeAnd" | "ShapeOr" | "ShapeNot"
+    ///                  | "NodeConstraint" | "Shape" | "ShapeExternal"
+    /// tripleExprType ::= "EachOf" | "OneOf" | "TripleConstraint"
+    /// valueType      ::= "IriStem" | "IriStemRange"
+    ///                  | "LiteralStem" | "LiteralStemRange"
+    ///                  | "Language" | "LanguageStem" | "LanguageStemRange"
+    ///                  | "Wildcard"
+    /// ```
+    TermType {
+        ShapeAnd => "ShapeAnd",
+        ShapeOr => "ShapeOr",
+        ShapeNot => "ShapeNot",
+        NodeConstraint => "NodeConstraint",
+        Shape => "Shape",
+        ShapeExternal => "ShapeExternal",
+        EachOf => "EachOf",
+        OneOf => "OneOf",
+        TripleConstraint => "TripleConstraint",
+        IriStem => "IriStem",
+        IriStemRange => "IriStemRange",
+        LiteralStem => "LiteralStem",
+        LiteralStemRange => "LiteralStemRange",
+        Language => "Language",
+        LanguageStem => "LanguageStem",
+        LanguageStemRange => "LanguageStemRange",
+        Wildcard => "Wildcard",
+        Schema => "Schema",
+        SemAct => "SemAct",
+        Annotation => "Annotation",
+    }
 }
 
 keywords! {

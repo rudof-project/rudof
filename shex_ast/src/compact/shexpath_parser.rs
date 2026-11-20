@@ -30,7 +30,7 @@ impl ShExPathParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shexpath::{Attribute, AttributeOrAny, Step};
+    use crate::shexpath::{Attribute, AttributeOrAny, Axis, Filter, Step, TermType};
 
     fn child(attribute: Attribute) -> Step {
         Step::child(AttributeOrAny::Attribute(attribute))
@@ -45,6 +45,118 @@ mod tests {
             Ok(path) => path,
             Err(e) => panic!("{src} is not parsed: {e}"),
         }
+    }
+
+    fn of_type(step: Step, term_type: TermType) -> Step {
+        step.with_filter(Filter::TermType(term_type))
+    }
+
+    #[test]
+    fn every_non_child_axis_is_a_step() {
+        for (axis, spelling) in Axis::SPELLED {
+            let src = format!("/shapes/{spelling}");
+            assert_eq!(
+                parse(&src),
+                ShExPath::path([child(Attribute::Shapes), Step::axis(*axis)]),
+                "{src}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_axis_may_start_a_path() {
+        assert_eq!(parse("self::"), ShExPath::path([Step::axis(Axis::Itself)]));
+        assert_eq!(parse("/self::"), ShExPath::path([Step::axis(Axis::Itself)]));
+    }
+
+    #[test]
+    fn an_axis_needs_its_double_colon() {
+        assert!(ShExPathParser::parse("/self").is_err());
+        assert!(ShExPathParser::parse("/parent").is_err());
+        assert!(ShExPathParser::parse("/thisShapeExpr:").is_err());
+    }
+
+    #[test]
+    fn descendant_has_no_spelling() {
+        assert!(ShExPathParser::parse("/descendant::").is_err());
+    }
+
+    #[test]
+    fn an_axis_may_have_a_term_type() {
+        assert_eq!(
+            parse("thisShapeExpr::Shape"),
+            ShExPath::path([of_type(Step::axis(Axis::ThisShapeExpr), TermType::Shape)])
+        );
+        assert_eq!(
+            parse("/expression/thisTripleExpr::TripleConstraint"),
+            ShExPath::path([
+                child(Attribute::Expression),
+                of_type(Step::axis(Axis::ThisTripleExpr), TermType::TripleConstraint)
+            ])
+        );
+    }
+
+    #[test]
+    fn a_term_type_alone_is_a_child_step_over_any_attribute() {
+        let expected = ShExPath::path([
+            child(Attribute::Expressions),
+            of_type(any(), TermType::TripleConstraint),
+        ]);
+        assert_eq!(parse("/expressions/TripleConstraint"), expected);
+        assert_eq!(parse("/expressions/child::TripleConstraint"), expected);
+        assert_eq!(parse("/expressions/*TripleConstraint"), expected);
+    }
+
+    #[test]
+    fn an_attribute_may_have_a_term_type() {
+        assert_eq!(
+            parse("/valueExpr Shape"),
+            ShExPath::path([of_type(child(Attribute::ValueExpr), TermType::Shape)])
+        );
+    }
+
+    #[test]
+    fn every_term_type_of_the_grammar_is_a_step() {
+        for term_type in TermType::ALL {
+            let src = format!("/{term_type}");
+            assert_eq!(parse(&src), ShExPath::path([of_type(any(), *term_type)]), "{src}");
+        }
+    }
+
+    #[test]
+    fn the_grammar_has_every_term_type_of_the_spec() {
+        let spec = "ShapeAnd ShapeOr ShapeNot NodeConstraint Shape ShapeExternal EachOf OneOf TripleConstraint \
+                    IriStem IriStemRange LiteralStem LiteralStemRange Language LanguageStem LanguageStemRange \
+                    Wildcard Schema SemAct Annotation";
+        let names: Vec<&str> = spec.split_whitespace().collect();
+        assert_eq!(names.len(), TermType::ALL.len(), "number of term types");
+        for name in names {
+            assert!(TermType::from_keyword(name).is_some(), "{name} is not a term type");
+        }
+    }
+
+    #[test]
+    fn a_term_type_is_the_whole_word() {
+        for (src, term_type) in [
+            ("/ShapeExternal", TermType::ShapeExternal),
+            ("/Shape", TermType::Shape),
+            ("/IriStemRange", TermType::IriStemRange),
+            ("/LanguageStemRange", TermType::LanguageStemRange),
+            ("/LiteralStemRange", TermType::LiteralStemRange),
+        ] {
+            assert_eq!(parse(src), ShExPath::path([of_type(any(), term_type)]), "{src}");
+        }
+    }
+
+    #[test]
+    fn term_types_and_attributes_differ_in_case() {
+        assert_eq!(parse("/language"), ShExPath::path([child(Attribute::Language)]));
+        assert_eq!(parse("/Language"), ShExPath::path([of_type(any(), TermType::Language)]));
+    }
+
+    #[test]
+    fn shape_decl_is_not_a_term_type() {
+        assert!(ShExPathParser::parse("/ShapeDecl").is_err());
     }
 
     #[test]

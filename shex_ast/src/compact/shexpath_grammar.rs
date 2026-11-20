@@ -7,7 +7,7 @@
 use crate::compact::grammar::map_error;
 use crate::compact::{IRes, Span};
 use crate::shex_parser_error::ParseError;
-use crate::shexpath::{Attribute, AttributeOrAny, ShExPath, Step};
+use crate::shexpath::{Attribute, AttributeOrAny, Axis, Filter, ShExPath, Step, TermType};
 use nom::{
     Parser,
     branch::alt,
@@ -48,9 +48,55 @@ fn separator(i: Span) -> IRes<Span> {
     alt((token("//"), token("/"))).parse(i)
 }
 
-/// `step ::= "child::"? attributeOrAny`
+/// ```text
+/// step ::= "child::"? termType filter*
+///        | "child::"? attributeOrAny termType? filter*
+///        | nonChildAxis termType? filter*
+/// ```
 fn step(i: Span) -> IRes<Step> {
-    map(preceded(opt(token("child::")), attribute_or_any), Step::child).parse(i)
+    alt((
+        map((non_child_axis, opt(term_type)), |(axis, term_type)| {
+            with_term_type(Step::axis(axis), term_type)
+        }),
+        map(preceded(opt(token("child::")), term_type), |term_type| {
+            with_term_type(Step::child(AttributeOrAny::Any), Some(term_type))
+        }),
+        map(
+            (preceded(opt(token("child::")), attribute_or_any), opt(term_type)),
+            |(attribute, term_type)| with_term_type(Step::child(attribute), term_type),
+        ),
+    ))
+    .parse(i)
+}
+
+/// A term type is the step's first filter.
+fn with_term_type(step: Step, term_type: Option<TermType>) -> Step {
+    match term_type {
+        Some(term_type) => step.with_filter(Filter::TermType(term_type)),
+        None => step,
+    }
+}
+
+/// `nonChildAxis ::= "thisShapeExpr::" | "thisTripleExpr::" | "self::" | "parent::" | "ancestor::"`
+fn non_child_axis(i: Span) -> IRes<Axis> {
+    alt((
+        value(Axis::ThisShapeExpr, token("thisShapeExpr::")),
+        value(Axis::ThisTripleExpr, token("thisTripleExpr::")),
+        value(Axis::Itself, token("self::")),
+        value(Axis::Parent, token("parent::")),
+        value(Axis::Ancestor, token("ancestor::")),
+    ))
+    .parse(i)
+}
+
+/// `termType ::= shapeExprType | tripleExprType | valueType | "Schema" | "SemAct" | "Annotation"`,
+/// see [`TermType`].
+fn term_type(i: Span) -> IRes<TermType> {
+    map_error(map_opt(word, |w| TermType::from_keyword(w.fragment())), || {
+        ParseError::Custom {
+            msg: "Expected a ShExPath term type".to_string(),
+        }
+    })(i)
 }
 
 /// `attributeOrAny ::= "*" | attribute`
