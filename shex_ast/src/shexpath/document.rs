@@ -1,9 +1,8 @@
 //! A schema written as ShExJ, which ShExPaths are evaluated over.
 
 use crate::Schema;
-use crate::compact::ShExPathParser;
 use crate::shexpath::eval::Evaluator;
-use crate::shexpath::{Location, ShExPath, ShExPathError, ShExPathItem, shexj};
+use crate::shexpath::{Location, ShExPath, ShExPathError, ShExPathItem, ShExPathParser, shexj};
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use serde_json::Value;

@@ -120,7 +120,7 @@ mod child_steps {
     fn a_path_is_relative_to_the_value_it_is_given() {
         let doc = issue();
         let context = select(&doc, "/shapes/*/shapeExpr")[..1].to_vec();
-        let path = shex_ast::compact::ShExPathParser::parse("expression/expressions/*", None, None)
+        let path = shex_ast::shexpath::ShExPathParser::parse("expression/expressions/*", None, None)
             .expect("the path is parsed");
         let items = doc.evaluate_from(&path, context).expect("the path is evaluated");
         assert_eq!(
@@ -138,7 +138,7 @@ mod child_steps {
     fn shapes_selects_nothing_from_a_value_that_is_not_the_schema() {
         let doc = issue();
         let context = select(&doc, "/shapes/*/shapeExpr");
-        let path = shex_ast::compact::ShExPathParser::parse("/shapes/*", None, None).expect("the path is parsed");
+        let path = shex_ast::shexpath::ShExPathParser::parse("/shapes/*", None, None).expect("the path is parsed");
         assert!(
             doc.evaluate_from(&path, context)
                 .expect("the path is evaluated")
@@ -934,7 +934,7 @@ mod junctions {
     fn every_operand_is_evaluated_from_the_same_value() {
         let doc = junctions();
         let context = select(&doc, "@<S1>/expression");
-        let path = shex_ast::compact::ShExPathParser::parse("expressions/*[0] , expressions/*[2]", None, None)
+        let path = shex_ast::shexpath::ShExPathParser::parse("expressions/*[0] , expressions/*[2]", None, None)
             .expect("the path is parsed");
         let items = doc.evaluate_from(&path, context).expect("the path is evaluated");
         assert_eq!(

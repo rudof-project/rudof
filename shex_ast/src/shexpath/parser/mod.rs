@@ -1,8 +1,10 @@
 //! Parser of [ShExPath](https://shexspec.github.io/spec/ShExPath) expressions.
 
-use crate::compact::shexpath_grammar::{shape_path, ws};
+mod grammar;
+
 use crate::shexpath::ShExPath;
 use crate::{ParseError, Span};
+use grammar::{shape_path, ws};
 use nom::{Err, Parser, sequence::terminated};
 use prefixmap::{DerefIri, PrefixMap};
 use rudof_iri::IriS;

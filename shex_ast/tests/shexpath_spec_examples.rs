@@ -7,8 +7,8 @@
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use serde_json::json;
-use shex_ast::compact::{ShExParser, ShExPathParser};
-use shex_ast::shexpath::{ShExJDocument, ShExPathError, ShExPathItem};
+use shex_ast::compact::ShExParser;
+use shex_ast::shexpath::{ShExJDocument, ShExPathError, ShExPathItem, ShExPathParser};
 
 fn document(src: &str) -> ShExJDocument {
     let schema = match ShExParser::parse(src, None, &IriS::new_unchecked("http://default/")) {
