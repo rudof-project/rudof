@@ -1,3 +1,5 @@
+#![cfg(not(target_family = "wasm"))]
+
 use shacl_testsuite::manifest::ManifestWalker;
 use shacl_testsuite::runner::{TestOutcome, run_outcome};
 use std::path::Path;

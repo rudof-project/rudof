@@ -45,6 +45,8 @@ stacker.workspace = true
 
 [dev-dependencies]
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 shacl_testsuite.workspace = true
 
 [[example]]
