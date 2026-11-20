@@ -13,7 +13,7 @@ fn parse(src: &str) -> shex_ast::Schema {
 }
 
 fn issue_schema() -> shex_ast::Schema {
-    parse(include_str!("fixtures/shexpath/issue.shex"))
+    parse(include_str!("../fixtures/shexpath/issue.shex"))
 }
 
 #[test]

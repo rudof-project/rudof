@@ -4,45 +4,15 @@
 //! The spec describes what each path selects in words; the locations below are those words
 //! applied to the ShExJ form of the example schema.
 
+use crate::common::*;
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use serde_json::json;
-use shex_ast::compact::ShExParser;
 use shex_ast::shexpath::{ShExJDocument, ShExPathError, ShExPathItem, ShExPathParser};
-
-fn document(src: &str) -> ShExJDocument {
-    let schema = match ShExParser::parse(src, None, &IriS::new_unchecked("http://default/")) {
-        Ok(schema) => schema,
-        Err(e) => panic!("the schema is not parsed: {e}"),
-    };
-    match ShExJDocument::new(&schema) {
-        Ok(doc) => doc,
-        Err(e) => panic!("the schema is not written as ShExJ: {e}"),
-    }
-}
-
-/// The example schema: `#IssueShape`, `#UserShape`, `#AgentShape` and `#EmployeeShape`.
-fn issue() -> ShExJDocument {
-    document(include_str!("fixtures/shexpath/issue.shex"))
-}
 
 /// The schema of the Disambiguation section, with the example schema's prefixes and base.
 fn bpobs() -> ShExJDocument {
-    document(include_str!("fixtures/shexpath/bpobs.shex"))
-}
-
-fn select<'a>(doc: &'a ShExJDocument, path: &str) -> Vec<ShExPathItem<'a>> {
-    match doc.select(path) {
-        Ok(items) => items,
-        Err(e) => panic!("{path} is not evaluated: {e}"),
-    }
-}
-
-fn selects(doc: &ShExJDocument, path: &str) -> Vec<String> {
-    select(doc, path)
-        .iter()
-        .map(|item| item.location().to_string())
-        .collect()
+    document(include_str!("../fixtures/shexpath/bpobs.shex"))
 }
 
 const ISSUE_SHAPE: &str = "/shapes/0/shapeExpr";
@@ -201,7 +171,7 @@ mod filters_and_term_types {
             selects(&issue(), "@<#IssueShape>/expression/expressions/*[assert count() = 4]"),
             four()
         );
-        let five = document(&include_str!("fixtures/shexpath/issue.shex").replace(
+        let five = document(&include_str!("../fixtures/shexpath/issue.shex").replace(
             ":name xsd:string MINLENGTH 4 ;",
             ":name xsd:string MINLENGTH 4 ; :fifth . ;",
         ));

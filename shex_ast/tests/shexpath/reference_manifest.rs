@@ -5,6 +5,7 @@
 //! The manifest checks `shapePathSchemaMatch`, the schema elements a path selects; its
 //! `shapePathDataMatch`, what a validator matched, is out of the scope of ShExPath.
 
+use crate::common::select;
 use serde_json::{Value, json};
 use shex_ast::compact::ShExParser;
 use shex_ast::shexpath::{ShExJDocument, ShExPathItem};
@@ -22,13 +23,6 @@ fn shex_test(name: &str) -> ShExJDocument {
     match ShExJDocument::new(&schema) {
         Ok(doc) => doc,
         Err(e) => panic!("the schema is not written as ShExJ: {e}"),
-    }
-}
-
-fn select<'a>(doc: &'a ShExJDocument, path: &str) -> Vec<ShExPathItem<'a>> {
-    match doc.select(path) {
-        Ok(items) => items,
-        Err(e) => panic!("{path} is not evaluated: {e}"),
     }
 }
 
