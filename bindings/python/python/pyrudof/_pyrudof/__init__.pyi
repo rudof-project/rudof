@@ -1862,6 +1862,26 @@ class Rudof:
         Raises:
             ShExError: If no schema is loaded or serialization fails.
         """
+    def evaluate_shex_path(self, path: builtins.str) -> builtins.list[builtins.dict[builtins.str, typing.Any]]:
+        r"""
+        Evaluates a ShExPath against the loaded ShEx schema.
+        
+        `ShExPath <https://shexspec.github.io/spec/ShExPath>`_ addresses the elements of a
+        schema. The path is written with the prefixes and base of the schema, and evaluated
+        from the schema.
+        
+        Args:
+            path (str): The ShExPath, for example ``"@<#IssueShape>~:category"``.
+        
+        Returns:
+            list[dict]: The selected elements, in order and with their duplicates, each as
+            ``{"location": str, "value": ...}``: where the element is in the ShExJ form of the
+            schema, as a JSON Pointer, and the element itself as ShExJ.
+        
+        Raises:
+            ShExError: If no schema is loaded, if ``path`` is not a ShExPath, or if evaluating
+                it fails, as a failed ``assert`` does.
+        """
     def compile_shex_to_file(self, path: builtins.str | os.PathLike | pathlib.Path) -> None:
         r"""
         Writes the currently loaded ShEx schema's compiled IR to a cache file.

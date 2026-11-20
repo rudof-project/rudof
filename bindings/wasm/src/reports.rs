@@ -317,6 +317,10 @@ impl From<&CoreNeighborArc> for NeighborArc {
     }
 }
 
+/// An element of a ShEx schema selected by `evaluate_shex_path`: its `location` in the ShExJ form
+/// of the schema, as a JSON Pointer, and its `value` as ShExJ.
+pub use rudof_lib::types::ShExPathMatch;
+
 /// The result of checking a ShEx schema with `check_shex`.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

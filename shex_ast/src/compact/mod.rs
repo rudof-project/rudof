@@ -24,14 +24,14 @@
 //!
 //! ```
 mod compact_printer;
-mod grammar;
+pub(crate) mod grammar;
 mod grammar_structs;
 mod located_parse_error;
 pub mod shapemap_compact_printer;
 mod shapemap_grammar;
 pub mod shapemap_parser;
 pub mod shex_compact_printer;
-mod shex_grammar;
+pub(crate) mod shex_grammar;
 pub mod shex_parser;
 pub mod shex_parser_error;
 

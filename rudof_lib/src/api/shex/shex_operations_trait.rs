@@ -1,14 +1,15 @@
 use crate::{
     Result,
     api::shex::implementations::{
-        add_node_shape_to_shapemap, check_shex_schema, compile_shex_schema_to_file, load_shapemap, load_shex_schema,
-        load_shex_schema_precompiled, reset_shapemap, reset_shex, reset_shex_schema, serialize_shapemap,
-        serialize_shex_schema, serialize_shex_validation_results, validate_shex,
+        add_node_shape_to_shapemap, check_shex_schema, compile_shex_schema_to_file, evaluate_shex_path, load_shapemap,
+        load_shex_schema, load_shex_schema_precompiled, reset_shapemap, reset_shex, reset_shex_schema,
+        serialize_shapemap, serialize_shex_schema, serialize_shex_validation_results, validate_shex,
     },
     formats::{
         DataReaderMode, InputSpec, IriNormalizationMode, ResultShExValidationFormat, ShExFormat,
         ShExValidationSortByMode, ShapeMapFormat,
     },
+    types::ShExPathMatch,
 };
 use rudof_rdf_sink::TriplesSink;
 use rudof_viz::VizEngine;
@@ -85,6 +86,21 @@ pub trait ShExOperations {
 
     /// Resets the ShEx schema.
     fn reset_shex_schema(&mut self);
+
+    /// Evaluates a [ShExPath](https://shexspec.github.io/spec/ShExPath) against the loaded ShEx schema.
+    ///
+    /// The path is resolved with the prefixes and base the schema declares, and evaluated from the
+    /// schema. The selected elements are returned in order, with their duplicates.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The ShExPath to evaluate
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no schema is loaded, if `path` is not a ShExPath, or if evaluating it
+    /// fails, as a failed `assert` does.
+    fn evaluate_shex_path(&self, path: &str) -> Result<Vec<ShExPathMatch>>;
 
     /// Adds a node/shape association to the current shapemap, creating it if none is loaded.
     ///
@@ -311,6 +327,10 @@ impl ShExOperations for crate::Rudof {
 
     fn compile_shex_schema_to_file<W: io::Write>(&self, writer: &mut W) -> Result<()> {
         compile_shex_schema_to_file(self, writer)
+    }
+
+    fn evaluate_shex_path(&self, path: &str) -> Result<Vec<ShExPathMatch>> {
+        evaluate_shex_path(self, path)
     }
 
     fn load_shex_schema_precompiled(&mut self, schema: &InputSpec, reader_mode: Option<&DataReaderMode>) -> Result<()> {

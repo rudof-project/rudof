@@ -1,0 +1,9 @@
+PREFIX : <http://ex.example/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+BASE <http://ex.example/schema>
+
+<#BPObs> {
+  :component { :code ["systolic"] ; :value xsd:double } ;
+  :component { :code ["diastolic"] ; :value xsd:double } ;
+  :component { :code ["posture"] ; :value @<#Postures> } ?
+}

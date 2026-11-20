@@ -29,8 +29,8 @@ pub use error::{Error, Result};
 #[cfg(feature = "generate")]
 pub use reports::GeneratedData;
 pub use reports::{
-    ExternalResolver, GraphDiff, NeighborArc, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationEntry,
-    ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
+    ExternalResolver, GraphDiff, NeighborArc, NodeNeighborhood, QueryResults, ShExCheck, ShExPathMatch,
+    ShExValidationEntry, ShExValidationReport, ShaclMessage, ShaclValidationEntry, ShaclValidationReport,
 };
 #[cfg(feature = "pgschema")]
 pub use reports::{PgSchemaValidationEntry, PgSchemaValidationReport};

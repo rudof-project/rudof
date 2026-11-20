@@ -142,7 +142,7 @@ const results = rudof.runQuery();         // { kind: "select", variables, rows }
 | RDF data | `readData(data, format?, base?, readerMode?, merge?)`, `serializeData(format?)`, `addTriple(subject, predicate, object, strictIris?)`, `removeTriple(subject, predicate, object, strictIris?)`, `addTriples(triples, strictIris?)`, `removeTriples(triples, strictIris?)`, `triples(subject?, predicate?, object?, strictIris?, limit?)`, `dereference(uri, readerMode?, merge?)`, `listEndpoints()` |
 | Staging | `beginStaging()`, `commitStaging()`, `rollbackStaging()`, `stagingDepth()` — stage changes to the data, then keep or discard them. Only the data is staged: the schemas stay loaded either way, while a rollback clears the validation results, the query results and the loaded query |
 | Nodes | `nodeInfo(nodeSelector, predicates?, mode?, showColors?, depth?)`, `nodeNeighborhood(nodeSelector, predicates?, mode?, depth?, strictIris?, limit?)` |
-| ShEx | `readShex(schema, format?, base?, readerMode?)`, `checkShex(schema, format?, base?)`, `serializeCurrentShex(format?, shapeLabel?)`, `readShapemap(shapemap, format?, baseNodes?, baseShapes?)`, `serializeShapemap(format?)`, `validateShex(readTriples?, readTriplesFormat?)`, `serializeShexValidationResults(format?, sortMode?)`, `materialize(format?, node?)`, `addExternalResolver(spec)`, `clearExternalResolvers()`, `Rudof.listExternalResolvers()` |
+| ShEx | `readShex(schema, format?, base?, readerMode?)`, `checkShex(schema, format?, base?)`, `serializeCurrentShex(format?, shapeLabel?)`, `evaluateShexPath(path)`, `readShapemap(shapemap, format?, baseNodes?, baseShapes?)`, `serializeShapemap(format?)`, `validateShex(readTriples?, readTriplesFormat?)`, `serializeShexValidationResults(format?, sortMode?)`, `materialize(format?, node?)`, `addExternalResolver(spec)`, `clearExternalResolvers()`, `Rudof.listExternalResolvers()` |
 | SHACL | `readShacl(shapes?, format?, base?, readerMode?)` (without `shapes`, they are taken from the data), `serializeShacl(format?)`, `validateShacl(mode?, fetchStrategy?, readTriples?, readTriplesFormat?)` (`readTriples` needs the `native` mode), `serializeShaclValidationResults(format?, sortMode?)` |
 | SPARQL | `readQuery(query, queryType?)`, `runQuery()`, `serializeQueryResults(format?)` |
 | Schemas | `convertSchemas(schema, inputMode, outputMode, inputFormat, outputFormat, base?, readerMode?, shape?)`, `compareSchemas(schema1, schema2, mode1, mode2, format1, format2, base1?, base2?, label1?, label2?, readerMode?)` |
@@ -206,6 +206,9 @@ Reports are plain objects, as in the Python bindings:
   `neighbor` and `isLast`.
 - `checkShex` returns `{ valid, message }`, and `listExternalResolvers`
   a list of `{ name, description, specSyntax }`.
+- `evaluateShexPath` returns a list of `ShExPathMatch`, `{ location, value }`: what a
+  [ShExPath](https://shexspec.github.io/spec/ShExPath) selects in the loaded schema, each with
+  its location in the ShExJ form of the schema (a JSON Pointer) and its value as ShExJ.
 
 Missing values are `null`. Errors are thrown as `Error`s whose `name` is the
 error category, matching the Python exception classes (`DataError`,

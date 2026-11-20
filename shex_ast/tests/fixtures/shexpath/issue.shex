@@ -1,0 +1,28 @@
+PREFIX : <http://ex.example/ns#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+BASE <http://ex.example/schema>
+
+<#IssueShape> {
+  :name xsd:string MINLENGTH 4 ;
+  :category ["bug" "feature request"] ;
+  $<#reportedBy> :postedBy @<#UserShape> ;
+  :processing {
+    :reproduced [true false] ;
+    :priority xsd:integer
+  } ?
+}
+
+<#UserShape> IRI /User\?id=[0-9]+/ {
+  (  foaf:name xsd:string
+   |  foaf:givenName xsd:string + ;
+      foaf:familyName xsd:string
+  ) ;
+  foaf:mbox IRI
+}
+
+<#AgentShape> { foaf:mbox IRI }
+
+<#EmployeeShape> EXTENDS @<#UserShape> EXTENDS @<#AgentShape> {
+  :employeeId xsd:integer
+}
