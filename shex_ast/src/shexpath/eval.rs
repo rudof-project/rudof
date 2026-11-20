@@ -56,6 +56,7 @@ impl<'a> Evaluator<'a> {
                 Selector::Axis(Axis::ThisTripleExpr) => {
                     selected.extend(self.this_triple_expr(&item, &mut HashSet::new()))
                 },
+                Selector::Axis(Axis::Descendant) => selected.extend(descendants(&item)),
                 _ => {
                     return Err(ShExPathError::NotImplemented {
                         feature: "axes".to_string(),
@@ -266,7 +267,11 @@ fn this_shape_expr<'a>(item: &ShExPathItem<'a>) -> Vec<ShExPathItem<'a>> {
     }
 }
 
-/// Every object and array below `item`, at any depth, in document order, not including `item`.
+/// `descendant::`: every item below `item`, at any depth, in document order, not including `item`.
+///
+/// As in the reference implementation, the atomic values are left out: only objects and arrays are
+/// collected. The `$` shortcut, the only use of this axis, looks for an `id`, which only an object
+/// has.
 fn descendants<'a>(item: &ShExPathItem<'a>) -> Vec<ShExPathItem<'a>> {
     let mut found = Vec::new();
     for child in children(item, &AttributeOrAny::Any) {
