@@ -12,6 +12,9 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ## [Unreleased]
 ### Added
 - `rudof_earl`: a new crate that builds [EARL 1.0](https://www.w3.org/TR/EARL10-Schema/) reports and serializes them as RDF, with the EARL, DOAP, FOAF and Dublin Core vocabularies ([#955](https://github.com/rudof-project/rudof/issues/955)).
+- `shacl_testsuite`: a test-suite crate that walks the SHACL W3C manifests, extracted from `shacl`'s integration tests ([#960](https://github.com/rudof-project/rudof/issues/960)).
+- `shacl_testsuite`: an `earl_report` binary that builds `rudof-shacl-earl.ttl` and `rudof-shacl12-earl.ttl`, the EARL reports submitted to `w3c/data-shapes` for the validator compliance page ([#960](https://github.com/rudof-project/rudof/issues/960)).
+- `rudof_rdf`: added new vocab terms ([#961](https://github.com/rudof-project/rudof/issues/961)).
 - `rudof_rdf`: `XsdVocab::xsd_date`, the `xsd:date` datatype IRI ([#956](https://github.com/rudof-project/rudof/issues/956)).
 - `shacl`: the shape-taking node expressions (`shnex:filterShape`, `shnex:findFirst`, `shnex:matchAll`, `shnex:nodesMatching`), triple terms and `shnex:conformsToShape`, which completes SHACL 1.2 node expressions ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `shacl`: the `sh:expression` and `sh:nodeByExpression` constraint components ([#868](https://github.com/rudof-project/rudof/issues/868)).
