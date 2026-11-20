@@ -5,17 +5,20 @@
 //! `valueExpr` is never read as `value` followed by something else.
 
 use crate::compact::grammar::map_error;
+use crate::compact::shex_grammar::iri;
 use crate::compact::{IRes, Span};
 use crate::shex_parser_error::ParseError;
-use crate::shexpath::{Attribute, AttributeOrAny, Axis, Filter, ShExPath, Step, TermType};
+use crate::shexpath::{
+    Attribute, AttributeOrAny, Axis, Comparator, Comparison, Filter, Operand, RValue, ShExPath, Step, TermType,
+};
 use nom::{
     Parser,
     branch::alt,
     bytes::complete::{is_not, tag, take_until, take_while1},
-    character::complete::{char, multispace1},
-    combinator::{map, map_opt, opt, recognize, value},
+    character::complete::{char, digit1, multispace1, one_of},
+    combinator::{map, map_opt, map_res, opt, recognize, value, verify},
     multi::many0,
-    sequence::{pair, preceded},
+    sequence::{delimited, pair, preceded, terminated},
 };
 
 /// `shapePath ::= sequenceStep ("," sequenceStep)*`
@@ -55,26 +58,134 @@ fn separator(i: Span) -> IRes<Span> {
 /// ```
 fn step(i: Span) -> IRes<Step> {
     alt((
-        map((non_child_axis, opt(term_type)), |(axis, term_type)| {
-            with_term_type(Step::axis(axis), term_type)
-        }),
-        map(preceded(opt(token("child::")), term_type), |term_type| {
-            with_term_type(Step::child(AttributeOrAny::Any), Some(term_type))
-        }),
         map(
-            (preceded(opt(token("child::")), attribute_or_any), opt(term_type)),
-            |(attribute, term_type)| with_term_type(Step::child(attribute), term_type),
+            (non_child_axis, opt(term_type), many0(filter)),
+            |(axis, term_type, filters)| with_filters(Step::axis(axis), term_type, filters),
+        ),
+        map(
+            (preceded(opt(token("child::")), term_type), many0(filter)),
+            |(term_type, filters)| with_filters(Step::child(AttributeOrAny::Any), Some(term_type), filters),
+        ),
+        map(
+            (
+                preceded(opt(token("child::")), attribute_or_any),
+                opt(term_type),
+                many0(filter),
+            ),
+            |(attribute, term_type, filters)| with_filters(Step::child(attribute), term_type, filters),
         ),
     ))
     .parse(i)
 }
 
-/// A term type is the step's first filter.
-fn with_term_type(step: Step, term_type: Option<TermType>) -> Step {
-    match term_type {
-        Some(term_type) => step.with_filter(Filter::TermType(term_type)),
-        None => step,
-    }
+/// A term type is the step's first filter, before those in brackets.
+fn with_filters(step: Step, term_type: Option<TermType>, filters: Vec<Filter>) -> Step {
+    term_type
+        .map(Filter::TermType)
+        .into_iter()
+        .chain(filters)
+        .fold(step, Step::with_filter)
+}
+
+/// `filter ::= "[" filterExpr "]"`
+fn filter(i: Span) -> IRes<Filter> {
+    delimited(token("["), filter_expr, token("]")).parse(i)
+}
+
+/// ```text
+/// filterExpr ::= "assert"? shapePath comparison?
+///              | "assert"? function comparison?
+///              | numericExpr
+/// ```
+///
+/// `numericExpr ::= INTEGER` is read as `index() = INTEGER`, of which it is shorthand.
+fn filter_expr(i: Span) -> IRes<Filter> {
+    alt((
+        map(
+            (opt(assert), function, opt(comparison)),
+            |(assert, operand, comparison)| Filter::Test {
+                assert: assert.is_some(),
+                operand,
+                comparison,
+            },
+        ),
+        map(
+            (opt(assert), shape_path, opt(comparison)),
+            |(assert, path, comparison)| Filter::Test {
+                assert: assert.is_some(),
+                operand: Operand::Path(path),
+                comparison,
+            },
+        ),
+        map(integer, Filter::index),
+    ))
+    .parse(i)
+}
+
+/// `"assert"`, matched without regard to case.
+fn assert(i: Span) -> IRes<Span> {
+    keyword_no_case("assert")(i)
+}
+
+/// `function ::= "index" "(" ")" | "count" "(" ")"`
+fn function(i: Span) -> IRes<Operand> {
+    terminated(
+        alt((
+            value(Operand::Index, keyword("index")),
+            value(Operand::Count, keyword("count")),
+        )),
+        (token("("), token(")")),
+    )
+    .parse(i)
+}
+
+/// `comparison ::= comparitor rvalue`
+fn comparison(i: Span) -> IRes<Comparison> {
+    map((comparator, rvalue), |(comparator, rvalue)| Comparison {
+        comparator,
+        rvalue,
+    })
+    .parse(i)
+}
+
+/// `comparitor ::= "=" | "<" | ">"`
+fn comparator(i: Span) -> IRes<Comparator> {
+    alt((
+        value(Comparator::Equal, token("=")),
+        value(Comparator::LessThan, token("<")),
+        value(Comparator::GreaterThan, token(">")),
+    ))
+    .parse(i)
+}
+
+/// `rvalue ::= INTEGER | iri`
+fn rvalue(i: Span) -> IRes<RValue> {
+    alt((map(integer, RValue::Integer), map(preceded(ws, iri), RValue::Iri))).parse(i)
+}
+
+/// `[19t] INTEGER ::= [+-]? [0-9]+`
+fn integer(i: Span) -> IRes<i64> {
+    map_error(
+        map_res(preceded(ws, recognize(pair(opt(one_of("+-")), digit1))), |n: Span| {
+            n.fragment().trim_start_matches('+').parse::<i64>()
+        }),
+        || ParseError::Integer,
+    )(i)
+}
+
+/// A case sensitive keyword, which is a whole word.
+fn keyword<'a>(keyword: &'static str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
+    map_error(verify(word, move |w: &Span| *w.fragment() == keyword), move || {
+        ParseError::ExpectedToken(keyword.to_string())
+    })
+}
+
+/// A keyword matched without regard to case, which is a whole word.
+fn keyword_no_case<'a>(keyword: &'static str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
+    map_error(
+        verify(word, move |w: &Span| w.fragment().eq_ignore_ascii_case(keyword)),
+        move || ParseError::ExpectedToken(keyword.to_string()),
+    )
 }
 
 /// `nonChildAxis ::= "thisShapeExpr::" | "thisTripleExpr::" | "self::" | "parent::" | "ancestor::"`
