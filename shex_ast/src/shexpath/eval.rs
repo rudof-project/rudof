@@ -1,23 +1,25 @@
 //! Evaluation of a ShExPath over a ShExJ document.
 
 use crate::shexpath::{
-    AttributeOrAny, Comparator, Comparison, Filter, Operand, RValue, Selector, ShExPath, ShExPathError, ShExPathItem,
-    Step,
+    AttributeOrAny, Axis, Comparator, Comparison, Filter, Operand, RValue, Segment, Selector, ShExPath, ShExPathError,
+    ShExPathItem, Step,
 };
 use prefixmap::IriRef;
 use serde_json::Value;
 use std::borrow::Cow;
 
 /// Evaluates paths over one document.
-pub(crate) struct Evaluator;
+pub(crate) struct Evaluator<'a> {
+    root: &'a Value,
+}
 
-impl Evaluator {
-    pub(crate) fn new() -> Self {
-        Evaluator
+impl<'a> Evaluator<'a> {
+    pub(crate) fn new(root: &'a Value) -> Self {
+        Evaluator { root }
     }
 
     /// The value `path` produces from `items`.
-    pub(crate) fn eval_path<'a>(
+    pub(crate) fn eval_path(
         &self,
         path: &ShExPath,
         items: Vec<ShExPathItem<'a>>,
@@ -32,11 +34,14 @@ impl Evaluator {
 
     /// Applies `step` to every item and concatenates what it reaches, then applies its filters to
     /// that whole value, left to right, each to what the one before it left.
-    fn eval_step<'a>(&self, step: &Step, items: Vec<ShExPathItem<'a>>) -> Result<Vec<ShExPathItem<'a>>, ShExPathError> {
+    fn eval_step(&self, step: &Step, items: Vec<ShExPathItem<'a>>) -> Result<Vec<ShExPathItem<'a>>, ShExPathError> {
         let mut selected = Vec::new();
         for item in items {
             match &step.selector {
                 Selector::Child(attribute) => selected.extend(children(&item, attribute)),
+                Selector::Axis(Axis::Itself) => selected.push(item),
+                Selector::Axis(Axis::Parent) => selected.extend(self.parent(&item)),
+                Selector::Axis(Axis::Ancestor) => selected.extend(self.ancestors(&item)),
                 _ => {
                     return Err(ShExPathError::NotImplemented {
                         feature: "axes".to_string(),
@@ -49,9 +54,28 @@ impl Evaluator {
             .try_fold(selected, |items, filter| self.apply_filter(filter, items))
     }
 
+    /// `parent::`: the item that has this one as a property value or array member. The schema has
+    /// no parent.
+    fn parent(&self, item: &ShExPathItem<'a>) -> Option<ShExPathItem<'a>> {
+        let location = item.location().parent()?;
+        let value = location
+            .segments()
+            .iter()
+            .try_fold(self.root, |value, segment| match segment {
+                Segment::Key(key) => value.get(key),
+                Segment::Index(index) => value.get(index),
+            })?;
+        Some(ShExPathItem::new(value, location))
+    }
+
+    /// `ancestor::`: the parent, its parent, and so on up to the schema, nearest first.
+    fn ancestors(&self, item: &ShExPathItem<'a>) -> Vec<ShExPathItem<'a>> {
+        std::iter::successors(self.parent(item), |parent| self.parent(parent)).collect()
+    }
+
     /// The items of `items` that `filter` keeps. It is evaluated once per item, and knows the item,
     /// the value it is trimming and the item's position in it.
-    fn apply_filter<'a>(
+    fn apply_filter(
         &self,
         filter: &Filter,
         items: Vec<ShExPathItem<'a>>,
@@ -68,7 +92,7 @@ impl Evaluator {
     fn keeps(
         &self,
         filter: &Filter,
-        item: &ShExPathItem<'_>,
+        item: &ShExPathItem<'a>,
         index: usize,
         count: usize,
     ) -> Result<bool, ShExPathError> {
@@ -100,7 +124,7 @@ impl Evaluator {
 
     /// The value of a filter's operand for an item: what a path selects from it, or its position, or
     /// the size of the value being trimmed.
-    fn operand_values<'a>(
+    fn operand_values(
         &self,
         operand: &Operand,
         item: &ShExPathItem<'a>,

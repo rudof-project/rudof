@@ -55,6 +55,6 @@ impl ShExJDocument {
         path: &ShExPath,
         context: Vec<ShExPathItem<'a>>,
     ) -> Result<Vec<ShExPathItem<'a>>, ShExPathError> {
-        Evaluator::new().eval_path(path, context)
+        Evaluator::new(&self.doc).eval_path(path, context)
     }
 }
