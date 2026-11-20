@@ -46,6 +46,7 @@
 # How to
 
 - [Precompiled ShEx schemas](./using-rudof/precompiled-shex-schemas.md)
+- [ShExPath](./using-rudof/shexpath.md)
 
 # `rudof` as a library
 
