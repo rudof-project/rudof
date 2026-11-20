@@ -1,6 +1,7 @@
 mod add_node_shape_to_shapemap;
 mod check_shex_schema;
 mod compile_shex_schema_to_file;
+mod evaluate_shex_path;
 mod load_shapemap;
 mod load_shex_schema;
 mod load_shex_schema_precompiled;
@@ -15,6 +16,7 @@ mod validate_shex;
 pub use add_node_shape_to_shapemap::AddNodeShapeToShapemapBuilder;
 pub use check_shex_schema::CheckShexSchemaBuilder;
 pub use compile_shex_schema_to_file::CompileShexSchemaToFileBuilder;
+pub use evaluate_shex_path::EvaluateShExPathBuilder;
 pub use load_shapemap::LoadShapemapBuilder;
 pub use load_shex_schema::LoadShexSchemaBuilder;
 pub use load_shex_schema_precompiled::LoadShexSchemaPrecompiledBuilder;

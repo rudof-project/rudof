@@ -45,10 +45,10 @@ use crate::{
             SerializeShaclValidationResultsBuilder, ValidateShaclBuilder,
         },
         shex::builders::{
-            AddNodeShapeToShapemapBuilder, CheckShexSchemaBuilder, CompileShexSchemaToFileBuilder, LoadShapemapBuilder,
-            LoadShexSchemaBuilder, LoadShexSchemaPrecompiledBuilder, ResetShapemapBuilder, ResetShexBuilder,
-            ResetShexSchemaBuilder, SerializeShapemapBuilder, SerializeShexSchemaBuilder,
-            SerializeShexValidationResultsBuilder, ValidateShexBuilder,
+            AddNodeShapeToShapemapBuilder, CheckShexSchemaBuilder, CompileShexSchemaToFileBuilder,
+            EvaluateShExPathBuilder, LoadShapemapBuilder, LoadShexSchemaBuilder, LoadShexSchemaPrecompiledBuilder,
+            ResetShapemapBuilder, ResetShexBuilder, ResetShexSchemaBuilder, SerializeShapemapBuilder,
+            SerializeShexSchemaBuilder, SerializeShexValidationResultsBuilder, ValidateShexBuilder,
         },
     },
     errors::{RudofError, ShExError},
@@ -623,6 +623,15 @@ impl Rudof {
     /// Returns a `ResetShexSchemaBuilder` to clear the currently-loaded ShEx schema from state.
     pub fn reset_shex_schema<'a>(&'a mut self) -> ResetShexSchemaBuilder<'a> {
         ResetShexSchemaBuilder::new(self)
+    }
+
+    /// Returns an `EvaluateShExPathBuilder` that evaluates a
+    /// [ShExPath](https://shexspec.github.io/spec/ShExPath) against the loaded ShEx schema.
+    ///
+    /// # Parameters
+    /// - `path`: the ShExPath to evaluate, written with the prefixes and base of the schema.
+    pub fn evaluate_shex_path<'a>(&'a self, path: &'a str) -> EvaluateShExPathBuilder<'a> {
+        EvaluateShExPathBuilder::new(self, path)
     }
 
     /// Returns a `CompileShexSchemaToFileBuilder` that writes the currently loaded

@@ -32,6 +32,10 @@ pub enum ShExError {
     #[error("No ShEx schema loaded")]
     NoShExSchemaLoaded,
 
+    /// Failed to parse or evaluate a ShExPath.
+    #[error("Failed to evaluate the ShExPath '{path}': {error}")]
+    FailedEvaluatingShExPath { path: String, error: String },
+
     /// A schema loaded from a precompiled `SchemaIR` cache (see
     /// `load_shex_schema_precompiled`) was asked for an output format that
     /// needs the original parsed schema (AST), which the cache doesn't
