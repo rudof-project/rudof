@@ -5121,6 +5121,7 @@ dependencies = [
  "either",
  "indoc",
  "itertools 0.14.0",
+ "libtest-mimic",
  "oxrdf",
  "petgraph 0.8.3",
  "prefixmap",
@@ -5151,9 +5152,11 @@ dependencies = [
  "rudof_earl",
  "rudof_iri",
  "rudof_rdf",
+ "serde",
  "shacl",
  "sparql_service",
  "thiserror 2.0.20",
+ "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]
