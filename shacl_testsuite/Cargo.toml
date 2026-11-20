@@ -1,0 +1,22 @@
+[package]
+name = "shacl_testsuite"
+version.workspace = true
+publish = false
+authors.workspace = true
+description = "Test-suite runner for the SHACL W3C test manifests."
+documentation = "https://docs.rs/shacl_testsuite"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+oxrdf.workspace = true
+rudof_earl.workspace = true
+rudof_iri.workspace = true
+rudof_rdf.workspace = true
+shacl = { workspace = true, features = ["sparql"] }
+sparql_service.workspace = true
+thiserror.workspace = true

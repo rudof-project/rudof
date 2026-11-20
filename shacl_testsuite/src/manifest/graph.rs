@@ -1,4 +1,4 @@
-use crate::common::TestSuiteError;
+use crate::TestSuiteError;
 use oxrdf::{NamedNode, NamedOrBlankNode, Term};
 use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, TestManifestVocab};
@@ -8,7 +8,7 @@ use sparql_service::RdfData;
 use std::path::Path;
 
 /// A test manifest's graph,
-pub(crate) struct ManifestGraph {
+pub struct ManifestGraph {
     base: String,
     store: RdfData,
     entries: Vec<Term>,
@@ -22,12 +22,16 @@ impl ManifestGraph {
             Some(path) => format!("file:/{path}"),
         };
 
-        let graph = Graph::from_path(path, &RDFFormat::Turtle, Some(&base))
+        Self::new_with_base(path, &base)
+    }
+
+    pub fn new_with_base(path: &Path, base: &str) -> Result<Self, TestSuiteError> {
+        let graph = Graph::from_path(path, &RDFFormat::Turtle, Some(base))
             .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
 
         let mut manifest = Self {
             store: graph.store().clone(),
-            base,
+            base: base.to_string(),
             entries: Vec::new(),
         };
 
@@ -59,6 +63,15 @@ impl ManifestGraph {
             .triples_matching(subject, property, &Any)?
             .map(Triple::into_object)
             .next())
+    }
+
+    /// Every object of `subject property ?object`, in no particular order
+    pub fn values(&self, subject: &NamedOrBlankNode, property: &NamedNode) -> Result<Vec<Term>, TestSuiteError> {
+        Ok(self
+            .store
+            .triples_matching(subject, property, &Any)?
+            .map(Triple::into_object)
+            .collect())
     }
 
     pub fn required_value(&self, subject: &NamedOrBlankNode, property: &NamedNode) -> Result<Term, TestSuiteError> {
@@ -94,5 +107,28 @@ impl ManifestGraph {
             None => Ok(Vec::new()),
             Some(head) => self.list(head),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ManifestGraph;
+    use std::path::Path;
+
+    #[test]
+    fn new_with_base_resolves_the_entry_against_the_given_base() {
+        let path = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../shacl/tests/data-shapes/data-shapes-test-suite/tests/core/node/disjoint-001.ttl"
+        ));
+        let base = "urn:x-shacl-test:/core/node/disjoint-001.ttl";
+
+        let manifest = ManifestGraph::new_with_base(path, base).expect("the fixture manifest should parse");
+
+        assert_eq!(manifest.entries().len(), 1);
+        assert_eq!(
+            manifest.entries()[0].to_string(),
+            "<urn:x-shacl-test:/core/node/disjoint-001>"
+        );
     }
 }

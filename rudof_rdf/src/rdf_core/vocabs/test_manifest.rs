@@ -11,3 +11,5 @@ vocab_term!(TestManifestVocab, MF_ACTION, "action");
 vocab_term!(TestManifestVocab, MF_RESULT, "result");
 vocab_term!(TestManifestVocab, MF_ENTRIES, "entries");
 vocab_term!(TestManifestVocab, MF_INCLUDE, "include");
+vocab_term!(TestManifestVocab, MF_STATUS, "status");
+vocab_term!(TestManifestVocab, MF_NAME, "name");

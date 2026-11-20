@@ -18,7 +18,7 @@ macro_rules! suite_tests {
         $(
             #[test]
             $(#[$attr])*
-            fn $name() -> Result<(), $crate::common::TestSuiteError> {
+            fn $name() -> Result<(), shacl_testsuite::TestSuiteError> {
                 $runner(format!("{}{}.ttl", $dir, $file))
             }
         )+

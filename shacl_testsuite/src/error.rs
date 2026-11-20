@@ -5,7 +5,7 @@ use std::io;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub(crate) enum TestSuiteError {
+pub enum TestSuiteError {
     #[error("Error compiling shapes: {0}")]
     TestShapesCompilation(String),
 

@@ -1,5 +1,5 @@
-use crate::common::TestSuiteError;
-use crate::common::manifest::{Manifest, ManifestEntry, ManifestGraph};
+use crate::TestSuiteError;
+use crate::manifest::{Manifest, ManifestEntry, ManifestGraph};
 use oxrdf::{NamedNode, NamedOrBlankNode, Term};
 use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::vocabs::{RdfsVocab, ShaclTestVocab, TestManifestVocab};
@@ -12,10 +12,10 @@ use shacl::validator::engine::NativeEngine;
 use std::collections::HashMap;
 
 /// A manifest for `sht:EvalNodeExpr` tests
-pub(crate) type NodeExprManifest = Manifest<NodeExprTest>;
+pub type NodeExprManifest = Manifest<NodeExprTest>;
 
 /// One `sht:EvalNodeExpr` test case
-pub(crate) struct NodeExprTest {
+pub struct NodeExprTest {
     pub label: String,
     pub node_expr: Term,
     pub fnode: Option<Term>,

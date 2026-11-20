@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     suite_tests! {
-        crate::common::runner::validate_runner,
+        shacl_testsuite::runner::validate_runner,
         "tests/data-shapes/shacl12-test-suite/tests/core/targets/",
         multiple_targets_001 => "multipleTargets-001",
         #[ignore = "sh:shape in the data graph as a target of the shape it points to is not implemented"]

@@ -1,5 +1,5 @@
-use crate::common::TestSuiteError;
-use crate::common::manifest::{Manifest, ManifestEntry, ManifestGraph};
+use crate::TestSuiteError;
+use crate::manifest::{Manifest, ManifestEntry, ManifestGraph};
 use oxrdf::NamedOrBlankNode;
 use rudof_rdf::rdf_core::vocabs::{ShaclTestVocab, TestManifestVocab};
 use rudof_rdf::rdf_core::{RDFFormat, Rdf};
@@ -11,10 +11,10 @@ use sparql_service::RdfData;
 use std::path::Path;
 
 /// A manifest for `sht:Validate` tests
-pub(crate) type ValidateManifest = Manifest<TestInstance<RdfData>>;
+pub type ValidateManifest = Manifest<TestInstance<RdfData>>;
 
 /// One `sht:Validate` test case
-pub(crate) struct TestInstance<RDF: Rdf> {
+pub struct TestInstance<RDF: Rdf> {
     pub data: RDF,
     pub shapes: ASTSchema,
     pub report: ValidationReport,

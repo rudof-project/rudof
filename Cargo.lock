@@ -5133,11 +5133,27 @@ dependencies = [
  "rust_decimal",
  "schemars 1.2.2",
  "serde",
+ "shacl_testsuite",
  "sparql_service",
  "stacker",
  "thiserror 2.0.20",
  "toml 0.9.12+spec-1.1.0",
  "tracing",
+]
+
+[[package]]
+name = "shacl_testsuite"
+version = "0.3.39"
+dependencies = [
+ "anyhow",
+ "clap",
+ "oxrdf",
+ "rudof_earl",
+ "rudof_iri",
+ "rudof_rdf",
+ "shacl",
+ "sparql_service",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
