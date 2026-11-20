@@ -34,6 +34,8 @@ pub mod shex_compact_printer;
 mod shex_grammar;
 pub mod shex_parser;
 pub mod shex_parser_error;
+mod shexpath_grammar;
+pub mod shexpath_parser;
 
 use nom::IResult;
 use nom_locate::LocatedSpan;
@@ -47,6 +49,7 @@ pub use crate::shapemap_parser::*;
 pub use crate::shex_compact_printer::*;
 pub use crate::shex_parser::*;
 pub use crate::shex_parser_error::*;
+pub use crate::shexpath_parser::*;
 
 // type Result<A> = std::result::Result<A, ParseError>;
 
