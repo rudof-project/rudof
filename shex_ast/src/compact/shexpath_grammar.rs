@@ -20,6 +20,7 @@ use nom::{
     multi::many0,
     sequence::{delimited, pair, preceded, terminated},
 };
+use prefixmap::IriRef;
 
 /// `shapePath ::= sequenceStep ("," sequenceStep)*`
 pub(crate) fn shape_path(i: Span) -> IRes<ShExPath> {
@@ -34,16 +35,76 @@ fn intersection_step(i: Span) -> IRes<ShExPath> {
     .parse(i)
 }
 
-/// `startStep ::= ("/" | "//")? step`
+/// `startStep ::= ("/" | "//")? step | shortcut`
 ///
 /// The separator has no effect on where the path begins.
 fn start_step(i: Span) -> IRes<Vec<Step>> {
-    map(preceded(opt(separator), step), |step| vec![step]).parse(i)
+    alt((map(preceded(opt(separator), step), |step| vec![step]), shortcut)).parse(i)
 }
 
-/// `nextStep ::= ("/" | "//") step`
+/// `nextStep ::= ("/" | "//") step | shortcut`
 fn next_step(i: Span) -> IRes<Vec<Step>> {
-    map(preceded(separator, step), |step| vec![step]).parse(i)
+    alt((map(preceded(separator, step), |step| vec![step]), shortcut)).parse(i)
+}
+
+/// `shortcut ::= ("@" | "~" | "$") iri`, read as the steps the spec says it abbreviates.
+fn shortcut(i: Span) -> IRes<Vec<Step>> {
+    alt((
+        map(preceded(token("@"), preceded(ws, iri)), shape_label_shortcut),
+        map(preceded(token("~"), preceded(ws, iri)), predicate_shortcut),
+        map(preceded(token("$"), preceded(ws, iri)), triple_expr_label_shortcut),
+    ))
+    .parse(i)
+}
+
+/// `@label` is `/shapes/*[id = label][assert count() = 1]/shapeExpr`.
+fn shape_label_shortcut(label: IriRef) -> Vec<Step> {
+    vec![
+        Step::child(AttributeOrAny::Attribute(Attribute::Shapes)),
+        Step::child(AttributeOrAny::Any)
+            .with_filter(id_is(label))
+            .with_filter(exactly_one()),
+        Step::child(AttributeOrAny::Attribute(Attribute::ShapeExpr)),
+    ]
+}
+
+/// `~iri` is `/thisShapeExpr::Shape/expression/thisTripleExpr::TripleConstraint[predicate = iri]`.
+fn predicate_shortcut(predicate: IriRef) -> Vec<Step> {
+    vec![
+        Step::axis(Axis::ThisShapeExpr).with_filter(Filter::TermType(TermType::Shape)),
+        Step::child(AttributeOrAny::Attribute(Attribute::Expression)),
+        Step::axis(Axis::ThisTripleExpr)
+            .with_filter(Filter::TermType(TermType::TripleConstraint))
+            .with_filter(attribute_is(Attribute::Predicate, predicate)),
+    ]
+}
+
+/// `$label` is `/descendant::[id = label][assert count() = 1]`.
+fn triple_expr_label_shortcut(label: IriRef) -> Vec<Step> {
+    vec![
+        Step::axis(Axis::Descendant)
+            .with_filter(id_is(label))
+            .with_filter(exactly_one()),
+    ]
+}
+
+/// `[id = label]`
+fn id_is(label: IriRef) -> Filter {
+    attribute_is(Attribute::Id, label)
+}
+
+/// `[attribute = iri]`
+fn attribute_is(attribute: Attribute, iri: IriRef) -> Filter {
+    Filter::compare(
+        Operand::Path(ShExPath::path([Step::child(AttributeOrAny::Attribute(attribute))])),
+        Comparator::Equal,
+        RValue::Iri(iri),
+    )
+}
+
+/// `[assert count() = 1]`
+fn exactly_one() -> Filter {
+    Filter::compare(Operand::Count, Comparator::Equal, RValue::Integer(1)).asserted()
 }
 
 /// `"/" | "//"`, which currently mean the same thing.
