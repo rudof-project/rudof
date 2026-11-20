@@ -18,6 +18,7 @@ use std::sync::{Arc, Mutex};
 use std::{io::BufWriter, path::PathBuf};
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
+#[cfg_attr(not(feature = "stub-gen"), pyo3_stub_gen_derive::remove_gen_stub)]
 #[pymethods]
 impl PyRudof {
     /// Checks whether a ShEx schema is well-formed, without loading it into the session.
@@ -162,6 +163,34 @@ impl PyRudof {
             }
             s.execute()
         })
+    }
+
+    /// Evaluates a ShExPath against the loaded ShEx schema.
+    ///
+    /// `ShExPath <https://shexspec.github.io/spec/ShExPath>`_ addresses the elements of a
+    /// schema. The path is written with the prefixes and base of the schema, and evaluated
+    /// from the schema.
+    ///
+    /// Args:
+    ///     path (str): The ShExPath, for example ``"@<#IssueShape>~:category"``.
+    ///
+    /// Returns:
+    ///     list[dict]: The selected elements, in order and with their duplicates, each as
+    ///     ``{"location": str, "value": ...}``: where the element is in the ShExJ form of the
+    ///     schema, as a JSON Pointer, and the element itself as ShExJ.
+    ///
+    /// Raises:
+    ///     ShExError: If no schema is loaded, if ``path`` is not a ShExPath, or if evaluating
+    ///         it fails, as a failed ``assert`` does.
+    #[gen_stub(override_return_type(
+        type_repr = "builtins.list[builtins.dict[builtins.str, typing.Any]]",
+        imports = ("builtins", "typing")
+    ))]
+    fn evaluate_shex_path(&self, py: Python<'_>, path: &str) -> Result<Py<PyAny>> {
+        let path = path.to_owned();
+        let matches = guard::detached(py, move || self.inner.evaluate_shex_path(&path).execute())?;
+        let obj = pythonize::pythonize(py, &matches).map_err(|e| CoreError::Generic { error: e.to_string() })?;
+        Ok(obj.unbind())
     }
 
     /// Writes the currently loaded ShEx schema's compiled IR to a cache file.

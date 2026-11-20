@@ -153,6 +153,20 @@ expected_output = [
 ]
 
 [[example]]
+key = "shex_path"
+source_file = "shex/shex_path.py"
+title = "Select ShEx Schema Elements with ShExPath"
+description = "Evaluate ShExPaths against a ShEx schema and print what they select"
+category = "shex"
+files = {}
+expected_output = [
+    "/shapes/0/shapeExpr/expression/expressions/1",
+    "http://ex.example/ns#category",
+    "http://ex.example/schema#UserShape",
+    "3 constraints",
+]
+
+[[example]]
 key = "shex_precompiled"
 source_file = "shex/shex_precompiled.py"
 title = "Precompiled ShEx Schema Cache"

@@ -64,6 +64,7 @@ ShEx
 .. automethod:: Rudof.read_shex
 .. automethod:: Rudof.check_shex
 .. automethod:: Rudof.serialize_current_shex
+.. automethod:: Rudof.evaluate_shex_path
 .. automethod:: Rudof.compile_shex_to_file
 .. automethod:: Rudof.read_shex_precompiled
 .. automethod:: Rudof.validate_shex
