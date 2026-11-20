@@ -1,0 +1,7 @@
+@prefix mf: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#> .
+
+<>
+  a mf:Manifest ;
+  mf:include <pass.ttl> ;
+  mf:include <fail.ttl> ;
+.
