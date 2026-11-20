@@ -6,7 +6,6 @@
 //!   --out shacl_testsuite/reports/rudof-shacl-earl.ttl
 //! ```
 
-use std::fs;
 use clap::Parser;
 use rudof_earl::model::{Assertion, TestResult};
 use rudof_earl::report::EarlReport;
@@ -19,10 +18,13 @@ use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use shacl_testsuite::manifest::ManifestWalker;
 use shacl_testsuite::runner::{TestOutcome, run_outcome};
+use std::fs;
 use std::path::PathBuf;
 
-const TOOL: &str = "https://github.com/rudof-project/rudof"; /// `earl:subject`
-const ORG: &str = "https://github.com/rudof-project"; /// `earl:assertedBy`
+const TOOL: &str = "https://github.com/rudof-project/rudof";
+/// `earl:subject`
+const ORG: &str = "https://github.com/rudof-project";
+/// `earl:assertedBy`
 
 #[derive(Parser)]
 struct Args {
