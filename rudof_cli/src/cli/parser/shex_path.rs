@@ -52,11 +52,13 @@ mod tests {
         args: ShexPathArgs,
     }
 
+    // The schema is `-`, stdin: a file name has to name an existing file to be parsed.
+
     #[test]
     fn schema_and_path_are_parsed() {
-        let cli = TestCli::parse_from(["test", "-s", "issue.shex", "-p", "@<#IssueShape>~:category"]);
+        let cli = TestCli::parse_from(["test", "-s", "-", "-p", "@<#IssueShape>~:category"]);
         assert_eq!(cli.args.path, "@<#IssueShape>~:category");
-        assert_eq!(cli.args.schema.source_name(), "issue.shex");
+        assert_eq!(cli.args.schema.source_name(), "stdin");
         assert_eq!(cli.args.base, None);
     }
 
@@ -65,7 +67,7 @@ mod tests {
         let cli = TestCli::parse_from([
             "test",
             "--schema",
-            "issue.shex",
+            "-",
             "--path",
             "/shapes/*",
             "--base",
@@ -77,15 +79,15 @@ mod tests {
 
     #[test]
     fn the_schema_format_defaults_to_shexc() {
-        let cli = TestCli::parse_from(["test", "-s", "issue.shex", "-p", "/shapes/*"]);
+        let cli = TestCli::parse_from(["test", "-s", "-", "-p", "/shapes/*"]);
         assert!(matches!(cli.args.schema_format, ShExFormatCli::ShExC));
-        let cli = TestCli::parse_from(["test", "-s", "issue.json", "-f", "shexj", "-p", "/shapes/*"]);
+        let cli = TestCli::parse_from(["test", "-s", "-", "-f", "shexj", "-p", "/shapes/*"]);
         assert!(matches!(cli.args.schema_format, ShExFormatCli::ShExJ));
     }
 
     #[test]
     fn the_path_is_required() {
-        assert!(TestCli::try_parse_from(["test", "-s", "issue.shex"]).is_err());
+        assert!(TestCli::try_parse_from(["test", "-s", "-"]).is_err());
     }
 
     #[test]
