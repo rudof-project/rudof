@@ -5145,7 +5145,11 @@ dependencies = [
 name = "shacl_testsuite"
 version = "0.3.39"
 dependencies = [
+ "anyhow",
+ "clap",
  "oxrdf",
+ "rudof_earl",
+ "rudof_iri",
  "rudof_rdf",
  "shacl",
  "sparql_service",

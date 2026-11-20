@@ -11,7 +11,11 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+anyhow.workspace = true
+clap.workspace = true
 oxrdf.workspace = true
+rudof_earl.workspace = true
+rudof_iri.workspace = true
 rudof_rdf.workspace = true
 shacl = { workspace = true, features = ["sparql"] }
 sparql_service.workspace = true
