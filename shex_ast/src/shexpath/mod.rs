@@ -7,15 +7,15 @@
 
 mod ast;
 mod document;
+mod error;
 mod eval;
 mod item;
 mod parser;
-mod shexj_view;
-mod shexpath_error;
+mod shexj;
 
 pub use ast::*;
 pub use document::*;
+pub use error::*;
 pub use item::*;
 pub use parser::*;
-pub use shexj_view::*;
-pub use shexpath_error::*;
+pub use shexj::*;
