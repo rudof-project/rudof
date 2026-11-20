@@ -1,7 +1,4 @@
-use crate::{
-    Result, Rudof,
-    api::shex::{ShExOperations, ShExPathMatch},
-};
+use crate::{Result, Rudof, api::shex::ShExOperations, types::ShExPathMatch};
 
 /// Builder for `evaluate_shex_path` operation.
 ///

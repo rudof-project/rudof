@@ -1,6 +1,5 @@
 use crate::{
     Result,
-    api::shex::ShExPathMatch,
     api::shex::implementations::{
         add_node_shape_to_shapemap, check_shex_schema, compile_shex_schema_to_file, evaluate_shex_path, load_shapemap,
         load_shex_schema, load_shex_schema_precompiled, reset_shapemap, reset_shex, reset_shex_schema,
@@ -10,6 +9,7 @@ use crate::{
         DataReaderMode, InputSpec, IriNormalizationMode, ResultShExValidationFormat, ShExFormat,
         ShExValidationSortByMode, ShapeMapFormat,
     },
+    types::ShExPathMatch,
 };
 use rudof_rdf_sink::TriplesSink;
 use rudof_viz::VizEngine;

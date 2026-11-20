@@ -1,4 +1,4 @@
-use crate::{Result, Rudof, api::shex::ShExPathMatch, errors::ShExError};
+use crate::{Result, Rudof, errors::ShExError, types::ShExPathMatch};
 use shex_ast::shexpath::ShExJDocument;
 
 pub fn evaluate_shex_path(rudof: &Rudof, path: &str) -> Result<Vec<ShExPathMatch>> {
