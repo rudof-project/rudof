@@ -5,7 +5,8 @@ use crate::commands::{
     CompareCommand, ConfigCommand, ConnectCommand, ConvertCommand, DataCommand, DctapCommand, DdlCommand,
     GenerateCommand, LoadCommand, MaterializeCommand, McpCommand, NodeCommand, PgschemaCommand,
     PgschemaValidateCommand, QueryCommand, RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand,
-    ShapemapCommand, ShexCheckCommand, ShexCommand, ShexValidateCommand, SparqlCommand, ValidateCommand,
+    ShapemapCommand, ShexCheckCommand, ShexCommand, ShexPathCommand, ShexValidateCommand, SparqlCommand,
+    ValidateCommand,
 };
 use crate::output::{ColorSupport, get_writer};
 use crate::shell::ShellCommand;
@@ -140,6 +141,7 @@ impl CommandFactory {
             CliCommand::Pgschema(args) => Ok(Box::new(PgschemaCommand::new(args))),
             CliCommand::Validate(args) => Ok(Box::new(ValidateCommand::new(args))),
             CliCommand::ShexCheck(args) => Ok(Box::new(ShexCheckCommand::new(args))),
+            CliCommand::ShexPath(args) => Ok(Box::new(ShexPathCommand::new(args))),
             CliCommand::ShexValidate(args) => Ok(Box::new(ShexValidateCommand::new(args))),
             CliCommand::ShaclValidate(args) => Ok(Box::new(ShaclValidateCommand::new(args))),
             CliCommand::Data(args) => Ok(Box::new(DataCommand::new(args))),
@@ -198,6 +200,11 @@ pub(crate) fn extract_common(cmd: &CliCommand) -> CommonArgs {
             qlever_index_dir: a.common.qlever_index_dir.clone(),
         }),
         CliCommand::ShexCheck(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::ShexPath(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
