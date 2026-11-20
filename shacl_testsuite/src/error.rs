@@ -30,6 +30,12 @@ pub enum TestSuiteError {
 
     #[error(transparent)]
     TryFromTerm(#[from] Box<TryFromTermError>),
+
+    #[error("Error parsing ignored.toml: {0}")]
+    IgnoredTomlRead(toml::de::Error),
+
+    #[error("Error writing ignored.toml: {0}")]
+    IgnoredTomlWrite(toml::ser::Error),
 }
 
 impl From<RdfDataError> for TestSuiteError {
