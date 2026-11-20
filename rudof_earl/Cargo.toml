@@ -1,0 +1,19 @@
+[package]
+name = "rudof_earl"
+version.workspace = true
+readme = "README.md"
+authors.workspace = true
+description = "EARL 1.0 (Evaluation and Report Language) reports."
+documentation = "https://docs.rs/rudof_earl"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+const_format.workspace = true
+paste.workspace = true
+prefixmap.workspace = true
+rudof_iri.workspace = true
+rudof_rdf.workspace = true
+thiserror.workspace = true

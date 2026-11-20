@@ -8,6 +8,10 @@ use rudof_iri::IriS;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
+mod dct;
+mod doap;
+mod earl;
+mod foaf;
 mod owl;
 mod rdf;
 mod rdfs;
@@ -18,6 +22,10 @@ mod shexr;
 mod test_manifest;
 mod xsd;
 
+pub use dct::DctVocab;
+pub use doap::DoapVocab;
+pub use earl::EarlVocab;
+pub use foaf::FoafVocab;
 pub use owl::OwlVocab;
 pub use rdf::RdfVocab;
 pub use rdfs::RdfsVocab;
@@ -79,10 +87,18 @@ mod tests {
     /// process, every vocabulary must keep returning its own base IRI.
     #[test]
     fn base_iri_is_distinct_per_vocabulary() {
+        assert_eq!(OwlVocab::base_iri().as_str(), OwlVocab::BASE);
         assert_eq!(RdfVocab::base_iri().as_str(), RdfVocab::BASE);
-        assert_eq!(ShexRVocab::base_iri().as_str(), ShexRVocab::BASE);
-        assert_eq!(XsdVocab::base_iri().as_str(), XsdVocab::BASE);
         assert_eq!(RdfsVocab::base_iri().as_str(), RdfsVocab::BASE);
-        assert_ne!(RdfVocab::base_iri().as_str(), ShexRVocab::base_iri().as_str());
+        assert_eq!(ShaclVocab::base_iri().as_str(), ShaclVocab::BASE);
+        assert_eq!(ShaclNodeExprVocab::base_iri().as_str(), ShaclNodeExprVocab::BASE);
+        assert_eq!(ShaclTestVocab::base_iri().as_str(), ShaclTestVocab::BASE);
+        assert_eq!(ShexRVocab::base_iri().as_str(), ShexRVocab::BASE);
+        assert_eq!(TestManifestVocab::base_iri().as_str(), TestManifestVocab::BASE);
+        assert_eq!(XsdVocab::base_iri().as_str(), XsdVocab::BASE);
+        assert_eq!(EarlVocab::base_iri().as_str(), EarlVocab::BASE);
+        assert_eq!(DoapVocab::base_iri().as_str(), DoapVocab::BASE);
+        assert_eq!(FoafVocab::base_iri().as_str(), FoafVocab::BASE);
+        assert_eq!(DctVocab::base_iri().as_str(), DctVocab::BASE);
     }
 }

@@ -11,6 +11,7 @@ impl RdfVocabulary for XsdVocab {
 vocab_term!(XsdVocab, XSD_BOOLEAN, "boolean");
 vocab_term!(XsdVocab, XSD_STRING, "string");
 vocab_term!(XsdVocab, XSD_DATE_TIME, "dateTime");
+vocab_term!(XsdVocab, XSD_DATE, "date");
 vocab_term!(XsdVocab, XSD_INTEGER, "integer");
 vocab_term!(XsdVocab, XSD_NEGATIVE_INTEGER, "negativeInteger");
 vocab_term!(XsdVocab, XSD_POSITIVE_INTEGER, "positiveInteger");

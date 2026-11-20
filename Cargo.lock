@@ -4329,6 +4329,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rudof_earl"
+version = "0.3.39"
+dependencies = [
+ "const_format",
+ "paste",
+ "prefixmap",
+ "rudof_iri",
+ "rudof_rdf",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "rudof_generate"
 version = "0.3.39"
 dependencies = [

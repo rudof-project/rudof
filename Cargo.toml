@@ -11,6 +11,7 @@ members = [
     "rbe_testsuite",
     "rdf_config",
     "rudof_config",
+    "rudof_earl",
     "rudof_rdf",
     "rudof_rdf_sink",
     "rudof_viz",
@@ -332,6 +333,7 @@ rmcp = { version = "3.6", features = [
 ] }
 rudof_cli = { version = "0.3.39", path = "./rudof_cli" }
 rudof_config = { version = "0.3.39", path = "./rudof_config" }
+rudof_earl = { version = "0.3.39", path = "./rudof_earl" }
 rudof_iri = { version = "0.3.39", path = "./rudof_iri" }
 rudof_rdf = { version = "0.3.39", path = "./rudof_rdf", default-features = false }
 rudof_rdf_sink = { version = "0.3.39", path = "./rudof_rdf_sink" }

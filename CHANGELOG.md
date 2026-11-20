@@ -11,6 +11,8 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 
 ## [Unreleased]
 ### Added
+- `rudof_earl`: a new crate that builds [EARL 1.0](https://www.w3.org/TR/EARL10-Schema/) reports and serializes them as RDF, with the EARL, DOAP, FOAF and Dublin Core vocabularies ([#955](https://github.com/rudof-project/rudof/issues/955)).
+- `rudof_rdf`: `XsdVocab::xsd_date`, the `xsd:date` datatype IRI ([#956](https://github.com/rudof-project/rudof/issues/956)).
 - `shacl`: the shape-taking node expressions (`shnex:filterShape`, `shnex:findFirst`, `shnex:matchAll`, `shnex:nodesMatching`), triple terms and `shnex:conformsToShape`, which completes SHACL 1.2 node expressions ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `shacl`: the `sh:expression` and `sh:nodeByExpression` constraint components ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `shacl`: a validation result reports the node its constraint comes from as `sh:sourceConstraint` ([#868](https://github.com/rudof-project/rudof/issues/868)).
