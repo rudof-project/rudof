@@ -6,11 +6,13 @@ mod entry;
 mod graph;
 mod node_expr;
 mod validate;
+mod walker;
 
 pub use entry::ManifestEntry;
 pub use graph::ManifestGraph;
 pub use node_expr::NodeExprManifest;
-pub use validate::ValidateManifest;
+pub use validate::{TestInstance, ValidateManifest};
+pub use walker::{ManifestWalker, ValidateEntry};
 
 /// A test manifest of kind `T`
 pub struct Manifest<T> {

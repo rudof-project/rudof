@@ -65,6 +65,15 @@ impl ManifestGraph {
             .next())
     }
 
+    /// Every object of `subject property ?object`, in no particular order
+    pub fn values(&self, subject: &NamedOrBlankNode, property: &NamedNode) -> Result<Vec<Term>, TestSuiteError> {
+        Ok(self
+            .store
+            .triples_matching(subject, property, &Any)?
+            .map(Triple::into_object)
+            .collect())
+    }
+
     pub fn required_value(&self, subject: &NamedOrBlankNode, property: &NamedNode) -> Result<Term, TestSuiteError> {
         self.value(subject, property)?
             .ok_or_else(|| TestSuiteError::Validation(format!("{subject} has no {property}")))
