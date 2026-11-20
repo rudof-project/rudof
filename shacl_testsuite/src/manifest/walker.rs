@@ -20,9 +20,7 @@ pub struct ManifestWalker {
 impl ManifestWalker {
     pub fn new(tests_root: impl Into<PathBuf>) -> Self {
         Self {
-            tests_root: tests_root
-                .into()
-                .join("tests"),
+            tests_root: tests_root.into().join("tests"),
         }
     }
 

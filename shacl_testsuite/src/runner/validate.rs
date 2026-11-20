@@ -29,7 +29,10 @@ fn test(path: String, mode: ShaclValidationMode) -> Result<(), TestSuiteError> {
 }
 
 /// Runs one test instance under one mode
-pub(crate) fn mismatch(test: &TestInstance<RdfData>, mode: &ShaclValidationMode) -> Result<Option<String>, TestSuiteError> {
+pub(crate) fn mismatch(
+    test: &TestInstance<RdfData>,
+    mode: &ShaclValidationMode,
+) -> Result<Option<String>, TestSuiteError> {
     let mut validator: DataValidation = test.data.clone().into();
     let test_shapes = test
         .shapes

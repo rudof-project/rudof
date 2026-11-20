@@ -1,8 +1,8 @@
-use std::path::Path;
-use shacl::validator::ShaclValidationMode;
+use crate::TestSuiteError;
 use crate::manifest::ValidateManifest;
 use crate::runner::validate::mismatch;
-use crate::TestSuiteError;
+use shacl::validator::ShaclValidationMode;
+use std::path::Path;
 
 pub enum TestOutcome {
     Passed,
@@ -11,8 +11,7 @@ pub enum TestOutcome {
 
 /// Runs every entry of the manifest at `path` under both validation modes
 pub fn run_outcome(path: &Path) -> TestOutcome {
-    run_outcome_inner(path)
-        .unwrap_or_else(|e| TestOutcome::Failed(e.to_string()))
+    run_outcome_inner(path).unwrap_or_else(|e| TestOutcome::Failed(e.to_string()))
 }
 
 fn run_outcome_inner(path: &Path) -> Result<TestOutcome, TestSuiteError> {
