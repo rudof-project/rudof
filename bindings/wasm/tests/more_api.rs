@@ -336,6 +336,65 @@ fn check_shex() {
     }
 }
 
+// ShExPath
+
+/// Part of the example schema of the ShExPath spec.
+const ISSUE_SCHEMA: &str = r#"
+PREFIX : <http://ex.example/ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+BASE <http://ex.example/schema>
+
+<#IssueShape> {
+  :name xsd:string MINLENGTH 4 ;
+  :category ["bug" "feature request"] ;
+  $<#reportedBy> :postedBy @<#UserShape>
+}
+
+<#UserShape> IRI
+"#;
+
+fn session_with_issue_schema() -> Session {
+    let mut rudof = Session::new(None);
+    rudof.read_shex(ISSUE_SCHEMA, None, None, None).unwrap();
+    rudof
+}
+
+#[test]
+fn evaluate_shex_path_selects_with_the_schema_prefixes_and_base() {
+    let rudof = session_with_issue_schema();
+    let matches = rudof.evaluate_shex_path("@<#IssueShape>~:category").unwrap();
+    assert_eq!(matches.len(), 1, "{matches:?}");
+    assert_eq!(matches[0].location, "/shapes/0/shapeExpr/expression/expressions/1");
+    assert_eq!(matches[0].value["predicate"], "http://ex.example/ns#category");
+}
+
+#[test]
+fn evaluate_shex_path_selects_atomic_values() {
+    let rudof = session_with_issue_schema();
+    let matches = rudof.evaluate_shex_path("$<#reportedBy>/valueExpr").unwrap();
+    assert_eq!(matches.len(), 1, "{matches:?}");
+    assert_eq!(matches[0].value, "http://ex.example/schema#UserShape");
+}
+
+#[test]
+fn evaluate_shex_path_selecting_nothing_is_not_an_error() {
+    let rudof = session_with_issue_schema();
+    assert!(rudof.evaluate_shex_path("@<#Nope>").unwrap().is_empty());
+}
+
+#[test]
+fn evaluate_shex_path_errors_are_shex_errors() {
+    let rudof = session_with_issue_schema();
+    let malformed = rudof.evaluate_shex_path("/shapes/asdf").unwrap_err();
+    assert_eq!(malformed.name(), "ShExError", "{malformed}");
+    let failed_assertion = rudof
+        .evaluate_shex_path("@<#IssueShape>/expression/expressions/*[assert count() = 1]")
+        .unwrap_err();
+    assert_eq!(failed_assertion.name(), "ShExError", "{failed_assertion}");
+    let without_schema = Session::new(None).evaluate_shex_path("/shapes/*").unwrap_err();
+    assert_eq!(without_schema.name(), "ShExError", "{without_schema}");
+}
+
 #[test]
 fn external_resolvers() {
     let resolvers = Session::list_external_resolvers();

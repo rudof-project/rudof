@@ -11,7 +11,7 @@ use crate::error::{Error, Result};
 #[cfg(feature = "pgschema")]
 use crate::reports::PgSchemaValidationReport;
 use crate::reports::{
-    ExternalResolver, GraphDiff, NodeNeighborhood, QueryResults, ShExCheck, ShExValidationReport,
+    ExternalResolver, GraphDiff, NodeNeighborhood, QueryResults, ShExCheck, ShExPathMatch, ShExValidationReport,
     ShaclValidationReport, Triples,
 };
 use rudof_lib::errors::RudofError;
@@ -989,6 +989,13 @@ impl Session {
         let message = String::from_utf8(output)
             .map_err(|e| Error::new("RudofError", format!("Output is not valid UTF-8: {e}")))?;
         Ok(ShExCheck { valid, message })
+    }
+
+    /// Evaluates a [ShExPath](https://shexspec.github.io/spec/ShExPath) against the loaded ShEx
+    /// schema. The path is written with the prefixes and base of the schema; the selected
+    /// elements come in order, with their duplicates.
+    pub fn evaluate_shex_path(&self, path: &str) -> Result<Vec<ShExPathMatch>> {
+        Ok(self.rudof.evaluate_shex_path(path).execute()?)
     }
 
     /// Adds an external shape resolver, configured by `spec` (see

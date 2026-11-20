@@ -144,6 +144,14 @@ export interface ShExCheck {
   message: string;
 }
 
+/** An element of a ShEx schema selected by `evaluateShexPath`. */
+export interface ShExPathMatch {
+  /** Where the element is in the ShExJ form of the schema, as a JSON Pointer. */
+  location: string;
+  /** The element, as ShExJ: an object, an array or an atomic value. */
+  value: unknown;
+}
+
 /** Data generated from a schema by `generate`. */
 export interface GeneratedData {
   /** The graph as RDF (Turtle); from a PG-Schema, the RDF encoding of the property graph. */
@@ -879,6 +887,14 @@ impl JsRudof {
     #[wasm_bindgen(js_name = checkShex, unchecked_return_type = "ShExCheck")]
     pub fn check_shex(&self, schema: &str, format: Option<String>, base: Option<String>) -> Result<JsValue, JsValue> {
         to_js(&self.session.check_shex(schema, format.as_deref(), base.as_deref())?)
+    }
+
+    /// Evaluates a [ShExPath](https://shexspec.github.io/spec/ShExPath) against the loaded ShEx
+    /// schema, written with the prefixes and base of the schema. Returns the selected elements in
+    /// order, with their duplicates.
+    #[wasm_bindgen(js_name = evaluateShexPath, unchecked_return_type = "ShExPathMatch[]")]
+    pub fn evaluate_shex_path(&self, path: &str) -> Result<JsValue, JsValue> {
+        to_js(&self.session.evaluate_shex_path(path)?)
     }
 
     /// Adds an external shape resolver, configured by `spec` (see

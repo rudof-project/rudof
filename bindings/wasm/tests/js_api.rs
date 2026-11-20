@@ -95,6 +95,26 @@ fn rudof_class_workflow() {
 }
 
 #[test]
+fn shex_path_matches_are_plain_objects() {
+    let mut rudof = JsRudof::new(None);
+    rudof.read_shex(SHEX_SCHEMA, None, None, None).unwrap();
+    let nothing = array(&rudof.evaluate_shex_path("@:Nope").unwrap());
+    assert_eq!(nothing.length(), 0);
+    let matches = array(
+        &rudof
+            .evaluate_shex_path("@:Person/expression/expressions/*[0]")
+            .unwrap(),
+    );
+    assert_eq!(matches.length(), 1);
+    let first = matches.get(0);
+    assert_eq!(get(&first, "location"), "/shapes/0/shapeExpr/expression/expressions/0");
+    assert_eq!(get(&get(&first, "value"), "predicate"), "http://example.org/name");
+
+    let error = rudof.evaluate_shex_path("/shapes/asdf").unwrap_err();
+    assert_eq!(error_name(&error), "ShExError");
+}
+
+#[test]
 fn more_reports_are_plain_objects() {
     let resolvers = array(&JsRudof::list_external_resolvers().unwrap());
     assert!(resolvers.length() > 0);
