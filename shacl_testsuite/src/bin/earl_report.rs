@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
         report = report.with_assertion(
             Assertion::new(
                 Object::iri(tool.clone()),
-                Object::iri(Iritest outcomeS::new_unchecked(&entry.entry)),
+                Object::iri(IriS::new_unchecked(&entry.entry)),
                 result,
             )
             .with_asserted_by(Object::iri(org.clone())),
