@@ -128,15 +128,26 @@ It has no effect without `--with-evidences`, and never affects violations.
 
 These keys can be set persistently in `rudof.toml` — see [`[shacl]`](../references/config.md#shacl--shacl-validation) in the config reference.
 
-## Show the triples the validation read
+## Show the triples that the validation reads
 
-`--statistics` prints how many triples the validation read, duplicates included, and how many of them are distinct. `--validated-graph <FILE>` writes those triples, in `--validated-graph-format` (default `turtle`). Both need the native engine: with `--mode sparql` the validation fails. Data the engine reads through SPARQL queries (`sh:sparql` constraints) and data fetched in advance with `--fetch-strategy by-shape` are not counted.
+Use `--statistics` to show the number of triples that the validation reads and the number of distinct triples. The first number includes duplicates.
+
+Use `--visited <FILE>` to write the triples that the validation reads to a file. The default format is `turtle`. To change the format, use `--visited-format`. A Turtle output declares the prefixes of the data.
+
+`--statistics` and `--visited` operate only with the native engine. With `--mode sparql`, the validation fails.
+
+The numbers do not include these data:
+
+- The data that the engine reads with SPARQL queries (`sh:sparql` constraints).
+- The data that `--fetch-strategy by-shape` gets before the validation.
 
 ```sh
-$ rudof shacl-validate --shapes examples/book.ttl examples/book_conformant.ttl --statistics --validated-graph read.ttl
+$ rudof shacl-validate --shapes examples/book.ttl examples/book_conformant.ttl --statistics --visited read.ttl
 No Errors found
 Triples read: 12 (distinct: 11)
 ```
+
+> **Note:** `--validated-graph` and `--validated-graph-format` are the old names of `--visited` and `--visited-format`. You can continue to use the old names.
 
 ## Which shape caused a violation
 

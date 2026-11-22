@@ -56,11 +56,21 @@ Options:
       --show-intermediate-results
           Print each (node, shape) result as soon as it's computed, instead of only the final report
       --statistics
-          Print how many triples the validation read, and how many of them are distinct
-      --validated-graph <FILE>
-          Write the triples the validation read to FILE
-      --validated-graph-format <FORMAT>
-          RDF format of --validated-graph
+          Show the number of triples that the validation reads and the number of distinct triples. With ShEx, also show the number of valid and invalid triples
+      --visited <FILE>
+          Write all the triples that the validation reads to FILE
+      --visited-format <FORMAT>
+          RDF format of the --visited file
+          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
+      --valid <FILE>
+          Write the valid subgraph to FILE: the triples that the conformant node/shape pairs match (ShEx only)
+      --valid-format <FORMAT>
+          RDF format of the --valid file
+          [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
+      --invalid <FILE>
+          Write the invalid subgraph to FILE: the triples that the validation reads and that are not valid (ShEx only)
+      --invalid-format <FORMAT>
+          RDF format of the --invalid file
           [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
       --no-errors
           SHACL only: don't retain violations in the validation report (default: violations are kept)

@@ -46,12 +46,22 @@ $ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http:/
 ╰──────┴───────┴────────┴───────────────────────╯
 ```
 
-### Show the triples the validation read
+### Show the triples that the validation reads
 
-`--statistics` prints how many triples the validation read, duplicates included, and how many of them are distinct. `--validated-graph <FILE>` writes those triples, in `--validated-graph-format`(default `turtle`). Only the arcs the validator asked the data for are counted.
+Use `--statistics` to show these numbers:
+
+- The number of triples that the validation reads. This number includes duplicates.
+- The number of distinct triples.
+- The number of valid triples and the number of invalid triples. Refer to [Extract the valid and invalid subgraphs](#extract-the-valid-and-invalid-subgraphs).
+
+The numbers include only the arcs that the validator gets from the data.
+
+`--statistics` counts the valid and invalid triples, but it does not keep them. To keep them, use `--valid` or `--invalid`.
+
+Use `--visited <FILE>` to write the triples that the validation reads to a file. The default format is `turtle`. To change the format, use `--visited-format`.
 
 ```sh
-$ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http://example.org/User" examples/user.ttl --statistics --validated-graph a.ttl
+$ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http://example.org/User" examples/user.ttl --statistics --visited a.ttl
 
 ╭──────┬───────┬────────┬───────────────────────╮
 │ Node │ Shape │ Status │ Details               │
@@ -59,6 +69,76 @@ $ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http:/
 │ :a   │ :User │ OK     │ Shape passed :a@:User │
 ╰──────┴───────┴────────┴───────────────────────╯
 Triples read: 12 (distinct: 9)
+Valid triples: 9
+Invalid triples: 0
+```
+
+> **Note:** `--validated-graph` and `--validated-graph-format` are the old names of `--visited` and `--visited-format`. You can continue to use the old names.
+
+### Extract the valid and invalid subgraphs
+
+The triples that the validation reads can include triples of nodes that do not conform. Use these options to write only a part of the triples:
+
+- `--valid <FILE>` writes the valid subgraph to a file.
+- `--invalid <FILE>` writes the invalid subgraph to a file.
+
+The valid subgraph contains these triples:
+
+- The triples that the triple constraints of a conformant `(node, shape)` pair match.
+- The valid triples of each node that a conformant pair refers to with a shape reference. This rule applies again to the referenced pairs.
+
+The valid subgraph does not contain these triples:
+
+- The triples of a pair that does not conform.
+- The values of an `EXTRA` predicate that no triple constraint matches.
+- The triples that the validator examines for a `NOT` expression.
+
+The invalid subgraph contains the triples that the validation reads and that are not in the valid subgraph. Thus, each triple that the validation reads is in one of the two subgraphs. If a conformant pair matches a triple, the triple is valid. This is also true when the validator reads the same triple for a pair that does not conform.
+
+Each output has a format option: `--visited-format`, `--valid-format` and `--invalid-format`. The default format is `turtle`. A Turtle output declares the prefixes of the data. You can write the three outputs with one command.
+
+#### Example
+
+This is the schema:
+
+```shex
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:Person { :name xsd:string }
+```
+
+This is the data:
+
+```turtle
+prefix : <http://example.org/>
+:alice :name "Alice" ; :email "alice@example.org" .
+:bob :name "Robert", "Bob" ; :email "bob@example.org" .
+```
+
+The shape map `map.sm` contains `:alice@:Person, :bob@:Person`. Bob has two names. Thus, Bob does not conform to `:Person`.
+
+```sh
+$ rudof shex-validate data.ttl -s schema.shex -m map.sm --valid valid.ttl --invalid invalid.nt --invalid-format ntriples
+```
+
+The file `valid.ttl` contains only the name of Alice:
+
+```turtle
+@prefix : <http://example.org/> .
+:alice :name "Alice" .
+```
+
+The file `invalid.nt` contains the two names of Bob:
+
+```text
+<http://example.org/bob> <http://example.org/name> "Bob" .
+<http://example.org/bob> <http://example.org/name> "Robert" .
+```
+
+These options are also available in the [shell](shell.md). This command uses the data and the schema that the shell has loaded:
+
+```sh
+rudof> shex-validate -m map.sm --statistics --valid valid.ttl --invalid invalid.ttl
 ```
 
 ## Precompiled schemas
@@ -238,9 +318,13 @@ Options:
       --external-resolver <SPEC>  External-shape resolver spec. Repeatable. Syntax: <kind>[:<arg>]. Built-in kinds: 'reject-all', 'schema:<path>'. Use --list-external-resolvers to enumerate.
       --list-external-resolvers   Print the available external-shape resolver kinds and exit
       --show-intermediate-results Print each (node, shape) result as soon as it's computed, instead of only the final report
-      --statistics Print how many triples the validation read, and how many of them are distinct
-      --validated-graph <FILE> Write the triples the validation read to FILE
-      --validated-graph-format <FORMAT>  RDF format of --validated-graph [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
+      --statistics                Show the number of triples that the validation reads, the number of distinct triples, and the number of valid and invalid triples
+      --visited <FILE>            Write all the triples that the validation reads to FILE
+      --visited-format <FORMAT>   RDF format of the --visited file [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
+      --valid <FILE>              Write the valid subgraph to FILE: the triples that the conformant node/shape pairs match
+      --valid-format <FORMAT>     RDF format of the --valid file [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
+      --invalid <FILE>            Write the invalid subgraph to FILE: the triples that the validation reads and that are not valid
+      --invalid-format <FORMAT>   RDF format of the --invalid file [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, jsonld, pg]
   -c, --config-file <FILE>        Config file name
   -o, --output-file <FILE>        Output file name, default = terminal
       --force-overwrite           Force overwrite to output file if it already exists
