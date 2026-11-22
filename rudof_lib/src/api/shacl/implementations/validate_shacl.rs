@@ -3,6 +3,7 @@ use crate::{
     errors::{DataError, ShaclError},
     formats::{ShaclFetchStrategy, ShaclValidationMode},
     types::Data,
+    utils::declare_data_prefixes,
 };
 use rudof_rdf_sink::TriplesSink;
 use shacl::ir::IRSchema;
@@ -27,6 +28,7 @@ pub fn validate_shacl_with(
         shacl_config = shacl_config.with_fetch_strategy(strategy);
     }
     if let Some(sink) = read_sink {
+        declare_data_prefixes(rudof, [&sink])?;
         shacl_config = shacl_config.with_read_sink(sink);
     }
 

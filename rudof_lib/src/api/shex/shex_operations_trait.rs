@@ -169,11 +169,20 @@ pub trait ShExOperations {
     /// # Arguments
     ///
     /// * `read_sink` - Optional sink that receives every triple the validator reads, for this run only
+    /// * `valid_sink` - Optional sink that receives the valid subgraph: only the triples that justify
+    ///   the conformant node/shape pairs, for this run only
+    /// * `invalid_sink` - Optional sink that receives the invalid subgraph: the triples read that are
+    ///   not in the valid subgraph, for this run only
     ///
     /// # Errors
     ///
     /// Returns an error if no schema or shape map is loaded, or if the sink refuses a triple.
-    fn validate_shex(&mut self, read_sink: Option<TriplesSink>) -> Result<()>;
+    fn validate_shex(
+        &mut self,
+        read_sink: Option<TriplesSink>,
+        valid_sink: Option<TriplesSink>,
+        invalid_sink: Option<TriplesSink>,
+    ) -> Result<()>;
 
     /// Serializes the ShEx validation results to a writer.
     ///
@@ -308,8 +317,13 @@ impl ShExOperations for crate::Rudof {
         reset_shapemap(self)
     }
 
-    fn validate_shex(&mut self, read_sink: Option<TriplesSink>) -> Result<()> {
-        validate_shex(self, read_sink)
+    fn validate_shex(
+        &mut self,
+        read_sink: Option<TriplesSink>,
+        valid_sink: Option<TriplesSink>,
+        invalid_sink: Option<TriplesSink>,
+    ) -> Result<()> {
+        validate_shex(self, read_sink, valid_sink, invalid_sink)
     }
 
     fn serialize_shex_validation_results<W: io::Write>(
