@@ -143,25 +143,59 @@ pub struct ValidateArgs {
 
     #[arg(
         long = "statistics",
-        help = "Print how many triples the validation read, and how many of them are distinct"
+        help = "Show the number of triples that the validation reads and the number of distinct triples. With ShEx, also show the number of valid and invalid triples"
     )]
     pub statistics: bool,
 
     #[arg(
-        long = "validated-graph",
+        long = "visited",
+        alias = "validated-graph",
         value_name = "FILE",
-        help = "Write the triples the validation read to FILE"
+        help = "Write all the triples that the validation reads to FILE"
     )]
-    pub validated_graph: Option<PathBuf>,
+    pub visited: Option<PathBuf>,
 
     #[arg(
-        long = "validated-graph-format",
+        long = "visited-format",
+        alias = "validated-graph-format",
         ignore_case = true,
         value_name = "FORMAT",
-        help = "RDF format of --validated-graph",
+        help = "RDF format of the --visited file",
         default_value_t = DataFormatCli::Turtle
     )]
-    pub validated_graph_format: DataFormatCli,
+    pub visited_format: DataFormatCli,
+
+    #[arg(
+        long = "valid",
+        value_name = "FILE",
+        help = "Write the valid subgraph to FILE: the triples that the conformant node/shape pairs match (ShEx only)"
+    )]
+    pub valid: Option<PathBuf>,
+
+    #[arg(
+        long = "valid-format",
+        ignore_case = true,
+        value_name = "FORMAT",
+        help = "RDF format of the --valid file",
+        default_value_t = DataFormatCli::Turtle
+    )]
+    pub valid_format: DataFormatCli,
+
+    #[arg(
+        long = "invalid",
+        value_name = "FILE",
+        help = "Write the invalid subgraph to FILE: the triples that the validation reads and that are not valid (ShEx only)"
+    )]
+    pub invalid: Option<PathBuf>,
+
+    #[arg(
+        long = "invalid-format",
+        ignore_case = true,
+        value_name = "FORMAT",
+        help = "RDF format of the --invalid file",
+        default_value_t = DataFormatCli::Turtle
+    )]
+    pub invalid_format: DataFormatCli,
 
     #[arg(
         long = "no-errors",

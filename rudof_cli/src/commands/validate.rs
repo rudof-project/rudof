@@ -10,7 +10,7 @@ use crate::{
         base::{Command, CommandContext},
     },
 };
-use anyhow::Result;
+use anyhow::{Result, bail};
 
 /// Implementation of the `validate` command.
 ///
@@ -52,14 +52,21 @@ impl ValidateCommand {
             list_external_resolvers: false,
             show_intermediate_results: self.args.show_intermediate_results,
             statistics: self.args.statistics,
-            validated_graph: self.args.validated_graph.clone(),
-            validated_graph_format: self.args.validated_graph_format,
+            visited: self.args.visited.clone(),
+            visited_format: self.args.visited_format,
+            valid: self.args.valid.clone(),
+            valid_format: self.args.valid_format,
+            invalid: self.args.invalid.clone(),
+            invalid_format: self.args.invalid_format,
             common: self.args.common.clone(),
         })
     }
 
     /// Convert ValidateArgs to ShaclValidateArgs  
     fn to_shacl_args(&self) -> Result<ShaclValidateArgs> {
+        if self.args.valid.is_some() || self.args.invalid.is_some() {
+            bail!("--valid and --invalid are only supported for ShEx validation");
+        }
         Ok(ShaclValidateArgs {
             data: self.args.data.clone(),
             data_format: self.args.data_format,
@@ -77,8 +84,8 @@ impl ValidateCommand {
             recursion_semantics: self.args.recursion_semantics,
             fetch_strategy: None,
             statistics: self.args.statistics,
-            validated_graph: self.args.validated_graph.clone(),
-            validated_graph_format: self.args.validated_graph_format,
+            visited: self.args.visited.clone(),
+            visited_format: self.args.visited_format,
             common: self.args.common.clone(),
         })
     }

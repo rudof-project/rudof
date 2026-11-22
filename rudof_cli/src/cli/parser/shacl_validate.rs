@@ -152,20 +152,22 @@ pub struct ShaclValidateArgs {
     pub statistics: bool,
 
     #[arg(
-        long = "validated-graph",
+        long = "visited",
+        alias = "validated-graph",
         value_name = "FILE",
-        help = "Write the triples the validation read to FILE"
+        help = "Write all the triples that the validation reads to FILE"
     )]
-    pub validated_graph: Option<PathBuf>,
+    pub visited: Option<PathBuf>,
 
     #[arg(
-        long = "validated-graph-format",
+        long = "visited-format",
+        alias = "validated-graph-format",
         ignore_case = true,
         value_name = "FORMAT",
-        help = "RDF format of --validated-graph",
+        help = "RDF format of the --visited file",
         default_value_t = DataFormatCli::Turtle
     )]
-    pub validated_graph_format: DataFormatCli,
+    pub visited_format: DataFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

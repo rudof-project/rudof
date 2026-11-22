@@ -45,6 +45,7 @@ fn statistics_prints_the_triples_read_on_a_line_of_its_own() {
     assert!(stdout.lines().any(|l| l == "Triples read: 1 (distinct: 1)"), "{stdout}");
 }
 
+/// Through the old `--validated-graph` names, aliases of `--visited`.
 #[test]
 fn validated_graph_writes_the_triples_read() {
     let dir = fixture();
@@ -90,4 +91,18 @@ fn the_sparql_mode_cannot_tell_the_triples_read() {
     );
     assert!(!ok);
     assert!(stderr.contains("native engine"), "{stderr}");
+}
+
+#[test]
+fn visited_in_turtle_uses_the_prefixes_of_the_data() {
+    let dir = fixture();
+    let (ok, _, stderr) = rudof_in(
+        dir.path(),
+        &["shacl-validate", "data.ttl", "-s", "shapes.ttl", "--visited", "sub.ttl"],
+    );
+    assert!(ok, "{stderr}");
+    let written = std::fs::read_to_string(dir.path().join("sub.ttl")).unwrap();
+    assert!(written.contains("prefix : <http://a.example/>"), "{written}");
+    assert!(written.contains(":alice"), "{written}");
+    assert!(!written.contains("<http://a.example/alice>"), "{written}");
 }

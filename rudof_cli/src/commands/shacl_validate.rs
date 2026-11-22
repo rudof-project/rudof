@@ -109,7 +109,7 @@ impl Command for ShaclValidateCommand {
             loading_schema.execute()?;
         }
 
-        let read_sink = if self.args.statistics || self.args.validated_graph.is_some() {
+        let read_sink = if self.args.statistics || self.args.visited.is_some() {
             let mut sink = GraphSink::new(OxigraphInMemory::new());
             sink.declare_prefixes(ctx.rudof.prefixes().execute())?;
             Some(Arc::new(Mutex::new(sink)))
@@ -150,8 +150,8 @@ impl Command for ShaclValidateCommand {
                     sink.graph().len()
                 )?;
             }
-            if let Some(path) = &self.args.validated_graph {
-                let format = RDFFormat::try_from(DataFormat::from(self.args.validated_graph_format))?;
+            if let Some(path) = &self.args.visited {
+                let format = RDFFormat::try_from(DataFormat::from(self.args.visited_format))?;
                 let file = File::create(path)
                     .with_context(|| format!("Failed to create validated graph file '{}'", path.display()))?;
                 let mut writer = BufWriter::new(file);
