@@ -1,0 +1,5 @@
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:alice :name "Alice" ; :parentOf :bob, :dave .
+:bob :name "Bob" .
+:dave :name 5 .

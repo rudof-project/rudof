@@ -1,0 +1,3 @@
+<http://example.org/bob> <http://example.org/name> "Bob" .
+<http://example.org/bob> <http://example.org/worksFor> <http://example.org/ibm> .
+<http://example.org/ibm> <http://example.org/name> "IBM" .

@@ -1,0 +1,2 @@
+<http://example.org/alice> <http://example.org/banned> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://example.org/alice> <http://example.org/name> "Alice" .

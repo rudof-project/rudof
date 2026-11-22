@@ -1,0 +1,2 @@
+<http://example.org/bob> <http://example.org/age> "unknown" .
+<http://example.org/bob> <http://example.org/name> "Bob" .

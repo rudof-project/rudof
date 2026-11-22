@@ -1,0 +1,4 @@
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:alice :name "Alice" ; :email "alice@example.org" .
+:bob :name "Robert", "Bob" ; :email "bob@example.org" .

@@ -58,6 +58,17 @@ pub struct ValidatorConfig {
     #[serde(skip)]
     pub(crate) read_sink: Option<TriplesSink>,
 
+    /// Sink that receives the valid subgraph: only the triples that justify the
+    /// conformant `(node, shape)` pairs (see [`Self::with_valid_sink`]).
+    /// Cannot be loaded from TOML.
+    #[serde(skip)]
+    pub(crate) valid_sink: Option<TriplesSink>,
+
+    /// Sink that receives the invalid subgraph: the triples read that are not in
+    /// the valid one (see [`Self::with_invalid_sink`]). Cannot be loaded from TOML.
+    #[serde(skip)]
+    pub(crate) invalid_sink: Option<TriplesSink>,
+
     /// Whether to print each `(node, shape)` result as soon as it's cached,
     /// instead of only showing the final report (default: false). When set
     /// and no [`Self::with_typing_observer`] was installed explicitly, the
@@ -103,6 +114,8 @@ impl ValidatorConfig {
             external_resolvers: ExternalShapeResolverRegistry::default(),
             typing_observer: None,
             read_sink: None,
+            valid_sink: None,
+            invalid_sink: None,
             show_intermediate_results: Self::default_show_intermediate_results(),
             conformant_color: Self::default_conformant_color(),
             non_conformant_color: Self::default_non_conformant_color(),
@@ -170,6 +183,27 @@ impl ValidatorConfig {
         self
     }
 
+    /// Install a sink that receives, once a validation ends, the triples of the
+    /// valid subgraph: those matched by the triple expressions of the conformant
+    /// `(node, shape)` pairs, following the pairs their shape references rely on.
+    /// Unlike [`Self::with_read_sink`], triples that were read but belong only to
+    /// non-conformant pairs, or that no triple constraint matched (e.g. values of
+    /// an `EXTRA` predicate), are left out.
+    pub fn with_valid_sink(mut self, sink: TriplesSink) -> Self {
+        self.valid_sink = Some(sink);
+        self
+    }
+
+    /// Install a sink that receives, once a validation ends, the triples of the
+    /// invalid subgraph: those the validator read that are not in the valid
+    /// subgraph (see [`Self::with_valid_sink`]). The valid and invalid subgraphs
+    /// split the triples read: a triple read while checking a non-conformant pair
+    /// but also matched by a conformant one is valid.
+    pub fn with_invalid_sink(mut self, sink: TriplesSink) -> Self {
+        self.invalid_sink = Some(sink);
+        self
+    }
+
     pub fn with_show_intermediate_results(mut self, flag: bool) -> Self {
         self.show_intermediate_results = flag;
         self
@@ -221,6 +255,14 @@ impl ValidatorConfig {
 
     pub fn read_sink(&self) -> Option<&TriplesSink> {
         self.read_sink.as_ref()
+    }
+
+    pub fn valid_sink(&self) -> Option<&TriplesSink> {
+        self.valid_sink.as_ref()
+    }
+
+    pub fn invalid_sink(&self) -> Option<&TriplesSink> {
+        self.invalid_sink.as_ref()
     }
 
     pub fn show_intermediate_results(&self) -> bool {
