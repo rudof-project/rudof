@@ -1,6 +1,11 @@
 use prefixmap::PrefixMap;
-use rbe::{Cardinality, RbeError};
+use rbe::{Cardinality, Component, RbeError};
 use shex_ast::{Node, Pred, ShapeLabelIdx, cond_kind::CondKind, ir::semantic_action_context::SemanticActionContext};
+
+/// The triple constraint a failure is about: the shape whose triple expression it is in and the
+/// component it was compiled as. Its ShExPath is
+/// [`SchemaIR::component_path`](shex_ast::ir::schema_ir::SchemaIR::component_path).
+pub type ConstraintRef = (ShapeLabelIdx, Component);
 
 /// Why a single candidate assignment of neighbors to a triple expression was
 /// rejected, attached as children of a [`ValidatorError::NoMatchesFound`]
@@ -14,6 +19,8 @@ pub enum NoMatchReason {
         predicate: Pred,
         value: Node,
         error: RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>,
+        /// The triple constraint whose condition failed, when a single one is to blame.
+        constraint: Option<ConstraintRef>,
     },
     /// `predicate` needed to occur `expected` times but occurred `current`
     /// times among the candidate's neighbors.
@@ -22,6 +29,8 @@ pub enum NoMatchReason {
         predicate: Pred,
         expected: Cardinality,
         current: usize,
+        /// The triple constraint whose cardinality was not met.
+        constraint: Option<ConstraintRef>,
     },
     /// A candidate was rejected for a reason that couldn't be attributed to
     /// a single predicate's cardinality (e.g. `Or`-branch interactions).
@@ -48,6 +57,7 @@ impl NoMatchReason {
                 predicate,
                 value,
                 error,
+                ..
             } => format!(
                 "Condition failed for predicate {} on node {}: {}",
                 // show_candidate(candidate),
@@ -60,6 +70,7 @@ impl NoMatchReason {
                 predicate,
                 expected,
                 current,
+                ..
             } => format!(
                 "Candidate [{}] rejected: predicate {} required cardinality {expected:?} but got {current}",
                 show_candidate(candidate),

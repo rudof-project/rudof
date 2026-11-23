@@ -157,7 +157,11 @@ pub enum ValidatorError {
     #[error(
         "Closed shape but found properties {remainder} which are not part of shape declared properties: {declared}"
     )]
-    ClosedShapeWithRemainderPreds { remainder: Preds, declared: Preds },
+    ClosedShapeWithRemainderPreds {
+        idx: ShapeLabelIdx,
+        remainder: Preds,
+        declared: Preds,
+    },
 
     #[error(transparent)]
     RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>),
@@ -552,7 +556,9 @@ impl ValidatorError {
                 }
                 Ok(())
             },
-            ValidatorError::ClosedShapeWithRemainderPreds { declared, remainder } => {
+            ValidatorError::ClosedShapeWithRemainderPreds {
+                declared, remainder, ..
+            } => {
                 let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
                 let declared_str = declared.iter().map(show_pred).collect::<Vec<_>>().join(", ");
                 let remainder_str = remainder.iter().map(show_pred).collect::<Vec<_>>().join(", ");
@@ -749,6 +755,7 @@ mod tests {
     #[test]
     fn closed_shape_error_shows_the_predicates() {
         let error = ValidatorError::ClosedShapeWithRemainderPreds {
+            idx: ShapeLabelIdx::from(0),
             remainder: Preds::new(vec![Pred::new_unchecked("http://example.org/p")]),
             declared: Preds::new(vec![Pred::new_unchecked("http://example.org/q")]),
         };
