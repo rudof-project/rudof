@@ -1,8 +1,6 @@
 //! Helpers shared by the ShExPath parser tests.
 
-use crate::shexpath::{
-    Attribute, AttributeOrAny, Comparator, Filter, Operand, RValue, ShExPath, ShExPathParser, Step, TermType,
-};
+use crate::{Attribute, AttributeOrAny, Comparator, Filter, Operand, RValue, ShExPath, ShExPathParser, Step, TermType};
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
 

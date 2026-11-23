@@ -3,7 +3,7 @@
 mod axes;
 mod filters;
 
-use crate::shexpath::{Axis, Selector, ShExPath, ShExPathError, ShExPathItem, Step};
+use crate::{Axis, Selector, ShExPath, ShExPathError, ShExPathItem, Step};
 use axes::{children, descendants, this_shape_expr};
 use serde_json::Value;
 use std::cell::OnceCell;

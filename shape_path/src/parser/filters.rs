@@ -14,8 +14,8 @@
 
 use super::junctions::shape_path;
 use super::lexical::{integer, iri, keyword, keyword_no_case, token};
-use crate::compact::{IRes, Span};
-use crate::shexpath::{Comparator, Comparison, Filter, Operand, RValue};
+use super::span::{IRes, Span};
+use crate::{Comparator, Comparison, Filter, Operand, RValue};
 use nom::{
     Parser,
     branch::alt,

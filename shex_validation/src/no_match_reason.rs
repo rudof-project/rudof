@@ -1,7 +1,7 @@
 use prefixmap::PrefixMap;
 use rbe::{Cardinality, Component, Max, RbeError};
+use shape_path::{SchemaPath, SchemaStep};
 use shex_ast::ir::schema_ir::SchemaIR;
-use shex_ast::shexpath::{SchemaPath, SchemaStep};
 use shex_ast::{Node, Pred, ShapeLabelIdx, cond_kind::CondKind, ir::semantic_action_context::SemanticActionContext};
 
 /// The triple constraint a failure is about: the shape whose triple expression it is in and the

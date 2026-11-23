@@ -2,14 +2,14 @@
 
 use rudof_iri::IriS;
 use shex_ast::compact::ShExParser;
-use shex_ast::shexpath::{ShExJDocument, ShExPathItem};
+use shex_ast::shexpath::{ShExJDocument, ShExPathItem, shexj_document};
 
 pub fn document(src: &str) -> ShExJDocument {
     let schema = match ShExParser::parse(src, None, &IriS::new_unchecked("http://default/")) {
         Ok(schema) => schema,
         Err(e) => panic!("the schema is not parsed: {e}"),
     };
-    match ShExJDocument::new(&schema) {
+    match shexj_document(&schema) {
         Ok(doc) => doc,
         Err(e) => panic!("the schema is not written as ShExJ: {e}"),
     }

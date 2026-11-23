@@ -1,7 +1,7 @@
 //! Resolution of the IRIs a ShExPath is written with.
 
 use super::parser_helpers::*;
-use crate::shexpath::{Attribute, Comparator, Filter, Operand, ShExPath, ShExPathParser};
+use crate::{Attribute, Comparator, Filter, Operand, ShExPath, ShExPathParser};
 
 #[test]
 fn a_relative_iri_is_resolved_against_the_base() {

@@ -5160,6 +5160,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "shape_path"
+version = "0.3.39"
+dependencies = [
+ "nom 8.0.0",
+ "nom_locate",
+ "prefixmap",
+ "rudof_iri",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "shapes_comparator"
 version = "0.3.39"
 dependencies = [
@@ -5239,6 +5252,7 @@ dependencies = [
  "schemars 1.2.2",
  "serde",
  "serde_json",
+ "shape_path",
  "tabled",
  "term_size",
  "thiserror 2.0.20",
@@ -5284,6 +5298,7 @@ dependencies = [
  "rudof_typing",
  "serde",
  "serde_json",
+ "shape_path",
  "shex_ast",
  "stacker",
  "termtree",
