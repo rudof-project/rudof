@@ -548,6 +548,14 @@ impl SchemaIR {
         self.shapes.entry(*idx).and_modify(|info| info.set_expr(se));
     }
 
+    /// Records that the triple constraint compiled as `component` of the shape at `idx` is
+    /// labelled `label`.
+    pub fn add_triple_expr_label(&mut self, idx: &ShapeLabelIdx, component: Component, label: IriS) {
+        self.shapes
+            .entry(*idx)
+            .and_modify(|info| info.add_triple_expr_label(component, label));
+    }
+
     /// Records where the anonymous shape expression at `idx` is written in the schema.
     pub fn set_location(&mut self, idx: &ShapeLabelIdx, location: ShapeExprLocation) {
         self.shapes.entry(*idx).and_modify(|info| info.set_location(location));
@@ -577,10 +585,14 @@ impl SchemaIR {
     }
 
     /// The ShExPath of the triple constraint compiled as `component` of the shape at `idx`:
-    /// `~predicate` after the path of the shape, and its position among the triple constraints on
-    /// the same predicate when there are several.
+    /// `$label` when it is labelled, and otherwise `~predicate` after the path of the shape, with
+    /// its position among the triple constraints on the same predicate when there are several.
     pub fn component_path(&self, idx: &ShapeLabelIdx, component: &Component) -> Option<SchemaPath> {
-        let ShapeExpr::Shape(shape) = self.find_shape_idx(idx)?.expr() else {
+        let info = self.find_shape_idx(idx)?;
+        if let Some(label) = info.triple_expr_label(component) {
+            return Some(SchemaPath::triple_expr(label.clone()));
+        }
+        let ShapeExpr::Shape(shape) = info.expr() else {
             return None;
         };
         let expr = shape.triple_expr();

@@ -20,6 +20,7 @@ PREFIX : <http://a.example/>
 :N NOT { :p . }
 :V { :p @:S OR { :q . } ; :t NOT { :u . } ; :w { :x . } AND { :y . } }
 :B { :p [ 1 ] ; ^:p . }
+:L { $:lbl :p { :q . } ; :p . }
 start = { :p . }
 "#;
 
@@ -100,6 +101,7 @@ fn the_paths_of_anonymous_shape_expressions() {
     assert_eq!(
         shown,
         [
+            "$:lbl/valueExpr",
             "@:A/shapeExprs/*[0]",
             "@:A/shapeExprs/*[1]",
             "@:N/shapeExpr",
@@ -130,4 +132,6 @@ fn constraints_on_a_repeated_predicate_are_numbered() {
     assert_eq!(shown("S"), ["@:S~:p/self::[0]", "@:S~:q", "@:S~:p/self::[1]"]);
     // An inverse constraint is on the same predicate, as `~` sees it.
     assert_eq!(shown("B"), ["@:B~:p/self::[0]", "@:B~:p/self::[1]"]);
+    // A labelled constraint is named by its label; the other one is still counted after it.
+    assert_eq!(shown("L"), ["$:lbl", "@:L~:p/self::[1]"]);
 }

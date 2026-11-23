@@ -1,7 +1,7 @@
 //! The ShExPath of a shape expression or a triple constraint of a schema, written with the
-//! shortcuts a person would use: `@:S`, `@:S~:p`, `@:S~:p/valueExpr`.
+//! shortcuts a person would use: `@:S`, `@:S~:p`, `@:S~:p/valueExpr`, `$:label`.
 
-use super::parser::shortcuts::{predicate_shortcut, shape_label_shortcut};
+use super::parser::shortcuts::{predicate_shortcut, shape_label_shortcut, triple_expr_label_shortcut};
 use super::{Attribute, AttributeOrAny, Axis, Filter, ShExPath, Step};
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
@@ -15,6 +15,8 @@ pub enum SchemaPathRoot {
     Shape(IriS),
     /// The `start` shape expression of the schema: `/start`.
     Start,
+    /// The triple expression declared with this label: `$label`.
+    TripleExpr(IriS),
 }
 
 /// A step of a [`SchemaPath`] down from its root.
@@ -59,6 +61,14 @@ impl SchemaPath {
         }
     }
 
+    /// The path of the triple expression declared as `label`.
+    pub fn triple_expr(label: IriS) -> Self {
+        SchemaPath {
+            root: SchemaPathRoot::TripleExpr(label),
+            steps: Vec::new(),
+        }
+    }
+
     /// This path followed by `step`.
     pub fn with_step(mut self, step: SchemaStep) -> Self {
         self.steps.push(step);
@@ -83,6 +93,7 @@ impl SchemaPath {
         let mut steps = match &self.root {
             SchemaPathRoot::Shape(label) => shape_label_shortcut(IriRef::Iri(label.clone())),
             SchemaPathRoot::Start => vec![Step::child(AttributeOrAny::Attribute(Attribute::Start))],
+            SchemaPathRoot::TripleExpr(label) => triple_expr_label_shortcut(IriRef::Iri(label.clone())),
         };
         for step in &self.steps {
             match step {
@@ -107,6 +118,7 @@ impl SchemaPath {
         let mut out = match &self.root {
             SchemaPathRoot::Shape(label) => format!("@{}", show_iri(label)),
             SchemaPathRoot::Start => "/start".to_string(),
+            SchemaPathRoot::TripleExpr(label) => format!("${}", show_iri(label)),
         };
         for step in &self.steps {
             match step {

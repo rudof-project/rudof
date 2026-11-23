@@ -35,6 +35,7 @@ fn paths() -> Vec<SchemaPath> {
         SchemaPath::shape(iri("A")).with_step(SchemaStep::Operand(1)),
         SchemaPath::shape(iri("N")).with_step(SchemaStep::Negated),
         SchemaPath::start().with_step(tc("p", None)),
+        SchemaPath::triple_expr(iri("lbl")).with_step(SchemaStep::ValueExpr),
     ]
 }
 
@@ -51,6 +52,7 @@ fn a_schema_path_is_shown_with_the_shortcuts() {
             "@:A/shapeExprs/*[1]",
             "@:N/shapeExpr",
             "/start~:p",
+            "$:lbl/valueExpr",
         ]
     );
     assert_eq!(
@@ -77,6 +79,7 @@ fn a_schema_path_selects_what_it_names() {
          :S { :p . ; ( :q . | :p { :r . } ) }
          :A IRI AND { :p . }
          :N NOT { :p . }
+         :L { $:lbl :p { :q . } ; :p . }
          start = { :p . }",
     );
     let pm = prefixmap();
@@ -103,6 +106,11 @@ fn a_schema_path_selects_what_it_names() {
         "Shape"
     );
     assert_eq!(one(SchemaPath::shape(iri("N")).with_step(SchemaStep::Negated)), "Shape");
+    assert_eq!(one(SchemaPath::triple_expr(iri("lbl"))), "TripleConstraint(:lbl)");
+    assert_eq!(
+        one(SchemaPath::triple_expr(iri("lbl")).with_step(SchemaStep::ValueExpr)),
+        "Shape"
+    );
     assert_eq!(
         one(SchemaPath::start().with_step(tc("p", None))),
         "TripleConstraint(:p)"

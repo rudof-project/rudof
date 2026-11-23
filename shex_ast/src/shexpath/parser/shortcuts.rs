@@ -41,7 +41,7 @@ pub(crate) fn predicate_shortcut(predicate: IriRef) -> Vec<Step> {
 }
 
 /// `$label` is `/descendant::[id = label][assert count() = 1]`.
-fn triple_expr_label_shortcut(label: IriRef) -> Vec<Step> {
+pub(crate) fn triple_expr_label_shortcut(label: IriRef) -> Vec<Step> {
     vec![
         Step::axis(Axis::Descendant)
             .with_filter(id_is(label))

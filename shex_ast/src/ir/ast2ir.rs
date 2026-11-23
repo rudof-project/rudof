@@ -574,7 +574,7 @@ impl AST2IR {
                 Ok(Self::mk_card_group(RbeStruct::or(cs), card))
             },
             ast::TripleExpr::TripleConstraint {
-                id: _,
+                id,
                 negated: _,
                 inverse,
                 predicate,
@@ -596,6 +596,16 @@ impl AST2IR {
                 let (cond, _display) =
                     self.value_expr2match_cond(value_expr, actions, location, compiled_schema, source_iri, base)?;
                 let component = current_table.add_component(iri, &cond);
+                // A labelled triple constraint is named by its label, `$label`.
+                if let (
+                    Some(ast::TripleExprLabel::IriRef {
+                        value: IriRef::Iri(label),
+                    }),
+                    Some(owner),
+                ) = (id, current_table.owner())
+                {
+                    compiled_schema.add_triple_expr_label(owner, component, label.clone());
+                }
                 Ok(RbeStruct::symbol(component, min.value, max))
             },
             ast::TripleExpr::Ref(r) => {
