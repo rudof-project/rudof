@@ -748,6 +748,14 @@ impl ValidatorError {
         schema: &SchemaIR,
         width: usize,
     ) -> Result<String, PrefixMapError> {
+        // Datatype IRIs and predicates in an error (e.g. xsd:int) come from the schema, not
+        // necessarily from the validated data, so they may be unqualified in `nodes_prefixmap`
+        // alone (e.g. a data file that never mentions xsd:). Fall back to the schema's prefix
+        // map, keeping the data's own prefixes (for the nodes and values themselves) as the
+        // priority, at every level of the error.
+        let mut combined = schema.prefixmap();
+        combined.merge(nodes_prefixmap.clone());
+        let nodes_prefixmap = &combined;
         // A shape made of a single triple constraint rejected on its one
         // and only candidate reduces to a single
         // `ConditionFailed` reason. Render that flat, naming the node and
@@ -756,20 +764,13 @@ impl ValidatorError {
         if let ValidatorError::NoMatchesFound { node, reasons, .. } = self
             && let [reason @ NoMatchReason::ConditionFailed { predicate, error, .. }] = reasons.as_slice()
         {
-            // Datatype IRIs in the error (e.g. xsd:int) come from the schema, not
-            // necessarily from the validated data, so they may be unqualified in
-            // `nodes_prefixmap` alone (e.g. a data file that never mentions xsd:).
-            // Fall back to the schema's prefix map, keeping the data's own
-            // prefixes (for the node/value themselves) as the priority.
-            let mut combined = schema.prefixmap();
-            combined.merge(nodes_prefixmap.clone());
             let path = reason.path(schema).map(|path| path.show_qualified(&schema.prefixmap()));
             return Ok(describe_condition_error(
                 node,
                 Some(predicate),
                 path.as_deref(),
                 error,
-                &combined,
+                nodes_prefixmap,
             ));
         }
         let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;

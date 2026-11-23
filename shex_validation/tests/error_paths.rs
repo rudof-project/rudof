@@ -182,6 +182,8 @@ fn a_nested_shape_is_named_by_where_it_is() {
         "{}",
         failure.reason
     );
+    // The datatypes of the nested error are written with the prefixes of the schema.
+    assert!(!failure.reason.contains("<http://www.w3.org/"), "{}", failure.reason);
     assert_eq!(failure.path(), "@:Nested~:q/valueExpr~:s");
     assert_eq!(
         failure.paths(),
