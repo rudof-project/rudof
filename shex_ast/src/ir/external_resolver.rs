@@ -153,7 +153,7 @@ impl ExternalShapeResolver for RejectAllExternalResolver {
 
     fn resolve(&self, _ctx: &ExternalResolveCtx<'_>) -> ExternalResolution {
         ExternalResolution::NonConformant {
-            rationale: "EXTERNAL shape rejected: no resolver supplied a definition".to_string(),
+            rationale: "no resolver supplied a definition".to_string(),
         }
     }
 }

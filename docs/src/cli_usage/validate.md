@@ -51,6 +51,9 @@ Options:
   -r, --result-format <FORMAT>
           Ouput result format, default = compact
           [default: compact] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads, compact, details, json, csv]
+      --details-layout <LAYOUT>
+          In ShEx mode, where the details result format writes the details of each result: 'below' (default) writes a summary in each row and the details below the table, 'table' writes all the details in the table
+          [default: below] [possible values: below, table]
       --map-state <FILE>
           MapState file name
       --show-intermediate-results

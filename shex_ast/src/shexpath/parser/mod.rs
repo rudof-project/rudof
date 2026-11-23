@@ -3,7 +3,7 @@
 mod filters;
 mod junctions;
 mod lexical;
-mod shortcuts;
+pub(crate) mod shortcuts;
 mod steps;
 
 use crate::shexpath::ShExPath;

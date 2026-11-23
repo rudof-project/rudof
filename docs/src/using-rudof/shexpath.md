@@ -164,5 +164,35 @@ and, where it is silent, the reference implementation,
 The ShExJ document is the schema as `rudof` writes it as ShExJ, without the `prefixmap` and
 `base` keys `rudof` adds, and with the `"type": "SemAct"` of every semantic action.
 
-ShExPath addresses a schema. Evaluating a path against data, or naming validation results with
-paths, is not supported.
+ShExPath addresses a schema. Evaluating a path against data is not supported.
+
+## ShExPaths in validation results
+
+When a node does not conform to a shape, the ShEx validation result names the parts of the schema
+that fail with ShExPaths. Each line of the result that names a triple constraint ends with
+`(at PATH)`, and the JSON result gives the paths in the `path` and `paths` fields of each error.
+See [Reading the results](../cli_usage/shex_validate.md#reading-the-results).
+
+The validation writes the paths with the shortcuts, and with the prefixes of the schema:
+
+| Path | Names |
+|---|---|
+| `@:Person` | The shape declared as `:Person`. |
+| `@:Person~:age` | The triple constraint on `:age` in that shape. |
+| `@:Product~:code/self::[1]` | The second triple constraint on `:code`, when the shape has more than one. The first one is `/self::[0]`. |
+| `$:knowsLabel` | The triple constraint with the label `:knowsLabel`. |
+| `@:Order~:item/valueExpr` | The anonymous shape in the triple constraint on `:item`. |
+| `@:Contact/shapeExprs/*[0]` | The first operand of the `AND` or `OR` that `:Contact` is. |
+| `@:N/shapeExpr` | The shape expression that the `NOT` of `:N` negates. |
+| `/start~:p` | The triple constraint on `:p` in the `start` shape expression. |
+
+Each path selects exactly one item when you evaluate it against the schema:
+
+```sh
+rudof shex-path -s schema.shex -p "@:Product~:code/self::[1]"
+```
+
+A shape declared in an imported schema is named by its label too. The `shex-path` command evaluates
+a path against the ShExJ form of one schema only. Thus, you must evaluate the path against the
+imported schema. Validation results do not use paths for the shapes inside a shape that has a
+blank node label, because a ShExPath cannot name such a label.

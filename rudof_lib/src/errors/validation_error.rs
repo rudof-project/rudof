@@ -21,6 +21,10 @@ pub enum ValidationError {
     )]
     UnsupportedShExValidationSortByMode { mode: String },
 
+    /// The layout of the details of ShEx validation results is not supported by Rudof.
+    #[error("Unsupported ShEx details layout: '{layout}'. Valid options are: 'below', 'table'")]
+    UnsupportedShExDetailsLayout { layout: String },
+
     /// The SHACL validation result sorting mode is not supported by Rudof.
     #[error(
         "Unsupported SHACL validation sort by mode: '{mode}'. Valid options are: 'severity', 'node', 'component', 'value', 'path', 'sourceshape', 'details'"

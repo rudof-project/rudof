@@ -48,6 +48,7 @@ impl Command for ShexValidateCommand {
         let schema_format = self.args.schema_format.into();
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
+        let details_layout = self.args.details_layout.into();
         let map_state = self.args.map_state.clone();
 
         // External-shape resolvers must be registered before `load_shex_schema`
@@ -213,6 +214,7 @@ impl Command for ShexValidateCommand {
             .serialize_shex_validation_results(&mut ctx.writer)
             .with_shex_validation_sort_order_mode(&sort_order)
             .with_result_shex_validation_format(&result_format)
+            .with_shex_details_layout(&details_layout)
             .execute()?;
 
         let finish = |sink: &Option<TriplesSink>| -> Result<u64> {

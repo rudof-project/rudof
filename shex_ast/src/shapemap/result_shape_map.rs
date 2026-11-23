@@ -238,46 +238,94 @@ impl ResultShapeMap {
         mut writer: W,
         sort_mode: Option<&SortMode>,
         with_details: Option<bool>,
+        details_layout: Option<DetailsLayout>,
         terminal_width: Option<usize>,
     ) -> Result<(), Error> {
         let with_details = with_details.unwrap_or(false);
+        let details_layout = details_layout.unwrap_or_default();
         let terminal_width = terminal_width.unwrap_or(80);
         let sort_mode = sort_mode.unwrap_or(&SortMode::Node);
 
-        let mut builder = Builder::default();
-        if with_details {
-            builder.push_record(["Node", "Shape", "Status", "Details"]);
-        } else {
-            builder.push_record(["Node", "Shape", "Status"]);
-        }
-
+        let mut rows = Vec::new();
         for (node, label, status) in self.iter_sorted(sort_mode) {
             let node_label = show_node(node, self.nodes_prefixmap());
             let shape_label = show_shapelabel(label, self.shapes_prefixmap());
-            let (details, status_label) = match status {
-                ValidationStatus::Conformant(conformant_info) => {
-                    (conformant_info.to_string(), self.ok_text().color(*self.ok_color()))
-                },
+            let (details, status_text, status_label) = match status {
+                ValidationStatus::Conformant(conformant_info) => (
+                    conformant_info.to_string(),
+                    self.ok_text().clone(),
+                    self.ok_text().color(*self.ok_color()),
+                ),
                 ValidationStatus::NonConformant(non_conformant_info) => (
                     non_conformant_info.to_string(),
+                    self.fail_text().clone(),
                     self.fail_text().color(*self.fail_color()),
                 ),
-                ValidationStatus::Pending => ("".to_owned(), "Pending".color(*self.pending_color())),
+                ValidationStatus::Pending => (
+                    "".to_owned(),
+                    "Pending".to_owned(),
+                    "Pending".color(*self.pending_color()),
+                ),
                 ValidationStatus::Inconsistent(ci, nci) => (
                     format!("Conformant: {ci}, Non-conformant: {nci}"),
+                    "Inconsistent".to_owned(),
                     "Inconsistent".color(*self.pending_color()),
                 ),
             };
-            if with_details {
-                builder.push_record([node_label, shape_label, status_label.to_string(), details]);
-            } else {
-                builder.push_record([node_label, shape_label, status_label.to_string()]);
+            rows.push((node_label, shape_label, status_text, status_label.to_string(), details));
+        }
+
+        let mut builder = Builder::default();
+        // The details of a result that don't fit in its row, written below the table
+        let mut sections = Vec::new();
+        if with_details && details_layout == DetailsLayout::Table {
+            builder.push_record(["Node", "Shape", "Status", "Details"]);
+            for (node_label, shape_label, _, status_label, details) in rows {
+                builder.push_record([node_label, shape_label, status_label, details]);
+            }
+        } else if with_details {
+            builder.push_record(["Node", "Shape", "Status", "Summary"]);
+            // The summary column takes what the other columns and the borders leave: each of the
+            // four columns takes its width plus a space on each side, and there are five borders.
+            let column_width = |header: &str, cell: fn(&(String, String, String, String, String)) -> &String| {
+                rows.iter()
+                    .map(|row| cell(row).chars().count())
+                    .chain([header.len()])
+                    .max()
+                    .unwrap_or(0)
+            };
+            let used = column_width("Node", |row| &row.0)
+                + column_width("Shape", |row| &row.1)
+                + column_width("Status", |row| &row.2)
+                + 4 * 2
+                + 5;
+            let summary_width = terminal_width.saturating_sub(used).max(MIN_SUMMARY_WIDTH);
+            for (node_label, shape_label, _, status_label, details) in rows {
+                let (summary, complete) = summarize(&details, &node_label, &shape_label, summary_width);
+                if !complete {
+                    sections.push((format!("{node_label}@{shape_label} {status_label}"), details.clone()));
+                }
+                builder.push_record([node_label, shape_label, status_label, summary]);
+            }
+        } else {
+            builder.push_record(["Node", "Shape", "Status"]);
+            for (node_label, shape_label, _, status_label, _) in rows {
+                builder.push_record([node_label, shape_label, status_label]);
             }
         }
         let mut table = builder.build();
         table.with(Style::modern_rounded());
         table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width)));
         writeln!(writer, "{table}")?;
+        // Unlike the cells of the table, these lines are not wrapped, so a tree keeps its shape
+        // and the ShExPaths in it can be copied whole.
+        for (title, details) in sections {
+            writeln!(writer)?;
+            writeln!(writer, "{title}")?;
+            for line in details.lines() {
+                writeln!(writer, "  {line}")?;
+            }
+        }
         Ok(())
     }
 
@@ -304,6 +352,36 @@ impl ResultShapeMap {
                 a.2.reason().cmp(&b.2.reason()).then(a.0.cmp(b.0)).then(a.1.cmp(b.1))
             },
         }
+    }
+}
+
+/// The fewest characters the summary column of a table with details is given, however narrow the
+/// terminal is.
+const MIN_SUMMARY_WIDTH: usize = 20;
+
+/// The summary of `details` for the row of `node`@`shape`, cut with `…` to at most `width`
+/// characters, and whether it is all of `details`.
+///
+/// The row already says the node and the shape, so `<node> does not conform to <shape>` is left
+/// out of the summary; when that is all the first line says, the summary is the line below it.
+fn summarize(details: &str, node: &str, shape: &str, width: usize) -> (String, bool) {
+    let mut lines = details.trim_end().lines();
+    let first = lines.next().unwrap_or("");
+    let header = format!("{node} does not conform to {shape}");
+    let (summary, rest) = match first.strip_prefix(&header) {
+        Some("") => {
+            let next = lines.next().unwrap_or("");
+            let next = next.trim_start_matches(|c: char| "├└│─ ".contains(c));
+            (next, true)
+        },
+        Some(cause) => (cause.trim_start_matches(':').trim_start(), lines.next().is_some()),
+        None => (first, lines.next().is_some()),
+    };
+    if summary.chars().count() <= width {
+        (summary.to_string(), !rest)
+    } else {
+        let cut: String = summary.chars().take(width.saturating_sub(1)).collect();
+        (format!("{}…", cut.trim_end()), false)
     }
 }
 
@@ -366,4 +444,51 @@ pub enum SortMode {
     Shape,
     Status,
     Details,
+}
+
+/// Where a table with details writes the details of each result.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DetailsLayout {
+    /// A summary in the row, and the details that don't fit in it below the table, one line each,
+    /// so a tree keeps its shape and the ShExPaths in it can be copied whole.
+    #[default]
+    Below,
+    /// All the details in the row, wrapped to the width of the table.
+    Table,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::summarize;
+
+    #[test]
+    fn a_summary_leaves_out_the_node_and_the_shape() {
+        let details = ":a does not conform to :S: property :p: expected exactly 1 value, found 0";
+        assert_eq!(
+            summarize(details, ":a", ":S", 80),
+            ("property :p: expected exactly 1 value, found 0".to_string(), true)
+        );
+    }
+
+    #[test]
+    fn a_summary_of_a_tree_is_its_first_branch() {
+        let details =
+            ":a does not conform to :S\n└── property :p value :b does not conform to :T\n    └── property :q: ...";
+        assert_eq!(
+            summarize(details, ":a", ":S", 80),
+            ("property :p value :b does not conform to :T".to_string(), false)
+        );
+    }
+
+    #[test]
+    fn a_long_summary_is_cut() {
+        assert_eq!(
+            summarize("Closed shape :S does not allow :z", ":a", ":S", 20),
+            ("Closed shape :S doe…".to_string(), false)
+        );
+        assert_eq!(
+            summarize("Shape passed :a@:S", ":a", ":S", 20),
+            ("Shape passed :a@:S".to_string(), true)
+        );
+    }
 }

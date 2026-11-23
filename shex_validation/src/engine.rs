@@ -6,7 +6,7 @@ use crate::Reasons;
 use crate::ValidatorConfig;
 use crate::ValidatorErrors;
 use crate::atom;
-use crate::no_match_reason::NoMatchReason;
+use crate::no_match_reason::{ConstraintRef, NoMatchReason};
 use crate::ref_typing::RefTyping;
 use crate::typing::{ObservableTyping, Typing, ValidationResult};
 use crate::validator_error::*;
@@ -14,7 +14,7 @@ use either::Either;
 use indexmap::IndexSet;
 use itertools::Itertools;
 // use prefixmap::PrefixMap;
-use rbe::MatchCond;
+use rbe::{Component, MatchCond, RbeError};
 use rudof_iri::iri;
 use rudof_rdf::rdf_core::{
     NeighsRDF,
@@ -950,6 +950,7 @@ impl Engine {
             .collect::<Vec<_>>();
         if shape.is_closed() && !reminder.is_empty() {
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                idx: *idx,
                 remainder: Preds::new(reminder),
                 declared: Preds::new(candidate_preds),
             });
@@ -1008,6 +1009,7 @@ impl Engine {
                 reminder.iter().map(|p| p.to_string()).join(", ")
             );*/
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                idx: *idx,
                 remainder: Preds::new(reminder),
                 declared: Preds::new(candidate_preds),
             });
@@ -1431,6 +1433,7 @@ impl Engine {
         let (values, reminder) = self.neighs(node, candidate_preds.clone(), rdf)?;
         if shape.is_closed() && !reminder.is_empty() {
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                idx: *idx,
                 remainder: Preds::new(reminder),
                 declared: Preds::new(candidate_preds),
             });
@@ -2342,22 +2345,26 @@ fn check_expr_neigh(
         let mut reasons: Vec<NoMatchReason> = result_iter
             .failed_candidates()
             .iter()
-            .map(|(candidate, predicate, value, error)| NoMatchReason::ConditionFailed {
-                candidate: candidate.clone(),
-                predicate: predicate.clone(),
-                value: value.clone(),
-                error: error.clone(),
-            })
+            .map(
+                |(candidate, predicate, value, component, error)| NoMatchReason::ConditionFailed {
+                    candidate: candidate.clone(),
+                    predicate: predicate.clone(),
+                    value: value.clone(),
+                    error: error.clone(),
+                    constraint: constraint_ref(expr, component.as_ref()),
+                },
+            )
             .collect();
         for (candidate, err) in result_iter.failed_cardinality() {
             match expr.cardinality_violations(err) {
                 Ok(violations) => {
-                    for (predicate, expected, current) in violations {
+                    for (component, predicate, expected, current) in violations {
                         reasons.push(NoMatchReason::CardinalityFailed {
                             candidate: candidate.clone(),
                             predicate,
                             expected,
                             current,
+                            constraint: constraint_ref(expr, Some(&component)),
                         });
                     }
                 },
@@ -2453,7 +2460,7 @@ fn check_expr_neigh(
                 // bailed out here instead of exhausting the iterator. Recover it
                 // so the reported error can name the node and property involved,
                 // not just the bare condition failure.
-                if let Some((candidate, predicate, value, error)) = result_iter.failed_candidates().last() {
+                if let Some((candidate, predicate, value, component, error)) = result_iter.failed_candidates().last() {
                     return fail(ValidatorError::NoMatchesFound {
                         node: Box::new(node.clone()),
                         shape: Box::new(shape.clone()),
@@ -2463,7 +2470,36 @@ fn check_expr_neigh(
                             predicate: predicate.clone(),
                             value: value.clone(),
                             error: error.clone(),
+                            constraint: constraint_ref(expr, component.as_ref()),
                         }],
+                    });
+                }
+                // No neighbour could be given to any triple constraint: report the triple
+                // constraints that needed one, as cardinality failures, instead of the bare
+                // "no candidates" of the matcher.
+                if matches!(
+                    err,
+                    RbeError::EmptyCandidatesNoValues { .. } | RbeError::EmptyCandidates { .. }
+                ) && let Ok(violations) = expr.violations_without_values()
+                    && !violations.is_empty()
+                {
+                    let reasons = violations
+                        .into_iter()
+                        .map(
+                            |(component, predicate, expected, current)| NoMatchReason::CardinalityFailed {
+                                candidate: Vec::new(),
+                                predicate,
+                                expected,
+                                current,
+                                constraint: constraint_ref(expr, Some(&component)),
+                            },
+                        )
+                        .collect();
+                    return fail(ValidatorError::NoMatchesFound {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        reasons,
                     });
                 }
                 return fail(ValidatorError::RbeError(err));
@@ -2483,6 +2519,11 @@ fn check_expr_neigh(
         idx: *idx,
         errors,
     })
+}
+
+/// The triple constraint `component` of `expr` is, named by the shape `expr` belongs to.
+fn constraint_ref(expr: &Expr, component: Option<&Component>) -> Option<ConstraintRef> {
+    Some((*expr.owner()?, *component?))
 }
 
 type PartitionInfo = (

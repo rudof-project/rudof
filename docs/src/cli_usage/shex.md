@@ -221,7 +221,7 @@ The command runs ShEx validation:
 ```sh
 rudof shex-validate --schema user.shex --node :a --shape-label :User user.ttl
 ╭──────┬───────┬────────┬───────────────────────╮
-│ Node │ Shape │ Status │ Details               │
+│ Node │ Shape │ Status │ Summary               │
 ├──────┼───────┼────────┼───────────────────────┤
 │ :a   │ :User │ OK     │ Shape passed :a@:User │
 ╰──────┴───────┴────────┴───────────────────────╯

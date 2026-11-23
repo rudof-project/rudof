@@ -11,6 +11,7 @@ mod error;
 mod eval;
 mod item;
 mod parser;
+mod schema_path;
 mod shexj;
 
 pub use ast::*;
@@ -18,6 +19,7 @@ pub use document::*;
 pub use error::*;
 pub use item::*;
 pub use parser::*;
+pub use schema_path::*;
 pub use shexj::*;
 
 #[cfg(test)]

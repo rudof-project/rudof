@@ -11,6 +11,7 @@ use crate::ir::semantic_action_context::SemanticActionContext;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr::ShapeExpr;
+use crate::ir::shape_expr_info::ShapeExprLocation;
 use crate::ir::shape_label::ShapeLabel;
 use crate::ir::test_action_extension::TestActionExtension;
 use crate::ir::value_set::ValueSet;
@@ -341,8 +342,9 @@ impl AST2IR {
             },
             ast::ShapeExpr::ShapeOr { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
-                for sew in ses {
+                for (index, sew) in ses.iter().enumerate() {
                     let internal_idx = compiled_schema.new_index(source_iri);
+                    compiled_schema.set_location(&internal_idx, ShapeExprLocation::Operand { parent: *idx, index });
                     let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&internal_idx, se.clone());
                     cnv.push(internal_idx);
@@ -353,8 +355,9 @@ impl AST2IR {
             },
             ast::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
                 let mut cnv = Vec::new();
-                for sew in ses {
+                for (index, sew) in ses.iter().enumerate() {
                     let internal_idx = compiled_schema.new_index(source_iri);
+                    compiled_schema.set_location(&internal_idx, ShapeExprLocation::Operand { parent: *idx, index });
                     let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&internal_idx, se.clone());
                     cnv.push(internal_idx);
@@ -365,6 +368,7 @@ impl AST2IR {
             },
             ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
                 let internal_idx = compiled_schema.new_index(source_iri);
+                compiled_schema.set_location(&internal_idx, ShapeExprLocation::Negated { parent: *idx });
                 let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri, base)?;
                 compiled_schema.replace_shape(&internal_idx, se.clone());
                 let not_se = ShapeExpr::ShapeNot { expr: internal_idx };
@@ -373,15 +377,12 @@ impl AST2IR {
             },
             ast::ShapeExpr::Shape(shape) => {
                 let new_extra = self.cnv_extra(&shape.extra, &compiled_schema.prefixmap())?;
-                let rbe_table: Expr = match &shape.expression {
-                    None => RbeTable::new(),
-                    Some(tew) => {
-                        let mut table: Expr = RbeTable::new();
-                        let rbe = self.triple_expr2rbe(&tew.te, compiled_schema, &mut table, source_iri, base)?;
-                        table.with_rbe(rbe);
-                        table
-                    },
-                };
+                let mut rbe_table: Expr = RbeTable::new();
+                rbe_table.set_owner(*idx);
+                if let Some(tew) = &shape.expression {
+                    let rbe = self.triple_expr2rbe(&tew.te, compiled_schema, &mut rbe_table, source_iri, base)?;
+                    rbe_table.with_rbe(rbe);
+                }
                 let preds = self.get_preds_shape(shape)?;
                 let extends = shape
                     .extends()
@@ -573,7 +574,7 @@ impl AST2IR {
                 Ok(Self::mk_card_group(RbeStruct::or(cs), card))
             },
             ast::TripleExpr::TripleConstraint {
-                id: _,
+                id,
                 negated: _,
                 inverse,
                 predicate,
@@ -587,9 +588,24 @@ impl AST2IR {
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate, inverse)?;
                 let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
+                // Where an anonymous value expression is: in the component about to be added.
+                let location = current_table.owner().map(|shape| ShapeExprLocation::ValueExpr {
+                    shape: *shape,
+                    component: current_table.next_component(),
+                });
                 let (cond, _display) =
-                    self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri, base)?;
+                    self.value_expr2match_cond(value_expr, actions, location, compiled_schema, source_iri, base)?;
                 let component = current_table.add_component(iri, &cond);
+                // A labelled triple constraint is named by its label, `$label`.
+                if let (
+                    Some(ast::TripleExprLabel::IriRef {
+                        value: IriRef::Iri(label),
+                    }),
+                    Some(owner),
+                ) = (id, current_table.owner())
+                {
+                    compiled_schema.add_triple_expr_label(owner, component, label.clone());
+                }
                 Ok(RbeStruct::symbol(component, min.value, max))
             },
             ast::TripleExpr::Ref(r) => {
@@ -680,10 +696,23 @@ impl AST2IR {
         &self,
         value_expr: &Option<Box<ast::ShapeExpr>>,
         actions: Vec<SemAct>,
+        location: Option<ShapeExprLocation>,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
         base: &Option<IriS>,
     ) -> CResult<(Cond, String)> {
+        // Records that the anonymous shape expression at `idx` is the value expression.
+        let locate = |compiled_schema: &mut SchemaIR, idx: &ShapeLabelIdx| {
+            if let Some(location) = location {
+                compiled_schema.set_location(idx, location);
+            }
+        };
+        // Records that each of `operands` is an operand of the shape expression at `parent`.
+        let locate_operands = |compiled_schema: &mut SchemaIR, parent: &ShapeLabelIdx, operands: &[ShapeLabelIdx]| {
+            for (index, operand) in operands.iter().enumerate() {
+                compiled_schema.set_location(operand, ShapeExprLocation::Operand { parent: *parent, index });
+            }
+        };
         let mut sem_actions_conds = self.sem_acts_to_conds(actions)?;
         let (cond, display) = if let Some(se) = value_expr.as_deref() {
             match se {
@@ -699,6 +728,7 @@ impl AST2IR {
                     // TODO: avoid recompiling the same shape expression?
                     // I think this code should be reviewed....
                     let idx = compiled_schema.new_index(source_iri);
+                    locate(compiled_schema, &idx);
                     let se = self.compile_shape_expr(se, &idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&idx, se.clone());
                     // trace!("Returning SHAPE cond with idx {idx}");
@@ -715,6 +745,8 @@ impl AST2IR {
                     let and_se = ShapeExpr::ShapeAnd { exprs: ands.clone() };
                     let idx_and = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_and, and_se);
+                    locate(compiled_schema, &idx_and);
+                    locate_operands(compiled_schema, &idx_and, &ands);
                     let display = format!(
                         "AND({})",
                         ands.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
@@ -736,6 +768,8 @@ impl AST2IR {
                     );
                     let idx_or = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_or, or_se);
+                    locate(compiled_schema, &idx_or);
+                    locate_operands(compiled_schema, &idx_or, &ors);
                     Ok((mk_cond_ref(idx_or), display))
                 },
                 ast::ShapeExpr::ShapeNot { shape_expr } => {
@@ -750,12 +784,15 @@ impl AST2IR {
                     let not_se = ShapeExpr::ShapeNot { expr: idx_shape_expr };
                     let idx_not = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_not, not_se);
+                    locate(compiled_schema, &idx_not);
+                    compiled_schema.set_location(&idx_shape_expr, ShapeExprLocation::Negated { parent: idx_not });
                     trace!("Returning NOT cond with idx {idx_not}");
                     Ok((mk_cond_ref(idx_not), display))
                 },
                 ast::ShapeExpr::External => {
                     let idx_ext = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_ext, ShapeExpr::External {});
+                    locate(compiled_schema, &idx_ext);
                     let display = format!("EXTERNAL {idx_ext}");
                     Ok((mk_cond_ref(idx_ext), display))
                 },

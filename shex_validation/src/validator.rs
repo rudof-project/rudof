@@ -373,19 +373,37 @@ fn show_errors(
     Ok(result)
 }
 
-/// The errors as `[{"error": ...}]`, shown with shape labels and prefixed names
-/// as in the `reason` of the result, not with the internal indexes of the shapes.
+/// The errors as `[{"error": ..., "path": ..., "paths": [...]}]`, shown with shape labels and
+/// prefixed names as in the `reason` of the result, not with the internal indexes of the shapes.
+///
+/// `path` is the ShExPath that says best where the error is in the schema (see
+/// [`ValidatorError::path`]) and `paths` those of every shape expression and triple constraint the
+/// error names. Both are written with the prefixes of the schema, so they can be evaluated against
+/// it. An error that names nothing in the schema has neither.
 fn json_errors(
     errors: &[ValidatorError],
     nodes_prefixmap: &PrefixMap,
     schema: &SchemaIR,
     width: usize,
 ) -> Result<Value> {
+    let shapes_prefixmap = schema.prefixmap();
     let vs: Result<Vec<_>> = errors
         .iter()
         .map(|err| {
             let shown = err.show_qualified(nodes_prefixmap, schema, width)?;
-            Ok(json!({ "error": shown.trim_end_matches('\n') }))
+            let mut entry = json!({ "error": shown.trim_end_matches('\n') });
+            if let Some(path) = err.path(schema) {
+                entry["path"] = json!(path.show_qualified(&shapes_prefixmap));
+            }
+            let paths: Vec<String> = err
+                .paths(schema)
+                .iter()
+                .map(|path| path.show_qualified(&shapes_prefixmap))
+                .collect();
+            if !paths.is_empty() {
+                entry["paths"] = json!(paths);
+            }
+            Ok(entry)
         })
         .collect();
     Ok(Value::Array(vs?))

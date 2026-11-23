@@ -46,7 +46,7 @@ fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
     compiled
 }
 
-/// The `info` entries of the `appInfo` of `node@:T`.
+/// The texts of the `info` entries of the `appInfo` of `node@:T`: their `error` or `reason`.
 fn app_info_entries(node: &str) -> Vec<String> {
     let config = ValidatorConfig::default();
     let compiled = compile(SCHEMA, &config);
@@ -62,8 +62,11 @@ fn app_info_entries(node: &str) -> Vec<String> {
         .as_array()
         .expect("info entries")
         .iter()
-        .flat_map(|entry| entry.as_object().expect("info entry").values())
-        .map(|value| value.as_str().expect("info text").to_string())
+        .map(|entry| {
+            let entry = entry.as_object().expect("info entry");
+            let text = entry.get("error").or_else(|| entry.get("reason")).expect("info text");
+            text.as_str().expect("info text").to_string()
+        })
         .collect()
 }
 
@@ -71,8 +74,8 @@ fn app_info_entries(node: &str) -> Vec<String> {
 fn errors_show_shape_labels_and_prefixed_names() {
     let errors = app_info_entries("ko");
     assert_eq!(errors.len(), 1, "{errors:?}");
-    assert!(errors[0].starts_with("Shape :T failed for node :ko"), "{errors:?}");
-    assert!(errors[0].contains(":y as :U"), "{errors:?}");
+    assert!(errors[0].starts_with(":ko does not conform to :T"), "{errors:?}");
+    assert!(errors[0].contains("value :y does not conform to :U"), "{errors:?}");
     assert!(!errors[0].contains("http://"), "{errors:?}");
 }
 

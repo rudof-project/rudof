@@ -4,7 +4,8 @@ use anyhow::{Result as AnyhowResult, bail};
 use clap::ValueEnum;
 use rudof_lib::formats::{
     ResultPgSchemaValidationFormat, ResultShExValidationFormat, ResultShaclValidationFormat, ResultValidationFormat,
-    ShExValidationSortByMode, ShaclValidationMode, ShaclValidationSortByMode, ValidationMode, ValidationSortByMode,
+    ShExDetailsLayout, ShExValidationSortByMode, ShaclValidationMode, ShaclValidationSortByMode, ValidationMode,
+    ValidationSortByMode,
 };
 use std::fmt::{Display, Formatter, Result};
 
@@ -93,6 +94,15 @@ cli_wrapper!(
         Shape,
         Status,
         Details
+    }
+);
+
+cli_wrapper!(
+    ShExDetailsLayoutCli,
+    ShExDetailsLayout,
+    {
+        Below,
+        Table
     }
 );
 
