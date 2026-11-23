@@ -31,6 +31,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `shex_ast`: dropped csv color format on shex validation ([#949](https://github.com/rudof-project/rudof/issues/949))
 - `shacl`: serializing a shapes graph writes its node expressions back, instead of dropping them and panicking on a composite `sh:targetNode` ([#868](https://github.com/rudof-project/rudof/issues/868)).
 - `shacl`: a target that cannot be resolved fails validation instead of being skipped ([#868](https://github.com/rudof-project/rudof/issues/868)).
+- `shacl`, `shex`, `prefixmap`: count characters, not bytes, for string length checks ([#963](https://github.com/rudof-project/rudof/issues/963))
 
 ### Changed
 - `rudof_cli`: in `shex-validate`, `shacl-validate` and `validate`, `--validated-graph` is now `--visited`, and `--validated-graph-format` is now `--visited-format` ([#957](https://github.com/rudof-project/rudof/issues/957)). You can continue to use the old names.
