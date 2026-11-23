@@ -11,6 +11,7 @@ vocab_term!(ShaclTestVocab, SHT_DATA_GRAPH, "dataGraph");
 vocab_term!(ShaclTestVocab, SHT_SHAPES_GRAPH, "shapesGraph");
 vocab_term!(ShaclTestVocab, SHT_FAILURE, "Failure");
 vocab_term!(ShaclTestVocab, SHT_VALIDATE, "Validate");
+vocab_term!(ShaclTestVocab, SHT_EVAL_NODE_EXPR, "EvalNodeExpr");
 vocab_term!(ShaclTestVocab, SHT_APPROVED, "approved");
 vocab_term!(ShaclTestVocab, SHT_NODE_EXPR, "nodeExpr");
 vocab_term!(ShaclTestVocab, SHT_FOCUS_NODE, "focusNode");

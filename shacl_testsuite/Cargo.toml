@@ -17,6 +17,8 @@ oxrdf.workspace = true
 rudof_earl.workspace = true
 rudof_iri.workspace = true
 rudof_rdf.workspace = true
+serde.workspace = true
 shacl = { workspace = true, features = ["sparql"] }
 sparql_service.workspace = true
 thiserror.workspace = true
+toml.workspace = true

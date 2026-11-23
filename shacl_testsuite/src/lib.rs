@@ -3,6 +3,8 @@
 #[cfg(not(target_family = "wasm"))]
 mod error;
 #[cfg(not(target_family = "wasm"))]
+pub mod ignored;
+#[cfg(not(target_family = "wasm"))]
 pub mod manifest;
 #[cfg(not(target_family = "wasm"))]
 pub mod runner;

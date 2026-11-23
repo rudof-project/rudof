@@ -4,8 +4,8 @@ use oxrdf::{NamedNode, NamedOrBlankNode, Term};
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclTestVocab, TestManifestVocab};
 use std::path::{Path, PathBuf};
 
-/// An approved `sht:Validate` entry
-pub struct ValidateEntry {
+/// An approved manifest entry of a given `rdf:type`
+pub struct ManifestTestEntry {
     /// The entry's IRI
     pub entry: String,
     /// The test file it is defined in
@@ -24,13 +24,23 @@ impl ManifestWalker {
         }
     }
 
-    pub fn validate_entries(&self) -> Result<Vec<ValidateEntry>, TestSuiteError> {
+    /// Every approved `sht:Validate` entry
+    pub fn validate_entries(&self) -> Result<Vec<ManifestTestEntry>, TestSuiteError> {
+        self.entries_of_type(ShaclTestVocab::sht_validate().into())
+    }
+
+    /// Every approved `sht:EvalNodeExpr` entry
+    pub fn node_expr_entries(&self) -> Result<Vec<ManifestTestEntry>, TestSuiteError> {
+        self.entries_of_type(ShaclTestVocab::sht_eval_node_expr().into())
+    }
+
+    fn entries_of_type(&self, want: NamedNode) -> Result<Vec<ManifestTestEntry>, TestSuiteError> {
         let mut out = Vec::new();
-        self.walk(Path::new("manifest.ttl"), &mut out)?;
+        self.walk(Path::new("manifest.ttl"), &want, &mut out)?;
         Ok(out)
     }
 
-    fn walk(&self, rel_path: &Path, out: &mut Vec<ValidateEntry>) -> Result<(), TestSuiteError> {
+    fn walk(&self, rel_path: &Path, want: &NamedNode, out: &mut Vec<ManifestTestEntry>) -> Result<(), TestSuiteError> {
         let disk_path = self.tests_root.join(rel_path);
         let base = format!("urn:x-shacl-test:/{}", rel_path.display());
         let graph = ManifestGraph::new_with_base(&disk_path, &base)?;
@@ -39,26 +49,26 @@ impl ManifestWalker {
         let mf_include: NamedNode = TestManifestVocab::mf_include().into();
         for include in graph.values(&subject, &mf_include)? {
             if let Some(rel) = as_urn_path(&include) {
-                self.walk(Path::new(rel), out)?;
+                self.walk(Path::new(rel), want, out)?;
             }
         }
 
         let rdf_type: NamedNode = RdfVocab::rdf_type().into();
         let mf_status: NamedNode = TestManifestVocab::mf_status().into();
-        let sht_validate = Term::NamedNode(ShaclTestVocab::sht_validate().into());
+        let want_type = Term::NamedNode(want.clone());
         let sht_approved = Term::NamedNode(ShaclTestVocab::sht_approved().into());
 
         for entry in graph.entries() {
             let entry_subject: NamedOrBlankNode = entry.clone().try_into()?;
 
-            let is_validate = graph.value(&entry_subject, &rdf_type)?.as_ref() == Some(&sht_validate);
+            let is_wanted_type = graph.value(&entry_subject, &rdf_type)?.as_ref() == Some(&want_type);
             let is_approved = graph.value(&entry_subject, &mf_status)?.as_ref() == Some(&sht_approved);
 
-            if is_validate
+            if is_wanted_type
                 && is_approved
                 && let Term::NamedNode(iri) = entry
             {
-                out.push(ValidateEntry {
+                out.push(ManifestTestEntry {
                     entry: iri.as_str().to_string(),
                     path: disk_path.clone(),
                 });
