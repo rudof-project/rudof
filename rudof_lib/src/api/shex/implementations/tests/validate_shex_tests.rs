@@ -436,7 +436,7 @@ fn test_serialize_validation_results_details() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Details));
 
-    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Details\s+│$").unwrap();
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Summary\s+│$").unwrap();
 
     assert!(re.is_match(&serialized));
 
