@@ -19,7 +19,7 @@ pub(super) fn shortcut(i: Span) -> IRes<Vec<Step>> {
 }
 
 /// `@label` is `/shapes/*[id = label][assert count() = 1]/shapeExpr`.
-fn shape_label_shortcut(label: IriRef) -> Vec<Step> {
+pub(crate) fn shape_label_shortcut(label: IriRef) -> Vec<Step> {
     vec![
         Step::child(AttributeOrAny::Attribute(Attribute::Shapes)),
         Step::child(AttributeOrAny::Any)
@@ -30,7 +30,7 @@ fn shape_label_shortcut(label: IriRef) -> Vec<Step> {
 }
 
 /// `~iri` is `/thisShapeExpr::Shape/expression/thisTripleExpr::TripleConstraint[predicate = iri]`.
-fn predicate_shortcut(predicate: IriRef) -> Vec<Step> {
+pub(crate) fn predicate_shortcut(predicate: IriRef) -> Vec<Step> {
     vec![
         Step::axis(Axis::ThisShapeExpr).with_filter(Filter::TermType(TermType::Shape)),
         Step::child(AttributeOrAny::Attribute(Attribute::Expression)),
