@@ -35,10 +35,10 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
                 return true;
             }
             if let Ok(iri) = S::term_as_iri(vn) {
-                return iri.as_str().len() > self.max_length() as usize;
+                return iri.as_str().chars().count() > self.max_length() as usize;
             }
             if let Ok(lit) = S::term_as_literal(vn) {
-                return lit.lexical_form().len() > self.max_length() as usize;
+                return lit.lexical_form().chars().count() > self.max_length() as usize;
             }
             true
         };

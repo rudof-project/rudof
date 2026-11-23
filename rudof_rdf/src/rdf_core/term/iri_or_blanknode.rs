@@ -20,14 +20,14 @@ pub enum IriOrBlankNode {
 }
 
 impl IriOrBlankNode {
-    /// Returns the length (in bytes) of this resource's string representation.
+    /// Returns the length (in characters) of this resource's string representation.
     ///
     /// - For blank nodes: the length of the identifier string
     /// - For IRIs: the length of the full IRI string
     pub fn length(&self) -> usize {
         match self {
-            IriOrBlankNode::BlankNode(label) => label.len(),
-            IriOrBlankNode::Iri(iri) => iri.as_str().len(),
+            IriOrBlankNode::BlankNode(label) => label.chars().count(),
+            IriOrBlankNode::Iri(iri) => iri.as_str().chars().count(),
         }
     }
 

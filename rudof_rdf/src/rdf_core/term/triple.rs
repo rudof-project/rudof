@@ -243,7 +243,7 @@ impl Object {
 
 /// ## Accessors methods
 impl Object {
-    // Returns the length (in bytes) of this object's string representation.
+    // Returns the length (in characters) of this object's string representation.
     ///
     /// - For IRIs: the length of the IRI string
     /// - For blank nodes: the length of the identifier
@@ -251,14 +251,14 @@ impl Object {
     /// - For triples: the sum of all component lengths
     pub fn length(&self) -> usize {
         match self {
-            Object::Iri(iri) => iri.as_str().len(),
-            Object::BlankNode(bn) => bn.len(),
-            Object::Literal(lit) => lit.lexical_form().len(),
+            Object::Iri(iri) => iri.as_str().chars().count(),
+            Object::BlankNode(bn) => bn.chars().count(),
+            Object::Literal(lit) => lit.lexical_form().chars().count(),
             Object::Triple {
                 subject,
                 predicate,
                 object,
-            } => subject.as_ref().length() + predicate.as_str().len() + object.as_ref().length(),
+            } => subject.as_ref().length() + predicate.as_str().chars().count() + object.as_ref().length(),
         }
     }
 
