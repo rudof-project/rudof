@@ -163,6 +163,17 @@ where
         }
     }
 
+    /// The cardinality violations of matching no values at all: the components that need at
+    /// least one value, each with its key, its cardinality and 0. `Err` as in
+    /// [`Self::cardinality_violations`], and `Ok` with none if the expression accepts no values.
+    #[allow(clippy::type_complexity)]
+    pub fn violations_without_values(&self) -> Result<Vec<(Component, K, Cardinality, usize)>, String> {
+        match self.rbe.match_bag_interval(&Bag::new(), self.open) {
+            Ok(()) => Ok(Vec::new()),
+            Err(err) => self.cardinality_violations(&err),
+        }
+    }
+
     pub fn keys(&self) -> impl Iterator<Item = &K> {
         self.key_components.keys()
     }
@@ -901,6 +912,26 @@ mod tests {
         assert_eq!(violations.len(), 1);
         assert_eq!(violations[0].0, c2);
         assert_eq!(violations[0].1, 'p');
+    }
+
+    /// Matching no values violates the components that need one, and only those.
+    #[test]
+    fn test_rbe_table_violations_without_values() {
+        let mut rbe_table: Table = RbeTable::new();
+        let c1 = rbe_table.add_component('p', &is_x());
+        let c2 = rbe_table.add_component('q', &is_y());
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 0, Max::IntMax(1)),
+        ]));
+        let violations = rbe_table.violations_without_values().unwrap();
+        let keys: Vec<(Component, char, usize)> = violations.iter().map(|(c, k, _, n)| (*c, *k, *n)).collect();
+        assert_eq!(keys, vec![(c1, 'p', 0)]);
+
+        let mut nullable: Table = RbeTable::new();
+        let c = nullable.add_component('p', &is_x());
+        nullable.with_rbe(RbeStruct::symbol(c, 0, Max::IntMax(1)));
+        assert_eq!(nullable.violations_without_values().unwrap(), vec![]);
     }
 
     #[test]
