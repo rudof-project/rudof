@@ -7,6 +7,7 @@ mod filters;
 mod junctions;
 mod locations;
 mod reference_manifest;
+mod schema_paths;
 mod self_parent_and_ancestor;
 mod shexj;
 mod shortcuts;
