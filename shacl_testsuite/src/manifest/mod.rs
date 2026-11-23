@@ -12,7 +12,7 @@ pub use entry::ManifestEntry;
 pub use graph::ManifestGraph;
 pub use node_expr::NodeExprManifest;
 pub use validate::{TestInstance, ValidateManifest};
-pub use walker::{ManifestWalker, ValidateEntry};
+pub use walker::{ManifestTestEntry, ManifestWalker};
 
 /// A test manifest of kind `T`
 pub struct Manifest<T> {
