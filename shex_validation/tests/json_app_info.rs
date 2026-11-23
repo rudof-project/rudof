@@ -46,7 +46,7 @@ fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
     compiled
 }
 
-/// The `info` entries of the `appInfo` of `node@:T`.
+/// The texts of the `info` entries of the `appInfo` of `node@:T`: their `error` or `reason`.
 fn app_info_entries(node: &str) -> Vec<String> {
     let config = ValidatorConfig::default();
     let compiled = compile(SCHEMA, &config);
@@ -62,8 +62,11 @@ fn app_info_entries(node: &str) -> Vec<String> {
         .as_array()
         .expect("info entries")
         .iter()
-        .flat_map(|entry| entry.as_object().expect("info entry").values())
-        .map(|value| value.as_str().expect("info text").to_string())
+        .map(|entry| {
+            let entry = entry.as_object().expect("info entry");
+            let text = entry.get("error").or_else(|| entry.get("reason")).expect("info text");
+            text.as_str().expect("info text").to_string()
+        })
         .collect()
 }
 

@@ -15,6 +15,7 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::semantic_action_context::SemanticActionContext;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
+use shex_ast::shexpath::SchemaPath;
 use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ast::cond_kind::CondKind, ir::shape_label::ShapeLabel};
 use termtree::Tree;
 use thiserror::Error;
@@ -323,6 +324,113 @@ impl ValidatorError {
         error
     }
 
+    /// The ShExPaths of the shape expressions and triple constraints of the schema this error
+    /// names, its own shape first and then those of the errors and reasons it contains, without
+    /// repeats.
+    pub fn paths(&self, schema: &SchemaIR) -> Vec<SchemaPath> {
+        let mut paths = Vec::new();
+        self.collect_paths(schema, &mut paths, &mut Vec::new());
+        paths
+    }
+
+    /// The ShExPath that says best where this error is: the triple constraint that failed when
+    /// there is one, and otherwise the shape the error is about.
+    pub fn path(&self, schema: &SchemaIR) -> Option<SchemaPath> {
+        let mut constraints = Vec::new();
+        self.collect_paths(schema, &mut Vec::new(), &mut constraints);
+        match constraints.as_slice() {
+            [constraint] => Some(constraint.clone()),
+            _ => self.shape_idx().and_then(|idx| schema.path_of(idx)),
+        }
+    }
+
+    /// The shape expression this error is about, if it is about one.
+    fn shape_idx(&self) -> Option<&ShapeLabelIdx> {
+        match self {
+            ValidatorError::ParentShapeFailed { idx, .. }
+            | ValidatorError::ShapeExtendsNoMainShape { idx, .. }
+            | ValidatorError::ParentShapeNodeConstraintFailed { idx, .. }
+            | ValidatorError::ParentShapeMainShapeFailed { idx, .. }
+            | ValidatorError::PartitionComponentFailed { idx, .. }
+            | ValidatorError::PartitionFailed { idx, .. }
+            | ValidatorError::TripleExprRefuted { idx, .. }
+            | ValidatorError::ShapeFailedNoPartitions { idx, .. }
+            | ValidatorError::AbstractShapeError { idx, .. }
+            | ValidatorError::DescendantsShapeError { idx, .. }
+            | ValidatorError::AbstractShapeNoDescendants { idx }
+            | ValidatorError::ClosedShapeWithRemainderPreds { idx, .. }
+            | ValidatorError::ShapeExtendsError { idx, .. }
+            | ValidatorError::ShapeAndError { shape_expr: idx, .. }
+            | ValidatorError::ShapeFailed { idx, .. }
+            | ValidatorError::NoMatchesFound { idx, .. }
+            | ValidatorError::ShapeRefFailed { idx, .. }
+            | ValidatorError::StartActFailed { idx, .. }
+            | ValidatorError::ExternalShapeRejected { idx, .. }
+            | ValidatorError::ExternalShapeUnresolved { idx, .. }
+            | ValidatorError::MaxStepsExceeded { idx, .. }
+            | ValidatorError::Cancelled { idx, .. } => Some(idx),
+            ValidatorError::DescendantShapeError { desc, .. } => Some(desc),
+            _ => None,
+        }
+    }
+
+    /// Adds to `paths` the paths this error names and to `constraints` those of the triple
+    /// constraints among them.
+    fn collect_paths(&self, schema: &SchemaIR, paths: &mut Vec<SchemaPath>, constraints: &mut Vec<SchemaPath>) {
+        fn add(path: Option<SchemaPath>, to: &mut Vec<SchemaPath>) {
+            if let Some(path) = path
+                && !to.contains(&path)
+            {
+                to.push(path);
+            }
+        }
+        add(self.shape_idx().and_then(|idx| schema.path_of(idx)), paths);
+        match self {
+            ValidatorError::NoMatchesFound { reasons, .. } => {
+                for reason in reasons {
+                    add(reason.path(schema), paths);
+                    add(reason.path(schema), constraints);
+                }
+            },
+            ValidatorError::PartitionComponentFailed { errors, .. }
+            | ValidatorError::PartitionFailed { errors, .. }
+            | ValidatorError::ShapeRefFailed { errors, .. }
+            | ValidatorError::AbstractShapeError { errors, .. }
+            | ValidatorError::DescendantShapeError { errors, .. }
+            | ValidatorError::DescendantsShapeError { errors, .. }
+            | ValidatorError::ShapeAndError { errors, .. }
+            | ValidatorError::ParentShapeMainShapeFailed { errors, .. }
+            | ValidatorError::ParentShapeFailed { errors, .. }
+            | ValidatorError::ShapeExtendsError { errors, .. } => {
+                for error in errors.iter() {
+                    error.collect_paths(schema, paths, constraints);
+                }
+            },
+            ValidatorError::ShapeFailed { errors, .. } => {
+                for error in errors {
+                    error.collect_paths(schema, paths, constraints);
+                }
+            },
+            ValidatorError::ShapeOrError { errors, .. } => {
+                for (idx, branch) in errors {
+                    add(schema.path_of(idx), paths);
+                    for error in branch.iter() {
+                        error.collect_paths(schema, paths, constraints);
+                    }
+                }
+            },
+            ValidatorError::FailedPending { failed_pending } => {
+                for (_, idx, _, errors) in failed_pending {
+                    add(schema.path_of(idx), paths);
+                    for error in errors {
+                        error.collect_paths(schema, paths, constraints);
+                    }
+                }
+            },
+            _ => {},
+        }
+    }
+
     /// The label of the shape expression at `idx`, or, for an anonymous one, its ShExPath.
     fn show_idx(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
         schema
@@ -554,7 +662,8 @@ impl ValidatorError {
             },
             ValidatorError::NoMatchesFound { reasons, .. } => {
                 for reason in reasons {
-                    tree.leaves.push(Tree::new(reason.show_qualified(nodes_prefixmap, schema)));
+                    tree.leaves
+                        .push(Tree::new(reason.show_qualified(nodes_prefixmap, schema)));
                 }
                 Ok(())
             },
@@ -654,9 +763,7 @@ impl ValidatorError {
             // prefixes (for the node/value themselves) as the priority.
             let mut combined = schema.prefixmap();
             combined.merge(nodes_prefixmap.clone());
-            let path = reason
-                .path(schema)
-                .map(|path| path.show_qualified(&schema.prefixmap()));
+            let path = reason.path(schema).map(|path| path.show_qualified(&schema.prefixmap()));
             return Ok(describe_condition_error(
                 node,
                 Some(predicate),
@@ -754,9 +861,7 @@ fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR, width: usize) -> String {
 
 /// The ShExPath of the shape expression at `idx`, with the prefixes of the schema.
 fn show_path(idx: &ShapeLabelIdx, schema: &SchemaIR) -> Option<String> {
-    schema
-        .path_of(idx)
-        .map(|path| path.show_qualified(&schema.prefixmap()))
+    schema.path_of(idx).map(|path| path.show_qualified(&schema.prefixmap()))
 }
 
 fn show_shape_expr(shape_expr: &ShapeExpr, schema: &SchemaIR, width: usize) -> String {
