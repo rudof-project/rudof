@@ -2,22 +2,38 @@ use crate::{
     Result, Rudof,
     errors::{DataError, ShExError},
     types::Data,
+    utils::declare_data_prefixes,
 };
 use rudof_rdf::rdf_core::Rdf;
 use rudof_rdf_sink::TriplesSink;
 use shex_ast::{ir::schema_ir::SchemaIR as ShExSchemaIR, shapemap::NodeSelector, shapemap::QueryShapeMap};
 use shex_validation::Validator as ShExValidator;
 
-/// Validates with `read_sink` installed in the session's validator for this
-/// run only: it is removed afterwards, whether the validation succeeded or not.
-pub fn validate_shex(rudof: &mut Rudof, read_sink: Option<TriplesSink>) -> Result<()> {
-    let has_sink = read_sink.is_some();
+/// Validates with `read_sink` (every triple read), `valid_sink` (the valid
+/// subgraph) and `invalid_sink` (the triples read outside the valid subgraph)
+/// installed in the session's validator for this run only: they are removed
+/// afterwards, whether the validation succeeded or not.
+pub fn validate_shex(
+    rudof: &mut Rudof,
+    read_sink: Option<TriplesSink>,
+    valid_sink: Option<TriplesSink>,
+    invalid_sink: Option<TriplesSink>,
+) -> Result<()> {
+    let has_sink = read_sink.is_some() || valid_sink.is_some() || invalid_sink.is_some();
+    declare_data_prefixes(
+        rudof,
+        read_sink.iter().chain(valid_sink.iter()).chain(invalid_sink.iter()),
+    )?;
     if has_sink && let Some(validator) = rudof.shex_validator.as_mut() {
         validator.set_read_sink(read_sink);
+        validator.set_valid_sink(valid_sink);
+        validator.set_invalid_sink(invalid_sink);
     }
     let result = run_validation(rudof);
     if has_sink && let Some(validator) = rudof.shex_validator.as_mut() {
         validator.set_read_sink(None);
+        validator.set_valid_sink(None);
+        validator.set_invalid_sink(None);
     }
     result
 }

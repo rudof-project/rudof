@@ -1,3 +1,4 @@
+use crate::Matched;
 use crate::PartitionDisplay;
 use crate::PartitionsDisplay;
 use crate::Reason;
@@ -36,6 +37,7 @@ use shex_ast::ir::shape_expr::ShapeExpr;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;
+use std::sync::{Arc, Mutex};
 use tracing::debug;
 use tracing::trace;
 
@@ -67,6 +69,9 @@ pub struct Engine {
     /// are reused while those hypotheses are still assumed, and committed to
     /// `typing` when the outermost proof ends (see `commit_provisional`).
     provisional: HashMap<PosAtom, (ValidationResult, HashSet<PosAtom>)>,
+    /// The distinct triples read, kept only when an invalid sink is installed
+    /// (see `record_read`). Behind a mutex because reads happen through `&self`.
+    read_log: Arc<Mutex<IndexSet<oxrdf::Triple>>>,
 }
 
 impl Engine {
@@ -81,6 +86,7 @@ impl Engine {
             typing: ObservableTyping::new(config.typing_observer()),
             hyp_deps: HashSet::new(),
             provisional: HashMap::new(),
+            read_log: Arc::default(),
         }
     }
 
@@ -136,7 +142,7 @@ impl Engine {
                 },
             }
         }
-        Ok(())
+        self.record_valid()
     }
 
     /// Lets `rdf` fetch ahead of time the outgoing arcs the pending atoms are
@@ -1951,30 +1957,119 @@ impl Engine {
     /// Pushes the arcs `neighs` read into the read sink, if one is installed:
     /// an outgoing arc as `(node, pred, value)`, an incoming one as
     /// `(value, pred, node)`.
+    /// Also logs them, distinct and in reading order, when an invalid sink is
+    /// installed, to tell the invalid triples apart once the validation ends.
     fn record_read(&self, node: &Node, arcs: &[(Pred, Node)]) -> Result<()> {
-        let Some(sink) = self.config.read_sink() else {
+        let read_sink = self.config.read_sink();
+        let log = self.config.invalid_sink().is_some();
+        if read_sink.is_none() && !log {
             return Ok(());
-        };
-        let failed = |error: String| ValidatorError::ReadSinkFailed { error };
-        let mut triples = Vec::with_capacity(arcs.len());
-        for (pred, value) in arcs {
-            let (subject, object) = if pred.is_direct() { (node, value) } else { (value, node) };
-            let subject: oxrdf::NamedOrBlankNode = subject
-                .as_object()
-                .clone()
-                .try_into()
-                .map_err(|e| failed(format!("{e}")))?;
-            let predicate: oxrdf::NamedNode = pred.iri().clone().into();
-            let object: oxrdf::Term = object.as_object().clone().into();
-            triples.push(oxrdf::Triple::new(subject, predicate, object));
         }
-        let mut sink = sink.0.lock().map_err(|e| failed(e.to_string()))?;
-        for triple in triples {
-            sink.push(triple).map_err(|e| failed(e.to_string()))?;
+        let triples = arcs_to_triples(node, arcs)?;
+        if log {
+            self.read_log
+                .lock()
+                .map_err(|e| sink_failed(e.to_string()))?
+                .extend(triples.iter().cloned());
+        }
+        match read_sink {
+            Some(sink) => push_triples(sink, triples),
+            None => Ok(()),
+        }
+    }
+
+    /// Pushes the valid subgraph into the valid sink and the invalid one into the
+    /// invalid sink, for those installed. The valid subgraph has the arcs matched
+    /// by the conformant pairs checked so far, and by the pairs they rely on,
+    /// transitively: a pair that turned out not to conform contributes nothing.
+    /// The invalid subgraph has the triples read that are not in the valid one.
+    pub(crate) fn record_valid(&self) -> Result<()> {
+        let valid_sink = self.config.valid_sink();
+        let invalid_sink = self.config.invalid_sink();
+        if valid_sink.is_none() && invalid_sink.is_none() {
+            return Ok(());
+        }
+        let mut valid = IndexSet::new();
+        for (node, arcs) in self.valid_arcs() {
+            valid.extend(arcs_to_triples(&node, &arcs)?);
+        }
+        if let Some(sink) = invalid_sink {
+            let read = self.read_log.lock().map_err(|e| sink_failed(e.to_string()))?;
+            push_triples(sink, read.iter().filter(|t| !valid.contains(*t)).cloned())?;
+        }
+        if let Some(sink) = valid_sink {
+            push_triples(sink, valid)?;
         }
         Ok(())
     }
 
+    /// The arcs, grouped by focus node, that justify the conformant pairs checked
+    /// so far (see [`Reason::collect_matched`]), following the pairs they rely on.
+    pub fn valid_arcs(&self) -> Vec<(Node, Vec<(Pred, Node)>)> {
+        let mut queue: Vec<PosAtom> = self
+            .checked
+            .iter()
+            .filter_map(|atom| match atom {
+                Atom::Pos(pa) => Some(pa.clone()),
+                Atom::Neg(_) => None,
+            })
+            .collect();
+        queue.reverse();
+        let mut visited = HashSet::new();
+        let mut arcs = Vec::new();
+        while let Some(pa) = queue.pop() {
+            if !visited.insert(pa.clone()) {
+                continue;
+            }
+            let mut refs = Vec::new();
+            match self.typing.get(&pa) {
+                Some(Either::Right(reasons)) => reasons.iter().for_each(|r| r.collect_matched(&mut arcs, &mut refs)),
+                Some(Either::Left(_)) => continue,
+                None => self
+                    .find_reasons(&pa)
+                    .iter()
+                    .for_each(|r| r.collect_matched(&mut arcs, &mut refs)),
+            }
+            refs.reverse();
+            queue.extend(refs.into_iter().filter(|r| !visited.contains(r)));
+        }
+        arcs
+    }
+}
+
+/// Pushes `arcs` of `node` into `sink`: an outgoing arc as `(node, pred, value)`,
+/// an incoming one as `(value, pred, node)`.
+fn sink_failed(error: String) -> ValidatorError {
+    ValidatorError::ReadSinkFailed { error }
+}
+
+/// The triples of `arcs` of `node`: an outgoing arc as `(node, pred, value)`, an
+/// incoming one as `(value, pred, node)`.
+fn arcs_to_triples(node: &Node, arcs: &[(Pred, Node)]) -> Result<Vec<oxrdf::Triple>> {
+    let mut triples = Vec::with_capacity(arcs.len());
+    for (pred, value) in arcs {
+        let (subject, object) = if pred.is_direct() { (node, value) } else { (value, node) };
+        let subject: oxrdf::NamedOrBlankNode = subject
+            .as_object()
+            .clone()
+            .try_into()
+            .map_err(|e| sink_failed(format!("{e}")))?;
+        let predicate: oxrdf::NamedNode = pred.iri().clone().into();
+        let object: oxrdf::Term = object.as_object().clone().into();
+        triples.push(oxrdf::Triple::new(subject, predicate, object));
+    }
+    Ok(triples)
+}
+
+fn push_triples(sink: &rudof_rdf_sink::TriplesSink, triples: impl IntoIterator<Item = oxrdf::Triple>) -> Result<()> {
+    let mut sink = sink.0.lock().map_err(|e| sink_failed(e.to_string()))?;
+    for triple in triples {
+        sink.push(triple).map_err(|e| sink_failed(e.to_string()))?;
+    }
+    Ok(())
+}
+
+impl Engine {
     fn cnv_err<S>(&self, err: S::Err) -> ValidatorError
     where
         S: NeighsRDF,
@@ -2190,22 +2285,38 @@ fn check_exprs_neigh(
     idx: &ShapeLabelIdx,
     typing: &RefTyping,
 ) -> Result<ValidationResult> {
+    let mut matched = Matched::default();
     for rbe in exprs.iter() {
-        let result = check_expr_neigh(rbe, neighs, node, shape, idx, typing)?;
-        if result.is_left() {
-            return fail(ValidatorError::ShapeFailed {
-                node: Box::new(node.clone()),
-                shape: Box::new(shape.clone()),
-                idx: *idx,
-                errors: result.left().unwrap().clone(),
-            });
+        match check_expr_neigh(rbe, neighs, node, shape, idx, typing)? {
+            Either::Left(errors) => {
+                return fail(ValidatorError::ShapeFailed {
+                    node: Box::new(node.clone()),
+                    shape: Box::new(shape.clone()),
+                    idx: *idx,
+                    errors,
+                });
+            },
+            Either::Right(reasons) => {
+                for reason in reasons {
+                    if let Reason::Shape { matched: m, .. } = reason {
+                        matched.extend(m);
+                    }
+                }
+            },
         }
     }
     pass(Reason::Shape {
         node: node.clone(),
         shape: Box::new(shape.clone()),
         idx: *idx,
+        matched,
     })
+}
+
+/// The arcs a successful match of a triple expression against `neighs` used: all of
+/// them, as the expression is matched against the whole bag.
+fn matched_arcs(neighs: &[(Pred, Node, SemanticActionContext)]) -> Vec<(Pred, Node)> {
+    neighs.iter().map(|(p, v, _)| (p.clone(), v.clone())).collect()
 }
 
 fn check_expr_neigh(
@@ -2304,7 +2415,10 @@ fn check_expr_neigh(
                             node: node.clone(),
                             shape: Box::new(shape.clone()),
                             idx: *idx,
-                            // TODO: Add pending_values to reason
+                            matched: Matched {
+                                arcs: matched_arcs(neighs),
+                                refs: pending_values.iter_vr().map(|(n, idx, _)| (n.clone(), *idx)).collect(),
+                            },
                         });
                     } else {
                         /*tracing::trace!(
@@ -2324,6 +2438,10 @@ fn check_expr_neigh(
                         node: node.clone(),
                         shape: Box::new(shape.clone()),
                         idx: *idx,
+                        matched: Matched {
+                            arcs: matched_arcs(neighs),
+                            refs: Vec::new(),
+                        },
                     });
                 }
             },

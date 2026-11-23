@@ -100,6 +100,20 @@ impl Validator {
         self.config.read_sink = sink;
     }
 
+    /// Installs the sink that receives the valid subgraph of the next
+    /// validations (see [`ValidatorConfig::with_valid_sink`]), or removes it
+    /// with `None`.
+    pub fn set_valid_sink(&mut self, sink: Option<TriplesSink>) {
+        self.config.valid_sink = sink;
+    }
+
+    /// Installs the sink that receives the invalid subgraph of the next
+    /// validations (see [`ValidatorConfig::with_invalid_sink`]), or removes it
+    /// with `None`.
+    pub fn set_invalid_sink(&mut self, sink: Option<TriplesSink>) {
+        self.config.invalid_sink = sink;
+    }
+
     /// The config to hand `Engine::new`: same as `self.config`, except that
     /// when `show_intermediate_results` is on and no observer was installed
     /// explicitly, a [`ConsoleTypingObserver`] is added, bound to the

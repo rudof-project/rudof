@@ -3,7 +3,7 @@ use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
 use serde::{Serialize, ser::SerializeMap};
 use shex_ast::{
-    Node, ShapeLabelIdx,
+    Node, Pred, ShapeLabelIdx,
     ir::{node_constraint::NodeConstraint, schema_ir::SchemaIR, shape::Shape, shape_expr::ShapeExpr},
 };
 use std::{fmt::Display, io};
@@ -71,6 +71,8 @@ pub enum Reason {
         node: Node,
         shape: Box<Shape>,
         idx: ShapeLabelIdx,
+        /// The arcs of `node` the triple expression matched, and the pairs they refer to.
+        matched: Matched,
     },
     ShapeRef {
         node: Node,
@@ -95,7 +97,60 @@ pub enum Reason {
     },
 }
 
+/// The part of the data that a successful match of a triple expression used: the
+/// arcs of the focus node it matched (an inverse predicate means the value is the
+/// subject of the triple) and the `(value, shape)` pairs those arcs refer to, which
+/// must conform too.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Matched {
+    pub arcs: Vec<(Pred, Node)>,
+    pub refs: Vec<(Node, ShapeLabelIdx)>,
+}
+
+impl Matched {
+    pub fn extend(&mut self, other: Matched) {
+        self.arcs.extend(other.arcs);
+        self.refs.extend(other.refs);
+    }
+}
+
 impl Reason {
+    /// Collects the data this reason justifies the conformance with: the arcs matched
+    /// by its triple expressions, as `(focus node, arcs)`, into `arcs`, and the pairs
+    /// it relies on (shape references, and the references of matched arcs) into
+    /// `refs`. A negation passes because something does *not* match, so it justifies
+    /// nothing with the data.
+    pub fn collect_matched(&self, arcs: &mut Vec<(Node, Vec<(Pred, Node)>)>, refs: &mut Vec<(Node, ShapeLabelIdx)>) {
+        match self {
+            Reason::Shape { node, matched, .. } => {
+                arcs.push((node.clone(), matched.arcs.clone()));
+                refs.extend(matched.refs.iter().cloned());
+            },
+            Reason::ShapeRef { node, idx } => refs.push((node.clone(), *idx)),
+            Reason::ShapeAnd { reasons, .. } => {
+                for r in reasons.iter().flatten() {
+                    r.collect_matched(arcs, refs);
+                }
+            },
+            Reason::DescendantShape { reasons, .. }
+            | Reason::ParentShapeMainShapePassed { reasons, .. }
+            | Reason::ShapeExtends { reasons, .. }
+            | Reason::ShapeOr { reasons, .. }
+            | Reason::ParentShapePassed { reasons, .. }
+            | Reason::PartitionComponent { reasons, .. }
+            | Reason::Partition { reasons, .. } => {
+                for r in reasons.iter() {
+                    r.collect_matched(arcs, refs);
+                }
+            },
+            Reason::ShapeNot { .. }
+            | Reason::NodeConstraint { .. }
+            | Reason::ParentShapeNodeConstraint { .. }
+            | Reason::Empty { .. }
+            | Reason::External { .. } => {},
+        }
+    }
+
     // Build a tree representation of the reason,
     // where the root is the main reason and the leaves are the sub-reasons
     fn build_tree(
@@ -325,7 +380,7 @@ impl Display for Reason {
                 }
                 Ok(())
             },
-            Reason::Shape { node, shape, idx } => {
+            Reason::Shape { node, shape, idx, .. } => {
                 write!(f, "Shape passed. Node {node}, shape {idx}: {shape}")
             },
             Reason::ShapeOr {

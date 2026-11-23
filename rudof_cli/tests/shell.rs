@@ -1541,3 +1541,53 @@ fn shell_compare_show_diff_with_the_loaded_data() {
     }
     assert_eq!(out.code, 0);
 }
+
+/// Issue #957: the statistics and the valid/invalid subgraphs of a ShEx
+/// validation are available from the shell, with the same flags as the CLI.
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn shell_shex_validate_reports_statistics_and_writes_the_valid_subgraph() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let data = dir.path().join("data.ttl");
+    let schema = dir.path().join("schema.shex");
+    let map = dir.path().join("map.sm");
+    std::fs::write(
+        &data,
+        "prefix : <http://a.example/>\n\
+         :alice :name \"Alice\" ; :email \"alice@example.org\" .\n\
+         :bob :name \"Robert\", \"Bob\" ; :email \"bob@example.org\" .\n",
+    )
+    .unwrap();
+    std::fs::write(
+        &schema,
+        "prefix : <http://a.example/>\nprefix xsd: <http://www.w3.org/2001/XMLSchema#>\n:Person { :name xsd:string }\n",
+    )
+    .unwrap();
+    std::fs::write(
+        &map,
+        "<http://a.example/alice>@<http://a.example/Person>,<http://a.example/bob>@<http://a.example/Person>\n",
+    )
+    .unwrap();
+    let valid = dir.path().join("valid.ttl");
+    let invalid = dir.path().join("invalid.ttl");
+    let script = format!(
+        "shex-validate {data} -s {schema} -m {map} --statistics --valid {valid} --invalid {invalid}\n\
+         exit\n",
+        data = data.display(),
+        schema = schema.display(),
+        map = map.display(),
+        valid = valid.display(),
+        invalid = invalid.display(),
+    );
+    let out = run_shell(&script);
+    assert_eq!(out.code, 0, "{}", out.transcript());
+    assert!(out.stdout.contains("Valid triples: 1"), "{}", out.transcript());
+    assert!(out.stdout.contains("Invalid triples: 2"), "{}", out.transcript());
+
+    let valid = std::fs::read_to_string(&valid).unwrap();
+    assert!(valid.contains(":alice :name \"Alice\""), "{valid}");
+    assert!(!valid.contains(":bob"), "{valid}");
+    let invalid = std::fs::read_to_string(&invalid).unwrap();
+    assert!(invalid.contains(":bob"), "{invalid}");
+    assert!(!invalid.contains(":alice"), "{invalid}");
+}

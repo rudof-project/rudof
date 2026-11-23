@@ -1,0 +1,5 @@
+<http://example.org/alice> <http://example.org/name> "Alice" .
+<http://example.org/alice> <http://example.org/parentOf> <http://example.org/bob> .
+<http://example.org/alice> <http://example.org/parentOf> <http://example.org/dave> .
+<http://example.org/bob> <http://example.org/name> "Bob" .
+<http://example.org/dave> <http://example.org/name> "5"^^<http://www.w3.org/2001/XMLSchema#integer> .

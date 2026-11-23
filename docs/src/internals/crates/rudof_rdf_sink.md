@@ -101,8 +101,8 @@ Two things to know:
 
 ## Producers
 
-- ShEx validation: `ValidatorConfig::with_read_sink(TriplesSink)` (in `rudof_lib`, `validate_shex().with_read_sink(..)`) receives every triple `Engine::neighs` reads. `rudof shex-validate --statistics` and `--validated-graph` use a `GraphSink`.
-- SHACL validation: `ShaclConfig::with_read_sink(TriplesSink)` (in `rudof_lib`, `validate_shacl().with_read_sink(..)`). SHACL has no single read point, so the processor reads the data through a `ReadRecorder` store, which pushes every triple `triples_matching` returns. Native engine only; the class index is skipped while recording, and the `by-shape` prefetch is not recorded. `rudof shacl-validate --statistics` and `--validated-graph` use a `GraphSink`.
+- ShEx validation: `ValidatorConfig::with_read_sink(TriplesSink)` (in `rudof_lib`, `validate_shex().with_read_sink(..)`) receives every triple `Engine::neighs` reads. `rudof shex-validate --statistics` and `--visited` use a `GraphSink`. `ValidatorConfig::with_valid_sink` and `with_invalid_sink` receive the valid and invalid subgraphs when the validation ends. `--valid` and `--invalid` use a `GraphSink` for these subgraphs. `--statistics` without these options uses a `CountingSink`.
+- SHACL validation: `ShaclConfig::with_read_sink(TriplesSink)` (in `rudof_lib`, `validate_shacl().with_read_sink(..)`). SHACL has no single read point, so the processor reads the data through a `ReadRecorder` store, which pushes every triple `triples_matching` returns. Native engine only; the class index is skipped while recording, and the `by-shape` prefetch is not recorded. `rudof shacl-validate --statistics` and `--visited` use a `GraphSink`.
 
 ## Dependencies
 

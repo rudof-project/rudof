@@ -82,7 +82,7 @@ fn test_validate_shex_success() {
     .unwrap();
 
     // Validate
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     assert!(rudof.shex_validation_results.is_some());
 
@@ -104,7 +104,7 @@ fn test_validate_shex_no_data_error() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Try to validate without data
-    let result = validate_shex(&mut rudof, None);
+    let result = validate_shex(&mut rudof, None, None, None);
 
     assert!(result.is_err());
 }
@@ -133,7 +133,7 @@ fn test_validate_shex_no_schema_error() {
     .unwrap();
 
     // Try to validate without schema
-    let result = validate_shex(&mut rudof, None);
+    let result = validate_shex(&mut rudof, None, None, None);
 
     assert!(result.is_err());
 }
@@ -170,7 +170,7 @@ fn test_validate_shex_no_shapemap_error() {
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Try to validate without shapemap
-    let result = validate_shex(&mut rudof, None);
+    let result = validate_shex(&mut rudof, None, None, None);
 
     assert!(result.is_err());
 }
@@ -217,7 +217,7 @@ fn test_validate_shex_validation_failure() {
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
     // Validate - should succeed but with validation failure result
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     assert!(rudof.shex_validation_results.is_some());
 
@@ -269,7 +269,7 @@ fn test_serialize_validation_results_compact() {
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     // Test compact format
     let serialized =
@@ -324,7 +324,7 @@ fn test_serialize_validation_results_json() {
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     // Test JSON format
     let serialized = serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Json));
@@ -377,7 +377,7 @@ fn test_serialize_validation_results_csv() {
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     // Test CSV format
     let serialized = serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Csv));
@@ -430,7 +430,7 @@ fn test_serialize_validation_results_details() {
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     // Test details format
     let serialized =
@@ -505,7 +505,7 @@ fn test_validate_shex_multiple_nodes() {
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
     // Validate
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     assert!(rudof.shex_validation_results.is_some());
 
@@ -568,7 +568,7 @@ fn test_validate_shex_iri_pattern_with_base_schema() {
     )
     .unwrap();
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
     assert!(
@@ -607,7 +607,7 @@ fn test_validate_shex_bnode_focus_in_shapemap() {
     let shapemap = InputSpec::str(r#"_:abcd@<http://a.example/S1>"#);
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
     assert!(
@@ -698,7 +698,7 @@ fn validate_shapemap_against_mock_endpoint(limits: rudof_rdf::rdf_core::Endpoint
     )
     .unwrap();
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     let results = rudof.shex_validation_results.as_ref().unwrap();
     let mut seen = 0;
@@ -828,7 +828,7 @@ fn validate_instance_of_class_with_superclasses(shape: &str) -> (bool, u64) {
     )
     .unwrap();
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
 
     let results = rudof.shex_validation_results.as_ref().unwrap();
     let (_, _, status) = results.iter().next().unwrap();
@@ -884,9 +884,184 @@ fn test_validate_shex_read_sink_is_removed_after_the_run() {
     .unwrap();
 
     let sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
-    validate_shex(&mut rudof, Some(TriplesSink::new(sink.clone()))).unwrap();
+    validate_shex(&mut rudof, Some(TriplesSink::new(sink.clone())), None, None).unwrap();
     assert_eq!(sink.lock().unwrap().report().triples, 2);
 
-    validate_shex(&mut rudof, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
     assert_eq!(sink.lock().unwrap().report().triples, 2);
+}
+
+/// Issue #957: the valid sink gets only the triples of the conformant pairs,
+/// the read sink every triple the validation read.
+#[test]
+fn test_validate_shex_valid_sink_keeps_only_the_valid_triples() {
+    use rudof_rdf::rdf_impl::OxigraphInMemory;
+    use rudof_rdf_sink::TriplesSink;
+    use rudof_rdf_sink::{GraphSink, RdfSink};
+    use std::sync::{Arc, Mutex};
+
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let data = InputSpec::str(
+        r#"<alice> <name> "Alice" ; <email> "alice@example.org" .
+           <bob> <name> "Robert", "Bob" ; <email> "bob@example.org" ."#,
+    );
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        Some("http://example.org/"),
+        None,
+        None,
+        None,
+        None,
+        EndpointStrategy::default(),
+    )
+    .unwrap();
+    let schema = InputSpec::str(
+        r#"prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+           <Person> { <name> xsd:string }"#,
+    );
+    load_shex_schema(
+        &mut rudof,
+        &schema,
+        Some(&ShExFormat::ShExC),
+        Some("http://example.org/"),
+        None,
+    )
+    .unwrap();
+    let shapemap = InputSpec::str(r#"<alice>@<Person>, <bob>@<Person>"#);
+    load_shapemap(
+        &mut rudof,
+        &shapemap,
+        Some(&ShapeMapFormat::Compact),
+        Some("http://example.org/"),
+        Some("http://example.org/"),
+    )
+    .unwrap();
+
+    let read = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
+    let valid = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
+    let invalid = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
+    validate_shex(
+        &mut rudof,
+        Some(TriplesSink::new(read.clone())),
+        Some(TriplesSink::new(valid.clone())),
+        Some(TriplesSink::new(invalid.clone())),
+    )
+    .unwrap();
+    let triples = |sink: &Arc<Mutex<GraphSink>>| {
+        let mut ts: Vec<String> = sink.lock().unwrap().graph().quads().map(|q| q.to_string()).collect();
+        ts.sort();
+        ts
+    };
+    assert_eq!(
+        triples(&valid),
+        vec![r#"<http://example.org/alice> <http://example.org/name> "Alice""#]
+    );
+    assert_eq!(
+        triples(&invalid),
+        vec![
+            r#"<http://example.org/bob> <http://example.org/name> "Bob""#,
+            r#"<http://example.org/bob> <http://example.org/name> "Robert""#,
+        ]
+    );
+    assert_eq!(triples(&read).len(), 3);
+
+    // Removed after the run, as the read sink is.
+    validate_shex(&mut rudof, None, None, None).unwrap();
+    assert_eq!(valid.lock().unwrap().report().triples, 1);
+}
+
+/// The read, valid and invalid sinks against a SPARQL endpoint, Wikidata style:
+/// a named endpoint with its own prefix map, `wdt:P31` values and an `EXTRA`
+/// predicate. `wd:Q42` conforms through `wd:Q5`; `wd:Q7` does not.
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn test_validate_shex_sinks_against_an_endpoint() {
+    use rudof_rdf::rdf_core::BuildRDF;
+    use rudof_rdf::rdf_impl::OxigraphInMemory;
+    use rudof_rdf_sink::{GraphSink, TriplesSink};
+    use std::str::FromStr;
+    use std::sync::{Arc, Mutex};
+
+    let wd = |local: &str| format!("http://www.wikidata.org/entity/{local}");
+    let p31 = "http://www.wikidata.org/prop/direct/P31".to_string();
+    let url = serve_triples_endpoint(vec![
+        (wd("Q42"), p31.clone(), wd("Q5")),
+        (wd("Q42"), p31.clone(), wd("Q999")),
+        (wd("Q7"), p31.clone(), wd("Q999")),
+    ]);
+    let config = RudofConfig::from_str(&format!(
+        r#"
+[rdf.endpoints.mockdata]
+name = "MockData"
+query_url = "{url}"
+
+[rdf.endpoints.mockdata.prefixmap]
+wd = "http://www.wikidata.org/entity/"
+wdt = "http://www.wikidata.org/prop/direct/"
+"#
+    ))
+    .unwrap();
+    let mut rudof = Rudof::new(config);
+    rudof
+        .load_data()
+        .with_endpoint("mockdata")
+        .with_endpoint_limits(rudof_rdf::rdf_core::EndpointLimits::default().with_min_request_interval_ms(Some(0)))
+        .execute()
+        .unwrap();
+    let schema = InputSpec::str(
+        r#"prefix wd: <http://www.wikidata.org/entity/>
+           prefix wdt: <http://www.wikidata.org/prop/direct/>
+           <Human> EXTRA wdt:P31 { wdt:P31 [ wd:Q5 ] }"#,
+    );
+    load_shex_schema(
+        &mut rudof,
+        &schema,
+        Some(&ShExFormat::ShExC),
+        Some("http://example.org/"),
+        None,
+    )
+    .unwrap();
+    let shapemap =
+        InputSpec::str("<http://www.wikidata.org/entity/Q42>@<Human>, <http://www.wikidata.org/entity/Q7>@<Human>");
+    load_shapemap(
+        &mut rudof,
+        &shapemap,
+        Some(&ShapeMapFormat::Compact),
+        Some("http://example.org/"),
+        Some("http://example.org/"),
+    )
+    .unwrap();
+
+    let new_sink = || Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
+    let (read, valid, invalid) = (new_sink(), new_sink(), new_sink());
+    validate_shex(
+        &mut rudof,
+        Some(TriplesSink::new(read.clone())),
+        Some(TriplesSink::new(valid.clone())),
+        Some(TriplesSink::new(invalid.clone())),
+    )
+    .unwrap();
+
+    let triples = |sink: &Arc<Mutex<GraphSink>>| {
+        let mut ts: Vec<String> = sink.lock().unwrap().graph().quads().map(|q| q.to_string()).collect();
+        ts.sort();
+        ts
+    };
+    let triple = |s: &str, o: &str| format!("<{}> <{p31}> <{}>", wd(s), wd(o));
+    assert_eq!(triples(&valid), vec![triple("Q42", "Q5")]);
+    assert_eq!(triples(&invalid), vec![triple("Q42", "Q999"), triple("Q7", "Q999")]);
+    assert_eq!(triples(&read).len(), 3);
+
+    // The endpoint's prefixes reach the sinks, so their Turtle uses them.
+    let mut turtle = Vec::new();
+    valid
+        .lock()
+        .unwrap()
+        .graph()
+        .serialize(&rudof_rdf::rdf_core::RDFFormat::Turtle, &mut turtle)
+        .unwrap();
+    let turtle = String::from_utf8(turtle).unwrap();
+    assert!(turtle.contains("wd:Q42 wdt:P31 wd:Q5"), "{turtle}");
 }

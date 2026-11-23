@@ -1,6 +1,6 @@
 use crate::{
     Result, Rudof,
-    errors::{DataError, IriError},
+    errors::{DataError, IriError, RudofError},
     formats::{IriNormalizationMode, QueryType},
     types::Data,
 };
@@ -335,6 +335,34 @@ pub fn resolution_prefixmap(rudof: &Rudof, rdf: &RdfData) -> PrefixMap {
     let mut prefixmap = rudof.prefixes.clone().unwrap_or_default();
     prefixmap.merge(rdf.prefixmap().unwrap_or_default());
     prefixmap
+}
+
+/// Declares on each of `sinks` the prefixes of the loaded data, filled in with the
+/// session's default prefixes (see [`resolution_prefixmap`]), so that a sink that
+/// writes a document, like the Turtle of a validated graph, abbreviates IRIs the way
+/// the data does. With no RDF data loaded, only the default prefixes are declared.
+///
+/// Prefixes the caller declared on a sink beforehand are kept, except those whose
+/// alias the data declares as well: the data's win.
+pub fn declare_data_prefixes<'a>(
+    rudof: &Rudof,
+    sinks: impl IntoIterator<Item = &'a rudof_rdf_sink::TriplesSink>,
+) -> Result<()> {
+    let prefixmap = match rdf_data(rudof) {
+        Ok(rdf) => resolution_prefixmap(rudof, rdf),
+        Err(_) => rudof.prefixes.clone().unwrap_or_default(),
+    };
+    let failed = |error: String| RudofError::Generic {
+        error: format!("Failed to declare the data prefixes on a sink: {error}"),
+    };
+    for sink in sinks {
+        sink.0
+            .lock()
+            .map_err(|e| failed(e.to_string()))?
+            .declare_prefixes(prefixmap.clone())
+            .map_err(|e| failed(e.to_string()))?;
+    }
+    Ok(())
 }
 
 /// Parses a term written as text into an RDF term, resolving prefixed names against

@@ -1,0 +1,6 @@
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:alice :name "Alice" ; :worksFor :acme .
+:acme :name 1 .
+:bob :name "Bob" ; :worksFor :ibm .
+:ibm :name "IBM" .

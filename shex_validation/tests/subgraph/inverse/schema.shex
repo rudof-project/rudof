@@ -1,0 +1,4 @@
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+:Child { :name xsd:string ; ^:parentOf @:Parent }
+:Parent { :name xsd:string }
