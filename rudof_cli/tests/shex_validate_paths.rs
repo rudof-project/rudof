@@ -83,11 +83,18 @@ fn paths(value: &Value, out: &mut Vec<String>) {
 fn the_details_name_the_failing_triple_constraint() {
     let dir = fixture();
     let stdout = validate(dir.path(), "details");
-    // The table wraps long lines: read its cells as one text.
-    let text: String = stdout.chars().filter(|c| !c.is_whitespace() && *c != '│').collect();
-    // the first of the two constraints on :category
+    // The details are written below the table, each in one line, so the path is not cut. It is
+    // the first of the two constraints on :category.
     assert!(
-        text.contains("predicate:categoryat@<#IssueShape>~:category/self::[0]required"),
+        stdout.contains(
+            "\n  :issue1 does not conform to <#IssueShape>: property :category: expected exactly 1 value, \
+             found 0 (1st :category constraint, at @<#IssueShape>~:category/self::[0])\n"
+        ),
+        "{stdout}"
+    );
+    // The row of the table sums it up, without repeating the node and the shape.
+    assert!(
+        stdout.contains("│ property :category: expected exactly 1 value"),
         "{stdout}"
     );
 }
