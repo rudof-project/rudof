@@ -659,22 +659,19 @@ impl ValidatorError {
                 show_node(node),
                 show_label(idx, schema, width)
             ),
+            // The node is said by the line above or the row of the result.
             ValidatorError::ExternalShapeRejected {
-                node,
                 idx,
                 resolver,
                 rationale,
+                ..
             } => format!(
-                "External shape {} rejected for node: {} and resolver {}: {}",
+                "resolver {resolver} rejected EXTERNAL shape {}: {rationale}",
                 show_label(idx, schema, width),
-                show_node(node),
-                resolver,
-                rationale
             ),
-            ValidatorError::ExternalShapeUnresolved { node, idx } => format!(
-                "External shape {} for node {} could not be resolved by any registered resolver",
+            ValidatorError::ExternalShapeUnresolved { idx, .. } => format!(
+                "no registered resolver resolved EXTERNAL shape {}",
                 show_label(idx, schema, width),
-                show_node(node),
             ),
             ValidatorError::MaxStepsExceeded { node, idx, max_steps } => format!(
                 "Validation aborted: exceeded the configured limit of {} step(s) while proving {}@{}",
