@@ -1,5 +1,7 @@
+use rbe::Component;
 use serde::{Deserialize, Serialize};
 
+use crate::ShapeLabelIdx;
 use crate::ir::{shape_expr::ShapeExpr, shape_label::ShapeLabel, source_idx::SourceIdx};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -7,15 +9,40 @@ pub struct ShapeExprInfo {
     label: Option<ShapeLabel>,
     expr: ShapeExpr,
     source: SourceIdx,
+    #[serde(default)]
+    location: Option<ShapeExprLocation>,
+}
+
+/// Where an anonymous shape expression is written in the schema, relative to the shape
+/// expression or triple constraint that contains it. A labelled shape expression is found by its
+/// label and has none.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ShapeExprLocation {
+    /// The operand at `index` of the `ShapeAnd` or `ShapeOr` at `parent`.
+    Operand { parent: ShapeLabelIdx, index: usize },
+    /// The shape expression negated by the `ShapeNot` at `parent`.
+    Negated { parent: ShapeLabelIdx },
+    /// The value expression of the triple constraint compiled as `component` of the shape at
+    /// `shape`.
+    ValueExpr { shape: ShapeLabelIdx, component: Component },
 }
 
 impl ShapeExprInfo {
     pub fn new(label: Option<ShapeLabel>, expr: ShapeExpr, source: SourceIdx) -> Self {
-        ShapeExprInfo { label, expr, source }
+        ShapeExprInfo {
+            label,
+            expr,
+            source,
+            location: None,
+        }
     }
 
     pub fn set_expr(&mut self, expr: ShapeExpr) {
         self.expr = expr;
+    }
+
+    pub fn set_location(&mut self, location: ShapeExprLocation) {
+        self.location = Some(location);
     }
 
     pub fn label(&self) -> Option<&ShapeLabel> {
@@ -28,5 +55,9 @@ impl ShapeExprInfo {
 
     pub fn source_idx(&self) -> &SourceIdx {
         &self.source
+    }
+
+    pub fn location(&self) -> Option<&ShapeExprLocation> {
+        self.location.as_ref()
     }
 }

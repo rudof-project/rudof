@@ -10,11 +10,13 @@ use crate::ir::node_constraint::NodeConstraint;
 use crate::ir::sem_act::SemAct;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
-use crate::ir::shape_expr_info::ShapeExprInfo;
+use crate::ir::shape_expr_info::{ShapeExprInfo, ShapeExprLocation};
 use crate::ir::source_idx::SourceIdx;
+use crate::shexpath::{SchemaPath, SchemaStep};
 use crate::{CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
 use crate::{Expr, Node, Pred, ResolveMethod};
 use prefixmap::{IriRef, PrefixMap};
+use rbe::Component;
 use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
@@ -544,6 +546,60 @@ impl SchemaIR {
 
     pub fn replace_shape(&mut self, idx: &ShapeLabelIdx, se: ShapeExpr) {
         self.shapes.entry(*idx).and_modify(|info| info.set_expr(se));
+    }
+
+    /// Records where the anonymous shape expression at `idx` is written in the schema.
+    pub fn set_location(&mut self, idx: &ShapeLabelIdx, location: ShapeExprLocation) {
+        self.shapes.entry(*idx).and_modify(|info| info.set_location(location));
+    }
+
+    /// The ShExPath of the shape expression at `idx`: `@label` for a labelled one, and for an
+    /// anonymous one the path of what contains it followed by where it is in that.
+    ///
+    /// There is none for a shape expression labelled with a blank node, which a ShExPath can't
+    /// name, nor for one inside it.
+    pub fn path_of(&self, idx: &ShapeLabelIdx) -> Option<SchemaPath> {
+        let info = self.find_shape_idx(idx)?;
+        match info.label() {
+            Some(ShapeLabel::Iri(iri)) => Some(SchemaPath::shape(iri.clone())),
+            Some(ShapeLabel::Start) => Some(SchemaPath::start()),
+            Some(ShapeLabel::BNode(_)) => None,
+            None => match info.location()? {
+                ShapeExprLocation::Operand { parent, index } => {
+                    Some(self.path_of(parent)?.with_step(SchemaStep::Operand(*index)))
+                },
+                ShapeExprLocation::Negated { parent } => Some(self.path_of(parent)?.with_step(SchemaStep::Negated)),
+                ShapeExprLocation::ValueExpr { shape, component } => {
+                    Some(self.component_path(shape, component)?.with_step(SchemaStep::ValueExpr))
+                },
+            },
+        }
+    }
+
+    /// The ShExPath of the triple constraint compiled as `component` of the shape at `idx`:
+    /// `~predicate` after the path of the shape, and its position among the triple constraints on
+    /// the same predicate when there are several.
+    pub fn component_path(&self, idx: &ShapeLabelIdx, component: &Component) -> Option<SchemaPath> {
+        let ShapeExpr::Shape(shape) = self.find_shape_idx(idx)?.expr() else {
+            return None;
+        };
+        let expr = shape.triple_expr();
+        let predicate = expr.get_key(component)?.iri().clone();
+        // Components are numbered in the order their triple constraints are written, which is the
+        // order in which `~predicate` selects them.
+        let same_predicate: Vec<Component> = expr
+            .components()
+            .filter(|(_, pred, _)| *pred.iri() == predicate)
+            .map(|(c, _, _)| c)
+            .collect();
+        let nth = match same_predicate.len() {
+            0 | 1 => None,
+            _ => same_predicate.iter().position(|c| c == component),
+        };
+        Some(
+            self.path_of(idx)?
+                .with_step(SchemaStep::TripleConstraint { predicate, nth }),
+        )
     }
 
     pub fn show_label(&self, label: &ShapeLabel) -> String {
