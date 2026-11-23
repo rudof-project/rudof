@@ -14,7 +14,7 @@ use either::Either;
 use indexmap::IndexSet;
 use itertools::Itertools;
 // use prefixmap::PrefixMap;
-use rbe::{Component, MatchCond};
+use rbe::{Component, MatchCond, RbeError};
 use rudof_iri::iri;
 use rudof_rdf::rdf_core::{
     NeighsRDF,
@@ -2472,6 +2472,34 @@ fn check_expr_neigh(
                             error: error.clone(),
                             constraint: constraint_ref(expr, component.as_ref()),
                         }],
+                    });
+                }
+                // No neighbour could be given to any triple constraint: report the triple
+                // constraints that needed one, as cardinality failures, instead of the bare
+                // "no candidates" of the matcher.
+                if matches!(
+                    err,
+                    RbeError::EmptyCandidatesNoValues { .. } | RbeError::EmptyCandidates { .. }
+                ) && let Ok(violations) = expr.violations_without_values()
+                    && !violations.is_empty()
+                {
+                    let reasons = violations
+                        .into_iter()
+                        .map(
+                            |(component, predicate, expected, current)| NoMatchReason::CardinalityFailed {
+                                candidate: Vec::new(),
+                                predicate,
+                                expected,
+                                current,
+                                constraint: constraint_ref(expr, Some(&component)),
+                            },
+                        )
+                        .collect();
+                    return fail(ValidatorError::NoMatchesFound {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        reasons,
                     });
                 }
                 return fail(ValidatorError::RbeError(err));

@@ -185,6 +185,25 @@ fn a_nested_shape_is_named_by_where_it_is() {
 }
 
 #[test]
+fn a_node_without_values_names_every_triple_constraint_it_misses() {
+    // `:nobody` has no triples at all
+    let failure = failure("nobody", "Person");
+    assert!(
+        failure.reason.starts_with(":nobody does not conform to :Person\n"),
+        "{}",
+        failure.reason
+    );
+    for line in [
+        "property :name: expected exactly 1 value, found 0 (at @:Person~:name)",
+        "property :age: expected exactly 1 value, found 0 (at @:Person~:age)",
+    ] {
+        assert!(failure.reason.contains(line), "{}", failure.reason);
+    }
+    assert!(!failure.reason.contains("No candidates"), "{}", failure.reason);
+    assert_eq!(failure.paths(), ["@:Person", "@:Person~:name", "@:Person~:age"]);
+}
+
+#[test]
 fn a_closed_shape_names_its_shape() {
     let failure = failure("closed", "Closed");
     assert_eq!(failure.reason, "Closed shape :Closed does not allow :z (allowed: :p)");
