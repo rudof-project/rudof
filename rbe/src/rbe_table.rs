@@ -50,7 +50,17 @@ where
 
     // Counter for the number of components
     component_counter: usize,
+
+    // The reference (e.g. shape) whose expression this table is, if known, so a component can be
+    // traced back to where it was declared.
+    #[serde(default)]
+    owner: Option<R>,
 }
+
+/// A value rejected by the condition of a component: the candidate assignment it was tried in, its
+/// key and value, the component whose condition rejected it (unknown when the value was tried
+/// against several components and all of them rejected it) and the error of that condition.
+pub type FailedCandidate<K, V, R, Ctx, P> = (Vec<(K, V)>, K, V, Option<Component>, RbeError<K, V, R, Ctx, P>);
 
 impl<K, V, R, Ctx, P> Default for RbeTable<K, V, R, Ctx, P>
 where
@@ -68,6 +78,7 @@ where
             component_key: HashMap::new(),
             open: false,
             component_counter: 0,
+            owner: None,
         }
     }
 }
@@ -92,24 +103,48 @@ where
         self.component_key.get(c)
     }
 
+    /// The reference whose expression this table is, if it was set with [`Self::set_owner`].
+    pub fn owner(&self) -> Option<&R> {
+        self.owner.as_ref()
+    }
+
+    /// Records the reference (e.g. shape) whose expression this table is.
+    pub fn set_owner(&mut self, owner: R) {
+        self.owner = Some(owner);
+    }
+
+    /// The component the next call to [`Self::add_component`] will return.
+    pub fn next_component(&self) -> Component {
+        Component::from(self.component_counter)
+    }
+
     /// Translates a cardinality-matching error against `Component` ids (as
-    /// produced internally by `RbeStruct<Component>`) into `(key, expected
-    /// cardinality, actual count)` triples naming the real key (e.g.
-    /// predicate) instead of the opaque id, so a caller with more context
+    /// produced internally by `RbeStruct<Component>`) into `(component, key,
+    /// expected cardinality, actual count)` tuples naming the real key (e.g.
+    /// predicate) next to the opaque id, so a caller with more context
     /// (e.g. a prefix map to qualify the key for display) can render it.
     /// `Err` is returned for errors that can't be attributed to a single
     /// key's cardinality (e.g. `Or`-branch interactions); it carries the
     /// original error's `Display` text as a best-effort fallback.
     /// Only called once matching has already failed, so the extra lookups
     /// here don't cost anything on the success path.
-    pub fn cardinality_violations(&self, err: &DerivError<Component>) -> Result<Vec<(K, Cardinality, usize)>, String> {
+    #[allow(clippy::type_complexity)]
+    pub fn cardinality_violations(
+        &self,
+        err: &DerivError<Component>,
+    ) -> Result<Vec<(Component, K, Cardinality, usize)>, String> {
         match err {
             DerivError::CardinalityFail {
                 symbol,
                 expected_cardinality,
                 current_number,
             } => match self.get_key(symbol) {
-                Some(key) => Ok(vec![(key.clone(), expected_cardinality.clone(), *current_number)]),
+                Some(key) => Ok(vec![(
+                    *symbol,
+                    key.clone(),
+                    expected_cardinality.clone(),
+                    *current_number,
+                )]),
                 None => Err(err.to_string()),
             },
             DerivError::CardinalityFailMulti { failures } => {
@@ -217,10 +252,11 @@ where
                         },
                     }
                 }
+                // Every component rejected the value, so no single one of them is to blame.
                 if pairs.is_empty()
                     && let Some(err) = last_err
                 {
-                    prefilter_failed.push((key.clone(), value.clone(), err));
+                    prefilter_failed.push((key.clone(), value.clone(), None, err));
                 }
             } else {
                 for component in components {
@@ -272,7 +308,7 @@ where
                 open: self.open,
                 failed: prefilter_failed
                     .into_iter()
-                    .map(|(key, value, err)| (Vec::new(), key, value, err))
+                    .map(|(key, value, component, err)| (Vec::new(), key, value, component, err))
                     .collect(),
                 failed_cardinality: Vec::new(),
             }))
@@ -438,8 +474,7 @@ where
     /// context (e.g. a prefix map) can render them. Only `IterCartesianProduct`
     /// accumulates these; once the iterator is exhausted (`next()` returned
     /// `None`), this holds an entry for every candidate that was tried.
-    #[allow(clippy::type_complexity)]
-    pub fn failed_candidates(&self) -> &[(Vec<(K, V)>, K, V, RbeError<K, V, R, Ctx, P>)] {
+    pub fn failed_candidates(&self) -> &[FailedCandidate<K, V, R, Ctx, P>] {
         match self {
             MatchTableIter::Empty(_) => &[],
             MatchTableIter::NonEmpty(cp) => cp.failed_candidates(),
@@ -476,8 +511,7 @@ where
     open: bool,
     // Candidates previously rejected by a per-value condition failure.
     // Grows as the iterator is driven; complete once it returns `None`.
-    #[allow(clippy::type_complexity)]
-    failed: Vec<(Vec<(K, V)>, K, V, RbeError<K, V, R, Ctx, P>)>,
+    failed: Vec<FailedCandidate<K, V, R, Ctx, P>>,
     // Candidates rejected because their cardinality didn't satisfy the
     // expression, kept structured (candidate, raw error over `Component`
     // ids) since translating `Component` back to the real key requires the
@@ -493,8 +527,7 @@ where
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    #[allow(clippy::type_complexity)]
-    pub fn failed_candidates(&self) -> &[(Vec<(K, V)>, K, V, RbeError<K, V, R, Ctx, P>)] {
+    pub fn failed_candidates(&self) -> &[FailedCandidate<K, V, R, Ctx, P>] {
         &self.failed
     }
 
@@ -529,7 +562,7 @@ where
             Some(vs) => {
                 let candidate: Vec<(K, V)> = vs.iter().map(|(k, v, _, _, _)| (k.clone(), v.clone())).collect();
                 let mut pending: Pending<K, V, R> = Pending::empty();
-                for (k, v, ctx, _, cond) in &vs {
+                for (k, v, ctx, component, cond) in &vs {
                     match cond.matches(v, ctx) {
                         Ok(mut new_pending) => {
                             /*tracing::trace!(
@@ -544,7 +577,8 @@ where
                         },
                         Err(err) => {
                             //tracing::trace!("Failed condition: {cond} with value: {v} and key {k}, error: {err}");
-                            self.failed.push((candidate, k.clone(), v.clone(), err.clone()));
+                            self.failed
+                                .push((candidate, k.clone(), v.clone(), Some(*component), err.clone()));
                             return Some(Err(err));
                         },
                     }
@@ -819,8 +853,63 @@ mod tests {
         assert_eq!(iter.next(), None);
         let failed = iter.failed_candidates();
         assert_eq!(failed.len(), 1);
-        let (_candidate, key, value, _err) = &failed[0];
+        let (_candidate, key, value, component, _err) = &failed[0];
         assert_eq!(*key, 'p');
         assert_eq!(*value, 'z');
+        // Both components rejected 'z', so neither is blamed.
+        assert_eq!(*component, None);
+    }
+
+    /// A value rejected by the only component of its key names that component.
+    #[test]
+    fn test_rbe_table_failed_candidate_names_its_component() {
+        let vs = vec![('p', 'x', ' '), ('q', 'z', ' ')];
+
+        let mut rbe_table: Table = RbeTable::new();
+        let c1 = rbe_table.add_component('p', &is_x());
+        let c2 = rbe_table.add_component('q', &is_y());
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 1, Max::IntMax(1)),
+        ]));
+
+        let mut iter = rbe_table.matches(vs).unwrap();
+        assert!(matches!(iter.next(), Some(Err(_))));
+        let failed = iter.failed_candidates();
+        assert_eq!(failed.len(), 1);
+        let (_candidate, key, _value, component, _err) = &failed[0];
+        assert_eq!(*key, 'q');
+        assert_eq!(*component, Some(c2));
+    }
+
+    /// A cardinality violation names the component next to its key.
+    #[test]
+    fn test_rbe_table_cardinality_violation_names_its_component() {
+        let mut rbe_table: Table = RbeTable::new();
+        let c1 = rbe_table.add_component('p', &is_x());
+        let c2 = rbe_table.add_component('p', &is_y());
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 1, Max::IntMax(1)),
+        ]));
+        let err = DerivError::CardinalityFail {
+            symbol: c2,
+            expected_cardinality: Cardinality::from(crate::Min::from(1), Max::IntMax(1)),
+            current_number: 0,
+        };
+        let violations = rbe_table.cardinality_violations(&err).unwrap();
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].0, c2);
+        assert_eq!(violations[0].1, 'p');
+    }
+
+    #[test]
+    fn test_rbe_table_owner_and_next_component() {
+        let mut rbe_table: Table = RbeTable::new();
+        assert_eq!(rbe_table.owner(), None);
+        rbe_table.set_owner('S');
+        assert_eq!(rbe_table.owner(), Some(&'S'));
+        let next = rbe_table.next_component();
+        assert_eq!(rbe_table.add_component('p', &is_x()), next);
     }
 }

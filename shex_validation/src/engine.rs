@@ -2342,17 +2342,19 @@ fn check_expr_neigh(
         let mut reasons: Vec<NoMatchReason> = result_iter
             .failed_candidates()
             .iter()
-            .map(|(candidate, predicate, value, error)| NoMatchReason::ConditionFailed {
-                candidate: candidate.clone(),
-                predicate: predicate.clone(),
-                value: value.clone(),
-                error: error.clone(),
-            })
+            .map(
+                |(candidate, predicate, value, _component, error)| NoMatchReason::ConditionFailed {
+                    candidate: candidate.clone(),
+                    predicate: predicate.clone(),
+                    value: value.clone(),
+                    error: error.clone(),
+                },
+            )
             .collect();
         for (candidate, err) in result_iter.failed_cardinality() {
             match expr.cardinality_violations(err) {
                 Ok(violations) => {
-                    for (predicate, expected, current) in violations {
+                    for (_component, predicate, expected, current) in violations {
                         reasons.push(NoMatchReason::CardinalityFailed {
                             candidate: candidate.clone(),
                             predicate,
@@ -2453,7 +2455,7 @@ fn check_expr_neigh(
                 // bailed out here instead of exhausting the iterator. Recover it
                 // so the reported error can name the node and property involved,
                 // not just the bare condition failure.
-                if let Some((candidate, predicate, value, error)) = result_iter.failed_candidates().last() {
+                if let Some((candidate, predicate, value, _component, error)) = result_iter.failed_candidates().last() {
                     return fail(ValidatorError::NoMatchesFound {
                         node: Box::new(node.clone()),
                         shape: Box::new(shape.clone()),
