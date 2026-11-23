@@ -1,5 +1,7 @@
 use prefixmap::PrefixMap;
 use rbe::{Cardinality, Component, RbeError};
+use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::shexpath::SchemaPath;
 use shex_ast::{Node, Pred, ShapeLabelIdx, cond_kind::CondKind, ir::semantic_action_context::SemanticActionContext};
 
 /// The triple constraint a failure is about: the shape whose triple expression it is in and the
@@ -41,7 +43,28 @@ pub enum NoMatchReason {
 }
 
 impl NoMatchReason {
-    pub fn show_qualified(&self, nodes_prefixmap: &PrefixMap) -> String {
+    /// The triple constraint this reason is about, when it is known.
+    pub fn constraint(&self) -> Option<&ConstraintRef> {
+        match self {
+            NoMatchReason::ConditionFailed { constraint, .. } | NoMatchReason::CardinalityFailed { constraint, .. } => {
+                constraint.as_ref()
+            },
+            NoMatchReason::Other { .. } => None,
+        }
+    }
+
+    /// The ShExPath of the triple constraint this reason is about, when it is known.
+    pub fn path(&self, schema: &SchemaIR) -> Option<SchemaPath> {
+        let (idx, component) = self.constraint()?;
+        schema.component_path(idx, component)
+    }
+
+    pub fn show_qualified(&self, nodes_prefixmap: &PrefixMap, schema: &SchemaIR) -> String {
+        // ` at @:S~:p`, where in the schema the failing triple constraint is
+        let at = self
+            .path(schema)
+            .map(|path| format!(" at {}", path.show_qualified(&schema.prefixmap())))
+            .unwrap_or_default();
         let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
         let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
         let show_candidate = |candidate: &[(Pred, Node)]| {
@@ -59,7 +82,7 @@ impl NoMatchReason {
                 error,
                 ..
             } => format!(
-                "Condition failed for predicate {} on node {}: {}",
+                "Condition failed for predicate {}{at} on node {}: {}",
                 // show_candidate(candidate),
                 show_pred(predicate),
                 value.show_qualified(nodes_prefixmap),
@@ -72,7 +95,7 @@ impl NoMatchReason {
                 current,
                 ..
             } => format!(
-                "Candidate [{}] rejected: predicate {} required cardinality {expected:?} but got {current}",
+                "Candidate [{}] rejected: predicate {}{at} required cardinality {expected:?} but got {current}",
                 show_candidate(candidate),
                 show_pred(predicate),
             ),

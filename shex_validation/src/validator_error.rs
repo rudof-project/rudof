@@ -323,10 +323,12 @@ impl ValidatorError {
         error
     }
 
+    /// The label of the shape expression at `idx`, or, for an anonymous one, its ShExPath.
     fn show_idx(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
         schema
             .shape_label_from_idx(idx)
             .map(|l| schema.show_label(l))
+            .or_else(|| show_path(idx, schema))
             .unwrap_or_else(|| idx.to_string())
     }
 
@@ -422,8 +424,8 @@ impl ValidatorError {
                 let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
                 err.show_qualified(&show_pred, &show_node)
             },
-            ValidatorError::ClosedShapeWithRemainderPreds { .. } => {
-                "Closed shape but found extra properties".to_string()
+            ValidatorError::ClosedShapeWithRemainderPreds { idx, .. } => {
+                format!("Closed shape {} but found extra properties", show_idx(idx))
             },
             ValidatorError::ParentShapeFailed { .. } => "Parent shape failed".to_string(),
             ValidatorError::ShapeExtendsNoMainShape { .. } => {
@@ -552,7 +554,7 @@ impl ValidatorError {
             },
             ValidatorError::NoMatchesFound { reasons, .. } => {
                 for reason in reasons {
-                    tree.leaves.push(Tree::new(reason.show_qualified(nodes_prefixmap)));
+                    tree.leaves.push(Tree::new(reason.show_qualified(nodes_prefixmap, schema)));
                 }
                 Ok(())
             },
@@ -643,7 +645,7 @@ impl ValidatorError {
         // property involved, instead of the generic
         // "Shape ... failed ...: no candidates matched" + one-line tree.
         if let ValidatorError::NoMatchesFound { node, reasons, .. } = self
-            && let [NoMatchReason::ConditionFailed { predicate, error, .. }] = reasons.as_slice()
+            && let [reason @ NoMatchReason::ConditionFailed { predicate, error, .. }] = reasons.as_slice()
         {
             // Datatype IRIs in the error (e.g. xsd:int) come from the schema, not
             // necessarily from the validated data, so they may be unqualified in
@@ -652,7 +654,16 @@ impl ValidatorError {
             // prefixes (for the node/value themselves) as the priority.
             let mut combined = schema.prefixmap();
             combined.merge(nodes_prefixmap.clone());
-            return Ok(describe_condition_error(node, Some(predicate), error, &combined));
+            let path = reason
+                .path(schema)
+                .map(|path| path.show_qualified(&schema.prefixmap()));
+            return Ok(describe_condition_error(
+                node,
+                Some(predicate),
+                path.as_deref(),
+                error,
+                &combined,
+            ));
         }
         let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
         let mut tree = Tree::new(root_str);
@@ -664,19 +675,25 @@ impl ValidatorError {
 /// Renders a condition failure (e.g. a datatype mismatch from `CondKind::Datatype`)
 /// naming the node and, when known, the property that carried the offending
 /// value — e.g. "Datatype error on node :x for property :age: expected xsd:int,
-/// found xsd:integer, lexical form "30"^^xsd:integer".
+/// found xsd:integer, lexical form "30"^^xsd:integer". With the ShExPath `path` of the triple
+/// constraint, it says where in the schema the constraint is: "... for property :age at
+/// @:Person~:age: ...".
 fn describe_condition_error(
     node: &Node,
     predicate: Option<&Pred>,
+    path: Option<&str>,
     error: &RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>,
     nodes_prefixmap: &PrefixMap,
 ) -> String {
     let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
     let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
-    let location = match predicate {
+    let mut location = match predicate {
         Some(p) => format!("on node {} for property {}", show_node(node), show_pred(p)),
         None => format!("on node {}", show_node(node)),
     };
+    if let Some(path) = path {
+        location.push_str(&format!(" at {path}"));
+    }
     match error {
         RbeError::CondFailed { prefix, details } => {
             let details_str = details
@@ -717,16 +734,29 @@ fn show_neg_cycles(neg_cycles: &[Vec<(String, String, Vec<String>)>]) -> String 
         .join("; ")
 }
 
+/// The label of the shape expression at `idx`, or, for an anonymous one, the expression itself
+/// followed by where it is in the schema: `{ :p . } at @:S~:q/valueExpr`.
 fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR, width: usize) -> String {
     if let Some(label) = schema.shape_label_from_idx(idx) {
         schema.show_label(label)
     } else {
         if let Some(info) = schema.find_shape_idx(idx) {
-            show_shape_expr(info.expr(), schema, width)
+            let expr = show_shape_expr(info.expr(), schema, width);
+            match show_path(idx, schema) {
+                Some(path) => format!("{expr} at {path}"),
+                None => expr,
+            }
         } else {
             format!("Shape {idx}")
         }
     }
+}
+
+/// The ShExPath of the shape expression at `idx`, with the prefixes of the schema.
+fn show_path(idx: &ShapeLabelIdx, schema: &SchemaIR) -> Option<String> {
+    schema
+        .path_of(idx)
+        .map(|path| path.show_qualified(&schema.prefixmap()))
 }
 
 fn show_shape_expr(shape_expr: &ShapeExpr, schema: &SchemaIR, width: usize) -> String {
