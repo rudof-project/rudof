@@ -12,130 +12,138 @@
 //! cargo test -p shacl --test shacl_testsuite -- --bless
 //! ```
 
-use libtest_mimic::{Arguments, Failed, Trial};
-use shacl_testsuite::TestSuiteError;
-use shacl_testsuite::ignored::{IgnoredEntry, IgnoredList};
-use shacl_testsuite::manifest::{ManifestTestEntry, ManifestWalker};
-use shacl_testsuite::runner::{TestOutcome, node_expr_outcome, run_outcome};
-use std::path::{Path, PathBuf};
+#[cfg(not(target_family = "wasm"))]
+mod run {
+    use libtest_mimic::{Arguments, Failed, Trial};
+    use shacl_testsuite::TestSuiteError;
+    use shacl_testsuite::ignored::{IgnoredEntry, IgnoredList};
+    use shacl_testsuite::manifest::{ManifestTestEntry, ManifestWalker};
+    use shacl_testsuite::runner::{TestOutcome, node_expr_outcome, run_outcome};
+    use std::path::{Path, PathBuf};
 
-const IGNORED_TOML: &str = "tests/ignored.toml";
+    const IGNORED_TOML: &str = "tests/ignored.toml";
 
-#[derive(Clone, Copy)]
-enum Kind {
-    Validate,
-    NodeExpr,
-}
-
-struct Entry {
-    /// `<suite>::<test IRI>`, e.g. `data-shapes::urn:x-shacl-test:/core/node/disjoint-001`
-    name: String,
-    kind: Kind,
-    path: PathBuf,
-}
-
-fn suite_entries(suite: &str, root: &str) -> Result<Vec<Entry>, TestSuiteError> {
-    let walker = ManifestWalker::new(root);
-    let mut out = Vec::new();
-
-    let as_entry = |suite: String, kind: Kind| {
-        move |e: ManifestTestEntry| Entry {
-            name: format!("{suite}::{}", e.entry),
-            kind,
-            path: e.path,
-        }
-    };
-
-    out.extend(
-        walker
-            .validate_entries()?
-            .into_iter()
-            .map(as_entry(suite.to_string(), Kind::Validate)),
-    );
-    out.extend(
-        walker
-            .node_expr_entries()?
-            .into_iter()
-            .map(as_entry(suite.to_string(), Kind::NodeExpr)),
-    );
-
-    Ok(out)
-}
-
-fn all_entries() -> Result<Vec<Entry>, TestSuiteError> {
-    let mut out = suite_entries("data-shapes", "tests/data-shapes/data-shapes-test-suite")?;
-    out.extend(suite_entries("shacl12", "tests/data-shapes/shacl12-test-suite")?);
-    Ok(out)
-}
-
-fn run_entry(entry: &Entry) -> TestOutcome {
-    match entry.kind {
-        Kind::Validate => run_outcome(&entry.path),
-        Kind::NodeExpr => node_expr_outcome(&entry.path),
+    #[derive(Clone, Copy)]
+    enum Kind {
+        Validate,
+        NodeExpr,
     }
-}
 
-/// Re-runs every entry and rewrites `tests/ignored.toml`
-fn bless(entries: &[Entry]) -> Result<(), TestSuiteError> {
-    let path = Path::new(IGNORED_TOML);
-    let previous = IgnoredList::load(path)?;
+    struct Entry {
+        /// `<suite>::<test IRI>`, e.g. `data-shapes::urn:x-shacl-test:/core/node/disjoint-001`
+        name: String,
+        kind: Kind,
+        path: PathBuf,
+    }
 
-    let mut ignored = Vec::new();
-    let (mut added, mut removed) = (0usize, 0usize);
+    fn suite_entries(suite: &str, root: &str) -> Result<Vec<Entry>, TestSuiteError> {
+        let walker = ManifestWalker::new(root);
+        let mut out = Vec::new();
 
-    for entry in entries {
-        match run_entry(entry) {
-            TestOutcome::Passed => {
-                if previous.is_ignored(&entry.name) {
-                    removed += 1;
-                }
-            },
-            TestOutcome::Failed(_) => {
-                if !previous.is_ignored(&entry.name) {
-                    added += 1;
-                }
-                ignored.push(IgnoredEntry {
-                    test: entry.name.clone(),
-                    reason: previous.reason_for(&entry.name).map(str::to_string),
-                    issue: None,
-                });
-            },
+        let as_entry = |suite: String, kind: Kind| {
+            move |e: ManifestTestEntry| Entry {
+                name: format!("{suite}::{}", e.entry),
+                kind,
+                path: e.path,
+            }
+        };
+
+        out.extend(
+            walker
+                .validate_entries()?
+                .into_iter()
+                .map(as_entry(suite.to_string(), Kind::Validate)),
+        );
+        out.extend(
+            walker
+                .node_expr_entries()?
+                .into_iter()
+                .map(as_entry(suite.to_string(), Kind::NodeExpr)),
+        );
+
+        Ok(out)
+    }
+
+    fn all_entries() -> Result<Vec<Entry>, TestSuiteError> {
+        let mut out = suite_entries("data-shapes", "tests/data-shapes/data-shapes-test-suite")?;
+        out.extend(suite_entries("shacl12", "tests/data-shapes/shacl12-test-suite")?);
+        Ok(out)
+    }
+
+    fn run_entry(entry: &Entry) -> TestOutcome {
+        match entry.kind {
+            Kind::Validate => run_outcome(&entry.path),
+            Kind::NodeExpr => node_expr_outcome(&entry.path),
         }
     }
 
-    IgnoredList { ignored }.save(path)?;
-    eprintln!("tests/ignored.toml updated: {added} added, {removed} removed");
-    Ok(())
-}
+    /// Re-runs every entry and rewrites `tests/ignored.toml`
+    fn bless(entries: &[Entry]) -> Result<(), TestSuiteError> {
+        let path = Path::new(IGNORED_TOML);
+        let previous = IgnoredList::load(path)?;
 
-fn main() -> Result<(), TestSuiteError> {
-    let mut raw_args: Vec<String> = std::env::args().collect();
-    let bless_requested = raw_args.iter().any(|a| a == "--bless");
-    raw_args.retain(|a| a != "--bless");
+        let mut ignored = Vec::new();
+        let (mut added, mut removed) = (0usize, 0usize);
 
-    let entries = all_entries()?;
+        for entry in entries {
+            match run_entry(entry) {
+                TestOutcome::Passed => {
+                    if previous.is_ignored(&entry.name) {
+                        removed += 1;
+                    }
+                },
+                TestOutcome::Failed(_) => {
+                    if !previous.is_ignored(&entry.name) {
+                        added += 1;
+                    }
+                    ignored.push(IgnoredEntry {
+                        test: entry.name.clone(),
+                        reason: previous.reason_for(&entry.name).map(str::to_string),
+                        issue: None,
+                    });
+                },
+            }
+        }
 
-    if bless_requested {
-        return bless(&entries);
+        IgnoredList { ignored }.save(path)?;
+        eprintln!("tests/ignored.toml updated: {added} added, {removed} removed");
+        Ok(())
     }
 
-    let args = Arguments::from_iter(raw_args.into_iter().skip(1));
-    let ignored = IgnoredList::load(Path::new(IGNORED_TOML))?;
+    pub fn main() -> Result<(), TestSuiteError> {
+        let mut raw_args: Vec<String> = std::env::args().collect();
+        let bless_requested = raw_args.iter().any(|a| a == "--bless");
+        raw_args.retain(|a| a != "--bless");
 
-    let trials = entries
-        .into_iter()
-        .map(|entry| {
-            let is_known = ignored.is_ignored(&entry.name);
-            Trial::test(entry.name.clone(), move || match (is_known, run_entry(&entry)) {
-                (true, TestOutcome::Failed(_)) => Ok(()),
-                (true, TestOutcome::Passed) => Err(Failed::from(
-                    "listed in tests/ignored.toml as failing but it now passes; remove the entry",
-                )),
-                (false, TestOutcome::Failed(message)) => Err(Failed::from(message)),
-                (false, TestOutcome::Passed) => Ok(()),
+        let entries = all_entries()?;
+
+        if bless_requested {
+            return bless(&entries);
+        }
+
+        let args = Arguments::from_iter(raw_args.into_iter().skip(1));
+        let ignored = IgnoredList::load(Path::new(IGNORED_TOML))?;
+
+        let trials = entries
+            .into_iter()
+            .map(|entry| {
+                let is_known = ignored.is_ignored(&entry.name);
+                Trial::test(entry.name.clone(), move || match (is_known, run_entry(&entry)) {
+                    (true, TestOutcome::Failed(_)) => Ok(()),
+                    (true, TestOutcome::Passed) => Err(Failed::from(
+                        "listed in tests/ignored.toml as failing but it now passes; remove the entry",
+                    )),
+                    (false, TestOutcome::Failed(message)) => Err(Failed::from(message)),
+                    (false, TestOutcome::Passed) => Ok(()),
+                })
             })
-        })
-        .collect();
+            .collect();
 
-    libtest_mimic::run(&args, trials).exit();
+        libtest_mimic::run(&args, trials).exit();
+    }
+}
+
+fn main() {
+    #[cfg(not(target_family = "wasm"))]
+    run::main().unwrap();
 }
