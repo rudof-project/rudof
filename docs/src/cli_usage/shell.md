@@ -57,7 +57,7 @@ rudof> shex examples/user.shex
 1 shape(s) loaded
 rudof> shex-validate -n :a -l :User
 ╭──────┬───────┬────────┬───────────────────────╮
-│ Node │ Shape │ Status │ Details               │
+│ Node │ Shape │ Status │ Summary               │
 ├──────┼───────┼────────┼───────────────────────┤
 │ :a   │ :User │ OK     │ Shape passed :a@:User │
 ╰──────┴───────┴────────┴───────────────────────╯

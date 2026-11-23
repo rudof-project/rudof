@@ -9,30 +9,82 @@ This command can be used to validate RDF data using ShEx. This is a specific com
 ```sh
 $ rudof shex-validate -s examples/user.shex -m examples/user.sm examples/user.ttl
 
-╭──────┬───────┬────────┬──────────────────────────────────────────────────────────────────────────────────╮
-│ Node │ Shape │ Status │ Details                                                                          │
-├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :a   │ :User │ OK     │ Shape passed :a@:User                                                            │
-├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :b   │ :User │ OK     │ Shape passed :b@:User                                                            │
-├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :c   │ :User │ OK     │ Shape passed :c@:User                                                            │
-├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :d   │ :User │ FAIL   │ Datatype error on node :d for property schema:name: found xsd:integer, expected  │
-│      │       │        │ xsd:string, lexical form "23"^^xsd:integer                                       │
-├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :e   │ :User │ FAIL   │ Shape :User failed for node :e                                                   │
-│      │       │        │ └── References failed:                                                           │
-│      │       │        │     └── Predicate schema:knows -> :d as :User                                    │
-│      │       │        │         └── Shape :User failed for node :d: no candidates matched the expression │
-│      │       │        │             └── Condition failed for predicate schema:name on node "23"^^<http:/ │
-│      │       │        │ /www.w3.org/2001/XMLSchema#integer>: Datatype error: found <http://www.w3.org/20 │
-│      │       │        │ 01/XMLSchema#integer>, expected <http://www.w3.org/2001/XMLSchema#string>, lexic │
-│      │       │        │ al form "23"^^<http://www.w3.org/2001/XMLSchema#integer>                         │
-├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :f   │ :User │ FAIL   │ No candidates to match. Missing: [schema:name]                                   │
-╰──────┴───────┴────────┴──────────────────────────────────────────────────────────────────────────────────╯
+╭──────┬───────┬────────┬──────────────────────────────────────────────────────────────────────────╮
+│ Node │ Shape │ Status │ Summary                                                                  │
+├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────┤
+│ :a   │ :User │ OK     │ Shape passed :a@:User                                                    │
+├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────┤
+│ :b   │ :User │ OK     │ Shape passed :b@:User                                                    │
+├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────┤
+│ :c   │ :User │ OK     │ Shape passed :c@:User                                                    │
+├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────┤
+│ :d   │ :User │ FAIL   │ property schema:name: Datatype error: found xsd:integer, expected xsd:s… │
+├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────┤
+│ :e   │ :User │ FAIL   │ property schema:knows value :d does not conform to :User                 │
+├──────┼───────┼────────┼──────────────────────────────────────────────────────────────────────────┤
+│ :f   │ :User │ FAIL   │ property schema:name: expected exactly 1 value, found 0 (at @:User~sche… │
+╰──────┴───────┴────────┴──────────────────────────────────────────────────────────────────────────╯
+
+:d@:User FAIL
+  :d does not conform to :User: property schema:name: Datatype error: found xsd:integer, expected xsd:string, lexical form "23"^^xsd:integer (at @:User~schema:name)
+
+:e@:User FAIL
+  :e does not conform to :User
+  └── property schema:knows value :d does not conform to :User
+      └── property schema:name: Datatype error: found xsd:integer, expected xsd:string, lexical form "23"^^xsd:integer (at @:User~schema:name)
+
+:f@:User FAIL
+  :f does not conform to :User: property schema:name: expected exactly 1 value, found 0 (at @:User~schema:name)
 ```
+
+### Reading the results
+
+The default result format, `details`, prints a table with one row per node and shape. The
+`Summary` column shows why a node does not conform, in one line. The table does not repeat the
+node and the shape, and it cuts a long summary with `…`.
+
+A result that does not fit in its row is written in full below the table, under
+`node@shape status`. These lines are not wrapped. When a node does not conform for one reason, the
+result is one line. When there are more reasons, or a reason that depends on another node, the
+result is a tree:
+
+```text
+:e does not conform to :User                                        <- the node and the shape
+└── property schema:knows value :d does not conform to :User        <- a value that fails a shape
+    └── property schema:name: Datatype error: ... (at @:User~schema:name)   <- why the value fails
+```
+
+Each line that names a triple constraint ends with `(at PATH)`. `PATH` is the
+[ShExPath](../using-rudof/shexpath.md) of the triple constraint in the schema, for example
+`@:User~schema:name`. Give the path to [`shex-path`](shex_path.md) to see the constraint:
+
+```sh
+rudof shex-path -s examples/user.shex -p "@:User~schema:name"
+```
+
+If a shape has more than one triple constraint on the same predicate, the line also says which one
+fails, for example `(2nd :code constraint, at @:Product~:code/self::[1])`. A triple constraint with
+a label is named by its label, for example `$:knowsLabel`. An anonymous shape, such as the shape
+inside a triple constraint or a branch of an `OR`, is named by its path, for example
+`@:Order~:item/valueExpr` or `@:Contact/shapeExprs/*[0]`.
+
+The `json` result format gives the same text in the `error` of each entry of `appInfo.info`. Each
+entry also has two more fields:
+
+- `path`: the ShExPath of the place where the error is. If the error names one triple constraint,
+  this is that constraint. If not, it is the shape.
+- `paths`: the ShExPaths of all the shapes and triple constraints that the error names, from the
+  outermost to the innermost.
+
+```json
+{
+  "error": ":f does not conform to :User: property schema:name: expected exactly 1 value, found 0 (at @:User~schema:name)",
+  "path": "@:User~schema:name",
+  "paths": ["@:User", "@:User~schema:name"]
+}
+```
+
+The paths use the prefixes of the schema. Thus, you can evaluate them against the schema.
 
 ### Validate data using ShEx schema, a node and a shape
 
@@ -40,7 +92,7 @@ $ rudof shex-validate -s examples/user.shex -m examples/user.sm examples/user.tt
 $ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http://example.org/User" examples/user.ttl
 
 ╭──────┬───────┬────────┬───────────────────────╮
-│ Node │ Shape │ Status │ Details               │
+│ Node │ Shape │ Status │ Summary               │
 ├──────┼───────┼────────┼───────────────────────┤
 │ :a   │ :User │ OK     │ Shape passed :a@:User │
 ╰──────┴───────┴────────┴───────────────────────╯
@@ -64,7 +116,7 @@ Use `--visited <FILE>` to write the triples that the validation reads to a file.
 $ rudof shex-validate -s examples/user.shex -n "http://example.org/a" -l "http://example.org/User" examples/user.ttl --statistics --visited a.ttl
 
 ╭──────┬───────┬────────┬───────────────────────╮
-│ Node │ Shape │ Status │ Details               │
+│ Node │ Shape │ Status │ Summary               │
 ├──────┼───────┼────────┼───────────────────────┤
 │ :a   │ :User │ OK     │ Shape passed :a@:User │
 ╰──────┴───────┴────────┴───────────────────────╯
@@ -192,15 +244,16 @@ Without any resolver, `:alice` already fails because `:Address` is rejected outr
 ```sh
 $ rudof shex-validate -s examples/person.shex -n "http://example.org/alice" -l "http://example.org/Person" examples/person.ttl
 
-╭────────┬─────────┬────────┬──────────────────────────────────────────────────────────────────────────────────╮
-│ Node   │ Shape   │ Status │ Details                                                                          │
-├────────┼─────────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :alice │ :Person │ FAIL   │ Shape :Person failed for node :alice                                             │
-│        │         │        │ └── References failed:                                                           │
-│        │         │        │     └── Predicate :address -> :alice_addr as :Address                            │
-│        │         │        │         └── External shape :Address rejected for node: :alice_addr and resolver  │
-│        │         │        │ reject-all: EXTERNAL shape rejected: no resolver supplied a definition           │
-╰────────┴─────────┴────────┴──────────────────────────────────────────────────────────────────────────────────╯
+╭────────┬─────────┬────────┬──────────────────────────────────────────────────────────────────╮
+│ Node   │ Shape   │ Status │ Summary                                                          │
+├────────┼─────────┼────────┼──────────────────────────────────────────────────────────────────┤
+│ :alice │ :Person │ FAIL   │ property :address value :alice_addr does not conform to :Address │
+╰────────┴─────────┴────────┴──────────────────────────────────────────────────────────────────╯
+
+:alice@:Person FAIL
+  :alice does not conform to :Person
+  └── property :address value :alice_addr does not conform to :Address
+      └── resolver reject-all rejected EXTERNAL shape :Address: no resolver supplied a definition
 ```
 
 Use `--external-resolver` (repeatable) to install resolvers that substitute or judge `EXTERNAL` shapes. Resolvers are applied in the order they appear on the command line (the most recently registered is consulted first, and the default `reject-all` always sits at the tail of the chain).
@@ -228,24 +281,23 @@ With the externs file plugged in, `:alice` validates and `:bob` still fails beca
 $ rudof shex-validate -s examples/person.shex --external-resolver schema:examples/address.shex -n "http://example.org/alice" -l "http://example.org/Person" examples/person.ttl
 
 ╭────────┬─────────┬────────┬─────────────────────────────╮
-│ Node   │ Shape   │ Status │ Details                     │
+│ Node   │ Shape   │ Status │ Summary                     │
 ├────────┼─────────┼────────┼─────────────────────────────┤
 │ :alice │ :Person │ OK     │ Shape passed :alice@:Person │
 ╰────────┴─────────┴────────┴─────────────────────────────╯
 
 $ rudof shex-validate -s examples/person.shex --external-resolver schema:examples/address.shex -n "http://example.org/bob" -l "http://example.org/Person" examples/person.ttl
 
-╭──────┬─────────┬────────┬──────────────────────────────────────────────────────────────────────────────────╮
-│ Node │ Shape   │ Status │ Details                                                                          │
-├──────┼─────────┼────────┼──────────────────────────────────────────────────────────────────────────────────┤
-│ :bob │ :Person │ FAIL   │ Shape :Person failed for node :bob                                               │
-│      │         │        │ └── References failed:                                                           │
-│      │         │        │     └── Predicate :address -> :bob_addr as :Address                              │
-│      │         │        │         └── Shape :Address failed for node :bob_addr: no candidates matched the  │
-│      │         │        │ expression                                                                       │
-│      │         │        │             └── Candidate [:street "Oak Avenue"] rejected: predicate :city requi │
-│      │         │        │ red cardinality {1, 1} but got 0                                                 │
-╰──────┴─────────┴────────┴──────────────────────────────────────────────────────────────────────────────────╯
+╭──────┬─────────┬────────┬────────────────────────────────────────────────────────────────╮
+│ Node │ Shape   │ Status │ Summary                                                        │
+├──────┼─────────┼────────┼────────────────────────────────────────────────────────────────┤
+│ :bob │ :Person │ FAIL   │ property :address value :bob_addr does not conform to :Address │
+╰──────┴─────────┴────────┴────────────────────────────────────────────────────────────────╯
+
+:bob@:Person FAIL
+  :bob does not conform to :Person
+  └── property :address value :bob_addr does not conform to :Address
+      └── property :city: expected exactly 1 value, found 0 (at @:Address~:city)
 ```
 
 ### Invalid specs
