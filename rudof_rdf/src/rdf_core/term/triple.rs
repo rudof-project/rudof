@@ -258,9 +258,7 @@ impl Object {
                 subject,
                 predicate,
                 object,
-            } => {
-                subject.as_ref().length() + predicate.as_str().chars().count() + object.as_ref().length()
-            }
+            } => subject.as_ref().length() + predicate.as_str().chars().count() + object.as_ref().length(),
         }
     }
 
