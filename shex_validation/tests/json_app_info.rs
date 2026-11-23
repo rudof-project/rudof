@@ -74,8 +74,8 @@ fn app_info_entries(node: &str) -> Vec<String> {
 fn errors_show_shape_labels_and_prefixed_names() {
     let errors = app_info_entries("ko");
     assert_eq!(errors.len(), 1, "{errors:?}");
-    assert!(errors[0].starts_with("Shape :T failed for node :ko"), "{errors:?}");
-    assert!(errors[0].contains(":y as :U"), "{errors:?}");
+    assert!(errors[0].starts_with(":ko does not conform to :T"), "{errors:?}");
+    assert!(errors[0].contains("value :y does not conform to :U"), "{errors:?}");
     assert!(!errors[0].contains("http://"), "{errors:?}");
 }
 

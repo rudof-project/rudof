@@ -122,10 +122,10 @@ fn failure(node: &str, shape: &str) -> Failure {
 #[test]
 fn a_failed_condition_names_its_triple_constraint() {
     let failure = failure("old", "Person");
-    assert!(
-        failure.reason.contains("for property :age at @:Person~:age:"),
-        "{}",
-        failure.reason
+    assert_eq!(
+        failure.reason,
+        ":old does not conform to :Person: property :age: Datatype error: found xsd:string, \
+         expected xsd:integer, lexical form \"old\" (at @:Person~:age)"
     );
     assert_eq!(failure.path(), "@:Person~:age");
     assert_eq!(failure.paths(), ["@:Person", "@:Person~:age"]);
@@ -135,12 +135,10 @@ fn a_failed_condition_names_its_triple_constraint() {
 #[test]
 fn a_failed_cardinality_names_its_triple_constraint() {
     let failure = failure("noname", "Person");
-    assert!(
-        failure
-            .reason
-            .contains("predicate :name at @:Person~:name required cardinality"),
-        "{}",
-        failure.reason
+    assert_eq!(
+        failure.reason,
+        ":noname does not conform to :Person: property :name: expected exactly 1 value, found 0 \
+         (at @:Person~:name)"
     );
     assert_eq!(failure.path(), "@:Person~:name");
     assert_eq!(failure.selected(failure.path()), ["TripleConstraint(:name)"]);
@@ -149,12 +147,10 @@ fn a_failed_cardinality_names_its_triple_constraint() {
 #[test]
 fn constraints_on_the_same_predicate_are_told_apart() {
     let failure = failure("once", "Twice");
-    assert!(
-        failure
-            .reason
-            .contains("predicate :p at @:Twice~:p/self::[1] required cardinality"),
-        "{}",
-        failure.reason
+    assert_eq!(
+        failure.reason,
+        ":once does not conform to :Twice: property :p: expected exactly 1 value, found 0 \
+         (2nd :p constraint, at @:Twice~:p/self::[1])"
     );
     assert_eq!(failure.path(), "@:Twice~:p/self::[1]");
     // the second constraint on :p, `:p xsd:string`
@@ -170,20 +166,15 @@ fn constraints_on_the_same_predicate_are_told_apart() {
 #[test]
 fn a_nested_shape_is_named_by_where_it_is() {
     let failure = failure("nested", "Nested");
-    assert!(
-        failure.reason.contains(":inner as @:Nested~:q/valueExpr"),
-        "{}",
-        failure.reason
+    // The anonymous shape is named by its path, the chain of references to it is one line, and
+    // the datatypes of the nested error are written with the prefixes of the schema.
+    assert_eq!(
+        failure.reason,
+        ":nested does not conform to :Nested\n\
+         └── property :q value :inner does not conform to @:Nested~:q/valueExpr\n    \
+         └── property :s: Datatype error: found xsd:integer, expected xsd:string, \
+         lexical form \"3\"^^xsd:integer (at @:Nested~:q/valueExpr~:s)"
     );
-    assert!(
-        failure
-            .reason
-            .contains("predicate :s at @:Nested~:q/valueExpr~:s on node"),
-        "{}",
-        failure.reason
-    );
-    // The datatypes of the nested error are written with the prefixes of the schema.
-    assert!(!failure.reason.contains("<http://www.w3.org/"), "{}", failure.reason);
     assert_eq!(failure.path(), "@:Nested~:q/valueExpr~:s");
     assert_eq!(
         failure.paths(),
@@ -196,13 +187,7 @@ fn a_nested_shape_is_named_by_where_it_is() {
 #[test]
 fn a_closed_shape_names_its_shape() {
     let failure = failure("closed", "Closed");
-    assert!(
-        failure
-            .reason
-            .starts_with("Closed shape :Closed but found extra properties"),
-        "{}",
-        failure.reason
-    );
+    assert_eq!(failure.reason, "Closed shape :Closed does not allow :z (allowed: :p)");
     assert_eq!(failure.path(), "@:Closed");
     assert_eq!(failure.selected(failure.path()), ["Shape"]);
 }
@@ -230,6 +215,16 @@ fn every_path_of_a_failure_selects_one_item() {
 #[test]
 fn the_branches_of_an_or_are_named_by_where_they_are() {
     let failure = failure("neither", "Either");
+    assert_eq!(
+        failure.reason,
+        ":neither does not conform to any branch of the OR\n\
+         ├── branch 0 (@:Either/shapeExprs/*[0])\n\
+         │   └── property :p: Datatype error: found xsd:integer, expected xsd:string, \
+         lexical form \"1\"^^xsd:integer (at @:Either/shapeExprs/*[0]~:p)\n\
+         └── branch 1 (@:Either/shapeExprs/*[1])\n    \
+         └── property :q: Datatype error: found xsd:integer, expected xsd:string, \
+         lexical form \"2\"^^xsd:integer (at @:Either/shapeExprs/*[1]~:q)"
+    );
     assert!(
         failure.paths().contains(&"@:Either/shapeExprs/*[0]~:p"),
         "{:?}",

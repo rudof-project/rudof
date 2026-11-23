@@ -268,20 +268,80 @@ pub enum ValidatorError {
     Cancelled { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
-fn add_errors_to_tree(
+/// Adds `errors` under `tree`, each as a line with the lines that explain it below.
+///
+/// When the line of `tree` already says that `node` does not conform to a shape, an error that
+/// only says that again (that `node` does not conform to some shape, or that references failed)
+/// adds no line of its own: its explanation goes right under `tree`. This keeps chains like
+/// "reference failed" / "shape failed" / "no match" down to the line that says why.
+fn add_errors_to_tree<'a>(
     tree: &mut Tree<String>,
-    errors: &ValidatorErrors,
+    errors: impl IntoIterator<Item = &'a ValidatorError>,
+    node: Option<&Node>,
     nodes_prefixmap: &PrefixMap,
     schema: &SchemaIR,
     width: usize,
 ) -> Result<(), PrefixMapError> {
-    for err in errors.iter() {
-        let child_root = err.root_qualified(nodes_prefixmap, schema, width)?;
-        let mut child_tree = Tree::new(child_root);
-        err.build_tree(&mut child_tree, nodes_prefixmap, schema, width)?;
-        tree.leaves.push(child_tree);
+    for err in errors {
+        let repeats_the_line = match err {
+            ValidatorError::FailedPending { .. } => node.is_some(),
+            _ => node.is_some() && err.non_conforming_node() == node,
+        };
+        if repeats_the_line {
+            err.build_tree(tree, nodes_prefixmap, schema, width)?;
+        } else {
+            let mut child_tree = Tree::new(err.root_qualified(nodes_prefixmap, schema, width)?);
+            err.build_tree(&mut child_tree, nodes_prefixmap, schema, width)?;
+            tree.leaves.push(child_tree);
+        }
     }
     Ok(())
+}
+
+/// Adds a line under `tree` for each reason why the neighbours of a node did not match a triple
+/// expression, without repeating a line. When the reasons were found with different candidate
+/// assignments of the neighbours, they are grouped under a line for each candidate.
+fn add_no_match_reasons_to_tree(
+    tree: &mut Tree<String>,
+    reasons: &[NoMatchReason],
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+) {
+    // (candidate, lines found with it), in the order the candidates were tried
+    let mut groups: Vec<(&[(Pred, Node)], Vec<String>)> = Vec::new();
+    for reason in reasons {
+        let line = reason.show_qualified(nodes_prefixmap, schema);
+        let candidate = reason.candidate();
+        match groups.iter_mut().find(|(c, _)| *c == candidate) {
+            Some((_, lines)) => {
+                if !lines.contains(&line) {
+                    lines.push(line)
+                }
+            },
+            None => groups.push((candidate, vec![line])),
+        }
+    }
+    let grouped = groups.iter().filter(|(candidate, _)| !candidate.is_empty()).count() > 1;
+    for (candidate, lines) in groups {
+        if grouped && !candidate.is_empty() {
+            let shown = candidate
+                .iter()
+                .map(|(p, v)| {
+                    format!(
+                        "{} {}",
+                        nodes_prefixmap.qualify(p.iri()),
+                        v.show_qualified(nodes_prefixmap)
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            let mut candidate_tree = Tree::new(format!("with {shown}"));
+            candidate_tree.leaves.extend(lines.into_iter().map(Tree::new));
+            tree.leaves.push(candidate_tree);
+        } else {
+            tree.leaves.extend(lines.into_iter().map(Tree::new));
+        }
+    }
 }
 
 impl ValidatorError {
@@ -341,6 +401,16 @@ impl ValidatorError {
         match constraints.as_slice() {
             [constraint] => Some(constraint.clone()),
             _ => self.shape_idx().and_then(|idx| schema.path_of(idx)),
+        }
+    }
+
+    /// The node this error says does not conform to a shape, when that and why is all it says.
+    fn non_conforming_node(&self) -> Option<&Node> {
+        match self {
+            ValidatorError::ShapeFailed { node, .. }
+            | ValidatorError::NoMatchesFound { node, .. }
+            | ValidatorError::ShapeRefFailed { node, .. } => Some(node),
+            _ => None,
         }
     }
 
@@ -431,13 +501,9 @@ impl ValidatorError {
         }
     }
 
-    /// The label of the shape expression at `idx`, or, for an anonymous one, its ShExPath.
+    /// How the shape expression at `idx` is named in a message, see [`show_label`].
     fn show_idx(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
-        schema
-            .shape_label_from_idx(idx)
-            .map(|l| schema.show_label(l))
-            .or_else(|| show_path(idx, schema))
-            .unwrap_or_else(|| idx.to_string())
+        show_label(idx, schema, 80)
     }
 
     // This method generates a string representation of the error, showing the root error message
@@ -452,14 +518,15 @@ impl ValidatorError {
         let show_idx = |idx: &ShapeLabelIdx| Self::show_idx(idx, schema);
 
         let s = match self {
-            ValidatorError::ShapeFailed { node, idx, .. } => {
-                format!("Shape {} failed for node {}", show_idx(idx), show_node(node))
+            ValidatorError::ShapeFailed { node, idx, .. }
+            | ValidatorError::NoMatchesFound { node, idx, .. }
+            | ValidatorError::ShapeRefFailed { node, idx, .. } => {
+                format!(
+                    "{} does not conform to {}",
+                    show_node(node),
+                    show_label(idx, schema, width)
+                )
             },
-            ValidatorError::NoMatchesFound { node, idx, .. } => format!(
-                "Shape {} failed for node {}: no candidates matched the expression",
-                show_label(idx, schema, width),
-                show_node(node)
-            ),
             ValidatorError::PartitionComponentFailed { node, idx, .. } => {
                 format!(
                     "Partition component failed ({}@{})",
@@ -505,35 +572,44 @@ impl ValidatorError {
                 show_node(node)
             ),
             ValidatorError::ShapeAndError { shape_expr, node, .. } => format!(
-                "And error: {} failed for node {}",
-                show_label(shape_expr, schema, width),
-                show_node(node)
+                "{} does not conform to {}, which an AND requires",
+                show_node(node),
+                show_label(shape_expr, schema, width)
             ),
             ValidatorError::ShapeOrError { node, .. } => {
-                format!("OR error: all branches failed for node {}", show_node(node))
+                format!("{} does not conform to any branch of the OR", show_node(node))
             },
             ValidatorError::ShapeNotError { node, shape_expr, .. } => {
                 format!(
-                    "Not {}: failed for node {}",
-                    show_shape_expr(shape_expr, schema, width),
-                    show_node(node)
+                    "{} conforms to {}, which a NOT forbids",
+                    show_node(node),
+                    show_shape_expr(shape_expr, schema, width)
                 )
             },
-            ValidatorError::ShapeRefFailed { node, idx, .. } => {
-                format!(
-                    "Reference to {} fails for node {}",
-                    show_label(idx, schema, width),
-                    show_node(node)
-                )
-            },
-            ValidatorError::FailedPending { .. } => "References failed:".to_string(),
+            ValidatorError::FailedPending { .. } => "References failed".to_string(),
             ValidatorError::RbeError(err) => {
                 let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
                 let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
                 err.show_qualified(&show_pred, &show_node)
             },
-            ValidatorError::ClosedShapeWithRemainderPreds { idx, .. } => {
-                format!("Closed shape {} but found extra properties", show_idx(idx))
+            ValidatorError::ClosedShapeWithRemainderPreds {
+                idx,
+                remainder,
+                declared,
+            } => {
+                let show_preds = |preds: &Preds| {
+                    preds
+                        .iter()
+                        .map(|p| nodes_prefixmap.qualify(p.iri()))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                };
+                format!(
+                    "Closed shape {} does not allow {} (allowed: {})",
+                    show_idx(idx),
+                    show_preds(remainder),
+                    show_preds(declared)
+                )
             },
             ValidatorError::ParentShapeFailed { .. } => "Parent shape failed".to_string(),
             ValidatorError::ShapeExtendsNoMainShape { .. } => {
@@ -625,21 +701,30 @@ impl ValidatorError {
         match self {
             ValidatorError::PartitionComponentFailed { errors, .. }
             | ValidatorError::PartitionFailed { errors, .. }
-            | ValidatorError::ShapeRefFailed { errors, .. }
             | ValidatorError::AbstractShapeError { errors, .. }
             | ValidatorError::DescendantShapeError { errors, .. }
             | ValidatorError::DescendantsShapeError { errors, .. }
-            | ValidatorError::ShapeAndError { errors, .. }
             | ValidatorError::ParentShapeMainShapeFailed { errors, .. }
             | ValidatorError::ParentShapeFailed { errors, .. }
             | ValidatorError::ShapeExtendsError { errors, .. } => {
-                add_errors_to_tree(tree, errors, nodes_prefixmap, schema, width)
+                add_errors_to_tree(tree, errors.iter(), None, nodes_prefixmap, schema, width)
             },
-            ValidatorError::ShapeOrError { errors, .. } => {
-                for (idx, errs) in errors {
-                    let label_str = Self::show_idx(idx, schema);
-                    let mut branch_tree = Tree::new(format!("Branch {label_str}:"));
-                    add_errors_to_tree(&mut branch_tree, errs, nodes_prefixmap, schema, width)?;
+            // The line of these errors already says that the node does not conform to the shape.
+            ValidatorError::ShapeRefFailed { node, errors, .. }
+            | ValidatorError::ShapeAndError { node, errors, .. } => {
+                add_errors_to_tree(tree, errors.iter(), Some(node), nodes_prefixmap, schema, width)
+            },
+            ValidatorError::ShapeOrError { node, errors, .. } => {
+                for (index, (idx, errs)) in errors.iter().enumerate() {
+                    let mut branch_tree = Tree::new(format!("branch {index} ({})", Self::show_idx(idx, schema)));
+                    add_errors_to_tree(
+                        &mut branch_tree,
+                        errs.iter(),
+                        Some(node),
+                        nodes_prefixmap,
+                        schema,
+                        width,
+                    )?;
                     tree.leaves.push(branch_tree);
                 }
                 Ok(())
@@ -651,59 +736,33 @@ impl ValidatorError {
                 }
                 Ok(())
             },
-            ValidatorError::ShapeFailed { errors, .. } => {
-                for err in errors {
-                    let child_root = err.root_qualified(nodes_prefixmap, schema, width)?;
-                    let mut child_tree = Tree::new(child_root);
-                    err.build_tree(&mut child_tree, nodes_prefixmap, schema, width)?;
-                    tree.leaves.push(child_tree);
-                }
-                Ok(())
+            ValidatorError::ShapeFailed { node, errors, .. } => {
+                add_errors_to_tree(tree, errors.iter(), Some(node), nodes_prefixmap, schema, width)
             },
             ValidatorError::NoMatchesFound { reasons, .. } => {
-                for reason in reasons {
-                    tree.leaves
-                        .push(Tree::new(reason.show_qualified(nodes_prefixmap, schema)));
-                }
+                add_no_match_reasons_to_tree(tree, reasons, nodes_prefixmap, schema);
                 Ok(())
             },
-            ValidatorError::ClosedShapeWithRemainderPreds {
-                declared, remainder, ..
-            } => {
-                let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
-                let declared_str = declared.iter().map(show_pred).collect::<Vec<_>>().join(", ");
-                let remainder_str = remainder.iter().map(show_pred).collect::<Vec<_>>().join(", ");
-                tree.leaves
-                    .push(Tree::new(format!("Allowed properties: {declared_str}")));
-                tree.leaves
-                    .push(Tree::new(format!("Extra properties found: {remainder_str}")));
-                Ok(())
-            },
+            // Its line says everything.
+            ValidatorError::ClosedShapeWithRemainderPreds { .. } => Ok(()),
             ValidatorError::FailedPending { failed_pending } => {
                 let show_pred = |p: &IriS| nodes_prefixmap.qualify(p);
                 for (n, s, ks, errs) in failed_pending {
-                    let keys = match ks.len() {
+                    let properties = match ks.len() {
                         0 => String::new(),
-                        1 => format!("Predicate {}", show_pred(ks[0].iri())),
+                        1 => format!("property {} ", show_pred(ks[0].iri())),
                         _ => format!(
-                            "Predicates {}",
+                            "properties {} ",
                             ks.iter().map(|k| show_pred(k.iri())).collect::<Vec<_>>().join(", ")
                         ),
                     };
                     let ref_root = format!(
-                        "{} -> {} as {}",
-                        keys,
+                        "{properties}value {} does not conform to {}",
                         n.show_qualified(nodes_prefixmap),
-                        Self::show_idx(s, schema)
+                        show_label(s, schema, width)
                     );
                     let mut ref_tree = Tree::new(ref_root);
-                    add_errors_to_tree(
-                        &mut ref_tree,
-                        &ValidatorErrors::new(errs.clone()),
-                        nodes_prefixmap,
-                        schema,
-                        width,
-                    )?;
+                    add_errors_to_tree(&mut ref_tree, errs.iter(), Some(n), nodes_prefixmap, schema, width)?;
                     tree.leaves.push(ref_tree);
                 }
                 Ok(())
@@ -756,65 +815,17 @@ impl ValidatorError {
         let mut combined = schema.prefixmap();
         combined.merge(nodes_prefixmap.clone());
         let nodes_prefixmap = &combined;
-        // A shape made of a single triple constraint rejected on its one
-        // and only candidate reduces to a single
-        // `ConditionFailed` reason. Render that flat, naming the node and
-        // property involved, instead of the generic
-        // "Shape ... failed ...: no candidates matched" + one-line tree.
-        if let ValidatorError::NoMatchesFound { node, reasons, .. } = self
-            && let [reason @ NoMatchReason::ConditionFailed { predicate, error, .. }] = reasons.as_slice()
-        {
-            let path = reason.path(schema).map(|path| path.show_qualified(&schema.prefixmap()));
-            return Ok(describe_condition_error(
-                node,
-                Some(predicate),
-                path.as_deref(),
-                error,
-                nodes_prefixmap,
-            ));
-        }
         let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
         let mut tree = Tree::new(root_str);
         self.build_tree(&mut tree, nodes_prefixmap, schema, width)?;
+        // An error explained by a single line is shown in one line: `:x does not conform to :S:
+        // property :p: ...`, instead of a line and a tree with one leaf.
+        if let [leaf] = tree.leaves.as_slice()
+            && leaf.leaves.is_empty()
+        {
+            return Ok(format!("{}: {}", tree.root, leaf.root));
+        }
         Ok(format!("{tree}"))
-    }
-}
-
-/// Renders a condition failure (e.g. a datatype mismatch from `CondKind::Datatype`)
-/// naming the node and, when known, the property that carried the offending
-/// value — e.g. "Datatype error on node :x for property :age: expected xsd:int,
-/// found xsd:integer, lexical form "30"^^xsd:integer". With the ShExPath `path` of the triple
-/// constraint, it says where in the schema the constraint is: "... for property :age at
-/// @:Person~:age: ...".
-fn describe_condition_error(
-    node: &Node,
-    predicate: Option<&Pred>,
-    path: Option<&str>,
-    error: &RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>,
-    nodes_prefixmap: &PrefixMap,
-) -> String {
-    let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
-    let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
-    let mut location = match predicate {
-        Some(p) => format!("on node {} for property {}", show_node(node), show_pred(p)),
-        None => format!("on node {}", show_node(node)),
-    };
-    if let Some(path) = path {
-        location.push_str(&format!(" at {path}"));
-    }
-    match error {
-        RbeError::CondFailed { prefix, details } => {
-            let details_str = details
-                .iter()
-                .map(|(label, v)| format!("{label} {}", show_node(v)))
-                .collect::<Vec<_>>()
-                .join(", ");
-            format!("{prefix} {location}: {details_str}")
-        },
-        other => format!(
-            "Condition failed {location}: {}",
-            other.show_qualified(&show_pred, &show_node)
-        ),
     }
 }
 
@@ -842,21 +853,19 @@ fn show_neg_cycles(neg_cycles: &[Vec<(String, String, Vec<String>)>]) -> String 
         .join("; ")
 }
 
-/// The label of the shape expression at `idx`, or, for an anonymous one, the expression itself
-/// followed by where it is in the schema: `{ :p . } at @:S~:q/valueExpr`.
+/// How the shape expression at `idx` is named in a message: by its label, or, for an anonymous
+/// one, by where it is in the schema, its ShExPath (`@:S~:q/valueExpr`). An anonymous shape
+/// expression that a ShExPath can't name, inside one labelled with a blank node, is shown as it
+/// is written.
 fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR, width: usize) -> String {
     if let Some(label) = schema.shape_label_from_idx(idx) {
         schema.show_label(label)
+    } else if let Some(path) = show_path(idx, schema) {
+        path
+    } else if let Some(info) = schema.find_shape_idx(idx) {
+        show_shape_expr(info.expr(), schema, width)
     } else {
-        if let Some(info) = schema.find_shape_idx(idx) {
-            let expr = show_shape_expr(info.expr(), schema, width);
-            match show_path(idx, schema) {
-                Some(path) => format!("{expr} at {path}"),
-                None => expr,
-            }
-        } else {
-            format!("Shape {idx}")
-        }
+        format!("Shape {idx}")
     }
 }
 
