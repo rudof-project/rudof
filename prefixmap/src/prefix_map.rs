@@ -489,7 +489,7 @@ impl PrefixMap {
             (s, length)
         } else {
             let s = format!("<{iri}>");
-            let length = iri.as_str().len() + 2;
+            let length = iri.as_str().chars().count() + 2;
             (s, length)
         };
 
@@ -542,7 +542,7 @@ impl PrefixMap {
                     .filter(|rest| is_local_name(rest))
                     .map(|rest| (alias.as_str(), rest))
             })
-            .max_by_key(|(_, rest)| iri.as_str().len() - rest.len())
+            .max_by_key(|(_, rest)| iri.as_str().chars().count() - rest.chars().count())
     }
 }
 

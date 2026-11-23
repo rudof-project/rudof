@@ -35,10 +35,10 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
                 return true;
             }
             if let Ok(iri) = S::term_as_iri(vn) {
-                return iri.as_str().len() < self.min_length() as usize;
+                return iri.as_str().chars().count() < self.min_length() as usize;
             }
             if let Ok(lit) = S::term_as_literal(vn) {
-                return lit.lexical_form().len() < self.min_length() as usize;
+                return lit.lexical_form().chars().count() < self.min_length() as usize;
             }
             true
         };
