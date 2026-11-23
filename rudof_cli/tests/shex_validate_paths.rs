@@ -48,19 +48,13 @@ fn fixture() -> tempfile::TempDir {
 }
 
 fn validate(dir: &Path, result_format: &str) -> String {
-    rudof_in(
-        dir,
-        &[
-            "shex-validate",
-            "data.ttl",
-            "-s",
-            "schema.shex",
-            "-m",
-            "shapemap.sm",
-            "-r",
-            result_format,
-        ],
-    )
+    validate_with(dir, &["-r", result_format])
+}
+
+fn validate_with(dir: &Path, options: &[&str]) -> String {
+    let mut args = vec!["shex-validate", "data.ttl", "-s", "schema.shex", "-m", "shapemap.sm"];
+    args.extend_from_slice(options);
+    rudof_in(dir, &args)
 }
 
 /// Every `path` in a JSON value, at any depth.
@@ -96,6 +90,17 @@ fn the_details_name_the_failing_triple_constraint() {
     // summary fits depends on the width of the terminal (80 columns when there is none, as in CI),
     // so only its start, which fits in the narrowest summary, is checked.
     assert!(stdout.contains("│ property :category"), "{stdout}");
+}
+
+#[test]
+fn the_table_layout_writes_the_details_in_the_table() {
+    let dir = fixture();
+    let stdout = validate_with(dir.path(), &["-r", "details", "--details-layout", "table"]);
+    assert!(stdout.contains("│ Details"), "{stdout}");
+    assert!(!stdout.contains("│ Summary"), "{stdout}");
+    // Nothing is written below the table.
+    assert!(!stdout.contains("\n  :issue1 does not conform to"), "{stdout}");
+    assert!(stdout.trim_end().ends_with('╯'), "{stdout}");
 }
 
 #[test]

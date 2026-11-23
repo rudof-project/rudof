@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::RDFFormat;
 pub use shacl::validator::FetchStrategy as ShaclFetchStrategy;
 use shacl::validator::ShaclValidationMode as InnerShaclValidationMode;
 use shacl::validator::report::ValidationReportSorting;
-use shex_ast::shapemap::result_shape_map::SortMode;
+use shex_ast::shapemap::result_shape_map::{DetailsLayout, SortMode};
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -54,6 +54,16 @@ pub enum ShExValidationSortByMode {
     Status,
     /// Sort by details - groups results by validation detail level
     Details,
+}
+
+/// Where the `details` format of ShEx validation results writes the details of each result.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub enum ShExDetailsLayout {
+    /// A summary in the table, and the details that don't fit in it below the table (default)
+    #[default]
+    Below,
+    /// All the details in the table
+    Table,
 }
 
 /// Sorting modes for SHACL validation results supported by Rudof.
@@ -300,6 +310,42 @@ impl From<ShExValidationSortByMode> for SortMode {
 impl From<&ShExValidationSortByMode> for SortMode {
     fn from(format: &ShExValidationSortByMode) -> Self {
         (*format).into()
+    }
+}
+
+// ============================================================================
+// ShExDetailsLayout
+// ============================================================================
+
+impl Display for ShExDetailsLayout {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ShExDetailsLayout::Below => write!(dest, "below"),
+            ShExDetailsLayout::Table => write!(dest, "table"),
+        }
+    }
+}
+
+impl FromStr for ShExDetailsLayout {
+    type Err = ValidationError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "below" => Ok(ShExDetailsLayout::Below),
+            "table" => Ok(ShExDetailsLayout::Table),
+            other => Err(ValidationError::UnsupportedShExDetailsLayout {
+                layout: other.to_string(),
+            }),
+        }
+    }
+}
+
+impl From<ShExDetailsLayout> for DetailsLayout {
+    fn from(layout: ShExDetailsLayout) -> Self {
+        match layout {
+            ShExDetailsLayout::Below => DetailsLayout::Below,
+            ShExDetailsLayout::Table => DetailsLayout::Table,
+        }
     }
 }
 

@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use crate::cli::parser::CommonArgsAll;
 use crate::cli::wrappers::{
-    DataFormatCli, DataReaderModeCli, EndpointStrategyCli, ResultShExValidationFormatCli, ShExFormatCli,
-    ShExValidationSortByModeCli, ShapeMapFormatCli,
+    DataFormatCli, DataReaderModeCli, EndpointStrategyCli, ResultShExValidationFormatCli, ShExDetailsLayoutCli,
+    ShExFormatCli, ShExValidationSortByModeCli, ShapeMapFormatCli,
 };
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -125,6 +125,18 @@ pub struct ShexValidateArgs {
         default_value_t = ResultShExValidationFormatCli::Details
     )]
     pub result_format: ResultShExValidationFormatCli,
+
+    #[arg(
+        long = "details-layout",
+        value_name = "LAYOUT",
+        ignore_case = true,
+        help = "Where the details result format writes the details of each result: \
+                'below' (default) writes a summary in each row and the details below the table, \
+                'table' writes all the details in the table",
+        default_value_t = ShExDetailsLayoutCli::Below,
+        value_enum
+    )]
+    pub details_layout: ShExDetailsLayoutCli,
 
     #[arg(long = "map-state", value_name = "FILE", help = "MapState file name")]
     pub map_state: Option<PathBuf>,

@@ -6,7 +6,8 @@ use crate::{
     api::shex::implementations::serialize_shex_validation_results::serialize_shex_validation_results,
     api::shex::implementations::validate_shex::validate_shex,
     formats::{
-        DataFormat, InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat,
+        DataFormat, InputSpec, ResultShExValidationFormat, ShExDetailsLayout, ShExFormat, ShExValidationSortByMode,
+        ShapeMapFormat,
     },
 };
 use regex::Regex;
@@ -21,7 +22,7 @@ fn serialize_validation_results_to_string(
 ) -> String {
     let mut buffer = Vec::new();
 
-    serialize_shex_validation_results(rudof, sort_order.as_ref(), format.as_ref(), &mut buffer).unwrap();
+    serialize_shex_validation_results(rudof, sort_order.as_ref(), format.as_ref(), None, &mut buffer).unwrap();
 
     String::from_utf8(buffer).unwrap()
 }
@@ -452,10 +453,82 @@ fn test_serialize_validation_results_no_results_error() {
 
     let mut buffer = Vec::new();
 
-    let result =
-        serialize_shex_validation_results(&rudof, None, Some(&ResultShExValidationFormat::Compact), &mut buffer);
+    let result = serialize_shex_validation_results(
+        &rudof,
+        None,
+        Some(&ResultShExValidationFormat::Compact),
+        None,
+        &mut buffer,
+    );
 
     assert!(result.is_err());
+}
+
+/// A rudof that has validated `ex:alice`, who has no `ex:age`, against `ex:PersonShape`, and the
+/// results in the `details` format with `layout`.
+fn details_of_alice_without_age(layout: ShExDetailsLayout) -> String {
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let data = InputSpec::str(
+        r#"PREFIX ex: <http://example.org/>
+           ex:alice ex:name "Alice" ."#,
+    );
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        None,
+        None,
+        None,
+        None,
+        None,
+        EndpointStrategy::default(),
+    )
+    .unwrap();
+    let schema = InputSpec::str(
+        r#"PREFIX ex: <http://example.org/>
+           PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+           ex:PersonShape {
+             ex:name xsd:string ;
+             ex:age xsd:integer
+           }"#,
+    );
+    load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
+    load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
+    validate_shex(&mut rudof, None, None, None).unwrap();
+
+    let mut buffer = Vec::new();
+    serialize_shex_validation_results(
+        &rudof,
+        None,
+        Some(&ResultShExValidationFormat::Details),
+        Some(&layout),
+        &mut buffer,
+    )
+    .unwrap();
+    String::from_utf8(buffer).unwrap()
+}
+
+#[test]
+fn test_serialize_validation_results_details_below_the_table() {
+    let serialized = details_of_alice_without_age(ShExDetailsLayout::Below);
+    let header = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Summary\s+│$").unwrap();
+    assert!(header.is_match(&serialized), "{serialized}");
+    // The details are written below the table, each in one line, with the ShExPath whole.
+    assert!(
+        serialized.contains("\n  ex:alice does not conform to ex:PersonShape"),
+        "{serialized}"
+    );
+    assert!(serialized.contains("@ex:PersonShape~ex:age"), "{serialized}");
+}
+
+#[test]
+fn test_serialize_validation_results_details_in_the_table() {
+    let serialized = details_of_alice_without_age(ShExDetailsLayout::Table);
+    let header = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Details\s+│$").unwrap();
+    assert!(header.is_match(&serialized), "{serialized}");
+    // Nothing is written below the table: it ends the output.
+    assert!(serialized.trim_end().ends_with('╯'), "{serialized}");
 }
 
 #[test]

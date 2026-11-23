@@ -54,6 +54,14 @@ result is a tree:
     └── property schema:name: Datatype error: ... (at @:User~schema:name)   <- why the value fails
 ```
 
+To write all the details in the table instead, use `--details-layout table`. The last column is
+then `Details`, each result is written in full in its row and wrapped to the width of the
+terminal, and nothing is written below the table. The default is `--details-layout below`.
+
+```sh
+rudof shex-validate -s examples/user.shex -m examples/user.sm --details-layout table examples/user.ttl
+```
+
 Each line that names a triple constraint ends with `(at PATH)`. `PATH` is the
 [ShExPath](../using-rudof/shexpath.md) of the triple constraint in the schema, for example
 `@:User~schema:name`. Give the path to [`shex-path`](shex_path.md) to see the constraint:
@@ -364,6 +372,7 @@ Options:
       --base-data <IRI>           Base RDF Data IRI (used to resolve relative IRIs in RDF data)
       --reader-mode <MODE>        RDF Reader mode [default: strict] [possible values: lax, strict]
   -r, --result-format <FORMAT>    Ouput result format [default: details] [possible values: details, turtle, ntriples, rdfxml, trig, n3, nquads, compact, json, csv]
+      --details-layout <LAYOUT>   Where the details result format writes the details of each result: 'below' (default) writes a summary in each row and the details below the table, 'table' writes all the details in the table [default: below] [possible values: below, table]
       --map-state <FILE>          MapState file name
       --strict-iris               Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode).
       --strategy <STRATEGY>       How -e/--endpoint answers lookups [default: sparql] [possible values: sparql, dereference]

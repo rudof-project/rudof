@@ -238,9 +238,11 @@ impl ResultShapeMap {
         mut writer: W,
         sort_mode: Option<&SortMode>,
         with_details: Option<bool>,
+        details_layout: Option<DetailsLayout>,
         terminal_width: Option<usize>,
     ) -> Result<(), Error> {
         let with_details = with_details.unwrap_or(false);
+        let details_layout = details_layout.unwrap_or_default();
         let terminal_width = terminal_width.unwrap_or(80);
         let sort_mode = sort_mode.unwrap_or(&SortMode::Node);
 
@@ -276,7 +278,12 @@ impl ResultShapeMap {
         let mut builder = Builder::default();
         // The details of a result that don't fit in its row, written below the table
         let mut sections = Vec::new();
-        if with_details {
+        if with_details && details_layout == DetailsLayout::Table {
+            builder.push_record(["Node", "Shape", "Status", "Details"]);
+            for (node_label, shape_label, _, status_label, details) in rows {
+                builder.push_record([node_label, shape_label, status_label, details]);
+            }
+        } else if with_details {
             builder.push_record(["Node", "Shape", "Status", "Summary"]);
             // The summary column takes what the other columns and the borders leave: each of the
             // four columns takes its width plus a space on each side, and there are five borders.
@@ -437,6 +444,17 @@ pub enum SortMode {
     Shape,
     Status,
     Details,
+}
+
+/// Where a table with details writes the details of each result.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DetailsLayout {
+    /// A summary in the row, and the details that don't fit in it below the table, one line each,
+    /// so a tree keeps its shape and the ShExPaths in it can be copied whole.
+    #[default]
+    Below,
+    /// All the details in the row, wrapped to the width of the table.
+    Table,
 }
 
 #[cfg(test)]

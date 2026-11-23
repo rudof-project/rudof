@@ -44,6 +44,7 @@ impl ValidateCommand {
             base_data: self.args.base_data.clone(),
             reader_mode: self.args.reader_mode,
             result_format: self.args.result_format.into(),
+            details_layout: self.args.details_layout,
             map_state: self.args.map_state.clone(),
             max_steps: self.args.max_steps,
             strategy: crate::cli::wrappers::EndpointStrategyCli::Sparql,

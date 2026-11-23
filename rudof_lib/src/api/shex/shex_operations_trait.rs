@@ -6,7 +6,7 @@ use crate::{
         serialize_shapemap, serialize_shex_schema, serialize_shex_validation_results, validate_shex,
     },
     formats::{
-        DataReaderMode, InputSpec, IriNormalizationMode, ResultShExValidationFormat, ShExFormat,
+        DataReaderMode, InputSpec, IriNormalizationMode, ResultShExValidationFormat, ShExDetailsLayout, ShExFormat,
         ShExValidationSortByMode, ShapeMapFormat,
     },
     types::ShExPathMatch,
@@ -190,6 +190,7 @@ pub trait ShExOperations {
     ///
     /// * `sort_order` - Optional sorting mode for the validation results (uses default order if None)
     /// * `result_shex_validation_format` - Optional format to serialize validation results (uses default if None)
+    /// * `details_layout` - Optional place of the details in the `details` format (uses default if None)
     /// * `writer` - The destination to write to
     ///
     /// # Errors
@@ -199,6 +200,7 @@ pub trait ShExOperations {
         &self,
         sort_order: Option<&ShExValidationSortByMode>,
         result_shex_validation_format: Option<&ResultShExValidationFormat>,
+        details_layout: Option<&ShExDetailsLayout>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -330,9 +332,10 @@ impl ShExOperations for crate::Rudof {
         &self,
         sort_order: Option<&ShExValidationSortByMode>,
         result_shex_validation_format: Option<&ResultShExValidationFormat>,
+        details_layout: Option<&ShExDetailsLayout>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_shex_validation_results(self, sort_order, result_shex_validation_format, writer)
+        serialize_shex_validation_results(self, sort_order, result_shex_validation_format, details_layout, writer)
     }
 
     fn reset_shex(&mut self) {
