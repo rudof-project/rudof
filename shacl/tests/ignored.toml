@@ -1,0 +1,215 @@
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/component/optional-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/component/optional-001'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/component/propertyValidator-select-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/component/propertyValidator-select-001'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/component/validator-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/component/validator-001'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/pre-binding/pre-binding-002"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/pre-binding/pre-binding-002'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/pre-binding/pre-binding-003"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/pre-binding/pre-binding-003'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/pre-binding/pre-binding-005"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/pre-binding/pre-binding-005'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/pre-binding/pre-binding-007"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/pre-binding/pre-binding-007'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/pre-binding/shapesGraph-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/pre-binding/shapesGraph-001'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/pre-binding/unsupported-sparql-002"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/pre-binding/unsupported-sparql-002'"
+
+[[ignored]]
+test = "data-shapes::urn:x-shacl-test:/sparql/pre-binding/unsupported-sparql-005"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'data-shapes::urn:x-shacl-test:/sparql/pre-binding/unsupported-sparql-005'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/misc/deactivated-003"
+reason = "sh:deactivated in a reified triple annotation is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/misc/severity-003"
+reason = "sh:severity in a reified triple annotation is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/closed-003"
+reason = "sh:closed sh:ByTypes is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/closed-004"
+reason = "sh:closed sh:ByTypes is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/datatype-003"
+reason = "a list of datatypes as the value of sh:datatype is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/maxListLength-001"
+reason = "sh:maxListLength is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/memberShape-001"
+reason = "sh:memberShape is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/minListLength-001"
+reason = "sh:minListLength is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/nodeKind-002"
+reason = "a list of node kinds as the value of sh:nodeKind is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/rootClass-001"
+reason = "sh:rootClass is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/uniqueMembers-001"
+reason = "sh:uniqueMembers is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/uniqueValuesFor-001"
+reason = "sh:uniqueValuesFor is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/uniqueValuesFor-002"
+reason = "sh:uniqueValuesFor is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/node/uniqueValuesFor-003"
+reason = "sh:uniqueValuesFor is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/class-002"
+reason = "a list of classes as the value of sh:class is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/datatype-004"
+reason = "a list of datatypes as the value of sh:datatype is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/disjoint-002"
+reason = "a property path as the value of sh:disjoint is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/equals-002"
+reason = "a property path as the value of sh:equals is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/lessThan-003"
+reason = "a property path as the value of sh:lessThan is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/lessThanOrEquals-002"
+reason = "a property path as the value of sh:lessThanOrEquals is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/maxListLength-001"
+reason = "sh:maxListLength is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/memberShape-001"
+reason = "sh:memberShape is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/minListLength-001"
+reason = "sh:minListLength is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/reifierShape-001"
+reason = "sh:reifierShape reports the reifier shape's own violations, not one sh:ReifierShapeConstraintComponent result"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/reifierShape-002"
+reason = "sh:reifierShape reports the reifier shape's own violations, not one sh:ReifierShapeConstraintComponent result"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/singleLine-001"
+reason = "sh:singleLine is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/someValue-001"
+reason = "sh:someValue is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/uniqueLang-003"
+reason = "sh:uniqueLang reports a result per language of the rdf:dirLangString values, instead of one"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/property/uniqueMembers-001"
+reason = "sh:uniqueMembers is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/targets/shape-001"
+reason = "sh:shape in the data graph as a target of the shape it points to is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/core/targets/targetClassImplicit-002"
+reason = "sh:ShapeClass as an implicit class target is not implemented"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/component/optional-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/component/optional-001'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/component/propertyValidator-select-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/component/propertyValidator-select-001'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/component/validator-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/component/validator-001'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/node/sparql-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/node/sparql-001'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/pre-binding/pre-binding-002"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/pre-binding/pre-binding-002'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/pre-binding/pre-binding-003"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/pre-binding/pre-binding-003'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/pre-binding/pre-binding-005"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/pre-binding/pre-binding-005'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/pre-binding/pre-binding-007"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/pre-binding/pre-binding-007'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/pre-binding/unsupported-sparql-002"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/pre-binding/unsupported-sparql-002'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/pre-binding/unsupported-sparql-005"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/pre-binding/unsupported-sparql-005'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/property/property-select-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/property/property-select-001'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/property/property-sparqlExpr-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/property/property-sparqlExpr-001'"
+
+[[ignored]]
+test = "shacl12::urn:x-shacl-test:/sparql/targets/targetNode-select-001"
+reason = "needs a real reason - see: cargo test -p shacl --test shacl_testsuite -- 'shacl12::urn:x-shacl-test:/sparql/targets/targetNode-select-001'"
