@@ -92,11 +92,10 @@ fn the_details_name_the_failing_triple_constraint() {
         ),
         "{stdout}"
     );
-    // The row of the table sums it up, without repeating the node and the shape.
-    assert!(
-        stdout.contains("│ property :category: expected exactly 1 value"),
-        "{stdout}"
-    );
+    // The row of the table sums it up, without repeating the node and the shape. How much of the
+    // summary fits depends on the width of the terminal (80 columns when there is none, as in CI),
+    // so only its start, which fits in the narrowest summary, is checked.
+    assert!(stdout.contains("│ property :category"), "{stdout}");
 }
 
 #[test]
