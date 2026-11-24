@@ -191,10 +191,20 @@ pub fn compare_graphs_with(first: &Graph, second: &Graph, mode: SubgraphMode) ->
 
 /// Returns `true` if both graphs are isomorphic.
 ///
-/// Delegates to Oxigraph: both graphs are canonicalized with
+/// First, both graphs are canonicalized with Oxigraph's
 /// [`Graph::canonicalize`] (an RDFC-1.0 based algorithm that also renames
-/// blank nodes inside triple terms) and the results compared as sets.
-/// Ground graphs skip the canonicalization.
+/// blank nodes inside triple terms) and the results compared as sets. Equal
+/// canonical forms prove that the graphs are isomorphic, as each one is a
+/// renaming of its graph.
+///
+/// Different canonical forms do not prove the contrary: with blank nodes
+/// inside triple terms, `canonicalize` can give the same graph more than one
+/// form, and which one it gives changes from call to call. Then the graphs
+/// are compared with the backtracking search of [`is_subgraph`]: two graphs
+/// with the same number of triples are isomorphic iff one is isomorphic to a
+/// subgraph of the other.
+///
+/// Ground graphs skip both steps.
 pub fn is_isomorphic(first: &Graph, second: &Graph) -> bool {
     if first.len() != second.len() {
         return false;
@@ -202,11 +212,11 @@ pub fn is_isomorphic(first: &Graph, second: &Graph) -> bool {
     if is_ground(first) && is_ground(second) {
         return first == second;
     }
-    let mut first = first.clone();
-    let mut second = second.clone();
-    first.canonicalize(CanonicalizationAlgorithm::Unstable);
-    second.canonicalize(CanonicalizationAlgorithm::Unstable);
-    first == second
+    let mut canonical_first = first.clone();
+    let mut canonical_second = second.clone();
+    canonical_first.canonicalize(CanonicalizationAlgorithm::Unstable);
+    canonical_second.canonicalize(CanonicalizationAlgorithm::Unstable);
+    canonical_first == canonical_second || is_subgraph(first, second)
 }
 
 /// Returns `true` if `first` is isomorphic to a subgraph (not necessarily proper) of `second`.
