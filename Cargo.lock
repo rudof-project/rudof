@@ -5161,7 +5161,7 @@ dependencies = [
 
 [[package]]
 name = "shape_path"
-version = "0.3.39"
+version = "0.3.40"
 dependencies = [
  "nom 8.0.0",
  "nom_locate",
