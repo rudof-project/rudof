@@ -155,7 +155,7 @@ pub struct ValidateArgs {
 
     #[arg(
         long = "statistics",
-        help = "Show the number of triples that the validation reads and the number of distinct triples. With ShEx, also show the number of valid and invalid triples"
+        help = "Show the number of triples that the validation reads and the number of distinct triples. and the number of valid and invalid triples"
     )]
     pub statistics: bool,
 
@@ -180,7 +180,7 @@ pub struct ValidateArgs {
     #[arg(
         long = "valid",
         value_name = "FILE",
-        help = "Write the valid subgraph to FILE: the triples that the conformant node/shape pairs match (ShEx only)"
+        help = "Write the valid subgraph to FILE: the triples that the conformant node/shape pairs match"
     )]
     pub valid: Option<PathBuf>,
 
@@ -196,7 +196,7 @@ pub struct ValidateArgs {
     #[arg(
         long = "invalid",
         value_name = "FILE",
-        help = "Write the invalid subgraph to FILE: the triples that the validation reads and that are not valid (ShEx only)"
+        help = "Write the invalid subgraph to FILE: the triples that the validation reads and that are not valid"
     )]
     pub invalid: Option<PathBuf>,
 

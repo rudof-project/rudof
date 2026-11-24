@@ -130,11 +130,15 @@ These keys can be set persistently in `rudof.toml` — see [`[shacl]`](../refere
 
 ## Show the triples that the validation reads
 
-Use `--statistics` to show the number of triples that the validation reads and the number of distinct triples. The first number includes duplicates.
+Use `--statistics` to show these numbers:
+
+- The number of triples that the validation reads. This number includes duplicates.
+- The number of distinct triples.
+- The number of valid triples and the number of invalid triples. Refer to [Extract the valid and invalid subgraphs](#extract-the-valid-and-invalid-subgraphs).
 
 Use `--visited <FILE>` to write the triples that the validation reads to a file. The default format is `turtle`. To change the format, use `--visited-format`. A Turtle output declares the prefixes of the data.
 
-`--statistics` and `--visited` operate only with the native engine. With `--mode sparql`, the validation fails.
+`--statistics`, `--visited`, `--valid` and `--invalid` operate only with the native engine. With `--mode sparql`, the validation fails.
 
 The numbers do not include these data:
 
@@ -148,6 +152,34 @@ Triples read: 12 (distinct: 11)
 ```
 
 > **Note:** `--validated-graph` and `--validated-graph-format` are the old names of `--visited` and `--visited-format`. You can continue to use the old names.
+
+### Extract the valid and invalid subgraphs
+
+The triples that the validation reads can include triples of focus nodes that do not conform. Use these options to write only a part of the triples:
+
+- `--valid <FILE>` writes the valid subgraph to a file.
+- `--invalid <FILE>` writes the invalid subgraph to a file.
+
+The valid subgraph contains these triples:
+
+- The triples that the validation reads to check a conformant `(focus node, shape)` pair of a shape with targets.
+- The valid triples of each pair that a conformant pair relies on: its property shapes, and the shapes of its `sh:node`, `sh:and`, `sh:or`, `sh:xone` and `sh:qualifiedValueShape` constraints. This rule applies again to these pairs.
+- The triples that select a conformant focus node as a target, for example its `rdf:type` triple for `sh:targetClass`.
+
+The valid subgraph does not contain these triples:
+
+- The triples of a pair that does not conform, and of the pairs that only it relies on.
+- The triples that the validator examines for a `sh:not` constraint, as the shape inside it does not conform.
+
+The invalid subgraph contains the triples that the validation reads and that are not in the valid subgraph. Thus, each triple that the validation reads is in one of the two subgraphs. If the validation reads a triple for a conformant pair, the triple is valid. This is also true when the validator reads the same triple for a pair that does not conform.
+
+To tell the pairs apart, the validation checks the focus nodes one at a time and the shapes one after the other, instead of in parallel, when it computes the subgraphs (with `--valid`, `--invalid` or `--statistics`). The report is the same.
+
+Each output has a format option: `--visited-format`, `--valid-format` and `--invalid-format`. The default format is `turtle`. A Turtle output declares the prefixes of the data. The `validate` command with `-M shacl` has the same options.
+
+```sh
+$ rudof shacl-validate --shapes shapes.ttl data.ttl --valid valid.ttl --invalid invalid.nt --invalid-format ntriples
+```
 
 ## Which shape caused a violation
 

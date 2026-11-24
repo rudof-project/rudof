@@ -65,6 +65,16 @@ pub struct ShaclConfig {
     /// [`Self::with_read_sink`].
     #[serde(skip)]
     pub(crate) read_sink: Option<TriplesSink>,
+
+    /// Sink that receives the valid subgraph once the validation ends (see
+    /// [`Self::with_valid_sink`]). Cannot be loaded from TOML.
+    #[serde(skip)]
+    pub(crate) valid_sink: Option<TriplesSink>,
+
+    /// Sink that receives the invalid subgraph once the validation ends (see
+    /// [`Self::with_invalid_sink`]). Cannot be loaded from TOML.
+    #[serde(skip)]
+    pub(crate) invalid_sink: Option<TriplesSink>,
 }
 
 impl ShaclConfig {
@@ -80,6 +90,8 @@ impl ShaclConfig {
             prefetch_max_rounds: Self::default_prefetch_max_rounds(),
             max_results: Self::default_max_results(),
             read_sink: None,
+            valid_sink: None,
+            invalid_sink: None,
         }
     }
 
@@ -133,6 +145,24 @@ impl ShaclConfig {
         self.read_sink = Some(sink);
         self
     }
+
+    /// Installs a sink that receives, once the validation ends, the valid
+    /// subgraph: the triples read while validating the conformant
+    /// `(focus node, shape)` pairs of the shapes with targets, following the
+    /// conformant pairs they rely on (see [`crate::validator::subgraph`]).
+    /// Needs the native engine, and validates the focus nodes one by one.
+    pub fn with_valid_sink(mut self, sink: TriplesSink) -> Self {
+        self.valid_sink = Some(sink);
+        self
+    }
+
+    /// Installs a sink that receives, once the validation ends, the invalid
+    /// subgraph: the triples read that are not in the valid subgraph (see
+    /// [`Self::with_valid_sink`]).
+    pub fn with_invalid_sink(mut self, sink: TriplesSink) -> Self {
+        self.invalid_sink = Some(sink);
+        self
+    }
 }
 
 impl ShaclConfig {
@@ -174,6 +204,19 @@ impl ShaclConfig {
 
     pub fn read_sink(&self) -> Option<&TriplesSink> {
         self.read_sink.as_ref()
+    }
+
+    pub fn valid_sink(&self) -> Option<&TriplesSink> {
+        self.valid_sink.as_ref()
+    }
+
+    pub fn invalid_sink(&self) -> Option<&TriplesSink> {
+        self.invalid_sink.as_ref()
+    }
+
+    /// Whether the validation has to tell the valid and invalid subgraphs apart.
+    pub fn tracks_subgraphs(&self) -> bool {
+        self.valid_sink.is_some() || self.invalid_sink.is_some()
     }
 }
 

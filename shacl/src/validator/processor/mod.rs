@@ -7,11 +7,12 @@ mod graph;
 mod rdf_data;
 
 use crate::error::ValidationError;
-use crate::ir::IRSchema;
+use crate::ir::{IRSchema, ShapeLabelIdx};
 use crate::validator::ShaclConfig;
 use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, Retention, Validate};
 use crate::validator::report::{ValidationOutcome, ValidationReport};
+use crate::validator::subgraph::SubgraphTracker;
 #[cfg(feature = "sparql")]
 pub use cached::CachedDataValidation;
 #[cfg(all(feature = "sparql", not(target_family = "wasm")))]
@@ -59,6 +60,16 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         }
     }
 
+    /// Installs the tracker handed every triple the validation reads, to tell
+    /// the valid and invalid subgraphs apart, or removes it with `None`.
+    /// Processors that cannot record their reads refuse a tracker.
+    fn set_subgraph_tracker(&mut self, tracker: Option<SubgraphTracker>) -> Result<(), ValidationError> {
+        match tracker {
+            Some(_) => Err(ValidationError::ReadSinkNotSupported),
+            None => Ok(()),
+        }
+    }
+
     /// Called once before validation begins, after [`Self::prepare_store`],
     /// with the shapes graph to validate against: e.g. to fetch in advance
     /// the data the validation will need.
@@ -94,7 +105,8 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         mode: &ShaclValidationMode,
         config: &ShaclConfig,
     ) -> Result<ValidationReport, ValidationError> {
-        if config.read_sink().is_some() && *mode != ShaclValidationMode::Native {
+        let records_reads = config.read_sink().is_some() || config.tracks_subgraphs();
+        if records_reads && *mode != ShaclValidationMode::Native {
             return Err(ValidationError::ReadSinkNeedsNativeEngine);
         }
         self.prepare_store()?;
@@ -111,6 +123,11 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         if let Some(sink) = read_sink {
             self.set_read_sink(Some(sink.clone()))?;
         }
+        let tracker = config.tracks_subgraphs().then(SubgraphTracker::new);
+        if let Some(tracker) = &tracker {
+            self.set_subgraph_tracker(Some(tracker.clone()))?;
+            master_runner.set_subgraph_tracker(Some(tracker.clone()));
+        }
         let outcome = validate_levels(
             self.store(),
             master_runner.as_mut(),
@@ -120,7 +137,14 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         if read_sink.is_some() {
             self.set_read_sink(None)?;
         }
+        if tracker.is_some() {
+            self.set_subgraph_tracker(None)?;
+            master_runner.set_subgraph_tracker(None);
+        }
         let all_outcome = outcome?;
+        if let Some(tracker) = &tracker {
+            tracker.push_subgraphs(config.valid_sink(), config.invalid_sink())?;
+        }
         let store = self.store();
 
         let mut pm = shapes_graph.prefix_map().clone();
@@ -173,15 +197,22 @@ fn validate_levels<S: NeighsRDF + Debug + Send + Sync>(
         // pre-built class index and cache.
         let mut forked_runners: Vec<Box<dyn Engine<S>>> = level.iter().map(|_| master_runner.fork()).collect();
 
-        // Validate all shapes in the level in parallel.
-        let level_results: Vec<Result<ValidationOutcome, ValidationError>> = forked_runners
-            .par_iter_mut()
-            .zip(level.par_iter())
-            .map(|(runner, idx)| {
-                let shape = shapes_graph.get_shape_from_idx_e(idx)?;
-                shape.validate(store, runner.as_mut(), None, Some(shape), shapes_graph)
-            })
-            .collect();
+        let validate = |(runner, idx): (&mut Box<dyn Engine<S>>, &ShapeLabelIdx)| {
+            let shape = shapes_graph.get_shape_from_idx_e(idx)?;
+            shape.validate(store, runner.as_mut(), None, Some(shape), shapes_graph)
+        };
+        // Validate all shapes in the level in parallel, unless the reads have
+        // to be attributed to the pair being validated, one at a time.
+        let level_results: Vec<Result<ValidationOutcome, ValidationError>> =
+            if master_runner.subgraph_tracker().is_some() {
+                forked_runners.iter_mut().zip(level.iter()).map(validate).collect()
+            } else {
+                forked_runners
+                    .par_iter_mut()
+                    .zip(level.par_iter())
+                    .map(validate)
+                    .collect()
+            };
 
         for result in level_results {
             all_outcome.extend(result?);

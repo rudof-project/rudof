@@ -170,39 +170,6 @@ fn visited_valid_and_invalid_are_written_at_once_each_in_its_format() {
 }
 
 #[test]
-fn valid_and_invalid_are_rejected_for_shacl_validation() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    std::fs::write(dir.path().join("data.ttl"), ISSUE_957_DATA).unwrap();
-    std::fs::write(
-        dir.path().join("shapes.ttl"),
-        "prefix sh: <http://www.w3.org/ns/shacl#>\n<http://a.example/S> a sh:NodeShape .\n",
-    )
-    .unwrap();
-    for flag in ["--valid", "--invalid"] {
-        let output = Command::new(env!("CARGO_BIN_EXE_rudof"))
-            .args([
-                "validate",
-                "data.ttl",
-                "-M",
-                "shacl",
-                "-s",
-                "shapes.ttl",
-                "-f",
-                "turtle",
-                flag,
-                "out.ttl",
-            ])
-            .current_dir(dir.path())
-            .stdin(Stdio::null())
-            .output()
-            .expect("failed to run rudof");
-        assert!(!output.status.success(), "{flag}");
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(stderr.contains("only supported for ShEx"), "{flag}: {stderr}");
-    }
-}
-
-#[test]
 fn subgraphs_in_turtle_use_the_prefixes_of_the_data() {
     for flag in ["--visited", "--valid", "--invalid"] {
         let (_, dir) = issue_957_run(&[flag, "sub.ttl"]);

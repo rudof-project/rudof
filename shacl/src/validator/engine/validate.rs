@@ -7,6 +7,7 @@ use crate::validator::engine::value_nodes_ops::ValueNodesOps;
 use crate::validator::nodes::FocusNodes;
 use crate::validator::recursion::cut_outcome;
 use crate::validator::report::{Evidence, ValidationOutcome, ValidationResult};
+use crate::validator::subgraph::SubgraphTracker;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
@@ -34,6 +35,22 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         source_shape: Option<&IRShape>,
         shapes_graph: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
+        match runner.subgraph_tracker().cloned() {
+            Some(tracker) => self.validate_tracked(store, runner, targets, source_shape, shapes_graph, &tracker),
+            None => self.validate_untracked(store, runner, targets, source_shape, shapes_graph),
+        }
+    }
+}
+
+impl IRShape {
+    fn validate_untracked<RDF: NeighsRDF + Debug>(
+        &self,
+        store: &RDF,
+        runner: &mut dyn Engine<RDF>,
+        targets: Option<&FocusNodes<RDF>>,
+        source_shape: Option<&IRShape>,
+        shapes_graph: &IRSchema,
+    ) -> Result<ValidationOutcome, ValidationError> {
         crate::with_stack(|| {
             let mut entered_chain = Vec::new();
             let outcome = self.validate_shape(store, runner, targets, source_shape, shapes_graph, &mut entered_chain);
@@ -46,9 +63,74 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
             outcome
         })
     }
-}
 
-impl IRShape {
+    /// Validates the focus nodes one by one, telling `tracker` which
+    /// `(focus node, shape)` pair each read belongs to and whether it
+    /// conforms (see [`crate::validator::subgraph`]). Validating them in one
+    /// batch would mix the reads of all of them.
+    fn validate_tracked<RDF: NeighsRDF + Debug>(
+        &self,
+        store: &RDF,
+        runner: &mut dyn Engine<RDF>,
+        targets: Option<&FocusNodes<RDF>>,
+        source_shape: Option<&IRShape>,
+        shapes_graph: &IRSchema,
+        tracker: &SubgraphTracker,
+    ) -> Result<ValidationOutcome, ValidationError> {
+        // A shape with no index is not cached: its reads belong to the pair that uses it
+        let Some(idx) = shapes_graph.get_idx(self.id()).copied() else {
+            return self.validate_untracked(store, runner, targets, source_shape, shapes_graph);
+        };
+        let selected;
+        let focus_nodes = match targets {
+            Some(targets) => targets,
+            None => {
+                let at_top_level = tracker.at_top_level();
+                if at_top_level {
+                    tracker.begin_targets(idx);
+                }
+                let nodes = self.focus_nodes(store, runner, shapes_graph);
+                if at_top_level {
+                    tracker.end_targets();
+                }
+                selected = nodes?;
+                &selected
+            },
+        };
+        let mut outcome = ValidationOutcome::new();
+        for node in focus_nodes.iter() {
+            let Ok(object) = RDF::term_as_object(node) else {
+                outcome.extend(self.validate_untracked(
+                    store,
+                    runner,
+                    Some(&FocusNodes::single(node.clone())),
+                    source_shape,
+                    shapes_graph,
+                )?);
+                continue;
+            };
+            tracker.enter((object, idx));
+            let node_outcome = self.validate_untracked(
+                store,
+                runner,
+                Some(&FocusNodes::single(node.clone())),
+                source_shape,
+                shapes_graph,
+            );
+            match node_outcome {
+                Ok(node_outcome) => {
+                    tracker.exit(node_outcome.conforms());
+                    outcome.extend(node_outcome);
+                },
+                Err(e) => {
+                    tracker.reset_stack();
+                    return Err(e);
+                },
+            }
+        }
+        Ok(outcome)
+    }
+
     fn validate_shape<RDF: NeighsRDF + Debug>(
         &self,
         store: &RDF,

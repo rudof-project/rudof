@@ -1,13 +1,12 @@
 use crate::cli::parser::ShaclValidateArgs;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::{Context, Result, anyhow};
-use rudof_lib::formats::{BackendSpec, DataFormat};
-use rudof_lib::types::{GraphSink, RdfSink, TriplesSink};
-use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
+use crate::commands::shex_validate::write_graph;
+use anyhow::{Result, anyhow};
+use rudof_lib::formats::BackendSpec;
+use rudof_lib::types::{CountingSink, GraphSink, RdfSink, TriplesSink};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 
 /// Implementation of the `shacl-validate` command.
@@ -109,20 +108,41 @@ impl Command for ShaclValidateCommand {
             loading_schema.execute()?;
         }
 
-        let read_sink = if self.args.statistics || self.args.visited.is_some() {
+        let new_sink = |ctx: &CommandContext| -> Result<Arc<Mutex<GraphSink>>> {
             let mut sink = GraphSink::new(OxigraphInMemory::new());
             sink.declare_prefixes(ctx.rudof.prefixes().execute())?;
-            Some(Arc::new(Mutex::new(sink)))
+            Ok(Arc::new(Mutex::new(sink)))
+        };
+        // As in `shex-validate`: `--statistics` counts the triples read, and the
+        // valid and invalid ones, which are only kept as a graph when `--valid`
+        // or `--invalid` asks for it.
+        let read_graph = if self.args.statistics || self.args.visited.is_some() {
+            Some(new_sink(ctx)?)
         } else {
             None
         };
+        let valid_graph = self.args.valid.as_ref().map(|_| new_sink(ctx)).transpose()?;
+        let invalid_graph = self.args.invalid.as_ref().map(|_| new_sink(ctx)).transpose()?;
+        let graph_or_count = |graph: &Option<Arc<Mutex<GraphSink>>>| match graph {
+            Some(graph) => Some(TriplesSink::new(graph.clone())),
+            None if self.args.statistics => Some(TriplesSink::new(Arc::new(Mutex::new(CountingSink::new())))),
+            None => None,
+        };
+        let valid_sink = graph_or_count(&valid_graph);
+        let invalid_sink = graph_or_count(&invalid_graph);
 
         let mut validation = ctx
             .rudof
             .validate_shacl()
             .with_shacl_validation_mode(&shacl_validation_mode);
-        if let Some(sink) = &read_sink {
+        if let Some(sink) = &read_graph {
             validation = validation.with_read_sink(TriplesSink::new(sink.clone()));
+        }
+        if let Some(sink) = &valid_sink {
+            validation = validation.with_valid_sink(sink.clone());
+        }
+        if let Some(sink) = &invalid_sink {
+            validation = validation.with_invalid_sink(sink.clone());
         }
         validation.execute()?;
 
@@ -139,7 +159,15 @@ impl Command for ShaclValidateCommand {
             writeln!(ctx.writer)?;
         }
 
-        if let Some(sink) = &read_sink {
+        let finish = |sink: &Option<TriplesSink>| -> Result<u64> {
+            match sink {
+                Some(sink) => Ok(sink.0.lock().map_err(|e| anyhow!("{e}"))?.finish()?.triples),
+                None => Ok(0),
+            }
+        };
+        let valid_triples = finish(&valid_sink)?;
+        let invalid_triples = finish(&invalid_sink)?;
+        if let Some(sink) = &read_graph {
             let mut sink = sink.lock().map_err(|e| anyhow!("{e}"))?;
             let report = sink.finish()?;
             if self.args.statistics {
@@ -149,16 +177,17 @@ impl Command for ShaclValidateCommand {
                     report.triples,
                     sink.graph().len()
                 )?;
+                writeln!(ctx.writer, "Valid triples: {valid_triples}")?;
+                writeln!(ctx.writer, "Invalid triples: {invalid_triples}")?;
             }
-            if let Some(path) = &self.args.visited {
-                let format = RDFFormat::try_from(DataFormat::from(self.args.visited_format))?;
-                let file = File::create(path)
-                    .with_context(|| format!("Failed to create validated graph file '{}'", path.display()))?;
-                let mut writer = BufWriter::new(file);
-                sink.graph()
-                    .serialize(&format, &mut writer)
-                    .map_err(|e| anyhow!("Failed to write validated graph: {e}"))?;
-                writer.flush()?;
+        }
+        for (path, format, graph) in [
+            (&self.args.visited, self.args.visited_format, &read_graph),
+            (&self.args.valid, self.args.valid_format, &valid_graph),
+            (&self.args.invalid, self.args.invalid_format, &invalid_graph),
+        ] {
+            if let (Some(path), Some(graph)) = (path, graph) {
+                write_graph(path, format, &*graph.lock().map_err(|e| anyhow!("{e}"))?)?;
             }
         }
 

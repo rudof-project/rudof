@@ -5119,6 +5119,7 @@ dependencies = [
  "anyhow",
  "dashmap",
  "either",
+ "indexmap 2.14.2",
  "indoc",
  "itertools 0.14.0",
  "libtest-mimic",

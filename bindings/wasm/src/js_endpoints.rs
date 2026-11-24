@@ -112,13 +112,14 @@ impl JsRudof {
         &mut self,
         #[wasm_bindgen(js_name = "readTriples")] read_triples: Option<bool>,
         #[wasm_bindgen(js_name = "readTriplesFormat")] read_triples_format: Option<String>,
+        subgraphs: Option<bool>,
     ) -> Result<JsValue, JsValue> {
         run_suspendable(|| {
-            to_js(
-                &self
-                    .session
-                    .validate_shex(read_triples.unwrap_or(false), read_triples_format.as_deref())?,
-            )
+            to_js(&self.session.validate_shex(
+                read_triples.unwrap_or(false),
+                read_triples_format.as_deref(),
+                subgraphs.unwrap_or(false),
+            )?)
         })
     }
 
@@ -135,6 +136,7 @@ impl JsRudof {
         #[wasm_bindgen(js_name = "fetchStrategy")] fetch_strategy: Option<String>,
         #[wasm_bindgen(js_name = "readTriples")] read_triples: Option<bool>,
         #[wasm_bindgen(js_name = "readTriplesFormat")] read_triples_format: Option<String>,
+        subgraphs: Option<bool>,
     ) -> Result<JsValue, JsValue> {
         run_suspendable(|| {
             to_js(&self.session.validate_shacl(
@@ -142,6 +144,7 @@ impl JsRudof {
                 fetch_strategy.as_deref(),
                 read_triples.unwrap_or(false),
                 read_triples_format.as_deref(),
+                subgraphs.unwrap_or(false),
             )?)
         })
     }

@@ -260,7 +260,7 @@ impl Command for ShexValidateCommand {
 }
 
 /// Writes the graph of `sink` to `path` in `format`.
-fn write_graph(path: &Path, format: DataFormatCli, sink: &GraphSink) -> Result<()> {
+pub(crate) fn write_graph(path: &Path, format: DataFormatCli, sink: &GraphSink) -> Result<()> {
     let format = RDFFormat::try_from(DataFormat::from(format))?;
     let file = File::create(path).with_context(|| format!("Failed to create graph file '{}'", path.display()))?;
     let mut writer = BufWriter::new(file);
