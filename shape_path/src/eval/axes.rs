@@ -1,7 +1,7 @@
 //! The axes of a step: which items are reachable from an item.
 
 use super::Evaluator;
-use crate::shexpath::{Attribute, AttributeOrAny, Location, Segment, ShExPathItem};
+use crate::{Attribute, AttributeOrAny, Location, Segment, ShExPathItem};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 

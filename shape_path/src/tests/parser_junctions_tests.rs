@@ -1,7 +1,7 @@
 //! Parsing of ShExPath junctions and parenthesized steps.
 
 use super::parser_helpers::*;
-use crate::shexpath::{Attribute, Filter, Operand, Selector, ShExPath, ShExPathParser, Step, TermType};
+use crate::{Attribute, Filter, Operand, Selector, ShExPath, ShExPathParser, Step, TermType};
 
 #[test]
 fn a_comma_makes_a_sequence() {

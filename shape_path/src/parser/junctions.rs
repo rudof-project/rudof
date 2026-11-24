@@ -11,9 +11,9 @@
 
 use super::lexical::{keyword_no_case, token};
 use super::shortcuts::shortcut;
+use super::span::{IRes, Span};
 use super::steps::step;
-use crate::compact::{IRes, Span};
-use crate::shexpath::{ShExPath, Step};
+use crate::{ShExPath, Step};
 use nom::{
     Parser,
     branch::alt,

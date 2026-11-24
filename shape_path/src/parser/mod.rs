@@ -1,18 +1,21 @@
 //! Parser of [ShExPath](https://shexspec.github.io/spec/ShExPath) expressions.
 
 mod filters;
+mod iri;
 mod junctions;
 mod lexical;
 pub(crate) mod shortcuts;
+mod span;
 mod steps;
 
-use crate::shexpath::ShExPath;
-use crate::{ParseError, Span};
+use crate::ShExPath;
+use crate::error::ShExPathParseError as ParseError;
 use junctions::shape_path;
 use lexical::ws;
 use nom::{Err, Parser, sequence::terminated};
 use prefixmap::{DerefIri, PrefixMap};
 use rudof_iri::IriS;
+use span::Span;
 
 type Result<A> = std::result::Result<A, ParseError>;
 

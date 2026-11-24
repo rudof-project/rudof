@@ -1,7 +1,7 @@
 //! Parsing of ShExPath filters.
 
 use super::parser_helpers::*;
-use crate::shexpath::{Attribute, Axis, Comparator, Filter, Operand, RValue, ShExPath, ShExPathParser, Step, TermType};
+use crate::{Attribute, Axis, Comparator, Filter, Operand, RValue, ShExPath, ShExPathParser, Step, TermType};
 
 #[test]
 fn a_number_selects_by_index() {

@@ -10,7 +10,7 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::semantic_actions_registry::SemanticActionsRegistry;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::ir::shape_label::ShapeLabel;
-use shex_ast::shexpath::ShExJDocument;
+use shex_ast::shexpath::shexj_document;
 use shex_ast::{ResolveMethod, ShExParser};
 
 const SCHEMA: &str = r#"
@@ -62,7 +62,7 @@ fn idx(ir: &SchemaIR, local: &str) -> ShapeLabelIdx {
 #[test]
 fn every_path_selects_exactly_what_it_names() {
     let (schema, ir) = compile(SCHEMA);
-    let doc = ShExJDocument::new(&schema).unwrap();
+    let doc = shexj_document(&schema).unwrap();
     let pm = ir.prefixmap();
     let mut checked = 0;
     for idx in indexes(&ir) {

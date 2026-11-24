@@ -15,6 +15,7 @@
 /rudof_lib/             @samuel-bustamante @algarfer @labra
 /rudof_mcp/             @samuel-bustamante
 /shacl/                 @algarfer @labra
+/shape_path/            @samuel-bustamante @labra
 /shex_ast/              @samuel-bustamante @labra
 /shex_validation/       @samuel-bustamante @labra
 /rudof_rdf/             @samuel-bustamante @algarfer @labra

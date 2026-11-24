@@ -1,7 +1,7 @@
 //! Parsing of ShExPath steps: child steps, attributes, axes and term types, and the tokens between them.
 
 use super::parser_helpers::*;
-use crate::shexpath::{Attribute, Axis, ShExPath, ShExPathParser, Step, TermType};
+use crate::{Attribute, Axis, ShExPath, ShExPathParser, Step, TermType};
 
 #[test]
 fn every_non_child_axis_is_a_step() {

@@ -9,7 +9,7 @@ use serde_json::Value;
 use shex_ast::ast::Schema;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_registry::SemanticActionsRegistry};
-use shex_ast::shexpath::ShExJDocument;
+use shex_ast::shexpath::shexj_document;
 use shex_ast::{Node, ResolveMethod, ShExParser, ir::ast2ir::AST2IR};
 use shex_validation::{Validator, ValidatorConfig};
 
@@ -84,7 +84,7 @@ impl Failure {
     /// What `path` selects in the schema: the `type` of each item, and its `predicate` if it has
     /// one, as `type(predicate)`.
     fn selected(&self, path: &str) -> Vec<String> {
-        let doc = ShExJDocument::new(&self.schema).expect("ShExJ document");
+        let doc = shexj_document(&self.schema).expect("ShExJ document");
         doc.select(path)
             .unwrap_or_else(|e| panic!("{path}: {e}"))
             .iter()
@@ -154,7 +154,7 @@ fn constraints_on_the_same_predicate_are_told_apart() {
     );
     assert_eq!(failure.path(), "@:Twice~:p/self::[1]");
     // the second constraint on :p, `:p xsd:string`
-    let doc = ShExJDocument::new(&failure.schema).expect("ShExJ document");
+    let doc = shexj_document(&failure.schema).expect("ShExJ document");
     let selected = doc.select(failure.path()).expect("select");
     assert_eq!(selected.len(), 1);
     assert_eq!(

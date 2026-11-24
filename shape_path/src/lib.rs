@@ -4,6 +4,9 @@
 //! [`ShExPathParser`] reads a path into a [`ShExPath`]. A path is
 //! evaluated over the ShExJ form of a schema, a [`ShExJDocument`], and selects
 //! [`ShExPathItem`]s: the nodes of that document, each with its [`Location`].
+//!
+//! This crate does not depend on `shex_ast`: a [`ShExJDocument`] is made from a ShExJ value, and
+//! `shex_ast::shexpath` makes one from a parsed schema.
 
 mod ast;
 mod document;
@@ -12,7 +15,6 @@ mod eval;
 mod item;
 mod parser;
 mod schema_path;
-mod shexj;
 
 pub use ast::*;
 pub use document::*;
@@ -20,7 +22,6 @@ pub use error::*;
 pub use item::*;
 pub use parser::*;
 pub use schema_path::*;
-pub use shexj::*;
 
 #[cfg(test)]
 mod tests {
