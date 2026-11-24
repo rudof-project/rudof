@@ -49,7 +49,9 @@ oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 libtest-mimic.workspace = true
-shacl_testsuite.workspace = true
+# Only a path, no version: shacl_testsuite is not published, and `cargo
+# publish` drops the dev-dependencies that have no version.
+shacl_testsuite = { path = "../shacl_testsuite" }
 
 [[example]]
 name = "endpoint_validation"
