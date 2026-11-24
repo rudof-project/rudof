@@ -3,8 +3,8 @@
 //! `shortcut ::= ("@" | "~" | "$") iri`
 
 use super::lexical::{iri, token};
-use crate::compact::{IRes, Span};
-use crate::shexpath::{Attribute, AttributeOrAny, Axis, Comparator, Filter, Operand, RValue, ShExPath, Step, TermType};
+use super::span::{IRes, Span};
+use crate::{Attribute, AttributeOrAny, Axis, Comparator, Filter, Operand, RValue, ShExPath, Step, TermType};
 use nom::{Parser, branch::alt, combinator::map, sequence::preceded};
 use prefixmap::IriRef;
 

@@ -1,7 +1,7 @@
 //! The filters of a step: which of the items it selected it keeps.
 
 use super::Evaluator;
-use crate::shexpath::{Comparator, Comparison, Filter, Operand, RValue, ShExPathError, ShExPathItem};
+use crate::{Comparator, Comparison, Filter, Operand, RValue, ShExPathError, ShExPathItem};
 use prefixmap::IriRef;
 use serde_json::Value;
 use std::borrow::Cow;

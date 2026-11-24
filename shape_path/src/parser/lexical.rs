@@ -4,10 +4,10 @@
 //! `terminated(shape_path, ws)`. Keywords are whole words: a word is read and then looked up, so
 //! `valueExpr` is never read as `value` followed by something else.
 
-use crate::compact::grammar::map_error;
-use crate::compact::shex_grammar;
-use crate::compact::{IRes, Span};
-use crate::shex_parser_error::ParseError;
+use super::iri as iri_terminal;
+use super::span::map_error;
+use super::span::{IRes, Span};
+use crate::error::ShExPathParseError as ParseError;
 use nom::{
     Parser,
     branch::alt,
@@ -21,7 +21,7 @@ use prefixmap::IriRef;
 
 /// `[136s] iri ::= IRIREF | prefixedName`, as written: it is resolved once the path is parsed.
 pub(super) fn iri(i: Span) -> IRes<IriRef> {
-    preceded(ws, shex_grammar::iri).parse(i)
+    preceded(ws, iri_terminal::iri).parse(i)
 }
 
 /// `[19t] INTEGER ::= [+-]? [0-9]+`

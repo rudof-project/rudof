@@ -1,7 +1,7 @@
 //! Parsing of the ShExPath shortcuts `@`, `~` and `$` as their long forms.
 
 use super::parser_helpers::*;
-use crate::shexpath::{Attribute, Axis, Comparator, Filter, Operand, RValue, ShExPath, ShExPathParser, Step};
+use crate::{Attribute, Axis, Comparator, Filter, Operand, RValue, ShExPath, ShExPathParser, Step};
 
 #[test]
 fn at_is_the_shape_declared_with_that_label() {

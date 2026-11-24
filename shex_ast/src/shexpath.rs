@@ -1,4 +1,8 @@
-//! The ShExJ document a ShExPath is evaluated over.
+//! [ShExPath](https://shexspec.github.io/spec/ShExPath) over the schemas of this crate.
+//!
+//! The language itself (paths, their parser and their evaluator) lives in the `shape_path` crate,
+//! which this module re-exports. What needs a [`Schema`] is here: [`shexj`] writes a schema as the
+//! ShExJ document a path is evaluated over, and [`shexj_document`] makes that document.
 //!
 //! ShExPath steps are named for ShExJ's property names, and an item is any node of the ShExJ
 //! document, so a path is evaluated over the schema written as ShExJ. That is the schema as rudof
@@ -10,9 +14,19 @@
 //!
 //! JSON objects are unordered, and so are the members of an object here.
 
+pub use shape_path::*;
+
 use crate::Schema;
-use crate::shexpath::ShExPathError;
 use serde_json::Value;
+
+/// The ShExJ form of `schema`, with the prefixes and base it declares, to evaluate ShExPaths over.
+pub fn shexj_document(schema: &Schema) -> Result<ShExJDocument, ShExPathError> {
+    Ok(ShExJDocument::from_value(
+        shexj(schema)?,
+        schema.prefixmap(),
+        schema.base(),
+    ))
+}
 
 /// The ShExJ form of `schema`.
 pub fn shexj(schema: &Schema) -> Result<Value, ShExPathError> {
