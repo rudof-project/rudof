@@ -822,3 +822,31 @@ pub(crate) mod properties {
         }
     }
 }
+
+/// Blank nodes that only occur inside triple terms. Oxigraph's
+/// `canonicalize` can give this graph two different canonical forms, chosen
+/// at random on each call, so comparing them alone failed about half the time.
+#[test]
+fn isomorphic_graphs_whose_canonical_forms_differ() {
+    let first = "
+        :n0 :p0 :n2 .
+        _:a2 :p1 _:a1 .
+        _:a3 :p1 <<( _:a1 :p0 _:a0 )>> .
+        _:a4 :p1 <<( _:a1 :p0 _:a2 )>> .
+        _:a0 :p1 <<( _:a4 :p0 _:a3 )>> .
+    ";
+    let second = "
+        :n0 :p0 :n2 .
+        _:b2 :p1 _:b0 .
+        _:b3 :p1 <<( _:b0 :p0 _:b2 )>> .
+        _:b4 :p1 <<( _:b0 :p0 _:b1 )>> .
+        _:b1 :p1 <<( _:b3 :p0 _:b4 )>> .
+    ";
+    let (first, second) = (ttl(first), ttl(second));
+    // Many times, as a single call failed only now and then
+    for _ in 0..200 {
+        assert!(first.is_isomorphic(&second));
+        assert_eq!(first.compare_with(&second), Isomorphic);
+        assert_eq!(second.compare_with(&first), Isomorphic);
+    }
+}
