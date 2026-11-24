@@ -24,6 +24,7 @@ The library is published as Rust crates, with the following ones:
 - [rudof_mcp](https://docs.rs/rudof_mcp)
 - [rudof_rdf](https://docs.rs/rudof_rdf)
 - [shacl](https://docs.rs/shacl)
+- [shape_path](https://docs.rs/shape_path)
 - [shapes_comparator](https://docs.rs/shapes_comparator)
 - [shapes_converter](https://docs.rs/shapes_converter)
 - [shex_ast](https://docs.rs/shex_ast)

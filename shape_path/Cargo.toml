@@ -1,0 +1,20 @@
+[package]
+name = "shape_path"
+version.workspace = true
+authors.workspace = true
+description = "ShExPath: a path language that addresses the elements of a ShEx schema"
+documentation = "https://docs.rs/shape_path"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+nom.workspace = true
+nom_locate.workspace = true
+prefixmap.workspace = true
+rudof_iri.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

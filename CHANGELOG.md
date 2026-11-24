@@ -10,10 +10,8 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 -->
 
 ## [Unreleased]
-### Added
-- `shacl`, `rudof_lib`, `rudof_cli`: SHACL validation can write the valid subgraph and the invalid subgraph, as ShEx validation does ([#972](https://github.com/rudof-project/rudof/issues/972)). The valid subgraph contains the triples that the validation reads for the conformant `(focus node, shape)` pairs of the shapes with targets, and for the conformant pairs that they rely on (property shapes, `sh:node`, `sh:and`, `sh:or`...). The invalid subgraph contains the other triples that the validation reads. Use `--valid FILE` and `--invalid FILE` in `shacl-validate` and in `validate -M shacl`, with `--valid-format` and `--invalid-format`; `--statistics` also shows the number of valid and invalid triples. In the library, use `ShaclConfig::with_valid_sink`, `with_invalid_sink` and the same methods of `ValidateShaclBuilder`. Native engine only.
-- `rudof_wasm`: `validateShex` and `validateShacl` (and their `Async` variants) take a `subgraphs` argument; with it, the report carries `validTriples`, `invalidTriples`, `validSubgraph` and `invalidSubgraph` ([#972](https://github.com/rudof-project/rudof/issues/972)).
-- `pyrudof`: `Rudof.validate_shex` and `Rudof.validate_shacl` take `subgraphs=True`; the report then has `valid_triples`, `invalid_triples`, `serialize_valid_triples()` and `serialize_invalid_triples()` ([#972](https://github.com/rudof-project/rudof/issues/972)).
+### Changed
+- `shape_path`, `shex_ast`, `shex_validation`, `rudof_lib`: ShExPath moved from `shex_ast` to the new `shape_path` crate, with no change in behaviour ([#969](https://github.com/rudof-project/rudof/issues/969)). `shape_path` does not depend on `shex_ast`, and `shex_ast::shexpath` re-exports it, so `shex_ast::shexpath::*` keeps working. `ShExJDocument::new(&Schema)` is now `shex_ast::shexpath::shexj_document(&Schema)`, and `ShExJDocument::from_value` makes a document from any ShExJ value.
 
 ## 0.3.40
 ### Added

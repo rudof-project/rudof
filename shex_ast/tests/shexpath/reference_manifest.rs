@@ -8,7 +8,7 @@
 use crate::common::select;
 use serde_json::{Value, json};
 use shex_ast::compact::ShExParser;
-use shex_ast::shexpath::{ShExJDocument, ShExPathItem};
+use shex_ast::shexpath::{ShExJDocument, ShExPathItem, shexj_document};
 use std::path::Path;
 
 /// A schema of the ShEx test suite, by name.
@@ -20,7 +20,7 @@ fn shex_test(name: &str) -> ShExJDocument {
         Ok(schema) => schema,
         Err(e) => panic!("{} is not parsed: {e}", path.display()),
     };
-    match ShExJDocument::new(&schema) {
+    match shexj_document(&schema) {
         Ok(doc) => doc,
         Err(e) => panic!("the schema is not written as ShExJ: {e}"),
     }

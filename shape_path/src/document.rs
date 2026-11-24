@@ -1,8 +1,7 @@
 //! A schema written as ShExJ, which ShExPaths are evaluated over.
 
-use crate::Schema;
-use crate::shexpath::eval::Evaluator;
-use crate::shexpath::{Location, ShExPath, ShExPathError, ShExPathItem, ShExPathParser, shexj};
+use crate::eval::Evaluator;
+use crate::{Location, ShExPath, ShExPathError, ShExPathItem, ShExPathParser};
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use serde_json::Value;
@@ -16,13 +15,10 @@ pub struct ShExJDocument {
 }
 
 impl ShExJDocument {
-    /// The ShExJ form of `schema`.
-    pub fn new(schema: &Schema) -> Result<Self, ShExPathError> {
-        Ok(ShExJDocument {
-            doc: shexj(schema)?,
-            prefixmap: schema.prefixmap(),
-            base: schema.base(),
-        })
+    /// The document `doc`, a schema written as ShExJ, whose paths are read with `prefixmap` and
+    /// `base`. `shex_ast::shexpath::shexj_document` makes one from a parsed schema.
+    pub fn from_value(doc: Value, prefixmap: Option<PrefixMap>, base: Option<IriS>) -> Self {
+        ShExJDocument { doc, prefixmap, base }
     }
 
     /// The ShExJ document.

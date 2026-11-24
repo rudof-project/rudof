@@ -54,6 +54,7 @@ subgraph rudof
     rudof_cli[<a href='https://crates.io/crates/rudof_cli'>rudof_cli</a>];
     pyrudof[<a href='https://pypi.org/project/pyrudof/'>pyrudof</a>];
     shex_ast[<a href='https://crates.io/crates/shex_ast'>shex_ast</a>];
+    shape_path[<a href='https://crates.io/crates/shape_path'>shape_path</a>];
     rudof_rdf[<a href='https://crates.io/crates/rudof_rdf'>rudof_rdf</a>];
     shex_validation[<a href='https://crates.io/crates/shex_validation'>shex_validation</a>];
     shacl[<a href='https://crates.io/crates/shacl'>shacl</a>];
@@ -69,6 +70,8 @@ subgraph rudof
  rudof_cli --> rudof_lib ;
  shex_ast --> rudof_rdf ;
  shex_validation-->shex_ast;
+ shex_ast-->shape_path;
+ shape_path-->prefixmap;
  rudof_rdf-->rudof_iri;
  shacl-->rudof_rdf;
  shacl-->sparql_service;
@@ -103,6 +106,7 @@ end
 
 - [ShEx Validation algorithm](https://docs.rs/shex_validation/).
 - [ShEx AST](https://docs.rs/shex_ast), that represents the [ShEx Abstract syntax](https://shex.io/shex-semantics/index.html#shape-expressions-shexj) based on ShExJ (JSON-LD), and bundles the ShEx Compact syntax parser that follows the [ShEx compact grammar](https://shex.io/shex-semantics/index.html#shexc).
+- [Shape path](https://docs.rs/shape_path), that parses and evaluates [ShExPaths](https://shexspec.github.io/spec/ShExPath), the paths that address the elements of a ShEx schema.
 - [Rudof RDF](https://docs.rs/rudof_rdf), a RDF Interface in Rust.
 - [PrefixMap](https://docs.rs/prefixmap): Turtle based prefixMap representation
 - [Conversions between different RDF data modelling technologies](https://docs.rs/shapes_converter).

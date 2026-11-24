@@ -117,9 +117,10 @@ for m in matches {
 }
 ```
 
-The language itself is in `shex_ast::shexpath`: `ShExPathParser` reads a path, and
-`ShExJDocument` evaluates it over a schema, also from items other than the schema, for relative
-paths.
+The language itself is in the `shape_path` crate, which `shex_ast::shexpath` re-exports:
+`ShExPathParser` reads a path, and `ShExJDocument` evaluates it over a schema, also from items
+other than the schema, for relative paths. `shex_ast::shexpath::shexj_document` makes the document
+from a parsed schema.
 
 ### From Python
 

@@ -12,10 +12,10 @@
 use super::filters::filter;
 use super::junctions::shape_path;
 use super::lexical::{token, word};
-use crate::compact::grammar::map_error;
-use crate::compact::{IRes, Span};
-use crate::shex_parser_error::ParseError;
-use crate::shexpath::{Attribute, AttributeOrAny, Axis, Filter, Selector, Step, TermType};
+use super::span::map_error;
+use super::span::{IRes, Span};
+use crate::error::ShExPathParseError as ParseError;
+use crate::{Attribute, AttributeOrAny, Axis, Filter, Selector, Step, TermType};
 use nom::{
     Parser,
     branch::alt,

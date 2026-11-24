@@ -29,6 +29,7 @@ rust_decimal.workspace = true
 schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+shape_path.workspace = true
 rudof_rdf.workspace = true
 tabled.workspace = true
 term_size.workspace = true
