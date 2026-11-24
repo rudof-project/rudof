@@ -74,12 +74,16 @@ fn rudof_class_workflow() {
     rudof.read_data(DATA, None, None, None, None).unwrap();
     rudof.read_shex(SHEX_SCHEMA, None, None, None).unwrap();
     rudof.read_shapemap("<alice>@:Person", None, None, None).unwrap();
-    let report = rudof.validate_shex(None, None).unwrap();
+    let report = rudof.validate_shex(None, None, None).unwrap();
     assert_eq!(get(&report, "conforms"), JsValue::TRUE);
 
     rudof.read_shacl(Some(SHACL_SHAPES.into()), None, None, None).unwrap();
-    let report = rudof.validate_shacl(None, None, None, None).unwrap();
+    let report = rudof.validate_shacl(None, None, None, None, None).unwrap();
     assert_eq!(array(&get(&report, "entries")).length(), 1);
+    assert!(get(&report, "validSubgraph").is_undefined());
+    let report = rudof.validate_shacl(None, None, None, None, Some(true)).unwrap();
+    assert!(get(&report, "validSubgraph").is_string());
+    assert!(get(&report, "invalidTriples").as_f64().is_some());
 
     rudof
         .read_query("PREFIX : <http://example.org/> ASK { :alice :age 23 }", None)

@@ -7,6 +7,7 @@ use crate::validator::engine::{Engine, NodeExprState, Retention};
 use crate::validator::index::ClassIndex;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationOutcome;
+use crate::validator::subgraph::SubgraphTracker;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::{Object, Term, Triple};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
@@ -32,6 +33,8 @@ pub struct NativeEngine {
     chain: HashSet<(Object, ShapeLabelIdx)>,
     node_exprs: NodeExprState,
     retention: Retention,
+    /// Shared across forks, as they validate parts of the same run.
+    subgraph_tracker: Option<SubgraphTracker>,
 }
 
 impl NativeEngine {
@@ -43,6 +46,7 @@ impl NativeEngine {
             chain: HashSet::new(),
             node_exprs: NodeExprState::default(),
             retention: Retention::default(),
+            subgraph_tracker: None,
         }
     }
 
@@ -137,6 +141,7 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
             chain: HashSet::new(),
             node_exprs: NodeExprState::default(),
             retention: self.retention,
+            subgraph_tracker: self.subgraph_tracker.clone(),
         })
     }
 
@@ -223,6 +228,14 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
     fn set_retention(&mut self, retention: Retention) {
         self.retention = retention;
     }
+
+    fn subgraph_tracker(&self) -> Option<&SubgraphTracker> {
+        self.subgraph_tracker.as_ref()
+    }
+
+    fn set_subgraph_tracker(&mut self, tracker: Option<SubgraphTracker>) {
+        self.subgraph_tracker = tracker;
+    }
 }
 
 #[cfg(feature = "sparql")]
@@ -239,6 +252,7 @@ impl<RDF: NeighsRDF + QueryRDF + Debug + 'static> Engine<RDF> for NativeEngine {
             chain: HashSet::new(),
             node_exprs: NodeExprState::default(),
             retention: self.retention,
+            subgraph_tracker: self.subgraph_tracker.clone(),
         })
     }
 
@@ -337,6 +351,14 @@ impl<RDF: NeighsRDF + QueryRDF + Debug + 'static> Engine<RDF> for NativeEngine {
 
     fn set_retention(&mut self, retention: Retention) {
         self.retention = retention;
+    }
+
+    fn subgraph_tracker(&self) -> Option<&SubgraphTracker> {
+        self.subgraph_tracker.as_ref()
+    }
+
+    fn set_subgraph_tracker(&mut self, tracker: Option<SubgraphTracker>) {
+        self.subgraph_tracker = tracker;
     }
 }
 

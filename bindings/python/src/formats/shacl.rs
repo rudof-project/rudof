@@ -1,14 +1,11 @@
 #![allow(clippy::clone_on_copy)]
 
 use crate::error::Result;
-use crate::formats::{PyRDFFormat, ReadTriples};
+use crate::formats::{PyRDFFormat, RecordedTriples, serialize_graph};
 use pyo3::prelude::*;
-use rudof_lib::errors::RudofError as CoreError;
 use rudof_lib::formats::{
-    DataFormat, ResultShaclValidationFormat, ShaclFetchStrategy, ShaclFormat, ShaclValidationMode,
-    ShaclValidationSortByMode,
+    ResultShaclValidationFormat, ShaclFetchStrategy, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
 };
-use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 
 pyenum! {
     /// SHACL shapes graph serialization formats.
@@ -229,18 +226,18 @@ pub struct PyShaclValidationReport {
     pub(crate) inner: ShaclValidationReport,
     pub(crate) conforms: bool,
     pub(crate) entries: Vec<PyShaclValidationEntry>,
-    pub(crate) read: Option<ReadTriples>,
+    pub(crate) recorded: RecordedTriples,
 }
 
 impl PyShaclValidationReport {
-    pub(crate) fn new(inner: ShaclValidationReport, read: Option<ReadTriples>) -> Self {
+    pub(crate) fn new(inner: ShaclValidationReport, recorded: RecordedTriples) -> Self {
         let conforms = inner.conforms();
         let entries = inner.results().iter().map(Into::into).collect();
         Self {
             inner,
             conforms,
             entries,
-            read,
+            recorded,
         }
     }
 }
@@ -267,7 +264,7 @@ impl PyShaclValidationReport {
     /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``read_triples=True``.
     #[getter]
     fn triples_read(&self) -> Option<u64> {
-        self.read.as_ref().map(|r| r.reads)
+        self.recorded.read.as_ref().map(|r| r.reads)
     }
 
     /// How many distinct triples the validation read.
@@ -275,7 +272,23 @@ impl PyShaclValidationReport {
     /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``read_triples=True``.
     #[getter]
     fn distinct_triples_read(&self) -> Option<usize> {
-        self.read.as_ref().map(|r| r.graph.len())
+        self.recorded.read.as_ref().map(|r| r.graph.len())
+    }
+
+    /// How many triples are in the valid subgraph: the triples read for the conformant focus node/shape pairs.
+    ///
+    /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``subgraphs=True``.
+    #[getter]
+    fn valid_triples(&self) -> Option<usize> {
+        self.recorded.valid.as_ref().map(|g| g.len())
+    }
+
+    /// How many triples are in the invalid subgraph: the triples read that are not valid.
+    ///
+    /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``subgraphs=True``.
+    #[getter]
+    fn invalid_triples(&self) -> Option<usize> {
+        self.recorded.invalid.as_ref().map(|g| g.len())
     }
 
     /// Serializes the distinct triples the validation read.
@@ -290,15 +303,37 @@ impl PyShaclValidationReport {
     ///     RudofError: If :meth:`Rudof.validate_shacl` was not called with ``read_triples=True``.
     #[pyo3(signature = (format = None))]
     fn serialize_read_triples(&self, format: Option<&PyRDFFormat>) -> Result<String> {
-        let read = self.read.as_ref().ok_or(CoreError::Generic {
-            error: "validate_shacl was not called with read_triples=True".into(),
-        })?;
-        let format = RDFFormat::try_from(format.map(DataFormat::from).unwrap_or(DataFormat::Turtle))?;
-        let mut buffer = Vec::new();
-        read.graph
-            .serialize(&format, &mut buffer)
-            .map_err(|e| CoreError::Generic { error: e.to_string() })?;
-        Ok(String::from_utf8_lossy(&buffer).into_owned())
+        serialize_graph(&self.recorded.read("validate_shacl")?.graph, format)
+    }
+
+    /// Serializes the valid subgraph: the triples read for the conformant focus node/shape pairs.
+    ///
+    /// Args:
+    ///     format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
+    ///
+    /// Returns:
+    ///     str: The serialized triples.
+    ///
+    /// Raises:
+    ///     RudofError: If :meth:`Rudof.validate_shacl` was not called with ``subgraphs=True``.
+    #[pyo3(signature = (format = None))]
+    fn serialize_valid_triples(&self, format: Option<&PyRDFFormat>) -> Result<String> {
+        serialize_graph(self.recorded.subgraph(true, "validate_shacl")?, format)
+    }
+
+    /// Serializes the invalid subgraph: the triples read that are not valid.
+    ///
+    /// Args:
+    ///     format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
+    ///
+    /// Returns:
+    ///     str: The serialized triples.
+    ///
+    /// Raises:
+    ///     RudofError: If :meth:`Rudof.validate_shacl` was not called with ``subgraphs=True``.
+    #[pyo3(signature = (format = None))]
+    fn serialize_invalid_triples(&self, format: Option<&PyRDFFormat>) -> Result<String> {
+        serialize_graph(self.recorded.subgraph(false, "validate_shacl")?, format)
     }
 
     fn __len__(&self) -> usize {

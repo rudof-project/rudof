@@ -125,10 +125,12 @@ rudof.readShex(schema);                   // ShExC by default
 rudof.readShapemap(":alice@:Person, {FOCUS :name _}@:Person");
 const report = rudof.validateShex();      // { conforms, entries, violations }
 const read = rudof.validateShex(true);    // also { triplesRead, distinctTriplesRead, readTriples }
+const split = rudof.validateShex(false, "turtle", true); // also { validTriples, invalidTriples, validSubgraph, invalidSubgraph }
 
 rudof.readShacl(shapes);
 const shaclReport = rudof.validateShacl("sparql");
 const shaclRead = rudof.validateShacl("native", undefined, true);  // also { triplesRead, distinctTriplesRead, readTriples }
+const shaclSplit = rudof.validateShacl("native", undefined, false, "turtle", true); // also { validTriples, invalidTriples, validSubgraph, invalidSubgraph }
 
 rudof.readQuery("SELECT ?s WHERE { ?s ?p ?o }");
 const results = rudof.runQuery();         // { kind: "select", variables, rows }
@@ -142,8 +144,8 @@ const results = rudof.runQuery();         // { kind: "select", variables, rows }
 | RDF data | `readData(data, format?, base?, readerMode?, merge?)`, `serializeData(format?)`, `addTriple(subject, predicate, object, strictIris?)`, `removeTriple(subject, predicate, object, strictIris?)`, `addTriples(triples, strictIris?)`, `removeTriples(triples, strictIris?)`, `triples(subject?, predicate?, object?, strictIris?, limit?)`, `dereference(uri, readerMode?, merge?)`, `listEndpoints()` |
 | Staging | `beginStaging()`, `commitStaging()`, `rollbackStaging()`, `stagingDepth()` — stage changes to the data, then keep or discard them. Only the data is staged: the schemas stay loaded either way, while a rollback clears the validation results, the query results and the loaded query |
 | Nodes | `nodeInfo(nodeSelector, predicates?, mode?, showColors?, depth?)`, `nodeNeighborhood(nodeSelector, predicates?, mode?, depth?, strictIris?, limit?)` |
-| ShEx | `readShex(schema, format?, base?, readerMode?)`, `checkShex(schema, format?, base?)`, `serializeCurrentShex(format?, shapeLabel?)`, `evaluateShexPath(path)`, `readShapemap(shapemap, format?, baseNodes?, baseShapes?)`, `serializeShapemap(format?)`, `validateShex(readTriples?, readTriplesFormat?)`, `serializeShexValidationResults(format?, sortMode?)`, `materialize(format?, node?)`, `addExternalResolver(spec)`, `clearExternalResolvers()`, `Rudof.listExternalResolvers()` |
-| SHACL | `readShacl(shapes?, format?, base?, readerMode?)` (without `shapes`, they are taken from the data), `serializeShacl(format?)`, `validateShacl(mode?, fetchStrategy?, readTriples?, readTriplesFormat?)` (`readTriples` needs the `native` mode), `serializeShaclValidationResults(format?, sortMode?)` |
+| ShEx | `readShex(schema, format?, base?, readerMode?)`, `checkShex(schema, format?, base?)`, `serializeCurrentShex(format?, shapeLabel?)`, `evaluateShexPath(path)`, `readShapemap(shapemap, format?, baseNodes?, baseShapes?)`, `serializeShapemap(format?)`, `validateShex(readTriples?, readTriplesFormat?, subgraphs?)`, `serializeShexValidationResults(format?, sortMode?)`, `materialize(format?, node?)`, `addExternalResolver(spec)`, `clearExternalResolvers()`, `Rudof.listExternalResolvers()` |
+| SHACL | `readShacl(shapes?, format?, base?, readerMode?)` (without `shapes`, they are taken from the data), `serializeShacl(format?)`, `validateShacl(mode?, fetchStrategy?, readTriples?, readTriplesFormat?, subgraphs?)` (`readTriples` and `subgraphs` need the `native` mode), `serializeShaclValidationResults(format?, sortMode?)` |
 | SPARQL | `readQuery(query, queryType?)`, `runQuery()`, `serializeQueryResults(format?)` |
 | Schemas | `convertSchemas(schema, inputMode, outputMode, inputFormat, outputFormat, base?, readerMode?, shape?)`, `compareSchemas(schema1, schema2, mode1, mode2, format1, format2, base1?, base2?, label1?, label2?, readerMode?)` |
 | DCTAP | `readDctap(dctap, format?)`, `serializeDctap(format?)` |

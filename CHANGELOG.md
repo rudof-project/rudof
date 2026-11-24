@@ -9,6 +9,12 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
+## [Unreleased]
+### Added
+- `shacl`, `rudof_lib`, `rudof_cli`: SHACL validation can write the valid subgraph and the invalid subgraph, as ShEx validation does ([#972](https://github.com/rudof-project/rudof/issues/972)). The valid subgraph contains the triples that the validation reads for the conformant `(focus node, shape)` pairs of the shapes with targets, and for the conformant pairs that they rely on (property shapes, `sh:node`, `sh:and`, `sh:or`...). The invalid subgraph contains the other triples that the validation reads. Use `--valid FILE` and `--invalid FILE` in `shacl-validate` and in `validate -M shacl`, with `--valid-format` and `--invalid-format`; `--statistics` also shows the number of valid and invalid triples. In the library, use `ShaclConfig::with_valid_sink`, `with_invalid_sink` and the same methods of `ValidateShaclBuilder`. Native engine only.
+- `rudof_wasm`: `validateShex` and `validateShacl` (and their `Async` variants) take a `subgraphs` argument; with it, the report carries `validTriples`, `invalidTriples`, `validSubgraph` and `invalidSubgraph` ([#972](https://github.com/rudof-project/rudof/issues/972)).
+- `pyrudof`: `Rudof.validate_shex` and `Rudof.validate_shacl` take `subgraphs=True`; the report then has `valid_triples`, `invalid_triples`, `serialize_valid_triples()` and `serialize_invalid_triples()` ([#972](https://github.com/rudof-project/rudof/issues/972)).
+
 ## 0.3.40
 ### Added
 - `rudof_earl`: a new crate that builds [EARL 1.0](https://www.w3.org/TR/EARL10-Schema/) reports and serializes them as RDF, with the EARL, DOAP, FOAF and Dublin Core vocabularies ([#955](https://github.com/rudof-project/rudof/issues/955)).

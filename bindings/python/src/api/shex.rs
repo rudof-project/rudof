@@ -1,9 +1,9 @@
+use crate::api::recording::RecordingSinks;
 use crate::{
     api::PyRudof,
     error::Result,
     formats::{
         PyReaderMode, PyResultShexValidationFormat, PyShExFormat, PyShExValidationReport, PyShexValidationSortMode,
-        ReadTriples,
     },
     guard,
     input::InputArg,
@@ -12,9 +12,6 @@ use crate::{
 use pyo3::prelude::*;
 use rudof_lib::errors::RudofError as CoreError;
 use rudof_lib::formats::{DataReaderMode, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode};
-use rudof_lib::types::{GraphSink, RdfSink, TriplesSink};
-use rudof_rdf::rdf_impl::OxigraphInMemory;
-use std::sync::{Arc, Mutex};
 use std::{io::BufWriter, path::PathBuf};
 
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pymethods)]
@@ -247,6 +244,11 @@ impl PyRudof {
     ///     read_triples (bool, optional): Also record the triples the validation reads, for
     ///         ``.triples_read``, ``.distinct_triples_read`` and ``.serialize_read_triples()``.
     ///         Defaults to ``False``.
+    ///     subgraphs (bool, optional): Also record the valid subgraph (the triples matched by
+    ///         the conformant node/shape pairs) and the invalid one (the triples read that are
+    ///         not valid), for ``.valid_triples``, ``.invalid_triples``,
+    ///         ``.serialize_valid_triples()`` and ``.serialize_invalid_triples()``.
+    ///         Defaults to ``False``.
     ///
     /// Returns:
     ///     ShExValidationReport: A snapshot of the result — ``.conforms``,
@@ -255,31 +257,22 @@ impl PyRudof {
     ///
     /// Raises:
     ///     ValidationError: If no schema, data, or ShapeMap is loaded.
-    #[pyo3(signature = (read_triples = false))]
-    fn validate_shex(&mut self, py: Python<'_>, read_triples: bool) -> Result<PyShExValidationReport> {
-        let read = guard::detached(py, || -> std::result::Result<_, CoreError> {
-            if !read_triples {
-                self.inner.validate_shex().execute()?;
-                return Ok(None);
+    #[pyo3(signature = (read_triples = false, subgraphs = false))]
+    fn validate_shex(&mut self, py: Python<'_>, read_triples: bool, subgraphs: bool) -> Result<PyShExValidationReport> {
+        let recorded = guard::detached(py, || -> std::result::Result<_, CoreError> {
+            let sinks = RecordingSinks::new(&self.inner, read_triples, subgraphs)?;
+            let mut b = self.inner.validate_shex();
+            if let Some(sink) = sinks.read() {
+                b = b.with_read_sink(sink);
             }
-            let mut sink = GraphSink::new(OxigraphInMemory::new());
-            let generic = |e: &dyn std::fmt::Display| CoreError::Generic { error: e.to_string() };
-            sink.declare_prefixes(self.inner.prefixes().execute())
-                .map_err(|e| generic(&e))?;
-            let sink = Arc::new(Mutex::new(sink));
-            self.inner
-                .validate_shex()
-                .with_read_sink(TriplesSink::new(sink.clone()))
-                .execute()?;
-            let mut sink = Arc::try_unwrap(sink)
-                .map_err(|_| generic(&"the read sink is still shared"))?
-                .into_inner()
-                .map_err(|e| generic(&e))?;
-            let reads = sink.finish().map_err(|e| generic(&e))?.triples;
-            Ok(Some(ReadTriples {
-                reads,
-                graph: sink.into_graph(),
-            }))
+            if let Some(sink) = sinks.valid() {
+                b = b.with_valid_sink(sink);
+            }
+            if let Some(sink) = sinks.invalid() {
+                b = b.with_invalid_sink(sink);
+            }
+            b.execute()?;
+            sinks.finish()
         })?;
         let results = self
             .inner
@@ -290,7 +283,7 @@ impl PyRudof {
             })?;
         // Guarded for the same reason as `validate_shacl`: building the report renders every
         // node and shape label to a string.
-        guard::catch_value(|| PyShExValidationReport::new(results, read))
+        guard::catch_value(|| PyShExValidationReport::new(results, recorded))
     }
 
     /// Serializes the results of the most recent :meth:`validate_shex` call.

@@ -126,7 +126,7 @@ pub struct PyShExValidationReport {
     #[allow(dead_code)]
     pub(crate) inner: ResultShapeMap,
     pub(crate) entries: Vec<PyShExValidationEntry>,
-    pub(crate) read: Option<ReadTriples>,
+    pub(crate) recorded: RecordedTriples,
 }
 
 /// The triples a validation read: how many reads, and the distinct triples.
@@ -135,8 +135,46 @@ pub(crate) struct ReadTriples {
     pub(crate) graph: OxigraphInMemory,
 }
 
+/// What a validation recorded of the triples it read: those it read, with
+/// ``read_triples=True``, and the valid and invalid subgraphs, with
+/// ``subgraphs=True``.
+#[derive(Default)]
+pub(crate) struct RecordedTriples {
+    pub(crate) read: Option<ReadTriples>,
+    pub(crate) valid: Option<OxigraphInMemory>,
+    pub(crate) invalid: Option<OxigraphInMemory>,
+}
+
+impl RecordedTriples {
+    /// The triples read, or an error naming `method` if it was not asked to read them.
+    pub(crate) fn read(&self, method: &str) -> Result<&ReadTriples> {
+        Ok(self.read.as_ref().ok_or(CoreError::Generic {
+            error: format!("{method} was not called with read_triples=True"),
+        })?)
+    }
+
+    /// The valid (`valid`) or invalid subgraph, or an error naming `method` if
+    /// it was not asked for the subgraphs.
+    pub(crate) fn subgraph(&self, valid: bool, method: &str) -> Result<&OxigraphInMemory> {
+        let graph = if valid { &self.valid } else { &self.invalid };
+        Ok(graph.as_ref().ok_or(CoreError::Generic {
+            error: format!("{method} was not called with subgraphs=True"),
+        })?)
+    }
+}
+
+/// Serializes `graph` in `format` (Turtle by default).
+pub(crate) fn serialize_graph(graph: &OxigraphInMemory, format: Option<&PyRDFFormat>) -> Result<String> {
+    let format = RDFFormat::try_from(format.map(DataFormat::from).unwrap_or(DataFormat::Turtle))?;
+    let mut buffer = Vec::new();
+    graph
+        .serialize(&format, &mut buffer)
+        .map_err(|e| CoreError::Generic { error: e.to_string() })?;
+    Ok(String::from_utf8_lossy(&buffer).into_owned())
+}
+
 impl PyShExValidationReport {
-    pub(crate) fn new(inner: ResultShapeMap, read: Option<ReadTriples>) -> Self {
+    pub(crate) fn new(inner: ResultShapeMap, recorded: RecordedTriples) -> Self {
         let entries = inner
             .iter()
             .map(|(node, shape, status)| PyShExValidationEntry {
@@ -146,7 +184,11 @@ impl PyShExValidationReport {
                 details: status_details(status),
             })
             .collect();
-        Self { inner, entries, read }
+        Self {
+            inner,
+            entries,
+            recorded,
+        }
     }
 }
 
@@ -187,7 +229,7 @@ impl PyShExValidationReport {
     /// ``None`` unless :meth:`Rudof.validate_shex` was called with ``read_triples=True``.
     #[getter]
     fn triples_read(&self) -> Option<u64> {
-        self.read.as_ref().map(|r| r.reads)
+        self.recorded.read.as_ref().map(|r| r.reads)
     }
 
     /// How many distinct triples the validation read.
@@ -195,7 +237,23 @@ impl PyShExValidationReport {
     /// ``None`` unless :meth:`Rudof.validate_shex` was called with ``read_triples=True``.
     #[getter]
     fn distinct_triples_read(&self) -> Option<usize> {
-        self.read.as_ref().map(|r| r.graph.len())
+        self.recorded.read.as_ref().map(|r| r.graph.len())
+    }
+
+    /// How many triples are in the valid subgraph: the triples matched by the conformant node/shape pairs.
+    ///
+    /// ``None`` unless :meth:`Rudof.validate_shex` was called with ``subgraphs=True``.
+    #[getter]
+    fn valid_triples(&self) -> Option<usize> {
+        self.recorded.valid.as_ref().map(|g| g.len())
+    }
+
+    /// How many triples are in the invalid subgraph: the triples read that are not valid.
+    ///
+    /// ``None`` unless :meth:`Rudof.validate_shex` was called with ``subgraphs=True``.
+    #[getter]
+    fn invalid_triples(&self) -> Option<usize> {
+        self.recorded.invalid.as_ref().map(|g| g.len())
     }
 
     /// Serializes the distinct triples the validation read.
@@ -210,15 +268,37 @@ impl PyShExValidationReport {
     ///     RudofError: If :meth:`Rudof.validate_shex` was not called with ``read_triples=True``.
     #[pyo3(signature = (format = None))]
     fn serialize_read_triples(&self, format: Option<&PyRDFFormat>) -> Result<String> {
-        let read = self.read.as_ref().ok_or(CoreError::Generic {
-            error: "validate_shex was not called with read_triples=True".into(),
-        })?;
-        let format = RDFFormat::try_from(format.map(DataFormat::from).unwrap_or(DataFormat::Turtle))?;
-        let mut buffer = Vec::new();
-        read.graph
-            .serialize(&format, &mut buffer)
-            .map_err(|e| CoreError::Generic { error: e.to_string() })?;
-        Ok(String::from_utf8_lossy(&buffer).into_owned())
+        serialize_graph(&self.recorded.read("validate_shex")?.graph, format)
+    }
+
+    /// Serializes the valid subgraph: the triples matched by the conformant node/shape pairs.
+    ///
+    /// Args:
+    ///     format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
+    ///
+    /// Returns:
+    ///     str: The serialized triples.
+    ///
+    /// Raises:
+    ///     RudofError: If :meth:`Rudof.validate_shex` was not called with ``subgraphs=True``.
+    #[pyo3(signature = (format = None))]
+    fn serialize_valid_triples(&self, format: Option<&PyRDFFormat>) -> Result<String> {
+        serialize_graph(self.recorded.subgraph(true, "validate_shex")?, format)
+    }
+
+    /// Serializes the invalid subgraph: the triples read that are not valid.
+    ///
+    /// Args:
+    ///     format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
+    ///
+    /// Returns:
+    ///     str: The serialized triples.
+    ///
+    /// Raises:
+    ///     RudofError: If :meth:`Rudof.validate_shex` was not called with ``subgraphs=True``.
+    #[pyo3(signature = (format = None))]
+    fn serialize_invalid_triples(&self, format: Option<&PyRDFFormat>) -> Result<String> {
+        serialize_graph(self.recorded.subgraph(false, "validate_shex")?, format)
     }
 
     fn __len__(&self) -> usize {

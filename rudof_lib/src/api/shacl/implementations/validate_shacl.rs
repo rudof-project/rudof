@@ -11,25 +11,48 @@ use shacl::validator::processor::{CachedDataValidation, GraphValidation, ShaclPr
 use shacl::validator::store::Graph;
 
 pub fn validate_shacl(rudof: &mut Rudof, mode: Option<&ShaclValidationMode>) -> Result<()> {
-    validate_shacl_with(rudof, mode, None, None)
+    validate_shacl_with(rudof, mode, None, ShaclSinks::default())
+}
+
+/// The sinks of one SHACL validation, see [`validate_shacl_with`].
+#[derive(Debug, Default, Clone)]
+pub struct ShaclSinks {
+    /// Receives every triple the validation reads.
+    pub read: Option<TriplesSink>,
+    /// Receives the valid subgraph: the triples read while validating the
+    /// conformant `(focus node, shape)` pairs, following the conformant pairs
+    /// they rely on.
+    pub valid: Option<TriplesSink>,
+    /// Receives the invalid subgraph: the triples read that are not valid.
+    pub invalid: Option<TriplesSink>,
 }
 
 /// Like [`validate_shacl`], with `fetch_strategy`, if given, overriding the
-/// configured `[shacl] fetch_strategy` for this call, and `read_sink`, if
-/// given, receiving every triple this validation reads.
+/// configured `[shacl] fetch_strategy` for this call, and the `sinks` given
+/// receiving the triples this validation reads, the valid subgraph and the
+/// invalid subgraph. The sinks need the native validation mode.
 pub fn validate_shacl_with(
     rudof: &mut Rudof,
     mode: Option<&ShaclValidationMode>,
     fetch_strategy: Option<ShaclFetchStrategy>,
-    read_sink: Option<TriplesSink>,
+    sinks: ShaclSinks,
 ) -> Result<()> {
     let mut shacl_config = rudof.config().execute().shacl().clone();
     if let Some(strategy) = fetch_strategy {
         shacl_config = shacl_config.with_fetch_strategy(strategy);
     }
-    if let Some(sink) = read_sink {
-        declare_data_prefixes(rudof, [&sink])?;
+    declare_data_prefixes(
+        rudof,
+        sinks.read.iter().chain(sinks.valid.iter()).chain(sinks.invalid.iter()),
+    )?;
+    if let Some(sink) = sinks.read {
         shacl_config = shacl_config.with_read_sink(sink);
+    }
+    if let Some(sink) = sinks.valid {
+        shacl_config = shacl_config.with_valid_sink(sink);
+    }
+    if let Some(sink) = sinks.invalid {
+        shacl_config = shacl_config.with_invalid_sink(sink);
     }
 
     let (data, shacl_schema_ir) = validate_loaded_data_schema_and_shapes(rudof)?;

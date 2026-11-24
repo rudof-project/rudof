@@ -15,6 +15,7 @@ use crate::error::ValidationError;
 use crate::validator::RecursionSemantics;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationOutcome;
+use crate::validator::subgraph::SubgraphTracker;
 pub use native::NativeEngine;
 #[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
@@ -103,6 +104,15 @@ pub trait Engine<S: NeighsRDF>: Send {
 
     /// Sets [`Self::retention`], which an engine that does not keep it ignores.
     fn set_retention(&mut self, _retention: Retention) {}
+
+    /// The tracker told which `(focus node, shape)` pair is being validated, to
+    /// tell the valid and invalid subgraphs apart, if any.
+    fn subgraph_tracker(&self) -> Option<&SubgraphTracker> {
+        None
+    }
+
+    /// Sets [`Self::subgraph_tracker`], which an engine that does not keep it ignores.
+    fn set_subgraph_tracker(&mut self, _tracker: Option<SubgraphTracker>) {}
 }
 
 /// What validating a shape keeps, which the processor sets from `ShaclConfig`.

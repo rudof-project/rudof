@@ -21,6 +21,7 @@ http-client = ["sparql", "sparql_service/http-client", "rudof_rdf/http-client"]
 anyhow.workspace = true
 dashmap.workspace = true
 either.workspace = true
+indexmap.workspace = true
 indoc.workspace = true
 itertools.workspace = true
 petgraph.workspace = true

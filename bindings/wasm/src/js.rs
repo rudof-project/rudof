@@ -27,6 +27,14 @@ export interface ShExValidationReport {
   distinctTriplesRead?: number;
   /** The distinct triples the validation read, serialized (with `readTriples`). */
   readTriples?: string;
+  /** How many triples are in the valid subgraph (with `subgraphs`). */
+  validTriples?: number;
+  /** How many triples are in the invalid subgraph (with `subgraphs`). */
+  invalidTriples?: number;
+  /** The valid subgraph, serialized: the triples matched by the conformant node/shape pairs (with `subgraphs`). */
+  validSubgraph?: string;
+  /** The invalid subgraph, serialized: the triples read that are not valid (with `subgraphs`). */
+  invalidSubgraph?: string;
 }
 
 export interface ShExValidationEntry {
@@ -49,6 +57,14 @@ export interface ShaclValidationReport {
   distinctTriplesRead?: number;
   /** The distinct triples the validation read, serialized (with `readTriples`). */
   readTriples?: string;
+  /** How many triples are in the valid subgraph (with `subgraphs`). */
+  validTriples?: number;
+  /** How many triples are in the invalid subgraph (with `subgraphs`). */
+  invalidTriples?: number;
+  /** The valid subgraph, serialized: the triples read for the conformant focus node/shape pairs (with `subgraphs`). */
+  validSubgraph?: string;
+  /** The invalid subgraph, serialized: the triples read that are not valid (with `subgraphs`). */
+  invalidSubgraph?: string;
 }
 
 export interface ShaclValidationEntry {
@@ -462,19 +478,24 @@ impl JsRudof {
 
     /// Validates the current data against the ShEx schema, for the
     /// associations in the current ShapeMap. With `readTriples`, the report
-    /// also carries `triplesRead`, `distinctTriplesRead` and `readTriples`,
-    /// serialized in `readTriplesFormat` (default `turtle`).
+    /// also carries `triplesRead`, `distinctTriplesRead` and `readTriples`.
+    /// With `subgraphs`, it also carries `validTriples` and `validSubgraph`,
+    /// the triples matched by the conformant node/shape pairs, and
+    /// `invalidTriples` and `invalidSubgraph`, the triples read that are not
+    /// valid. The triples are serialized in `readTriplesFormat` (default
+    /// `turtle`).
     #[wasm_bindgen(js_name = validateShex, unchecked_return_type = "ShExValidationReport")]
     pub fn validate_shex(
         &mut self,
         #[wasm_bindgen(js_name = "readTriples")] read_triples: Option<bool>,
         #[wasm_bindgen(js_name = "readTriplesFormat")] read_triples_format: Option<String>,
+        subgraphs: Option<bool>,
     ) -> Result<JsValue, JsValue> {
-        to_js(
-            &self
-                .session
-                .validate_shex(read_triples.unwrap_or(false), read_triples_format.as_deref())?,
-        )
+        to_js(&self.session.validate_shex(
+            read_triples.unwrap_or(false),
+            read_triples_format.as_deref(),
+            subgraphs.unwrap_or(false),
+        )?)
     }
 
     /// Serializes the results of the most recent ShEx validation.
@@ -520,8 +541,12 @@ impl JsRudof {
     /// the default, or `by-shape`) selects how the data of a SPARQL endpoint
     /// is fetched; see `validateShaclAsync`. With `readTriples` (native
     /// engine only), the report also carries `triplesRead`,
-    /// `distinctTriplesRead` and `readTriples`, serialized in
-    /// `readTriplesFormat` (default `turtle`).
+    /// `distinctTriplesRead` and `readTriples`. With `subgraphs` (native
+    /// engine only), it also carries `validTriples` and `validSubgraph`, the
+    /// triples read while validating the conformant focus node/shape pairs,
+    /// and `invalidTriples` and `invalidSubgraph`, the triples read that are
+    /// not valid. The triples are serialized in `readTriplesFormat` (default
+    /// `turtle`).
     #[wasm_bindgen(js_name = validateShacl, unchecked_return_type = "ShaclValidationReport")]
     pub fn validate_shacl(
         &mut self,
@@ -529,12 +554,14 @@ impl JsRudof {
         #[wasm_bindgen(js_name = "fetchStrategy")] fetch_strategy: Option<String>,
         #[wasm_bindgen(js_name = "readTriples")] read_triples: Option<bool>,
         #[wasm_bindgen(js_name = "readTriplesFormat")] read_triples_format: Option<String>,
+        subgraphs: Option<bool>,
     ) -> Result<JsValue, JsValue> {
         to_js(&self.session.validate_shacl(
             mode.as_deref(),
             fetch_strategy.as_deref(),
             read_triples.unwrap_or(false),
             read_triples_format.as_deref(),
+            subgraphs.unwrap_or(false),
         )?)
     }
 

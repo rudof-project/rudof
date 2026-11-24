@@ -66,11 +66,18 @@ pub enum ValidationError {
     #[error("Validating the shape {0} holds more than {1} results and evidences, the configured max_results")]
     TooManyResults(String, usize),
 
-    #[error("This SHACL processor cannot record the triples it reads: no read sink is supported")]
+    #[error(
+        "This SHACL processor cannot record the triples it reads: no read sink, nor valid or invalid sink, is supported"
+    )]
     ReadSinkNotSupported,
 
-    #[error("The SPARQL engine reads the data through queries, not triples: a read sink needs the native engine")]
+    #[error(
+        "The SPARQL engine reads the data through queries, not triples: a read, valid or invalid sink needs the native engine"
+    )]
     ReadSinkNeedsNativeEngine,
+
+    #[error("Failed to push the valid or invalid subgraph into its sink: {0}")]
+    SubgraphSinkFailed(String),
 }
 
 impl ValidationError {

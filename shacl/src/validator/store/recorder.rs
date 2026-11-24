@@ -5,9 +5,13 @@
 //! wrapped store and, when a [`TriplesSink`] is installed, pushes every triple
 //! it hands back into the sink. Without a sink it is a plain pass-through.
 //!
+//! When a [`SubgraphTracker`] is installed, it is also handed every triple
+//! read, to tell the valid and invalid subgraphs apart.
+//!
 //! SPARQL queries ([`QueryRDF`]) are forwarded but not recorded: their
 //! answers are bindings, not triples.
 
+use crate::validator::subgraph::SubgraphTracker;
 use oxrdf::Triple as OxTriple;
 use prefixmap::{PrefixMap, PrefixMapError};
 use rudof_iri::IriS;
@@ -22,6 +26,7 @@ use std::fmt::{self, Debug, Display};
 pub struct ReadRecorder<S> {
     inner: S,
     sink: Option<TriplesSink>,
+    tracker: Option<SubgraphTracker>,
 }
 
 /// An error of the wrapped store, or of the sink refusing a triple.
@@ -48,7 +53,11 @@ impl<E> From<RdfSinkError> for ReadRecorderError<E> {
 
 impl<S> ReadRecorder<S> {
     pub fn new(inner: S) -> Self {
-        Self { inner, sink: None }
+        Self {
+            inner,
+            sink: None,
+            tracker: None,
+        }
     }
 
     pub fn inner(&self) -> &S {
@@ -69,11 +78,24 @@ impl<S> ReadRecorder<S> {
         self.sink = sink;
     }
 
+    /// Installs the tracker that is handed the triples read from now on, or
+    /// removes it with `None`.
+    pub fn set_tracker(&mut self, tracker: Option<SubgraphTracker>) {
+        self.tracker = tracker;
+    }
+
     pub fn is_recording(&self) -> bool {
-        self.sink.is_some()
+        self.sink.is_some() || self.tracker.is_some()
     }
 
     fn record<'a, E>(&self, triples: impl IntoIterator<Item = &'a OxTriple>) -> Result<(), ReadRecorderError<E>> {
+        if self.sink.is_none() && self.tracker.is_none() {
+            return Ok(());
+        }
+        let triples: Vec<&OxTriple> = triples.into_iter().collect();
+        if let Some(tracker) = &self.tracker {
+            tracker.record_read(triples.iter().copied());
+        }
         let Some(sink) = &self.sink else {
             return Ok(());
         };

@@ -12,7 +12,7 @@ use crate::error::{Error, Result};
 use crate::reports::PgSchemaValidationReport;
 use crate::reports::{
     ExternalResolver, GraphDiff, NodeNeighborhood, QueryResults, ShExCheck, ShExPathMatch, ShExValidationReport,
-    ShaclValidationReport, Triples,
+    ShaclValidationReport, Triples, TriplesRecorded,
 };
 use rudof_lib::errors::RudofError;
 #[cfg(feature = "comparison")]
@@ -349,54 +349,35 @@ impl Session {
     /// associations in the current ShapeMap.
     ///
     /// With `read_triples`, the report also carries the triples the
-    /// validation read, serialized in `read_triples_format` (default Turtle).
+    /// validation read; with `subgraphs`, the valid subgraph (the triples
+    /// matched by the conformant node/shape pairs) and the invalid one (the
+    /// triples read that are not valid). The triples are serialized in
+    /// `triples_format` (default Turtle).
     pub fn validate_shex(
         &mut self,
         read_triples: bool,
-        read_triples_format: Option<&str>,
+        triples_format: Option<&str>,
+        subgraphs: bool,
     ) -> Result<ShExValidationReport> {
-        let format: Option<DataFormat> = parse(read_triples_format, "RDF format")?;
-        let read = if read_triples {
-            Some(self.validate_shex_reading(format.unwrap_or(DataFormat::Turtle))?)
-        } else {
-            self.rudof.validate_shex().execute()?;
-            None
-        };
+        let format: Option<DataFormat> = parse(triples_format, "RDF format")?;
+        let sinks = RecordingSinks::new(&self.rudof, read_triples, subgraphs)?;
+        let mut b = self.rudof.validate_shex();
+        if let Some(sink) = sinks.read() {
+            b = b.with_read_sink(sink);
+        }
+        if let Some(sink) = sinks.valid() {
+            b = b.with_valid_sink(sink);
+        }
+        if let Some(sink) = sinks.invalid() {
+            b = b.with_invalid_sink(sink);
+        }
+        b.execute()?;
         let results = self
             .rudof
             .shex_validation_results()
             .ok_or_else(|| Error::new("ValidationError", "ShEx validation produced no results"))?;
-        let mut report: ShExValidationReport = results.into();
-        if let Some((reads, distinct, serialized)) = read {
-            report.triples_read = Some(reads);
-            report.distinct_triples_read = Some(distinct);
-            report.read_triples = Some(serialized);
-        }
-        Ok(report)
-    }
-
-    /// Validates with a `GraphSink` as read sink and returns how many triples
-    /// were read, how many are distinct, and the distinct ones in `format`.
-    fn validate_shex_reading(&mut self, format: DataFormat) -> Result<(usize, usize, String)> {
-        let format = RDFFormat::try_from(format).map_err(|e| Error::from(RudofError::from(e)))?;
-        let generic = |e: &dyn Display| Error::from(RudofError::Generic { error: e.to_string() });
-        let mut sink = GraphSink::new(OxigraphInMemory::new());
-        sink.declare_prefixes(self.rudof.prefixes().execute())
-            .map_err(|e| generic(&e))?;
-        let sink = Arc::new(Mutex::new(sink));
-        self.rudof
-            .validate_shex()
-            .with_read_sink(TriplesSink::new(sink.clone()))
-            .execute()?;
-        let mut sink = sink.lock().map_err(|e| generic(&e))?;
-        let reads = sink.finish().map_err(|e| generic(&e))?.triples;
-        let mut buffer = Vec::new();
-        sink.graph().serialize(&format, &mut buffer).map_err(|e| generic(&e))?;
-        Ok((
-            reads as usize,
-            sink.graph().len(),
-            String::from_utf8_lossy(&buffer).into_owned(),
-        ))
+        let report: ShExValidationReport = results.into();
+        Ok(report.with_triples(sinks.finish(format)?))
     }
 
     /// Serializes the results of the most recent ShEx validation.
@@ -466,24 +447,24 @@ impl Session {
     /// `on-demand` (the default) when the validation needs it, `by-shape`
     /// shape by shape before validating, many nodes per query. It has no
     /// effect on data in memory.
+    ///
+    /// With `read_triples`, the report also carries the triples the
+    /// validation read; with `subgraphs`, the valid subgraph (the triples read
+    /// while validating the conformant focus node/shape pairs) and the invalid
+    /// one (the triples read that are not valid). The triples are serialized
+    /// in `triples_format` (default Turtle). Both need the native engine.
     pub fn validate_shacl(
         &mut self,
         mode: Option<&str>,
         fetch_strategy: Option<&str>,
         read_triples: bool,
-        read_triples_format: Option<&str>,
+        triples_format: Option<&str>,
+        subgraphs: bool,
     ) -> Result<ShaclValidationReport> {
         let mode: Option<ShaclValidationMode> = parse(mode, "SHACL validation mode")?;
         let fetch_strategy: Option<ShaclFetchStrategy> = parse(fetch_strategy, "SHACL fetch strategy")?;
-        let format: Option<DataFormat> = parse(read_triples_format, "RDF format")?;
-        let sink = if read_triples {
-            let mut sink = GraphSink::new(OxigraphInMemory::new());
-            sink.declare_prefixes(self.rudof.prefixes().execute())
-                .map_err(|e| Error::from(RudofError::Generic { error: e.to_string() }))?;
-            Some(Arc::new(Mutex::new(sink)))
-        } else {
-            None
-        };
+        let format: Option<DataFormat> = parse(triples_format, "RDF format")?;
+        let sinks = RecordingSinks::new(&self.rudof, read_triples, subgraphs)?;
         let mut b = self.rudof.validate_shacl();
         if let Some(m) = &mode {
             b = b.with_shacl_validation_mode(m);
@@ -491,28 +472,22 @@ impl Session {
         if let Some(s) = fetch_strategy {
             b = b.with_fetch_strategy(s);
         }
-        if let Some(sink) = &sink {
-            b = b.with_read_sink(TriplesSink::new(sink.clone()));
+        if let Some(sink) = sinks.read() {
+            b = b.with_read_sink(sink);
+        }
+        if let Some(sink) = sinks.valid() {
+            b = b.with_valid_sink(sink);
+        }
+        if let Some(sink) = sinks.invalid() {
+            b = b.with_invalid_sink(sink);
         }
         b.execute()?;
         let report = self
             .rudof
             .shacl_validation_results()
             .ok_or_else(|| Error::new("ValidationError", "SHACL validation produced no results"))?;
-        let mut report: ShaclValidationReport = report.into();
-        if let Some(sink) = sink {
-            let format = RDFFormat::try_from(format.unwrap_or(DataFormat::Turtle))
-                .map_err(|e| Error::from(RudofError::from(e)))?;
-            let generic = |e: &dyn Display| Error::from(RudofError::Generic { error: e.to_string() });
-            let mut sink = sink.lock().map_err(|e| generic(&e))?;
-            let reads = sink.finish().map_err(|e| generic(&e))?.triples;
-            let mut buffer = Vec::new();
-            sink.graph().serialize(&format, &mut buffer).map_err(|e| generic(&e))?;
-            report.triples_read = Some(reads as usize);
-            report.distinct_triples_read = Some(sink.graph().len());
-            report.read_triples = Some(String::from_utf8_lossy(&buffer).into_owned());
-        }
-        Ok(report)
+        let report: ShaclValidationReport = report.into();
+        Ok(report.with_triples(sinks.finish(format)?))
     }
 
     /// Serializes the results of the most recent SHACL validation.
@@ -1297,4 +1272,80 @@ fn borrowed(triples: &[(String, String, String)]) -> Vec<(&str, &str, &str)> {
         .iter()
         .map(|(subject, predicate, object)| (subject.as_str(), predicate.as_str(), object.as_str()))
         .collect()
+}
+
+type SharedGraphSink = Arc<Mutex<GraphSink>>;
+
+/// The graph sinks of a validation that records the triples it reads and/or
+/// its valid and invalid subgraphs.
+struct RecordingSinks {
+    read: Option<SharedGraphSink>,
+    valid: Option<SharedGraphSink>,
+    invalid: Option<SharedGraphSink>,
+}
+
+fn generic_error(e: &dyn Display) -> Error {
+    Error::from(RudofError::Generic { error: e.to_string() })
+}
+
+impl RecordingSinks {
+    fn new(rudof: &Rudof, read_triples: bool, subgraphs: bool) -> Result<Self> {
+        let new_sink = || -> Result<SharedGraphSink> {
+            let mut sink = GraphSink::new(OxigraphInMemory::new());
+            sink.declare_prefixes(rudof.prefixes().execute())
+                .map_err(|e| generic_error(&e))?;
+            Ok(Arc::new(Mutex::new(sink)))
+        };
+        let new_sink_if = |wanted: bool| if wanted { new_sink().map(Some) } else { Ok(None) };
+        Ok(RecordingSinks {
+            read: new_sink_if(read_triples)?,
+            valid: new_sink_if(subgraphs)?,
+            invalid: new_sink_if(subgraphs)?,
+        })
+    }
+
+    fn handle(sink: &Option<SharedGraphSink>) -> Option<TriplesSink> {
+        sink.as_ref().map(|s| TriplesSink::new(s.clone()))
+    }
+
+    fn read(&self) -> Option<TriplesSink> {
+        Self::handle(&self.read)
+    }
+
+    fn valid(&self) -> Option<TriplesSink> {
+        Self::handle(&self.valid)
+    }
+
+    fn invalid(&self) -> Option<TriplesSink> {
+        Self::handle(&self.invalid)
+    }
+
+    /// How many triples each sink received, how many are distinct, and the
+    /// distinct ones serialized in `format` (default Turtle).
+    fn finish(self, format: Option<DataFormat>) -> Result<TriplesRecorded> {
+        let format =
+            RDFFormat::try_from(format.unwrap_or(DataFormat::Turtle)).map_err(|e| Error::from(RudofError::from(e)))?;
+        let finish = |sink: Option<SharedGraphSink>| -> Result<Option<(usize, usize, String)>> {
+            let Some(sink) = sink else {
+                return Ok(None);
+            };
+            let mut sink = sink.lock().map_err(|e| generic_error(&e))?;
+            let reads = sink.finish().map_err(|e| generic_error(&e))?.triples;
+            let mut buffer = Vec::new();
+            sink.graph()
+                .serialize(&format, &mut buffer)
+                .map_err(|e| generic_error(&e))?;
+            Ok(Some((
+                reads as usize,
+                sink.graph().len(),
+                String::from_utf8_lossy(&buffer).into_owned(),
+            )))
+        };
+        let subgraph = |sink| finish(sink).map(|found| found.map(|(_, distinct, serialized)| (distinct, serialized)));
+        Ok(TriplesRecorded {
+            read: finish(self.read)?,
+            valid: subgraph(self.valid)?,
+            invalid: subgraph(self.invalid)?,
+        })
+    }
 }

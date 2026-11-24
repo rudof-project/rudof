@@ -1,3 +1,4 @@
+use crate::api::shacl::implementations::ShaclSinks;
 use crate::{
     Result, Rudof,
     api::shacl::ShaclOperations,
@@ -13,7 +14,7 @@ pub struct ValidateShaclBuilder<'a> {
     rudof: &'a mut Rudof,
     mode: Option<&'a ShaclValidationMode>,
     fetch_strategy: Option<ShaclFetchStrategy>,
-    read_sink: Option<TriplesSink>,
+    sinks: ShaclSinks,
 }
 
 impl<'a> ValidateShaclBuilder<'a> {
@@ -26,7 +27,7 @@ impl<'a> ValidateShaclBuilder<'a> {
             rudof,
             mode: None,
             fetch_strategy: None,
-            read_sink: None,
+            sinks: ShaclSinks::default(),
         }
     }
 
@@ -57,20 +58,36 @@ impl<'a> ValidateShaclBuilder<'a> {
     /// Pushes every triple the validation reads into `read_sink`, for this
     /// run only. Needs the native validation mode.
     pub fn with_read_sink(mut self, read_sink: TriplesSink) -> Self {
-        self.read_sink = Some(read_sink);
+        self.sinks.read = Some(read_sink);
+        self
+    }
+
+    /// Pushes the valid subgraph into `valid_sink` once the validation ends,
+    /// for this run only: the triples read while validating the conformant
+    /// `(focus node, shape)` pairs of the shapes with targets, following the
+    /// conformant pairs their constraints rely on (e.g. through `sh:node`).
+    /// Triples only read while checking pairs that turned out non-conformant
+    /// are left out. Needs the native validation mode.
+    pub fn with_valid_sink(mut self, valid_sink: TriplesSink) -> Self {
+        self.sinks.valid = Some(valid_sink);
+        self
+    }
+
+    /// Pushes the invalid subgraph into `invalid_sink` once the validation
+    /// ends, for this run only: the triples the validation read that are not
+    /// in the valid subgraph (see [`Self::with_valid_sink`]). Needs the native
+    /// validation mode.
+    pub fn with_invalid_sink(mut self, invalid_sink: TriplesSink) -> Self {
+        self.sinks.invalid = Some(invalid_sink);
         self
     }
 
     /// Executes the SHACL validation operation with the configured parameters.
     pub fn execute(self) -> Result<()> {
-        if self.fetch_strategy.is_none() && self.read_sink.is_none() {
+        let no_sinks = self.sinks.read.is_none() && self.sinks.valid.is_none() && self.sinks.invalid.is_none();
+        if self.fetch_strategy.is_none() && no_sinks {
             return <Rudof as ShaclOperations>::validate_shacl(self.rudof, self.mode);
         }
-        crate::api::shacl::implementations::validate_shacl_with(
-            self.rudof,
-            self.mode,
-            self.fetch_strategy,
-            self.read_sink,
-        )
+        crate::api::shacl::implementations::validate_shacl_with(self.rudof, self.mode, self.fetch_strategy, self.sinks)
     }
 }

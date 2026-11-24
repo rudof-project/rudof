@@ -17,9 +17,11 @@ pub mod processor;
 mod recursion;
 pub mod report;
 pub mod store;
+pub mod subgraph;
 pub mod typing;
 
 pub use crate::ir::RecursionSemantics;
 pub use config::ShaclConfig;
 pub use fetch_strategy::FetchStrategy;
 pub use mode::ShaclValidationMode;
+pub use subgraph::{SubgraphTracker, Subgraphs};

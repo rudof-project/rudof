@@ -6,6 +6,7 @@ use crate::validator::engine::SparqlEngine;
 use crate::validator::engine::{Engine, NativeEngine};
 use crate::validator::processor::ShaclProcessor;
 use crate::validator::store::{Graph, ReadRecorder};
+use crate::validator::subgraph::SubgraphTracker;
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::RDFFormat;
 #[cfg(not(feature = "sparql"))]
@@ -86,6 +87,11 @@ impl ShaclProcessor<ReadRecorder<RdfData>> for GraphValidation {
         Ok(())
     }
 
+    fn set_subgraph_tracker(&mut self, tracker: Option<SubgraphTracker>) -> Result<(), ValidationError> {
+        self.store.set_tracker(tracker);
+        Ok(())
+    }
+
     /// Not while recording: the index reads the whole graph up front, and
     /// then answers class lookups without reading the `rdf:type` and
     /// `rdfs:subClassOf` triples behind them.
@@ -108,6 +114,11 @@ impl ShaclProcessor<ReadRecorder<OxigraphInMemory>> for GraphValidation {
 
     fn set_read_sink(&mut self, sink: Option<TriplesSink>) -> Result<(), ValidationError> {
         self.store.set_sink(sink);
+        Ok(())
+    }
+
+    fn set_subgraph_tracker(&mut self, tracker: Option<SubgraphTracker>) -> Result<(), ValidationError> {
+        self.store.set_tracker(tracker);
         Ok(())
     }
 

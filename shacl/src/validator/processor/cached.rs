@@ -3,6 +3,7 @@ use crate::ir::IRSchema;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
 use crate::validator::store::{CachedRdfData, ReadRecorder};
+use crate::validator::subgraph::SubgraphTracker;
 use crate::validator::{FetchStrategy, ShaclConfig, ShaclValidationMode, prefetch};
 use rudof_rdf_sink::TriplesSink;
 use sparql_service::RdfData;
@@ -51,6 +52,11 @@ impl ShaclProcessor<ReadRecorder<CachedRdfData>> for CachedDataValidation {
 
     fn set_read_sink(&mut self, sink: Option<TriplesSink>) -> Result<(), ValidationError> {
         self.store.set_sink(sink);
+        Ok(())
+    }
+
+    fn set_subgraph_tracker(&mut self, tracker: Option<SubgraphTracker>) -> Result<(), ValidationError> {
+        self.store.set_tracker(tracker);
         Ok(())
     }
 

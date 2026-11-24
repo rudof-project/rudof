@@ -147,7 +147,7 @@ pub struct ShaclValidateArgs {
 
     #[arg(
         long = "statistics",
-        help = "Print how many triples the validation read, and how many of them are distinct"
+        help = "Print how many triples the validation read, how many of them are distinct, and how many are valid and invalid"
     )]
     pub statistics: bool,
 
@@ -168,6 +168,38 @@ pub struct ShaclValidateArgs {
         default_value_t = DataFormatCli::Turtle
     )]
     pub visited_format: DataFormatCli,
+
+    #[arg(
+        long = "valid",
+        value_name = "FILE",
+        help = "Write the valid subgraph to FILE: the triples that the validation reads for the conformant focus node/shape pairs"
+    )]
+    pub valid: Option<PathBuf>,
+
+    #[arg(
+        long = "valid-format",
+        ignore_case = true,
+        value_name = "FORMAT",
+        help = "RDF format of the --valid file",
+        default_value_t = DataFormatCli::Turtle
+    )]
+    pub valid_format: DataFormatCli,
+
+    #[arg(
+        long = "invalid",
+        value_name = "FILE",
+        help = "Write the invalid subgraph to FILE: the triples that the validation reads and that are not valid"
+    )]
+    pub invalid: Option<PathBuf>,
+
+    #[arg(
+        long = "invalid-format",
+        ignore_case = true,
+        value_name = "FORMAT",
+        help = "RDF format of the --invalid file",
+        default_value_t = DataFormatCli::Turtle
+    )]
+    pub invalid_format: DataFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

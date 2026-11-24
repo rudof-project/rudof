@@ -10,7 +10,7 @@ use crate::{
         base::{Command, CommandContext},
     },
 };
-use anyhow::{Result, bail};
+use anyhow::Result;
 
 /// Implementation of the `validate` command.
 ///
@@ -65,9 +65,6 @@ impl ValidateCommand {
 
     /// Convert ValidateArgs to ShaclValidateArgs  
     fn to_shacl_args(&self) -> Result<ShaclValidateArgs> {
-        if self.args.valid.is_some() || self.args.invalid.is_some() {
-            bail!("--valid and --invalid are only supported for ShEx validation");
-        }
         Ok(ShaclValidateArgs {
             data: self.args.data.clone(),
             data_format: self.args.data_format,
@@ -87,6 +84,10 @@ impl ValidateCommand {
             statistics: self.args.statistics,
             visited: self.args.visited.clone(),
             visited_format: self.args.visited_format,
+            valid: self.args.valid.clone(),
+            valid_format: self.args.valid_format,
+            invalid: self.args.invalid.clone(),
+            invalid_format: self.args.invalid_format,
             common: self.args.common.clone(),
         })
     }

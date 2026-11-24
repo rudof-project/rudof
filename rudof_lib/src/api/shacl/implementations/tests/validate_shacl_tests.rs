@@ -1368,3 +1368,58 @@ fn test_validate_shacl_read_sink_needs_the_native_mode() {
 
     assert!(result.is_err());
 }
+
+#[test]
+fn test_validate_shacl_valid_and_invalid_sinks_split_the_triples_read() {
+    use rudof_rdf_sink::{CountingSink, RdfSink, TriplesSink};
+    use std::sync::{Arc, Mutex};
+
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let schema = InputSpec::str(
+        r#"
+        @prefix ex: <http://example.org/> .
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+        ex:S sh:targetNode ex:Alice, ex:Bob ;
+             sh:property [ sh:path ex:name ; sh:datatype xsd:string ] .
+        "#,
+    );
+    load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
+    let data = InputSpec::str(
+        r#"
+        @prefix ex: <http://example.org/> .
+        ex:Alice ex:name "Alice" .
+        ex:Bob ex:name 23, "Bob" .
+        "#,
+    );
+    load_data(
+        &mut rudof,
+        Some(&[data]),
+        Some(&DataFormat::Turtle),
+        None,
+        None,
+        None,
+        None,
+        None,
+        EndpointStrategy::default(),
+    )
+    .unwrap();
+    let new_sink = || Arc::new(Mutex::new(CountingSink::new()));
+    let (read, valid, invalid) = (new_sink(), new_sink(), new_sink());
+
+    rudof
+        .validate_shacl()
+        .with_read_sink(TriplesSink::new(read.clone()))
+        .with_valid_sink(TriplesSink::new(valid.clone()))
+        .with_invalid_sink(TriplesSink::new(invalid.clone()))
+        .execute()
+        .unwrap();
+
+    assert_eq!(read.lock().unwrap().report().triples, 3);
+    assert_eq!(valid.lock().unwrap().report().triples, 1);
+    assert_eq!(invalid.lock().unwrap().report().triples, 2);
+
+    // For that run only
+    rudof.validate_shacl().execute().unwrap();
+    assert_eq!(valid.lock().unwrap().report().triples, 1);
+}

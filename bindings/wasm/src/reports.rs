@@ -10,6 +10,46 @@ use rudof_lib::types::{
 use rudof_lib::types::{PgSchemaResultAssociation, PgSchemaValidationResult};
 use serde::Serialize;
 
+/// What a validation recorded of the triples it read, see
+/// `Session::validate_shex` and `Session::validate_shacl`.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct TriplesRecorded {
+    /// How many triples were read, duplicates included, how many distinct,
+    /// and the distinct ones serialized.
+    pub read: Option<(usize, usize, String)>,
+    /// The valid subgraph: how many triples, and the triples serialized.
+    pub valid: Option<(usize, String)>,
+    /// The invalid subgraph: how many triples, and the triples serialized.
+    pub invalid: Option<(usize, String)>,
+}
+
+macro_rules! impl_record_triples {
+    ($report:ty) => {
+        impl $report {
+            /// Adds what the validation recorded of the triples it read.
+            pub fn with_triples(mut self, recorded: TriplesRecorded) -> Self {
+                if let Some((reads, distinct, serialized)) = recorded.read {
+                    self.triples_read = Some(reads);
+                    self.distinct_triples_read = Some(distinct);
+                    self.read_triples = Some(serialized);
+                }
+                if let Some((count, serialized)) = recorded.valid {
+                    self.valid_triples = Some(count);
+                    self.valid_subgraph = Some(serialized);
+                }
+                if let Some((count, serialized)) = recorded.invalid {
+                    self.invalid_triples = Some(count);
+                    self.invalid_subgraph = Some(serialized);
+                }
+                self
+            }
+        }
+    };
+}
+
+impl_record_triples!(ShExValidationReport);
+impl_record_triples!(ShaclValidationReport);
+
 /// The result of ShEx validation: one entry per node/shape association.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +70,21 @@ pub struct ShExValidationReport {
     /// The distinct triples the validation read, serialized.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub read_triples: Option<String>,
+    /// How many triples are in the valid subgraph. Only present when the
+    /// validation was asked for the subgraphs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub valid_triples: Option<usize>,
+    /// How many triples are in the invalid subgraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_triples: Option<usize>,
+    /// The valid subgraph, serialized: the triples matched by
+    /// the conformant node/shape pairs, following the pairs their shapes rely on.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub valid_subgraph: Option<String>,
+    /// The invalid subgraph, serialized: the triples read that are not in the
+    /// valid subgraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_subgraph: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -65,6 +120,10 @@ impl From<&ResultShapeMap> for ShExValidationReport {
             triples_read: None,
             distinct_triples_read: None,
             read_triples: None,
+            valid_triples: None,
+            invalid_triples: None,
+            valid_subgraph: None,
+            invalid_subgraph: None,
         }
     }
 }
@@ -101,6 +160,22 @@ pub struct ShaclValidationReport {
     /// The distinct triples the validation read, serialized.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub read_triples: Option<String>,
+    /// How many triples are in the valid subgraph. Only present when the
+    /// validation was asked for the subgraphs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub valid_triples: Option<usize>,
+    /// How many triples are in the invalid subgraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_triples: Option<usize>,
+    /// The valid subgraph, serialized: the triples read
+    /// while validating the conformant focus node/shape pairs, following the
+    /// conformant pairs they rely on.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub valid_subgraph: Option<String>,
+    /// The invalid subgraph, serialized: the triples read that are not in the
+    /// valid subgraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_subgraph: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -162,6 +237,10 @@ impl From<&CoreShaclReport> for ShaclValidationReport {
             triples_read: None,
             distinct_triples_read: None,
             read_triples: None,
+            valid_triples: None,
+            invalid_triples: None,
+            valid_subgraph: None,
+            invalid_subgraph: None,
         }
     }
 }

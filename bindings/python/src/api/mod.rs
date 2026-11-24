@@ -8,6 +8,7 @@ pub mod pgschema;
 pub mod prefixes;
 pub mod query;
 pub mod rdf_config;
+mod recording;
 pub mod service;
 pub mod session;
 pub mod shacl;
