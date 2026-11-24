@@ -275,7 +275,7 @@ impl PyShaclValidationReport {
         self.recorded.read.as_ref().map(|r| r.graph.len())
     }
 
-    /// How many triples are in the valid subgraph: the triples read for the conformant focus node/shape pairs.
+    /// How many triples are in the valid subgraph, that is, the triples read for the conformant focus node/shape pairs.
     ///
     /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``subgraphs=True``.
     #[getter]
@@ -283,7 +283,7 @@ impl PyShaclValidationReport {
         self.recorded.valid.as_ref().map(|g| g.len())
     }
 
-    /// How many triples are in the invalid subgraph: the triples read that are not valid.
+    /// How many triples are in the invalid subgraph, that is, the triples read that are not valid.
     ///
     /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``subgraphs=True``.
     #[getter]
@@ -306,7 +306,7 @@ impl PyShaclValidationReport {
         serialize_graph(&self.recorded.read("validate_shacl")?.graph, format)
     }
 
-    /// Serializes the valid subgraph: the triples read for the conformant focus node/shape pairs.
+    /// Serializes the valid subgraph, that is, the triples read for the conformant focus node/shape pairs.
     ///
     /// Args:
     ///     format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
@@ -321,7 +321,7 @@ impl PyShaclValidationReport {
         serialize_graph(self.recorded.subgraph(true, "validate_shacl")?, format)
     }
 
-    /// Serializes the invalid subgraph: the triples read that are not valid.
+    /// Serializes the invalid subgraph, that is, the triples read that are not valid.
     ///
     /// Args:
     ///     format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.

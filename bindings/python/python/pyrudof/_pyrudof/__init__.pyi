@@ -2080,14 +2080,14 @@ class ShExValidationReport:
     @property
     def valid_triples(self) -> typing.Optional[builtins.int]:
         r"""
-        How many triples are in the valid subgraph: the triples matched by the conformant node/shape pairs.
+        How many triples are in the valid subgraph, that is, the triples matched by the conformant node/shape pairs.
         
         ``None`` unless :meth:`Rudof.validate_shex` was called with ``subgraphs=True``.
         """
     @property
     def invalid_triples(self) -> typing.Optional[builtins.int]:
         r"""
-        How many triples are in the invalid subgraph: the triples read that are not valid.
+        How many triples are in the invalid subgraph, that is, the triples read that are not valid.
         
         ``None`` unless :meth:`Rudof.validate_shex` was called with ``subgraphs=True``.
         """
@@ -2106,7 +2106,7 @@ class ShExValidationReport:
         """
     def serialize_valid_triples(self, format: typing.Optional[RDFFormat] = None) -> builtins.str:
         r"""
-        Serializes the valid subgraph: the triples matched by the conformant node/shape pairs.
+        Serializes the valid subgraph, that is, the triples matched by the conformant node/shape pairs.
         
         Args:
             format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
@@ -2119,7 +2119,7 @@ class ShExValidationReport:
         """
     def serialize_invalid_triples(self, format: typing.Optional[RDFFormat] = None) -> builtins.str:
         r"""
-        Serializes the invalid subgraph: the triples read that are not valid.
+        Serializes the invalid subgraph, that is, the triples read that are not valid.
         
         Args:
             format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
@@ -2230,14 +2230,14 @@ class ShaclValidationReport:
     @property
     def valid_triples(self) -> typing.Optional[builtins.int]:
         r"""
-        How many triples are in the valid subgraph: the triples read for the conformant focus node/shape pairs.
+        How many triples are in the valid subgraph, that is, the triples read for the conformant focus node/shape pairs.
         
         ``None`` unless :meth:`Rudof.validate_shacl` was called with ``subgraphs=True``.
         """
     @property
     def invalid_triples(self) -> typing.Optional[builtins.int]:
         r"""
-        How many triples are in the invalid subgraph: the triples read that are not valid.
+        How many triples are in the invalid subgraph, that is, the triples read that are not valid.
         
         ``None`` unless :meth:`Rudof.validate_shacl` was called with ``subgraphs=True``.
         """
@@ -2256,7 +2256,7 @@ class ShaclValidationReport:
         """
     def serialize_valid_triples(self, format: typing.Optional[RDFFormat] = None) -> builtins.str:
         r"""
-        Serializes the valid subgraph: the triples read for the conformant focus node/shape pairs.
+        Serializes the valid subgraph, that is, the triples read for the conformant focus node/shape pairs.
         
         Args:
             format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
@@ -2269,7 +2269,7 @@ class ShaclValidationReport:
         """
     def serialize_invalid_triples(self, format: typing.Optional[RDFFormat] = None) -> builtins.str:
         r"""
-        Serializes the invalid subgraph: the triples read that are not valid.
+        Serializes the invalid subgraph, that is, the triples read that are not valid.
         
         Args:
             format (RDFFormat, optional): Output format. Defaults to ``RDFFormat.Turtle``.
