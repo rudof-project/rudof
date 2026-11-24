@@ -9,7 +9,7 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ### Removed
 -->
 
-## [Unreleased]
+## 0.3.40
 ### Added
 - `rudof_earl`: a new crate that builds [EARL 1.0](https://www.w3.org/TR/EARL10-Schema/) reports and serializes them as RDF, with the EARL, DOAP, FOAF and Dublin Core vocabularies ([#955](https://github.com/rudof-project/rudof/issues/955)).
 - `shacl_testsuite`: a test-suite crate that walks the SHACL W3C manifests, extracted from `shacl`'s integration tests ([#960](https://github.com/rudof-project/rudof/issues/960)).
