@@ -4,7 +4,7 @@ use pretty::RcDoc;
 use std::fmt::Debug;
 use std::fmt::Display;
 
-pub struct RbePrettyPrinter {}
+pub struct RbePrettyPrinter;
 
 impl Default for RbePrettyPrinter {
     fn default() -> Self {

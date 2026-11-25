@@ -34,13 +34,13 @@ fn rudof_in(dir: &Path, args: &[&str]) -> Output {
     }
 }
 
-const SCHEMA_SHEX: &str = r#"PREFIX : <http://example.org/>
+const SCHEMA_SHEX: &str = "PREFIX : <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :PersonShape {
   :name xsd:string
 }
-"#;
+";
 
 #[test]
 fn convert_to_html_accepts_target_folder_flag() {

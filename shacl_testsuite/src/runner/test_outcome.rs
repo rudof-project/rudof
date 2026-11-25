@@ -42,8 +42,8 @@ fn node_expr_outcome_inner(path: &Path) -> Result<TestOutcome, TestSuiteError> {
         let actual = manifest.evaluate(&test)?;
 
         let equals = if test.ignore_order {
-            let mut actual = actual.iter().map(|t| t.to_string()).collect::<Vec<_>>();
-            let mut expected = test.expected.iter().map(|t| t.to_string()).collect::<Vec<_>>();
+            let mut actual = actual.iter().map(ToString::to_string).collect::<Vec<_>>();
+            let mut expected = test.expected.iter().map(ToString::to_string).collect::<Vec<_>>();
             actual.sort();
             expected.sort();
             actual == expected

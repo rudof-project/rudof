@@ -19,6 +19,7 @@ where
         Atom::Neg(na.clone())
     }
 
+    #[must_use]
     pub fn negated(&self) -> Atom<A> {
         match self {
             Atom::Pos(value) => Atom::Neg(value.clone()),

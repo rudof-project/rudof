@@ -29,22 +29,26 @@ pub struct EndpointLimits {
 }
 
 impl EndpointLimits {
+    #[must_use]
     pub fn with_min_request_interval_ms(mut self, ms: Option<u64>) -> Self {
         self.min_request_interval_ms = ms;
         self
     }
 
+    #[must_use]
     pub fn with_max_concurrent_requests(mut self, n: Option<usize>) -> Self {
         self.max_concurrent_requests = n;
         self
     }
 
+    #[must_use]
     pub fn with_max_nodes_per_query(mut self, n: Option<usize>) -> Self {
         self.max_nodes_per_query = n;
         self
     }
 
     /// Each field of `self`, or of `fallback` where `self` leaves it unset.
+    #[must_use]
     pub fn or(self, fallback: EndpointLimits) -> EndpointLimits {
         EndpointLimits {
             min_request_interval_ms: self.min_request_interval_ms.or(fallback.min_request_interval_ms),

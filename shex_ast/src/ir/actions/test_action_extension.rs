@@ -17,7 +17,7 @@ use crate::ir::semantic_action_context::SemanticActionContext;
 /// the node being checked (the focus node of a node constraint's semantic
 /// action).
 #[derive(Debug, Clone)]
-pub struct TestActionExtension {}
+pub struct TestActionExtension;
 
 impl TestActionExtension {
     pub fn new() -> Self {
@@ -41,9 +41,7 @@ impl SemanticActionExtension for TestActionExtension {
     }
 
     fn run_action(&self, parameter: Option<&str>, context: &SemanticActionContext) -> Result<(), SemanticActionError> {
-        let code = if let Some(parameter) = parameter {
-            parameter
-        } else {
+        let Some(code) = parameter else {
             return Ok(()); // No parameter means no action, so we succeed silently.
         };
 
@@ -54,7 +52,7 @@ impl SemanticActionExtension for TestActionExtension {
         let caps = re
             .captures(code)
             .ok_or_else(|| SemanticActionError::InvalidTestParameter {
-                parameter: code.to_string(),
+                parameter: code.to_owned(),
             })?;
 
         let directive = &caps[1]; // "fail" or "print"
@@ -63,7 +61,7 @@ impl SemanticActionExtension for TestActionExtension {
         let message: String = if let Some(quoted) = caps.get(2) {
             // Strip surrounding quotes and unescape \\ and \"
             let inner = &quoted.as_str()[1..quoted.as_str().len() - 1];
-            inner.replace(r#"\\"#, r"\").replace(r#"\""#, "\"")
+            inner.replace(r"\\", r"\").replace(r#"\""#, "\"")
         } else {
             // Particle: s, p, o or n
             let particle = &caps[3];
@@ -82,12 +80,11 @@ impl SemanticActionExtension for TestActionExtension {
                     variable: particle.to_string(),
                 })?
                 .to_string()*/
-            match binding {
-                Some(str) => str.to_string(),
-                None => {
-                    eprintln!("Warning: Unresolved variable {particle} in Test semact: no binding provided");
-                    String::new()
-                },
+            if let Some(str) = binding {
+                str.clone()
+            } else {
+                eprintln!("Warning: Unresolved variable {particle} in Test semact: no binding provided");
+                String::new()
             }
         };
 

@@ -26,7 +26,7 @@ pub fn connect_pg_db(
         super::db::verify_in_memory(read_only)?;
     } else {
         let path = path.ok_or_else(|| PgDbError::DataSourceSpec {
-            message: "A database path is required unless connecting in-memory".to_string(),
+            message: "A database path is required unless connecting in-memory".to_owned(),
         })?;
         let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
         let conn_info = PgDbConnection {
@@ -40,6 +40,6 @@ pub fn connect_pg_db(
 
     Ok(PgDbInfo {
         storage_version: lbug::get_storage_version(),
-        library_source: lbug::get_library_source().to_string(),
+        library_source: lbug::get_library_source().to_owned(),
     })
 }

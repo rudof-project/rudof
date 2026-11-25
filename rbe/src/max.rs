@@ -15,6 +15,7 @@ pub enum Max {
 
 impl Max {
     /// Subtracts n from self. If self is Unbounded, it remains Unbounded. If self is an IntMax and n is greater than or equal to the IntMax value, it returns IntMax(0). Otherwise, it returns a new IntMax with the value of self minus n.
+    #[must_use]
     pub fn minus(&self, n: usize) -> Max {
         match self {
             Max::Unbounded => Max::Unbounded,
@@ -45,6 +46,7 @@ impl Max {
     }
 
     /// Returns the maximum of two Max values. If either of the Max values is Unbounded, the result will be Unbounded. Otherwise, it returns the maximum of the two integer values.
+    #[must_use]
     pub fn max(&self, other: &Max) -> Max {
         match (self, other) {
             (Max::Unbounded, _) | (_, Max::Unbounded) => Max::Unbounded,
@@ -53,6 +55,7 @@ impl Max {
     }
 
     /// Returns the minimum of two Max values. If one of the Max values is Unbounded, it returns the other Max value. If both Max values are IntMax, it returns the minimum of the two integer values.
+    #[must_use]
     pub fn min(&self, other: &Max) -> Max {
         match self {
             Max::Unbounded => other.clone(),
@@ -64,6 +67,7 @@ impl Max {
     }
 
     /// Returns the sum of two Max values. If either of the Max values is Unbounded, the result will be Unbounded. Otherwise, it returns the sum of the two integer values.
+    #[must_use]
     pub fn plus(&self, other: &Max) -> Max {
         match (self, other) {
             (Max::Unbounded, _) | (_, Max::Unbounded) => Max::Unbounded,
@@ -72,6 +76,7 @@ impl Max {
     }
 
     ///  Result of v divided by self, rounded up
+    #[must_use]
     pub fn div_up(&self, v: &usize) -> Max {
         match (v, self) {
             // I removed this because the Scala implementation also removes this
@@ -84,6 +89,7 @@ impl Max {
     }
 
     /// Result of v divided by self, rounded down
+    #[must_use]
     pub fn div_down(&self, v: &usize) -> Max {
         match (v, self) {
             (0, Max::IntMax(0)) => Max::Unbounded, // 0 divided by 0 is considered unbounded
@@ -132,7 +138,7 @@ impl From<isize> for Max {
 }
 
 impl fmt::Display for Max {
-    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, dest: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             Max::Unbounded => write!(dest, "*"),
             Max::IntMax(max) => write!(dest, "{max}"),
@@ -158,7 +164,7 @@ struct MaxVisitor;
 impl Visitor<'_> for MaxVisitor {
     type Value = Max;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("a positive integer or -1")
     }
 

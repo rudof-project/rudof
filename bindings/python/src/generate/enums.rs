@@ -95,7 +95,7 @@ impl PyEntityDistribution {
 
     fn __str__(&self) -> String {
         match self {
-            PyEntityDistribution::Equal => "Equal".to_string(),
+            PyEntityDistribution::Equal => "Equal".to_owned(),
         }
     }
 

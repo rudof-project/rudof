@@ -69,18 +69,18 @@ fn mk_error(kind: ErrorKind, message: &'static str, cause: Option<String>, conte
     if let Some(ctx) = context {
         match ctx {
             Value::Object(o) => {
-                for (k, v) in o.into_iter() {
+                for (k, v) in o {
                     map.insert(k, v);
                 }
             },
             other => {
-                map.insert("context".to_string(), other);
+                map.insert("context".to_owned(), other);
             },
         }
     }
 
     if let Some(c) = cause {
-        map.insert("cause".to_string(), json!(c));
+        map.insert("cause".to_owned(), json!(c));
     }
 
     match kind {

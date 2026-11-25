@@ -63,7 +63,7 @@ where
             // Increment to next assignment
             let mut next_assignment = assignment.clone();
             let mut carry = true;
-            for digit in next_assignment.iter_mut() {
+            for digit in &mut next_assignment {
                 if carry {
                     *digit += 1;
                     if *digit < self.k {
@@ -101,7 +101,7 @@ where
     R: Ref,
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
-    T: std::hash::Hash + Eq + Clone,
+    T: Hash + Eq + Clone,
 {
     // Build a vector of predicates, one for each triple expression, that checks if a given subset of neighbours satisfies the conditions of the triple expression
     let conditions = build_conditions(exprs).collect::<Vec<_>>();
@@ -130,7 +130,7 @@ where
     R: Ref,
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
-    T: std::hash::Hash + Eq + Clone,
+    T: Hash + Eq + Clone,
 {
     triple_exprs.values().map(|rbes| {
         // Collect all predicates from the triple expression into a set
@@ -173,7 +173,7 @@ mod tests {
         let predicates = build_predicates(&triple_exprs).collect::<Vec<_>>();
         let mut count = 0;
         for (i, partition) in KPartitionIteratorMultiPredicate::new(data.clone(), predicates).enumerate() {
-            println!("{}: {:?}", i, partition);
+            println!("{i}: {partition:?}");
             count += 1;
         }
         /*
@@ -205,7 +205,7 @@ mod tests {
         let predicates = build_predicates(&triple_exprs).collect::<Vec<_>>();
         let mut count = 0;
         for (i, partition) in KPartitionIteratorMultiPredicate::new(data.clone(), predicates).enumerate() {
-            println!("{}: {:?}", i, partition);
+            println!("{i}: {partition:?}");
             count += 1;
         }
         /*

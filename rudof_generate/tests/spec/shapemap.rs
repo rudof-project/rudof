@@ -8,11 +8,11 @@
 
 use crate::common::*;
 
-const SCHEMA: &str = r#"PREFIX ex: <http://example.org/>
+const SCHEMA: &str = "PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 ex:StudentShape { a [ex:Student] ; ex:name xsd:string }
 ex:AssistantShape { a [ex:Student] ; a [ex:Assistant] ; ex:name xsd:string ; ex:salary xsd:integer }
-"#;
+";
 
 async fn generate_with_shapemap(entities: usize) -> (String, String) {
     let fixture = Fixture::shex(SCHEMA);
@@ -31,7 +31,7 @@ fn associations(shapemap: &str) -> Vec<(String, String)> {
         .filter(|a| !a.is_empty())
         .map(|a| {
             let (node, shape) = a.split_once('@').unwrap_or_else(|| panic!("not an association: {a}"));
-            (node.to_string(), shape.to_string())
+            (node.to_owned(), shape.to_owned())
         })
         .collect()
 }

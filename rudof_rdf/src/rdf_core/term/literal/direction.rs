@@ -36,7 +36,7 @@ impl FromStr for BaseDirection {
         match s {
             "ltr" => Ok(BaseDirection::Ltr),
             "rtl" => Ok(BaseDirection::Rtl),
-            _ => Err(BaseDirectionParseError::InvalidBaseDirection(s.to_string())),
+            _ => Err(BaseDirectionParseError::InvalidBaseDirection(s.to_owned())),
         }
     }
 }

@@ -61,51 +61,51 @@ impl MatchKind<Pred, Node, ShapeLabelIdx, SemanticActionContext> for CondKind {
         match self {
             CondKind::Any => empty(),
             CondKind::NodeKind(nk) => match check_node_node_kind(v, nk) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("NodeKind error: {e}")),
             },
             CondKind::Datatype { iri, .. } => match check_node_datatype(v, iri) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => Err(datatype_error_to_rbe(v, &e)),
             },
             CondKind::Length(n) => match check_node_length(v, *n) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("Length error: {e}")),
             },
             CondKind::MinLength(n) => match check_node_min_length(v, *n) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("MinLength error: {e}")),
             },
             CondKind::MaxLength(n) => match check_node_max_length(v, *n) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("MaxLength error: {e}")),
             },
             CondKind::Pattern { regex, flags, base } => match check_pattern(v, regex, flags.as_deref(), base) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("Pattern error: {e}")),
             },
             CondKind::MinInclusive(n) => match check_node_min_inclusive(v, n.clone()) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("MinInclusive error: {e}")),
             },
             CondKind::MinExclusive(n) => match check_node_min_exclusive(v, n.clone()) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("MinExclusive error: {e}")),
             },
             CondKind::MaxInclusive(n) => match check_node_max_inclusive(v, n.clone()) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("MaxInclusive error: {e}")),
             },
             CondKind::MaxExclusive(n) => match check_node_max_exclusive(v, n.clone()) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("MaxExclusive error: {e}")),
             },
             CondKind::TotalDigits(n) => match check_node_total_digits(v, *n) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("TotalDigits error: {e}")),
             },
             CondKind::FractionDigits(n) => match check_node_fraction_digits(v, *n) {
-                Ok(_) => empty(),
+                Ok(()) => empty(),
                 Err(e) => error(format!("FractionDigits error: {e}")),
             },
             CondKind::ValueSet { vs, prefixmap } => {
@@ -146,21 +146,21 @@ fn datatype_error_to_rbe(
         SchemaIRError::DatatypeDontMatch { found, expected, .. } => {
             if let Ok(found_node) = iri_ref_node(found) {
                 return RbeError::CondFailed {
-                    prefix: "Datatype error".to_string(),
+                    prefix: "Datatype error".to_owned(),
                     details: vec![
-                        ("found".to_string(), found_node),
-                        ("expected".to_string(), Node::iri(expected.clone())),
-                        ("lexical form".to_string(), node.clone()),
+                        ("found".to_owned(), found_node),
+                        ("expected".to_owned(), Node::iri(expected.clone())),
+                        ("lexical form".to_owned(), node.clone()),
                     ],
                 };
             }
         },
         SchemaIRError::DatatypeNoLiteral { expected, .. } => {
             return RbeError::CondFailed {
-                prefix: "Datatype error: not a literal".to_string(),
+                prefix: "Datatype error: not a literal".to_owned(),
                 details: vec![
-                    ("expected datatype".to_string(), Node::iri((**expected).clone())),
-                    ("found".to_string(), node.clone()),
+                    ("expected datatype".to_owned(), Node::iri((**expected).clone())),
+                    ("found".to_owned(), node.clone()),
                 ],
             };
         },
@@ -174,9 +174,9 @@ fn datatype_error_to_rbe(
                 return RbeError::CondFailed {
                     prefix: format!("Datatype error: {error}"),
                     details: vec![
-                        ("expected".to_string(), Node::iri(expected.clone())),
-                        ("declared datatype".to_string(), datatype_node),
-                        ("lexical form".to_string(), node.clone()),
+                        ("expected".to_owned(), Node::iri(expected.clone())),
+                        ("declared datatype".to_owned(), datatype_node),
+                        ("lexical form".to_owned(), node.clone()),
                     ],
                 };
             }
@@ -196,27 +196,27 @@ pub(crate) fn check_pattern(node: &Node, regex: &str, flags: Option<&str>, base:
         Object::Iri(iri) => Ok(iri.to_string()),
         Object::Triple { .. } => Err(Box::new(SchemaIRError::PatternTripleTerm {
             node: node.to_string(),
-            regex: regex.to_string(),
-            flags: flags.map(|f| f.to_string()),
+            regex: regex.to_owned(),
+            flags: flags.map(ToOwned::to_owned),
         })),
     }?;
     let effective_regex = match flags {
         Some(f) if !f.is_empty() => format!("(?{f}){regex}"),
-        _ => regex.to_string(),
+        _ => regex.to_owned(),
     };
     if let Ok(re) = regex::Regex::new(&effective_regex) {
         if re.is_match(&lexical_form) {
             Ok(())
         } else {
             Err(Box::new(SchemaIRError::PatternError {
-                regex: regex.to_string(),
-                flags: flags.unwrap_or("").to_string(),
+                regex: regex.to_owned(),
+                flags: flags.unwrap_or("").to_owned(),
                 lexical_form: lexical_form.clone(),
             }))
         }
     } else {
         Err(Box::new(SchemaIRError::InvalidRegex {
-            regex: regex.to_string(),
+            regex: regex.to_owned(),
         }))
     }
 }
@@ -258,35 +258,35 @@ fn check_literal_datatype(sliteral: &ConcreteLiteral, expected: &IriS, node: &No
             msg: format!("check_literal_datatype: into_checked_literal error: {e}"),
         })
     })?;
-    match checked_literal {
-        ConcreteLiteral::WrongDatatypeLiteral {
-            lexical_form,
-            datatype,
-            error,
-        } => Err(Box::new(SchemaIRError::WrongDatatypeLiteralMatch {
+    if let ConcreteLiteral::WrongDatatypeLiteral {
+        lexical_form,
+        datatype,
+        error,
+    } = checked_literal
+    {
+        Err(Box::new(SchemaIRError::WrongDatatypeLiteralMatch {
             datatype: datatype.clone(),
             error: error.clone(),
             expected: expected.clone(),
-            lexical_form: lexical_form.to_string(),
-        })),
-        _ => {
-            let node_dt = checked_literal.datatype();
-            let node_dt_iri = node_dt.get_iri().map_err(|e| {
-                Box::new(SchemaIRError::CheckLiteralDatatypeCnvIriRef2IriError {
-                    iri_ref: node_dt.clone(),
-                    error: e.to_string(),
-                })
-            })?;
-            if node_dt_iri == expected {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatch {
-                    expected: expected.clone(),
-                    found: node_dt,
-                    lexical_form: node.to_string(),
-                }))
-            }
-        },
+            lexical_form: lexical_form.clone(),
+        }))
+    } else {
+        let node_dt = checked_literal.datatype();
+        let node_dt_iri = node_dt.get_iri().map_err(|e| {
+            Box::new(SchemaIRError::CheckLiteralDatatypeCnvIriRef2IriError {
+                iri_ref: node_dt.clone(),
+                error: e.to_string(),
+            })
+        })?;
+        if node_dt_iri == expected {
+            Ok(())
+        } else {
+            Err(Box::new(SchemaIRError::DatatypeDontMatch {
+                expected: expected.clone(),
+                found: node_dt,
+                lexical_form: node.to_string(),
+            }))
+        }
     }
 }
 
@@ -313,17 +313,17 @@ pub(crate) fn check_node_min_inclusive(node: &Node, min: NumericLiteral) -> CRes
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: "check_node_min_inclusive: as_numeric error".to_string(),
+            msg: "check_node_min_inclusive: as_numeric error".to_owned(),
         })
     })?;
-    if !node_num.less_than(&min) {
-        Ok(())
-    } else {
+    if node_num.less_than(&min) {
         Err(Box::new(SchemaIRError::MinInclusiveError {
             expected: min.clone(),
             found: node_num,
             node: node.to_string(),
         }))
+    } else {
+        Ok(())
     }
 }
 
@@ -336,17 +336,17 @@ pub(crate) fn check_node_min_exclusive(node: &Node, min: NumericLiteral) -> CRes
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: "check_node_min_exclusive: as_numeric error".to_string(),
+            msg: "check_node_min_exclusive: as_numeric error".to_owned(),
         })
     })?;
-    if !node_num.less_than_or_eq(&min) {
-        Ok(())
-    } else {
+    if node_num.less_than_or_eq(&min) {
         Err(Box::new(SchemaIRError::MinExclusiveError {
             expected: min.clone(),
             found: node_num,
             node: node.to_string(),
         }))
+    } else {
+        Ok(())
     }
 }
 
@@ -359,7 +359,7 @@ pub(crate) fn check_node_total_digits(node: &Node, total: usize) -> CResult<()> 
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: "check_node_total_digits: as_numeric error".to_string(),
+            msg: "check_node_total_digits: as_numeric error".to_owned(),
         })
     })?;
     if let Some(num_digits) = node_num.total_digits() {
@@ -390,7 +390,7 @@ pub(crate) fn check_node_fraction_digits(node: &Node, fd: usize) -> CResult<()> 
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: "check_node_fraction_digits: as_numeric error".to_string(),
+            msg: "check_node_fraction_digits: as_numeric error".to_owned(),
         })
     })?;
     if let Some(num_fd) = node_num.fraction_digits() {
@@ -421,7 +421,7 @@ pub(crate) fn check_node_max_exclusive(node: &Node, max: NumericLiteral) -> CRes
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: "check_node_min_exclusive: as_numeric error".to_string(),
+            msg: "check_node_min_exclusive: as_numeric error".to_owned(),
         })
     })?;
     if node_num.less_than(&max) {
@@ -443,7 +443,7 @@ pub(crate) fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CRes
     })?;
     let node_num = node_object.numeric_value().ok_or_else(|| {
         Box::new(SchemaIRError::Internal {
-            msg: "check_node_max_inclusive: as_numeric error".to_string(),
+            msg: "check_node_max_inclusive: as_numeric error".to_owned(),
         })
     })?;
     if node_num.less_than_or_eq(&max) {

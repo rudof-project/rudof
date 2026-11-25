@@ -76,11 +76,11 @@ pub trait Manifest {
             "Running manifest with mode: {mode:?}, excluded_entries: {:?}, single_entries: {:?}, allowed_traits: {:?}",
             excluded_entries, single_entries, allowed_traits
         );*/
-        let mut result: ManifestRunResult = ManifestRunResult::new();
+        let mut result = ManifestRunResult::new();
         for entry_name in &self.entry_names() {
             let entry_traits = self.has_traits(entry_name).unwrap_or_default();
             if excluded_entries.contains(entry_name) {
-                result.add_skipped(entry_name.to_string(), entry_traits);
+                result.add_skipped(entry_name.clone(), entry_traits);
             } else {
                 // We clone these here to avoid borrowing issues in the closure passed to catch_unwind
                 let entries = single_entries.clone();
@@ -91,19 +91,19 @@ pub trait Manifest {
                 }));
                 match safe_result {
                     Ok(Ok(true)) => {
-                        result.add_passed(entry_name.to_string(), entry_traits);
+                        result.add_passed(entry_name.clone(), entry_traits);
                     },
                     Ok(Ok(false)) => {
-                        result.add_skipped(entry_name.to_string(), entry_traits);
+                        result.add_skipped(entry_name.clone(), entry_traits);
                     },
                     Ok(Err(e)) => {
-                        result.add_failed(entry_name.to_string(), *e, entry_traits);
+                        result.add_failed(entry_name.clone(), *e, entry_traits);
                         if mode == ManifestRunMode::FailFirstError {
                             return result;
                         }
                     },
                     Err(err) => {
-                        result.add_panicked(entry_name.to_string(), err, entry_traits);
+                        result.add_panicked(entry_name.clone(), err, entry_traits);
                         if mode == ManifestRunMode::FailFirstError {
                             return result;
                         }

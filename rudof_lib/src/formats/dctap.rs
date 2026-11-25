@@ -70,7 +70,7 @@ impl FromStr for DCTapFormat {
             "xlsm" => Ok(DCTapFormat::Xlsm),
             "xls" => Ok(DCTapFormat::Xls),
             other => Err(DCTapError::UnsupportedDCTapFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }
@@ -97,7 +97,7 @@ impl FromStr for ResultDCTapFormat {
             "internal" => Ok(ResultDCTapFormat::Internal),
             "json" => Ok(ResultDCTapFormat::Json),
             other => Err(DCTapError::UnsupportedResultDCTapFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }

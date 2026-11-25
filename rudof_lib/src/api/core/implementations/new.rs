@@ -2,7 +2,7 @@ use crate::{Rudof, RudofConfig};
 
 pub fn new(config: RudofConfig) -> Rudof {
     Rudof {
-        version: env!("CARGO_PKG_VERSION").to_string(),
+        version: env!("CARGO_PKG_VERSION").to_owned(),
         config,
         data: None,
         shacl_shapes: None,

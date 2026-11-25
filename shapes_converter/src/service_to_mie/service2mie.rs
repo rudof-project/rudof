@@ -4,7 +4,7 @@ use sparql_service::ServiceDescription;
 use crate::service_to_mie::Service2MieConfig;
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)] // This is while we don't use config
+#[expect(dead_code)] // This is while we don't use config
 pub struct Service2Mie {
     config: Service2MieConfig,
     current_mie: Mie,

@@ -56,24 +56,14 @@ impl Default for LabelSet {
 
 impl Debug for LabelSet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let labels_str = self
-            .labels
-            .iter()
-            .map(|label| label.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
-        write!(f, "{{{}}}", labels_str)
+        let labels_str = self.labels.iter().cloned().collect::<Vec<_>>().join(", ");
+        write!(f, "{{{labels_str}}}")
     }
 }
 
 impl Display for LabelSet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let labels_str = self
-            .labels
-            .iter()
-            .map(|label| label.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
-        write!(f, "{{{}}}", labels_str)
+        let labels_str = self.labels.iter().cloned().collect::<Vec<_>>().join(", ");
+        write!(f, "{{{labels_str}}}")
     }
 }

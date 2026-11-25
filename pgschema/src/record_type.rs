@@ -31,6 +31,7 @@ impl RecordType {
         }
     }
 
+    #[must_use]
     pub fn with_open(mut self) -> Self {
         self.open = true;
         self
@@ -42,6 +43,7 @@ impl RecordType {
     }
 
     /// Creates a RecordType with a single key-value pair.
+    #[must_use]
     pub fn with_key_value(mut self, key: &str, value_type: ValueType) -> Self {
         self.map.insert(Key::new(key), value_type);
         self
@@ -54,43 +56,40 @@ impl RecordType {
         let (missing_record_type_keys, extra_record_keys) = compare_keys(&record_type_keys, &record_keys);
         if non_empty(&missing_record_type_keys) {
             return Left(vec![PgsError::MissingKeys {
-                keys: format!("{:?}", missing_record_type_keys),
+                keys: format!("{missing_record_type_keys:?}"),
                 record_type: self.to_string(),
             }]);
         }
         if non_empty(&extra_record_keys) && !self.open {
             return Left(vec![PgsError::ExtraKeysNotOpen {
-                keys: format!("{:?}", extra_record_keys),
+                keys: format!("{extra_record_keys:?}"),
                 record_type: self.to_string(),
             }]);
         }
-        for (key, value_type) in self.map.iter() {
+        for (key, value_type) in &self.map {
             if let Some(value_set) = record.get(key) {
                 let result = value_type.conforms(value_set);
                 if result.is_left() {
                     return result;
-                } else {
-                    // If the value type conforms, we can collect evidence
-                    // let evidence = result.right().unwrap();
-                    continue;
                 }
-            } else {
-                // In principle, this should not happen as the keys are checked first
-                // but we handle it anyway
-                if !self.open {
-                    return Either::Left(vec![PgsError::KeyNotFoundClosedRecordType {
-                        key: key.clone(),
-                        record_type: self.to_string(),
-                    }]); // Key not found in RecordType and open is false
-                } else {
-                    // If open, we can ignore keys not in RecordType
-                    continue;
-                }
+                // If the value type conforms, we can collect evidence
+                // let evidence = result.right().unwrap();
+                continue;
             }
+            // In principle, this should not happen as the keys are checked first
+            // but we handle it anyway
+            if !self.open {
+                return Left(vec![PgsError::KeyNotFoundClosedRecordType {
+                    key: key.clone(),
+                    record_type: self.to_string(),
+                }]); // Key not found in RecordType and open is false
+            }
+            // If open, we can ignore keys not in RecordType
         }
         Either::Right(vec![])
     }
 
+    #[must_use]
     pub fn combine(&self, other: &RecordType) -> Self {
         let mut result = RecordType::new();
         for (key, value_type) in &self.map {
@@ -121,7 +120,7 @@ impl Display for RecordType {
             .map
             .iter()
             .sorted_by_key(|(k, _)| *k)
-            .map(|(k, v)| format!("{}: {}", k, v))
+            .map(|(k, v)| format!("{k}: {v}"))
             .collect();
         write!(f, "{{{}}}", entries.join(", "))
     }
@@ -133,9 +132,8 @@ fn compare_keys(record_type_keys: &HashSet<&Key>, record_keys: &HashSet<&Key>) -
     for key in record_type_keys {
         if record_keys.contains(key) {
             continue;
-        } else {
-            missing_record_type_keys.insert((*key).clone());
         }
+        missing_record_type_keys.insert((*key).clone());
     }
     for key in record_keys {
         if !record_type_keys.contains(key) {

@@ -18,6 +18,7 @@
 //!   not define the same label twice
 //! - relative `IMPORT`s, which RDF resolves against the base
 
+use std::fmt::Write as _;
 mod common;
 
 use common::{read_manifest, schemas_dir};
@@ -117,7 +118,7 @@ fn sort_extra(value: &mut Value) {
     match value {
         Value::Object(map) => {
             if let Some(Value::Array(extra)) = map.get_mut("extra") {
-                extra.sort_by_key(|v| v.to_string());
+                extra.sort_by_key(ToString::to_string);
             }
             map.values_mut().for_each(sort_extra);
         },
@@ -130,7 +131,7 @@ fn rename_bnodes(value: &mut Value, bnodes: &mut HashMap<String, String>) {
     match value {
         Value::String(s) if s.starts_with("_:") => {
             let n = bnodes.len();
-            *s = bnodes.entry(s.clone()).or_insert_with(|| format!("_:b{n}")).clone();
+            s.clone_from(bnodes.entry(s.clone()).or_insert_with(|| format!("_:b{n}")));
         },
         Value::Array(vs) => vs.iter_mut().for_each(|v| rename_bnodes(v, bnodes)),
         Value::Object(map) => map.values_mut().for_each(|v| rename_bnodes(v, bnodes)),
@@ -205,6 +206,10 @@ fn shextest_schemas_round_trip_between_formats() {
         if let Ok(shexc) = std::fs::read_to_string(&shex_path) {
             match ShExParser::parse(&shexc, Some(base.clone()), &source()) {
                 Ok(schema) => {
+                    #[expect(
+                        trivial_casts,
+                        reason = "the cast gives all the array elements the same fn pointer type"
+                    )]
                     for (name, round_trip) in [
                         ("ShExC -> ShExJ", via_shexj as fn(&Schema) -> Result<Schema, String>),
                         ("ShExC -> ShExR", via_shexr),
@@ -259,12 +264,14 @@ fn shextest_schemas_round_trip_between_formats() {
 
     let mut report = String::new();
     for (name, fails) in &failures {
-        report.push_str(&format!("\n== {name}: {} failures\n", fails.len()));
+        write!(report, "\n== {name}: {} failures\n", fails.len()).unwrap();
         for (entry, e) in fails {
-            report.push_str(&format!(
-                "-- {entry}: {}\n",
+            writeln!(
+                report,
+                "-- {entry}: {}",
                 e.lines().take(6).collect::<Vec<_>>().join("\n   ")
-            ));
+            )
+            .unwrap();
         }
     }
     if let Ok(path) = std::env::var("ROUNDTRIP_REPORT") {
@@ -276,7 +283,7 @@ fn shextest_schemas_round_trip_between_formats() {
 /// A node constraint with nothing in it accepts any node: in ShExC, that is `.`
 #[test]
 fn empty_node_constraint_is_printed_as_a_dot() {
-    let shexr = r#"
+    let shexr = "
 prefix sx: <http://www.w3.org/ns/shex#>
 prefix : <http://example.org/>
 
@@ -287,7 +294,7 @@ prefix : <http://example.org/>
       sx:expressions ( [ a sx:TripleConstraint ; sx:predicate :related ; sx:valueExpr [ a sx:NodeConstraint ] ] )
     ]
   ] .
-"#;
+";
     let graph = OxigraphInMemory::from_str(shexr, &RDFFormat::Turtle, Some(BASE), &ReaderMode::Strict).unwrap();
     let schema = ShExRParser::new(graph).parse().unwrap();
     let shexc = ShExFormatter::default().without_colors().format_schema(&schema);

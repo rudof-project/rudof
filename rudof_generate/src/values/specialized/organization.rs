@@ -7,14 +7,14 @@ pub struct OrganizationGenerator;
 
 impl FieldGenerator for OrganizationGenerator {
     fn generate(&self, _context: &GenerationContext) -> Result<String> {
-        Ok("Sample Organization Corp".to_string())
+        Ok("Sample Organization Corp".to_owned())
     }
 
     fn name(&self) -> &str {
         "organization"
     }
     fn supported_datatypes(&self) -> Vec<String> {
-        vec!["http://www.w3.org/2001/XMLSchema#string".to_string()]
+        vec!["http://www.w3.org/2001/XMLSchema#string".to_owned()]
     }
 }
 
@@ -22,13 +22,13 @@ pub struct AcademicGenerator;
 
 impl FieldGenerator for AcademicGenerator {
     fn generate(&self, _context: &GenerationContext) -> Result<String> {
-        Ok("Academic Course 101".to_string())
+        Ok("Academic Course 101".to_owned())
     }
 
     fn name(&self) -> &str {
         "academic"
     }
     fn supported_datatypes(&self) -> Vec<String> {
-        vec!["http://www.w3.org/2001/XMLSchema#string".to_string()]
+        vec!["http://www.w3.org/2001/XMLSchema#string".to_owned()]
     }
 }

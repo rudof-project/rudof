@@ -101,16 +101,16 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Node
                 if allowed_iri {
                     format!("isIRI({vn_sparql})")
                 } else {
-                    "false".to_string()
+                    "false".to_owned()
                 }
             } else if vn.is_literal() {
                 if allowed_lit {
                     format!("isLiteral({vn_sparql})")
                 } else {
-                    "false".to_string()
+                    "false".to_owned()
                 }
             } else {
-                "false".to_string()
+                "false".to_owned()
             };
             Some(formatdoc! {"
                 ASK {{ FILTER({test}) }}

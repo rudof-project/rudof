@@ -31,7 +31,7 @@ impl Display for ReifierInfo {
             f,
             "ReifierInfo {{ reificationRequired: {}, reifierShape: {} }}",
             self.reification_required,
-            self.reifier_shape().iter().map(|node| node.to_string()).join(", ")
+            self.reifier_shape().iter().map(ToString::to_string).join(", ")
         )
     }
 }

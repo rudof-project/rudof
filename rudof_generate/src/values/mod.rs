@@ -39,12 +39,13 @@ impl GenerationContext {
             subject,
             parameters: HashMap::new(),
             quality: DataQuality::Medium,
-            locale: "en".to_string(),
+            locale: "en".to_owned(),
             seed: None,
         }
     }
 
     /// Attach the configured seed, so that values are reproducible.
+    #[must_use]
     pub fn with_seed(mut self, seed: Option<u64>) -> Self {
         self.seed = seed;
         self
@@ -73,16 +74,19 @@ impl GenerationContext {
         }
     }
 
+    #[must_use]
     pub fn with_quality(mut self, quality: DataQuality) -> Self {
         self.quality = quality;
         self
     }
 
+    #[must_use]
     pub fn with_locale(mut self, locale: String) -> Self {
         self.locale = locale;
         self
     }
 
+    #[must_use]
     pub fn with_parameter<K: Into<String>, V: Into<Value>>(mut self, key: K, value: V) -> Self {
         self.parameters.insert(key.into(), value.into());
         self

@@ -139,7 +139,7 @@ fn parse_shape_ref(
             let iri = parse_single_shape_ref(&sid, config)?;
             shapes.push(ShapeExpr::iri_ref(iri));
         }
-        match &shapes[..] {
+        match &*shapes {
             [] => return Ok(()),
             [shape] => {
                 *shape_expr = match shape_expr {

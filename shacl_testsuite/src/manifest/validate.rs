@@ -62,5 +62,5 @@ fn graph_path(term: String) -> String {
     let mut chars = term.chars();
     chars.next();
     chars.next_back();
-    chars.as_str().to_string().replace("file:/", "")
+    chars.as_str().to_owned().replace("file:/", "")
 }

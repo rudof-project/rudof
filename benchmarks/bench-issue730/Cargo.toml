@@ -28,3 +28,6 @@ zip = { workspace = true, features = [
     "time",
     "xz",
 ] }
+
+[lints]
+workspace = true

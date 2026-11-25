@@ -77,7 +77,7 @@ impl UnifiedPropertyConstraint {
                 _ => {},
             }
         }
-        literal_allowed.then(|| DEFAULT_LITERAL_DATATYPE.to_string())
+        literal_allowed.then(|| DEFAULT_LITERAL_DATATYPE.to_owned())
     }
 }
 
@@ -166,7 +166,7 @@ impl UnifiedConstraintModel {
     /// labels in a property graph); the
     /// smallest id when several do, so the choice does not depend on map order.
     pub fn shape_for_class(&self, class: &str) -> Option<&str> {
-        let bare = |iri: &str| iri.trim_matches(['<', '>']).to_string();
+        let bare = |iri: &str| iri.trim_matches(['<', '>']).to_owned();
         let class = bare(class);
         self.shapes
             .values()

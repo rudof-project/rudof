@@ -56,7 +56,7 @@ fn kept(sink: &Sink) -> BTreeSet<String> {
 }
 
 fn set(triples: &[&str]) -> BTreeSet<String> {
-    triples.iter().map(|t| t.to_string()).collect()
+    triples.iter().map(ToString::to_string).collect()
 }
 
 /// Validates `DATA` against `schema`, returning whether it conforms and the
@@ -64,9 +64,9 @@ fn set(triples: &[&str]) -> BTreeSet<String> {
 fn validate(schema: &str) -> (bool, BTreeSet<String>, BTreeSet<String>, BTreeSet<String>) {
     let (read, valid, invalid) = (new_sink(), new_sink(), new_sink());
     let config = ShaclConfig::default()
-        .with_read_sink(TriplesSink::new(read.clone()))
-        .with_valid_sink(TriplesSink::new(valid.clone()))
-        .with_invalid_sink(TriplesSink::new(invalid.clone()));
+        .with_read_sink(TriplesSink::new(Arc::clone(&read)))
+        .with_valid_sink(TriplesSink::new(Arc::clone(&valid)))
+        .with_invalid_sink(TriplesSink::new(Arc::clone(&invalid)));
     let mut validation: GraphValidation = Graph::from(rdf(DATA)).into();
     let report = validation
         .validate(&shapes(schema), &ShaclValidationMode::Native, &config)
@@ -104,11 +104,11 @@ fn splits_the_triples_read_by_the_conformance_of_each_focus_node() {
 #[test]
 fn a_conformant_node_brings_the_nodes_it_relies_on() {
     let (conforms, _, valid, invalid) = validate(
-        r#"
+        "
         :S sh:targetNode :alice ;
            sh:property [ sh:path :knows ; sh:node :Named ] .
         :Named sh:property [ sh:path :name ; sh:minCount 1 ] .
-        "#,
+        ",
     );
 
     assert!(conforms);
@@ -119,11 +119,11 @@ fn a_conformant_node_brings_the_nodes_it_relies_on() {
 #[test]
 fn a_non_conformant_node_puts_what_it_read_in_the_invalid_subgraph() {
     let (conforms, _, valid, invalid) = validate(
-        r#"
+        "
         :S sh:targetNode :bob ;
            sh:property [ sh:path :knows ; sh:node :Named ] .
         :Named sh:property [ sh:path :name ; sh:datatype xsd:string ] .
-        "#,
+        ",
     );
 
     assert!(!conforms);
@@ -140,12 +140,12 @@ fn a_non_conformant_node_puts_what_it_read_in_the_invalid_subgraph() {
 #[test]
 fn a_triple_read_by_a_conformant_node_is_valid_even_if_a_failing_one_read_it() {
     let (_, _, valid, invalid) = validate(
-        r#"
+        "
         :Knows sh:targetNode :alice, :carol ;
            sh:property [ sh:path :knows ; sh:minCount 1 ] .
         :Named sh:targetNode :alice, :bob ;
            sh:property [ sh:path :name ; sh:datatype xsd:integer ] .
-        "#,
+        ",
     );
 
     // :alice conforms to :Knows but not to :Named, so the triple about her

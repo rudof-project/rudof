@@ -41,7 +41,7 @@ impl RecordingSinks {
     }
 
     fn handle(sink: &Option<SharedGraphSink>) -> Option<TriplesSink> {
-        sink.as_ref().map(|s| TriplesSink::new(s.clone()))
+        sink.as_ref().map(|s| TriplesSink::new(Arc::clone(s)))
     }
 
     pub(crate) fn read(&self) -> Option<TriplesSink> {

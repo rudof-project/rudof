@@ -38,6 +38,7 @@ impl NodeConstraint {
         Self::default()
     }
 
+    #[must_use]
     pub fn with_datatype(mut self, datatype: IriRef) -> Self {
         self.datatype = Some(datatype);
         self
@@ -63,6 +64,7 @@ impl NodeConstraint {
         self.values.clone()
     }
 
+    #[must_use]
     pub fn with_node_kind(mut self, node_kind: NodeKind) -> Self {
         self.node_kind = Some(node_kind);
         self
@@ -72,11 +74,13 @@ impl NodeConstraint {
         self.node_kind.clone()
     }
 
+    #[must_use]
     pub fn with_xsfacets(mut self, facets: Vec<XsFacet>) -> Self {
         self.xs_facet = if facets.is_empty() { None } else { Some(facets) };
         self
     }
 
+    #[must_use]
     pub fn with_pattern(mut self, pat: &str) -> Self {
         match self.xs_facet {
             Some(ref mut facets) => facets.push(XsFacet::pattern(pat)),
@@ -85,6 +89,7 @@ impl NodeConstraint {
         self
     }
 
+    #[must_use]
     pub fn with_pattern_flags(mut self, pat: &str, flags: &str) -> Self {
         match self.xs_facet {
             Some(ref mut facets) => facets.push(XsFacet::pattern_flags(pat, flags)),
@@ -97,26 +102,32 @@ impl NodeConstraint {
         self.xs_facet.clone()
     }
 
+    #[must_use]
     pub fn with_length(self, len: usize) -> Self {
         self.add_facet(XsFacet::length(len))
     }
 
+    #[must_use]
     pub fn with_minlength(self, len: usize) -> Self {
         self.add_facet(XsFacet::min_length(len))
     }
 
+    #[must_use]
     pub fn with_maxlength(self, len: usize) -> Self {
         self.add_facet(XsFacet::max_length(len))
     }
 
+    #[must_use]
     pub fn with_min_inclusive(self, n: NumericLiteral) -> Self {
         self.add_facet(XsFacet::min_inclusive(n))
     }
 
+    #[must_use]
     pub fn with_max_inclusive(self, n: NumericLiteral) -> Self {
         self.add_facet(XsFacet::max_inclusive(n))
     }
 
+    #[must_use]
     pub fn add_facet(mut self, f: XsFacet) -> Self {
         match self.xs_facet {
             Some(ref mut facets) => facets.push(f),
@@ -125,22 +136,27 @@ impl NodeConstraint {
         self
     }
 
+    #[must_use]
     pub fn with_min_exclusive(self, n: NumericLiteral) -> Self {
         self.add_facet(XsFacet::min_exclusive(n))
     }
 
+    #[must_use]
     pub fn with_max_exclusive(self, n: NumericLiteral) -> Self {
         self.add_facet(XsFacet::max_exclusive(n))
     }
 
+    #[must_use]
     pub fn with_totaldigits(self, n: usize) -> Self {
         self.add_facet(XsFacet::totaldigits(n))
     }
 
+    #[must_use]
     pub fn with_fractiondigits(self, n: usize) -> Self {
         self.add_facet(XsFacet::fractiondigits(n))
     }
 
+    #[must_use]
     pub fn with_values(mut self, values: Vec<ValueSetValue>) -> Self {
         /*let mut vs: Vec<ValueSetValue> = Vec::with_capacity(values.len());
         for v in values {
@@ -150,6 +166,7 @@ impl NodeConstraint {
         self
     }
 
+    #[must_use]
     pub fn with_sem_acts(mut self, sem_acts: Option<Vec<SemAct>>) -> Self {
         self.sem_acts = sem_acts.filter(|sas| !sas.is_empty());
         self
@@ -159,6 +176,7 @@ impl NodeConstraint {
         self.sem_acts.clone()
     }
 
+    #[must_use]
     pub fn with_annotations(mut self, annotations: Option<Vec<Annotation>>) -> Self {
         self.annotations = annotations.filter(|anns| !anns.is_empty());
         self
@@ -311,7 +329,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                 impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                         formatter.write_str("`type` or `nodeKind` or `datatype` or some xsfacet or `values` ")
                     }
 
@@ -351,7 +369,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
         impl<'de> Visitor<'de> for NodeConstraintVisitor {
             type Value = NodeConstraint;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("struct NodeConstraint")
             }
 
@@ -475,7 +493,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                             if value != "NodeConstraint" {
                                 return Err(de::Error::custom(format!("Expected NodeConstraint, found: {value}")));
                             }
-                            type_ = Some("NodeConstraint".to_string());
+                            type_ = Some("NodeConstraint".to_owned());
                         },
                         Field::Flags => {
                             if flags.is_some() {

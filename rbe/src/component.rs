@@ -37,7 +37,7 @@ mod tests {
 
     #[test]
     fn test_component_creation() {
-        let c1: Component = Component::new();
+        let c1 = Component::new();
         assert_eq!(c1.0, 0)
     }
 }

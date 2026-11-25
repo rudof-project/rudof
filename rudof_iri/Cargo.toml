@@ -10,7 +10,6 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-getrandom.workspace = true
 indexmap.workspace = true
 oxiri.workspace = true
 oxrdf.workspace = true
@@ -30,3 +29,6 @@ reqwest.workspace = true
 # through oxrdf/oxigraph).
 getrandom.workspace = true
 getrandom03.workspace = true
+
+[lints]
+workspace = true

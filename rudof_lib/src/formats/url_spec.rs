@@ -29,7 +29,7 @@ impl UrlSpec {
     /// Parses a string into a UrlSpec with an HTTP client.
     pub fn parse(str: &str) -> Result<UrlSpec, InputSpecError> {
         let url = Url::parse(str).map_err(|e| InputSpecError::UrlParseError {
-            str: str.to_string(),
+            str: str.to_owned(),
             error: format!("{e}"),
         })?;
         let client = ClientBuilder::new()

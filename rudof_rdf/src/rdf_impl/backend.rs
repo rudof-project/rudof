@@ -189,7 +189,7 @@ impl NeighsRDF for RdfBackend {
         if let RdfBackend::Endpoint(b) = self {
             return b.prefetch_outgoing_arcs(subjects, preds).map_err(Into::into);
         }
-        let _ = (subjects, preds);
+        let (_subjects, _preds) = (subjects, preds);
         Ok(())
     }
 
@@ -197,7 +197,7 @@ impl NeighsRDF for RdfBackend {
         &self,
         subject: &Self::Subject,
         preds: &[Self::IRI],
-    ) -> std::result::Result<
+    ) -> Result<
         (
             std::collections::HashMap<Self::IRI, std::collections::HashSet<Self::Term>>,
             Vec<Self::IRI>,
@@ -238,19 +238,19 @@ impl QueryRDF for RdfBackend {
             RdfBackend::InMemory(b) => {
                 let s = b.query_select(query_str)?;
                 let pm = b.prefixmap().clone();
-                (s.iter().map(|x| x.convert(|t| t.clone())).collect(), pm)
+                (s.iter().map(|x| x.convert(Clone::clone)).collect(), pm)
             },
             #[cfg(any(all(not(target_family = "wasm"), feature = "sparql"), feature = "jspi"))]
             RdfBackend::Endpoint(b) => {
                 let s = b.query_select(query_str)?;
                 let pm = b.prefixmap().clone();
-                (s.iter().map(|x| x.convert(|t| t.clone())).collect(), pm)
+                (s.iter().map(|x| x.convert(Clone::clone)).collect(), pm)
             },
             #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
             RdfBackend::Qlever(b) => {
                 let s = b.query_select(query_str)?;
                 let pm = <QleverGraphContainer as Rdf>::prefixmap(b).unwrap_or_default();
-                (s.iter().map(|x| x.convert(|t| t.clone())).collect(), pm)
+                (s.iter().map(|x| x.convert(Clone::clone)).collect(), pm)
             },
         };
         Ok(QuerySolutions::new(raw, pm))

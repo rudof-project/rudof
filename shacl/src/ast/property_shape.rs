@@ -56,21 +56,25 @@ impl ASTPropertyShape {
         }
     }
 
+    #[must_use]
     pub fn with_name(mut self, name: Option<MessageMap>) -> Self {
         self.name = name;
         self
     }
 
+    #[must_use]
     pub fn with_description(mut self, description: Option<MessageMap>) -> Self {
         self.description = description;
         self
     }
 
+    #[must_use]
     pub fn with_order(mut self, order: Option<OrderValue>) -> Self {
         self.order = order;
         self
     }
 
+    #[must_use]
     pub fn with_group(mut self, group: Option<Object>) -> Self {
         self.group = group;
         self
@@ -80,36 +84,43 @@ impl ASTPropertyShape {
         self.reifier_info.as_ref()
     }
 
+    #[must_use]
     pub fn with_reifier_shape(mut self, reifier_info: Option<ReifierInfo>) -> Self {
         self.reifier_info = reifier_info;
         self
     }
 
+    #[must_use]
     pub fn with_severity(mut self, severity: Option<Severity>) -> Self {
         self.severity = severity;
         self
     }
 
+    #[must_use]
     pub fn with_targets(mut self, targets: Vec<ASTTarget>) -> Self {
         self.targets = targets;
         self
     }
 
+    #[must_use]
     pub fn with_property_shapes(mut self, property_shape: Vec<Object>) -> Self {
         self.property_shapes = property_shape;
         self
     }
 
+    #[must_use]
     pub fn with_components(mut self, components: Vec<ASTComponent>) -> Self {
         self.components = components;
         self
     }
 
+    #[must_use]
     pub fn with_closed(mut self, closed: bool) -> Self {
         self.closed = closed;
         self
     }
 
+    #[must_use]
     pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
         self.message = message;
         self
@@ -227,23 +238,23 @@ impl Display for ASTPropertyShape {
         writeln!(f, "{{")?;
         writeln!(f, "\tPropertyShape")?;
         writeln!(f, "\tpath: {}", self.path)?;
-        for target in self.targets.iter() {
+        for target in &self.targets {
             writeln!(f, "\t{target}")?
         }
         if self.closed {
             writeln!(f, "\tclosed: {}", self.closed)?
         }
-        for property in self.property_shapes.iter() {
+        for property in &self.property_shapes {
             writeln!(f, "\tProperty {property}")?
         }
-        for reifier in self.reifier_info.iter() {
+        if let Some(reifier) = &self.reifier_info {
             writeln!(f, "\tReifierInfo {reifier}")?
         }
-        for message in self.message.iter() {
+        if let Some(message) = &self.message {
             writeln!(f, "\tMessage {message}")?
         }
 
-        for component in self.components.iter() {
+        for component in &self.components {
             writeln!(f, "\t{component}")?
         }
         // TODO - For NodeExpr, do not delete

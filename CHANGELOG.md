@@ -21,11 +21,16 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `bench-shex`, `bench-issue730`: the benchmarks use the workspace `zip` 9 with their own list of codecs ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - README: new badges for npm and Docker, and links for the planned features ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - CI: the Windows OpenSSL setup gives the libraries both names, `ssl.lib` and `libssl.lib` (and the same for `crypto`), because `lbug` 0.20 links `libssl.lib` ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- All crates: each crate inherits `[workspace.lints]`, and the code is changed so that `cargo clippy -- -D warnings` passes with them, for example `#[must_use]` on builder methods, explicit lifetimes, `{ .. }` patterns, `write!` instead of `push_str(&format!(..))` and `drop(..)` instead of `let _ = ..` ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- Root `Cargo.toml`: the lints that do not fit the project, that change the public API, or that need real code changes (for example `expect_used`, `todo` and `trivially_copy_pass_by_ref`) are set to `allow`, with a comment for each group ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `clippy.toml`: tests can use `expect`, `unwrap`, `panic` and `println` ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `pgschema`: the parsers that rustemo generates are not linted ([#975](https://github.com/rudof-project/rudof/issues/975)).
 
 ### Removed
 - `shapemap_oxgraph`: an old crate that was not in the workspace ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - `rudof_cli`: the unused `supports-color` dependency ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- Root `Cargo.toml`: the workspace dependencies that no crate uses (`josekit`, `openssl`, `rust_decimal_macros`, `tokio-test`, `uuid` and five internal crates), and the unused `readme` field ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `pgschema`, `rdf_config`, `shapes_comparator`, `shapes_converter`, `shex_ast`, `rbe`: the dependencies that the crates do not use; `rbe` uses `toml` only in its tests ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- Root `Cargo.toml`: the workspace dependencies that no crate uses (`josekit`, `openssl`, `rust_decimal_macros`, `term_size`, `tokio-test`, `uuid` and five internal crates), and the unused `readme` field ([#975](https://github.com/rudof-project/rudof/issues/975)).
 
 ## 0.3.42
 ### Fixed

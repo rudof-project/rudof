@@ -15,7 +15,7 @@ pub(crate) fn find_first<RDF: FocusRDF>(
         .map(|term| {
             let find_first = term_to_iri_or_blanknode::<RDF>(&term)?;
             let nodes = optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_nodes(), rdf, depth, steps)?
-                .unwrap_or_else(|| ASTNodeExpr::Var("focusNode".to_string()));
+                .unwrap_or_else(|| ASTNodeExpr::Var("focusNode".to_owned()));
             Ok(ASTNodeExpr::FindFirst {
                 find_first,
                 nodes: nodes.into(),

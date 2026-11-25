@@ -276,7 +276,7 @@ impl Reason {
                 "Partition component for {} matches {}: {}",
                 node.show_qualified(nodes_prefixmap),
                 // schema.show_shape(shape, width),
-                maybe_label.map(|l| schema.show_idx(&l)).unwrap_or("Base".to_string()),
+                maybe_label.map_or("Base".to_owned(), |l| schema.show_idx(&l)),
                 partition.show_qualified(nodes_prefixmap, schema, width)?,
                 // neighs,
             )),
@@ -317,7 +317,7 @@ impl Reason {
         let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
         let mut tree = Tree::new(root_str);
         self.build_tree(&mut tree, nodes_prefixmap, schema, width)?;
-        write!(writer, "{}", tree).map_err(|e| PrefixMapError::IOError { error: e.to_string() })?;
+        write!(writer, "{tree}").map_err(|e| PrefixMapError::IOError { error: e.to_string() })?;
         Ok(())
     }
 
@@ -428,7 +428,7 @@ impl Display for Reason {
             } => write!(
                 f,
                 "Partition component passed. Node {node}, shape: {shape}, idx: {idx}, maybe_label: {}, partition_idx: {}, partition: {}, neighs: {}, reasons: {reasons}",
-                maybe_label.map(|l| l.to_string()).unwrap_or("None".to_string()),
+                maybe_label.map_or("None".to_owned(), |l| l.to_string()),
                 partition_idx,
                 partition,
                 neighs,
@@ -441,8 +441,7 @@ impl Display for Reason {
                 reasons,
             } => write!(
                 f,
-                "Partition passed. Node {node}, shape: {shape}, idx: {idx}, partition: {}, reasons: {reasons}",
-                partition,
+                "Partition passed. Node {node}, shape: {shape}, idx: {idx}, partition: {partition}, reasons: {reasons}",
             ),
             Reason::ParentShapeNodeConstraint { node, idx, nc } => write!(
                 f,

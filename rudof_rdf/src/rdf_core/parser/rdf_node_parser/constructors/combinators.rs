@@ -50,7 +50,7 @@ where
 pub struct ApplyParser<A, F, O> {
     value: A,
     function: F,
-    _phantom: std::marker::PhantomData<O>,
+    _phantom: PhantomData<O>,
 }
 
 impl<A, F, O> ApplyParser<A, F, O>
@@ -61,7 +61,7 @@ where
         Self {
             value,
             function,
-            _phantom: std::marker::PhantomData,
+            _phantom: PhantomData,
         }
     }
 }

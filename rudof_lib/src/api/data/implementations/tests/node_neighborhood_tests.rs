@@ -8,14 +8,14 @@ use crate::{
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::{ArcDirection, term::Object};
 
-const GRAPH: &str = r#"
+const GRAPH: &str = "
         prefix : <http://example.org/>
         :a :p :b ;
            :r :c .
         :b :q :c ;
            :s 1 .
         :e :p :a .
-    "#;
+    ";
 
 fn iri(local: &str) -> IriS {
     IriS::new_unchecked(&format!("http://example.org/{local}"))
@@ -94,7 +94,7 @@ fn test_node_neighborhood_resolves_relative_iris_against_the_base() {
     // written, which matches nothing in a graph whose IRIs are absolute.
     let arcs: Vec<NeighborArc> = rudof
         .node_neighborhood("<a>")
-        .with_predicates(&["<p>".to_string()])
+        .with_predicates(&["<p>".to_owned()])
         .with_mode(&NodeInspectionMode::Outgoing)
         .execute()
         .unwrap()
@@ -113,10 +113,10 @@ fn test_node_neighborhood_of_a_triple_term() {
     // The annotation makes `<<( :a :p :b )>>` a term of the graph, reified by a blank
     // node that carries the annotation's own triple.
     let data = InputSpec::from_str(
-        r#"
+        "
             prefix : <http://example.org/>
             :a :p :b {| :since 2020 |} .
-        "#,
+        ",
     )
     .unwrap();
     rudof.load_data().with_data(&[data]).execute().unwrap();

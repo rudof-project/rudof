@@ -93,9 +93,5 @@ fn dereferenceable_uri(node: &str) -> Option<&str> {
         .strip_prefix('<')
         .and_then(|rest| rest.strip_suffix('>'))
         .unwrap_or(trimmed);
-    if inner.starts_with("http://") || inner.starts_with("https://") {
-        Some(inner)
-    } else {
-        None
-    }
+    (inner.starts_with("http://") || inner.starts_with("https://")).then_some(inner)
 }

@@ -37,7 +37,7 @@ impl FieldGenerator for PersonGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec!["http://www.w3.org/2001/XMLSchema#string".to_string()]
+        vec!["http://www.w3.org/2001/XMLSchema#string".to_owned()]
     }
 }
 
@@ -57,7 +57,7 @@ fn generate_first_name(rng: &mut impl Rng, locale: &str) -> String {
             "Javier",
             "Laura",
             "Manuel",
-            "María",
+            "Mar\u{ed}a",
             "Miguel",
             "Pilar",
             "Rafael",
@@ -73,8 +73,8 @@ fn generate_first_name(rng: &mut impl Rng, locale: &str) -> String {
             "Charles",
             "Christine",
             "David",
-            "Élise",
-            "François",
+            "\u{c9}lise",
+            "Fran\u{e7}ois",
             "Isabelle",
             "Jacques",
             "Julie",
@@ -85,7 +85,7 @@ fn generate_first_name(rng: &mut impl Rng, locale: &str) -> String {
             "Pierre",
             "Sophie",
             "Thomas",
-            "Valérie",
+            "Val\u{e9}rie",
         ],
         _ => &[
             "Alexander",
@@ -117,26 +117,26 @@ fn generate_first_name(rng: &mut impl Rng, locale: &str) -> String {
 fn generate_last_name(rng: &mut impl Rng, locale: &str) -> String {
     let names = match locale {
         "es" => &[
-            "García",
-            "González",
-            "Rodríguez",
-            "Fernández",
-            "López",
-            "Martínez",
-            "Sánchez",
-            "Pérez",
-            "Gómez",
-            "Martín",
-            "Jiménez",
+            "Garc\u{ed}a",
+            "Gonz\u{e1}lez",
+            "Rodr\u{ed}guez",
+            "Fern\u{e1}ndez",
+            "L\u{f3}pez",
+            "Mart\u{ed}nez",
+            "S\u{e1}nchez",
+            "P\u{e9}rez",
+            "G\u{f3}mez",
+            "Mart\u{ed}n",
+            "Jim\u{e9}nez",
             "Ruiz",
-            "Hernández",
-            "Díaz",
+            "Hern\u{e1}ndez",
+            "D\u{ed}az",
             "Moreno",
-            "Muñoz",
-            "Álvarez",
+            "Mu\u{f1}oz",
+            "\u{c1}lvarez",
             "Romero",
             "Alonso",
-            "Gutiérrez",
+            "Guti\u{e9}rrez",
         ],
         "fr" => &[
             "Martin", "Bernard", "Dubois", "Thomas", "Robert", "Richard", "Petit", "Durand", "Leroy", "Moreau",
@@ -192,17 +192,17 @@ fn generate_phone_number(rng: &mut impl Rng, locale: &str) -> String {
         "es" => {
             // Spanish phone number format
             let prefix = rng.random_range(600..800);
-            let number = rng.random_range(100000..1000000);
+            let number = rng.random_range(100_000..1_000_000);
             format!("+34 {prefix} {number}")
         },
         "fr" => {
             // French phone number format
             let area = rng.random_range(1..6);
-            let number = rng.random_range(10000000..100000000);
+            let number = rng.random_range(10_000_000..100_000_000);
             format!(
                 "+33 {} {} {} {}",
                 area,
-                number / 1000000,
+                number / 1_000_000,
                 (number / 1000) % 1000,
                 number % 1000
             )
@@ -222,8 +222,8 @@ fn generate_address(rng: &mut impl Rng, locale: &str) -> String {
         "es" => {
             let streets = [
                 "Calle Mayor",
-                "Avenida de la Constitución",
-                "Plaza España",
+                "Avenida de la Constituci\u{f3}n",
+                "Plaza Espa\u{f1}a",
                 "Calle Real",
             ];
             let street = streets.choose(rng).unwrap();
@@ -235,7 +235,7 @@ fn generate_address(rng: &mut impl Rng, locale: &str) -> String {
                 "Rue de la Paix",
                 "Avenue des Champs",
                 "Boulevard Saint-Germain",
-                "Place de la République",
+                "Place de la R\u{e9}publique",
             ];
             let street = streets.choose(rng).unwrap();
             let number = rng.random_range(1..200);

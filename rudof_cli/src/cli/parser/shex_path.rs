@@ -87,11 +87,11 @@ mod tests {
 
     #[test]
     fn the_path_is_required() {
-        assert!(TestCli::try_parse_from(["test", "-s", "-"]).is_err());
+        TestCli::try_parse_from(["test", "-s", "-"]).unwrap_err();
     }
 
     #[test]
     fn the_schema_is_required() {
-        assert!(TestCli::try_parse_from(["test", "-p", "/shapes/*"]).is_err());
+        TestCli::try_parse_from(["test", "-p", "/shapes/*"]).unwrap_err();
     }
 }

@@ -1,7 +1,7 @@
 use crate::{Result, Rudof, api::shex::ShExOperations};
 
 pub struct CheckShexSchemaBuilder<'a, W: std::io::Write> {
-    rudof: &'a crate::Rudof,
+    rudof: &'a Rudof,
     schema: &'a crate::formats::InputSpec,
     schema_format: Option<&'a crate::formats::ShExFormat>,
     base_schema: Option<&'a str>,
@@ -13,7 +13,7 @@ impl<'a, W: std::io::Write> CheckShexSchemaBuilder<'a, W> {
     ///
     /// This is called internally by `Rudof::check_shex_schema()` and should not
     /// be constructed directly.
-    pub(crate) fn new(rudof: &'a crate::Rudof, schema: &'a crate::formats::InputSpec, writer: &'a mut W) -> Self {
+    pub(crate) fn new(rudof: &'a Rudof, schema: &'a crate::formats::InputSpec, writer: &'a mut W) -> Self {
         Self {
             rudof,
             schema,

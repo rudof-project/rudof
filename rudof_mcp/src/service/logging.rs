@@ -105,10 +105,10 @@ impl LogRateLimiter {
 fn truncate_text(text: &str) -> String {
     let char_count = text.chars().count();
     if char_count <= MAX_TEXT_FIELD_CHARS {
-        text.to_string()
+        text.to_owned()
     } else {
         let truncated: String = text.chars().take(MAX_TEXT_FIELD_CHARS).collect();
-        format!("{}...[truncated]", truncated)
+        format!("{truncated}...[truncated]")
     }
 }
 
@@ -144,7 +144,7 @@ impl LogData {
     /// Convert the log data to a JSON value for the MCP notification.
     pub fn to_json(&self) -> Value {
         let mut map = serde_json::Map::new();
-        map.insert("message".to_string(), json!(truncate_text(&self.message)));
+        map.insert("message".to_owned(), json!(truncate_text(&self.message)));
         for (key, value) in &self.fields {
             map.insert(key.clone(), value.clone());
         }

@@ -82,20 +82,19 @@ impl IRShape {
             return self.validate_untracked(store, runner, targets, source_shape, shapes_graph);
         };
         let selected;
-        let focus_nodes = match targets {
-            Some(targets) => targets,
-            None => {
-                let at_top_level = tracker.at_top_level();
-                if at_top_level {
-                    tracker.begin_targets(idx);
-                }
-                let nodes = self.focus_nodes(store, runner, shapes_graph);
-                if at_top_level {
-                    tracker.end_targets();
-                }
-                selected = nodes?;
-                &selected
-            },
+        let focus_nodes = if let Some(targets) = targets {
+            targets
+        } else {
+            let at_top_level = tracker.at_top_level();
+            if at_top_level {
+                tracker.begin_targets(idx);
+            }
+            let nodes = self.focus_nodes(store, runner, shapes_graph);
+            if at_top_level {
+                tracker.end_targets();
+            }
+            selected = nodes?;
+            &selected
         };
         let mut outcome = ValidationOutcome::new();
         for node in focus_nodes.iter() {
@@ -216,7 +215,7 @@ impl IRShape {
 
         // 3. Check each of the components
         let mut component_outcome = ValidationOutcome::new();
-        for component in components.iter() {
+        for component in components {
             let outcome = runner.evaluate(
                 store,
                 self,
@@ -255,7 +254,7 @@ impl IRShape {
         // attribute the *entire* returned outcome to `orig`, since that's exactly the
         // node this loop iteration validated on this shape's behalf.
         let mut nested_by_focus: HashMap<Object, ValidationOutcome> = HashMap::new();
-        for ps in self.property_shapes().iter() {
+        for ps in self.property_shapes() {
             let shape = shapes_graph.get_shape_from_idx_e(ps)?;
             for (orig, vn) in value_nodes.iter() {
                 let outcome = nested_by_focus.entry(RDF::term_as_object(orig)?).or_default();
@@ -340,7 +339,7 @@ impl IRShape {
             // evidence at all, if none of its constraints happened to
             // iterate any value).
             if runner.retention().store_evidences && !self.targets().is_empty() {
-                for (node_object, node_outcome) in by_focus.iter_mut() {
+                for (node_object, node_outcome) in &mut by_focus {
                     if node_outcome.conforms() {
                         let evidence = Evidence::new_shape(node_object.clone(), self.id().clone());
                         node_outcome.push_evidence(evidence.clone());
@@ -413,18 +412,17 @@ fn get_active_focus_nodes<RDF: NeighsRDF + Debug>(
     let active: Result<Vec<_>, _> = focus_nodes
         .iter()
         .filter_map(|node| {
-            let off = match shared.and_then(|idx| runner.node_expr_state().deactivated.get(idx).copied()) {
-                Some(off) => Ok(off),
-                None => {
-                    runner.node_expr_state().steps = 0;
-                    let off = deactivated
-                        .evaluate(store, node, &scope, runner, shapes_graph)
-                        .map(|values| node_expr_is_true::<RDF>(&values));
-                    if let (Some(idx), Ok(off)) = (shared, &off) {
-                        runner.node_expr_state().deactivated.insert(*idx, *off);
-                    }
-                    off
-                },
+            let off = if let Some(off) = shared.and_then(|idx| runner.node_expr_state().deactivated.get(idx).copied()) {
+                Ok(off)
+            } else {
+                runner.node_expr_state().steps = 0;
+                let off = deactivated
+                    .evaluate(store, node, &scope, runner, shapes_graph)
+                    .map(|values| node_expr_is_true::<RDF>(&values));
+                if let (Some(idx), Ok(off)) = (shared, &off) {
+                    runner.node_expr_state().deactivated.insert(*idx, *off);
+                }
+                off
             };
             match off {
                 Ok(true) => None,
@@ -486,7 +484,7 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
                         "Reification required but no reifier found for triple {triple} with predicate {pred}",
                     ))
                     .with_path(Some(SHACLPath::iri(pred.clone())))
-                    .with_source(source_shape.map(|s| s.id()).cloned());
+                    .with_source(source_shape.map(IRShape::id).cloned());
                     outcome.push_violation(vr_single);
                     continue;
                 }

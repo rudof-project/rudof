@@ -41,7 +41,7 @@ impl RudofMcpService {
         name = "load_rdf_data_from_sources",
         title = "Load RDF Data from Sources",
         output_schema = schema_for_output::<LoadRdfDataFromSourcesResponse>(),
-        description = "Load RDF triples into the server's in-memory datastore from URLs, local file paths, or inline RDF text. Each call is cumulative — triples are merged into existing data. `data` is optional — omit or pass [] when only using `endpoint`. To query a live SPARQL endpoint: set endpoint URL and pass data:[]. Call this before validate_shex, validate_shacl, execute_sparql_query, node_info, or export tools.",
+        description = "Load RDF triples into the server's in-memory datastore from URLs, local file paths, or inline RDF text. Each call is cumulative \u{2014} triples are merged into existing data. `data` is optional \u{2014} omit or pass [] when only using `endpoint`. To query a live SPARQL endpoint: set endpoint URL and pass data:[]. Call this before validate_shex, validate_shacl, execute_sparql_query, node_info, or export tools.",
         annotations(
             title = "Load RDF Data from Sources",
             read_only_hint = false,
@@ -142,7 +142,7 @@ impl RudofMcpService {
         name = "execute_sparql_query",
         title = "Execute SPARQL Query",
         output_schema = schema_for_output::<QueryExecutionResponse>(),
-        description = "Execute a SPARQL query against the server's in-memory RDF graph. Supports SELECT, CONSTRUCT, and ASK (DESCRIBE not yet implemented). Provide a direct SPARQL string in `query` OR a natural language description in `query_natural_language` — not both. No `endpoint` parameter here — to query a live SPARQL endpoint, first call load_rdf_data_from_sources with {endpoint: 'https://...', data: []}. Requires data to be loaded first.",
+        description = "Execute a SPARQL query against the server's in-memory RDF graph. Supports SELECT, CONSTRUCT, and ASK (DESCRIBE not yet implemented). Provide a direct SPARQL string in `query` OR a natural language description in `query_natural_language` \u{2014} not both. No `endpoint` parameter here \u{2014} to query a live SPARQL endpoint, first call load_rdf_data_from_sources with {endpoint: 'https://...', data: []}. Requires data to be loaded first.",
         annotations(
             title = "Execute SPARQL Query",
             read_only_hint = true,
@@ -168,7 +168,7 @@ impl RudofMcpService {
         name = "validate_shex",
         title = "Validate RDF with ShEx",
         output_schema = schema_for_output::<ValidateShexResponse>(),
-        description = "Validate the loaded RDF data against a ShEx schema. Requires a node–shape mapping: supply `shapemap` (e.g. ':alice@:Person') or `maybe_node` with an optional `maybe_shape` to auto-generate one. Requires data to be loaded first.",
+        description = "Validate the loaded RDF data against a ShEx schema. Requires a node\u{2013}shape mapping: supply `shapemap` (e.g. ':alice@:Person') or `maybe_node` with an optional `maybe_shape` to auto-generate one. Requires data to be loaded first.",
         annotations(
             title = "Validate RDF with ShEx",
             read_only_hint = true,
@@ -266,7 +266,7 @@ impl RudofMcpService {
         name = "reset_session_state",
         title = "Reset Session State",
         output_schema = schema_for_output::<ResetSessionStateResponse>(),
-        description = "Clear session state loaded so far in this MCP session. With no `targets` (or [\"all\"]), clears everything (RDF data, ShEx/SHACL/pgschema/DCTap schemas, shapemap, query/validation results, ...) — the same as starting a fresh session. With one or more targets, clears only that state, leaving the rest untouched.",
+        description = "Clear session state loaded so far in this MCP session. With no `targets` (or [\"all\"]), clears everything (RDF data, ShEx/SHACL/pgschema/DCTap schemas, shapemap, query/validation results, ...) \u{2014} the same as starting a fresh session. With one or more targets, clears only that state, leaving the rest untouched.",
         annotations(
             title = "Reset Session State",
             read_only_hint = false,

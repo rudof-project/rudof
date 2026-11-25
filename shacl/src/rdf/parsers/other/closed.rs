@@ -13,7 +13,7 @@ pub(crate) fn closed<RDF: FocusRDF>(budget: Arc<ParseBudget>) -> impl RDFNodePar
     SingleBoolPropertyParser::new(ShaclVocab::sh_closed())
         .optional()
         .then(move |maybe_closed| {
-            ignored_properties(budget.clone()).map(move |is| {
+            ignored_properties(Arc::clone(&budget)).map(move |is| {
                 maybe_closed.map_or(vec![], |b| {
                     vec![ASTComponent::Closed {
                         is_closed: b,

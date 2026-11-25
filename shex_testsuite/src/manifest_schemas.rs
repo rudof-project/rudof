@@ -147,7 +147,7 @@ impl ManifestSchemas {
     #[cfg(not(target_family = "wasm"))]
     pub fn run_pretty_print_roundtrip_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_owned() })),
             Some(entry) => entry.run_pretty_print_roundtrip(base),
         }
     }
@@ -163,7 +163,7 @@ impl SchemasEntry {
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             Box::new(ManifestError::SchemaJsonError {
                 error: Box::new(e),
-                entry_name: self.name.to_string(),
+                entry_name: self.name.clone(),
             })
         })?;
         debug!("Passed schema parsing from JSON");
@@ -178,7 +178,7 @@ impl SchemasEntry {
 
         let schema_parsed_after_serialization = serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized)
             .map_err(|e| ManifestError::SchemaParsingAfterSerialization {
-                schema_name: self.name.to_string(),
+                schema_name: self.name.clone(),
                 schema_parsed: Box::new(schema_parsed.clone()),
                 schema_serialized: schema_serialized.clone(),
                 error: e,
@@ -199,20 +199,19 @@ impl SchemasEntry {
 
             // If the 2 schemas are equal, parse the corresponding schema using ShExC and check that it is also equal
             let shex_local = Path::new(&self.shex);
-            let mut shex_buf = PathBuf::from(base);
-            shex_buf.push(shex_local);
+            let shex_buf = PathBuf::from(base).join(shex_local);
             let base_absolute = base.canonicalize().map_err(|err| ManifestError::AbsolutePathError {
                 base: base.as_os_str().to_os_string(),
                 error: err,
             })?;
-            let base_url = Url::from_file_path(&base_absolute).map_err(|_| ManifestError::BasePathError {
+            let base_url = Url::from_file_path(&base_absolute).map_err(|()| ManifestError::BasePathError {
                 base: base_absolute.as_os_str().to_os_string(),
             })?;
             let base_iri = IriS::new_unchecked(base_url.as_str());
             let mut shexc_schema_parsed =
                 ShExParser::parse_buf(&shex_buf, Some(base_iri)).map_err(|e| ManifestError::ShExCParsingError {
                     error: Box::new(e),
-                    entry_name: self.name.to_string(),
+                    entry_name: self.name.clone(),
                     shex_path: Box::new(shex_buf.clone()),
                 })?;
 
@@ -247,7 +246,7 @@ impl SchemasEntry {
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
             Box::new(ManifestError::SchemaJsonError {
                 error: Box::new(e),
-                entry_name: self.name.to_string(),
+                entry_name: self.name.clone(),
             })
         })?;
         debug!("Pretty print roundtrip: passed schema parsing from JSON");
@@ -259,7 +258,7 @@ impl SchemasEntry {
         let reparsed = ShExParser::parse(&pretty_printed, None, &source_iri).map_err(|e| {
             Box::new(ManifestError::PrettyPrintParsingError {
                 error: Box::new(e),
-                entry_name: self.name.to_string(),
+                entry_name: self.name.clone(),
                 pretty_printed: pretty_printed.clone(),
             })
         })?;
@@ -269,7 +268,7 @@ impl SchemasEntry {
             Ok(())
         } else {
             Err(Box::new(ManifestError::PrettyPrintRoundtripDifferent {
-                entry_name: self.name.to_string(),
+                entry_name: self.name.clone(),
                 schema_parsed: Box::new(schema_parsed),
                 pretty_printed,
                 reparsed: Box::new(reparsed),
@@ -298,12 +297,12 @@ impl Manifest for ManifestSchemas {
         _manifest_shex_syntax_mode: ManifestShExSyntaxMode,
     ) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_owned() })),
             Some(entry) => entry.run(base),
         }
     }
 
-    fn has_traits(&self, _name: &str) -> Result<Vec<std::string::String>, Box<ManifestError>> {
+    fn has_traits(&self, _name: &str) -> Result<Vec<String>, Box<ManifestError>> {
         Ok(Vec::new())
     }
 }

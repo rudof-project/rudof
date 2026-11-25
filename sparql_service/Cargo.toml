@@ -39,3 +39,6 @@ sparesults = { workspace = true, optional = true }
 thiserror.workspace = true
 toml.workspace = true
 tracing.workspace = true
+
+[lints]
+workspace = true

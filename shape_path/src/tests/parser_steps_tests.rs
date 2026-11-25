@@ -23,14 +23,14 @@ fn an_axis_may_start_a_path() {
 
 #[test]
 fn an_axis_needs_its_double_colon() {
-    assert!(ShExPathParser::parse_syntax("/self").is_err());
-    assert!(ShExPathParser::parse_syntax("/parent").is_err());
-    assert!(ShExPathParser::parse_syntax("/thisShapeExpr:").is_err());
+    ShExPathParser::parse_syntax("/self").unwrap_err();
+    ShExPathParser::parse_syntax("/parent").unwrap_err();
+    ShExPathParser::parse_syntax("/thisShapeExpr:").unwrap_err();
 }
 
 #[test]
 fn descendant_has_no_spelling() {
-    assert!(ShExPathParser::parse_syntax("/descendant::").is_err());
+    ShExPathParser::parse_syntax("/descendant::").unwrap_err();
 }
 
 #[test]
@@ -108,7 +108,7 @@ fn term_types_and_attributes_differ_in_case() {
 
 #[test]
 fn shape_decl_is_not_a_term_type() {
-    assert!(ShExPathParser::parse_syntax("/ShapeDecl").is_err());
+    ShExPathParser::parse_syntax("/ShapeDecl").unwrap_err();
 }
 
 #[test]
@@ -175,14 +175,14 @@ fn an_attribute_is_the_whole_word() {
 
 #[test]
 fn attributes_are_case_sensitive() {
-    assert!(ShExPathParser::parse_syntax("/Shapes").is_err());
-    assert!(ShExPathParser::parse_syntax("/VALUEEXPR").is_err());
+    ShExPathParser::parse_syntax("/Shapes").unwrap_err();
+    ShExPathParser::parse_syntax("/VALUEEXPR").unwrap_err();
 }
 
 #[test]
 fn a_word_that_is_not_an_attribute_is_an_error() {
-    assert!(ShExPathParser::parse_syntax("/asdf").is_err());
-    assert!(ShExPathParser::parse_syntax("/abstract").is_err());
+    ShExPathParser::parse_syntax("/asdf").unwrap_err();
+    ShExPathParser::parse_syntax("/abstract").unwrap_err();
 }
 
 #[test]
@@ -207,8 +207,8 @@ fn slash_star_is_not_a_comment() {
 
 #[test]
 fn an_empty_path_is_an_error() {
-    assert!(ShExPathParser::parse_syntax("").is_err());
-    assert!(ShExPathParser::parse_syntax("/").is_err());
+    ShExPathParser::parse_syntax("").unwrap_err();
+    ShExPathParser::parse_syntax("/").unwrap_err();
 }
 
 #[test]

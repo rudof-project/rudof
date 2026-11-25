@@ -199,12 +199,12 @@ pub fn assert_same_node(
     let mut a_triples: Vec<_> = actual
         .triples_with_subject(&a_subj)
         .expect("querying actual graph")
-        .map(|t| (t.pred().as_str().to_string(), t.obj().clone()))
+        .map(|t| (t.pred().as_str().to_owned(), t.obj().clone()))
         .collect();
     let mut e_triples: Vec<_> = expected
         .triples_with_subject(&e_subj)
         .expect("querying expected graph")
-        .map(|t| (t.pred().as_str().to_string(), t.obj().clone()))
+        .map(|t| (t.pred().as_str().to_owned(), t.obj().clone()))
         .collect();
     assert_eq!(
         a_triples.len(),

@@ -95,52 +95,62 @@ impl ShaclConfig {
         }
     }
 
+    #[must_use]
     pub fn with_rdf_data(mut self, data: RdfDataConfig) -> Self {
         self.data = data;
         self
     }
 
+    #[must_use]
     pub fn with_store_errors(mut self, flag: bool) -> Self {
         self.store_errors = flag;
         self
     }
 
+    #[must_use]
     pub fn with_store_evidences(mut self, flag: bool) -> Self {
         self.store_evidences = flag;
         self
     }
 
+    #[must_use]
     pub fn with_evidence_shapes_only(mut self, flag: bool) -> Self {
         self.evidence_shapes_only = flag;
         self
     }
 
+    #[must_use]
     pub fn with_recursion_semantics(mut self, semantics: RecursionSemantics) -> Self {
         self.recursion_semantics = semantics;
         self
     }
 
+    #[must_use]
     pub fn with_fetch_strategy(mut self, strategy: FetchStrategy) -> Self {
         self.fetch_strategy = strategy;
         self
     }
 
+    #[must_use]
     pub fn with_prefetch_batch_size(mut self, size: usize) -> Self {
         self.prefetch_batch_size = size.max(1);
         self
     }
 
+    #[must_use]
     pub fn with_prefetch_max_rounds(mut self, rounds: usize) -> Self {
         self.prefetch_max_rounds = rounds;
         self
     }
 
+    #[must_use]
     pub fn with_max_results(mut self, max: Option<usize>) -> Self {
         self.max_results = max;
         self
     }
 
     /// Installs a sink that receives every triple the native engine reads.
+    #[must_use]
     pub fn with_read_sink(mut self, sink: TriplesSink) -> Self {
         self.read_sink = Some(sink);
         self
@@ -151,6 +161,7 @@ impl ShaclConfig {
     /// `(focus node, shape)` pairs of the shapes with targets, following the
     /// conformant pairs they rely on (see [`crate::validator::subgraph`]).
     /// Needs the native engine, and validates the focus nodes one by one.
+    #[must_use]
     pub fn with_valid_sink(mut self, sink: TriplesSink) -> Self {
         self.valid_sink = Some(sink);
         self
@@ -159,6 +170,7 @@ impl ShaclConfig {
     /// Installs a sink that receives, once the validation ends, the invalid
     /// subgraph: the triples read that are not in the valid subgraph (see
     /// [`Self::with_valid_sink`]).
+    #[must_use]
     pub fn with_invalid_sink(mut self, sink: TriplesSink) -> Self {
         self.invalid_sink = Some(sink);
         self
@@ -302,10 +314,10 @@ mod tests {
     #[test]
     fn toml_configures_store_flags() {
         let c: ShaclConfig = toml::from_str(
-            r#"
+            "
             store_errors = false
             store_evidences = true
-        "#,
+        ",
         )
         .unwrap();
         assert!(!c.store_errors());
@@ -320,7 +332,7 @@ mod tests {
 
     #[test]
     fn toml_configures_evidence_shapes_only() {
-        let c: ShaclConfig = toml::from_str(r#"evidence_shapes_only = true"#).unwrap();
+        let c: ShaclConfig = toml::from_str("evidence_shapes_only = true").unwrap();
         assert!(c.evidence_shapes_only());
     }
 
@@ -341,7 +353,7 @@ mod tests {
         "#,
         )
         .unwrap();
-        assert_eq!(c.rdf_data().base().map(|i| i.as_str()), Some("http://ex/"));
+        assert_eq!(c.rdf_data().base().map(rudof_iri::IriS::as_str), Some("http://ex/"));
     }
 
     #[test]

@@ -76,7 +76,7 @@ impl PyDbEngine {
 
     fn __str__(&self) -> String {
         match self {
-            PyDbEngine::Lbug => "Lbug".to_string(),
+            PyDbEngine::Lbug => "Lbug".to_owned(),
         }
     }
 
@@ -132,8 +132,8 @@ impl From<&PgSchemaResultAssociation> for PyPgSchemaValidationEntry {
         let details = association
             .details
             .as_ref()
-            .map_left(|errors| join_details(errors.iter().map(|e| e.to_string())))
-            .map_right(|evidences| join_details(evidences.iter().map(|e| e.to_string())))
+            .map_left(|errors| join_details(errors.iter().map(ToString::to_string)))
+            .map_right(|evidences| join_details(evidences.iter().map(ToString::to_string)))
             .into_inner();
         PyPgSchemaValidationEntry {
             node_id: association.node_id.clone(),

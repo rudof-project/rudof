@@ -18,7 +18,7 @@ impl Reasons {
 
 impl Display for Reasons {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for reason in self.reasons.iter() {
+        for reason in &self.reasons {
             writeln!(f, "  {reason}")?;
         }
         Ok(())

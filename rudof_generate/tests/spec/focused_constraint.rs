@@ -16,7 +16,7 @@ use tempfile::NamedTempFile;
 #[tokio::test]
 async fn test_shex_datatype_passthrough() {
     // Create a ShEx schema with specific datatypes
-    let shex_schema = r#"
+    let shex_schema = "
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -25,7 +25,7 @@ ex:PersonShape {
   ex:age xsd:integer ;
   ex:active xsd:boolean
 }
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -66,7 +66,7 @@ ex:PersonShape {
 #[tokio::test]
 async fn test_shacl_datatype_passthrough() {
     // Create a SHACL schema with specific datatypes
-    let shacl_schema = r#"
+    let shacl_schema = "
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -91,7 +91,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
     ] .
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -132,7 +132,7 @@ ex:PersonShape a sh:NodeShape ;
 #[tokio::test]
 async fn test_shacl_cardinality_passthrough() {
     // Create a SHACL schema with cardinality constraints
-    let shacl_schema = r#"
+    let shacl_schema = "
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -151,7 +151,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:minCount 0 ;
         sh:maxCount 3 ;
     ] .
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -204,11 +204,11 @@ ex:PersonShape a sh:NodeShape ;
 
 /// Test that basic constraints are correctly passed from schema to generated data
 #[cfg(not(target_family = "wasm"))]
-#[allow(clippy::cmp_owned)]
+#[expect(clippy::cmp_owned)]
 #[tokio::test]
 async fn test_constraint_pipeline_verification() {
     // Create a simple SHACL schema
-    let shacl_schema = r#"
+    let shacl_schema = "
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -221,7 +221,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
     ] .
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -250,7 +250,7 @@ ex:PersonShape a sh:NodeShape ;
     // Count how many name properties were generated
     let name_count = triples
         .iter()
-        .filter(|t| t.predicate.to_string() == "<http://example.org/name>".to_string())
+        .filter(|t| t.predicate.to_string() == "<http://example.org/name>".to_owned())
         .count();
 
     assert!(name_count > 0, "Should have generated at least one name property");

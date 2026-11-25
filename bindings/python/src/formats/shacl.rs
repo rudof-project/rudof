@@ -142,8 +142,8 @@ impl PyShapesGraphSource {
 
     fn __str__(&self) -> String {
         match self {
-            PyShapesGraphSource::CurrentData => "CurrentData".to_string(),
-            PyShapesGraphSource::CurrentSchema => "CurrentSchema".to_string(),
+            PyShapesGraphSource::CurrentData => "CurrentData".to_owned(),
+            PyShapesGraphSource::CurrentSchema => "CurrentSchema".to_owned(),
         }
     }
 
@@ -204,9 +204,9 @@ impl From<&ShaclValidationResult> for PyShaclValidationEntry {
     fn from(result: &ShaclValidationResult) -> Self {
         PyShaclValidationEntry {
             focus_node: result.focus_node().to_string(),
-            path: result.path().map(|p| p.to_string()),
-            value: result.value().map(|v| v.to_string()),
-            source_shape: result.source().map(|s| s.to_string()),
+            path: result.path().map(ToString::to_string),
+            value: result.value().map(ToString::to_string),
+            source_shape: result.source().map(ToString::to_string),
             constraint_component: result.constraint_component().to_string(),
             severity: result.severity().to_string(),
             message: result.message().to_string(),
@@ -222,7 +222,7 @@ impl From<&ShaclValidationResult> for PyShaclValidationEntry {
 pub struct PyShaclValidationReport {
     // Kept so the report can serialize itself once `rudof_lib` grows the standalone
     // serializers; iteration goes through `entries`, which a `#[pyclass]` iterator can own.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub(crate) inner: ShaclValidationReport,
     pub(crate) conforms: bool,
     pub(crate) entries: Vec<PyShaclValidationEntry>,
@@ -280,7 +280,10 @@ impl PyShaclValidationReport {
     /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``subgraphs=True``.
     #[getter]
     fn valid_triples(&self) -> Option<usize> {
-        self.recorded.valid.as_ref().map(|g| g.len())
+        self.recorded
+            .valid
+            .as_ref()
+            .map(rudof_rdf::rdf_impl::OxigraphInMemory::len)
     }
 
     /// How many triples are in the invalid subgraph, that is, the triples read that are not valid.
@@ -288,7 +291,10 @@ impl PyShaclValidationReport {
     /// ``None`` unless :meth:`Rudof.validate_shacl` was called with ``subgraphs=True``.
     #[getter]
     fn invalid_triples(&self) -> Option<usize> {
-        self.recorded.invalid.as_ref().map(|g| g.len())
+        self.recorded
+            .invalid
+            .as_ref()
+            .map(rudof_rdf::rdf_impl::OxigraphInMemory::len)
     }
 
     /// Serializes the distinct triples the validation read.

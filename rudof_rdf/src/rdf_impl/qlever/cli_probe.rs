@@ -57,7 +57,7 @@ pub async fn probe(image: &str) -> Result<CliKind, QleverError> {
         return Ok(CliKind::V2);
     }
     Err(QleverError::UnknownCliKind {
-        image: image.to_string(),
+        image: image.to_owned(),
     })
 }
 
@@ -89,7 +89,7 @@ pub(crate) async fn ensure_image(docker: &Docker, image: &str) -> Result<(), Qle
     tracing::info!("QLever image {} not present locally; pulling (~1GB)", image);
 
     let options = bollard::query_parameters::CreateImageOptions {
-        from_image: Some(image.to_string()),
+        from_image: Some(image.to_owned()),
         ..Default::default()
     };
 
@@ -119,9 +119,9 @@ async fn probe_one(docker: &Docker, image: &str, cmd: &str) -> Result<bool, Qlev
     let user = host_uid_gid();
 
     let create = ContainerCreateBody {
-        image: Some(image.to_string()),
+        image: Some(image.to_owned()),
         cmd: Some(vec!["-c".into(), format!("{cmd} -h")]),
-        working_dir: Some("/data".to_string()),
+        working_dir: Some("/data".to_owned()),
         user,
         host_config: Some(HostConfig {
             binds: Some(binds),
@@ -142,10 +142,10 @@ async fn probe_one(docker: &Docker, image: &str, cmd: &str) -> Result<bool, Qlev
         .try_collect::<Vec<_>>()
         .await
         .unwrap_or_default();
-    let exit_code = wait_result.into_iter().next().map(|r| r.status_code).unwrap_or(-1);
+    let exit_code = wait_result.into_iter().next().map_or(-1, |r| r.status_code);
 
     let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
-    let _ = docker.remove_container(&id, Some(remove_opts)).await;
+    drop(docker.remove_container(&id, Some(remove_opts)).await);
 
     Ok(exit_code == 0)
 }

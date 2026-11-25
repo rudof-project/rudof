@@ -33,7 +33,7 @@ pub type RdfSubject = <RdfData as Rdf>::Subject;
 pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
     let trimmed = s.trim();
     match mode {
-        IriNormalizationMode::Strict => trimmed.to_string(),
+        IriNormalizationMode::Strict => trimmed.to_owned(),
         IriNormalizationMode::Lax => {
             let is_bare_iri = !trimmed.starts_with('<')
                 && !trimmed.starts_with('_')
@@ -41,9 +41,9 @@ pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
                 && !trimmed.starts_with('"')
                 && trimmed.contains("://");
             if is_bare_iri {
-                format!("<{}>", trimmed)
+                format!("<{trimmed}>")
             } else {
-                trimmed.to_string()
+                trimmed.to_owned()
             }
         },
     }
@@ -59,7 +59,7 @@ pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
 pub fn get_base_iri(rudof: &Rudof, base_iri: Option<&str>) -> Result<IriS> {
     if let Some(base_iri) = base_iri {
         let base_iri = IriS::from_str(base_iri).map_err(|error| IriError::ParseError {
-            iri: base_iri.to_string(),
+            iri: base_iri.to_owned(),
             error: error.to_string(),
         })?;
 
@@ -68,7 +68,7 @@ pub fn get_base_iri(rudof: &Rudof, base_iri: Option<&str>) -> Result<IriS> {
 
     session_base_iri(rudof)?.ok_or_else(|| {
         IriError::WasmNotSupported {
-            operation: "defaulting the base IRI to the current directory (provide a base IRI)".to_string(),
+            operation: "defaulting the base IRI to the current directory (provide a base IRI)".to_owned(),
         }
         .into()
     })
@@ -92,13 +92,13 @@ pub(crate) fn session_base_iri(rudof: &Rudof) -> Result<Option<IriS>> {
     #[cfg(not(target_family = "wasm"))]
     {
         let cwd = env::current_dir().map_err(|e| IriError::PathConversionError {
-            path: ".".to_string(),
+            path: ".".to_owned(),
             error: format!("Error resolving base IRI. Failed to get current directory: {e}"),
         })?;
 
-        let url = Url::from_directory_path(&cwd).map_err(|_| IriError::PathConversionError {
+        let url = Url::from_directory_path(&cwd).map_err(|()| IriError::PathConversionError {
             path: cwd.to_string_lossy().to_string(),
-            error: "Error resolving base IRI. Cannot convert current directory to a file URL".to_string(),
+            error: "Error resolving base IRI. Cannot convert current directory to a file URL".to_owned(),
         })?;
         Ok(Some(url.into()))
     }
@@ -158,7 +158,7 @@ pub fn parse_node_selector(node: &str, iri_mode: IriNormalizationMode) -> Result
     let normalized = normalize_iri_str(node, iri_mode);
     ShapeMapParser::parse_node_selector(normalized.as_str()).map_err(|e| {
         Box::new(DataError::FailedNodeSelectorParse {
-            node: normalized.as_str().to_string(),
+            node: normalized.as_str().to_owned(),
             error: e.to_string(),
         })
         .into()
@@ -202,7 +202,7 @@ where
         IriRef::Prefixed { prefix, local } => {
             let iri = resolve(prefix.as_str(), local.as_str()).map_err(|e| {
                 Box::new(DataError::FailedPrefixResolution {
-                    prefix: prefix.to_string(),
+                    prefix: prefix.clone(),
                     error: e.to_string(),
                 })
             })?;
@@ -379,7 +379,7 @@ pub fn parse_term(
 ) -> Result<RdfTerm> {
     if is_selector_shape(term) {
         return Err(Box::new(DataError::NotATerm {
-            term: term.trim().to_string(),
+            term: term.trim().to_owned(),
         })
         .into());
     }
@@ -430,7 +430,7 @@ pub fn parse_subject(
     let term = parse_term(subject, base, prefixmap, iri_mode)?;
     RdfData::term_as_subject(&term).map_err(|_| {
         Box::new(DataError::NotASubject {
-            term: subject.trim().to_string(),
+            term: subject.trim().to_owned(),
         })
         .into()
     })
@@ -440,7 +440,7 @@ pub fn parse_subject(
 fn parse_iri_ref(iri: &str) -> Result<IriRef> {
     ShapeMapParser::parse_iri_ref(iri).map_err(|e| {
         Box::new(DataError::FailedIriRefParse {
-            iri: iri.to_string(),
+            iri: iri.to_owned(),
             error: e.to_string(),
         })
         .into()
@@ -485,12 +485,12 @@ mod tests {
         assert_eq!(term("ex:alice"), alice());
         // A bare IRI is accepted in the lax mode, and not in the strict one.
         assert_eq!(term("http://example.org/alice"), alice());
-        assert!(parse_term("http://example.org/alice", None, &prefixmap(), Strict).is_err());
+        parse_term("http://example.org/alice", None, &prefixmap(), Strict).unwrap_err();
     }
 
     #[test]
     fn test_parse_term_blank_nodes_and_literals() {
-        assert_eq!(term("_:b1"), RdfTerm::from(Object::BlankNode("b1".to_string())));
+        assert_eq!(term("_:b1"), RdfTerm::from(Object::BlankNode("b1".to_owned())));
         assert_eq!(
             term("\"Alice\""),
             RdfTerm::from(Object::Literal(ConcreteLiteral::str("Alice")))
@@ -580,8 +580,8 @@ mod tests {
                 "{err}"
             );
         }
-        assert!(parse_subject("<alice>", None, &prefixmap(), Lax).is_err());
-        assert!(parse_predicate_iri("<name>", None, &prefixmap()).is_err());
+        parse_subject("<alice>", None, &prefixmap(), Lax).unwrap_err();
+        parse_predicate_iri("<name>", None, &prefixmap()).unwrap_err();
     }
 
     #[test]
@@ -590,7 +590,7 @@ mod tests {
             parse_subject("ex:alice", None, &prefixmap(), Lax).unwrap().to_string(),
             "<http://example.org/alice>"
         );
-        assert!(parse_subject("_:b1", None, &prefixmap(), Lax).is_ok());
+        parse_subject("_:b1", None, &prefixmap(), Lax).unwrap();
         let err = parse_subject("\"Alice\"", None, &prefixmap(), Lax).unwrap_err();
         assert!(err.to_string().contains("cannot be the subject"), "{err}");
     }
@@ -613,13 +613,13 @@ mod tests {
                 .to_string()
                 .contains("<<( <http://example.org/alice>")
         );
-        assert_eq!(term("\"Shalom\"@he--rtl").to_string(), "\"Shalom\"@he--rtl".to_string());
+        assert_eq!(term("\"Shalom\"@he--rtl").to_string(), "\"Shalom\"@he--rtl".to_owned());
         assert_ne!(term("\"Shalom\"@he--rtl"), term("\"Shalom\"@he"));
 
         // A triple term is an object and nothing else, and its IRIs reach the graph, so
         // a relative one with no base is refused as it is in the flat positions.
-        assert!(parse_subject("<<( ex:alice ex:name \"Alice\" )>>", None, &prefixmap(), Lax).is_err());
-        assert!(parse_term("<<( <alice> ex:name \"Alice\" )>>", None, &prefixmap(), Lax).is_err());
+        parse_subject("<<( ex:alice ex:name \"Alice\" )>>", None, &prefixmap(), Lax).unwrap_err();
+        parse_term("<<( <alice> ex:name \"Alice\" )>>", None, &prefixmap(), Lax).unwrap_err();
         assert_eq!(
             term_with_base("<<( <alice> <name> \"Alice\" )>>"),
             term("<<( ex:alice ex:name \"Alice\" )>>")
@@ -630,16 +630,14 @@ mod tests {
     fn test_a_bare_iri_inside_a_triple_term_is_not_wrapped() {
         // The lax mode wraps a whole term that is a bare IRI, not one written inside a
         // triple term, where it has to be bracketed or prefixed.
-        assert!(
-            parse_term(
-                "<<( http://example.org/alice ex:name \"A\" )>>",
-                None,
-                &prefixmap(),
-                Lax
-            )
-            .is_err()
-        );
-        assert!(parse_term("<<( ex:alice ex:name \"A\" )>>", None, &prefixmap(), Lax).is_ok());
+        parse_term(
+            "<<( http://example.org/alice ex:name \"A\" )>>",
+            None,
+            &prefixmap(),
+            Lax,
+        )
+        .unwrap_err();
+        parse_term("<<( ex:alice ex:name \"A\" )>>", None, &prefixmap(), Lax).unwrap();
     }
 
     #[test]
@@ -705,7 +703,7 @@ mod tests {
             IriS::new_unchecked("http://example.org/name")
         );
         // As for the predicates of `node_neighborhood`, a bare IRI is not accepted.
-        assert!(parse_predicate_iri("http://example.org/name", None, &pm).is_err());
-        assert!(parse_predicate_iri("other:name", None, &pm).is_err());
+        parse_predicate_iri("http://example.org/name", None, &pm).unwrap_err();
+        parse_predicate_iri("other:name", None, &pm).unwrap_err();
     }
 }

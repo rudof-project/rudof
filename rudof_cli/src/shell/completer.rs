@@ -70,7 +70,7 @@ impl ShellHelper {
         let word_start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
         let mut words = line[..word_start].split_whitespace();
         match (words.next(), words.next(), words.next()) {
-            (Some("config"), Some("get") | Some("set"), None) => Some(&line[word_start..pos]),
+            (Some("config"), Some("get" | "set"), None) => Some(&line[word_start..pos]),
             _ => None,
         }
     }
@@ -180,8 +180,8 @@ impl Completer for ShellHelper {
                 .into_iter()
                 .filter(|name| name.starts_with(sub_prefix))
                 .map(|name| Pair {
-                    display: name.to_string(),
-                    replacement: name.to_string(),
+                    display: name.to_owned(),
+                    replacement: name.to_owned(),
                 })
                 .collect();
             return Ok((word_start, candidates));
@@ -242,7 +242,7 @@ impl Completer for ShellHelper {
             if !possible.is_empty() {
                 let candidates = possible
                     .iter()
-                    .map(|v| v.get_name().to_string())
+                    .map(|v| v.get_name().to_owned())
                     .filter(|name| name.starts_with(value_prefix))
                     .map(|name| Pair {
                         display: name.clone(),
@@ -322,8 +322,8 @@ mod tests {
     #[test]
     fn completes_endpoint_argument_against_registered_endpoint_names() {
         let helper = ShellHelper::new(
-            vec!["endpoint".to_string()],
-            vec!["wikidata".to_string(), "dbpedia".to_string()],
+            vec!["endpoint".to_owned()],
+            vec!["wikidata".to_owned(), "dbpedia".to_owned()],
             vec![],
         );
         let history = DefaultHistory::new();
@@ -339,7 +339,7 @@ mod tests {
 
     #[test]
     fn completes_endpoint_argument_case_insensitively() {
-        let helper = ShellHelper::new(vec!["endpoint".to_string()], vec!["Wikidata".to_string()], vec![]);
+        let helper = ShellHelper::new(vec!["endpoint".to_owned()], vec!["Wikidata".to_owned()], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn other_commands_still_fall_back_to_filename_completion() {
-        let helper = ShellHelper::new(vec!["shex".to_string()], vec!["wikidata".to_string()], vec![]);
+        let helper = ShellHelper::new(vec!["shex".to_owned()], vec!["wikidata".to_owned()], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -365,7 +365,7 @@ mod tests {
 
     #[test]
     fn completes_config_subcommand_against_get_and_set() {
-        let helper = ShellHelper::new(vec!["config".to_string()], vec![], vec![]);
+        let helper = ShellHelper::new(vec!["config".to_owned()], vec![], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -381,12 +381,12 @@ mod tests {
     #[test]
     fn completes_config_get_key_against_known_config_paths() {
         let helper = ShellHelper::new(
-            vec!["config".to_string()],
+            vec!["config".to_owned()],
             vec![],
             vec![
-                "shex_validator.max_steps".to_string(),
-                "shex_validator.width".to_string(),
-                "shex".to_string(),
+                "shex_validator.max_steps".to_owned(),
+                "shex_validator.width".to_owned(),
+                "shex".to_owned(),
             ],
         );
         let history = DefaultHistory::new();
@@ -404,9 +404,9 @@ mod tests {
     #[test]
     fn does_not_complete_config_set_value_as_a_config_key() {
         let helper = ShellHelper::new(
-            vec!["config".to_string()],
+            vec!["config".to_owned()],
             vec![],
-            vec!["shex_validator.max_steps".to_string()],
+            vec!["shex_validator.max_steps".to_owned()],
         );
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
@@ -424,7 +424,7 @@ mod tests {
         // `logging.level` is a plain (non-`Option`) string precisely so it's
         // always present in the config tree — and so always completable —
         // even before it's ever been set. Regression test for that.
-        let helper = ShellHelper::new(vec!["config".to_string()], vec![], vec!["logging.level".to_string()]);
+        let helper = ShellHelper::new(vec!["config".to_owned()], vec![], vec!["logging.level".to_owned()]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -438,7 +438,7 @@ mod tests {
 
     #[test]
     fn completes_logging_level_value_against_known_level_names() {
-        let helper = ShellHelper::new(vec!["config".to_string()], vec![], vec!["logging.level".to_string()]);
+        let helper = ShellHelper::new(vec!["config".to_owned()], vec![], vec!["logging.level".to_owned()]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -453,9 +453,9 @@ mod tests {
     #[test]
     fn does_not_offer_level_names_for_other_config_keys() {
         let helper = ShellHelper::new(
-            vec!["config".to_string()],
+            vec!["config".to_owned()],
             vec![],
-            vec!["shex_validator.max_steps".to_string()],
+            vec!["shex_validator.max_steps".to_owned()],
         );
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
@@ -468,7 +468,7 @@ mod tests {
 
     #[test]
     fn completes_a_flag_name_for_a_known_subcommand() {
-        let helper = ShellHelper::new(vec!["shex".to_string()], vec![], vec![]);
+        let helper = ShellHelper::new(vec!["shex".to_owned()], vec![], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -482,7 +482,7 @@ mod tests {
 
     #[test]
     fn completes_a_long_flags_value_when_it_is_a_value_enum() {
-        let helper = ShellHelper::new(vec!["shex".to_string()], vec![], vec![]);
+        let helper = ShellHelper::new(vec!["shex".to_owned()], vec![], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -496,7 +496,7 @@ mod tests {
 
     #[test]
     fn completes_a_short_flags_value_when_it_is_a_value_enum() {
-        let helper = ShellHelper::new(vec!["shex".to_string()], vec![], vec![]);
+        let helper = ShellHelper::new(vec!["shex".to_owned()], vec![], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -510,7 +510,7 @@ mod tests {
 
     #[test]
     fn completes_shacl_validate_recursion_semantics_value() {
-        let helper = ShellHelper::new(vec!["shacl-validate".to_string()], vec![], vec![]);
+        let helper = ShellHelper::new(vec!["shacl-validate".to_owned()], vec![], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 
@@ -526,7 +526,7 @@ mod tests {
     fn does_not_intercept_flag_value_completion_for_non_enum_flags() {
         // `-o`/`--output-file` takes a file path, not a fixed set of values, so this must fall
         // through to plain filename completion instead of being (wrongly) treated as empty.
-        let helper = ShellHelper::new(vec!["shex".to_string()], vec![], vec![]);
+        let helper = ShellHelper::new(vec!["shex".to_owned()], vec![], vec![]);
         let history = DefaultHistory::new();
         let ctx = Context::new(&history);
 

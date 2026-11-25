@@ -40,7 +40,7 @@ impl FromStr for VizEngine {
             "plantuml" => Ok(VizEngine::PlantUml),
             "graphviz" => Ok(VizEngine::GraphViz),
             other => Err(UnsupportedVizEngine {
-                engine: other.to_string(),
+                engine: other.to_owned(),
             }),
         }
     }

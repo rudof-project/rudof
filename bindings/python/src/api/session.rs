@@ -22,7 +22,7 @@ impl PyRudof {
     #[new]
     #[pyo3(signature = (config = None))]
     fn __init__(config: Option<&PyRudofConfig>) -> Self {
-        let config = config.map(|c| c.inner.clone()).unwrap_or_default();
+        let config = config.map_or_default(|c| c.inner.clone());
         Self {
             inner: Rudof::new(config),
         }
@@ -41,7 +41,7 @@ impl PyRudof {
 
     /// Returns the version of the underlying rudof library.
     fn get_version(&self) -> String {
-        self.inner.version().execute().to_string()
+        self.inner.version().execute().to_owned()
     }
 
     fn __repr__(&self) -> String {

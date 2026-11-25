@@ -77,20 +77,20 @@ async fn test_datatype_configuration() {
 
     // Add datatype-specific configuration
     let mut datatype_config = DatatypeConfig {
-        generator: "integer".to_string(),
+        generator: "integer".to_owned(),
         parameters: HashMap::new(),
     };
     datatype_config
         .parameters
-        .insert("min".to_string(), serde_json::json!(18));
+        .insert("min".to_owned(), serde_json::json!(18));
     datatype_config
         .parameters
-        .insert("max".to_string(), serde_json::json!(65));
+        .insert("max".to_owned(), serde_json::json!(65));
 
     config
         .field_generators
         .datatypes
-        .insert("http://www.w3.org/2001/XMLSchema#integer".to_string(), datatype_config);
+        .insert("http://www.w3.org/2001/XMLSchema#integer".to_owned(), datatype_config);
 
     // Verify configuration is stored correctly
     let int_config = config
@@ -111,18 +111,18 @@ async fn test_property_configuration() {
 
     // Add property-specific configuration
     let mut property_config = PropertyConfig {
-        generator: "string".to_string(),
+        generator: "string".to_owned(),
         parameters: HashMap::new(),
-        templates: Some(vec!["{{name}}".to_string()]),
+        templates: Some(vec!["{{name}}".to_owned()]),
     };
     property_config
         .parameters
-        .insert("locale".to_string(), serde_json::json!("fr"));
+        .insert("locale".to_owned(), serde_json::json!("fr"));
 
     config
         .field_generators
         .properties
-        .insert("foaf:name".to_string(), property_config);
+        .insert("foaf:name".to_owned(), property_config);
 
     // Verify configuration is stored correctly
     let name_config = config

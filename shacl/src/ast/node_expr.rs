@@ -93,11 +93,11 @@ impl Display for ASTNodeExpr {
             ASTNodeExpr::List(l) => write!(
                 f,
                 "list({})",
-                l.iter().map(|o| o.to_string()).collect::<Vec<_>>().join(", ")
+                l.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
             ),
             ASTNodeExpr::PathValues { focus_node, path } => {
                 let fnode = match focus_node {
-                    None => "".to_string(),
+                    None => String::new(),
                     Some(n) => n.to_string(),
                 };
 
@@ -109,20 +109,20 @@ impl Display for ASTNodeExpr {
                 then,
                 else_expression,
             } => {
-                let then = then.as_deref().map(|t| t.to_string()).unwrap_or_default();
-                let else_expression = else_expression.as_deref().map(|e| e.to_string()).unwrap_or_default();
+                let then = then.as_deref().map_or_default(ToString::to_string);
+                let else_expression = else_expression.as_deref().map_or_default(ToString::to_string);
                 write!(f, "if({if_condition} then {then} else {else_expression})")
             },
             ASTNodeExpr::Distinct(d) => write!(f, "distinct({d})"),
             ASTNodeExpr::Intersection(i) => write!(
                 f,
                 "intersection({})",
-                i.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", ")
+                i.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
             ),
             ASTNodeExpr::Concat(c) => write!(
                 f,
                 "concat({})",
-                c.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", ")
+                c.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
             ),
             ASTNodeExpr::Remove { remove, nodes } => write!(f, "remove({remove} in {nodes})"),
             ASTNodeExpr::Filter { filter_shape, nodes } => write!(f, "filter({filter_shape} in {nodes})"),

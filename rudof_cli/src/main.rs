@@ -54,8 +54,11 @@ fn run() -> anyhow::Result<()> {
 #[cfg(not(target_family = "wasm"))]
 /// Sets up the application environment including logging and signal handling.
 fn setup() {
-    clientele::dotenv().ok();
+    drop(clientele::dotenv());
 
+    // SAFETY: called at start-up, before the program starts other threads, so
+    // nothing else reads or writes the environment at the same time.
+    #[expect(unsafe_code, reason = "`env::set_var` is unsafe since the 2024 edition")]
     unsafe {
         env::set_var("RUSTEMO_NOTRACE", "1");
     }

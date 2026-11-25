@@ -192,7 +192,7 @@ impl PyGeneratorConfig {
 
     /// Sets the locale used by the default field generators.
     fn set_locale(&mut self, locale: &str) {
-        self.inner.field_generators.default.locale = locale.to_string();
+        locale.clone_into(&mut self.inner.field_generators.default.locale);
     }
 
     /// Returns the locale used by the default field generators.

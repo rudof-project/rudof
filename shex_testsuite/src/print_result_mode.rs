@@ -41,7 +41,7 @@ fn print_traits_failed_names(result: &ManifestRunResult) {
     for (trait_, failed) in &result.traits_failed {
         println!(
             "{trait_}: {}",
-            failed.iter().map(|name| name.as_str()).collect::<Vec<_>>().join(", ")
+            failed.iter().map(String::as_str).collect::<Vec<_>>().join(", ")
         );
     }
 }
@@ -51,14 +51,14 @@ fn print_traits_failed_skipped_names(result: &ManifestRunResult) {
     for (trait_, failed) in &result.traits_failed {
         println!(
             "{trait_}: {}",
-            failed.iter().map(|name| name.as_str()).collect::<Vec<_>>().join(", ")
+            failed.iter().map(String::as_str).collect::<Vec<_>>().join(", ")
         );
     }
     println!("--- Skipped with traits ---");
     for (trait_, skipped) in &result.traits_skipped {
         println!(
             "{trait_}: {}",
-            skipped.iter().map(|name| name.as_str()).collect::<Vec<_>>().join(", ")
+            skipped.iter().map(String::as_str).collect::<Vec<_>>().join(", ")
         );
     }
 }

@@ -25,7 +25,7 @@ impl Preds {
             .map(|pred| pred.show_qualified(prefixmap))
             .collect::<Vec<String>>()
             .join(", ");
-        format!("[{}]", preds_str)
+        format!("[{preds_str}]")
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Pred> {
@@ -38,7 +38,7 @@ impl Display for Preds {
         let preds_str = self
             .values
             .iter()
-            .map(|pred| pred.to_string())
+            .map(ToString::to_string)
             .collect::<Vec<String>>()
             .join(", ");
         write!(f, "[{preds_str}]")

@@ -13,7 +13,7 @@ fn main() {
     }
 
     if let Err(e) = settings.process_dir() {
-        eprintln!("{}", e);
+        eprintln!("{e}");
         exit(1);
     }
 }

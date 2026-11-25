@@ -117,6 +117,6 @@ mod tests {
         assert_eq!(files.first().unwrap(), &tmp.join("rudof.toml"));
         assert_eq!(files.last().unwrap(), &nested.join("rudof.toml"));
 
-        std::fs::remove_dir_all(&tmp).ok();
+        drop(std::fs::remove_dir_all(&tmp));
     }
 }

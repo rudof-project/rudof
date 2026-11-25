@@ -94,9 +94,9 @@ fn the_software_is_typed_as_project_software_and_test_subject() {
         .map(|(_, _, o)| o)
         .collect();
 
-    assert!(types.contains(&&"<http://usefulinc.com/ns/doap#Project>".to_string()));
-    assert!(types.contains(&&"<http://www.w3.org/ns/earl#Software>".to_string()));
-    assert!(types.contains(&&"<http://www.w3.org/ns/earl#TestSubject>".to_string()));
+    assert!(types.contains(&&"<http://usefulinc.com/ns/doap#Project>".to_owned()));
+    assert!(types.contains(&&"<http://www.w3.org/ns/earl#Software>".to_owned()));
+    assert!(types.contains(&&"<http://www.w3.org/ns/earl#TestSubject>".to_owned()));
 }
 
 #[test]

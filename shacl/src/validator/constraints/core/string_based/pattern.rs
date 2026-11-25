@@ -65,12 +65,11 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Patt
         let pattern = escape_sparql_string(self.pattern());
         let flags_arg = self
             .flags()
-            .map(|f| format!(", \"{}\"", escape_sparql_string(f)))
-            .unwrap_or_default();
+            .map_or_default(|f| format!(", \"{}\"", escape_sparql_string(f)));
 
         let query_fn = |vn: &S::Term| -> Option<String> {
             if vn.is_blank_node() {
-                return Some("ASK { FILTER(false) }".to_string());
+                return Some("ASK { FILTER(false) }".to_owned());
             }
             let vn_sparql = term_as_sparql::<S>(vn)?;
             Some(formatdoc! {"

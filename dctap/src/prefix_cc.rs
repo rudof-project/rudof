@@ -61,7 +61,7 @@ mod tests {
         let prefix_cc = PrefixCC::from_str(data).unwrap();
         assert_eq!(
             prefix_cc.get("rdf"),
-            Some("http://www.w3.org/1999/02/22-rdf-syntax-ns#".to_string())
+            Some("http://www.w3.org/1999/02/22-rdf-syntax-ns#".to_owned())
         )
     }
 
@@ -73,7 +73,7 @@ mod tests {
         let prefix_cc = PrefixCC::from_path(current_exe).unwrap();
         assert_eq!(
             prefix_cc.get("rdf"),
-            Some("http://www.w3.org/1999/02/22-rdf-syntax-ns#".to_string())
+            Some("http://www.w3.org/1999/02/22-rdf-syntax-ns#".to_owned())
         )
     }
 }

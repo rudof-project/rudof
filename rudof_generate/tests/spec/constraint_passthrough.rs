@@ -18,7 +18,7 @@ use tempfile::NamedTempFile;
 #[tokio::test]
 async fn test_shex_datatype_passthrough() {
     // Create a ShEx schema with specific datatypes
-    let shex_schema = r#"
+    let shex_schema = "
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -27,7 +27,7 @@ ex:PersonShape {
   ex:age xsd:integer ;
   ex:active xsd:boolean
 }
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -57,7 +57,7 @@ ex:PersonShape {
             let datatype = lit.datatype().to_string();
             // Remove angle brackets if present
             let clean_datatype = datatype.trim_start_matches('<').trim_end_matches('>');
-            *datatype_counts.entry(clean_datatype.to_string()).or_insert(0) += 1;
+            *datatype_counts.entry(clean_datatype.to_owned()).or_insert(0) += 1;
         }
     }
 
@@ -72,7 +72,7 @@ ex:PersonShape {
 #[tokio::test]
 async fn test_shacl_datatype_passthrough() {
     // Create a SHACL schema with specific datatypes
-    let shacl_schema = r#"
+    let shacl_schema = "
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -97,7 +97,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
     ] .
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -146,7 +146,7 @@ ex:PersonShape a sh:NodeShape ;
 #[tokio::test]
 async fn test_shex_cardinality_passthrough() {
     // Create a ShEx schema with cardinality constraints
-    let shex_schema = r#"
+    let shex_schema = "
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -155,7 +155,7 @@ ex:PersonShape {
   ex:email xsd:string {0,2} ;     # zero to two emails
   ex:phone xsd:string *           # zero or more phones
 }
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -214,7 +214,7 @@ ex:PersonShape {
 #[tokio::test]
 async fn test_shacl_cardinality_passthrough() {
     // Create a SHACL schema with cardinality constraints
-    let shacl_schema = r#"
+    let shacl_schema = "
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -239,7 +239,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:minCount 2 ;
         sh:maxCount 5 ;
     ] .
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -300,7 +300,7 @@ ex:PersonShape a sh:NodeShape ;
 #[tokio::test]
 async fn test_shex_shape_reference_passthrough() {
     // Create a ShEx schema with shape references
-    let shex_schema = r#"
+    let shex_schema = "
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -314,7 +314,7 @@ ex:AddressShape {
   ex:city xsd:string ;
   ex:country xsd:string
 }
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -363,7 +363,7 @@ ex:AddressShape {
 #[tokio::test]
 async fn test_shacl_shape_reference_passthrough() {
     // Create a SHACL schema with shape references
-    let shacl_schema = r#"
+    let shacl_schema = "
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -396,7 +396,7 @@ ex:AddressShape a sh:NodeShape ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
     ] .
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -445,7 +445,7 @@ ex:AddressShape a sh:NodeShape ;
 #[tokio::test]
 async fn test_shacl_value_constraints_passthrough() {
     // Create a SHACL schema with basic supported constraints
-    let shacl_schema = r#"
+    let shacl_schema = "
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -470,7 +470,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
     ] .
-"#;
+";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();

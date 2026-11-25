@@ -41,7 +41,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
 
                 if !self.siblings().is_empty() && is_valid {
                     // If there are siblings, check that none of them validate
-                    for sibling in self.siblings().iter() {
+                    for sibling in self.siblings() {
                         let sibling_shape = shapes_graph.get_shape_from_idx_e(sibling)?;
                         let sibling_results =
                             sibling_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;

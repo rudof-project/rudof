@@ -42,3 +42,5 @@ tokio = { workspace = true, features = ["rt-multi-thread"] }
 pyo3-stub-gen = { workspace = true, optional = true }
 # Not optional: `remove_gen_stub` must strip `#[gen_stub(...)]` when stub-gen is off.
 pyo3-stub-gen-derive.workspace = true
+[lints]
+workspace = true

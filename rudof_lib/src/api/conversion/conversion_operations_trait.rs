@@ -32,7 +32,7 @@ pub trait ConversionOperations {
     /// # Errors
     ///
     /// Returns an error if the schema cannot be loaded, converted, or serialized.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn show_schema_conversion<W: io::Write>(
         &mut self,
         schema: &InputSpec,

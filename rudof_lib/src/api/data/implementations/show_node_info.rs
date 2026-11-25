@@ -44,9 +44,9 @@ fn data_prefixmap(rudof: &Rudof, show_colors: bool) -> Result<PrefixMap> {
     })
 }
 
-const BRANCH_MIDDLE: &str = "├──";
-const BRANCH_LAST: &str = "└──";
-const SKIP_MIDDLE: &str = "│  ";
+const BRANCH_MIDDLE: &str = "\u{251c}\u{2500}\u{2500}";
+const BRANCH_LAST: &str = "\u{2514}\u{2500}\u{2500}";
+const SKIP_MIDDLE: &str = "\u{2502}  ";
 const SKIP_LAST: &str = "   ";
 
 /// Renders a depth-first stream of [`NeighborArc`] as a tree, arc by arc.
@@ -119,6 +119,10 @@ impl<'a> TreePrinter<'a> {
     }
 }
 
+#[expect(
+    clippy::unnecessary_box_returns,
+    reason = "the callers return `Result<_, Box<DataError>>`"
+)]
 fn io_error(err: io::Error) -> Box<DataError> {
     Box::new(DataError::FailedIoOperation { error: err.to_string() })
 }

@@ -36,7 +36,7 @@ impl ParallelGenerator {
     }
 
     /// Set the shapes to generate data for
-    pub async fn set_shapes(&mut self, shape_infos: Vec<crate::ir::shape_info::ShapeInfo>) -> Result<()> {
+    pub async fn set_shapes(&mut self, shape_infos: Vec<ShapeInfo>) -> Result<()> {
         let mut shapes = self.shapes.write().await;
         shapes.clear();
 
@@ -126,7 +126,7 @@ impl ParallelGenerator {
             EntityDistribution::Weighted(weights) => {
                 let total_weight: f64 = weights.values().sum();
                 if total_weight <= 0.0 {
-                    return Err(DataGeneratorError::Config("Total weight must be positive".to_string()));
+                    return Err(DataGeneratorError::Config("Total weight must be positive".to_owned()));
                 }
 
                 for shape_id in shapes.keys() {
@@ -194,7 +194,7 @@ impl ParallelGenerator {
         // Store generated entity IRIs
         {
             let mut entities_guard = generated_entities.write().await;
-            entities_guard.insert(shape_id.to_string(), entity_iris);
+            entities_guard.insert(shape_id.to_owned(), entity_iris);
         }
 
         Ok(all_triples)
@@ -230,7 +230,7 @@ impl ParallelGenerator {
                 config.property_count_variance = val;
             }
             if let Some(val) = &override_config.excluded_properties {
-                config.excluded_properties = val.clone();
+                config.excluded_properties.clone_from(val);
             }
         }
         config
@@ -271,9 +271,7 @@ impl ParallelGenerator {
         constraints.iter().any(|constraint| {
             matches!(
                 constraint,
-                UnifiedConstraint::NodeKind(NodeKind::Iri)
-                    | UnifiedConstraint::NodeKind(NodeKind::BlankNodeOrIri)
-                    | UnifiedConstraint::NodeKind(NodeKind::IriOrLiteral)
+                UnifiedConstraint::NodeKind(NodeKind::Iri | NodeKind::BlankNodeOrIri | NodeKind::IriOrLiteral)
             )
         })
     }
@@ -354,6 +352,8 @@ impl ParallelGenerator {
 
     /// Generate a single entity
     async fn generate_single_entity(&self, shape_info: &ShapeInfo, entity_index: usize) -> Result<Vec<Triple>> {
+        use crate::config::PropertySelectionStrategy;
+        use rand::seq::SliceRandom;
         let mut triples = Vec::new();
         let shape_id = &shape_info.declaration.id.to_string();
         let entity_iri = format!("{}-{}", shape_id, entity_index + 1);
@@ -415,8 +415,6 @@ impl ParallelGenerator {
         }
 
         // 2. Select from candidates based on strategy
-        use crate::config::PropertySelectionStrategy;
-        use rand::seq::SliceRandom;
 
         match config.property_selection_strategy {
             PropertySelectionStrategy::All | PropertySelectionStrategy::Weighted => {
@@ -865,40 +863,40 @@ impl ParallelGenerator {
             match constraint {
                 UnifiedConstraint::MinInclusive(crate::ir::Value::Literal(val, _)) => {
                     if let Ok(i) = val.parse::<i64>() {
-                        params.insert("min".to_string(), json!(i));
+                        params.insert("min".to_owned(), json!(i));
                     } else if let Ok(f) = val.parse::<f64>() {
-                        params.insert("min".to_string(), json!(f));
+                        params.insert("min".to_owned(), json!(f));
                     }
                 },
                 UnifiedConstraint::MaxInclusive(crate::ir::Value::Literal(val, _)) => {
                     if let Ok(i) = val.parse::<i64>() {
-                        params.insert("max".to_string(), json!(i));
+                        params.insert("max".to_owned(), json!(i));
                     } else if let Ok(f) = val.parse::<f64>() {
-                        params.insert("max".to_string(), json!(f));
+                        params.insert("max".to_owned(), json!(f));
                     }
                 },
                 UnifiedConstraint::MinExclusive(crate::ir::Value::Literal(val, _)) => {
                     if let Ok(i) = val.parse::<i64>() {
-                        params.insert("min".to_string(), json!(i + 1));
+                        params.insert("min".to_owned(), json!(i + 1));
                     } else if let Ok(f) = val.parse::<f64>() {
-                        params.insert("min".to_string(), json!(f + 0.001));
+                        params.insert("min".to_owned(), json!(f + 0.001));
                     }
                 },
                 UnifiedConstraint::MaxExclusive(crate::ir::Value::Literal(val, _)) => {
                     if let Ok(i) = val.parse::<i64>() {
-                        params.insert("max".to_string(), json!(i - 1));
+                        params.insert("max".to_owned(), json!(i - 1));
                     } else if let Ok(f) = val.parse::<f64>() {
-                        params.insert("max".to_string(), json!(f - 0.001));
+                        params.insert("max".to_owned(), json!(f - 0.001));
                     }
                 },
                 UnifiedConstraint::MinLength(len) => {
-                    params.insert("min_length".to_string(), json!(*len));
+                    params.insert("min_length".to_owned(), json!(*len));
                 },
                 UnifiedConstraint::MaxLength(len) => {
-                    params.insert("max_length".to_string(), json!(*len));
+                    params.insert("max_length".to_owned(), json!(*len));
                 },
                 UnifiedConstraint::Pattern(pattern) => {
-                    params.insert("pattern".to_string(), json!(pattern));
+                    params.insert("pattern".to_owned(), json!(pattern));
                 },
                 UnifiedConstraint::In(values) => {
                     let json_values: Vec<Value> = values
@@ -906,19 +904,19 @@ impl ParallelGenerator {
                         .map(|v| match v {
                             crate::ir::Value::Literal(val, _) => json!(val),
                             crate::ir::Value::Iri(iri) => json!(iri),
-                            _ => json!(null),
+                            crate::ir::Value::BlankNode(_) => json!(null),
                         })
                         .collect();
-                    params.insert("values".to_string(), json!(json_values));
+                    params.insert("values".to_owned(), json!(json_values));
                 },
                 UnifiedConstraint::HasValue(value) => match value {
                     crate::ir::Value::Literal(val, _) => {
-                        params.insert("fixed_value".to_string(), json!(val));
+                        params.insert("fixed_value".to_owned(), json!(val));
                     },
                     crate::ir::Value::Iri(iri) => {
-                        params.insert("fixed_value".to_string(), json!(iri));
+                        params.insert("fixed_value".to_owned(), json!(iri));
                     },
-                    _ => {},
+                    crate::ir::Value::BlankNode(_) => {},
                 },
                 _ => {}, // Other constraints not implemented yet
             }

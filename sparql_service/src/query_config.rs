@@ -18,6 +18,7 @@ impl QueryConfig {
         }
     }
 
+    #[must_use]
     pub fn with_data_config(mut self, cfg: RdfDataConfig) -> Self {
         self.data_config = cfg;
         self

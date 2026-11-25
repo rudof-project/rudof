@@ -25,8 +25,8 @@ pub(crate) fn json_resource_result(uri: &str, value: &Value) -> Result<ReadResou
     })?;
 
     Ok(ReadResourceResult::new(vec![ResourceContents::TextResourceContents {
-        uri: uri.to_string(),
-        mime_type: Some("application/json".to_string()),
+        uri: uri.to_owned(),
+        mime_type: Some("application/json".to_owned()),
         text: json,
         meta: None,
     }]))

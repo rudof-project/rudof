@@ -95,11 +95,11 @@ impl ShapeMapParser<'_> {
                 msg: format!("Incomplete input parsing node selector {str}: needed {s:?}"),
             },
             Err::Error(e) => ParseError::NodeSelectorNomError {
-                str: str.to_string(),
+                str: str.to_owned(),
                 err: Box::new(e),
             },
             Err::Failure(f) => ParseError::NodeSelectorNomError {
-                str: str.to_string(),
+                str: str.to_owned(),
                 err: Box::new(f),
             },
         })?;
@@ -144,9 +144,9 @@ struct ShapeMapStatementIterator<'a> {
 }
 
 impl ShapeMapStatementIterator<'_> {
-    pub fn new(src: Span) -> Result<ShapeMapStatementIterator> {
+    pub fn new(src: Span<'_>) -> Result<ShapeMapStatementIterator<'_>> {
         match tws0(src) {
-            Ok((left, _)) => Ok(ShapeMapStatementIterator { src: left, done: false }),
+            Ok((left, ())) => Ok(ShapeMapStatementIterator { src: left, done: false }),
             Err(Err::Incomplete(_)) => Ok(ShapeMapStatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
                 msg: format!("cannot start parsing. Error: {e}"),
@@ -177,7 +177,7 @@ impl Iterator for ShapeMapStatementIterator<'_> {
                 self.done = true;
                 r = None;
             },
-            Err(Err::Error(e)) | Err(Err::Failure(e)) => {
+            Err(Err::Error(e) | Err::Failure(e)) => {
                 r = Some(Err(ParseError::NomError { err: Box::new(e) }));
                 self.done = true;
             },
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_prefix() {
-        let str = r#":a@:S"#;
+        let str = ":a@:S";
         let mut nodes_prefixmap = PrefixMap::new();
         nodes_prefixmap.add_prefix("", IriS::new_unchecked("http://example.org/"));
 

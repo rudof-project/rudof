@@ -16,7 +16,7 @@ pub(crate) fn var<RDF: FocusRDF>(
             let var = term_to_string::<RDF>(&term)?;
             if var.is_empty() {
                 Err(RDFError::DefaultError {
-                    msg: "shnex:var must be a non-empty string".to_string(),
+                    msg: "shnex:var must be a non-empty string".to_owned(),
                 })
             } else {
                 Ok(ASTNodeExpr::Var(var))

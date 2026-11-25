@@ -8,7 +8,7 @@ use crate::{Result, Rudof, errors::DataError};
 pub fn commit_staging(rudof: &mut Rudof) -> Result<()> {
     let frame = rudof.staging.pop().ok_or_else(|| {
         Box::new(DataError::NoStagingFrame {
-            operation: "commit_staging".to_string(),
+            operation: "commit_staging".to_owned(),
         })
     })?;
 

@@ -3,7 +3,6 @@ use rudof_rdf::rdf_core::term::literal::Lang;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 use std::fmt::Display;
-use std::result;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -120,7 +119,7 @@ impl Exclusion {
 }
 
 impl Serialize for Exclusion {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -300,7 +299,7 @@ enum StemValue {
 } */
 
 #[derive(Debug)]
-#[allow(dead_code)]
+#[expect(dead_code)]
 struct ExclusionTypeError {
     value: String,
 }

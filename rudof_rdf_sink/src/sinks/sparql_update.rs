@@ -44,6 +44,7 @@ impl SparqlUpdateSink {
 
     /// Sets how many triples go in one `INSERT DATA`. A size of zero is read
     /// as one.
+    #[must_use]
     pub fn with_batch_size(mut self, batch_size: usize) -> Self {
         self.batch_size = batch_size.max(1);
         self
@@ -54,7 +55,7 @@ impl SparqlUpdateSink {
     fn insert_data(triples: &[Triple]) -> String {
         let mut update = String::from("INSERT DATA {\n");
         for triple in triples {
-            let _ = writeln!(update, "{triple} .");
+            writeln!(update, "{triple} .").unwrap();
         }
         update.push_str("}\n");
         update

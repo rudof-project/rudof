@@ -15,7 +15,7 @@ fn parse(triple_expr: &str) -> Result<String, String> {
 #[test]
 fn inclusion_between_parentheses() {
     // This used to panic
-    assert!(parse("( &:e ) ; :q .").is_ok());
+    parse("( &:e ) ; :q .").unwrap();
 }
 
 #[test]

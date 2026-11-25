@@ -14,7 +14,7 @@ pub enum Value {
 
 impl Value {
     pub fn str(s: &str) -> Self {
-        Value::String(s.to_string())
+        Value::String(s.to_owned())
     }
 
     pub fn int(i: i32) -> Self {
@@ -24,7 +24,7 @@ impl Value {
     pub fn date(repr: &str) -> Result<Self, PgsError> {
         let format = format_description!("[year]-[month]-[day]");
         let date = Date::parse(repr, &format).map_err(|e| PgsError::InvalidDate {
-            date: repr.to_string(),
+            date: repr.to_owned(),
             error: e.to_string(),
         })?;
         Ok(Value::Date(date))
@@ -61,7 +61,7 @@ impl Value {
             _ => Err(PgsError::TypeMismatch {
                 operation: ">".into(),
                 expected: "Integer".into(),
-                found: format!("{:?}", other),
+                found: format!("{other:?}"),
             }),
         }
     }
@@ -73,7 +73,7 @@ impl Value {
             _ => Err(PgsError::TypeMismatch {
                 operation: "<".into(),
                 expected: "Integer".into(),
-                found: format!("{:?}", other),
+                found: format!("{other:?}"),
             }),
         }
     }
@@ -85,7 +85,7 @@ impl Value {
             _ => Err(PgsError::TypeMismatch {
                 operation: "<=".into(),
                 expected: "Integer".into(),
-                found: format!("{:?}", other),
+                found: format!("{other:?}"),
             }),
         }
     }
@@ -97,7 +97,7 @@ impl Value {
             _ => Err(PgsError::TypeMismatch {
                 operation: ">=".into(),
                 expected: "Integer".into(),
-                found: format!("{:?}", other),
+                found: format!("{other:?}"),
             }),
         }
     }
@@ -106,7 +106,7 @@ impl Value {
         match self {
             Value::String(s) => {
                 let regex = Regex::new(pattern).map_err(|e| PgsError::InvalidRegex {
-                    pattern: pattern.to_string(),
+                    pattern: pattern.to_owned(),
                     error: e.to_string(),
                 })?;
                 let matches = regex.is_match(s);
@@ -115,7 +115,7 @@ impl Value {
             _ => Err(PgsError::TypeMismatch {
                 operation: "regex_match".into(),
                 expected: "String".into(),
-                found: format!("{:?}", self),
+                found: format!("{self:?}"),
             }),
         }
     }
@@ -124,10 +124,10 @@ impl Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::String(s) => write!(f, "{}", s),
-            Value::Integer(i) => write!(f, "{}", i),
-            Value::Date(d) => write!(f, "{}", d),
-            Value::Bool(b) => write!(f, "{}", b),
+            Value::String(s) => write!(f, "{s}"),
+            Value::Integer(i) => write!(f, "{i}"),
+            Value::Date(d) => write!(f, "{d}"),
+            Value::Bool(b) => write!(f, "{b}"),
         }
     }
 }

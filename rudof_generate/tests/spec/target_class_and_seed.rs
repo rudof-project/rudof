@@ -27,10 +27,10 @@ fn write(temp_dir: &TempDir, name: &str, body: &str) -> PathBuf {
 fn types_in(turtle: &str) -> Vec<String> {
     let mut found = Vec::new();
     for token in turtle.split_whitespace().collect::<Vec<_>>().windows(2) {
-        let (predicate, object) = (token[0], token[1]);
+        let &[predicate, object] = token else { continue };
         let is_type = predicate == "a" || predicate.trim_matches(['<', '>']) == RDF_TYPE;
         if is_type && object.starts_with('<') {
-            found.push(object.trim_matches(['<', '>', ';', '.']).to_string());
+            found.push(object.trim_matches(['<', '>', ';', '.']).to_owned());
         }
     }
     found
@@ -54,7 +54,7 @@ async fn shacl_entities_are_typed_with_the_declared_target_class() -> Result<()>
     let schema = write(
         &dir,
         "target.ttl",
-        r#"
+        "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -63,7 +63,7 @@ async fn shacl_entities_are_typed_with_the_declared_target_class() -> Result<()>
 :Widget a sh:NodeShape ;
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
-"#,
+",
     );
 
     let content = generate(&schema, dir.path().join("out.ttl"), 3, Some(1)).await?;
@@ -86,7 +86,7 @@ async fn shacl_falls_back_to_a_single_valued_rdf_type_constraint() -> Result<()>
     let schema = write(
         &dir,
         "in.ttl",
-        r#"
+        "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -96,7 +96,7 @@ async fn shacl_falls_back_to_a_single_valued_rdf_type_constraint() -> Result<()>
 :Widget a sh:NodeShape ;
     sh:property [ sh:path rdf:type ; sh:in ( ex:Widget ) ; sh:minCount 1 ; sh:maxCount 1 ] ;
     sh:property [ sh:path ex:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
-"#,
+",
     );
 
     let content = generate(&schema, dir.path().join("out.ttl"), 3, Some(1)).await?;
@@ -116,7 +116,7 @@ async fn shex_entities_are_typed_from_the_rdf_type_value_set() -> Result<()> {
     let schema = write(
         &dir,
         "target.shex",
-        r#"
+        "
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX ex:  <http://example.org/>
@@ -126,7 +126,7 @@ PREFIX :    <http://weso.es/shapes/>
    rdf:type  [ex:Widget]  ;
    ex:label  xsd:string
 }
-"#,
+",
     );
 
     let content = generate(&schema, dir.path().join("out.ttl"), 3, Some(1)).await?;
@@ -146,7 +146,7 @@ async fn the_same_seed_reproduces_the_same_graph() -> Result<()> {
     let schema = write(
         &dir,
         "seeded.ttl",
-        r#"
+        "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -156,7 +156,7 @@ async fn the_same_seed_reproduces_the_same_graph() -> Result<()> {
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
     sh:property [ sh:path ex:count ; sh:datatype xsd:integer ; sh:minCount 1 ; sh:maxCount 1 ] .
-"#,
+",
     );
 
     // Compared as a parsed set of triples rather than as text. The serialiser
@@ -205,7 +205,7 @@ async fn a_shape_with_several_rdf_type_constraints_keeps_its_own_class() -> Resu
     let schema = write(
         &dir,
         "multi.shex",
-        r#"
+        "
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX ex:  <http://example.org/>
@@ -216,7 +216,7 @@ PREFIX :    <http://weso.es/shapes/>
    rdf:type  [ex:ResearchAssistant]  ;
    ex:label  xsd:string
 }
-"#,
+",
     );
 
     let content = generate(&schema, dir.path().join("out.ttl"), 3, Some(1)).await?;

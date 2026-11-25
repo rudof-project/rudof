@@ -17,16 +17,19 @@ impl Node {
         }
     }
 
+    #[must_use]
     pub fn with_label(mut self, label: &str) -> Self {
-        self.labels.insert(label.to_string());
+        self.labels.insert(label.to_owned());
         self
     }
 
+    #[must_use]
     pub fn with_labels(mut self, labels: impl IntoIterator<Item = LabelName>) -> Self {
         self.labels = LabelSet::from(labels);
         self
     }
 
+    #[must_use]
     pub fn with_content(mut self, content: &Record) -> Self {
         self.properties = content.clone();
         self
@@ -41,6 +44,7 @@ impl Node {
     }
 
     /// Update Node with a new ID
+    #[must_use]
     pub fn with_id(mut self, new_id: NodeId) -> Self {
         self.id = new_id;
         self
@@ -115,24 +119,24 @@ mod tests {
         );
 
         let mut graph = PropertyGraphSchema::new();
-        let person_label = LabelPropertySpec::Label("Person".to_string());
+        let person_label = LabelPropertySpec::Label("Person".to_owned());
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
         let age = PropertyValue::property(Key::new("age"), TypeSpec::integer(Card::One));
         let aliases = PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
-        let _ = graph.add_node_spec(
+        drop(graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
-        );
+        ));
 
         let property_value_spec = graph.get_node_semantics("PersonType").unwrap();
         let semantics = property_value_spec.semantics(&graph).unwrap();
         debug!("Semantics of person type: {:?}", semantics);
 
-        assert!(graph.conforms_node(&"PersonType".to_string(), &alice).is_right());
-        assert!(graph.conforms_node(&"PersonType".to_string(), &alice_wrong1).is_left());
-        assert!(graph.conforms_node(&"PersonType".to_string(), &alice_wrong2).is_left());
-        assert!(graph.conforms_node(&"PersonType".to_string(), &alice_wrong3).is_left())
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &alice).is_right());
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &alice_wrong1).is_left());
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &alice_wrong2).is_left());
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &alice_wrong3).is_left())
     }
 
     #[test]
@@ -144,16 +148,16 @@ mod tests {
         );
 
         let mut graph = PropertyGraphSchema::new();
-        let person_label = LabelPropertySpec::Label("Person".to_string());
+        let person_label = LabelPropertySpec::Label("Person".to_owned());
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
         let age = PropertyValue::property(Key::new("age"), TypeSpec::integer(Card::One));
         let aliases = PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
-        let _ = graph.add_node_spec(
+        drop(graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
-        );
-        assert!(graph.conforms_node(&"PersonType".to_string(), &alice).is_left(),)
+        ));
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &alice).is_left(),)
     }
 
     #[test]
@@ -172,17 +176,17 @@ mod tests {
         );
 
         let mut graph = PropertyGraphSchema::new();
-        let person_label = LabelPropertySpec::Label("Person".to_string());
+        let person_label = LabelPropertySpec::Label("Person".to_owned());
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
         let age = PropertyValue::optional_property(Key::new("age"), TypeSpec::integer(Card::One));
         let aliases = PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
-        let _ = graph.add_node_spec(
+        drop(graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
-        );
-        assert!(graph.conforms_node(&"PersonType".to_string(), &alice).is_right());
-        assert!(graph.conforms_node(&"PersonType".to_string(), &bob).is_right())
+        ));
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &alice).is_right());
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &bob).is_right())
     }
 
     #[traced_test]
@@ -210,7 +214,7 @@ mod tests {
                 .with_key_value("aliases", Value::str("Bobby")),
         );
 
-        let person_label = LabelPropertySpec::Label("Person".to_string());
+        let person_label = LabelPropertySpec::Label("Person".to_owned());
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
         let first_name = PropertyValue::property(Key::new("first_name"), TypeSpec::string(Card::One));
         let last_name = PropertyValue::property(Key::new("last_name"), TypeSpec::string(Card::One));
@@ -221,15 +225,15 @@ mod tests {
             PropertyValue::each_of(age, aliases),
         );
         let mut graph = PropertyGraphSchema::new();
-        let _ = graph.add_node_spec(
+        drop(graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
-        );
+        ));
 
-        assert!(graph.conforms_node(&"PersonType".to_string(), &alice).is_right());
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &alice).is_right());
 
-        assert!(graph.conforms_node(&"PersonType".to_string(), &bob).is_right());
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &bob).is_right());
 
-        assert!(graph.conforms_node(&"PersonType".to_string(), &wrong1).is_left());
+        assert!(graph.conforms_node(&"PersonType".to_owned(), &wrong1).is_left());
     }
 }

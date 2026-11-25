@@ -46,7 +46,7 @@ async fn validity_of(schema: &PathBuf, out: PathBuf) -> Result<(f64, f64)> {
     ))
 }
 
-const TARGETED: &str = r#"
+const TARGETED: &str = "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -56,7 +56,7 @@ const TARGETED: &str = r#"
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:label ; sh:datatype xsd:string  ; sh:minCount 1 ; sh:maxCount 1 ] ;
     sh:property [ sh:path ex:count ; sh:datatype xsd:integer ; sh:minCount 1 ; sh:maxCount 1 ] .
-"#;
+";
 
 /// A shape that declares a target class: entities carry that class, and the
 /// metric has to resolve it back to the shape rather than look for the shape
@@ -83,7 +83,7 @@ async fn validity_is_reported_for_shapes_without_a_target_class() -> Result<()> 
     let schema = write(
         &dir,
         "untargeted.ttl",
-        r#"
+        "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -91,7 +91,7 @@ async fn validity_is_reported_for_shapes_without_a_target_class() -> Result<()> 
 
 :Widget a sh:NodeShape ;
     sh:property [ sh:path ex:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
-"#,
+",
     );
 
     let (validity, _loss) = validity_of(&schema, dir.path().join("out.ttl")).await?;

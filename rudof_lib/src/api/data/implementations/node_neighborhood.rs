@@ -35,7 +35,7 @@ pub fn node_neighborhood<'a>(
             .deref_iri(base.as_ref(), Some(&rdf.prefixmap().unwrap_or_default()))
             .map_err(|e| {
                 Box::new(DataError::FailedTermResolution {
-                    term: node.trim().to_string(),
+                    term: node.trim().to_owned(),
                     error: e.to_string(),
                 })
             })?;

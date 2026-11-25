@@ -42,12 +42,12 @@ fn the_rest_of_the_document_is_the_schema_as_rudof_writes_it() {
 #[test]
 fn semantic_actions_have_their_shexj_type() {
     let schema = parse(
-        r#"PREFIX ex: <http://ex.example/>
+        "PREFIX ex: <http://ex.example/>
            %ex:start{ start code %}
            ex:S {
              ex:p . %ex:onConstraint{ constraint code %}
            } %ex:onShape{ shape code %}
-        "#,
+        ",
     );
     let doc = shexj(&schema).expect("the schema is written as ShExJ");
     let start_act = &doc["startActs"][0];

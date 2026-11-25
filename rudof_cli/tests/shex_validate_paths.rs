@@ -89,18 +89,18 @@ fn the_details_name_the_failing_triple_constraint() {
     // The row of the table sums it up, without repeating the node and the shape. How much of the
     // summary fits depends on the width of the terminal (80 columns when there is none, as in CI),
     // so only its start, which fits in the narrowest summary, is checked.
-    assert!(stdout.contains("│ property :category"), "{stdout}");
+    assert!(stdout.contains("\u{2502} property :category"), "{stdout}");
 }
 
 #[test]
 fn the_table_layout_writes_the_details_in_the_table() {
     let dir = fixture();
     let stdout = validate_with(dir.path(), &["-r", "details", "--details-layout", "table"]);
-    assert!(stdout.contains("│ Details"), "{stdout}");
-    assert!(!stdout.contains("│ Summary"), "{stdout}");
+    assert!(stdout.contains("\u{2502} Details"), "{stdout}");
+    assert!(!stdout.contains("\u{2502} Summary"), "{stdout}");
     // Nothing is written below the table.
     assert!(!stdout.contains("\n  :issue1 does not conform to"), "{stdout}");
-    assert!(stdout.trim_end().ends_with('╯'), "{stdout}");
+    assert!(stdout.trim_end().ends_with('\u{256f}'), "{stdout}");
 }
 
 #[test]

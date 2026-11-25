@@ -43,7 +43,7 @@ impl Display for Closed {
             self.is_closed,
             self.ignored_properties()
                 .iter()
-                .map(|p| p.to_string())
+                .map(ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(", ")
         )

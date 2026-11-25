@@ -137,8 +137,8 @@ pub fn feature<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<Feature>>
 where
     RDF: FocusRDF,
 {
-    IrisPropertyParser::new(sd_feature().clone()).flat_map(|ref iris| {
-        let features = get_features(iris)?;
+    IrisPropertyParser::new(sd_feature().clone()).flat_map(|iris| {
+        let features = get_features(&iris)?;
         Ok(features)
     })
 }
@@ -147,8 +147,8 @@ pub fn result_format<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<SparqlRes
 where
     RDF: FocusRDF,
 {
-    IrisPropertyParser::new(sd_result_format().clone()).flat_map(|ref iris| {
-        let result_format = get_result_formats(iris)?;
+    IrisPropertyParser::new(sd_result_format().clone()).flat_map(|iris| {
+        let result_format = get_result_formats(&iris)?;
         Ok(result_format)
     })
 }
@@ -157,8 +157,8 @@ pub fn supported_language<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<Supp
 where
     RDF: FocusRDF,
 {
-    IrisPropertyParser::new(sd_supported_language().clone()).flat_map(|ref iris| {
-        let langs = get_supported_languages(iris)?;
+    IrisPropertyParser::new(sd_supported_language().clone()).flat_map(|iris| {
+        let langs = get_supported_languages(&iris)?;
         Ok(langs)
     })
 }
@@ -458,7 +458,7 @@ where
     })
 }
 
-pub fn property_partition<RDF>() -> impl RDFNodeParse<RDF, Output = crate::PropertyPartition>
+pub fn property_partition<RDF>() -> impl RDFNodeParse<RDF, Output = PropertyPartition>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: TryInto<IriOrBlankNode> + Clone,

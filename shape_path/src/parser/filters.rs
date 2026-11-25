@@ -24,7 +24,7 @@ use nom::{
 };
 
 /// `filter ::= "[" filterExpr "]"`
-pub(super) fn filter(i: Span) -> IRes<Filter> {
+pub(super) fn filter(i: Span<'_>) -> IRes<'_, Filter> {
     delimited(token("["), filter_expr, token("]")).parse(i)
 }
 
@@ -35,7 +35,7 @@ pub(super) fn filter(i: Span) -> IRes<Filter> {
 /// ```
 ///
 /// `numericExpr ::= INTEGER` is read as `index() = INTEGER`, of which it is shorthand.
-fn filter_expr(i: Span) -> IRes<Filter> {
+fn filter_expr(i: Span<'_>) -> IRes<'_, Filter> {
     alt((
         map(
             (opt(assert), function, opt(comparison)),
@@ -59,12 +59,12 @@ fn filter_expr(i: Span) -> IRes<Filter> {
 }
 
 /// `"assert"`, matched without regard to case.
-fn assert(i: Span) -> IRes<Span> {
+fn assert(i: Span<'_>) -> IRes<'_, Span<'_>> {
     keyword_no_case("assert")(i)
 }
 
 /// `function ::= "index" "(" ")" | "count" "(" ")"`
-fn function(i: Span) -> IRes<Operand> {
+fn function(i: Span<'_>) -> IRes<'_, Operand> {
     terminated(
         alt((
             value(Operand::Index, keyword("index")),
@@ -76,7 +76,7 @@ fn function(i: Span) -> IRes<Operand> {
 }
 
 /// `comparison ::= comparitor rvalue`
-fn comparison(i: Span) -> IRes<Comparison> {
+fn comparison(i: Span<'_>) -> IRes<'_, Comparison> {
     map((comparator, rvalue), |(comparator, rvalue)| Comparison {
         comparator,
         rvalue,
@@ -85,7 +85,7 @@ fn comparison(i: Span) -> IRes<Comparison> {
 }
 
 /// `comparitor ::= "=" | "<" | ">"`
-fn comparator(i: Span) -> IRes<Comparator> {
+fn comparator(i: Span<'_>) -> IRes<'_, Comparator> {
     alt((
         value(Comparator::Equal, token("=")),
         value(Comparator::LessThan, token("<")),
@@ -95,6 +95,6 @@ fn comparator(i: Span) -> IRes<Comparator> {
 }
 
 /// `rvalue ::= INTEGER | iri`
-fn rvalue(i: Span) -> IRes<RValue> {
+fn rvalue(i: Span<'_>) -> IRes<'_, RValue> {
     alt((map(integer, RValue::Integer), map(iri, RValue::Iri))).parse(i)
 }

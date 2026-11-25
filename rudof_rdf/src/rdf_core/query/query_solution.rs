@@ -98,9 +98,9 @@ impl<S: Rdf> QuerySolution<S> {
     /// variables), one per line in the format: `?variable -> value`
     pub fn show(&self) -> String {
         let mut result = String::new();
-        for var in self.variables.iter() {
+        for var in &self.variables {
             let value = match self.find_solution(var) {
-                None => "()".to_string(),
+                None => "()".to_owned(),
                 Some(v) => format!("{v}"),
             };
             result.push_str(format!("{var} -> {value}\n").as_str())

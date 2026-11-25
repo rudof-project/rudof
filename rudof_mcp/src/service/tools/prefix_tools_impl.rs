@@ -176,7 +176,7 @@ pub async fn manage_prefixes_impl(
         .iter()
         .map(|(alias, iri)| PrefixEntry {
             alias: alias.clone(),
-            iri: iri.as_str().to_string(),
+            iri: iri.as_str().to_owned(),
         })
         .collect();
     prefixes.sort_by(|a, b| a.alias.cmp(&b.alias));
@@ -186,7 +186,7 @@ pub async fn manage_prefixes_impl(
     };
     let structured = serialize_structured(&response, "manage_prefixes_impl")?;
     let summary = if prefixes.is_empty() {
-        "No default prefixes are defined.".to_string()
+        "No default prefixes are defined.".to_owned()
     } else {
         prefixes
             .iter()
@@ -373,6 +373,6 @@ mod tests {
         let request: Result<ManagePrefixesRequest, _> =
             serde_json::from_value(serde_json::json!({"action": "frobnicate"}));
 
-        assert!(request.is_err());
+        request.unwrap_err();
     }
 }

@@ -136,6 +136,6 @@ impl PyDataGenerator {
     }
 
     fn __repr__(&self) -> String {
-        "DataGenerator()".to_string()
+        "DataGenerator()".to_owned()
     }
 }

@@ -11,7 +11,7 @@ use crate::{
 fn test_load_service_description() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let service_desc_ttl = r#"
+    let service_desc_ttl = "
         @prefix sd: <http://www.w3.org/ns/sparql-service-description#> .
         @prefix ent: <http://www.w3.org/ns/entailment/> .
         
@@ -19,7 +19,7 @@ fn test_load_service_description() {
             sd:endpoint <http://example.org/sparql> ;
             sd:supportedLanguage sd:SPARQL11Query ;
             sd:defaultEntailmentRegime ent:Simple .
-    "#;
+    ";
 
     let input_spec = InputSpec::str(service_desc_ttl);
 
@@ -44,8 +44,5 @@ fn test_load_service_description() {
     assert!(result.contains("http://www.w3.org/ns/entailment/"));
     assert!(result.contains("SPARQL11Query"));
 
-    println!(
-        "\n===== test_load_service_description =====\n{}============================================",
-        result
-    );
+    println!("\n===== test_load_service_description =====\n{result}============================================");
 }

@@ -62,7 +62,7 @@ impl FromStr for ShapeMapFormat {
             "details" => Ok(ShapeMapFormat::Details),
             "csv" => Ok(ShapeMapFormat::Csv),
             other => Err(ShapeMapError::UnsupportedShapeMapFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }

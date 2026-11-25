@@ -132,7 +132,7 @@ impl Display for DependencyGraph {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Dependency Graph:")?;
         for (from, posneg, to) in self.all_edges() {
-            writeln!(f, "  {} --{}--> {}", from, posneg, to)?;
+            writeln!(f, "  {from} --{posneg}--> {to}")?;
         }
         Ok(())
     }

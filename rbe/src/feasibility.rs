@@ -146,7 +146,7 @@ where
             Rbe::Symbol { value, card } => card.min.value == 0 || self.hi(value) >= card.min.value,
             Rbe::And { values } => values.iter().all(|v| self.once(v)),
             Rbe::Or { values } => values.iter().any(|v| self.once(v)),
-            Rbe::Star { value: _ } => true,
+            Rbe::Star { .. } => true,
             Rbe::Plus { value } => self.once(value),
             Rbe::Repeat { value, card } => card.min.value == 0 || self.once(value),
         }
@@ -166,7 +166,7 @@ mod tests {
     }
 
     fn counts(pairs: &[(char, usize)]) -> HashMap<char, usize> {
-        pairs.iter().cloned().collect()
+        pairs.iter().copied().collect()
     }
 
     // { a{1,2} | a+ ; q } — the shared-predicate OneOf screw case: committing an

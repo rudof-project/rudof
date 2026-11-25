@@ -1,4 +1,4 @@
-#[allow(unused_imports)]
+#[expect(unused_imports)]
 use clap::command;
 use clap::{Parser, Subcommand};
 

@@ -2,7 +2,7 @@ use crate::service::{errors::*, mcp_service::*};
 // `CreateMessageRequestParams`/`SamplingMessage` (MCP sampling) are
 // deprecated by SEP-2577; the protocol still supports sampling and there
 // is no replacement API, so they stay in use here.
-#[allow(deprecated)]
+#[expect(deprecated)]
 use rmcp::{
     ErrorData as McpError, Peer, RoleServer,
     handler::server::wrapper::Parameters,
@@ -76,19 +76,19 @@ fn query_outcome(results: &QueryResult) -> Result<(Option<Bindings>, Option<bool
 /// converting natural language to SPARQL.
 // MCP sampling is deprecated by SEP-2577; the protocol still supports it
 // and there is no replacement API, so it stays in use here.
-#[allow(deprecated)]
+#[expect(deprecated)]
 async fn generate_sparql_from_natural_language(
     natural_language: &str,
     peer: &Peer<RoleServer>,
 ) -> Result<String, McpError> {
-    let system_message = r#"You are a SPARQL query expert. Convert natural language questions into valid SPARQL queries.
+    let system_message = "You are a SPARQL query expert. Convert natural language questions into valid SPARQL queries.
                                     - Only output the SPARQL query, no explanations or markdown formatting
                                     - Use standard SPARQL syntax (SELECT, CONSTRUCT, ASK, or DESCRIBE)
                                     - Include appropriate prefixes if needed
                                     - Make the query efficient and correct
-                                    - If you need to guess prefixes, use common ones like rdf:, rdfs:, xsd:, ex:, etc."#;
+                                    - If you need to guess prefixes, use common ones like rdf:, rdfs:, xsd:, ex:, etc.";
 
-    let user_message = format!("Generate a SPARQL query for: {}", natural_language);
+    let user_message = format!("Generate a SPARQL query for: {natural_language}");
 
     // Sampling is the client's to provide. Asking a client that never declared
     // it yields an opaque "method not found", so say what is missing instead.
@@ -141,9 +141,9 @@ async fn generate_sparql_from_natural_language(
             .collect::<Vec<_>>()
             .join("\n")
             .trim()
-            .to_string()
+            .to_owned()
     } else {
-        generated_query.trim().to_string()
+        generated_query.trim().to_owned()
     };
 
     tracing::debug!(
@@ -220,7 +220,7 @@ pub async fn execute_sparql_query_impl(
     // Guard: SELECT queries only support the 'internal' result format.
     if matches!(query_type, Some("SELECT")) && result_format != ResultQueryFormatParam::Internal {
         return Ok(ToolExecutionError::with_hint(
-            format!("Format '{}' is not yet supported for SELECT queries", result_format),
+            format!("Format '{result_format}' is not yet supported for SELECT queries"),
             "SELECT queries only support 'internal' format. Omit result_format or use 'internal'.",
         )
         .into_call_tool_result());
@@ -302,11 +302,10 @@ pub async fn execute_sparql_query_impl(
     let outcome = match query_type {
         QueryResultKind::Select => format!("Rows: {}", response.bindings.as_ref().map_or(0, Bindings::count)),
         QueryResultKind::Ask => format!("Answer: {}", response.boolean.unwrap_or_default()),
-        QueryResultKind::Construct => "Constructed an RDF graph".to_string(),
+        QueryResultKind::Construct => "Constructed an RDF graph".to_owned(),
     };
     let summary = format!(
-        "SPARQL query executed.\n{}\nResult format: {}\nResult size: {} bytes",
-        outcome, result_format, result_size_bytes
+        "SPARQL query executed.\n{outcome}\nResult format: {result_format}\nResult size: {result_size_bytes} bytes"
     );
 
     let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
@@ -338,7 +337,7 @@ mod tests {
             .expect("the test data should load");
 
         rudof
-            .load_sparql_query(&InputSpec::Str(query.to_string()))
+            .load_sparql_query(&InputSpec::Str(query.to_owned()))
             .execute()
             .expect("the query should parse");
         rudof.run_query().execute().expect("the query should run");
@@ -350,8 +349,8 @@ mod tests {
 
     #[test]
     fn a_select_reports_its_rows_keyed_by_variable() {
-        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
-               select ?person ?name where { ?person :name ?name } order by ?person"#);
+        let (kind, bindings, boolean) = run("prefix : <http://example.org/>
+               select ?person ?name where { ?person :name ?name } order by ?person");
 
         assert_eq!(kind, QueryResultKind::Select);
         assert_eq!(boolean, None);
@@ -363,14 +362,14 @@ mod tests {
         let alice = bindings
             .rows()
             .iter()
-            .find(|row| row.get("person").map(|term| term.to_string()) == Some("http://example.org/alice".to_string()))
+            .find(|row| row.get("person").map(ToString::to_string) == Some("http://example.org/alice".to_owned()))
             .expect("one row binds ?person to :alice");
         match alice.get("name") {
             Some(Object::Literal(literal)) => {
                 assert_eq!(literal.lexical_form(), "Alice");
                 assert_eq!(
-                    literal.lang().map(|lang| lang.as_str().to_string()),
-                    Some("en".to_string())
+                    literal.lang().map(|lang| lang.as_str().to_owned()),
+                    Some("en".to_owned())
                 );
             },
             other => panic!("?name should bind a language-tagged literal, not {other:?}"),
@@ -379,8 +378,8 @@ mod tests {
 
     #[test]
     fn an_unbound_variable_is_absent_from_its_row() {
-        let (_, bindings, _) = run(r#"prefix : <http://example.org/>
-               select ?person ?nickname where { ?person :name ?name optional { ?person :nick ?nickname } }"#);
+        let (_, bindings, _) = run("prefix : <http://example.org/>
+               select ?person ?nickname where { ?person :name ?name optional { ?person :nick ?nickname } }");
 
         let bindings = bindings.expect("a SELECT reports bindings");
         assert_eq!(bindings.variables(), ["person", "nickname"]);
@@ -393,8 +392,8 @@ mod tests {
 
     #[test]
     fn an_ask_reports_its_answer() {
-        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
-               ask { :alice :knows :bob }"#);
+        let (kind, bindings, boolean) = run("prefix : <http://example.org/>
+               ask { :alice :knows :bob }");
 
         assert_eq!(kind, QueryResultKind::Ask);
         assert_eq!(boolean, Some(true));
@@ -403,8 +402,8 @@ mod tests {
 
     #[test]
     fn a_construct_reports_neither() {
-        let (kind, bindings, boolean) = run(r#"prefix : <http://example.org/>
-               construct { ?person :label ?name } where { ?person :name ?name }"#);
+        let (kind, bindings, boolean) = run("prefix : <http://example.org/>
+               construct { ?person :label ?name } where { ?person :name ?name }");
 
         assert_eq!(kind, QueryResultKind::Construct);
         assert!(bindings.is_none());

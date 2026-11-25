@@ -51,9 +51,9 @@ impl ConformanceMetrics {
         }
         let resolve_shape = |type_iri: &str| -> Option<String> {
             if model.shapes.contains_key(type_iri) {
-                Some(type_iri.to_string())
+                Some(type_iri.to_owned())
             } else {
-                class_to_shape.get(type_iri).map(|s| (*s).to_string())
+                class_to_shape.get(type_iri).map(|s| (*s).to_owned())
             }
         };
 
@@ -68,12 +68,12 @@ impl ConformanceMetrics {
                     subject_type.insert(triple.subject.clone(), shape_id);
                 }
             } else {
-                let key = (triple.subject.clone(), triple.predicate.as_str().to_string());
+                let key = (triple.subject.clone(), triple.predicate.as_str().to_owned());
                 *outgoing_counts.entry(key).or_insert(0) += 1;
             }
         }
 
-        let mut valid_triples = 0usize;
+        let mut valid_triples = 0_usize;
 
         for triple in &triples {
             let is_valid = if triple.predicate.as_str() == RDF_TYPE {
@@ -140,7 +140,7 @@ fn validate_non_type_triple(
         return false;
     };
 
-    let count_key = (triple.subject.clone(), triple.predicate.as_str().to_string());
+    let count_key = (triple.subject.clone(), triple.predicate.as_str().to_owned());
     let count = outgoing_counts.get(&count_key).copied().unwrap_or(0);
 
     if let Some(max) = property.max_cardinality
@@ -169,12 +169,10 @@ fn evaluate_constraint(
         UnifiedConstraint::ShapeReference(target_shape) => match object {
             Term::NamedNode(node) => subject_type
                 .get(&NamedOrBlankNode::NamedNode(node.clone()))
-                .map(|s| s == target_shape)
-                .unwrap_or(false),
+                .is_some_and(|s| s == target_shape),
             Term::BlankNode(node) => subject_type
                 .get(&NamedOrBlankNode::BlankNode(node.clone()))
-                .map(|s| s == target_shape)
-                .unwrap_or(false),
+                .is_some_and(|s| s == target_shape),
             _ => false,
         },
         // The object is an instance of a shape that targets the class.
@@ -184,7 +182,7 @@ fn evaluate_constraint(
                 Term::BlankNode(node) => NamedOrBlankNode::BlankNode(node.clone()),
                 _ => return false,
             };
-            let bare = |iri: &str| iri.trim_matches(['<', '>']).to_string();
+            let bare = |iri: &str| iri.trim_matches(['<', '>']).to_owned();
             subject_type
                 .get(&node)
                 .and_then(|s| model.shapes.get(s))
@@ -199,7 +197,7 @@ fn evaluate_constraint(
             NodeKind::IriOrLiteral => matches!(object, Term::NamedNode(_) | Term::Literal(_)),
         },
         UnifiedConstraint::Pattern(pattern) => match object {
-            Term::Literal(lit) => Regex::new(pattern).map(|re| re.is_match(lit.value())).unwrap_or(false),
+            Term::Literal(lit) => Regex::new(pattern).is_ok_and(|re| re.is_match(lit.value())),
             _ => false,
         },
         UnifiedConstraint::MinInclusive(bound) => compare_numeric(object, bound, |v, b| v >= b),

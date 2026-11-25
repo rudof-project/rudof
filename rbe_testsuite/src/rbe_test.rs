@@ -64,15 +64,15 @@ impl RbeTest {
     /// Runs this test
     pub fn run(&self) -> RbeTestResult {
         match (&self.match_result, self.rbe.match_bag_interval(&self.bag, self.open)) {
-            (MatchResult::Pass, Ok(())) => RbeTestResult::passed(self.name().to_string()),
-            (MatchResult::Pass, Err(err)) => RbeTestResult::failed(self.name().to_string(), err),
+            (MatchResult::Pass, Ok(())) => RbeTestResult::passed(self.name().to_owned()),
+            (MatchResult::Pass, Err(err)) => RbeTestResult::failed(self.name().to_owned(), err),
             (MatchResult::Fail, Ok(())) => RbeTestResult::failed(
-                self.name().to_string(),
+                self.name().to_owned(),
                 DerivError::ShouldFailButPassed {
                     name: self.name.clone(),
                 },
             ),
-            (MatchResult::Fail, Err(_)) => RbeTestResult::passed(self.name().to_string()),
+            (MatchResult::Fail, Err(_)) => RbeTestResult::passed(self.name().to_owned()),
         }
     }
 

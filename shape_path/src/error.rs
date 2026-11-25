@@ -143,11 +143,11 @@ fn format_parse_error_context(context: &[LocatedParseError]) -> String {
 
 impl nom::error::ParseError<LocatedSpan<&str>> for LocatedParseError {
     fn from_error_kind(input: LocatedSpan<&str>, kind: ErrorKind) -> Self {
-        ShExPathParseError::SyntaxError(kind.description().to_string()).at(input)
+        ShExPathParseError::SyntaxError(kind.description().to_owned()).at(input)
     }
 
     fn append(input: LocatedSpan<&str>, kind: ErrorKind, other: Self) -> Self {
-        let mut error = ShExPathParseError::SyntaxError(kind.description().to_string()).at(input);
+        let mut error = ShExPathParseError::SyntaxError(kind.description().to_owned()).at(input);
         error.append(other);
         error
     }

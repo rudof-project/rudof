@@ -23,7 +23,7 @@ impl VarName {
     ///
     /// * `str` - The variable name without prefix
     pub fn new(str: &str) -> VarName {
-        VarName { str: str.to_string() }
+        VarName { str: str.to_owned() }
     }
 
     /// Returns the variable name as a string slice without prefix.

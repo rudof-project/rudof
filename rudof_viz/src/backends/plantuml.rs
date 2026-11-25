@@ -129,10 +129,10 @@ fn write_box<W: Write>(writer: &mut W, b: &DiagramBox) -> Result<(), RenderError
         Shape::Cloud => "cloud",
         Shape::Class => "class",
     };
-    let stereotype = b.stereotype().map(|s| format!(" <<{s}>>")).unwrap_or_default();
+    let stereotype = b.stereotype().map_or_default(|s| format!(" <<{s}>>"));
     match b.shape() {
         Shape::Class => {
-            let href = b.href().map(|h| format!(" [[{h} {}]]", b.title())).unwrap_or_default();
+            let href = b.href().map_or_default(|h| format!(" [[{h} {}]]", b.title()));
             writeln!(writer, "{keyword} \"{}\" as {}{stereotype}{href} {{", b.title(), b.id())?;
             for line in b.compartments() {
                 writeln!(writer, "{line}")?;
@@ -143,7 +143,7 @@ fn write_box<W: Write>(writer: &mut W, b: &DiagramBox) -> Result<(), RenderError
         Shape::Rectangle | Shape::Cloud => {
             let display = match b.href() {
                 Some(href) => format!("[[{href} {}]]", b.title()),
-                None => b.title().to_string(),
+                None => b.title().to_owned(),
             };
             writeln!(writer, "{keyword} \"{display}\"{stereotype} as {}", b.id())?;
         },
@@ -200,8 +200,8 @@ impl ExternalToolRenderer for PlantUmlBackend {
         if !self.plantuml_path.exists() {
             return Err(RenderError::ExternalResourceMissing {
                 path: self.plantuml_path.display().to_string(),
-                error: "file does not exist".to_string(),
-                env_var: "PLANTUML".to_string(),
+                error: "file does not exist".to_owned(),
+                env_var: "PLANTUML".to_owned(),
             });
         }
         check_java_installed()?;
@@ -238,14 +238,14 @@ fn check_java_installed() -> Result<(), RenderError> {
         .arg("-version")
         .output()
         .map_err(|e| RenderError::ExternalToolUnavailable {
-            tool: "java".to_string(),
+            tool: "java".to_owned(),
             error: e.to_string(),
         })?;
     if output.status.success() {
         Ok(())
     } else {
         Err(RenderError::ExternalToolUnavailable {
-            tool: "java".to_string(),
+            tool: "java".to_owned(),
             error: String::from_utf8_lossy(&output.stderr).to_string(),
         })
     }
@@ -256,7 +256,7 @@ fn check_plantuml_jar(path: &Path) -> Result<(), RenderError> {
     let mut command = Command::new("java");
     command.args(["-jar", &path.display().to_string(), "-version"]);
     let output = command.output().map_err(|e| RenderError::ExternalToolUnavailable {
-        tool: "java -jar plantuml.jar -version".to_string(),
+        tool: "java -jar plantuml.jar -version".to_owned(),
         error: e.to_string(),
     })?;
     if output.status.success() {
@@ -265,7 +265,7 @@ fn check_plantuml_jar(path: &Path) -> Result<(), RenderError> {
         Err(RenderError::ExternalResourceMissing {
             path: path.display().to_string(),
             error: String::from_utf8_lossy(&output.stderr).to_string(),
-            env_var: "PLANTUML".to_string(),
+            env_var: "PLANTUML".to_owned(),
         })
     }
 }
@@ -351,7 +351,7 @@ mod tests {
         let mut diagram = Diagram::new()
             .with_hide_empty_members(true)
             .with_hide_circles(true)
-            .with_direction(crate::model::Direction::TopToBottom)
+            .with_direction(Direction::TopToBottom)
             .with_shadowing(true)
             .with_class_skin(ClassSkin {
                 border_color: Color::Black,
@@ -361,7 +361,7 @@ mod tests {
         diagram.add_box(
             DiagramBox::new(BoxId::new(0), Shape::Class, ":Person")
                 .with_stereotype("(S,#FF7700)")
-                .with_compartments(vec![":name xsd:string".to_string()]),
+                .with_compartments(vec![":name xsd:string".to_owned()]),
         );
         diagram.add_box(DiagramBox::new(BoxId::new(1), Shape::Class, ":Company").with_stereotype("(S,#FF7700)"));
         diagram.add_connector(

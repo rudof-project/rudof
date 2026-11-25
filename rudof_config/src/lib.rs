@@ -34,7 +34,7 @@ pub trait TomlConfig: Sized + Default + Serialize + DeserializeOwned {
     /// Returns [`ConfigError::Parse`] if the string is not valid TOML for this type
     fn from_toml_str(s: &str) -> Result<Self, ConfigError> {
         toml::from_str(s).map_err(|e| ConfigError::Parse {
-            location: "<string>".to_string(),
+            location: "<string>".to_owned(),
             error: e.to_string(),
         })
     }

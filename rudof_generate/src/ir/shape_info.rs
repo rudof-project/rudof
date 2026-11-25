@@ -76,7 +76,7 @@ impl ShapeProcessor {
             .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
         let shapes = schema
             .shapes()
-            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))?;
+            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_owned()))?;
 
         // Process shapes to extract dependencies and properties
         self.process_shapes(&shapes).await?;
@@ -183,7 +183,7 @@ impl ShapeProcessor {
                                 Some(dt.to_string())
                             } else {
                                 // Default to string if no datatype specified
-                                Some("http://www.w3.org/2001/XMLSchema#string".to_string())
+                                Some("http://www.w3.org/2001/XMLSchema#string".to_owned())
                             };
 
                             properties.push(PropertyInfo {
@@ -199,7 +199,7 @@ impl ShapeProcessor {
                             // Other shape expressions - treat as generic string property
                             properties.push(PropertyInfo {
                                 property_iri,
-                                datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_string()),
+                                datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_owned()),
                                 shape_ref: None,
                                 min_cardinality: min_card,
                                 max_cardinality: max_card,
@@ -211,7 +211,7 @@ impl ShapeProcessor {
                     // No value expression - treat as generic string property
                     properties.push(PropertyInfo {
                         property_iri,
-                        datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_string()),
+                        datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_owned()),
                         shape_ref: None,
                         min_cardinality: min_card,
                         max_cardinality: max_card,
@@ -273,8 +273,8 @@ impl ShapeProcessor {
     pub async fn load_schema_text(&mut self, text: &str, format: crate::config::SchemaFormat) -> Result<()> {
         use crate::config::SchemaFormat;
         let (unified_model, translation_metrics) = match format {
-            SchemaFormat::ShEx => self.shex_converter.convert_schema(text.to_string()).await?,
-            SchemaFormat::Shacl => self.shacl_converter.convert_schema(text.to_string()).await?,
+            SchemaFormat::ShEx => self.shex_converter.convert_schema(text.to_owned()).await?,
+            SchemaFormat::Shacl => self.shacl_converter.convert_schema(text.to_owned()).await?,
             SchemaFormat::PgSchema => crate::adapters::PgSchemaToUnified.convert_schema(text)?,
         };
         self.unified_model = Some(unified_model);
@@ -313,10 +313,6 @@ impl ShapeProcessor {
 
 /// Perform topological sort on the dependency graph
 fn topological_sort(graph: &HashMap<String, Vec<String>>) -> Result<Vec<String>> {
-    let mut result = Vec::new();
-    let mut visited = std::collections::HashSet::new();
-    let mut temp_visited = std::collections::HashSet::new();
-
     fn visit(
         node: &str,
         graph: &HashMap<String, Vec<String>>,
@@ -334,7 +330,7 @@ fn topological_sort(graph: &HashMap<String, Vec<String>>) -> Result<Vec<String>>
             return Ok(());
         }
 
-        temp_visited.insert(node.to_string());
+        temp_visited.insert(node.to_owned());
 
         if let Some(dependencies) = graph.get(node) {
             for dep in dependencies {
@@ -343,11 +339,15 @@ fn topological_sort(graph: &HashMap<String, Vec<String>>) -> Result<Vec<String>>
         }
 
         temp_visited.remove(node);
-        visited.insert(node.to_string());
-        result.push(node.to_string());
+        visited.insert(node.to_owned());
+        result.push(node.to_owned());
 
         Ok(())
     }
+
+    let mut result = Vec::new();
+    let mut visited = std::collections::HashSet::new();
+    let mut temp_visited = std::collections::HashSet::new();
 
     for node in graph.keys() {
         if !visited.contains(node) {

@@ -42,26 +42,28 @@ pub fn serialize_query_results<W: io::Write>(
                     error: error.to_string(),
                 })?
             },
-            _ => Err(RudofError::UnsupportedResultQueryFormatSelect {
-                format: result_query_format.to_string(),
-                formats: [
-                    ResultQueryFormat::Internal,
-                    ResultQueryFormat::Csv,
-                    ResultQueryFormat::Markdown,
-                    ResultQueryFormat::Json,
-                ]
-                .iter()
-                .map(|a| a.to_string())
-                .collect(),
-            })?,
+            _ => {
+                return Err(RudofError::UnsupportedResultQueryFormatSelect {
+                    format: result_query_format.to_string(),
+                    formats: [
+                        ResultQueryFormat::Internal,
+                        ResultQueryFormat::Csv,
+                        ResultQueryFormat::Markdown,
+                        ResultQueryFormat::Json,
+                    ]
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect(),
+                });
+            },
         },
         QueryResult::Construct(results) => {
-            writeln!(writer, "{}", results).map_err(|error| QueryError::FailedSerializingQueryResults {
+            writeln!(writer, "{results}").map_err(|error| QueryError::FailedSerializingQueryResults {
                 error: error.to_string(),
             })?
         },
         QueryResult::Ask(result) => {
-            writeln!(writer, "{}", result).map_err(|error| QueryError::FailedSerializingQueryResults {
+            writeln!(writer, "{result}").map_err(|error| QueryError::FailedSerializingQueryResults {
                 error: error.to_string(),
             })?
         },

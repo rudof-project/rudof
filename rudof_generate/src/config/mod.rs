@@ -428,7 +428,7 @@ pub struct DefaultFieldConfig {
 impl Default for DefaultFieldConfig {
     fn default() -> Self {
         Self {
-            locale: "en".to_string(),
+            locale: "en".to_owned(),
             quality: DataQuality::default(),
         }
     }
@@ -557,7 +557,7 @@ impl OutputConfig {
         }
 
         // Detect CPU cores (with fallback to 4)
-        let cpu_count = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+        let cpu_count = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
 
         // Calculate optimal file count based on dataset size
         let optimal_count = match total_triples {
@@ -618,22 +618,22 @@ impl GeneratorConfig {
     pub fn validate(&self) -> Result<()> {
         if self.generation.entity_count == 0 {
             return Err(crate::DataGeneratorError::Config(
-                "entity_count must be greater than 0".to_string(),
+                "entity_count must be greater than 0".to_owned(),
             ));
         }
 
         if self.parallel.batch_size == 0 {
             return Err(crate::DataGeneratorError::Config(
-                "batch_size must be greater than 0".to_string(),
+                "batch_size must be greater than 0".to_owned(),
             ));
         }
 
         // Validate entity distribution weights sum to reasonable values
-        if let EntityDistribution::Weighted(ref weights) = self.generation.entity_distribution {
+        if let EntityDistribution::Weighted(weights) = &self.generation.entity_distribution {
             let total: f64 = weights.values().sum();
             if total <= 0.0 {
                 return Err(crate::DataGeneratorError::Config(
-                    "Weighted distribution weights must sum to a positive value".to_string(),
+                    "Weighted distribution weights must sum to a positive value".to_owned(),
                 ));
             }
         }
@@ -641,13 +641,13 @@ impl GeneratorConfig {
         // Validate coherence parameters
         if self.generation.property_fill_probability < 0.0 || self.generation.property_fill_probability > 1.0 {
             return Err(crate::DataGeneratorError::Config(
-                "property_fill_probability must be between 0.0 and 1.0".to_string(),
+                "property_fill_probability must be between 0.0 and 1.0".to_owned(),
             ));
         }
 
         if self.generation.property_count_variance < 0.0 || self.generation.property_count_variance > 1.0 {
             return Err(crate::DataGeneratorError::Config(
-                "property_count_variance must be between 0.0 and 1.0".to_string(),
+                "property_count_variance must be between 0.0 and 1.0".to_owned(),
             ));
         }
 

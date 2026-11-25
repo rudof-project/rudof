@@ -48,7 +48,7 @@ fn write(dir: &TempDir, name: &str, body: &str) -> PathBuf {
 }
 
 fn strip(iri: &str) -> String {
-    iri.trim_matches(['<', '>']).to_string()
+    iri.trim_matches(['<', '>']).to_owned()
 }
 
 /// Read the shapes graph with the same parser the generator uses, so the test
@@ -75,7 +75,7 @@ fn parse_shapes(turtle: &str) -> Vec<ShapeRule> {
     };
 
     let mut shapes = Vec::new();
-    for (subject, props) in &by_subject {
+    for props in by_subject.values() {
         let Some(target) = one(props, &sh("targetClass")) else {
             continue;
         };
@@ -89,20 +89,17 @@ fn parse_shapes(turtle: &str) -> Vec<ShapeRule> {
             };
             let number = |key: &str| -> Option<usize> {
                 one(rule_props, &sh(key))
-                    .and_then(|v| v.split('"').nth(1).map(str::to_string).or(Some(v)))
+                    .and_then(|v| v.split('"').nth(1).map(str::to_owned).or(Some(v)))
                     .and_then(|v| v.parse::<usize>().ok())
             };
             properties.push(PropertyRule {
                 path: strip(&path),
                 min_count: number("minCount"),
                 max_count: number("maxCount"),
-                node_kind_iri: one(rule_props, &sh("nodeKind"))
-                    .map(|nk| strip(&nk).ends_with("#IRI"))
-                    .unwrap_or(false),
+                node_kind_iri: one(rule_props, &sh("nodeKind")).is_some_and(|nk| strip(&nk).ends_with("#IRI")),
                 datatype: one(rule_props, &sh("datatype")).map(|d| strip(&d)),
             });
         }
-        let _ = subject;
         shapes.push(ShapeRule {
             target_class: strip(&target),
             properties,
@@ -135,7 +132,7 @@ fn conformance_failures(graph: &OxigraphInMemory, shapes: &[ShapeRule]) -> Confo
     }
 
     let mut failures = Vec::new();
-    let mut subjects_checked = 0usize;
+    let mut subjects_checked = 0_usize;
     let subjects_total = by_subject.len();
     for (subject, triples) in &by_subject {
         let types: HashSet<String> = triples
@@ -239,7 +236,7 @@ async fn generate(schema: &PathBuf, out: PathBuf, entities: usize) -> Result<Oxi
 /// A schema exercising every route through the generator at once: literal
 /// properties, a property whose range is another shape, a property constrained
 /// only to be an IRI, and both an optional and a bounded-multiple property.
-const MIXED_SCHEMA: &str = r#"
+const MIXED_SCHEMA: &str = "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -257,7 +254,7 @@ const MIXED_SCHEMA: &str = r#"
     sh:property [ sh:path ex:homepage  ; sh:nodeKind sh:IRI      ; sh:minCount 1 ; sh:maxCount 1 ] ;
     sh:property [ sh:path ex:nickname  ; sh:datatype xsd:string  ; sh:maxCount 1 ] ;
     sh:property [ sh:path ex:tag       ; sh:datatype xsd:string  ; sh:minCount 1 ; sh:maxCount 3 ] .
-"#;
+";
 
 #[tokio::test]
 async fn generated_data_conforms_to_the_schema_it_came_from() -> Result<()> {

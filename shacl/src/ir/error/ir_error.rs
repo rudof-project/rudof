@@ -64,7 +64,7 @@ impl IRError {
     pub fn from_rdf_err<RDF: Rdf>(op: &str, err: RDF::Err) -> Self {
         Self::GraphError {
             error: err.to_string(),
-            operation: op.to_string(),
+            operation: op.to_owned(),
         }
     }
 

@@ -75,38 +75,47 @@ impl ShExConfig {
         }
     }
 
+    #[must_use]
     pub fn with_show_extends(mut self, flag: bool) -> Self {
         self.show_extends = flag;
         self
     }
+    #[must_use]
     pub fn with_show_imports(mut self, flag: bool) -> Self {
         self.show_imports = flag;
         self
     }
+    #[must_use]
     pub fn with_show_shapes(mut self, flag: bool) -> Self {
         self.show_shapes = flag;
         self
     }
+    #[must_use]
     pub fn with_show_dependencies(mut self, flag: bool) -> Self {
         self.show_dependencies = flag;
         self
     }
+    #[must_use]
     pub fn with_show_ir(mut self, flag: bool) -> Self {
         self.show_ir = flag;
         self
     }
+    #[must_use]
     pub fn with_shex_format(mut self, format: ShExFormat) -> Self {
         self.shex_format = format;
         self
     }
+    #[must_use]
     pub fn with_check_well_formed(mut self, flag: bool) -> Self {
         self.check_well_formed = flag;
         self
     }
+    #[must_use]
     pub fn with_rdf_config_shex(mut self, cfg: RdfDataConfig) -> Self {
         self.rdf_config_shex = cfg;
         self
     }
+    #[must_use]
     pub fn with_base(mut self, iri: Option<IriS>) -> Self {
         self.base = iri;
         self
@@ -185,7 +194,7 @@ mod tests {
 
     #[test]
     fn partial_toml_fills_remaining_defaults() {
-        let c: ShExConfig = toml::from_str(r#"show_imports = false"#).unwrap();
+        let c: ShExConfig = toml::from_str("show_imports = false").unwrap();
         assert!(!c.show_imports());
         assert_eq!(c.show_extends(), ShExConfig::default_show_extends());
         assert_eq!(c.check_well_formed(), ShExConfig::default_check_well_formed());

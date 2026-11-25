@@ -26,11 +26,13 @@ impl QueryShapeMap {
         self.shapes_prefixmap.clone()
     }
 
+    #[must_use]
     pub fn with_nodes_prefixmap(mut self, prefixmap: &PrefixMap) -> Self {
         self.nodes_prefixmap = prefixmap.clone();
         self
     }
 
+    #[must_use]
     pub fn with_shapes_prefixmap(mut self, prefixmap: &PrefixMap) -> Self {
         self.shapes_prefixmap = prefixmap.clone();
         self

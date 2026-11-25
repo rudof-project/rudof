@@ -50,17 +50,20 @@ where
         RbeCondMatcher::default()
     }
 
+    #[must_use]
     pub fn with_rbe(mut self, rbe: &RbeCond<K, V, R, Ctx, P>) -> Self {
         self.rbe = (*rbe).clone();
         self.controlled = self.rbe.symbols();
         self
     }
 
+    #[must_use]
     pub fn extend_controlled(mut self, controlled: HashSet<K>) -> Self {
         self.controlled.extend(controlled);
         self
     }
 
+    #[must_use]
     pub fn with_open(mut self, open: bool) -> Self {
         self.open = open;
         self
@@ -96,26 +99,22 @@ where
         let mut current = self.rbe.clone();
         for (key, value, ctx) in iter {
             let deriv = current.deriv(&key, &value, &ctx, 1, self.open, &self.controlled, pending);
-            match deriv {
-                RbeCond::Fail { error } => {
-                    current = RbeCond::Fail {
-                        error: RbeError::DerivIterError {
-                            error_msg: format!("{error}"),
-                            processed: processed.clone(),
-                            expr: Box::new(self.rbe.clone()),
-                            current: Box::new(current.clone()),
-                            key: key.clone(),
-                            open: self.open,
-                        },
-                    };
-                    break;
-                },
-                _ => {
-                    debug!("Processing: {key}/{value}\ncurrent:{current}\nderiv:{deriv}");
-                    processed.push((key.clone(), value.clone(), ctx.clone()));
-                    current = deriv;
-                },
+            if let RbeCond::Fail { error } = deriv {
+                current = RbeCond::Fail {
+                    error: RbeError::DerivIterError {
+                        error_msg: format!("{error}"),
+                        processed: processed.clone(),
+                        expr: Box::new(self.rbe.clone()),
+                        current: Box::new(current.clone()),
+                        key: key.clone(),
+                        open: self.open,
+                    },
+                };
+                break;
             }
+            debug!("Processing: {key}/{value}\ncurrent:{current}\nderiv:{deriv}");
+            processed.push((key.clone(), value.clone(), ctx.clone()));
+            current = deriv;
         }
         current
     }
@@ -154,7 +153,7 @@ mod tests {
                         })
                     }
                 },
-                IntKind::RefX => Ok(Pending::from_pair(*v, "X".to_string())),
+                IntKind::RefX => Ok(Pending::from_pair(*v, "X".to_owned())),
             }
         }
     }
@@ -207,13 +206,13 @@ mod tests {
     fn test_rbe_matcher_len_name() {
         let rbe: RbeCond<char, String, String, char, StrKind> = RbeCond::and(vec![
             RbeCond::symbol_cond('a', cond_len(3), Min::from(1), Max::IntMax(1)),
-            RbeCond::symbol_cond('b', cond_name("foo".to_string()), Min::from(0), Max::IntMax(1)),
+            RbeCond::symbol_cond('b', cond_name("foo".to_owned()), Min::from(0), Max::IntMax(1)),
         ]);
         let expected = Pending::empty();
         let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(
-            rbe_matcher.matches(vec![('a', "baz".to_string(), 'a')].into_iter()),
+            rbe_matcher.matches(vec![('a', "baz".to_owned(), 'a')].into_iter()),
             Ok(expected)
         );
     }
@@ -228,7 +227,7 @@ mod tests {
             RbeCond::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
         ]);
         let mut expected = Pending::new();
-        expected.insert_with_key(42, "X".to_string(), 'b');
+        expected.insert_with_key(42, "X".to_owned(), 'b');
         let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(
@@ -247,7 +246,7 @@ mod tests {
             RbeCond::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
         ]);
         let mut expected = Pending::new();
-        expected.insert_with_key(42, "X".to_string(), 'b');
+        expected.insert_with_key(42, "X".to_owned(), 'b');
         let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(
@@ -267,6 +266,6 @@ mod tests {
         ]);
         let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
         let iter = vec![('b', 42, 'b'), ('a', 3, 'a')].into_iter();
-        assert!(rbe_matcher.matches(iter).is_err());
+        rbe_matcher.matches(iter).unwrap_err();
     }
 }

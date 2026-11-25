@@ -103,7 +103,7 @@ impl TapReaderBuilder {
     ) -> Result<TapReader<R>> {
         let path_name = path.as_ref().to_string_lossy().to_string();
         let mut excel: Xlsx<_> = match open_workbook(path) {
-            Ok(xls) => Ok::<calamine::Xlsx<BufReader<File>>, TapError>(xls),
+            Ok(xls) => Ok::<Xlsx<BufReader<File>>, TapError>(xls),
             Err(e) => Err(TapError::OpeningWorkbook {
                 path: path_name.clone(),
                 error: e,
@@ -121,7 +121,7 @@ impl TapReaderBuilder {
             },
             Some(name) => excel.worksheet_range(name).map_err(|e| TapError::SheetNameError {
                 path: path_name.clone(),
-                sheet_name: name.to_string(),
+                sheet_name: name.to_owned(),
                 error: e,
             }),
         }?;

@@ -88,7 +88,7 @@ impl NumericLiteral {
     pub fn non_positive_integer(n: i128) -> Result<NumericLiteral, RDFError> {
         if n > 0 {
             return Err(RDFError::ConversionError {
-                msg: ("nonPositiveInteger (must be <= 0)".to_string()),
+                msg: "nonPositiveInteger (must be <= 0)".to_owned(),
             });
         }
         Ok(NumericLiteral::NonPositiveInteger(n))
@@ -106,7 +106,7 @@ impl NumericLiteral {
     pub fn positive_integer(n: u128) -> Result<NumericLiteral, RDFError> {
         if n == 0 {
             return Err(RDFError::ConversionError {
-                msg: ("positiveInteger (must be > 0)".to_string()),
+                msg: "positiveInteger (must be > 0)".to_owned(),
             });
         }
         Ok(NumericLiteral::PositiveInteger(n))
@@ -119,7 +119,7 @@ impl NumericLiteral {
     pub fn negative_integer(n: i128) -> Result<NumericLiteral, RDFError> {
         if n >= 0 {
             return Err(RDFError::ConversionError {
-                msg: ("negativeInteger (must be < 0)".to_string()),
+                msg: "negativeInteger (must be < 0)".to_owned(),
             });
         }
         Ok(NumericLiteral::NegativeInteger(n))
@@ -201,7 +201,7 @@ impl NumericLiteral {
 
     /// Creates an integer literal from i64.
     pub fn integer_from_i64(d: i64) -> NumericLiteral {
-        NumericLiteral::Integer(d as i128)
+        NumericLiteral::Integer(i128::from(d))
     }
 
     /// Creates an integer literal from i128.
@@ -322,7 +322,7 @@ impl NumericLiteral {
             // For decimals, normalize and count only digits
             NumericLiteral::Decimal(d) => {
                 let normalized = d.normalize();
-                normalized.to_string().chars().filter(|c| c.is_ascii_digit()).count()
+                normalized.to_string().chars().filter(char::is_ascii_digit).count()
             },
             // Float/double don't have meaningful total digits
             NumericLiteral::Double(_) | NumericLiteral::Float(_) => return None,

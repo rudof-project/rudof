@@ -22,8 +22,8 @@ pub struct TapShape {
 impl TapShape {
     pub fn new(line: u64) -> TapShape {
         TapShape {
-            shape_id: Option::None,
-            shape_label: Option::None,
+            shape_id: None,
+            shape_label: None,
             statements: Vec::new(),
             start_line: line,
             extends: Vec::new(),
@@ -49,7 +49,7 @@ impl TapShape {
     }
 
     pub fn set_shape_label(&mut self, shape_label: &str) {
-        self.shape_label = Some(shape_label.to_string());
+        self.shape_label = Some(shape_label.to_owned());
         // Reset the statements because we have a new shape
         self.statements = Vec::new();
     }
@@ -60,7 +60,7 @@ impl TapShape {
             Ok(())
         } else {
             Err(TapReaderWarning::ExtendsLabelWithoutExtendsId {
-                label: label.to_string(),
+                label: label.to_owned(),
                 line,
             })
         }
@@ -105,7 +105,7 @@ impl Display for TapShape {
         )?;
         if !self.extends.is_empty() {
             write!(f, "extends")?;
-            for e in self.extends.iter() {
+            for e in &self.extends {
                 write!(f, " {e}")?;
             }
         }

@@ -49,7 +49,7 @@ pub enum QueryDialectCli {
 }
 
 impl Display for QueryDialectCli {
-    fn fmt(&self, f: &mut Formatter) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let val = self.to_possible_value().expect("no skipped variants");
         write!(f, "{}", val.get_name())
     }

@@ -117,7 +117,7 @@ where
 {
     if let Some(color) = color {
         // use std::borrow::Borrow;
-        let data: Cow<str> = s.into();
+        let data: Cow<'_, str> = s.into();
         let s: String = match data {
             Cow::Owned(t) => t,
             Cow::Borrowed(t) => t.into(),

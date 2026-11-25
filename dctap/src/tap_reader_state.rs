@@ -32,6 +32,7 @@ impl TapReaderState {
         &self.headers
     }
 
+    #[must_use]
     pub fn with_headers(mut self, headers: TapHeaders) -> Self {
         self.headers = headers;
         self
@@ -57,7 +58,7 @@ impl TapReaderState {
 
     // Get a value for placeholder_id and increment its counter
     pub fn placeholder_id(&mut self, str: &str) -> u64 {
-        match self.placeholder_ids.entry(str.to_string()) {
+        match self.placeholder_ids.entry(str.to_owned()) {
             Entry::Occupied(mut r) => {
                 let v = r.get_mut();
                 *v += 1;

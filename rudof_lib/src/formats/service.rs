@@ -24,7 +24,7 @@ impl FromStr for ResultServiceFormat {
             "mie" => Ok(ResultServiceFormat::Mie),
             "json" => Ok(ResultServiceFormat::Json),
             other => Err(ServiceError::UnsupportedResultServiceFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }

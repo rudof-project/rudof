@@ -25,6 +25,10 @@ pub enum ShapeExpr {
     },
     NodeConstraint(Box<NodeConstraint>),
     Shape(Box<Shape>),
+    #[expect(
+        clippy::empty_enum_variants_with_brackets,
+        reason = "`External {}` is part of the public API"
+    )]
     External {},
     Ref {
         idx: ShapeLabelIdx,
@@ -41,8 +45,8 @@ impl ShapeExpr {
 
     pub fn direct_references(&self) -> Vec<ShapeLabelIdx> {
         match self {
-            ShapeExpr::ShapeOr { exprs, .. } => exprs.to_vec(),
-            ShapeExpr::ShapeAnd { exprs, .. } => exprs.to_vec(),
+            ShapeExpr::ShapeOr { exprs, .. } => exprs.clone(),
+            ShapeExpr::ShapeAnd { exprs, .. } => exprs.clone(),
             ShapeExpr::ShapeNot { expr, .. } => vec![*expr],
             ShapeExpr::NodeConstraint(_) => vec![],
             ShapeExpr::Shape(_s) => vec![],
@@ -93,8 +97,7 @@ impl ShapeExpr {
                 let refs = if visited.insert(*expr) {
                     schema
                         .find_shape_idx(expr)
-                        .map(|info| info.expr().references_visited(schema, visited))
-                        .unwrap_or_default()
+                        .map_or_default(|info| info.expr().references_visited(schema, visited))
                 } else {
                     HashMap::new()
                 };
@@ -107,8 +110,7 @@ impl ShapeExpr {
                 let refs = if visited.insert(*expr) {
                     schema
                         .find_shape_idx(expr)
-                        .map(|info| info.expr().references_visited(schema, visited))
-                        .unwrap_or_default()
+                        .map_or_default(|info| info.expr().references_visited(schema, visited))
                 } else {
                     HashMap::new()
                 };
@@ -121,8 +123,7 @@ impl ShapeExpr {
                 if visited.insert(*expr) {
                     schema
                         .find_shape_idx(expr)
-                        .map(|info| info.expr().references_visited(schema, visited))
-                        .unwrap_or_default()
+                        .map_or_default(|info| info.expr().references_visited(schema, visited))
                 } else {
                     HashMap::new()
                 }
@@ -207,10 +208,9 @@ impl ShapeExpr {
                         let expr = info.expr();
                         if visited.contains(&expr) {
                             continue;
-                        } else {
-                            visited.push(expr);
-                            expr.add_edges(source, graph, pos_neg, schema, visited);
                         }
+                        visited.push(expr);
+                        expr.add_edges(source, graph, pos_neg, schema, visited);
                     }
                 }
             },
@@ -220,10 +220,9 @@ impl ShapeExpr {
                         let expr = info.expr();
                         if visited.contains(&expr) {
                             continue;
-                        } else {
-                            visited.push(expr);
-                            expr.add_edges(source, graph, pos_neg, schema, visited);
                         }
+                        visited.push(expr);
+                        expr.add_edges(source, graph, pos_neg, schema, visited);
                     }
                 }
             },

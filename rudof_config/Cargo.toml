@@ -16,3 +16,6 @@ toml.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 dirs.workspace = true
+
+[lints]
+workspace = true

@@ -331,7 +331,7 @@ pub enum RDFError {
     /// # Fields
     /// - `msg`: A detailed description of why the opaque parser failed
     /// - `context`: Optional context about where in the parsing process the failure occurred
-    #[error("Opaque parser failed: {msg}{}", context.as_ref().map(|c| format!(" (context: {})", c)).unwrap_or_default())]
+    #[error("Opaque parser failed: {msg}{}", context.as_ref().map_or_default(|c| format!(" (context: {c})")))]
     FailedOpaqueError { msg: String, context: Option<String> },
 
     /// Error when a parser explicitly fails with a custom message.

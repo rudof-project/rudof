@@ -178,8 +178,7 @@ mod tool_router_tests {
 
         schema
             .get("items")
-            .map(|items| enumerated_values(items, defs))
-            .unwrap_or_default()
+            .map_or_default(|items| enumerated_values(items, defs))
     }
 
     /// A depth of 0 traverses nothing, so the schema must rule it out.
@@ -222,8 +221,7 @@ mod tool_router_tests {
         for expected in expected_tools {
             assert!(
                 tool_names.iter().any(|n| n == expected),
-                "Expected tool '{}' should be present",
-                expected
+                "Expected tool '{expected}' should be present"
             );
         }
     }
@@ -269,15 +267,14 @@ mod prompt_router_tests {
     fn test_expected_prompts_present() {
         let service = RudofMcpService::new();
         let prompts = service.prompt_router.list_all();
-        let prompt_names: Vec<_> = prompts.iter().map(|p| p.name.to_string()).collect();
+        let prompt_names: Vec<_> = prompts.iter().map(|p| p.name.clone()).collect();
 
         let expected_prompts = vec!["explore_rdf_node", "analyze_rdf_data", "validation_guide"];
 
         for expected in expected_prompts {
             assert!(
                 prompt_names.iter().any(|n| n == expected),
-                "Expected prompt '{}' should be present",
-                expected
+                "Expected prompt '{expected}' should be present"
             );
         }
     }
@@ -315,8 +312,8 @@ mod completion_tests {
         let completions = service.get_prompt_argument_completions("analyze_rdf_data", "focus");
 
         assert!(!completions.is_empty());
-        assert!(completions.contains(&"structure".to_string()));
-        assert!(completions.contains(&"all".to_string()));
+        assert!(completions.contains(&"structure".to_owned()));
+        assert!(completions.contains(&"all".to_owned()));
     }
 
     /// Test prompt argument completions for technology
@@ -327,8 +324,8 @@ mod completion_tests {
         let completions = service.get_prompt_argument_completions("validation_guide", "technology");
 
         assert!(!completions.is_empty());
-        assert!(completions.contains(&"shex".to_string()));
-        assert!(completions.contains(&"shacl".to_string()));
+        assert!(completions.contains(&"shex".to_owned()));
+        assert!(completions.contains(&"shacl".to_owned()));
     }
 
     /// Test resource URI completions for format
@@ -342,7 +339,7 @@ mod completion_tests {
             !completions.is_empty(),
             "Should have format completions for rudof:// URIs"
         );
-        assert!(completions.contains(&"turtle".to_string()));
+        assert!(completions.contains(&"turtle".to_owned()));
     }
 
     /// Test resource URI completions for endpoint
@@ -382,13 +379,13 @@ mod completion_tests {
 // =============================================================================
 
 #[cfg(not(target_family = "wasm"))]
-#[allow(deprecated)]
+#[expect(deprecated)]
 mod log_level_tests {
     use super::*;
     use rmcp::model::LoggingLevel;
 
     /// Helper to run async code in tests
-    fn block_on<F: std::future::Future>(f: F) -> F::Output {
+    fn block_on<F: Future>(f: F) -> F::Output {
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()

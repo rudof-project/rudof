@@ -1,6 +1,6 @@
 use rudof_rdf::rdf_core::term::literal::Lang;
 use serde::{Serialize, Serializer};
-use std::{result, str::FromStr};
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -29,7 +29,7 @@ impl FromStr for LangOrWildcard {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let lang = Lang::new(s).map_err(|e| LangOrWildcardParseError::InvalidLang {
-            tag: s.to_string(),
+            tag: s.to_owned(),
             error: e.to_string(),
         })?;
         Ok(LangOrWildcard::Lang(lang))
@@ -37,7 +37,7 @@ impl FromStr for LangOrWildcard {
 }
 
 impl Serialize for LangOrWildcard {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

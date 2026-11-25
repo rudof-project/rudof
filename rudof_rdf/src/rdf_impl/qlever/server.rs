@@ -81,10 +81,10 @@ impl QleverServer {
         // The image's entrypoint expects `["-c", "<cmd-string>"]` and a working directory of `/data` with something bound there.
         let mut request = image
             .with_cmd(["-c", cmd.as_str()])
-            .with_working_dir(CONTAINER_WORKING_DIR.to_string())
+            .with_working_dir(CONTAINER_WORKING_DIR.to_owned())
             .with_mount(Mount::bind_mount(
                 handle.path().display().to_string(),
-                CONTAINER_WORKING_DIR.to_string(),
+                CONTAINER_WORKING_DIR.to_owned(),
             ));
 
         if let Some(label) = &config.container_label {
@@ -106,9 +106,9 @@ impl QleverServer {
                     use bollard::models::{PortBinding, PortMap};
                     let mut bindings: PortMap = std::collections::HashMap::new();
                     bindings.insert(
-                        format!("{}/tcp", container_port),
+                        format!("{container_port}/tcp"),
                         Some(vec![PortBinding {
-                            host_ip: Some("0.0.0.0".to_string()),
+                            host_ip: Some("0.0.0.0".to_owned()),
                             host_port: Some(host_port.to_string()),
                         }]),
                     );
@@ -155,9 +155,9 @@ impl QleverServer {
 /// Construct the single command string that the container's shell will run.
 /// Translates the [`QleverConfig`] flags to `ServerMain` / `qlever-server`
 pub(crate) fn build_server_cmd(cli: CliKind, index_name: &str, config: &QleverConfig) -> String {
-    let mut argv: Vec<String> = vec![cli.server_cmd().to_string()];
+    let mut argv: Vec<String> = vec![cli.server_cmd().to_owned()];
     argv.push("-i".into());
-    argv.push(index_name.to_string());
+    argv.push(index_name.to_owned());
     argv.push("-p".into());
     argv.push(config.container_port.to_string());
 
@@ -236,7 +236,7 @@ async fn wait_until_responsive(endpoint: &str, timeout_secs: u64) -> Result<(), 
         if std::time::Instant::now() >= deadline {
             warn!("QLever did not respond within {}s", timeout_secs);
             return Err(QleverError::ServerStartupTimeout {
-                endpoint: endpoint.to_string(),
+                endpoint: endpoint.to_owned(),
                 timeout_secs,
             });
         }
@@ -264,7 +264,7 @@ fn shell_quote(s: &str) -> String {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'/' | b':' | b'='
         )
     }) {
-        s.to_string()
+        s.to_owned()
     } else {
         let escaped = s.replace('\'', "'\\''");
         format!("'{escaped}'")

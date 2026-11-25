@@ -63,7 +63,7 @@ fn failing(labels: &[Value]) -> BTreeSet<String> {
     labels
         .iter()
         .filter(|l| l["kind"] != "trap")
-        .map(|l| l["node"].as_str().unwrap().to_string())
+        .map(|l| l["node"].as_str().unwrap().to_owned())
         .collect()
 }
 
@@ -84,7 +84,11 @@ async fn run(entities: usize, rate: f64, operators: &[&str], reading: &str) -> R
         dir.display().to_string().replace('\\', "/"),
     );
     let cfg = GeneratorConfig::from_toml_str(&toml).unwrap_or_else(|e| panic!("{e}\n{toml}"));
-    assert_eq!(cfg.output.format, OutputFormat::Pg);
+    assert_eq!(
+        cfg.output.format,
+        OutputFormat::Pg,
+        "the config should select the PG output"
+    );
     let graph = generate(&fixture, cfg).await;
     Run {
         graph,
@@ -99,7 +103,7 @@ async fn run(entities: usize, rate: f64, operators: &[&str], reading: &str) -> R
 /// IRIs as the validators print them: without angle brackets.
 fn bare(set: &BTreeSet<String>) -> BTreeSet<String> {
     set.iter()
-        .map(|n| n.trim_matches(|c| c == '<' || c == '>').to_string())
+        .map(|n| n.trim_matches(|c| c == '<' || c == '>').to_owned())
         .collect()
 }
 

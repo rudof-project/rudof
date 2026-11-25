@@ -61,8 +61,8 @@ impl InheritanceGraph {
 
 impl Display for InheritanceGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (source, target, _) in self.graph.edge_references() {
-            writeln!(f, "{} -> {} ", source, target,)?;
+        for (source, target, ()) in self.graph.edge_references() {
+            writeln!(f, "{source} -> {target} ",)?;
         }
         Ok(())
     }

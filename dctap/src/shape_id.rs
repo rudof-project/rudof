@@ -10,7 +10,7 @@ pub struct ShapeId {
 impl ShapeId {
     pub fn new(str: &str, line: u64) -> ShapeId {
         ShapeId {
-            str: str.to_string(),
+            str: str.to_owned(),
             line,
         }
     }
@@ -31,7 +31,7 @@ impl ShapeId {
 impl Default for ShapeId {
     fn default() -> Self {
         Self {
-            str: "default".to_string(),
+            str: "default".to_owned(),
             line: 0,
         }
     }

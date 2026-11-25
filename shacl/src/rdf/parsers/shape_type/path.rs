@@ -8,5 +8,5 @@ use std::sync::Arc;
 
 pub(crate) fn path<RDF: FocusRDF>(budget: Arc<ParseBudget>) -> impl RDFNodeParse<RDF, Output = SHACLPath> {
     SingleValuePropertyParser::new(ShaclVocab::sh_path())
-        .then(move |term| ShaclPathParser::with_budget(term, budget.clone()))
+        .then(move |term| ShaclPathParser::with_budget(term, Arc::clone(&budget)))
 }

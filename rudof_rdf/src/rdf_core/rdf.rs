@@ -277,7 +277,7 @@ pub trait Rdf: Sized {
     fn term_as_object(term: &Self::Term) -> Result<Object, RDFError> {
         <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_e| RDFError::TermAsObject {
             term: format!("Converting term to object: {term}"),
-            error: "Error term_as_object".to_string(),
+            error: "Error term_as_object".to_owned(),
         })
     }
 
@@ -314,7 +314,7 @@ pub trait Rdf: Sized {
     /// # Errors
     ///
     /// Returns `RDFError::TermAsLang` if the term is not a language-tagged literal.
-    fn term_as_lang(term: &Self::Term) -> std::result::Result<Lang, RDFError> {
+    fn term_as_lang(term: &Self::Term) -> Result<Lang, RDFError> {
         if let Ok(literal) = Self::term_as_literal(term)
             && let Ok(lang) = Lang::new(literal.lexical_form())
         {

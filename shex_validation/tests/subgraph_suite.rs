@@ -88,9 +88,9 @@ fn run(case: &Case) -> Subgraphs {
     let valid_sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
     let invalid_sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
     let config = ValidatorConfig::default()
-        .with_read_sink(TriplesSink::new(visited_sink.clone()))
-        .with_valid_sink(TriplesSink::new(valid_sink.clone()))
-        .with_invalid_sink(TriplesSink::new(invalid_sink.clone()));
+        .with_read_sink(TriplesSink::new(Arc::clone(&visited_sink)))
+        .with_valid_sink(TriplesSink::new(Arc::clone(&valid_sink)))
+        .with_invalid_sink(TriplesSink::new(Arc::clone(&invalid_sink)));
     let schema = compile(&case.read("schema.shex"), &config);
     let graph = OxigraphInMemory::from_str(&case.read("data.ttl"), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("parse data");

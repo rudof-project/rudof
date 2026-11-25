@@ -22,7 +22,7 @@ impl FromStr for CompareSchemaFormat {
             "shexc" => Ok(CompareSchemaFormat::ShExC),
             "shexj" => Ok(CompareSchemaFormat::ShExJ),
             "turtle" => Ok(CompareSchemaFormat::Turtle),
-            _ => Err(ComparatorError::UnknownSchemaFormat(s.to_string())),
+            _ => Err(ComparatorError::UnknownSchemaFormat(s.to_owned())),
         }
     }
 }

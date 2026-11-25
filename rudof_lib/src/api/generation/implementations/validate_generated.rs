@@ -67,10 +67,10 @@ pub fn validate_generated(
                 .shex_validation_results
                 .as_ref()
                 .ok_or_else(|| GenerationError::FailedValidatingGeneratedData {
-                    error: "the ShEx validator produced no results".to_string(),
+                    error: "the ShEx validator produced no results".to_owned(),
                 })?;
         let mut outcome = GenerationValidation {
-            language: "ShEx".to_string(),
+            language: "ShEx".to_owned(),
             ..Default::default()
         };
         for (_, _, status) in results.iter() {
@@ -94,15 +94,13 @@ pub fn validate_generated(
                 .shacl_validation_results
                 .as_ref()
                 .ok_or_else(|| GenerationError::FailedValidatingGeneratedData {
-                    error: "the SHACL validator produced no report".to_string(),
+                    error: "the SHACL validator produced no report".to_owned(),
                 })?;
         // Focus nodes are the generated entities listed in the shapemap.
-        let checked = std::fs::read_to_string(shapemap)
-            .map(|s| s.split(',').filter(|a| a.contains('@')).count())
-            .unwrap_or(0);
+        let checked = std::fs::read_to_string(shapemap).map_or(0, |s| s.split(',').filter(|a| a.contains('@')).count());
         let failing: HashSet<String> = report.results().iter().map(|r| r.focus_node().to_string()).collect();
         Ok(GenerationValidation {
-            language: "SHACL".to_string(),
+            language: "SHACL".to_owned(),
             checked,
             conformant: checked.saturating_sub(failing.len()),
             violations: report.results().len(),

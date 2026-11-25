@@ -10,7 +10,7 @@ pub(crate) fn order<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = OrderVal
     SingleLiteralPropertyParser::new(ShaclVocab::sh_order()).flat_map(|lit: RDF::Literal| match lit.try_into() {
         Ok(concrete_literal) => parse_order_value(concrete_literal),
         Err(_e) => Err(RDFError::ParseFailError {
-            msg: "Failed to convert literal to concrete literal".to_string(),
+            msg: "Failed to convert literal to concrete literal".to_owned(),
         }),
     })
 }
@@ -21,28 +21,25 @@ fn parse_order_value(concrete_literal: ConcreteLiteral) -> Result<OrderValue, RD
         ConcreteLiteral::NumericLiteral(NumericLiteral::Decimal(d)) => Ok(OrderValue::Decimal(d)),
         ConcreteLiteral::DatatypeLiteral { lexical_form, datatype } => {
             let datatype_iris = datatype.get_iri().map_err(|e| RDFError::ParseFailError {
-                msg: format!("Failed to get datatype IRI: {}", e),
+                msg: format!("Failed to get datatype IRI: {e}"),
             })?;
             if datatype_iris == &XsdVocab::xsd_integer() {
                 match lexical_form.parse::<i128>() {
                     Ok(i) => Ok(OrderValue::Integer(i)),
                     Err(e) => Err(RDFError::ParseFailError {
-                        msg: format!("Failed to parse integer from lexical form '{}': {}", lexical_form, e),
+                        msg: format!("Failed to parse integer from lexical form '{lexical_form}': {e}"),
                     }),
                 }
             } else if datatype_iris == &XsdVocab::xsd_decimal() {
                 match Decimal::from_str_exact(&lexical_form) {
                     Ok(d) => Ok(OrderValue::Decimal(d)),
                     Err(e) => Err(RDFError::ParseFailError {
-                        msg: format!("Failed to parse decimal from lexical form '{}': {}", lexical_form, e),
+                        msg: format!("Failed to parse decimal from lexical form '{lexical_form}': {e}"),
                     }),
                 }
             } else {
                 Err(RDFError::ParseFailError {
-                    msg: format!(
-                        "Value of sh:order must be an integer or a decimal literal. Got datatype {}",
-                        datatype
-                    ),
+                    msg: format!("Value of sh:order must be an integer or a decimal literal. Got datatype {datatype}"),
                 })
             }
         },
@@ -52,10 +49,7 @@ fn parse_order_value(concrete_literal: ConcreteLiteral) -> Result<OrderValue, RD
                 concrete_literal
             );
             Err(RDFError::ParseFailError {
-                msg: format!(
-                    "Value of sh:order must be an integer or a decimal literal. Got {}",
-                    concrete_literal
-                ),
+                msg: format!("Value of sh:order must be an integer or a decimal literal. Got {concrete_literal}"),
             })
         },
     }

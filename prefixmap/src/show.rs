@@ -6,6 +6,6 @@ pub trait Show {
 
 impl<S: Show> Show for Option<&S> {
     fn show(&self, pm: &PrefixMap) -> String {
-        self.map(|i| i.show(pm)).unwrap_or_default()
+        self.map_or_default(|i| i.show(pm))
     }
 }

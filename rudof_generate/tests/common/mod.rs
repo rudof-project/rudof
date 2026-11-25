@@ -14,6 +14,7 @@ use rudof_lib::formats::{
     DataFormat, InputSpec, ResultShExValidationFormat, ResultShaclValidationFormat, ShExFormat, ShaclFormat,
     ShapeMapFormat,
 };
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
@@ -132,7 +133,7 @@ pub fn validate_shex(data: &str, schema: &str, shapemap: &str) -> Verdict {
             Some("FAIL") => {
                 verdict.violations += 1;
                 if let Some(node) = line.split(',').next() {
-                    verdict.failing.insert(node.to_string());
+                    verdict.failing.insert(node.to_owned());
                 }
             },
             other => panic!("unexpected ShEx status {other:?} in line: {line}"),
@@ -240,11 +241,12 @@ pub fn validate_pgschema(graph: &str, schema: &str, type_map: &str) -> Verdict {
         } else {
             verdict.violations += 1;
             verdict.failing.insert(association.node_id.clone());
-            verdict.report.push_str(&format!(
-                "{} @ {}: {:?}
-",
+            writeln!(
+                verdict.report,
+                "{} @ {}: {:?}",
                 association.node_id, association.type_name, association.details
-            ));
+            )
+            .unwrap();
         }
     }
     verdict

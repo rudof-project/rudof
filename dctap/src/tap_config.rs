@@ -76,36 +76,43 @@ impl TapConfig {
         }
     }
 
+    #[must_use]
     pub fn with_delimiter(mut self, c: char) -> Self {
         self.delimiter = c;
         self
     }
 
+    #[must_use]
     pub fn with_quote(mut self, c: char) -> Self {
         self.quote = c;
         self
     }
 
+    #[must_use]
     pub fn with_flexible(mut self, flag: bool) -> Self {
         self.flexible = flag;
         self
     }
 
+    #[must_use]
     pub fn with_picklist_delimiter(mut self, c: char) -> Self {
         self.picklist_delimiter = c;
         self
     }
 
+    #[must_use]
     pub fn with_property_placeholders(mut self, placeholders: HashMap<String, PlaceholderResolver>) -> Self {
         self.property_placeholders = placeholders;
         self
     }
 
+    #[must_use]
     pub fn with_empty_property_placeholder(mut self, placeholder: Option<PlaceholderResolver>) -> Self {
         self.empty_property_placeholder = placeholder;
         self
     }
 
+    #[must_use]
     pub fn with_value_shape_delimiter(mut self, c: char) -> Self {
         self.value_shape_delimiter = c;
         self
@@ -194,12 +201,12 @@ mod tests {
         let key = "nalt";
         let resolver = PlaceholderResolver::stem("pending");
         let mut ph = HashMap::new();
-        ph.insert(key.to_string(), resolver.clone());
+        ph.insert(key.to_owned(), resolver.clone());
         let config = TapConfig::default()
             .with_property_placeholders(ph)
             .with_empty_property_placeholder(resolver.clone().into());
-        assert_eq!(config.get_property_placeholder(&"nalt".to_string()), Some(&resolver));
-        assert_eq!(config.get_property_placeholder(&"".to_string()), Some(&resolver))
+        assert_eq!(config.get_property_placeholder(&"nalt".to_owned()), Some(&resolver));
+        assert_eq!(config.get_property_placeholder(&String::new()), Some(&resolver))
     }
 
     #[test]
@@ -234,7 +241,7 @@ picklist_delimiter = " "
             .with_property_placeholders(property_placeholders)
             .with_empty_property_placeholder(PlaceholderResolver::stem("empty")); */
         assert_eq!(
-            config.get_property_placeholder(&"x".to_string()).unwrap(),
+            config.get_property_placeholder(&"x".to_owned()).unwrap(),
             &PlaceholderResolver::stem("pending")
         );
         // let str = toml::to_string_pretty(&config).unwrap();

@@ -44,18 +44,18 @@ fn test_load_shapemap_compact_success() {
 
     // Load ShEx schema
     let schema = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
-           }"#,
+           }",
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load ShapeMap
-    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
+    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -65,8 +65,7 @@ fn test_load_shapemap_compact_success() {
     assert!(serialized.contains("PersonShape"));
 
     println!(
-        "\n===== test_load_shapemap_compact_success =====\n{}\n============================================",
-        serialized
+        "\n===== test_load_shapemap_compact_success =====\n{serialized}\n============================================"
     );
 }
 
@@ -96,21 +95,21 @@ fn test_load_shapemap_replace() {
 
     // Load ShEx schema
     let schema = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape { ex:name xsd:string }
-           ex:EmployeeShape { ex:name xsd:string }"#,
+           ex:EmployeeShape { ex:name xsd:string }",
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load first shapemap
-    let shapemap1 = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
+    let shapemap1 = InputSpec::str("ex:alice@ex:PersonShape");
 
     load_shapemap(&mut rudof, &shapemap1, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
     // Load second shapemap (should replace)
-    let shapemap2 = InputSpec::str(r#"ex:bob@ex:EmployeeShape"#);
+    let shapemap2 = InputSpec::str("ex:bob@ex:EmployeeShape");
 
     load_shapemap(&mut rudof, &shapemap2, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -120,10 +119,7 @@ fn test_load_shapemap_replace() {
     assert!(serialized.contains("bob"));
     assert!(serialized.contains("EmployeeShape"));
 
-    println!(
-        "\n===== test_load_shapemap_replace =====\n{}\n============================================",
-        serialized
-    );
+    println!("\n===== test_load_shapemap_replace =====\n{serialized}\n============================================");
 }
 
 #[test]
@@ -132,15 +128,15 @@ fn test_load_shapemap_no_data_error() {
 
     // Load schema but no data
     let schema = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:PersonShape { ex:name xsd:string }"#,
+           ex:PersonShape { ex:name xsd:string }",
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Try to load shapemap without data
-    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
+    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
 
     let result = load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None);
 
@@ -171,7 +167,7 @@ fn test_load_shapemap_no_schema_error() {
     .unwrap();
 
     // Try to load shapemap without schema
-    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
+    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
 
     let result = load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None);
 
@@ -202,9 +198,9 @@ fn test_load_shapemap_invalid_syntax() {
     .unwrap();
 
     let schema = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:PersonShape { ex:name xsd:string }"#,
+           ex:PersonShape { ex:name xsd:string }",
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
@@ -245,15 +241,15 @@ fn test_load_shapemap_with_base_nodes() {
 
     // Load schema
     let schema = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:PersonShape { ex:name xsd:string }"#,
+           ex:PersonShape { ex:name xsd:string }",
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load shapemap with base for nodes
-    let shapemap = InputSpec::str(r#"<alice>@ex:PersonShape"#);
+    let shapemap = InputSpec::str("<alice>@ex:PersonShape");
 
     load_shapemap(
         &mut rudof,
@@ -269,8 +265,7 @@ fn test_load_shapemap_with_base_nodes() {
     assert!(serialized.contains("alice"));
 
     println!(
-        "\n===== test_load_shapemap_with_base_nodes =====\n{}\n============================================",
-        serialized
+        "\n===== test_load_shapemap_with_base_nodes =====\n{serialized}\n============================================"
     );
 }
 
@@ -299,15 +294,15 @@ fn test_serialize_shapemap_json() {
 
     // Load schema
     let schema = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:PersonShape { ex:name xsd:string }"#,
+           ex:PersonShape { ex:name xsd:string }",
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load shapemap
-    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
+    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -316,10 +311,7 @@ fn test_serialize_shapemap_json() {
     assert!(serialized.contains("alice"));
     assert!(serialized.contains("PersonShape"));
     // JSON format check
-    assert!(serialized.contains("{") && serialized.contains("}"));
+    assert!(serialized.contains('{') && serialized.contains('}'));
 
-    println!(
-        "\n===== test_serialize_shapemap_json =====\n{}\n============================================",
-        serialized
-    );
+    println!("\n===== test_serialize_shapemap_json =====\n{serialized}\n============================================");
 }

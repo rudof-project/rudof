@@ -50,23 +50,23 @@ fn test_validate_and_serialize_pgschema() {
 
     // Load PG schema
     let pg_schema = InputSpec::str(
-        r#"
+        "
 CREATE NODE TYPE ( AdultStudentType: Student {
     name: STRING ,
     age: INTEGER CHECK > 18
 })
-        "#,
+        ",
     );
 
     load_pgschema(&mut rudof, &pg_schema, None).unwrap();
 
     // Load typemap
     let typemap = InputSpec::str(
-        r#"
+        "
 n1: AdultStudentType,
 n2_wrong: AdultStudentType,
 n3_wrong: AdultStudentType
-        "#,
+        ",
     );
 
     load_typemap(&mut rudof, &typemap).unwrap();
@@ -76,13 +76,13 @@ n3_wrong: AdultStudentType
 
     // Serialize results in different formats
     let compact = serialize_validation_to_string(&rudof, Some(ResultPgSchemaValidationFormat::Compact), None);
-    println!("\n===== Compact Format =====\n{}\n", compact);
+    println!("\n===== Compact Format =====\n{compact}\n");
 
     let json = serialize_validation_to_string(&rudof, Some(ResultPgSchemaValidationFormat::Json), None);
-    println!("===== JSON Format =====\n{}\n", json);
+    println!("===== JSON Format =====\n{json}\n");
 
     let csv = serialize_validation_to_string(&rudof, Some(ResultPgSchemaValidationFormat::Csv), Some(true));
-    println!("===== CSV Format =====\n{}\n", csv);
+    println!("===== CSV Format =====\n{csv}\n");
 
     // Assertions - should find validation errors
     // n1 should pass (age 23 > 18)

@@ -18,10 +18,10 @@ pretty.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-toml.workspace = true
 tracing = { workspace = true }
 
 [dev-dependencies]
+toml.workspace = true
 indoc.workspace = true
 proptest.workspace = true
 tracing-test.workspace = true
@@ -32,3 +32,6 @@ criterion = { workspace = true }
 [[bench]]
 name = "match_bag"
 harness = false
+
+[lints]
+workspace = true

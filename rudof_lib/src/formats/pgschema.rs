@@ -27,7 +27,7 @@ impl FromStr for PgSchemaFormat {
         match s.to_lowercase().as_str() {
             "compact" | "pgschemac" => Ok(PgSchemaFormat::PgSchemaC),
             other => Err(PgSchemaError::UnsupportedPgSchemaFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }

@@ -73,7 +73,7 @@ impl NoMatchReason {
     /// triple constraint is in the schema: `property :name: expected exactly 1 value, found 0
     /// (at @:Person~:name)`.
     pub fn show_qualified(&self, nodes_prefixmap: &PrefixMap, schema: &SchemaIR) -> String {
-        let at = self.path(schema).map(|path| show_at(&path, schema)).unwrap_or_default();
+        let at = self.path(schema).map_or_default(|path| show_at(&path, schema));
         let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
         let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
         match self {
@@ -115,16 +115,16 @@ impl NoMatchReason {
 pub(crate) fn show_cardinality(cardinality: &Cardinality) -> String {
     let values = |n: usize| {
         if n == 1 {
-            "1 value".to_string()
+            "1 value".to_owned()
         } else {
             format!("{n} values")
         }
     };
     let min = cardinality.min.value;
     match &cardinality.max {
-        Max::Unbounded if min == 0 => "any number of values".to_string(),
+        Max::Unbounded if min == 0 => "any number of values".to_owned(),
         Max::Unbounded => format!("at least {}", values(min)),
-        Max::IntMax(0) => "no values".to_string(),
+        Max::IntMax(0) => "no values".to_owned(),
         Max::IntMax(max) if *max == min => format!("exactly {}", values(min)),
         Max::IntMax(max) if min == 0 => format!("at most {}", values(*max)),
         Max::IntMax(max) => format!("between {min} and {max} values"),

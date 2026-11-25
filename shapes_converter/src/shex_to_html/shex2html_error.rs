@@ -57,7 +57,7 @@ pub enum ShEx2HtmlError {
     #[error(transparent)]
     IOError {
         #[from]
-        err: std::io::Error,
+        err: io::Error,
     },
 
     #[error(transparent)]
@@ -102,6 +102,6 @@ pub enum ShEx2HtmlError {
 
 impl ShEx2HtmlError {
     pub fn not_implemented(msg: &str) -> ShEx2HtmlError {
-        ShEx2HtmlError::NotImplemented { msg: msg.to_string() }
+        ShEx2HtmlError::NotImplemented { msg: msg.to_owned() }
     }
 }

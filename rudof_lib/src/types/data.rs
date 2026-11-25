@@ -42,7 +42,7 @@ impl Data {
     pub fn unwrap_pg_mut(&mut self) -> &mut PropertyGraph {
         match self {
             Data::PGData(pg) => pg,
-            _ => panic!("called unwrap_pg_mut on RDFData"),
+            Data::RDFData(_) => panic!("called unwrap_pg_mut on RDFData"),
         }
     }
 }

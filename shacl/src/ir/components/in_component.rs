@@ -25,7 +25,7 @@ impl Display for In {
         let values = self
             .values()
             .iter()
-            .map(|v| v.to_string())
+            .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join(", ");
 

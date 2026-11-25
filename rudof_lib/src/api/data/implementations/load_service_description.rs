@@ -33,7 +33,7 @@ pub fn load_service_description(
     )
     .map_err(|error| {
         Box::new(DataError::FailedParsingServiceDescriptionData {
-            source_name: service.source_name().to_string(),
+            source_name: service.source_name().clone(),
             format: data_format.to_string(),
             base: base.to_string(),
             reader_mode: reader_mode.to_string(),

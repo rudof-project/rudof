@@ -13,7 +13,7 @@ pub mod query_shape_map;
 pub mod result_shape_map;
 pub mod shacl_path_ref;
 pub mod shape_selector;
-#[allow(clippy::module_inception)]
+#[expect(clippy::module_inception)]
 pub mod shapemap;
 pub mod shapemap_config;
 pub mod shapemap_error;

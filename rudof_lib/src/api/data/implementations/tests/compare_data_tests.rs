@@ -108,7 +108,7 @@ fn invalid_rdf_is_an_error() {
     let rudof = rudof();
     let data1 = InputSpec::str(TTL);
     let data2 = InputSpec::str(":not valid turtle");
-    assert!(rudof.compare_data(&data1, &data2).execute().is_err());
+    rudof.compare_data(&data1, &data2).execute().unwrap_err();
 }
 
 #[test]
@@ -116,7 +116,7 @@ fn non_rdf_format_is_an_error() {
     let rudof = rudof();
     let data = InputSpec::str(TTL);
     let result = rudof.compare_data(&data, &data).with_format(&DataFormat::Pg).execute();
-    assert!(result.is_err());
+    result.unwrap_err();
 }
 
 #[test]
@@ -206,7 +206,7 @@ fn compare_loaded_data_with_input() {
 fn compare_loaded_data_without_data_is_an_error() {
     let rudof = rudof();
     let other = InputSpec::str(TTL);
-    assert!(rudof.compare_loaded_data(&other).execute().is_err());
+    rudof.compare_loaded_data(&other).execute().unwrap_err();
 }
 
 // Diffs
@@ -222,11 +222,11 @@ fn diff_lists_the_triples_only_in_each_graph() {
     let strings = |ts: &[oxrdf::Triple]| ts.iter().map(ToString::to_string).collect::<Vec<_>>();
     assert_eq!(
         strings(&diff.only_in_first),
-        vec!["_:b <http://example.org/name> \"Bob\"".to_string()]
+        vec!["_:b <http://example.org/name> \"Bob\"".to_owned()]
     );
     assert_eq!(
         strings(&diff.only_in_second),
-        vec!["_:c <http://example.org/name> \"Robert\"".to_string()]
+        vec!["_:c <http://example.org/name> \"Robert\"".to_owned()]
     );
 }
 

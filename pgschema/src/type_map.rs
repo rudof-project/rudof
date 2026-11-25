@@ -51,12 +51,9 @@ impl TypeMap {
         for association in &self.associations {
             let node_id = association.node_id();
             let type_name = association.type_name();
-            let either_node_edge =
-                graph
-                    .get_node_edge_by_label(node_id)
-                    .map_err(|_| PgsError::MissingNodeEdgeLabel {
-                        label: node_id.to_string(),
-                    })?;
+            let either_node_edge = graph
+                .get_node_edge_by_label(node_id)
+                .map_err(|_| PgsError::MissingNodeEdgeLabel { label: node_id.clone() })?;
             let conforms_result = match either_node_edge {
                 Left(node) => schema.conforms_node(type_name, node),
                 Right(edge) => schema.conforms_edge(type_name, edge, graph),
@@ -79,7 +76,7 @@ impl TypeMap {
                 self.find_association(&result_association.node_id, &result_association.type_name)
             {
                 match (expected_association.should_conform, &result_association.details) {
-                    (true, Right(_)) => continue,
+                    (true, Right(_)) => {},
                     (true, Left(errors)) => {
                         failed_associations.push(FailedAssociation {
                             node_id: result_association.node_id.clone(),
@@ -96,7 +93,7 @@ impl TypeMap {
                             },
                         });
                     },
-                    (false, Left(_)) => continue,
+                    (false, Left(_)) => {},
                 }
             } else {
                 return Err(PgsError::MissingAssociation {
@@ -146,7 +143,7 @@ impl Display for FailedAssociation {
 fn show_evidences(evidences: &[Evidence]) -> String {
     evidences
         .iter()
-        .map(|e| e.to_string())
+        .map(ToString::to_string)
         .collect::<Vec<String>>()
         .join("\n ")
 }
@@ -154,7 +151,7 @@ fn show_evidences(evidences: &[Evidence]) -> String {
 fn show_errors(errors: &[PgsError]) -> String {
     errors
         .iter()
-        .map(|e| e.to_string())
+        .map(ToString::to_string)
         .collect::<Vec<String>>()
         .join("\n ")
 }
@@ -162,7 +159,7 @@ fn show_errors(errors: &[PgsError]) -> String {
 impl Display for TypeMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for ass in &self.associations {
-            writeln!(f, "  {}", ass)?;
+            writeln!(f, "  {ass}")?;
         }
         Ok(())
     }
@@ -184,6 +181,7 @@ impl Association {
         }
     }
 
+    #[must_use]
     pub fn with_no_conform(mut self) -> Self {
         self.should_conform = false;
         self

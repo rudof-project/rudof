@@ -70,7 +70,7 @@ fn a_filter_may_hold_a_junction() {
 
 #[test]
 fn a_union_keyword_is_a_whole_word() {
-    assert!(ShExPathParser::parse_syntax("shapes unionstart").is_err());
+    ShExPathParser::parse_syntax("shapes unionstart").unwrap_err();
 }
 
 #[test]

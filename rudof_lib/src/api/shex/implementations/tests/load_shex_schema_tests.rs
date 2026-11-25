@@ -32,7 +32,7 @@ fn test_load_shex_schema_shexc_success() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        r#"
+        "
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            <PersonShape> {
              <name> xsd:string ;
@@ -43,7 +43,7 @@ fn test_load_shex_schema_shexc_success() {
              <employeeId> xsd:string ;
              <worksFor> <PersonShape>
            }
-        "#,
+        ",
     );
 
     load_shex_schema(
@@ -62,8 +62,7 @@ fn test_load_shex_schema_shexc_success() {
     assert!(serialized.contains("age"));
 
     println!(
-        "\n===== test_load_shex_schema_shexc_success =====\n{}============================================",
-        serialized
+        "\n===== test_load_shex_schema_shexc_success =====\n{serialized}============================================"
     );
 }
 
@@ -72,15 +71,15 @@ fn test_load_shex_schema_replace() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema1 = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:Shape1 { ex:prop1 xsd:string }"#,
+           ex:Shape1 { ex:prop1 xsd:string }",
     );
 
     let schema2 = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:Shape2 { ex:prop2 xsd:integer }"#,
+           ex:Shape2 { ex:prop2 xsd:integer }",
     );
 
     load_shex_schema(&mut rudof, &schema1, Some(&ShExFormat::ShExC), None, None).unwrap();
@@ -92,10 +91,7 @@ fn test_load_shex_schema_replace() {
     assert!(!serialized.contains("Shape1"));
     assert!(serialized.contains("Shape2"));
 
-    println!(
-        "\n===== test_load_shex_schema_replace =====\n{}============================================",
-        serialized
-    );
+    println!("\n===== test_load_shex_schema_replace =====\n{serialized}============================================");
 }
 
 #[test]
@@ -114,11 +110,11 @@ fn test_load_shex_schema_with_base() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        r#"
+        "
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         <PersonShape> {
              <name> xsd:string
-           }"#,
+           }",
     );
 
     load_shex_schema(
@@ -134,10 +130,7 @@ fn test_load_shex_schema_with_base() {
 
     assert!(serialized.contains("PersonShape"));
 
-    println!(
-        "\n===== test_load_shex_schema_with_base =====\n{}============================================",
-        serialized
-    );
+    println!("\n===== test_load_shex_schema_with_base =====\n{serialized}============================================");
 }
 
 #[test]
@@ -146,9 +139,9 @@ fn test_load_shex_schema_negative_cycles() {
 
     // Schema con ciclos negativos
     let schema = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
            ex:Shape1 NOT @ex:Shape2
-           ex:Shape2 NOT @ex:Shape1"#,
+           ex:Shape2 NOT @ex:Shape1",
     );
 
     let result = load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None);
@@ -164,12 +157,12 @@ fn test_load_shex_schema_shexr_turtle_roundtrip() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        r#"PREFIX ex: <http://example.org/>
+        "PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer ?
-           }"#,
+           }",
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();

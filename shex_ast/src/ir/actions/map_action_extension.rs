@@ -32,7 +32,7 @@ impl MapActionExtension {
 }
 
 impl SemanticActionExtension for MapActionExtension {
-    fn action_iri(&self) -> rudof_iri::IriS {
+    fn action_iri(&self) -> IriS {
         iri!("http://shex.io/extensions/Map/")
     }
 
@@ -44,7 +44,7 @@ impl SemanticActionExtension for MapActionExtension {
         if let Some(param) = parameter {
             trace!("Parameter: {}", param);
             let iri = IriS::parse_turtle(param.trim()).map_err(|e| SemanticActionError::InvalidParameter {
-                details: format!("Invalid IRI parameter: {}", e),
+                details: format!("Invalid IRI parameter: {e}"),
             })?;
             if let Some(object) = context.o() {
                 trace!("Object from context: {}", object);
@@ -53,12 +53,12 @@ impl SemanticActionExtension for MapActionExtension {
                 trace!("Updated state: {}", *st);
             } else {
                 return Err(SemanticActionError::NoObjectInContext {
-                    details: "No object provided in context".to_string(),
+                    details: "No object provided in context".to_owned(),
                 });
             }
         } else {
             return Err(SemanticActionError::InvalidParameter {
-                details: "No parameter provided".to_string(),
+                details: "No parameter provided".to_owned(),
             });
         }
         Ok(())

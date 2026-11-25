@@ -43,7 +43,11 @@ pub(crate) fn map_error<'a, T: 'a>(
 /// A combinator to add tracing to the parser.
 /// [fun] is an identifier for the parser and [parser] is the actual parser.
 #[inline(always)]
-#[allow(dead_code)] // The dead_code warning is disabled because this combinator is only used in debug mode.
+#[expect(
+    clippy::inline_always,
+    reason = "the parser combinators are on the hot path of the grammar"
+)]
+#[expect(dead_code)] // The dead_code warning is disabled because this combinator is only used in debug mode.
 #[allow(unused_variables)] // The unused_variables warning is disabled in case the tracing code commented out.
 pub(crate) fn traced<'a, T, P>(fun: &'static str, mut parser: P) -> impl FnMut(Span<'a>) -> IRes<'a, T>
 where
@@ -67,7 +71,7 @@ where
 
 /// A combinator that recognises a comment, starting at a `#`
 /// character and ending at the end of the line.
-fn comment(input: Span) -> IRes<()> {
+fn comment(input: Span<'_>) -> IRes<'_, ()> {
     alt((
         value((), pair(tag("#"), is_not("\n\r"))),
         // a comment that immediately precedes the end of the line –
@@ -78,7 +82,7 @@ fn comment(input: Span) -> IRes<()> {
     .parse(input)
 }
 
-fn multi_comment(i: Span) -> IRes<()> {
+fn multi_comment(i: Span<'_>) -> IRes<'_, ()> {
     // take_until, not is_not: is_not treats "*/" as a character set, so any '*' or '/'
     // inside the comment body (e.g. a /** doc comment */) would end the match early
     value((), delimited(tag("/*"), take_until("*/"), tag("*/"))).parse(i)
@@ -86,7 +90,7 @@ fn multi_comment(i: Span) -> IRes<()> {
 
 /// A combinator that recognises an arbitrary amount of whitespace and
 /// comments.
-pub(crate) fn tws0(input: Span) -> IRes<()> {
+pub(crate) fn tws0(input: Span<'_>) -> IRes<'_, ()> {
     value((), many0(alt((value((), multispace1), comment)))).parse(input)
 }
 
@@ -100,14 +104,14 @@ pub(crate) fn tws1(input: Span) -> IRes<()> {
 
 /// A combinator that creates a parser for a specific token.
 pub(crate) fn token<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
-    map_error(tag(token), || ShExParseError::ExpectedToken(token.to_string()))
+    map_error(tag(token), || ShExParseError::ExpectedToken(token.to_owned()))
 }
 
 /// A combinator that creates a parser for a specific token,
 /// surrounded by trailing whitespace or comments.
 pub(crate) fn token_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
     map_error(delimited(tws0, tag(token), tws0), || {
-        ShExParseError::ExpectedToken(token.to_string())
+        ShExParseError::ExpectedToken(token.to_owned())
     })
 }
 
@@ -115,7 +119,7 @@ pub(crate) fn token_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, 
 /// surrounded by trailing whitespace or comments.
 pub(crate) fn token_tws_no_case<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
     map_error(delimited(tws0, keyword_no_case(token), tws0), || {
-        ShExParseError::ExpectedToken(token.to_string())
+        ShExParseError::ExpectedToken(token.to_owned())
     })
 }
 
@@ -135,7 +139,7 @@ fn is_name_char(c: char) -> bool {
 /// surrounded by trailing whitespace or comments.
 pub(crate) fn tag_no_case_tws<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
     map_error(delimited(tws0, keyword_no_case(token), tws0), || {
-        ShExParseError::ExpectedToken(token.to_string())
+        ShExParseError::ExpectedToken(token.to_owned())
     })
 }
 

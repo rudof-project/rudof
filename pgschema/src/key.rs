@@ -5,7 +5,7 @@ use std::fmt::Display;
 pub struct Key(String);
 impl Key {
     pub fn new(name: &str) -> Self {
-        Key(name.to_string())
+        Key(name.to_owned())
     }
 
     pub fn str(&self) -> &str {

@@ -25,21 +25,25 @@ impl Assertor {
         }
     }
 
+    #[must_use]
     pub fn with_type(mut self, t: IriS) -> Self {
         self.types.push(t);
         self
     }
 
+    #[must_use]
     pub fn with_types(mut self, types: Vec<IriS>) -> Self {
         self.types = types;
         self
     }
 
+    #[must_use]
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
     }
 
+    #[must_use]
     pub fn with_homepage(mut self, homepage: IriS) -> Self {
         self.homepage = Some(homepage);
         self

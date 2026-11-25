@@ -27,7 +27,7 @@ impl ShExToUnified {
             .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
         let shapes = schema
             .shapes()
-            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))?;
+            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_owned()))?;
 
         self.convert_shapes(&shapes).await
     }
@@ -39,7 +39,7 @@ impl ShExToUnified {
             .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
         let shapes = schema
             .shapes()
-            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))?;
+            .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_owned()))?;
 
         self.convert_shapes(&shapes).await
     }
@@ -70,7 +70,7 @@ impl ShExToUnified {
         {
             target_class = Self::derive_target_class(&expr.te, &shape_id);
             self.extract_properties(&expr.te, &mut properties, metrics);
-            let extra: Vec<String> = s.extra.iter().flatten().map(|iri| iri.to_string()).collect();
+            let extra: Vec<String> = s.extra.iter().flatten().map(ToString::to_string).collect();
             for p in &mut properties {
                 p.all_values_match = !extra.contains(&p.property_iri);
             }
@@ -177,7 +177,7 @@ impl ShExToUnified {
         iri.strip_prefix('<')
             .and_then(|rest| rest.strip_suffix('>'))
             .unwrap_or(iri)
-            .to_string()
+            .to_owned()
     }
 
     fn extract_properties(
@@ -318,7 +318,7 @@ impl ShExToUnified {
         let exact: Option<Vec<String>> = values
             .iter()
             .map(|v| match v {
-                ValueSetValue::Language { language_tag } => Some(language_tag.as_str().to_string()),
+                ValueSetValue::Language { language_tag } => Some(language_tag.as_str().to_owned()),
                 _ => None,
             })
             .collect();
@@ -330,7 +330,7 @@ impl ShExToUnified {
             .map(|v| match v {
                 ValueSetValue::LanguageStem {
                     stem: LangOrWildcard::Lang(lang),
-                } => Some(lang.as_str().to_string()),
+                } => Some(lang.as_str().to_owned()),
                 _ => None,
             })
             .collect();
@@ -343,7 +343,7 @@ impl ShExToUnified {
         match facet {
             XsFacet::StringFacet(sf) => match sf {
                 shex_ast::ast::StringFacet::Pattern(pattern) => {
-                    constraints.push(UnifiedConstraint::Pattern(pattern.regex().to_string()));
+                    constraints.push(UnifiedConstraint::Pattern(pattern.regex().to_owned()));
                     true
                 },
                 shex_ast::ast::StringFacet::MinLength(min) => {

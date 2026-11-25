@@ -1,6 +1,6 @@
 use std::fmt;
 
-use serde::de::{self};
+use serde::de;
 use serde::{Deserialize, Deserializer, Serialize};
 // use serde_derive::Serialize;
 
@@ -33,7 +33,7 @@ impl<'de> Deserialize<'de> for ContextEntryValue {
         impl<'de> de::Visitor<'de> for ContextEntryValueVisitor {
             type Value = ContextEntryValue;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("ContextEntryValue")
             }
 
@@ -41,7 +41,7 @@ impl<'de> Deserialize<'de> for ContextEntryValue {
             where
                 E: de::Error,
             {
-                Ok(ContextEntryValue::Plain(value.to_string()))
+                Ok(ContextEntryValue::Plain(value.to_owned()))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>

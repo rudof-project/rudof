@@ -51,7 +51,7 @@ pub struct Case {
     pub source_iri: IriS,
 }
 
-pub fn load_corpus(manifest_path: &Path) -> anyhow::Result<Vec<Case>> {
+pub fn load_corpus(manifest_path: &Path) -> Result<Vec<Case>> {
     let manifest_text =
         std::fs::read_to_string(manifest_path).with_context(|| format!("read mainfest {}", manifest_path.display()))?;
     let manifest: Manifest =
@@ -67,7 +67,7 @@ pub fn load_corpus(manifest_path: &Path) -> anyhow::Result<Vec<Case>> {
     manifest.case.into_iter().map(|spec| load_case(spec, &root)).collect()
 }
 
-fn load_case(spec: CaseSpec, root: &Path) -> anyhow::Result<Case> {
+fn load_case(spec: CaseSpec, root: &Path) -> Result<Case> {
     let schema_path = root
         .join(&spec.schema)
         .canonicalize()
@@ -91,11 +91,10 @@ fn load_case(spec: CaseSpec, root: &Path) -> anyhow::Result<Case> {
         .parent()
         .ok_or_else(|| anyhow::anyhow!("schema has no parent dir: {}", schema_path.display()))?;
     let base_str = format!("file://{}/", schema_dir.display());
-    let base = IriS::new(&base_str).with_context(|| format!("create base IRI from {}", base_str))?;
+    let base = IriS::new(&base_str).with_context(|| format!("create base IRI from {base_str}"))?;
 
     let source_iri_str = format!("file://{}", schema_path.display());
-    let source_iri =
-        IriS::new(&source_iri_str).with_context(|| format!("create source IRI from {}", source_iri_str))?;
+    let source_iri = IriS::new(&source_iri_str).with_context(|| format!("create source IRI from {source_iri_str}"))?;
 
     Ok(Case {
         id: spec.id,

@@ -49,6 +49,7 @@ impl Filter {
     }
 
     /// This filter with `assert` in front. A term type cannot be asserted and is returned unchanged.
+    #[must_use]
     pub fn asserted(self) -> Self {
         match self {
             Filter::Test {
@@ -58,7 +59,7 @@ impl Filter {
                 operand,
                 comparison,
             },
-            other => other,
+            other @ Filter::TermType(_) => other,
         }
     }
 }

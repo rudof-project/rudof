@@ -44,10 +44,10 @@ fn validates_shape_on_triple_term_focus_node() {
         @prefix : <http://a.example/> .
         :x :asserts <<( :s :p "o" )>> .
     "#;
-    let schema = r#"
+    let schema = "
         BASE <http://a.example/>
         <M> { ^<asserts> [<http://a.example/x>] }
-    "#;
+    ";
 
     let config = ValidatorConfig::default();
     let compiled = compile(schema, &config);

@@ -31,11 +31,13 @@ impl Location {
     }
 
     /// The location of the value of property `key` of the item here.
+    #[must_use]
     pub fn key(&self, key: &str) -> Self {
-        self.with(Segment::Key(key.to_string()))
+        self.with(Segment::Key(key.to_owned()))
     }
 
     /// The location of member `index` of the array here.
+    #[must_use]
     pub fn index(&self, index: usize) -> Self {
         self.with(Segment::Index(index))
     }

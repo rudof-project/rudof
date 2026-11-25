@@ -26,7 +26,7 @@ pub fn load_sparql_query(rudof: &mut Rudof, query: &InputSpec, _query_type: Opti
     let prefixed_query_string = format!("{header}{query_string}");
 
     let parsed_query = SparqlQuery::new(&prefixed_query_string).map_err(|error| QueryError::FailedParsingQuery {
-        source_name: query.source_name().to_string(),
+        source_name: query.source_name().clone(),
         error: error.to_string(),
     })?;
 

@@ -18,7 +18,6 @@ rudof_iri.workspace = true
 mie.workspace = true
 minijinja = { workspace = true, features = ["serde"] }
 prefixmap.workspace = true
-rdf_config.workspace = true
 rudof_viz.workspace = true
 serde.workspace = true
 shacl.workspace = true
@@ -34,3 +33,6 @@ tracing.workspace = true
 
 [dev-dependencies]
 tracing-test.workspace = true
+
+[lints]
+workspace = true

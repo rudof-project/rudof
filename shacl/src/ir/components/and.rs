@@ -27,7 +27,7 @@ impl Display for And {
             "And [{}]",
             self.shapes()
                 .iter()
-                .map(|s| s.to_string())
+                .map(ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(", ")
         )

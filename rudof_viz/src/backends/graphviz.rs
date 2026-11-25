@@ -4,6 +4,7 @@
 use crate::model::{ClassSkin, Connector, ConnectorKind, Diagram, DiagramBox, Direction, LineType, Shape};
 use crate::render::{DiagramRenderer, RenderError};
 use crate::style::{LineStyle, StyleRule, StyleSheet};
+use std::fmt::Write as _;
 use std::io::Write;
 
 #[cfg(not(target_family = "wasm"))]
@@ -81,20 +82,17 @@ fn write_box<W: Write>(
     let id = escape_dot(&b.id().to_string());
     match b.shape() {
         Shape::Class => {
-            let border_color = class_skin.map(|s| s.border_color.name()).unwrap_or("black");
-            let background_color = class_skin.map(|s| s.background_color.name()).unwrap_or("white");
-            let href_attr = b
-                .href()
-                .map(|h| format!(" HREF=\"{}\"", escape_html(h)))
-                .unwrap_or_default();
+            let border_color = class_skin.map_or("black", |s| s.border_color.name());
+            let background_color = class_skin.map_or("white", |s| s.background_color.name());
+            let href_attr = b.href().map_or_default(|h| format!(" HREF=\"{}\"", escape_html(h)));
             let (title, _) = strip_links(b.title());
             let mut label = format!(
                 "<TABLE BORDER=\"1\" CELLBORDER=\"1\" CELLSPACING=\"0\" COLOR=\"{border_color}\" BGCOLOR=\"{background_color}\"{href_attr}>"
             );
-            label.push_str(&format!("<TR><TD><B>{}</B></TD></TR>", escape_html(&title)));
+            write!(label, "<TR><TD><B>{}</B></TD></TR>", escape_html(&title)).unwrap();
             for line in b.compartments() {
                 let (text, _) = strip_links(line);
-                label.push_str(&format!("<TR><TD ALIGN=\"LEFT\">{}</TD></TR>", escape_html(&text)));
+                write!(label, "<TR><TD ALIGN=\"LEFT\">{}</TD></TR>", escape_html(&text)).unwrap();
             }
             label.push_str("</TABLE>");
             writeln!(writer, "  \"{id}\" [shape=plaintext, label=<{label}>];")?;
@@ -113,7 +111,7 @@ fn write_box<W: Write>(
             };
             let mut attrs = vec![
                 format!("shape={shape_keyword}"),
-                "style=\"filled\"".to_string(),
+                "style=\"filled\"".to_owned(),
                 format!("label=\"{}\"", escape_dot(&text)),
             ];
             if let Some(href) = b.href().or(text_href.as_deref()) {
@@ -127,7 +125,7 @@ fn write_box<W: Write>(
                     attrs.push(format!("color=\"{}\"", lc.name()));
                 }
                 if let Some(t) = rule.line_thickness() {
-                    attrs.push(format!("penwidth={}", (t as f64).max(1.0)));
+                    attrs.push(format!("penwidth={}", f64::from(t).max(1.0)));
                 }
             }
             writeln!(writer, "  \"{id}\" [{}];", attrs.join(", "))?;
@@ -140,7 +138,7 @@ fn write_connector<W: Write>(writer: &mut W, c: &Connector) -> Result<(), Render
     let mut attrs = Vec::new();
     match c.kind() {
         ConnectorKind::Generalization => {
-            attrs.push("arrowhead=empty".to_string());
+            attrs.push("arrowhead=empty".to_owned());
         },
         ConnectorKind::Association => {
             let (text, text_href) = strip_links(c.label().unwrap_or(""));
@@ -198,20 +196,17 @@ fn strip_links(s: &str) -> (String, Option<String>) {
     while let Some(start) = rest.find("[[") {
         result.push_str(&rest[..start]);
         let after_open = &rest[start + 2..];
-        match after_open.find("]]") {
-            Some(end) => {
-                let inner = &after_open[..end];
-                let (url, label) = inner.split_once(' ').unwrap_or(("", inner));
-                if first_href.is_none() && !url.is_empty() {
-                    first_href = Some(url.to_string());
-                }
-                result.push_str(label);
-                rest = &after_open[end + 2..];
-            },
-            None => {
-                result.push_str("[[");
-                rest = after_open;
-            },
+        if let Some(end) = after_open.find("]]") {
+            let inner = &after_open[..end];
+            let (url, label) = inner.split_once(' ').unwrap_or(("", inner));
+            if first_href.is_none() && !url.is_empty() {
+                first_href = Some(url.to_owned());
+            }
+            result.push_str(label);
+            rest = &after_open[end + 2..];
+        } else {
+            result.push_str("[[");
+            rest = after_open;
         }
     }
     result.push_str(rest);
@@ -270,14 +265,14 @@ mod tests {
     fn strips_a_single_link_and_captures_its_href() {
         let (text, href) = strip_links("[[http://example.org/x label]]");
         assert_eq!(text, "label");
-        assert_eq!(href, Some("http://example.org/x".to_string()));
+        assert_eq!(href, Some("http://example.org/x".to_owned()));
     }
 
     #[test]
     fn strips_multiple_links_keeping_only_the_first_href() {
         let (text, href) = strip_links("[ [[http://example.org/a A]] [[http://example.org/b B]] ]");
         assert_eq!(text, "[ A B ]");
-        assert_eq!(href, Some("http://example.org/a".to_string()));
+        assert_eq!(href, Some("http://example.org/a".to_owned()));
     }
 
     #[test]
@@ -341,7 +336,7 @@ mod tests {
         });
         diagram.add_box(
             DiagramBox::new(BoxId::new(0), Shape::Class, ":Person")
-                .with_compartments(vec!["[[http://schema.org/name schema:name]] : xsd:string".to_string()]),
+                .with_compartments(vec!["[[http://schema.org/name schema:name]] : xsd:string".to_owned()]),
         );
 
         let text = render_to_string(&diagram);
@@ -358,7 +353,7 @@ mod tests {
         let mut diagram = Diagram::new();
         diagram.add_box(DiagramBox::new(BoxId::new(0), Shape::Class, ":Employee"));
         diagram.add_box(DiagramBox::new(BoxId::new(1), Shape::Class, ":Person"));
-        diagram.add_connector(crate::model::Connector::new(
+        diagram.add_connector(Connector::new(
             BoxId::new(0),
             BoxId::new(1),
             ConnectorKind::Generalization,
@@ -374,12 +369,12 @@ mod tests {
         diagram.add_box(DiagramBox::new(BoxId::new(0), Shape::Class, ":Person"));
         diagram.add_box(DiagramBox::new(BoxId::new(1), Shape::Class, ":Company"));
         diagram.add_connector(
-            crate::model::Connector::new(BoxId::new(0), BoxId::new(1), ConnectorKind::Association)
+            Connector::new(BoxId::new(0), BoxId::new(1), ConnectorKind::Association)
                 .with_label(":worksFor")
                 .with_target_decoration("*"),
         );
         diagram.add_connector(
-            crate::model::Connector::new(BoxId::new(0), BoxId::new(1), ConnectorKind::Association)
+            Connector::new(BoxId::new(0), BoxId::new(1), ConnectorKind::Association)
                 .with_label("subj")
                 .with_style(ArrowStyle::new().with_line_color(Color::Blue)),
         );
@@ -406,11 +401,7 @@ mod tests {
         let mut diagram = Diagram::new();
         diagram.add_box(DiagramBox::new(BoxId::new(0), Shape::Rectangle, "A"));
         diagram.add_box(DiagramBox::new(BoxId::new(1), Shape::Rectangle, "B"));
-        diagram.add_connector(crate::model::Connector::new(
-            BoxId::new(0),
-            BoxId::new(1),
-            ConnectorKind::Association,
-        ));
+        diagram.add_connector(Connector::new(BoxId::new(0), BoxId::new(1), ConnectorKind::Association));
 
         let backend = GraphVizBackend::default();
         let mut out = Vec::new();

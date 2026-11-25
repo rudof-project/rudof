@@ -78,11 +78,7 @@ impl<RDF: Rdf> Display for FocusNodes<RDF> {
         write!(
             f,
             "FocusNodes[{}]",
-            self.set
-                .iter()
-                .map(|node| node.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
+            self.set.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
         )
     }
 }

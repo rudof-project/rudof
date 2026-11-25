@@ -52,7 +52,7 @@ fn triples(rudof: &Rudof, subject: Option<&str>, predicate: Option<&str>, object
         builder = builder.with_object(object);
     }
     let mut triples: Vec<Triple> = builder.execute().unwrap().collect();
-    triples.sort_by_key(|triple| triple.to_string());
+    triples.sort_by_key(ToString::to_string);
     triples
 }
 
@@ -475,8 +475,8 @@ fn test_a_base_direction_tells_two_triples_apart() {
     assert_eq!(triples.iter().collect::<HashSet<_>>().len(), 2);
 
     let rendered: Vec<String> = triples.iter().map(|triple| triple.object.to_string()).collect();
-    assert!(rendered.contains(&"\"Shalom\"@he--rtl".to_string()), "{rendered:?}");
-    assert!(rendered.contains(&"\"Shalom\"@he".to_string()), "{rendered:?}");
+    assert!(rendered.contains(&"\"Shalom\"@he--rtl".to_owned()), "{rendered:?}");
+    assert!(rendered.contains(&"\"Shalom\"@he".to_owned()), "{rendered:?}");
 }
 
 #[test]

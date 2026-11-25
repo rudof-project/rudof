@@ -11,12 +11,12 @@ use shex_ast::shapemap::{NodeSelector, QueryShapeMap, ShapeSelector};
 use shex_ast::{Node, ResolveMethod, ShExParser, ShapeExprLabel, ir::ast2ir::AST2IR};
 use shex_validation::{Validator, ValidatorConfig};
 
-const DATA: &str = r#"
+const DATA: &str = "
 prefix : <http://example.org/>
 :x :p 1 .
 :y :p 1 .
 :z :q 1 .
-"#;
+";
 
 fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
     let base = IriS::new_unchecked("http://example.org/");
@@ -65,7 +65,7 @@ fn conforming(schema: &str, shape: &str) -> Vec<String> {
     nodes
         .iter()
         .filter(|node| result.get_info(node, &shape_label).unwrap().is_conformant())
-        .map(|node| node.to_string().trim_start_matches("http://example.org/").to_string())
+        .map(|node| node.to_string().trim_start_matches("http://example.org/").to_owned())
         .collect()
 }
 

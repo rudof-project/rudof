@@ -8,6 +8,7 @@ mod tests {
     use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
     use rudof_rdf::rdf_core::{RDFFormat, SHACLPath};
     use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
+    use std::fmt::Write as _;
 
     #[test]
     fn test_language_in() {
@@ -24,9 +25,8 @@ mod tests {
         let shape_id = Object::iri(iri!("http://example.org/TestShape"));
         let graph = OxigraphInMemory::from_str(shape, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let ast = ShaclParser::new(graph).parse().unwrap();
-        let shape = match ast.get_shape(&shape_id).unwrap() {
-            ASTShape::NodeShape(ns) => ns,
-            _ => unreachable!(),
+        let ASTShape::NodeShape(shape) = ast.get_shape(&shape_id).unwrap() else {
+            unreachable!()
         };
 
         match shape.components().first().unwrap() {
@@ -45,7 +45,7 @@ mod tests {
     /// parsed against the wrong node. The W3C test suite does not cover this.
     #[test]
     fn test_subset_of_keeps_the_focus_for_later_components() {
-        let shape = r#"
+        let shape = "
             @prefix :    <http://example.org/> .
             @prefix sh:  <http://www.w3.org/ns/shacl#> .
 
@@ -56,14 +56,13 @@ mod tests {
                 sh:path :property1 ;
                 sh:subsetOf ( :property2 :property3 ) ;
                 sh:minCount 1 .
-        "#;
+        ";
 
         let shape_id = Object::iri(iri!("http://example.org/TestShape-property1"));
         let graph = OxigraphInMemory::from_str(shape, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let ast = ShaclParser::new(graph).parse().unwrap();
-        let shape = match ast.get_shape(&shape_id).unwrap() {
-            ASTShape::PropertyShape(ps) => ps,
-            _ => unreachable!(),
+        let ASTShape::PropertyShape(shape) = ast.get_shape(&shape_id).unwrap() else {
+            unreachable!()
         };
 
         let subset_of = shape
@@ -95,13 +94,13 @@ mod tests {
 
     #[test]
     fn test_parse_shacl_rdf() {
-        let graph = r#"
+        let graph = "
             @prefix sh: <http://www.w3.org/ns/shacl#> .
             @prefix : <http://example.org/> .
 
             :Shape a sh:NodeShape ;
                 sh:targetClass :TargetClass .
-        "#;
+        ";
         let shape_id = Object::iri(iri!("http://example.org/Shape"));
 
         let rdf = OxigraphInMemory::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
@@ -120,7 +119,7 @@ mod tests {
 
         match ast.get_shape(&Object::iri(iri!(id))).unwrap() {
             ASTShape::NodeShape(ns) => (**ns).clone(),
-            _ => unreachable!(),
+            ASTShape::PropertyShape(_) => unreachable!(),
         }
     }
 
@@ -128,13 +127,13 @@ mod tests {
     /// node expression.
     #[test]
     fn test_deactivated_boolean_is_a_literal_expression() {
-        let shape = r#"
+        let shape = "
             @prefix :    <http://example.org/> .
             @prefix sh:  <http://www.w3.org/ns/shacl#> .
 
             :TestShape a sh:NodeShape ;
                 sh:deactivated true .
-        "#;
+        ";
 
         let shape = node_shape_of(shape, "http://example.org/TestShape");
 
@@ -150,14 +149,14 @@ mod tests {
     /// blank node is the subject of, recursively.
     #[test]
     fn test_deactivated_nested_node_expression() {
-        let shape = r#"
+        let shape = "
             @prefix :      <http://example.org/> .
             @prefix sh:    <http://www.w3.org/ns/shacl#> .
             @prefix shnex: <http://www.w3.org/ns/shacl-node-expr#> .
 
             :TestShape a sh:NodeShape ;
                 sh:deactivated [ shnex:exists [ shnex:pathValues :property1 ] ] .
-        "#;
+        ";
 
         let shape = node_shape_of(shape, "http://example.org/TestShape");
 
@@ -179,7 +178,7 @@ mod tests {
     /// `test_subset_of_keeps_the_focus_for_later_components`.
     #[test]
     fn test_deactivated_keeps_the_focus_for_later_components() {
-        let shape = r#"
+        let shape = "
             @prefix :      <http://example.org/> .
             @prefix sh:    <http://www.w3.org/ns/shacl#> .
             @prefix shnex: <http://www.w3.org/ns/shacl-node-expr#> .
@@ -187,7 +186,7 @@ mod tests {
             :TestShape a sh:NodeShape ;
                 sh:deactivated [ shnex:exists [ shnex:pathValues :property1 ] ] ;
                 sh:minCount 1 .
-        "#;
+        ";
 
         let shape = node_shape_of(shape, "http://example.org/TestShape");
 
@@ -205,7 +204,7 @@ mod tests {
     /// it either, or the components declared after `sh:closed` are lost.
     #[test]
     fn test_ignored_properties() {
-        let shape = r#"
+        let shape = "
             @prefix :    <http://example.org/> .
             @prefix sh:  <http://www.w3.org/ns/shacl#> .
 
@@ -213,7 +212,7 @@ mod tests {
                 sh:closed true ;
                 sh:ignoredProperties ( :p :q ) ;
                 sh:hasValue :a .
-        "#;
+        ";
 
         let shape = node_shape_of(shape, "http://example.org/TestShape");
 
@@ -263,10 +262,10 @@ mod tests {
         let mut shapes = format!("{PATH_PREFIXES}_:l1 rdf:first :q ; rdf:rest ( :q ) .\n");
         for n in 2..=10 {
             let m = n - 1;
-            shapes.push_str(&format!("_:l{n} rdf:first _:l{m} ; rdf:rest ( _:l{m} ) .\n"));
+            writeln!(shapes, "_:l{n} rdf:first _:l{m} ; rdf:rest ( _:l{m} ) .").unwrap();
         }
         for i in 0..2000 {
-            shapes.push_str(&format!(":S{i} a sh:PropertyShape ; sh:path _:l10 .\n"));
+            writeln!(shapes, ":S{i} a sh:PropertyShape ; sh:path _:l10 .").unwrap();
         }
 
         let err = parse_shapes(&shapes).unwrap_err();
@@ -281,7 +280,7 @@ mod tests {
              :S sh:targetNode :a ; sh:deactivated _:d0 .\n_:d10 shnex:concat ( _:x _:x ) .\n"
         );
         for i in 0..10 {
-            dag.push_str(&format!("_:d{i} shnex:concat ( _:d{j} _:d{j} ) .\n", j = i + 1));
+            writeln!(dag, "_:d{i} shnex:concat ( _:d{j} _:d{j} ) .", j = i + 1).unwrap();
         }
         let members: String = (0..200).map(|j| format!(" :v{j}")).collect();
         let arcs: String = (0..200).map(|j| format!(", {j}")).collect();
@@ -310,7 +309,7 @@ mod tests {
         ] {
             let mut shapes = format!("{PATH_PREFIXES}_:l rdf:first :v ; rdf:rest ({members} ) .\n");
             for i in 0..400 {
-                shapes.push_str(&format!(":S{i} {shape} .\n"));
+                writeln!(shapes, ":S{i} {shape} .").unwrap();
             }
 
             let err = parse_shapes(&shapes).unwrap_err();

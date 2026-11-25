@@ -9,10 +9,6 @@ pub(crate) fn empty<RDF: FocusRDF>(
     _: usize,
     _: &mut usize,
 ) -> Result<Option<ASTNodeExpr>, RDFError> {
-    let res = if neighs.is_empty() {
-        Some(ASTNodeExpr::Empty)
-    } else {
-        None
-    };
+    let res = neighs.is_empty().then_some(ASTNodeExpr::Empty);
     Ok(res)
 }

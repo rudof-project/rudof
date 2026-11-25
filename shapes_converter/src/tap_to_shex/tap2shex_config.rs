@@ -29,21 +29,25 @@ impl Tap2ShExConfig {
         }
     }
 
+    #[must_use]
     pub fn with_base_iri(mut self, iri: Option<IriS>) -> Self {
         self.base_iri = iri;
         self
     }
 
+    #[must_use]
     pub fn with_datatype_base_iri(mut self, iri: Option<IriS>) -> Self {
         self.datatype_base_iri = iri;
         self
     }
 
+    #[must_use]
     pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
         self.prefixmap = prefixmap;
         self
     }
 
+    #[must_use]
     pub fn with_dctap(mut self, cfg: TapConfig) -> Self {
         self.dctap = cfg;
         self
@@ -92,7 +96,7 @@ impl Tap2ShExConfig {
                     if prefix.is_empty() {
                         match &self.base_iri {
                             None => Err(Tap2ShExError::IriNoPrefix {
-                                str: str.to_string(),
+                                str: str.to_owned(),
                                 line,
                             }),
                             Some(base_iri) => base_iri
@@ -104,7 +108,7 @@ impl Tap2ShExConfig {
                         Err(Tap2ShExError::ResolvingPrefixError {
                             err: e,
                             line,
-                            field: str.to_string(),
+                            field: str.to_owned(),
                         })
                     }
                 },
@@ -112,7 +116,7 @@ impl Tap2ShExConfig {
         } else {
             let iri = match &self.base_iri {
                 None => Err(Tap2ShExError::IriNoPrefix {
-                    str: str.to_string(),
+                    str: str.to_owned(),
                     line,
                 }),
                 Some(base_iri) => base_iri.extend(str).map_err(|e| Tap2ShExError::IriSError { err: e }),
@@ -125,7 +129,7 @@ impl Tap2ShExConfig {
 pub fn prefix_local_name(str: &str) -> Option<(String, String)> {
     // TODO: Check how to escape special characters
     if let Some((prefix, localname)) = str.rsplit_once(':') {
-        Some((prefix.to_string(), localname.to_string()))
+        Some((prefix.to_owned(), localname.to_owned()))
     } else {
         None
     }
@@ -154,7 +158,7 @@ mod tests {
     #[test]
     fn partial_toml_fills_remaining_defaults() {
         let c = Tap2ShExConfig::from_toml_str(r#"base_iri = "http://ex/""#).unwrap();
-        assert_eq!(c.base_iri().map(|i| i.as_str()), Some("http://ex/"));
+        assert_eq!(c.base_iri().map(rudof_iri::IriS::as_str), Some("http://ex/"));
     }
 
     #[test]

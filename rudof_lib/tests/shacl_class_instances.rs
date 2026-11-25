@@ -25,29 +25,29 @@ prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 :course :student :carol, :dave, [ a :PhDStudent ; :name "Erin" ] .
 "#;
 
-const TARGET_CLASS: &str = r#"
+const TARGET_CLASS: &str = "
 prefix : <http://example.org/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 :PersonShape a sh:NodeShape ;
   sh:targetClass :Person ;
   sh:property [ sh:path :name ; sh:minCount 1 ] .
-"#;
+";
 
-const IMPLICIT_TARGET_CLASS: &str = r#"
+const IMPLICIT_TARGET_CLASS: &str = "
 prefix : <http://example.org/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 :Person a rdfs:Class, sh:NodeShape ;
   sh:property [ sh:path :name ; sh:minCount 1 ] .
-"#;
+";
 
-const CLASS: &str = r#"
+const CLASS: &str = "
 prefix : <http://example.org/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 :CourseShape a sh:NodeShape ;
   sh:targetNode :course ;
   sh:property [ sh:path :student ; sh:class :Person ] .
-"#;
+";
 
 /// Validates `DATA` against `shapes` and returns the focus nodes and values
 /// of the violations, sorted.
@@ -69,7 +69,7 @@ fn violations(shapes: &str, mode: ShaclValidationMode) -> Vec<(String, Option<St
     let mut violations: Vec<_> = report
         .results()
         .iter()
-        .map(|r| (r.focus_node().to_string(), r.value().map(|v| v.to_string())))
+        .map(|r| (r.focus_node().to_string(), r.value().map(ToString::to_string)))
         .collect();
     violations.sort();
     violations
@@ -110,8 +110,8 @@ fn class_accepts_instances_of_subclasses_at_any_depth() {
         assert_eq!(
             violations(CLASS, mode),
             [(
-                "http://example.org/course".to_string(),
-                Some("http://example.org/dave".to_string())
+                "http://example.org/course".to_owned(),
+                Some("http://example.org/dave".to_owned())
             )],
             "{mode:?}"
         );

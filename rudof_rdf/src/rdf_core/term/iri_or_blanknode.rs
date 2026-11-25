@@ -50,7 +50,7 @@ impl IriOrBlankNode {
     ///
     /// # Parameters
     /// - `prefixmap`: A prefix map containing IRI-to-prefix mappings
-    pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
+    pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
         match self {
             IriOrBlankNode::BlankNode(bnode) => format!("_:{bnode}"),
             IriOrBlankNode::Iri(iri) => prefixmap.qualify(iri),

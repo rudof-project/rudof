@@ -138,7 +138,7 @@ pub async fn node_info_impl(
 
     if let Err(e) = showing_node_info.with_show_colors(false).execute() {
         return Ok(ToolExecutionError::with_hint(
-            format!("Node not found: {}", e),
+            format!("Node not found: {e}"),
             "Verify the node exists in the loaded RDF data. Use the correct IRI or prefixed name.",
         )
         .into_call_tool_result());
@@ -165,12 +165,12 @@ pub async fn node_info_impl(
     }
     let arcs = match walking_neighborhood
         .execute()
-        .and_then(|arcs| arcs.collect::<Result<Vec<_>, _>>())
+        .and_then(Iterator::collect::<Result<Vec<_>, _>>)
     {
         Ok(arcs) => arcs,
         Err(e) => {
             return Ok(ToolExecutionError::with_hint(
-                format!("Failed to walk the neighborhood of {}: {}", node, e),
+                format!("Failed to walk the neighborhood of {node}: {e}"),
                 "Give the predicates as angle-bracketed IRIs or prefixed names",
             )
             .into_call_tool_result());
@@ -236,7 +236,7 @@ mod tests {
         let result = node_info_impl(
             &service,
             Parameters(NodeInfoRequest {
-                node: node.to_string(),
+                node: node.to_owned(),
                 predicates: None,
                 depth: None,
                 mode,
@@ -266,8 +266,8 @@ mod tests {
             Object::Literal(literal) => {
                 assert_eq!(literal.lexical_form(), "Alice");
                 assert_eq!(
-                    literal.lang().map(|lang| lang.as_str().to_string()),
-                    Some("en".to_string())
+                    literal.lang().map(|lang| lang.as_str().to_owned()),
+                    Some("en".to_owned())
                 );
             },
             other => panic!("the :name arc should reach a literal, not {other}"),

@@ -257,7 +257,7 @@ pub enum ParseError {
 
 impl ParseError {
     /// Locate this error by adding a position.
-    pub fn at(self, position: Span) -> LocatedParseError {
+    pub fn at(self, position: Span<'_>) -> LocatedParseError {
         // miri doesn't like nom_locate, cf. https://github.com/fflorent/nom_locate/issues/88
         let column = if cfg!(not(miri)) {
             position.naive_get_utf8_column()

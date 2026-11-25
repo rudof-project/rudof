@@ -57,14 +57,14 @@ impl InputSpec {
     pub fn source_name(&self) -> String {
         match self {
             InputSpec::Path(path_buf) => path_buf.display().to_string(),
-            InputSpec::Stdin => "stdin".to_string(),
+            InputSpec::Stdin => "stdin".to_owned(),
             InputSpec::Url(url_spec) => url_spec.to_string(),
-            InputSpec::Str(_) => "string".to_string(),
+            InputSpec::Str(_) => "string".to_owned(),
         }
     }
 
     pub fn str(s: &str) -> InputSpec {
-        InputSpec::Str(s.to_string())
+        InputSpec::Str(s.to_owned())
     }
 
     /// Converts the InputSpec to an IRI (Internationalized Resource Identifier).
@@ -79,7 +79,7 @@ impl InputSpec {
                     error: err,
                 })?;
                 let url = Url::from_file_path(path_absolute)
-                    .map_err(|_| InputSpecError::FromFilePath { path: path.clone() })?;
+                    .map_err(|()| InputSpecError::FromFilePath { path: path.clone() })?;
                 Ok(IriS::new_unchecked(url.as_str()))
             },
             #[cfg(target_family = "wasm")]
@@ -109,8 +109,8 @@ impl InputSpec {
             InputSpec::Path(p) => match fs::File::open(p) {
                 Ok(reader) => Ok(Either::Right(Either::Left(BufReader::new(reader)))),
                 Err(e) => Err(InputSpecError::OpenPathError {
-                    msg: context_error.to_string(),
-                    path: p.to_path_buf(),
+                    msg: context_error.to_owned(),
+                    path: p.clone(),
                     err: e,
                 }),
             },
@@ -122,8 +122,8 @@ impl InputSpec {
                         let mut headers = reqwest::header::HeaderMap::new();
                         let accept_value =
                             HeaderValue::from_str(accept_str).map_err(|e| InputSpecError::AcceptValue {
-                                context: context_error.to_string(),
-                                str: accept_str.to_string(),
+                                context: context_error.to_owned(),
+                                str: accept_str.to_owned(),
                                 error: e.to_string(),
                             })?;
                         headers.insert(ACCEPT, accept_value);
@@ -173,18 +173,17 @@ impl InputSpec {
                     path: path.to_string_lossy().to_string(),
                     error: err,
                 })?;
-                let url: Url = Url::from_file_path(absolute_path).map_err(|_| InputSpecError::GuessBaseFromPath {
-                    path: path.to_path_buf(),
-                })?;
+                let url: Url = Url::from_file_path(absolute_path)
+                    .map_err(|()| InputSpecError::GuessBaseFromPath { path: path.clone() })?;
                 Ok(url.to_string())
             },
             #[cfg(target_family = "wasm")]
             InputSpec::Path(_) => Err(InputSpecError::WasmNotSupported {
                 operation: "File path operations".to_string(),
             }),
-            InputSpec::Stdin => Ok("stdin://".to_string()),
+            InputSpec::Stdin => Ok("stdin://".to_owned()),
             InputSpec::Url(url_spec) => Ok(url_spec.url().to_string()),
-            InputSpec::Str(_) => Ok("string://".to_string()),
+            InputSpec::Str(_) => Ok("string://".to_owned()),
         }
     }
 }
@@ -229,7 +228,7 @@ impl FromStr for InputSpec {
 
         if s.is_empty() {
             return Err(InputSpecError::InvalidInput {
-                error: "The provided input is empty".to_string(),
+                error: "The provided input is empty".to_owned(),
             });
         }
 
@@ -243,18 +242,18 @@ impl FromStr for InputSpec {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
             },
-            _ if curie_like_regex.is_match(s) && !Path::new(s).exists() => Ok(InputSpec::Str(s.to_string())),
+            _ if curie_like_regex.is_match(s) && !Path::new(s).exists() => Ok(InputSpec::Str(s.to_owned())),
             _ if filepath_regex.is_match(s) => {
                 let path = Path::new(s);
                 if !path.exists() {
-                    return Err(InputSpecError::FileDoesntExist { str: s.to_string() });
+                    return Err(InputSpecError::FileDoesntExist { str: s.to_owned() });
                 }
                 if path.is_dir() {
-                    return Err(InputSpecError::PathIsDir { str: s.to_string() });
+                    return Err(InputSpecError::PathIsDir { str: s.to_owned() });
                 }
 
                 let pb: PathBuf = PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
-                    str: s.to_string(),
+                    str: s.to_owned(),
                     error: format!("{e}"),
                 })?;
                 Ok(InputSpec::Path(pb))
@@ -262,11 +261,11 @@ impl FromStr for InputSpec {
             _ if Path::new(s).is_file() || Path::new(s).is_dir() => {
                 let path = Path::new(s);
                 if path.is_dir() {
-                    return Err(InputSpecError::PathIsDir { str: s.to_string() });
+                    return Err(InputSpecError::PathIsDir { str: s.to_owned() });
                 }
                 Ok(InputSpec::Path(PathBuf::from(s)))
             },
-            _ => Ok(InputSpec::Str(s.to_string())),
+            _ => Ok(InputSpec::Str(s.to_owned())),
         }
     }
 }

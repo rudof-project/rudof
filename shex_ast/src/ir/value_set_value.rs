@@ -106,7 +106,7 @@ impl ValueSetValue {
                         Object::Iri(iri_s) => iri_s.as_str().starts_with(iri.as_str()),
                         _ => false,
                     },
-                    IriOrWildcard::Wildcard { type_: _ } => true, // Matches everything for now
+                    IriOrWildcard::Wildcard { .. } => true, // Matches everything for now
                 };
                 if !matches_stem {
                     return false;
@@ -149,7 +149,7 @@ impl ValueSetValue {
                         },
                         _ => false,
                     },
-                    StringOrWildcard::Wildcard { type_: _ } => true, // Matches everything for now
+                    StringOrWildcard::Wildcard { .. } => true, // Matches everything for now
                 };
                 if !matches_stem {
                     return false;
@@ -178,14 +178,11 @@ impl ValueSetValue {
                 }
                 true
             },
-            ValueSetValue::Language { language_tag } => object.lang().map(|lang| language_tag == lang).unwrap_or(false),
-            ValueSetValue::LanguageStem { stem } => object
-                .lang()
-                .map(|lang| match stem {
-                    LangOrWildcard::Lang(s) => lang_stem_matches(s.as_str(), lang.as_str()),
-                    LangOrWildcard::Wildcard { .. } => true, // Matches everything for now
-                })
-                .unwrap_or(false),
+            ValueSetValue::Language { language_tag } => object.lang().is_some_and(|lang| language_tag == lang),
+            ValueSetValue::LanguageStem { stem } => object.lang().is_some_and(|lang| match stem {
+                LangOrWildcard::Lang(s) => lang_stem_matches(s.as_str(), lang.as_str()),
+                LangOrWildcard::Wildcard { .. } => true, // Matches everything for now
+            }),
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
                 let matches_stem = match stem {
                     LangOrWildcard::Lang(lang) => match object {
@@ -194,7 +191,7 @@ impl ValueSetValue {
                         },
                         _ => false,
                     },
-                    LangOrWildcard::Wildcard { type_: _ } => true, // Matches everything for now
+                    LangOrWildcard::Wildcard { .. } => true, // Matches everything for now
                 };
                 if !matches_stem {
                     return false;
@@ -231,7 +228,7 @@ impl ValueSetValue {
             ValueSetValue::IriStemRange { stem, exclusions } => {
                 let mut s = match stem {
                     IriOrWildcard::Iri(iri) => prefixmap.qualify(iri),
-                    IriOrWildcard::Wildcard { type_: _ } => "*".to_string(),
+                    IriOrWildcard::Wildcard { .. } => "*".to_owned(),
                 };
                 s.push('~');
                 if let Some(exclusions) = exclusions {
@@ -253,7 +250,7 @@ impl ValueSetValue {
             ValueSetValue::LiteralStemRange { stem, exclusions } => {
                 let mut s = match stem {
                     StringOrWildcard::String(s) => s.clone(),
-                    StringOrWildcard::Wildcard { type_: _ } => "*".to_string(),
+                    StringOrWildcard::Wildcard { .. } => "*".to_owned(),
                 };
                 s.push('~');
                 if let Some(exclusions) = exclusions {
@@ -270,7 +267,7 @@ impl ValueSetValue {
                 s
             },
             ValueSetValue::Language { language_tag } => {
-                format!("@{}", language_tag)
+                format!("@{language_tag}")
             },
             ValueSetValue::LanguageStem { stem } => {
                 format!("@{stem}~")
@@ -278,7 +275,7 @@ impl ValueSetValue {
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
                 let mut s = match stem {
                     LangOrWildcard::Lang(lang) => lang.to_string(),
-                    LangOrWildcard::Wildcard { type_: _ } => "*".to_string(),
+                    LangOrWildcard::Wildcard { .. } => "*".to_owned(),
                 };
                 s.push('~');
                 if let Some(exclusions) = exclusions {

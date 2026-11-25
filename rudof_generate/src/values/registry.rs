@@ -26,7 +26,7 @@ impl FieldGeneratorRegistry {
 
     /// Register a field generator instance
     pub fn register_generator(&mut self, generator: Box<dyn FieldGenerator>) {
-        let name = generator.name().to_string();
+        let name = generator.name().to_owned();
 
         // Register mappings for supported datatypes
         for datatype in generator.supported_datatypes() {
@@ -38,7 +38,7 @@ impl FieldGeneratorRegistry {
 
     /// Register a field generator factory
     pub fn register_factory(&mut self, factory: Box<dyn FieldGeneratorFactory>) {
-        let name = factory.generator_name().to_string();
+        let name = factory.generator_name().to_owned();
         self.factories.insert(name, factory);
     }
 
@@ -46,7 +46,7 @@ impl FieldGeneratorRegistry {
     pub fn get_generator(&self, name: &str) -> Result<&dyn FieldGenerator> {
         self.generators
             .get(name)
-            .map(|g| g.as_ref())
+            .map(AsRef::as_ref)
             .ok_or_else(|| DataGeneratorError::FieldGeneration(format!("Generator '{name}' not found")))
     }
 
@@ -89,11 +89,11 @@ impl FieldGeneratorRegistry {
 
     /// List all registered generators
     pub fn list_generators(&self) -> Vec<&str> {
-        self.generators.keys().map(|s| s.as_str()).collect()
+        self.generators.keys().map(String::as_str).collect()
     }
 
     /// List all supported datatypes
     pub fn list_datatypes(&self) -> Vec<&str> {
-        self.datatype_mappings.keys().map(|s| s.as_str()).collect()
+        self.datatype_mappings.keys().map(String::as_str).collect()
     }
 }

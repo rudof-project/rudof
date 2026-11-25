@@ -35,7 +35,7 @@ pub(crate) fn apply_removals(rudof: &mut Rudof, triples: Vec<OxTriple>) -> Resul
             )
             .map_err(|error| {
                 Box::new(DataError::FailedTripleUpdate {
-                    operation: "remove".to_string(),
+                    operation: "remove".to_owned(),
                     error: error.to_string(),
                 })
             })?;
@@ -46,7 +46,7 @@ pub(crate) fn apply_removals(rudof: &mut Rudof, triples: Vec<OxTriple>) -> Resul
         rdf.remove_triple(triple.subject.clone(), triple.predicate.clone(), triple.object.clone())
             .map_err(|error| {
                 Box::new(DataError::FailedTripleUpdate {
-                    operation: "remove".to_string(),
+                    operation: "remove".to_owned(),
                     error: error.to_string(),
                 })
             })?;

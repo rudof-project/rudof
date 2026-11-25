@@ -66,13 +66,13 @@ impl Display for QualifiedValueShape {
             self.qualified_max_count(),
             self.qualified_value_shapes_disjoint(),
             if self.siblings().is_empty() {
-                "".to_string()
+                String::new()
             } else {
                 format!(
                     ", siblings: [{}]",
                     self.siblings()
                         .iter()
-                        .map(|s| s.to_string())
+                        .map(ToString::to_string)
                         .collect::<Vec<_>>()
                         .join(", ")
                 )

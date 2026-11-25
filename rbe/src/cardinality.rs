@@ -40,6 +40,7 @@ impl Cardinality {
         n >= self.min.value && self.max.greater_or_equal(n)
     }
 
+    #[must_use]
     pub fn minus(&self, n: usize) -> Cardinality {
         let min = self.min.value.saturating_sub(n);
         /*if self.min.value > n {
@@ -57,7 +58,7 @@ impl Cardinality {
 }
 
 impl fmt::Display for Cardinality {
-    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, dest: &mut fmt::Formatter<'_>) -> fmt::Result {
         match (&self.min, &self.max) {
             (Min { value: 1 }, Max::IntMax(1)) => write!(dest, ""),
             (Min { value: 0 }, Max::IntMax(1)) => write!(dest, "?"),
@@ -70,7 +71,7 @@ impl fmt::Display for Cardinality {
 }
 
 impl fmt::Debug for Cardinality {
-    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, dest: &mut fmt::Formatter<'_>) -> fmt::Result {
         match (&self.min, &self.max) {
             (Min { value: 0 }, Max::IntMax(1)) => write!(dest, "?"),
             (Min { value: 0 }, Max::Unbounded) => write!(dest, "*"),

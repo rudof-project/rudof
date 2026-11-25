@@ -16,15 +16,15 @@ use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_re
 use shex_ast::{Node, ResolveMethod, ShExParser, ir::ast2ir::AST2IR};
 use shex_validation::{Reason, ValidationResult, Validator, ValidatorConfig, ValidatorError};
 
-const SCHEMA: &str = r#"
+const SCHEMA: &str = "
 prefix : <http://a.example/>
 
 :Person EXTRA :p31 { :p31 @:HumanOrSubclass }
 :HumanOrSubclass [ :q5 ] OR EXTRA :p279 { :p279 @:HumanOrSubclass + }
 :NotHuman NOT [ :q5 ] AND EXTRA :p279 { :p279 . + }
-"#;
+";
 
-const DATA: &str = r#"
+const DATA: &str = "
 prefix : <http://a.example/>
 
 :q42 :p31 :q5 .
@@ -38,7 +38,7 @@ prefix : <http://a.example/>
 
 :rex :p31 :dog .
 :dog :p279 :animal .
-"#;
+";
 
 fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
     let base = IriS::new_unchecked("http://a.example/");
@@ -75,7 +75,7 @@ impl rudof_typing::TypingObserver<Node, shex_ast::ShapeLabelIdx, ValidatorError,
 /// result was proved for along the way.
 fn validate(node: &str, shape: &str) -> (bool, Vec<String>) {
     let observer = Arc::new(RecordingObserver::default());
-    let config = ValidatorConfig::default().with_typing_observer(observer.clone());
+    let config = ValidatorConfig::default().with_typing_observer(Arc::<RecordingObserver>::clone(&observer));
     let compiled = compile(SCHEMA, &config);
     let mut validator = Validator::new(&compiled, &config).expect("validator");
     let graph = OxigraphInMemory::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::Strict).expect("parse graph");

@@ -6,12 +6,12 @@ use crate::{Result, Rudof, errors::PrefixesError};
 /// mirroring the overwrite behaviour of [`prefixmap::PrefixMap::add_prefix`].
 pub fn rename_prefix(rudof: &mut Rudof, old_alias: &str, new_alias: &str) -> Result<()> {
     let pm = rudof.prefixes.as_mut().ok_or_else(|| PrefixesError::AliasNotFound {
-        alias: old_alias.to_string(),
+        alias: old_alias.to_owned(),
     })?;
     let iri = pm
         .remove_prefix(old_alias)
         .ok_or_else(|| PrefixesError::AliasNotFound {
-            alias: old_alias.to_string(),
+            alias: old_alias.to_owned(),
         })?;
     pm.add_prefix(new_alias, iri);
     Ok(())

@@ -3,6 +3,7 @@ use crate::metrics::conformance::ConformanceMetrics;
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF, RDFFormat};
 use rudof_rdf::rdf_impl::OxigraphInMemory;
+use std::fmt::Write as _;
 use std::path::PathBuf;
 
 /// Handles writing generated data to various output formats
@@ -201,16 +202,18 @@ impl OutputWriter {
         let mut manifest_content = String::new();
 
         manifest_content.push_str("# Data Generator Parallel Output Manifest\n");
-        manifest_content.push_str(&format!(
-            "# Generated on: {}\n",
+        writeln!(
+            manifest_content,
+            "# Generated on: {}",
             chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
-        ));
-        manifest_content.push_str(&format!("# Total parallel files: {actual_file_count}\n\n"));
+        )
+        .unwrap();
+        write!(manifest_content, "# Total parallel files: {actual_file_count}\n\n").unwrap();
 
         for i in 0..actual_file_count {
             let file_path = self.get_parallel_file_path(i);
             if file_path.exists() {
-                manifest_content.push_str(&format!("{}\n", file_path.display()));
+                writeln!(manifest_content, "{}", file_path.display()).unwrap();
             }
         }
 
@@ -310,7 +313,7 @@ impl GenerationStatistics {
                     let shape_type = triple.object.to_string();
                     // Remove angle brackets if present
                     let shape_type = shape_type.trim_start_matches('<').trim_end_matches('>');
-                    *shape_counts.entry(shape_type.to_string()).or_insert(0) += 1;
+                    *shape_counts.entry(shape_type.to_owned()).or_insert(0) += 1;
                 }
             }
         }
@@ -326,11 +329,13 @@ impl GenerationStatistics {
         }
     }
 
+    #[must_use]
     pub fn with_timing(mut self, duration: std::time::Duration) -> Self {
         self.generation_time = Some(format!("{}ms", duration.as_millis()));
         self
     }
 
+    #[must_use]
     pub fn with_conformance_metrics(mut self, metrics: ConformanceMetrics) -> Self {
         self.conformance_metrics = Some(metrics);
         self

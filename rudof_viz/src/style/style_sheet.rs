@@ -14,7 +14,7 @@ pub struct StyleRule {
 impl StyleRule {
     pub fn new(name: &str) -> Self {
         StyleRule {
-            name: name.to_string(),
+            name: name.to_owned(),
             background_color: None,
             line_thickness: None,
             line_color: None,
@@ -22,21 +22,25 @@ impl StyleRule {
         }
     }
 
+    #[must_use]
     pub fn with_background_color(mut self, color: Color) -> Self {
         self.background_color = Some(color);
         self
     }
 
+    #[must_use]
     pub fn with_line_thickness(mut self, thickness: u32) -> Self {
         self.line_thickness = Some(thickness);
         self
     }
 
+    #[must_use]
     pub fn with_line_color(mut self, color: Color) -> Self {
         self.line_color = Some(color);
         self
     }
 
+    #[must_use]
     pub fn with_round_corner(mut self, corner: u32) -> Self {
         self.round_corner = Some(corner);
         self

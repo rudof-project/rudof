@@ -41,7 +41,7 @@ mod tests {
     use rudof_rdf::rdf_core::term::Object;
     use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 
-    const SHAPES: &str = r#"
+    const SHAPES: &str = "
         @prefix :    <http://example.org/> .
         @prefix sh:  <http://www.w3.org/ns/shacl#> .
 
@@ -52,7 +52,7 @@ mod tests {
             sh:path ( :a :b ) ;
             sh:subsetOf [ sh:inversePath :c ] ;
             sh:nodeKind sh:Literal .
-    "#;
+    ";
 
     fn property_shape(shapes: &str) -> ASTPropertyShape {
         let graph = OxigraphInMemory::from_str(shapes, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
@@ -60,7 +60,7 @@ mod tests {
         let id = Object::iri(iri!("http://example.org/TestShape-property1"));
         match ast.get_shape(&id).unwrap() {
             ASTShape::PropertyShape(ps) => (**ps).clone(),
-            _ => unreachable!(),
+            ASTShape::NodeShape(_) => unreachable!(),
         }
     }
 
@@ -72,7 +72,7 @@ mod tests {
 
         let graph = OxigraphInMemory::from_str(SHAPES, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let ast = ShaclParser::new(graph).parse().unwrap();
-        let ir: crate::ir::IRSchema = ast.try_into().map_err(|e: IRError| e.to_string()).unwrap();
+        let ir: IRSchema = ast.try_into().map_err(|e: IRError| e.to_string()).unwrap();
 
         let mut writer: ShaclWriter<OxigraphInMemory> = ShaclWriter::new();
         writer.register(&ir).unwrap();

@@ -83,6 +83,6 @@ pub enum ShEx2UmlError {
 
 impl ShEx2UmlError {
     pub fn not_implemented(msg: &str) -> ShEx2UmlError {
-        ShEx2UmlError::NotImplemented { msg: msg.to_string() }
+        ShEx2UmlError::NotImplemented { msg: msg.to_owned() }
     }
 }

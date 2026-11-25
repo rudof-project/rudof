@@ -43,14 +43,14 @@ fn a_shortcut_needs_no_slash_before_it() {
 
 #[test]
 fn a_shortcut_cannot_follow_a_slash() {
-    assert!(ShExPathParser::parse_syntax("@<S>/~<p>").is_err());
-    assert!(ShExPathParser::parse_syntax("/shapes/@<S>").is_err());
+    ShExPathParser::parse_syntax("@<S>/~<p>").unwrap_err();
+    ShExPathParser::parse_syntax("/shapes/@<S>").unwrap_err();
 }
 
 #[test]
 fn a_shortcut_takes_no_filters() {
-    assert!(ShExPathParser::parse_syntax("@<S>~<p>[2]").is_err());
-    assert!(ShExPathParser::parse_syntax("@<S>[0]").is_err());
+    ShExPathParser::parse_syntax("@<S>~<p>[2]").unwrap_err();
+    ShExPathParser::parse_syntax("@<S>[0]").unwrap_err();
 }
 
 #[test]
@@ -82,5 +82,5 @@ fn at_context_is_still_an_attribute() {
 
 #[test]
 fn a_blank_node_label_cannot_follow_a_sigil() {
-    assert!(ShExPathParser::parse_syntax("@_:b1").is_err());
+    ShExPathParser::parse_syntax("@_:b1").unwrap_err();
 }

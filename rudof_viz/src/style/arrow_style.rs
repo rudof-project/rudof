@@ -33,16 +33,19 @@ impl ArrowStyle {
         }
     }
 
+    #[must_use]
     pub fn with_line_color(mut self, color: Color) -> Self {
         self.line_color = color;
         self
     }
 
+    #[must_use]
     pub fn with_line_thickness(mut self, thickness: LineStyle) -> Self {
         self.line_thickness = thickness;
         self
     }
 
+    #[must_use]
     pub fn with_text_color(mut self, color: Color) -> Self {
         self.text_color = color;
         self

@@ -43,14 +43,14 @@ pub fn dereference(
         .build()
         .map_err(|error| {
             Box::new(DataError::DereferenceError {
-                uri: uri.to_string(),
+                uri: uri.to_owned(),
                 error: format!("failed to build HTTP client: {error}"),
             })
         })?;
 
     let response = client.get(uri).send().map_err(|error| {
         Box::new(DataError::DereferenceError {
-            uri: uri.to_string(),
+            uri: uri.to_owned(),
             error: error.to_string(),
         })
     })?;
@@ -59,7 +59,7 @@ pub fn dereference(
 
     if !response.status().is_success() {
         return Err(Box::new(DataError::DereferenceHttpStatus {
-            uri: uri.to_string(),
+            uri: uri.to_owned(),
             status: response.status().to_string(),
         })
         .into());
@@ -74,12 +74,12 @@ pub fn dereference(
 
     let body = response.text().map_err(|error| {
         Box::new(DataError::DereferenceError {
-            uri: uri.to_string(),
+            uri: uri.to_owned(),
             error: error.to_string(),
         })
     })?;
 
-    if !merge || rudof.data.is_none() || matches!(rudof.data, Some(ref data) if data.is_pg()) {
+    if !merge || rudof.data.is_none() || matches!(&rudof.data, Some(data) if data.is_pg()) {
         let rdf_data = RdfData::new()
             .with_rdf_data_config(rudof.config.rdf_data())
             .map_err(|error| {

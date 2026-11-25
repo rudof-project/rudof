@@ -3,6 +3,7 @@ use crate::{
     type_name::LabelName, value::Value,
 };
 use either::Either;
+use std::fmt::Write as _;
 use std::{collections::HashMap, fmt::Display};
 
 /// Simple representation of a property graph
@@ -50,7 +51,7 @@ impl PropertyGraph {
     /// Edges are remapped to the new node IDs to avoid conflicts.
     pub fn merge(&mut self, other: &PropertyGraph) {
         // Map old node IDs in `other` to new IDs in `self`
-        let mut id_map: std::collections::HashMap<NodeId, NodeId> = HashMap::new();
+        let mut id_map: HashMap<NodeId, NodeId> = HashMap::new();
 
         // Merge nodes
         for (name, other_id) in &other.node_names {
@@ -120,10 +121,10 @@ impl PropertyGraph {
 
     pub fn get_node_by_label(&self, label: &str) -> Result<&Node, PgsError> {
         let id = self.node_names.get(label).ok_or(PgsError::MissingNodeLabel {
-            label: label.to_string(),
+            label: label.to_owned(),
         })?;
         self.nodes.get(id).ok_or(PgsError::MissingNodeLabel {
-            label: label.to_string(),
+            label: label.to_owned(),
         })
     }
 
@@ -135,24 +136,26 @@ impl PropertyGraph {
             return Ok(Either::Right(edge));
         }
         Err(PgsError::MissingNodeEdgeLabel {
-            label: label.to_string(),
+            label: label.to_owned(),
         })
     }
 
     pub fn get_edge_by_label(&self, label: &str) -> Result<&Edge, PgsError> {
         let id = self.edge_names.get(label).ok_or(PgsError::MissingEdgeLabel {
-            label: label.to_string(),
+            label: label.to_owned(),
         })?;
         self.edges.get(id).ok_or(PgsError::MissingEdgeLabel {
-            label: label.to_string(),
+            label: label.to_owned(),
         })
     }
 
+    #[must_use]
     pub fn with_nodes(mut self, nodes: HashMap<NodeId, Node>) -> Self {
         self.nodes = nodes;
         self
     }
 
+    #[must_use]
     pub fn with_edges(mut self, edges: HashMap<EdgeId, Edge>) -> Self {
         self.edges = edges;
         self
@@ -169,7 +172,7 @@ impl PropertyGraph {
 
     pub fn get_node_id(&self, label: &str) -> Result<NodeId, PgsError> {
         self.node_names.get(label).cloned().ok_or(PgsError::MissingNodeLabel {
-            label: label.to_string(),
+            label: label.to_owned(),
         })
     }
 
@@ -201,25 +204,23 @@ impl PropertyGraph {
 
 impl Display for PropertyGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (node_id, node) in self.nodes.iter() {
+        for (node_id, node) in &self.nodes {
             let node_id_str = node_id.to_string();
             let node_label = self
                 .node_names
                 .iter()
                 .find(|(_, id)| *id == node_id)
-                .map(|(label, _)| label)
-                .unwrap_or(&node_id_str);
-            writeln!(f, "Node {}: {}", node_label, node)?;
+                .map_or(&node_id_str, |(label, _)| label);
+            writeln!(f, "Node {node_label}: {node}")?;
         }
-        for (edge_id, edge) in self.edges.iter() {
+        for (edge_id, edge) in &self.edges {
             let edge_id_str = edge_id.to_string();
             let edge_label = self
                 .edge_names
                 .iter()
                 .find(|(_, id)| *id == edge_id)
-                .map(|(label, _)| label)
-                .unwrap_or(&edge_id_str);
-            writeln!(f, "Edge {}: {}", edge_label, edge)?;
+                .map_or(&edge_id_str, |(label, _)| label);
+            writeln!(f, "Edge {edge_label}: {edge}")?;
         }
         Ok(())
     }
@@ -239,12 +240,8 @@ impl PropertyGraph {
             ));
         }
         for (name, edge) in self.named_edges() {
-            let node_name = |id: &NodeId| {
-                self.node_name(id)
-                    .map(yarspg_identifier)
-                    .unwrap_or_else(|| id.to_string())
-            };
-            let id = name.map(|n| format!("{} ", yarspg_identifier(n))).unwrap_or_default();
+            let node_name = |id: &NodeId| self.node_name(id).map_or_else(|| id.to_string(), yarspg_identifier);
+            let id = name.map_or_default(|n| format!("{} ", yarspg_identifier(n)));
             lines.push(format!(
                 "({}) - ({}{}) -> ({})",
                 node_name(edge.source()),
@@ -324,8 +321,8 @@ impl PropertyGraph {
         edges.sort_by_key(|(name, edge)| {
             (
                 *name,
-                self.node_name(edge.source()).map(str::to_string),
-                self.node_name(edge.target()).map(str::to_string),
+                self.node_name(edge.source()).map(str::to_owned),
+                self.node_name(edge.target()).map(str::to_owned),
             )
         });
         edges
@@ -335,7 +332,7 @@ impl PropertyGraph {
 /// A name or label: bare when it is a YARS-PG identifier, quoted otherwise.
 fn yarspg_identifier(name: &str) -> String {
     if !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
-        name.to_string()
+        name.to_owned()
     } else {
         yarspg_string(name)
     }
@@ -350,8 +347,8 @@ fn yarspg_value(value: &Value) -> String {
         Value::String(s) => yarspg_string(s),
         Value::Integer(i) => i.to_string(),
         Value::Date(d) => format!("DATE \"{d}\""),
-        Value::Bool(true) => "TRUE".to_string(),
-        Value::Bool(false) => "FALSE".to_string(),
+        Value::Bool(true) => "TRUE".to_owned(),
+        Value::Bool(false) => "FALSE".to_owned(),
     }
 }
 
@@ -360,7 +357,7 @@ fn yarspg_labels_record(labels: &LabelSet, record: &Record) -> String {
     let mut out = String::new();
     if labels.iter().next().is_some() {
         let labels: Vec<_> = labels.iter().map(|l| yarspg_identifier(l)).collect();
-        out.push_str(&format!(" {{{}}}", labels.join(", ")));
+        write!(out, " {{{}}}", labels.join(", ")).unwrap();
     }
     let mut properties: Vec<_> = record.iter().collect();
     properties.sort_by_key(|(key, _)| *key);
@@ -380,7 +377,7 @@ fn yarspg_labels_record(labels: &LabelSet, record: &Record) -> String {
                 format!("{}: {values}", yarspg_identifier(key.str()))
             })
             .collect();
-        out.push_str(&format!(" [{}]", properties.join(", ")));
+        write!(out, " [{}]", properties.join(", ")).unwrap();
     }
     out
 }
@@ -401,7 +398,7 @@ fn json_record(record: &Record) -> serde_json::Map<String, serde_json::Value> {
             let mut values: Vec<_> = values.iter().collect();
             values.sort();
             (
-                key.str().to_string(),
+                key.str().to_owned(),
                 serde_json::Value::Array(values.into_iter().map(json_value).collect()),
             )
         })

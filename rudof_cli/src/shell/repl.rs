@@ -99,10 +99,10 @@ fn read_command(editor: &mut Editor<ShellHelper, DefaultHistory>) -> Result<Stri
                 buffer.push_str(&next);
             },
             Err(err @ ReadlineError::Eof) => {
-                let _ = writeln!(
-                    std::io::stderr(),
+                drop(writeln!(
+                    io::stderr(),
                     "Warning: input ended with an unterminated quote; discarding: {buffer}"
-                );
+                ));
                 return Err(err);
             },
             Err(err) => return Err(err),
@@ -145,7 +145,7 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
     let history_path = history_file();
     if let Some(path) = &history_path {
         // A missing history file is expected on first run; ignore the error.
-        let _ = editor.load_history(path);
+        drop(editor.load_history(path));
     }
 
     writeln!(ctx.writer, "{BANNER}")?;
@@ -161,7 +161,7 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
     // still works, just without Ctrl-C cancellation.
     if let Err(err) = crate::signals::install_shell_ctrl_c_handler() {
         writeln!(
-            std::io::stderr(),
+            io::stderr(),
             "Warning: could not install Ctrl-C handler ({err}); Ctrl-C during a running command will exit the shell"
         )?;
     }
@@ -174,7 +174,7 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
                     continue;
                 }
                 if let Err(err) = editor.add_history_entry(line) {
-                    writeln!(std::io::stderr(), "Warning: could not record history entry: {err}")?;
+                    writeln!(io::stderr(), "Warning: could not record history entry: {err}")?;
                 }
                 match line {
                     "exit" | "quit" => break,
@@ -186,7 +186,7 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
                         rudof_rdf::cancellation::reset();
                         if let Err(err) = dispatch_catching_panics(line, ctx) {
                             writeln!(
-                                std::io::stderr(),
+                                io::stderr(),
                                 "{} {}",
                                 crate::output::error_prefix(),
                                 crate::output::format_error(&err)
@@ -196,10 +196,10 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
                 }
                 ctx.writer.flush()?;
             },
-            Err(ReadlineError::Interrupted) => continue,
+            Err(ReadlineError::Interrupted) => {},
             Err(ReadlineError::Eof) => break,
             Err(err) => {
-                writeln!(std::io::stderr(), "Readline error: {err}")?;
+                writeln!(io::stderr(), "Readline error: {err}")?;
                 break;
             },
         }
@@ -208,7 +208,7 @@ pub fn run(ctx: &mut CommandContext) -> Result<()> {
     if let Some(path) = &history_path
         && let Err(err) = editor.save_history(path)
     {
-        writeln!(std::io::stderr(), "Warning: could not save shell history: {err}")?;
+        writeln!(io::stderr(), "Warning: could not save shell history: {err}")?;
     }
 
     Ok(())
@@ -254,11 +254,11 @@ fn dispatch_catching_panics(line: &str, ctx: &mut CommandContext) -> Result<()> 
 /// by the tests in this module; don't "simplify" the parameter type.
 fn panic_message(payload: &Box<dyn std::any::Any + Send>) -> String {
     if let Some(s) = payload.downcast_ref::<&str>() {
-        (*s).to_string()
+        (*s).to_owned()
     } else if let Some(s) = payload.downcast_ref::<String>() {
         s.clone()
     } else {
-        "no further information available".to_string()
+        "no further information available".to_owned()
     }
 }
 
@@ -414,19 +414,19 @@ impl StatsKind {
             Self::Data => match ctx.rudof.data_stats() {
                 Some(DataStats::Rdf { triples }) => format!("{triples} triple(s) loaded"),
                 Some(DataStats::Pg { nodes, edges }) => format!("{nodes} node(s), {edges} edge(s) loaded"),
-                None => "No data loaded".to_string(),
+                None => "No data loaded".to_owned(),
             },
-            Self::Shex => match ctx.rudof.shex_schema().and_then(|schema| schema.shapes()) {
+            Self::Shex => match ctx.rudof.shex_schema().and_then(shex_ast::ast::schema::Schema::shapes) {
                 Some(shapes) => format!("{} shape(s) loaded", shapes.len()),
-                None => "No shapes loaded".to_string(),
+                None => "No shapes loaded".to_owned(),
             },
             Self::Shacl => match ctx.rudof.shacl_shapes() {
                 Some(shapes) => format!("{} shape(s) loaded", shapes.iter().count()),
-                None => "No shapes loaded".to_string(),
+                None => "No shapes loaded".to_owned(),
             },
             Self::DCTap => match ctx.rudof.dctap() {
                 Some(dctap) => format!("{} shape(s) loaded", dctap.shapes().count()),
-                None => "No shapes loaded".to_string(),
+                None => "No shapes loaded".to_owned(),
             },
             Self::Pgschema => match ctx.rudof.pg_schema() {
                 Some(schema) => format!(
@@ -434,7 +434,7 @@ impl StatsKind {
                     schema.node_type_count(),
                     schema.edge_type_count()
                 ),
-                None => "No schema loaded".to_string(),
+                None => "No schema loaded".to_owned(),
             },
             Self::Service => match ctx.rudof.service_description() {
                 Some(service) => format!(
@@ -442,7 +442,7 @@ impl StatsKind {
                     service.available_graphs_count(),
                     service.feature_count()
                 ),
-                None => "No service description loaded".to_string(),
+                None => "No service description loaded".to_owned(),
             },
         }
     }
@@ -564,7 +564,7 @@ fn canonical_endpoint_name(ctx: &CommandContext, name: &str) -> Option<String> {
         .execute()
         .rdf_data()
         .find_endpoint(name)
-        .map(|e| e.name().to_string())
+        .map(|e| e.name().to_owned())
 }
 
 fn endpoint_url(ctx: &CommandContext, name: &str) -> Option<String> {
@@ -831,7 +831,7 @@ fn config_set_path(root: &mut toml::Value, key: &str, new_value: toml::Value) ->
     let mut segments = key.split('.').peekable();
     while let Some(segment) = segments.next() {
         if segments.peek().is_none() {
-            current.as_table_mut()?.insert(segment.to_string(), new_value);
+            current.as_table_mut()?.insert(segment.to_owned(), new_value);
             return Some(());
         }
         current = current.get_mut(segment)?;
@@ -878,7 +878,7 @@ fn parse_config_scalar(value: &str) -> toml::Value {
     } else if let Ok(f) = value.parse::<f64>() {
         toml::Value::Float(f)
     } else {
-        toml::Value::String(value.to_string())
+        toml::Value::String(value.to_owned())
     }
 }
 
@@ -906,7 +906,7 @@ fn registered_endpoint_names(ctx: &CommandContext) -> Vec<String> {
 fn registered_endpoints_line(ctx: &CommandContext) -> String {
     let names = registered_endpoint_names(ctx);
     if names.is_empty() {
-        "No endpoints are registered in the config.".to_string()
+        "No endpoints are registered in the config.".to_owned()
     } else {
         format!("Registered endpoints: {}", names.join(", "))
     }
@@ -964,7 +964,7 @@ fn run_external_command(command_line: &str, ctx: &mut CommandContext) -> Result<
 
 #[cfg(not(windows))]
 fn system_shell(command_line: &str) -> Command {
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_owned());
     let mut command = Command::new(shell);
     command.arg("-c").arg(command_line);
     command
@@ -995,7 +995,7 @@ fn apply_bare_resource_convenience(tokens: &mut Vec<String>) {
         return;
     }
     if let Some((_, flag)) = BARE_RESOURCE_FLAG.iter().find(|(name, _)| name == command) {
-        tokens.insert(1, (*flag).to_string());
+        tokens.insert(1, (*flag).to_owned());
     }
 }
 
@@ -1105,16 +1105,16 @@ fn print_help(ctx: &mut CommandContext) -> Result<()> {
 fn command_names() -> Vec<String> {
     let mut names: Vec<String> = ReplLine::command()
         .get_subcommands()
-        .map(|cmd| cmd.get_name().to_string())
+        .map(|cmd| cmd.get_name().to_owned())
         .collect();
-    names.push("help".to_string());
-    names.push("exit".to_string());
-    names.push("quit".to_string());
-    names.push("cd".to_string());
-    names.push("endpoint".to_string());
-    names.push("reset".to_string());
-    names.push("prefixes".to_string());
-    names.push("resolvers".to_string());
+    names.push("help".to_owned());
+    names.push("exit".to_owned());
+    names.push("quit".to_owned());
+    names.push("cd".to_owned());
+    names.push("endpoint".to_owned());
+    names.push("reset".to_owned());
+    names.push("prefixes".to_owned());
+    names.push("resolvers".to_owned());
     names
 }
 

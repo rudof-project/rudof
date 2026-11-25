@@ -1,6 +1,6 @@
 mod direction;
 mod lang;
-#[allow(clippy::module_inception)]
+#[expect(clippy::module_inception)]
 mod literal;
 mod numeric_literal;
 mod xsd_datetime;

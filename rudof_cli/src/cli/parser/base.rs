@@ -374,6 +374,6 @@ mod tests {
         assert_eq!(limits.min_request_interval_ms, None);
         assert_eq!(limits.max_concurrent_requests, Some(4));
         assert_eq!(limits.max_nodes_per_query, Some(50));
-        assert!(TestCli::try_parse_from(["test", "--max-nodes-per-query", "0"]).is_err());
+        TestCli::try_parse_from(["test", "--max-nodes-per-query", "0"]).unwrap_err();
     }
 }

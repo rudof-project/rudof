@@ -23,3 +23,6 @@ tracing.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest.workspace = true
+
+[lints]
+workspace = true

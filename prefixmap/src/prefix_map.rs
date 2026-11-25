@@ -73,7 +73,7 @@ impl<'de> Deserialize<'de> for PrefixMap {
         impl<'de> Visitor<'de> for PrefixMapVisitor {
             type Value = PrefixMap;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("a map of prefix to IRI")
             }
 
@@ -125,7 +125,7 @@ impl PrefixMap {
         //         value: self.map.get(key).unwrap().to_string(),
         //     });
         // }
-        self.map.insert(key.to_string(), iri.into());
+        self.map.insert(key.to_owned(), iri.into());
     }
 
     /// Finds an IRI associated with a given alias
@@ -142,7 +142,7 @@ impl PrefixMap {
     ///
     // Returns an error if any of the aliases in the other [`PrefixMap`] already exist in this one.
     pub fn merge(&mut self, other: PrefixMap) {
-        for (alias, iri) in other.into_iter() {
+        for (alias, iri) in other {
             self.add_prefix(alias, iri)
         }
     }
@@ -161,6 +161,7 @@ impl PrefixMap {
 /// Formatting for [`PrefixMap`] outputs
 impl PrefixMap {
     /// Disable all colors when qualifying IRIs
+    #[must_use]
     pub fn without_colors(self) -> Self {
         self.with_qualify_prefix_color(None)
             .with_qualify_localname_color(None)
@@ -169,6 +170,7 @@ impl PrefixMap {
 
     /// Enables the default color scheme (blue prefix, red colon, black
     /// local name) when qualifying IRIs.
+    #[must_use]
     pub fn with_default_colors(mut self) -> Self {
         self.qualify_localname_color = Some(Color::Black);
         self.qualify_prefix_color = Some(Color::Blue);
@@ -177,12 +179,14 @@ impl PrefixMap {
     }
 
     /// Enable or disable hyperlinking when qualifying IRIs
+    #[must_use]
     pub fn with_hyperlink(mut self, hyperlink: bool) -> Self {
         self.hyperlink = hyperlink;
         self
     }
 
     /// Sets the base IRI used to shorten IRIs that don't match any prefix alias
+    #[must_use]
     pub fn with_base(mut self, base: Option<IriS>) -> Self {
         self.base = base;
         self
@@ -216,7 +220,7 @@ impl PrefixMap {
     fn alias_color(&self, alias: &str) -> String {
         match self.qualify_prefix_color {
             Some(color) => Self::colorize(alias, color),
-            None => alias.to_string(),
+            None => alias.to_owned(),
         }
     }
 
@@ -224,7 +228,7 @@ impl PrefixMap {
     fn local_color(&self, rest: &str) -> String {
         match self.qualify_localname_color {
             Some(color) => Self::colorize(rest, color),
-            None => rest.to_string(),
+            None => rest.to_owned(),
         }
     }
 
@@ -232,7 +236,7 @@ impl PrefixMap {
     fn semicolon_color(&self) -> String {
         match self.qualify_semicolon_color {
             Some(color) => Self::colorize(":", color),
-            None => ":".to_string(),
+            None => ":".to_owned(),
         }
     }
 
@@ -246,24 +250,28 @@ impl PrefixMap {
     }
 
     /// Change color when qualifying a IRI
+    #[must_use]
     pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> Self {
         self.qualify_prefix_color = color;
         self
     }
 
     /// Change color of localname when qualifying a IRI
+    #[must_use]
     pub fn with_qualify_localname_color(mut self, color: Option<Color>) -> Self {
         self.qualify_localname_color = color;
         self
     }
 
     /// Change color of semicolon when qualifying a IRI
+    #[must_use]
     pub fn with_qualify_semicolon_color(mut self, color: Option<Color>) -> Self {
         self.qualify_semicolon_color = color;
         self
     }
 
     /// Disable all rich qualifying (colors and hyperlinks)
+    #[must_use]
     pub fn without_rich_qualifying(self) -> Self {
         self.with_hyperlink(false).without_colors()
     }
@@ -399,7 +407,7 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
-        self.qualify_optional(iri).unwrap_or_else(|| format!("<{}>", iri))
+        self.qualify_optional(iri).unwrap_or_else(|| format!("<{iri}>"))
     }
 
     /// Qualifies an IRI against a [`PrefixMap`]
@@ -449,11 +457,7 @@ impl PrefixMap {
     /// set and it is a prefix of `iri`
     fn base_relative_match(&self, iri: &IriS) -> Option<String> {
         let base = self.base.as_ref()?;
-        if iri.as_str().starts_with(base.as_str()) {
-            Some(iri.relative_from(base))
-        } else {
-            None
-        }
+        iri.as_str().starts_with(base.as_str()).then(|| iri.relative_from(base))
     }
 
     /// Qualifies an IRI against a [`PrefixMap`], returning the length of the qualified string
@@ -526,7 +530,7 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify_local(&self, iri: &IriS) -> Option<String> {
-        self.longest_prefix_match(iri).map(|(_, rest)| rest.to_string())
+        self.longest_prefix_match(iri).map(|(_, rest)| rest.to_owned())
     }
 
     /// Finds the longest prefix match for a given IRI in the [`PrefixMap`]
@@ -693,8 +697,8 @@ impl PrefixMap {
 
 impl Display for PrefixMap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (alias, iri) in self.map.iter() {
-            writeln!(f, "prefix {}: <{}>", alias, iri)?
+        for (alias, iri) in &self.map {
+            writeln!(f, "prefix {alias}: <{iri}>")?
         }
         Ok(())
     }
@@ -704,12 +708,11 @@ impl Iterator for PrefixMap {
     type Item = (String, IriS);
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.map.is_empty() {
-            true => None,
-            false => {
-                let (k, v) = self.map.shift_remove_index(0).unwrap();
-                Some((k, v))
-            },
+        if self.map.is_empty() {
+            None
+        } else {
+            let (k, v) = self.map.shift_remove_index(0).unwrap();
+            Some((k, v))
         }
     }
 }
@@ -767,7 +770,7 @@ mod tests {
 
     #[test]
     fn test_is_local_name() {
-        for valid in ["", "a", "S1", "1", "_x", "a.b", "a:b", "a-b", "%20x", "é", "a\\/b"] {
+        for valid in ["", "a", "S1", "1", "_x", "a.b", "a:b", "a-b", "%20x", "\u{e9}", "a\\/b"] {
             assert!(is_local_name(valid), "{valid} should be a valid local name");
         }
         for invalid in ["/S1", "a/b", "a#b", ".a", "a.", "-a", "%2", "a b", "a?b"] {

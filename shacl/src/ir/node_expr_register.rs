@@ -41,7 +41,7 @@ impl<'a, RDF: BuildRDF> NodeExprRegister<'a, RDF> {
     }
 
     pub(crate) fn string(&mut self, property: IriS, value: &str) -> Result<(), IRError> {
-        let literal: RDF::Literal = value.to_string().into();
+        let literal: RDF::Literal = value.to_owned().into();
         self.arc(property, literal.into())
     }
 

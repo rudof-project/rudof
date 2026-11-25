@@ -37,7 +37,7 @@ impl Sum {
     ) -> Result<Vec<Rdf::Term>, IRError> {
         let terms = self.sum.evaluate(store, focus, scope, runner, ir)?;
 
-        let mut rank = 0u8;
+        let mut rank = 0_u8;
         let mut total = Decimal::ZERO;
 
         for term in &terms {

@@ -19,14 +19,12 @@ async fn test_pattern_with_length_constraints() {
 
     // Test with a specific pattern that has predictable length (license plate format)
     let mut context = GenerationContext::new(
-        "http://example.org/constrainedString".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/constrainedString".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     // Use a pattern with fixed length to test pattern compliance
-    context
-        .parameters
-        .insert("pattern".to_string(), json!("[A-Z]{3}\\d{3}"));
+    context.parameters.insert("pattern".to_owned(), json!("[A-Z]{3}\\d{3}"));
 
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
@@ -65,11 +63,11 @@ async fn test_pattern_with_enumeration() {
 
     // Test with numeric pattern since enumeration is not currently supported
     let mut context = GenerationContext::new(
-        "http://example.org/numericCode".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/numericCode".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
-    context.parameters.insert("pattern".to_string(), json!("\\d{3}"));
+    context.parameters.insert("pattern".to_owned(), json!("\\d{3}"));
 
     let mut generated_values = HashSet::new();
     for _ in 0..10 {
@@ -102,18 +100,18 @@ async fn test_pattern_with_different_datatypes() {
 
     // Test with xsd:token datatype (normalized string)
     let mut token_context = GenerationContext::new(
-        "http://example.org/token".to_string(),
-        "http://www.w3.org/2001/XMLSchema#token".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/token".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#token".to_owned(),
+        "test_subject".to_owned(),
     );
     token_context
         .parameters
-        .insert("pattern".to_string(), json!("[A-Za-z0-9_-]+"));
+        .insert("pattern".to_owned(), json!("[A-Za-z0-9_-]+"));
 
     let token_result = generator.generate(&token_context).unwrap();
     println!("Generated token: {token_result}");
 
-    let token_regex = Regex::new(r"^[A-Za-z0-9_-]+$").unwrap();
+    let token_regex = Regex::new("^[A-Za-z0-9_-]+$").unwrap();
     assert!(
         token_regex.is_match(&token_result),
         "Token should match pattern: {token_result}"
@@ -121,13 +119,13 @@ async fn test_pattern_with_different_datatypes() {
 
     // Test with custom datatype (should still work)
     let mut custom_context = GenerationContext::new(
-        "http://example.org/custom".to_string(),
-        "http://example.org/CustomType".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/custom".to_owned(),
+        "http://example.org/CustomType".to_owned(),
+        "test_subject".to_owned(),
     );
     custom_context
         .parameters
-        .insert("pattern".to_string(), json!("CUSTOM-\\d{4}"));
+        .insert("pattern".to_owned(), json!("CUSTOM-\\d{4}"));
 
     let custom_result = generator.generate(&custom_context).unwrap();
     println!("Generated custom type: {custom_result}");
@@ -157,10 +155,10 @@ async fn test_pattern_shacl_constraint_integration() {
     for (prop_name, pattern) in shacl_patterns {
         let mut context = GenerationContext::new(
             format!("http://example.org/{prop_name}"),
-            "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            "test_subject".to_string(),
+            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+            "test_subject".to_owned(),
         );
-        context.parameters.insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_owned(), json!(pattern));
 
         let result = generator.generate(&context).unwrap();
         println!("Generated SHACL {prop_name} pattern: {result}");
@@ -181,7 +179,7 @@ async fn test_pattern_shacl_constraint_integration() {
                 assert!(result.len() >= 10, "Product code should have proper length: {result}");
             },
             "serialNumber" => {
-                assert!(result.contains("-"), "Serial number should contain hyphens: {result}");
+                assert!(result.contains('-'), "Serial number should contain hyphens: {result}");
                 let parts: Vec<&str> = result.split('-').collect();
                 assert!(parts.len() >= 3, "Serial number should have multiple parts: {result}");
             },
@@ -229,10 +227,10 @@ async fn test_pattern_shex_cardinality_integration() {
     for (name, pattern) in phone_patterns {
         let mut context = GenerationContext::new(
             format!("http://example.org/{name}"),
-            "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            "test_subject".to_string(),
+            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+            "test_subject".to_owned(),
         );
-        context.parameters.insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_owned(), json!(pattern));
 
         let result = generator.generate(&context).unwrap();
         all_results.push((name, result));
@@ -243,10 +241,10 @@ async fn test_pattern_shex_cardinality_integration() {
     for (name, pattern) in tag_patterns {
         let mut context = GenerationContext::new(
             format!("http://example.org/{name}"),
-            "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            "test_subject".to_string(),
+            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+            "test_subject".to_owned(),
         );
-        context.parameters.insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_owned(), json!(pattern));
 
         let result = generator.generate(&context).unwrap();
         all_results.push((name, result));
@@ -259,7 +257,7 @@ async fn test_pattern_shex_cardinality_integration() {
     // Validate phone number formats
     for (name, result) in &all_results {
         if name.contains("Phone") || name.contains("Contacts") {
-            assert!(result.contains("-"), "Phone numbers should contain hyphens: {result}");
+            assert!(result.contains('-'), "Phone numbers should contain hyphens: {result}");
             assert_eq!(result.len(), 12, "Phone numbers should be 12 chars: {result}");
         } else if name.contains("Tag") {
             assert!(
@@ -303,11 +301,11 @@ async fn test_pattern_generator_robustness() {
         println!("Testing {description}: '{pattern}'");
 
         let mut context = GenerationContext::new(
-            "http://example.org/malformed".to_string(),
-            "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            "test_subject".to_string(),
+            "http://example.org/malformed".to_owned(),
+            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+            "test_subject".to_owned(),
         );
-        context.parameters.insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_owned(), json!(pattern));
 
         let result = generator.generate(&context);
 
@@ -348,10 +346,10 @@ async fn test_pattern_generator_complex_integration() {
     for (prop_name, pattern) in complex_patterns {
         let mut context = GenerationContext::new(
             format!("http://example.org/{prop_name}"),
-            "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            "test_subject".to_string(),
+            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+            "test_subject".to_owned(),
         );
-        context.parameters.insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_owned(), json!(pattern));
 
         let result = generator.generate(&context).unwrap();
         generated_results.push((prop_name, result));
@@ -390,11 +388,11 @@ async fn test_pattern_generator_complex_integration() {
                 assert!(result.len() >= 9, "Employee ID should have proper length: {result}");
             },
             "email" => {
-                assert!(result.contains("@"), "Email should contain @: {result}");
-                assert!(result.contains("."), "Email should contain .: {result}");
+                assert!(result.contains('@'), "Email should contain @: {result}");
+                assert!(result.contains('.'), "Email should contain .: {result}");
             },
             "phone" => {
-                assert!(result.contains("-"), "Phone should contain -: {result}");
+                assert!(result.contains('-'), "Phone should contain -: {result}");
                 assert_eq!(result.len(), 12, "Phone should be exactly 12 chars: {result}");
             },
             _ => {},
@@ -410,13 +408,11 @@ async fn test_pattern_generator_consistency() {
 
     // Test that the same context produces varied but valid results
     let mut context = GenerationContext::new(
-        "http://example.org/consistent".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/consistent".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
-    context
-        .parameters
-        .insert("pattern".to_string(), json!("[A-Z]{2}\\d{4}"));
+    context.parameters.insert("pattern".to_owned(), json!("[A-Z]{2}\\d{4}"));
 
     let mut results = Vec::new();
     for _ in 0..100 {
@@ -471,10 +467,10 @@ async fn test_pattern_generator_memory_efficiency() {
         for j in 0..100 {
             let mut context = GenerationContext::new(
                 format!("http://example.org/prop{i}-{j}"),
-                "http://www.w3.org/2001/XMLSchema#string".to_string(),
+                "http://www.w3.org/2001/XMLSchema#string".to_owned(),
                 format!("subject_{j}"),
             );
-            context.parameters.insert("pattern".to_string(), json!(pattern));
+            context.parameters.insert("pattern".to_owned(), json!(pattern));
 
             let result = generator.generate(&context);
             assert!(

@@ -21,7 +21,7 @@ impl FromStr for CompareSchemaMode {
             "shex" => Ok(CompareSchemaMode::ShEx),
             "shacl" => Ok(CompareSchemaMode::Shacl),
             "service_description" => Ok(CompareSchemaMode::ServiceDescription),
-            _ => Err(crate::ComparatorError::UnknownSchemaMode(s.to_string())),
+            _ => Err(crate::ComparatorError::UnknownSchemaMode(s.to_owned())),
         }
     }
 }

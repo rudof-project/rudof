@@ -69,7 +69,7 @@ pub enum SchemaIRError {
         lexical_form: String,
     },
 
-    #[error("Finding content from iris. Errors: [{}]", errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", "))]
+    #[error("Finding content from iris. Errors: [{}]", errors.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", "))]
     FindingContentFromIrisError { errors: Vec<SchemaIRError> },
 
     #[error("Generating candidates from iri {iri}: {error}")]
@@ -85,7 +85,7 @@ pub enum SchemaIRError {
         expected: IriS,
     },
 
-    #[error("Datatype expected {expected} but found literal {node} which has datatype: {}", (*node).datatype().map(|d| d.to_string()).unwrap_or("None".to_string()))]
+    #[error("Datatype expected {expected} but found literal {node} which has datatype: {}", (*node).datatype().map_or("None".to_owned(), |d| d.to_string()))]
     DatatypeNoLiteral { expected: Box<IriS>, node: Box<Node> },
 
     #[error("Datatype expected {expected} but found String literal {lexical_form}")]
@@ -209,7 +209,7 @@ pub enum SchemaIRError {
     #[error("Parsing ShExJ format from iri: {iri}: {error}")]
     ShExJError { error: String, iri: IriS },
 
-    #[error("Error importing Schema from iri: {iri}: {}", errors.iter().map(|(format, error)| format!("\nFor {format}: {error}")).collect::<Vec<_>>().join(""))]
+    #[error("Error importing Schema from iri: {iri}: {}", errors.iter().map(|(format, error)| format!("\nFor {format}: {error}")).collect::<String>())]
     SchemaFromIriRotatingFormats {
         iri: IriS,
         errors: Vec<(ShExFormat, Box<SchemaIRError>)>,

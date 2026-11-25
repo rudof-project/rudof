@@ -72,7 +72,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MaxL
 
         let query_fn = |vn: &S::Term| -> Option<String> {
             if vn.is_blank_node() {
-                return Some("ASK { FILTER(false) }".to_string());
+                return Some("ASK { FILTER(false) }".to_owned());
             }
             let vn_sparql = term_as_sparql::<S>(vn)?;
             Some(formatdoc! {"

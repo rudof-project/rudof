@@ -11,7 +11,7 @@ fn main() -> anyhow::Result<()> {
     use shacl::validator::store::ShaclDataManager;
     use std::io::Cursor;
 
-    let shacl = r#"
+    let shacl = "
         @prefix ex:  <http://example.org/> .
         @prefix wd:  <http://www.wikidata.org/entity/> .
         @prefix wdt: <http://www.wikidata.org/prop/direct/> .
@@ -27,7 +27,7 @@ fn main() -> anyhow::Result<()> {
                 sh:maxCount 1 ;
                 sh:datatype xsd:string ;
             ] .
-    "#;
+    ";
 
     let schema = ShaclDataManager::load(&mut Cursor::new(shacl), "Test", &RDFFormat::Turtle, None)?;
 

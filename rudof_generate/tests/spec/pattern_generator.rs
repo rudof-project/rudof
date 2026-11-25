@@ -28,13 +28,13 @@ async fn test_pattern_generator_phone_numbers() {
 
     // Test US phone number pattern
     let mut context = GenerationContext::new(
-        "http://example.org/phone".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/phone".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context
         .parameters
-        .insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}"));
+        .insert("pattern".to_owned(), json!("\\d{3}-\\d{3}-\\d{4}"));
 
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
@@ -71,13 +71,13 @@ async fn test_pattern_generator_international_phone() {
     let generator = PatternGenerator;
 
     let mut context = GenerationContext::new(
-        "http://example.org/intlPhone".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/intlPhone".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context
         .parameters
-        .insert("pattern".to_string(), json!("\\+1-\\d{3}-\\d{3}-\\d{4}"));
+        .insert("pattern".to_owned(), json!("\\+1-\\d{3}-\\d{3}-\\d{4}"));
 
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
@@ -100,12 +100,12 @@ async fn test_pattern_generator_email() {
     let generator = PatternGenerator;
 
     let mut context = GenerationContext::new(
-        "http://example.org/email".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/email".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context.parameters.insert(
-        "pattern".to_string(),
+        "pattern".to_owned(),
         json!("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"),
     );
 
@@ -114,14 +114,14 @@ async fn test_pattern_generator_email() {
         println!("Generated email: {result}");
 
         // Basic email validation
-        assert!(result.contains("@"), "Email should contain @");
-        assert!(result.contains("."), "Email should contain .");
+        assert!(result.contains('@'), "Email should contain @");
+        assert!(result.contains('.'), "Email should contain .");
 
         let parts: Vec<&str> = result.split('@').collect();
         assert_eq!(parts.len(), 2, "Email should have exactly one @");
         assert!(!parts[0].is_empty(), "Local part should not be empty");
         assert!(!parts[1].is_empty(), "Domain part should not be empty");
-        assert!(parts[1].contains("."), "Domain should contain .");
+        assert!(parts[1].contains('.'), "Domain should contain .");
     }
 }
 
@@ -132,13 +132,13 @@ async fn test_pattern_generator_student_id() {
     let generator = PatternGenerator;
 
     let mut context = GenerationContext::new(
-        "http://example.org/studentId".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/studentId".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context
         .parameters
-        .insert("pattern".to_string(), json!("[A-Z]{2,3}\\d{4,6}"));
+        .insert("pattern".to_owned(), json!("[A-Z]{2,3}\\d{4,6}"));
 
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
@@ -161,7 +161,7 @@ async fn test_pattern_generator_student_id() {
             "Should have 4-6 digits: {digits}"
         );
         assert!(
-            letters.chars().all(|c| c.is_uppercase()),
+            letters.chars().all(char::is_uppercase),
             "Letters should be uppercase: {letters}"
         );
     }
@@ -174,13 +174,13 @@ async fn test_pattern_generator_date() {
     let generator = PatternGenerator;
 
     let mut context = GenerationContext::new(
-        "http://example.org/dateString".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/dateString".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context
         .parameters
-        .insert("pattern".to_string(), json!("\\d{4}-\\d{2}-\\d{2}"));
+        .insert("pattern".to_owned(), json!("\\d{4}-\\d{2}-\\d{2}"));
 
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
@@ -213,14 +213,13 @@ async fn test_pattern_generator_ip_address() {
     let generator = PatternGenerator;
 
     let mut context = GenerationContext::new(
-        "http://example.org/ipAddress".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/ipAddress".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
-    context.parameters.insert(
-        "pattern".to_string(),
-        json!("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"),
-    );
+    context
+        .parameters
+        .insert("pattern".to_owned(), json!("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"));
 
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
@@ -247,13 +246,13 @@ async fn test_pattern_generator_url() {
     let generator = PatternGenerator;
 
     let mut context = GenerationContext::new(
-        "http://example.org/website".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/website".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context
         .parameters
-        .insert("pattern".to_string(), json!("https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"));
+        .insert("pattern".to_owned(), json!("https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"));
 
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
@@ -264,7 +263,7 @@ async fn test_pattern_generator_url() {
             result.starts_with("http://") || result.starts_with("https://"),
             "URL should start with http:// or https://: {result}"
         );
-        assert!(result.contains("."), "URL should contain domain separator");
+        assert!(result.contains('.'), "URL should contain domain separator");
 
         // Extract domain part
         let domain_part = if result.starts_with("https://") {
@@ -274,7 +273,7 @@ async fn test_pattern_generator_url() {
         };
 
         assert!(!domain_part.is_empty(), "Domain part should not be empty");
-        assert!(domain_part.contains("."), "Domain should have TLD separator");
+        assert!(domain_part.contains('.'), "Domain should have TLD separator");
     }
 }
 
@@ -286,35 +285,35 @@ async fn test_pattern_generator_heuristics() {
 
     // Test phone heuristic
     let phone_context = GenerationContext::new(
-        "http://example.org/phoneNumber".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/phoneNumber".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
 
     let phone_result = generator.generate(&phone_context).unwrap();
     println!("Heuristic phone: {phone_result}");
     assert!(
-        phone_result.contains("-"),
+        phone_result.contains('-'),
         "Phone heuristic should generate dash-separated format"
     );
 
     // Test email heuristic
     let email_context = GenerationContext::new(
-        "http://example.org/emailAddress".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/emailAddress".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
 
     let email_result = generator.generate(&email_context).unwrap();
     println!("Heuristic email: {email_result}");
-    assert!(email_result.contains("@"), "Email heuristic should generate @ symbol");
-    assert!(email_result.contains("."), "Email heuristic should generate domain");
+    assert!(email_result.contains('@'), "Email heuristic should generate @ symbol");
+    assert!(email_result.contains('.'), "Email heuristic should generate domain");
 
     // Test URL heuristic
     let url_context = GenerationContext::new(
-        "http://example.org/websiteUrl".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/websiteUrl".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
 
     let url_result = generator.generate(&url_context).unwrap();
@@ -326,9 +325,9 @@ async fn test_pattern_generator_heuristics() {
 
     // Test ID heuristic
     let id_context = GenerationContext::new(
-        "http://example.org/userId".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/userId".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
 
     let id_result = generator.generate(&id_context).unwrap();
@@ -354,22 +353,22 @@ async fn test_pattern_generator_integration_config() {
 
     // Phone pattern config
     let mut phone_config = PropertyConfig {
-        generator: "pattern".to_string(),
+        generator: "pattern".to_owned(),
         parameters: HashMap::new(),
         templates: None,
     };
     phone_config
         .parameters
-        .insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}"));
-    property_configs.insert("http://example.org/phone".to_string(), phone_config);
+        .insert("pattern".to_owned(), json!("\\d{3}-\\d{3}-\\d{4}"));
+    property_configs.insert("http://example.org/phone".to_owned(), phone_config);
 
     // Email pattern config using heuristic
     let email_config = PropertyConfig {
-        generator: "pattern".to_string(),
+        generator: "pattern".to_owned(),
         parameters: HashMap::new(),
         templates: None,
     };
-    property_configs.insert("http://example.org/emailAddress".to_string(), email_config);
+    property_configs.insert("http://example.org/emailAddress".to_owned(), email_config);
 
     config.field_generators.properties = property_configs;
 
@@ -382,27 +381,27 @@ async fn test_pattern_generator_integration_config() {
     // Basic test of pattern generator functionality
     let pattern_gen = PatternGenerator;
     let mut context = GenerationContext::new(
-        "http://example.org/phone".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/phone".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context
         .parameters
-        .insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}"));
+        .insert("pattern".to_owned(), json!("\\d{3}-\\d{3}-\\d{4}"));
 
     let phone_result = pattern_gen.generate(&context).unwrap();
     println!("Generated phone in integration test: {phone_result}");
-    assert!(phone_result.contains("-"), "Should contain phone dashes");
+    assert!(phone_result.contains('-'), "Should contain phone dashes");
 
     // Test email heuristic
     let email_context = GenerationContext::new(
-        "http://example.org/emailAddress".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/emailAddress".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     let email_result = pattern_gen.generate(&email_context).unwrap();
     println!("Generated email in integration test: {email_result}");
-    assert!(email_result.contains("@"), "Should contain email @ symbol");
+    assert!(email_result.contains('@'), "Should contain email @ symbol");
 }
 
 /// Test pattern generator with SHACL schema
@@ -451,10 +450,10 @@ ex:PersonShape a sh:NodeShape ;
     // Add pattern generator as default for string datatype
     let mut datatype_configs = HashMap::new();
     let string_config = DatatypeConfig {
-        generator: "pattern".to_string(),
+        generator: "pattern".to_owned(),
         parameters: HashMap::new(),
     };
-    datatype_configs.insert("http://www.w3.org/2001/XMLSchema#string".to_string(), string_config);
+    datatype_configs.insert("http://www.w3.org/2001/XMLSchema#string".to_owned(), string_config);
     config.field_generators.datatypes = datatype_configs;
 
     // Test generation
@@ -482,12 +481,12 @@ async fn test_pattern_generator_error_handling() {
 
     // Test with unsupported complex pattern - should fallback gracefully
     let mut context = GenerationContext::new(
-        "http://example.org/complex".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/complex".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context.parameters.insert(
-        "pattern".to_string(),
+        "pattern".to_owned(),
         json!("(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)[A-Za-z\\d]{8,}"),
     );
 
@@ -506,13 +505,13 @@ async fn test_pattern_generator_randomness() {
     let generator = PatternGenerator;
 
     let mut context = GenerationContext::new(
-        "http://example.org/phone".to_string(),
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        "test_subject".to_string(),
+        "http://example.org/phone".to_owned(),
+        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+        "test_subject".to_owned(),
     );
     context
         .parameters
-        .insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}"));
+        .insert("pattern".to_owned(), json!("\\d{3}-\\d{3}-\\d{4}"));
 
     let mut generated_values = std::collections::HashSet::new();
 

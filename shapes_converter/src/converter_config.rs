@@ -33,31 +33,37 @@ impl ConverterConfig {
         }
     }
 
+    #[must_use]
     pub fn with_dctap(mut self, cfg: TapConfig) -> Self {
         self.dctap = cfg;
         self
     }
 
+    #[must_use]
     pub fn with_shex2html(mut self, cfg: ShEx2HtmlConfig) -> Self {
         self.shex2html = cfg;
         self
     }
 
+    #[must_use]
     pub fn with_tap2shex(mut self, cfg: Tap2ShExConfig) -> Self {
         self.tap2shex = cfg;
         self
     }
 
+    #[must_use]
     pub fn with_shex2sparql(mut self, cfg: ShEx2SparqlConfig) -> Self {
         self.shex2sparql = cfg;
         self
     }
 
+    #[must_use]
     pub fn with_shacl2shex(mut self, cfg: Shacl2ShExConfig) -> Self {
         self.shacl2shex = cfg;
         self
     }
 
+    #[must_use]
     pub fn with_shex2uml(mut self, cfg: ShEx2UmlConfig) -> Self {
         self.shex2uml = cfg;
         self

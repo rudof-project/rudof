@@ -33,7 +33,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                 // Only meaningful when no shape conforms: then these are the
                 // reasons each alternative failed.
                 let mut details = Vec::new();
-                for idx in self.shapes().iter() {
+                for idx in self.shapes() {
                     let internal_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results =
                         internal_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;
@@ -53,7 +53,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                     details.clear();
                 }
                 let node_obj = S::term_as_object(node).ok();
-                if conforming_shapes != 1 {
+                if conforming_shapes == 1 {
+                    let ev = Evidence::new(fnode_obj.clone(), component.clone())
+                        .with_path(maybe_path.cloned())
+                        .with_value(node_obj)
+                        .with_source(Some(shape.id().clone()));
+                    outcome.push_evidence(ev);
+                } else {
                     let msg = format!(
                         "Shape {}: Xone constraint not satisfied for node {node}. Number of conforming shapes: {conforming_shapes}",
                         shape.id()
@@ -65,12 +71,6 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                         .with_source(Some(shape.id().clone()))
                         .with_details(details);
                     outcome.push_violation(vr);
-                } else {
-                    let ev = Evidence::new(fnode_obj.clone(), component.clone())
-                        .with_path(maybe_path.cloned())
-                        .with_value(node_obj)
-                        .with_source(Some(shape.id().clone()));
-                    outcome.push_evidence(ev);
                 }
             }
         }

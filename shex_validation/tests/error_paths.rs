@@ -13,7 +13,7 @@ use shex_ast::shexpath::shexj_document;
 use shex_ast::{Node, ResolveMethod, ShExParser, ir::ast2ir::AST2IR};
 use shex_validation::{Validator, ValidatorConfig};
 
-const SCHEMA: &str = r#"
+const SCHEMA: &str = "
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -22,7 +22,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Nested { :q { :s xsd:string } }
 :Closed CLOSED { :p . }
 :Either { :p xsd:string } OR { :q xsd:string }
-"#;
+";
 
 const DATA: &str = r#"
 prefix : <http://example.org/>
@@ -89,7 +89,7 @@ impl Failure {
             .unwrap_or_else(|e| panic!("{path}: {e}"))
             .iter()
             .map(|item| {
-                let ty = item.value()["type"].as_str().unwrap_or("?").to_string();
+                let ty = item.value()["type"].as_str().unwrap_or("?").to_owned();
                 match item.value()["predicate"].as_str() {
                     Some(p) => format!("{ty}({})", p.replace("http://example.org/", ":")),
                     None => ty,
@@ -171,8 +171,8 @@ fn a_nested_shape_is_named_by_where_it_is() {
     assert_eq!(
         failure.reason,
         ":nested does not conform to :Nested\n\
-         └── property :q value :inner does not conform to @:Nested~:q/valueExpr\n    \
-         └── property :s: Datatype error: found xsd:integer, expected xsd:string, \
+         \u{2514}\u{2500}\u{2500} property :q value :inner does not conform to @:Nested~:q/valueExpr\n    \
+         \u{2514}\u{2500}\u{2500} property :s: Datatype error: found xsd:integer, expected xsd:string, \
          lexical form \"3\"^^xsd:integer (at @:Nested~:q/valueExpr~:s)"
     );
     assert_eq!(failure.path(), "@:Nested~:q/valueExpr~:s");
@@ -237,11 +237,11 @@ fn the_branches_of_an_or_are_named_by_where_they_are() {
     assert_eq!(
         failure.reason,
         ":neither does not conform to any branch of the OR\n\
-         ├── branch 0 (@:Either/shapeExprs/*[0])\n\
-         │   └── property :p: Datatype error: found xsd:integer, expected xsd:string, \
+         \u{251c}\u{2500}\u{2500} branch 0 (@:Either/shapeExprs/*[0])\n\
+         \u{2502}   \u{2514}\u{2500}\u{2500} property :p: Datatype error: found xsd:integer, expected xsd:string, \
          lexical form \"1\"^^xsd:integer (at @:Either/shapeExprs/*[0]~:p)\n\
-         └── branch 1 (@:Either/shapeExprs/*[1])\n    \
-         └── property :q: Datatype error: found xsd:integer, expected xsd:string, \
+         \u{2514}\u{2500}\u{2500} branch 1 (@:Either/shapeExprs/*[1])\n    \
+         \u{2514}\u{2500}\u{2500} property :q: Datatype error: found xsd:integer, expected xsd:string, \
          lexical form \"2\"^^xsd:integer (at @:Either/shapeExprs/*[1]~:q)"
     );
     assert!(

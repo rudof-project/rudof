@@ -7,7 +7,7 @@ use shex_ast::ir::shape_label::ShapeLabel;
 #[derive(Debug, Clone)]
 pub struct ShExStatistics {
     /// Count of shapes grouped by number of extends clauses
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub extends_count: std::collections::HashMap<usize, usize>,
 
     /// Number of locally defined shapes
@@ -26,6 +26,6 @@ pub struct ShExStatistics {
     pub has_imports: bool,
 
     /// List of negative cycles detected in the schema
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub neg_cycles: Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>>,
 }

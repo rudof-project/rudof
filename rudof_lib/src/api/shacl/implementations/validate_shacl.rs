@@ -87,7 +87,7 @@ fn validate_loaded_data_schema_and_shapes(rudof: &mut Rudof) -> Result<(&mut Dat
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if !data.is_rdf() {
-        Err(Box::new(DataError::NoRdfDataLoaded))?
+        return Err(Box::new(DataError::NoRdfDataLoaded).into());
     }
 
     let shacl_schema_ir = rudof.shacl_shapes.as_ref().ok_or(ShaclError::NoShaclShapesLoaded)?;

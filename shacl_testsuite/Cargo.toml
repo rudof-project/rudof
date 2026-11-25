@@ -22,3 +22,6 @@ shacl = { workspace = true, features = ["sparql"] }
 sparql_service.workspace = true
 thiserror.workspace = true
 toml.workspace = true
+
+[lints]
+workspace = true

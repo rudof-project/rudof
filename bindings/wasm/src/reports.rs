@@ -27,6 +27,7 @@ macro_rules! impl_record_triples {
     ($report:ty) => {
         impl $report {
             /// Adds what the validation recorded of the triples it read.
+            #[must_use]
             pub fn with_triples(mut self, recorded: TriplesRecorded) -> Self {
                 if let Some((reads, distinct, serialized)) = recorded.read {
                     self.triples_read = Some(reads);
@@ -275,8 +276,7 @@ impl From<&QueryResult> for QueryResults {
                 let variables = solutions
                     .iter()
                     .next()
-                    .map(|s| s.variables().iter().map(ToString::to_string).collect())
-                    .unwrap_or_default();
+                    .map_or_default(|s| s.variables().iter().map(ToString::to_string).collect());
                 let rows = solutions
                     .iter()
                     .map(|solution| {
@@ -386,7 +386,7 @@ impl From<&CoreNeighborArc> for NeighborArc {
                 ArcDirection::Outgoing => "outgoing",
                 ArcDirection::Incoming => "incoming",
             }
-            .to_string(),
+            .to_owned(),
             depth: arc.depth,
             node: arc.node.to_string(),
             predicate: arc.predicate.to_string(),
@@ -509,11 +509,12 @@ pub struct GraphDiff {
 
 impl From<rudof_lib::types::DataDiff> for GraphDiff {
     fn from(data_diff: rudof_lib::types::DataDiff) -> Self {
-        let report = data_diff.to_string();
-        let d = data_diff.diff;
         fn pairs<B: ToString, T: ToString>(ps: &[(B, T)]) -> Vec<[String; 2]> {
             ps.iter().map(|(b, t)| [b.to_string(), t.to_string()]).collect()
         }
+
+        let report = data_diff.to_string();
+        let d = data_diff.diff;
         GraphDiff {
             relation: d.relation.to_string(),
             mode: d.mode.to_string(),

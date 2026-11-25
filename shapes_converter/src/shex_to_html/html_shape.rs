@@ -75,6 +75,6 @@ impl HtmlShape {
     }
 
     pub fn set_svg_shape(&mut self, str: &str) {
-        self.svg_shape = Some(str.to_string());
+        self.svg_shape = Some(str.to_owned());
     }
 }

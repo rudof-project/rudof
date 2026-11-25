@@ -18,7 +18,7 @@ use std::path::Path;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
-    io::{self},
+    io,
 };
 
 /// Describes the service description of a SPARQL endpoint
@@ -69,18 +69,20 @@ impl ServiceDescription {
         }
     }
 
+    #[must_use]
     pub fn with_endpoint(mut self, endpoint: Option<IriS>) -> Self {
         self.endpoint = endpoint;
         self
     }
 
+    #[must_use]
     pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {
         self.prefixmap = prefixmap;
         self
     }
 
     pub fn add_title(&mut self, title: Option<&str>) {
-        self.title = title.map(|t| t.to_string());
+        self.title = title.map(ToOwned::to_owned);
     }
 
     pub fn title(&self) -> &Option<String> {
@@ -139,11 +141,13 @@ impl ServiceDescription {
         self.result_format.extend(result_formats);
     }
 
+    #[must_use]
     pub fn with_default_dataset(mut self, default_dataset: Option<Dataset>) -> Self {
         self.default_dataset = default_dataset;
         self
     }
 
+    #[must_use]
     pub fn with_available_graphs(mut self, available_graphs: Vec<GraphCollection>) -> Self {
         self.available_graphs = available_graphs;
         self
@@ -151,7 +155,7 @@ impl ServiceDescription {
 
     pub fn service2mie(&self) -> Mie {
         let mut mie = Mie::default();
-        let endpoint = self.endpoint.as_ref().map(|e| e.as_str());
+        let endpoint = self.endpoint.as_ref().map(IriS::as_str);
         mie.add_endpoint(endpoint);
 
         if let Some(title) = &self.title {
@@ -159,7 +163,7 @@ impl ServiceDescription {
         }
 
         let mut graph_names = Vec::new();
-        for graph_collection in self.available_graphs.iter() {
+        for graph_collection in &self.available_graphs {
             for named_graph_descr in graph_collection.named_graph_descriptions() {
                 let name = named_graph_descr.name();
                 graph_names.push(name.clone());
@@ -209,11 +213,11 @@ impl Display for ServiceDescription {
         } else {
             writeln!(f, " endpoint: None")?;
         }
-        let sup_lang = self.supported_language.iter().map(|l| l.to_string()).join(", ");
+        let sup_lang = self.supported_language.iter().map(ToString::to_string).join(", ");
         writeln!(f, "  supportedLanguage: [{sup_lang}]")?;
-        let feature = self.feature.iter().map(|l| l.to_string()).join(", ");
+        let feature = self.feature.iter().map(ToString::to_string).join(", ");
         writeln!(f, "  feature: [{feature}]")?;
-        let result = self.result_format.iter().map(|l| l.to_string()).join(", ");
+        let result = self.result_format.iter().map(ToString::to_string).join(", ");
         writeln!(f, "  result_format: [{result}]")?;
         if let Some(default_ds) = &self.default_dataset {
             writeln!(f, "  default_dataset: {default_ds}")?;
@@ -223,7 +227,7 @@ impl Display for ServiceDescription {
         writeln!(
             f,
             "  availableGraphs: {}",
-            self.available_graphs.iter().map(|a| a.to_string()).join(", ")
+            self.available_graphs.iter().map(ToString::to_string).join(", ")
         )?;
         Ok(())
     }

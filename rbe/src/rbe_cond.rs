@@ -144,7 +144,7 @@ where
     pub fn show_qualified(&self, show_key: &impl Fn(&K) -> String, show_value: &impl Fn(&V) -> String) -> String {
         match self {
             RbeCond::Fail { error } => format!("Fail {{{}}}", error.show_qualified(show_key, show_value)),
-            RbeCond::Empty => "Empty".to_string(),
+            RbeCond::Empty => "Empty".to_owned(),
             RbeCond::Symbol { key, cond, card } => format!("{}|{cond}{card}", show_key(key)),
             RbeCond::And { exprs } => exprs
                 .iter()
@@ -168,10 +168,14 @@ where
                 set.insert(key.clone());
             },
             RbeCond::And { exprs } => {
-                exprs.iter().for_each(|v| v.symbols_aux(set));
+                for v in exprs {
+                    v.symbols_aux(set);
+                }
             },
             RbeCond::Or { exprs } => {
-                exprs.iter().for_each(|v| v.symbols_aux(set));
+                for v in exprs {
+                    v.symbols_aux(set);
+                }
             },
             RbeCond::Plus { expr } => {
                 expr.symbols_aux(set);
@@ -179,7 +183,7 @@ where
             RbeCond::Star { expr } => {
                 expr.symbols_aux(set);
             },
-            RbeCond::Repeat { expr, card: _ } => {
+            RbeCond::Repeat { expr, .. } => {
                 expr.symbols_aux(set);
             },
         }
@@ -191,12 +195,12 @@ where
             RbeCond::Empty => true,
             RbeCond::Symbol { card, .. } if card.nullable() => true,
             RbeCond::Symbol { .. } => false,
-            RbeCond::And { exprs } => exprs.iter().all(|v| v.nullable()),
-            RbeCond::Or { exprs } => exprs.iter().any(|v| v.nullable()),
+            RbeCond::And { exprs } => exprs.iter().all(RbeCond::nullable),
+            RbeCond::Or { exprs } => exprs.iter().any(RbeCond::nullable),
             RbeCond::Star { .. } => true,
             RbeCond::Plus { expr } => expr.nullable(),
-            RbeCond::Repeat { expr: _, card } if card.min.is_0() => true,
-            RbeCond::Repeat { expr, card: _ } => expr.nullable(),
+            RbeCond::Repeat { card, .. } if card.min.is_0() => true,
+            RbeCond::Repeat { expr, .. } => expr.nullable(),
         }
     }
 
@@ -226,7 +230,7 @@ where
                 }
             },
             RbeCond::Or { exprs } => {
-                let results: Vec<_> = exprs.iter().map(|v| v.mandatory_values()).collect();
+                let results: Vec<_> = exprs.iter().map(RbeCond::mandatory_values).collect();
                 if results.iter().any(|r| matches!(r, Either::Right(vs) if vs.is_empty())) {
                     Either::Right(Vec::new())
                 } else {
@@ -247,8 +251,8 @@ where
             },
             RbeCond::Star { .. } => Either::Right(Vec::new()),
             RbeCond::Plus { expr } => expr.mandatory_values(),
-            RbeCond::Repeat { expr: _, card } if card.min.is_0() => Either::Right(Vec::new()),
-            RbeCond::Repeat { expr, card: _ } => expr.mandatory_values(),
+            RbeCond::Repeat { card, .. } if card.min.is_0() => Either::Right(Vec::new()),
+            RbeCond::Repeat { expr, .. } => expr.mandatory_values(),
         }
     }
 
@@ -256,6 +260,7 @@ where
     /// open indicates if we allow extra symbols
     /// `controlled` contains the list of symbols controlled by the `rbe` that should not be assumed as extra symbols
     /// `pending`
+    #[must_use]
     pub fn deriv(
         &self,
         symbol: &K,
@@ -269,8 +274,8 @@ where
     where
         K: Eq + Hash + Clone,
     {
-        match *self {
-            ref fail @ RbeCond::Fail { .. } => fail.clone(),
+        match self {
+            fail @ RbeCond::Fail { .. } => fail.clone(),
             RbeCond::Empty => {
                 if open && !(controlled.contains(symbol)) {
                     RbeCond::Empty
@@ -283,11 +288,7 @@ where
                     }
                 }
             },
-            RbeCond::Symbol {
-                ref key,
-                ref cond,
-                ref card,
-            } => {
+            RbeCond::Symbol { key, cond, card } => {
                 if *key == *symbol {
                     match cond.matches(value, ctx) {
                         Err(err) => RbeCond::Fail { error: err },
@@ -321,17 +322,17 @@ where
                     }
                 }
             },
-            RbeCond::And { ref exprs } => Self::deriv_and(exprs, symbol, value, ctx, n, open, controlled, pending),
-            RbeCond::Or { ref exprs } => Self::mk_or_values(
+            RbeCond::And { exprs } => Self::deriv_and(exprs, symbol, value, ctx, n, open, controlled, pending),
+            RbeCond::Or { exprs } => Self::mk_or_values(
                 exprs
                     .iter()
                     .map(|rbe| rbe.deriv(symbol, value, ctx, n, open, controlled, pending)),
             ),
-            RbeCond::Plus { ref expr } => {
+            RbeCond::Plus { expr } => {
                 let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
                 Self::mk_and(&d, &RbeCond::Star { expr: expr.clone() })
             },
-            RbeCond::Repeat { ref expr, ref card } if card.is_0_0() => {
+            RbeCond::Repeat { expr, card } if card.is_0_0() => {
                 let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
                 if d.nullable() {
                     RbeCond::Fail {
@@ -341,13 +342,13 @@ where
                     RbeCond::Empty
                 }
             },
-            RbeCond::Repeat { ref expr, ref card } => {
+            RbeCond::Repeat { expr, card } => {
                 let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
                 let card = card.minus(n);
                 let rest = Self::mk_range(expr, &card);
                 Self::mk_and(&d, &rest)
             },
-            RbeCond::Star { ref expr } => {
+            RbeCond::Star { expr } => {
                 let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
                 Self::mk_and(&d, expr)
             },
@@ -498,7 +499,7 @@ where
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, dest: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             RbeCond::Fail { error } => write!(dest, "Fail {{{error:?}}}"),
             RbeCond::Empty => write!(dest, "Empty"),
@@ -520,7 +521,7 @@ where
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, dest: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             RbeCond::Fail { error } => write!(dest, "Fail {{{error}}}"),
             RbeCond::Empty => write!(dest, "Empty"),
@@ -573,18 +574,18 @@ mod tests {
 
     #[test]
     fn deriv_symbol_b_2_3() {
-        let rbe: RbeCond<String, String, String, char> = RbeCond::symbol("b".to_string(), 2, Max::IntMax(3));
+        let rbe: RbeCond<String, String, String, char> = RbeCond::symbol("b".to_owned(), 2, Max::IntMax(3));
         let mut pending = Pending::empty();
         let d = rbe.deriv(
-            &"b".to_string(),
-            &"vb2".to_string(),
+            &"b".to_owned(),
+            &"vb2".to_owned(),
             &'a',
             1,
             true,
             &HashSet::new(),
             &mut pending,
         );
-        assert_eq!(RbeCond::symbol("b".to_string(), 1, Max::IntMax(2)), d);
+        assert_eq!(RbeCond::symbol("b".to_owned(), 1, Max::IntMax(2)), d);
     }
 
     #[test]

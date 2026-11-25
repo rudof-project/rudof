@@ -24,7 +24,7 @@ fn validate_loaded_data_schema_and_typemap(rudof: &mut Rudof) -> Result<(&mut Da
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if !data.is_pg() {
-        Err(Box::new(DataError::NoPgDataLoaded))?
+        return Err(Box::new(DataError::NoPgDataLoaded).into());
     }
 
     let pg_schema = rudof.pg_schema.as_ref().ok_or(PgSchemaError::NoPgschemaLoaded)?;

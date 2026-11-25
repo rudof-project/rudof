@@ -95,3 +95,6 @@ getrandom03.workspace = true
 oxigraph = { workspace = true, optional = true, features = ["js"] }
 js-sys = { workspace = true, optional = true }
 wasm-bindgen = { workspace = true, optional = true }
+
+[lints]
+workspace = true

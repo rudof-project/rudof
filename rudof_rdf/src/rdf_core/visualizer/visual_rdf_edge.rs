@@ -36,7 +36,7 @@ impl VisualRDFEdge {
             return VisualRDFEdge::Reifies;
         }
         let iri_label = R::qualify_iri(rdf, iri);
-        let iri_str = (*iri).as_str().to_string();
+        let iri_str = (*iri).as_str().to_owned();
         VisualRDFEdge::Iri {
             label: iri_label,
             url: iri_str,
@@ -62,7 +62,7 @@ impl VisualRDFEdge {
     pub fn label(&self) -> String {
         match self {
             VisualRDFEdge::Iri { label, .. } => label.clone(),
-            VisualRDFEdge::Reifies => "reifies".to_string(),
+            VisualRDFEdge::Reifies => "reifies".to_owned(),
         }
     }
 }

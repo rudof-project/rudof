@@ -67,7 +67,7 @@ impl FromStr for ShExFormat {
 }
 
 impl Display for ShExFormat {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ShExFormat::ShExC => write!(f, "ShExC"),
             ShExFormat::ShExJ => write!(f, "ShExJ"),

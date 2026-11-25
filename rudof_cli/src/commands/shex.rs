@@ -89,7 +89,7 @@ impl Command for ShexCommand {
                 .common
                 .output
                 .as_deref()
-                .map_or_else(|| "stdout".to_string(), |path| path.display().to_string());
+                .map_or_else(|| "stdout".to_owned(), |path| path.display().to_string());
             report_shapes_saved(ctx, &destination);
         }
 

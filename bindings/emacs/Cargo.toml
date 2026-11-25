@@ -32,3 +32,6 @@ rudof_lib = { workspace = true, default-features = true, features = ["http-clien
 libtest-mimic.workspace = true
 serde = { workspace = true }
 serde_json.workspace = true
+
+[lints]
+workspace = true

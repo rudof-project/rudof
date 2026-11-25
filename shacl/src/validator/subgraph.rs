@@ -86,7 +86,7 @@ impl SubgraphTracker {
 
     fn state(&self) -> MutexGuard<'_, TrackerState> {
         // A poisoned lock only means another thread panicked: the state is still usable
-        self.0.lock().unwrap_or_else(|e| e.into_inner())
+        self.0.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Records that the validator read `triples`.

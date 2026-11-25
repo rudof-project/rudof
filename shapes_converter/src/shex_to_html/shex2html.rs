@@ -40,7 +40,7 @@ impl ShEx2Html {
         let prefixmap = shex.prefixmap().unwrap_or_default().without_rich_qualifying();
         let parent = self.create_name_for_schema(shex);
         if self.config.embed_svg_schema || self.config.embed_svg_shape {
-            let _ = self.current_uml_converter.convert(shex);
+            drop(self.current_uml_converter.convert(shex));
         }
         if let Some(shapes) = shex.shapes() {
             for shape_decl in shapes {
@@ -152,7 +152,7 @@ impl ShEx2Html {
     fn shape_label2name(&mut self, label: &ShapeExprLabel, prefixmap: &PrefixMap) -> Result<Name, ShEx2HtmlError> {
         match label {
             ShapeExprLabel::IriRef { value } => iri_ref2name(value, &self.config, &None, prefixmap),
-            ShapeExprLabel::BNode { value: _ } => todo!(),
+            ShapeExprLabel::BNode { .. } => todo!(),
             ShapeExprLabel::Start => todo!(),
         }
     }
@@ -190,7 +190,7 @@ impl ShEx2Html {
         }
         let mut html_shape = HtmlShape::new(name.clone(), parent.clone());
         if let Some(extends) = &shape.extends {
-            for e in extends.iter() {
+            for e in extends {
                 let extended_name = self.shape_label2name(e, prefixmap)?;
                 let (extended_node, found) = self.current_html.get_node_adding_label(&extended_name.name());
                 html_shape.add_extends(&extended_name);
@@ -202,26 +202,16 @@ impl ShEx2Html {
         }
         if let Some(te) = &shape.expression {
             match &te.te {
-                TripleExpr::EachOf {
-                    id: _,
-                    expressions,
-                    min: _,
-                    max: _,
-                    sem_acts: _,
-                    annotations: _,
-                } => {
+                TripleExpr::EachOf { expressions, .. } => {
                     for e in expressions {
                         match &e.te {
                             TripleExpr::TripleConstraint {
-                                id: _,
-                                negated: _,
-                                inverse: _,
                                 predicate,
                                 value_expr,
                                 min,
                                 max,
-                                sem_acts: _,
                                 annotations,
+                                ..
                             } => {
                                 let pred_name = mk_name(predicate, annotations, &self.config, prefixmap)?;
                                 let card = mk_card(min, max)?;
@@ -237,12 +227,10 @@ impl ShEx2Html {
                                 } else {
                                     ValueConstraint::default()
                                 };
-                                match value_constraint {
-                                    ValueConstraint::None => {},
-                                    _ => {
-                                        let entry = ShapeTemplateEntry::new(pred_name, value_constraint, card);
-                                        html_shape.add_entry(entry)
-                                    },
+                                if value_constraint == ValueConstraint::None {
+                                } else {
+                                    let entry = ShapeTemplateEntry::new(pred_name, value_constraint, card);
+                                    html_shape.add_entry(entry)
                                 }
                             },
                             _ => todo!(),
@@ -250,24 +238,14 @@ impl ShEx2Html {
                     }
                     Ok(())
                 },
-                TripleExpr::OneOf {
-                    id: _,
-                    expressions: _,
-                    min: _,
-                    max: _,
-                    sem_acts: _,
-                    annotations: _,
-                } => todo!(),
+                TripleExpr::OneOf { .. } => todo!(),
                 TripleExpr::TripleConstraint {
-                    id: _,
-                    negated: _,
-                    inverse: _,
                     predicate,
                     value_expr,
                     min,
                     max,
-                    sem_acts: _,
                     annotations,
+                    ..
                 } => {
                     let pred_name = mk_name(predicate, annotations, &self.config, prefixmap)?;
                     let card = mk_card(min, max)?;
@@ -276,12 +254,10 @@ impl ShEx2Html {
                     } else {
                         ValueConstraint::default()
                     };
-                    match value_constraint {
-                        ValueConstraint::None => {},
-                        _ => {
-                            let entry = ShapeTemplateEntry::new(pred_name, value_constraint, card);
-                            html_shape.add_entry(entry);
-                        },
+                    if value_constraint == ValueConstraint::None {
+                    } else {
+                        let entry = ShapeTemplateEntry::new(pred_name, value_constraint, card);
+                        html_shape.add_entry(entry);
                     };
                     Ok(())
                 },
@@ -400,7 +376,7 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2Htm
 #[allow(clippy::result_large_err)]
 fn generate_shape_page(
     shape: &HtmlShape,
-    template: &Template,
+    template: &Template<'_, '_>,
     _config: &ShEx2HtmlConfig,
 ) -> Result<(), ShEx2HtmlError> {
     let name = shape.name();
@@ -440,7 +416,7 @@ fn get_label(
     prefixmap: &PrefixMap,
     config: &ShEx2HtmlConfig,
 ) -> Result<Option<String>, PrefixMapError> {
-    for label in config.annotation_label.iter() {
+    for label in &config.annotation_label {
         if let Some(value) = find_annotation(annotations, label, prefixmap)? {
             return Ok(Some(object_value2string(&value)));
         }
@@ -489,10 +465,7 @@ mod tests {
         let mut env = Environment::new();
         env.add_template("hello", "Hello {{ name }}!").unwrap();
         let tmpl = env.get_template("hello").unwrap();
-        assert_eq!(
-            tmpl.render(context!(name => "John")).unwrap(),
-            "Hello John!".to_string()
-        )
+        assert_eq!(tmpl.render(context!(name => "John")).unwrap(), "Hello John!".to_owned())
     }
 
     /*    #[test]

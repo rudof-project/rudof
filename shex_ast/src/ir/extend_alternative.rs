@@ -70,6 +70,7 @@ impl ExtendAlternative {
     /// Attach `idxs` as constraints scoped to this alternative's current bucket shapes —
     /// used when resolving a `ShapeAnd`, where the non-main conjuncts may see exactly the
     /// splits of the main conjunct's buckets.
+    #[must_use]
     pub fn with_scoped_constraints(mut self, idxs: &[ShapeLabelIdx]) -> Self {
         let scope = self.bucket_shapes.clone();
         for c in idxs {
@@ -99,6 +100,7 @@ impl ExtendAlternative {
     /// Used to combine one chosen alternative per extended parent into a selection.
     /// A constraint reaching the merge through several paths (a diamond) keeps one
     /// entry whose scope is the union of the paths' scopes.
+    #[must_use]
     pub fn merge(&self, other: &Self) -> Self {
         let mut result = self.clone();
         for b in &other.bucket_shapes {

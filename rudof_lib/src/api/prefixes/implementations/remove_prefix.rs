@@ -5,7 +5,7 @@ pub fn remove_prefix(rudof: &mut Rudof, alias: &str) -> Result<()> {
     match removed {
         Some(_) => Ok(()),
         None => Err(PrefixesError::AliasNotFound {
-            alias: alias.to_string(),
+            alias: alias.to_owned(),
         }
         .into()),
     }

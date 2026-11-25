@@ -126,15 +126,15 @@ fn used_prefixes_are_the_ones_in_the_text() {
     assert_eq!(
         aliases,
         vec![
-            ("".to_string(), EX.to_string()),
-            ("schema".to_string(), "http://schema.org/".to_string()),
-            ("xsd".to_string(), "http://www.w3.org/2001/XMLSchema#".to_string()),
+            (String::new(), EX.to_owned()),
+            ("schema".to_owned(), "http://schema.org/".to_owned()),
+            ("xsd".to_owned(), "http://www.w3.org/2001/XMLSchema#".to_owned()),
         ]
     );
     // The short form of 3 does not use xsd:
     let used = used_prefixes(triples[1..2].iter().map(TermRef::Triple), &pm());
     assert_eq!(
         used.iter().map(|(a, _)| a.clone()).collect::<Vec<_>>(),
-        vec!["".to_string()]
+        vec![String::new()]
     );
 }

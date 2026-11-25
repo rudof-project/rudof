@@ -158,18 +158,18 @@ where
 impl Display for Shape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let extends = if self.extends.is_empty() {
-            "".to_string()
+            String::new()
         } else {
-            format!("EXTENDS [{}]", self.extends.iter().map(|e| e.to_string()).join(" "))
+            format!("EXTENDS [{}]", self.extends.iter().map(ToString::to_string).join(" "))
         };
         let closed = if self.closed { "CLOSED" } else { "" };
         let extra = if self.extra.is_empty() {
-            "".to_string()
+            String::new()
         } else {
             format!("EXTRA [{}]", self.extra.iter().join(" "))
         };
         let preds = if self.preds.is_empty() {
-            "".to_string()
+            String::new()
         } else {
             self.preds.iter().join(",")
         };

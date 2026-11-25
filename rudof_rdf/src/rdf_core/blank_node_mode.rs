@@ -72,7 +72,7 @@ pub fn apply_blank_node_mode(triples: Vec<Triple>, mode: BlankNodeMode) -> Vec<T
         .map(|t| {
             let subject = match t.subject {
                 NamedOrBlankNode::BlankNode(b) => NamedOrBlankNode::BlankNode(relabel(&b)),
-                other => other,
+                other @ NamedOrBlankNode::NamedNode(_) => other,
             };
             let object = match t.object {
                 Term::BlankNode(b) => Term::BlankNode(relabel(&b)),

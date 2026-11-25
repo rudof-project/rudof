@@ -77,19 +77,19 @@ impl Display for ShaCo {
         writeln!(f, "Shapes Comparison:")?;
         if !self.equal_properties.is_empty() {
             writeln!(f, " Equal properties:")?;
-            for (property, equals) in self.equal_properties.iter() {
+            for (property, equals) in &self.equal_properties {
                 writeln!(f, "  - {property}: {equals}")?;
             }
         }
         if !self.properties1.is_empty() {
             writeln!(f, " Properties in shape 1 that are not in shape 2:")?;
-            for (property, descr) in self.properties1.iter() {
+            for (property, descr) in &self.properties1 {
                 writeln!(f, "  - {property}: {descr}")?;
             }
         }
         if !self.properties2.is_empty() {
             writeln!(f, " Properties in shape 2 that are not in shape 1:")?;
-            for (property, descr) in self.properties2.iter() {
+            for (property, descr) in &self.properties2 {
                 writeln!(f, "  - {property}: {descr}")?;
             }
         }
@@ -102,12 +102,12 @@ impl Display for EqualProperty {
         writeln!(
             f,
             "\n  - descr1: {}",
-            self.description1.as_ref().map(|d| d.to_string()).unwrap_or_default()
+            self.description1.as_ref().map_or_default(ToString::to_string)
         )?;
         writeln!(
             f,
             "  - descr2: {}",
-            self.description2.as_ref().map(|d| d.to_string()).unwrap_or_default()
+            self.description2.as_ref().map_or_default(ToString::to_string)
         )?;
         Ok(())
     }
@@ -118,7 +118,7 @@ impl Display for DiffProperty {
         writeln!(
             f,
             "\n  - descr: {}",
-            self.description.as_ref().map(|d| d.to_string()).unwrap_or_default()
+            self.description.as_ref().map_or_default(ToString::to_string)
         )?;
         Ok(())
     }

@@ -199,7 +199,7 @@ impl<S: QueryRDF> QueryRDF for ReadRecorder<S> {
         let solutions = self.inner.query_select(query).map_err(ReadRecorderError::Store)?;
         let pm = self.inner.prefixmap().unwrap_or_default();
         let mut converted = QuerySolutions::empty();
-        converted.extend(solutions.iter().map(|s| s.convert(|t| t.clone())).collect(), pm);
+        converted.extend(solutions.iter().map(|s| s.convert(Clone::clone)).collect(), pm);
         Ok(converted)
     }
 
@@ -230,7 +230,7 @@ mod tests {
         let graph = OxigraphInMemory::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let sink = Arc::new(Mutex::new(CountingSink::new()));
         let mut recorder = ReadRecorder::new(graph);
-        recorder.set_sink(Some(TriplesSink::new(sink.clone())));
+        recorder.set_sink(Some(TriplesSink::new(Arc::clone(&sink))));
         (recorder, sink)
     }
 

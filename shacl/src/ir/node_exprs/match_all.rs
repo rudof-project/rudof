@@ -20,6 +20,7 @@ impl MatchAll {
         Self { match_all, nodes: None }
     }
 
+    #[must_use]
     pub fn with_nodes(mut self, nodes: Option<IRNodeExpr>) -> Self {
         self.nodes = nodes.map(Box::new);
         self

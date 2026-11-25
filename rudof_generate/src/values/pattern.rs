@@ -23,7 +23,7 @@ impl FieldGenerator for PatternGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec!["http://www.w3.org/2001/XMLSchema#string".to_string()]
+        vec!["http://www.w3.org/2001/XMLSchema#string".to_owned()]
     }
 }
 
@@ -66,7 +66,7 @@ impl PatternGenerator {
             ));
         }
 
-        if pattern.contains("@") || pattern.contains("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}") {
+        if pattern.contains('@') || pattern.contains("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}") {
             // Email pattern
             let domains = ["example.com", "test.org", "sample.edu", "demo.net"];
             let usernames = ["user", "admin", "test", "demo", "john.doe", "jane.smith"];
@@ -136,7 +136,7 @@ impl PatternGenerator {
 
         if pattern.contains("#[0-9A-Fa-f]{6}") || pattern.contains("#[0-9A-F]{6}") {
             // Hex color pattern like #FF0000
-            return Ok(format!("#{:06X}", rng.random_range(0..0x1000000)));
+            return Ok(format!("#{:06X}", rng.random_range(0..0x0100_0000)));
         }
 
         if pattern.contains("[A-Z]{3}\\d{3}") {
@@ -162,7 +162,7 @@ impl PatternGenerator {
             ));
         }
 
-        if pattern.starts_with("^") && pattern.ends_with("$") {
+        if pattern.starts_with('^') && pattern.ends_with('$') {
             // Handle anchored patterns by removing anchors
             let inner_pattern = &pattern[1..pattern.len() - 1];
             return self.generate_from_pattern(inner_pattern, context);
@@ -395,7 +395,7 @@ impl PatternGenerator {
             let domains = ["example.com", "test.org", "sample.net"];
             Ok(format!("https://{}", domains[rng.random_range(0..domains.len())]))
         } else if property_lower.contains("id") || property_lower.contains("identifier") {
-            Ok(format!("ID{:06}", rng.random_range(100000..999999)))
+            Ok(format!("ID{:06}", rng.random_range(100_000..999_999)))
         } else {
             // Generic string generation
             let words = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"];
@@ -418,13 +418,13 @@ mod tests {
     fn test_phone_pattern_generation() {
         let generator = PatternGenerator;
         let mut context = GenerationContext::new(
-            "http://example.org/phone".to_string(),
-            "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            "subject1".to_string(),
+            "http://example.org/phone".to_owned(),
+            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+            "subject1".to_owned(),
         );
         context
             .parameters
-            .insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}"));
+            .insert("pattern".to_owned(), json!("\\d{3}-\\d{3}-\\d{4}"));
 
         let result = generator.generate(&context).unwrap();
         println!("Generated phone: {result}");
@@ -441,35 +441,35 @@ mod tests {
     fn test_email_pattern_generation() {
         let generator = PatternGenerator;
         let mut context = GenerationContext::new(
-            "http://example.org/email".to_string(),
-            "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            "subject1".to_string(),
+            "http://example.org/email".to_owned(),
+            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+            "subject1".to_owned(),
         );
         context.parameters.insert(
-            "pattern".to_string(),
+            "pattern".to_owned(),
             json!("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"),
         );
 
         let result = generator.generate(&context).unwrap();
         println!("Generated email: {result}");
 
-        assert!(result.contains("@"));
-        assert!(result.contains("."));
+        assert!(result.contains('@'));
+        assert!(result.contains('.'));
     }
 
     #[test]
     fn test_heuristic_generation() {
         let generator = PatternGenerator;
         let context = GenerationContext::new(
-            "http://example.org/phone".to_string(),
-            "http://www.w3.org/2001/XMLSchema#string".to_string(),
-            "subject1".to_string(),
+            "http://example.org/phone".to_owned(),
+            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
+            "subject1".to_owned(),
         );
 
         let result = generator.generate(&context).unwrap();
         println!("Generated heuristic phone: {result}");
 
         // Should generate phone-like format
-        assert!(result.contains("-"));
+        assert!(result.contains('-'));
     }
 }

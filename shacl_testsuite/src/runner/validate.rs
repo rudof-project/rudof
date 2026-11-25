@@ -19,7 +19,7 @@ fn test(path: String, mode: ShaclValidationMode) -> Result<(), TestSuiteError> {
 
     for test in tests {
         if let Some(message) = mismatch(&test, &mode)? {
-            println!("❌ Test failed");
+            println!("\u{274c} Test failed");
             println!("{message}");
             return Err(TestSuiteError::NotEquals);
         }
@@ -47,13 +47,13 @@ pub(crate) fn mismatch(
 
     let expected = test.report.clone().without_details();
 
-    if report != expected {
+    if report == expected {
+        Ok(None)
+    } else {
         Ok(Some(format!(
             "Expected report:\n{:#?}\nActual report:\n{:#?}",
             expected.results(),
             report.results()
         )))
-    } else {
-        Ok(None)
     }
 }

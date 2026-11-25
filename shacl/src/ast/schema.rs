@@ -28,11 +28,13 @@ impl ASTSchema {
         self.shapes.is_empty()
     }
 
+    #[must_use]
     pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
         self.prefixmap = prefixmap;
         self
     }
 
+    #[must_use]
     pub fn with_shapes(mut self, shapes: HashMap<Object, ASTShape>) -> Self {
         self.shapes = shapes;
         self
@@ -72,7 +74,7 @@ impl IntoIterator for ASTSchema {
 
 impl Display for ASTSchema {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for (id, shape) in self.shapes.iter() {
+        for (id, shape) in &self.shapes {
             writeln!(f, "{id} -> {shape}")?;
         }
         Ok(())

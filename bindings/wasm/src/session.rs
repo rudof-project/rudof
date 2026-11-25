@@ -60,7 +60,7 @@ impl Session {
 
     /// The version of the underlying rudof library.
     pub fn version(&self) -> String {
-        self.rudof.version().execute().to_string()
+        self.rudof.version().execute().to_owned()
     }
 
     // ------------------------------------------------------------------------
@@ -988,9 +988,9 @@ impl Session {
         Rudof::list_external_resolvers()
             .into_iter()
             .map(|info| ExternalResolver {
-                name: info.name.to_string(),
-                description: info.description.to_string(),
-                spec_syntax: info.spec_syntax.to_string(),
+                name: info.name.to_owned(),
+                description: info.description.to_owned(),
+                spec_syntax: info.spec_syntax.to_owned(),
             })
             .collect()
     }
@@ -1002,7 +1002,7 @@ impl Session {
     /// Compares two schemas (`mode1`/`mode2`: `shex`, `shacl`, ...), or only
     /// the shapes `label1` and `label2`.
     #[cfg(feature = "comparison")]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn compare_schemas(
         &mut self,
         schema1: &str,
@@ -1305,7 +1305,7 @@ impl RecordingSinks {
     }
 
     fn handle(sink: &Option<SharedGraphSink>) -> Option<TriplesSink> {
-        sink.as_ref().map(|s| TriplesSink::new(s.clone()))
+        sink.as_ref().map(|s| TriplesSink::new(Arc::clone(s)))
     }
 
     fn read(&self) -> Option<TriplesSink> {

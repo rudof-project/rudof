@@ -32,18 +32,20 @@ impl Shape {
         Shape {
             closed,
             extra,
-            expression: expression.map(|e| e.into()),
+            expression: expression.map(Into::into),
             sem_acts: None,
             annotations: None,
             extends: None,
         }
     }
 
+    #[must_use]
     pub fn with_expression(mut self, expression: TripleExpr) -> Self {
         self.expression = Some(expression.into());
         self
     }
 
+    #[must_use]
     pub fn with_sem_acts(mut self, sem_acts: Option<Vec<SemAct>>) -> Self {
         self.sem_acts = sem_acts;
         self
@@ -57,6 +59,7 @@ impl Shape {
         self.annotations.is_some()
     }
 
+    #[must_use]
     pub fn with_annotations(mut self, annotations: Option<Vec<Annotation>>) -> Self {
         self.annotations = annotations;
         self
@@ -70,6 +73,7 @@ impl Shape {
         }
     }
 
+    #[must_use]
     pub fn with_extends(mut self, extends: Option<Vec<ShapeExprLabel>>) -> Self {
         self.extends = extends;
         self

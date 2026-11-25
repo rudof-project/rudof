@@ -39,9 +39,8 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Closed {
         let mut outcome = ValidationOutcome::new();
 
         for (fnode, _) in value_nodes.iter() {
-            let subject = match S::term_as_subject(fnode) {
-                Ok(subj) => subj,
-                Err(_) => continue,
+            let Ok(subject) = S::term_as_subject(fnode) else {
+                continue;
             };
 
             let triples = store
@@ -111,9 +110,8 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clos
             let focus_obj = S::term_as_object(fnode)?;
 
             let triples_iter: Box<dyn Iterator<Item = (Object, Option<Object>)>> = if fnode.is_blank_node() {
-                let subject = match S::term_as_subject(fnode) {
-                    Ok(s) => s,
-                    Err(_) => continue,
+                let Ok(subject) = S::term_as_subject(fnode) else {
+                    continue;
                 };
                 let triples = store
                     .triples_with_subject(&subject)
@@ -138,13 +136,11 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clos
 
                 let mut rows: Vec<(Object, Option<Object>)> = Vec::new();
                 for sol in solutions.iter() {
-                    let pred_term = match sol.find_solution("p") {
-                        Some(t) => t,
-                        None => continue,
+                    let Some(pred_term) = sol.find_solution("p") else {
+                        continue;
                     };
-                    let pred_obj = match S::term_as_object(pred_term) {
-                        Ok(obj @ Object::Iri(_)) => obj,
-                        _ => continue,
+                    let Ok(pred_obj @ Object::Iri(_)) = S::term_as_object(pred_term) else {
+                        continue;
                     };
                     let value = sol.find_solution("o").and_then(|t| S::term_as_object(t).ok());
                     rows.push((pred_obj, value));

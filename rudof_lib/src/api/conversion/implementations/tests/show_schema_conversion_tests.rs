@@ -43,7 +43,7 @@ fn test_convert_shex_to_shex() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema_input = InputSpec::str(
-        r#"
+        "
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -52,7 +52,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:age xsd:integer ?
 }
-        "#,
+        ",
     );
 
     let serialized = serialize_conversion_to_string(
@@ -67,10 +67,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     assert!(serialized.contains("Person") || serialized.contains(":Person"));
     assert!(serialized.contains("schema:name") || serialized.contains("name"));
 
-    println!(
-        "\n===== test_convert_shex_to_shex =====\n{}\n============================================",
-        serialized
-    );
+    println!("\n===== test_convert_shex_to_shex =====\n{serialized}\n============================================");
 }
 
 #[test]
@@ -78,7 +75,7 @@ fn test_convert_shex_to_sparql() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema_input = InputSpec::str(
-        r#"
+        "
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -87,7 +84,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:age xsd:integer ?
 }
-        "#,
+        ",
     );
 
     let serialized = serialize_conversion_to_string(
@@ -106,10 +103,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
             || serialized.to_uppercase().contains("CONSTRUCT")
     );
 
-    println!(
-        "\n===== test_convert_shex_to_sparql =====\n{}\n============================================",
-        serialized
-    );
+    println!("\n===== test_convert_shex_to_sparql =====\n{serialized}\n============================================");
 }
 
 #[test]
@@ -117,7 +111,7 @@ fn test_convert_shex_to_uml_plantuml() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema_input = InputSpec::str(
-        r#"
+        "
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -126,7 +120,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:knows @:Person *
 }
-        "#,
+        ",
     );
 
     let serialized = serialize_conversion_to_string(
@@ -142,8 +136,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     assert!(serialized.contains("@startuml") || serialized.contains("class") || !serialized.is_empty());
 
     println!(
-        "\n===== test_convert_shex_to_uml_plantuml =====\n{}\n============================================",
-        serialized
+        "\n===== test_convert_shex_to_uml_plantuml =====\n{serialized}\n============================================"
     );
 }
 
@@ -152,7 +145,7 @@ fn test_convert_shacl_to_shacl() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema_input = InputSpec::str(
-        r#"
+        "
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix schema: <http://schema.org/> .
@@ -165,7 +158,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:datatype xsd:string ;
         sh:minCount 1
     ] .
-        "#,
+        ",
     );
 
     let serialized = serialize_conversion_to_string(
@@ -179,10 +172,7 @@ ex:PersonShape a sh:NodeShape ;
 
     assert!(serialized.contains("PersonShape") || serialized.contains("NodeShape"));
 
-    println!(
-        "\n===== test_convert_shacl_to_shacl =====\n{}\n============================================",
-        serialized
-    );
+    println!("\n===== test_convert_shacl_to_shacl =====\n{serialized}\n============================================");
 }
 
 #[cfg(feature = "dctap")]
@@ -194,10 +184,10 @@ fn test_convert_dctap_to_uml() {
     let mut rudof = Rudof::new(RudofConfig::default().with_tap2shex(tap_cfg));
 
     let schema_input = InputSpec::str(
-        r#"shapeID,propertyID,mandatory,repeatable,valueDataType
+        "shapeID,propertyID,mandatory,repeatable,valueDataType
 :Person,schema:name,true,false,xsd:string
 :Person,schema:knows,false,true,:Person
-:Organization,schema:name,true,false,xsd:string"#,
+:Organization,schema:name,true,false,xsd:string",
     );
 
     let serialized = serialize_conversion_to_string(
@@ -212,10 +202,7 @@ fn test_convert_dctap_to_uml() {
     // PlantUML output should contain class definitions or diagram markers
     assert!(!serialized.is_empty());
 
-    println!(
-        "\n===== test_convert_dctap_to_uml =====\n{}\n============================================",
-        serialized
-    );
+    println!("\n===== test_convert_dctap_to_uml =====\n{serialized}\n============================================");
 }
 
 #[test]
@@ -223,7 +210,7 @@ fn test_convert_with_shape_filter() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema_input = InputSpec::str(
-        r#"
+        "
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -236,7 +223,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:member @:Person *
 }
-        "#,
+        ",
     );
 
     let mut buffer = Vec::new();
@@ -265,7 +252,6 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     assert!(serialized.contains("Person"));
 
     println!(
-        "\n===== test_convert_with_shape_filter =====\n{}\n============================================",
-        serialized
+        "\n===== test_convert_with_shape_filter =====\n{serialized}\n============================================"
     );
 }

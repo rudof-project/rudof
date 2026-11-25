@@ -40,9 +40,9 @@ pub fn find_annotation(
     annotations: &Option<Vec<Annotation>>,
     predicate: &IriS,
     prefixmap: &PrefixMap,
-) -> std::result::Result<Option<ObjectValue>, PrefixMapError> {
+) -> Result<Option<ObjectValue>, PrefixMapError> {
     if let Some(anns) = annotations {
-        for a in anns.iter() {
+        for a in anns {
             let iri_predicate = prefixmap.resolve_iriref(a.predicate())?;
             if *predicate == iri_predicate {
                 return Ok(Some(a.object()));

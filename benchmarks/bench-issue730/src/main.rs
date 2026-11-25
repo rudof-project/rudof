@@ -107,10 +107,7 @@ mod native {
         }
 
         println!("Corpus: {}", root.display());
-        println!(
-            "Runs per size: {} (reporting mean of validate_shex, ms)\n",
-            RUNS_PER_SIZE
-        );
+        println!("Runs per size: {RUNS_PER_SIZE} (reporting mean of validate_shex, ms)\n");
         println!("{:>6}  {:>15}", "steps", "validate (ms)");
         println!("{:>6}  {:>15}", "-----", "-------------");
 

@@ -72,9 +72,7 @@ impl FromStr for ComparisonMode {
             "shex" => Ok(ComparisonMode::ShEx),
             "dctap" => Ok(ComparisonMode::Dctap),
             "service" => Ok(ComparisonMode::Service),
-            other => Err(ComparisonError::UnsupportedComparisonMode {
-                mode: other.to_string(),
-            }),
+            other => Err(ComparisonError::UnsupportedComparisonMode { mode: other.to_owned() }),
         }
     }
 }
@@ -104,10 +102,10 @@ impl TryFrom<ComparisonFormat> for ShaclFormat {
             ComparisonFormat::NTriples => Ok(ShaclFormat::NTriples),
             ComparisonFormat::RdfXml => Ok(ShaclFormat::RdfXml),
             ComparisonFormat::ShExC => Err(ComparisonError::UnsupportedConversionToShacl {
-                format: "ShExC".to_string(),
+                format: "ShExC".to_owned(),
             }),
             ComparisonFormat::ShExJ => Err(ComparisonError::UnsupportedConversionToShacl {
-                format: "ShExJ".to_string(),
+                format: "ShExJ".to_owned(),
             }),
         }
     }
@@ -134,7 +132,7 @@ impl FromStr for ComparisonFormat {
             "rdfxml" => Ok(ComparisonFormat::RdfXml),
             "ntriples" => Ok(ComparisonFormat::NTriples),
             other => Err(ComparisonError::UnsupportedComparisonFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }
@@ -185,7 +183,7 @@ impl FromStr for ResultComparisonFormat {
             "internal" => Ok(ResultComparisonFormat::Internal),
             "json" => Ok(ResultComparisonFormat::Json),
             other => Err(ComparisonError::UnsupportedResultComparisonFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }

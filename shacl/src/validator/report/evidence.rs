@@ -63,16 +63,19 @@ impl Evidence {
         }
     }
 
+    #[must_use]
     pub fn with_path(mut self, path: Option<SHACLPath>) -> Self {
         self.path = path;
         self
     }
 
+    #[must_use]
     pub fn with_value(mut self, value: Option<Object>) -> Self {
         self.value = value;
         self
     }
 
+    #[must_use]
     pub fn with_source(mut self, source: Option<Object>) -> Self {
         self.source = source;
         self

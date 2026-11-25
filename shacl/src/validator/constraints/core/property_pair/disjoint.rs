@@ -40,9 +40,8 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Disjoint {
                 return false;
             };
             let iri: S::IRI = self.iri().clone().into();
-            let triples_to_compare = match store.triples_with_subject_predicate(&subject, &iri) {
-                Ok(iter) => iter,
-                Err(_) => return true,
+            let Ok(triples_to_compare) = store.triples_with_subject_predicate(&subject, &iri) else {
+                return true;
             };
 
             for triple in triples_to_compare {

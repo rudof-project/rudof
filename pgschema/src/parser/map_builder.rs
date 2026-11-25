@@ -6,7 +6,7 @@ use crate::{
     type_map::{Association as PGAssociation, TypeMap},
 };
 
-pub struct MapBuilder {}
+pub struct MapBuilder;
 
 impl Default for MapBuilder {
     fn default() -> Self {

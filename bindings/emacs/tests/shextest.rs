@@ -216,9 +216,8 @@ mod imp {
     }
 
     fn run_one(validation_dir: &Path, entry: &ManifestEntry) -> Result<(), Failed> {
-        let focus = match &entry.action.focus {
-            Some(serde_json::Value::String(focus)) => focus,
-            _ => return Err(Failed::from("entry is not eligible (no string focus)")),
+        let Some(serde_json::Value::String(focus)) = &entry.action.focus else {
+            return Err(Failed::from("entry is not eligible (no string focus)"));
         };
         let expect_conformant = match entry.type_.as_str() {
             "sht:ValidationTest" => true,
@@ -252,14 +251,14 @@ mod imp {
             match &entry.action.shape {
                 Some(shape) if shape.starts_with("_:") => shape.clone(),
                 Some(shape) => format!("<{shape}>"),
-                None => "START".to_string(),
+                None => "START".to_owned(),
             }
         );
 
         let mut rudof = Rudof::new(RudofConfig::default());
         let outcome = (|| -> anyhow::Result<bool> {
             read_shex(&mut rudof, schema_text, None, Some(schema_base))?;
-            read_data(&mut rudof, data_text, Some("turtle".to_string()), Some(base))?;
+            read_data(&mut rudof, data_text, Some("turtle".to_owned()), Some(base))?;
             read_shapemap(&mut rudof, shapemap_text, None, None, None)?;
             let quadruples = validate_shex_quadruples(&mut rudof)?;
             Ok(quadruples.iter().any(|(_, _, status, _)| status == "conformant"))
@@ -316,7 +315,7 @@ mod imp {
             ranked.push(RankedEntry {
                 rank: ranked.len(),
                 name: entry.name.clone(),
-                new_traits: new_traits.into_iter().map(str::to_string).collect(),
+                new_traits: new_traits.into_iter().map(str::to_owned).collect(),
             });
         }
 
@@ -339,19 +338,18 @@ mod imp {
 
         // Preserve a hand-tuned tier size across regeneration -- only a fresh
         // (never-yet-generated) file falls back to the bootstrap default.
-        let default_fast_tier_size = try_load_ranked_manifest()
-            .map(|m| m.default_fast_tier_size)
-            .unwrap_or(BOOTSTRAP_FAST_TIER_SIZE);
+        let default_fast_tier_size =
+            try_load_ranked_manifest().map_or(BOOTSTRAP_FAST_TIER_SIZE, |m| m.default_fast_tier_size);
 
         let manifest = RankedManifest {
-            generate_with: GENERATE_WITH.to_string(),
-            run_full_suite_with: RUN_FULL_SUITE_WITH.to_string(),
+            generate_with: GENERATE_WITH.to_owned(),
+            run_full_suite_with: RUN_FULL_SUITE_WITH.to_owned(),
             default_fast_tier_size,
             rankings,
         };
         let out_path = ranked_manifest_path();
         let json = serde_json::to_string_pretty(&manifest)?;
-        std::fs::write(&out_path, json + "\n")?;
+        std::fs::write(&out_path, format!("{json}\n"))?;
         eprintln!(
             "wrote {} ranked entries to {}",
             manifest.rankings.len(),
@@ -365,6 +363,7 @@ mod imp {
         // all, so this never shows up as a test (ignored or otherwise) -- see
         // this file's top doc comment.
         if env_flag("RUDOF_SHEXTEST_GENERATE_RANKING") {
+            #[expect(clippy::exit, reason = "the harness reports its result through the exit code")]
             match generate_ranking() {
                 Ok(()) => std::process::exit(0),
                 Err(error) => {

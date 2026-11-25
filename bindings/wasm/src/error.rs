@@ -7,6 +7,10 @@ use std::fmt::{Display, Formatter};
 /// (`ShExError`, `DataError`, ...). In JavaScript they become the `name` of the
 /// thrown `Error`, so callers can tell them apart.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[expect(
+    clippy::error_impl_error,
+    reason = "`Error` is the public name of this type in the JavaScript API"
+)]
 pub struct Error {
     name: &'static str,
     message: String,

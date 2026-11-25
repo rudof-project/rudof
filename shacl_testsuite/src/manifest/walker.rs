@@ -69,7 +69,7 @@ impl ManifestWalker {
                 && let Term::NamedNode(iri) = entry
             {
                 out.push(ManifestTestEntry {
-                    entry: iri.as_str().to_string(),
+                    entry: iri.as_str().to_owned(),
                     path: disk_path.clone(),
                 });
             }

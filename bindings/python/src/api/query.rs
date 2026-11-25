@@ -63,13 +63,12 @@ impl PyRudof {
                 let variables: Vec<String> = solutions
                     .iter()
                     .next()
-                    .map(|s| s.variables().iter().map(|v| v.to_string()).collect())
-                    .unwrap_or_default();
+                    .map_or_default(|s| s.variables().iter().map(ToString::to_string).collect());
                 let rows = solutions
                     .iter()
                     .map(|solution| {
                         (0..solution.variables().len())
-                            .map(|i| solution.find_solution(i).map(|t| t.to_string()))
+                            .map(|i| solution.find_solution(i).map(ToString::to_string))
                             .collect()
                     })
                     .collect();

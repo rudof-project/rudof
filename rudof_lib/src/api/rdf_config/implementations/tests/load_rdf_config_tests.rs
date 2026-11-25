@@ -47,7 +47,6 @@ fn test_load_and_serialize_basic_rdf_config() {
     assert!(serialized.contains("Oviedo") || serialized.contains("city"));
 
     println!(
-        "\n===== test_load_and_serialize_basic_rdf_config =====\n{}\n============================================",
-        serialized
+        "\n===== test_load_and_serialize_basic_rdf_config =====\n{serialized}\n============================================"
     );
 }

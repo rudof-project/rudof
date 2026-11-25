@@ -38,7 +38,7 @@ impl PyRudof {
     /// Raises:
     ///     ComparisonError: If a mode or format name is not recognized, or the comparison fails.
     ///     InputError: If either schema cannot be resolved.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[pyo3(signature = (schema1, schema2, mode1, mode2, format1, format2, base1 = None,
                         base2 = None, label1 = None, label2 = None, reader_mode = None))]
     fn compare_schemas(
@@ -112,7 +112,7 @@ impl PyRudof {
     /// Raises:
     ///     InputError: If the schema cannot be resolved.
     ///     ConversionError: If the conversion fails.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[pyo3(signature = (schema, input_mode, output_mode, input_format, output_format,
                         base = None, reader_mode = None, shape = None,
                         templates_folder = None, output_folder = None))]

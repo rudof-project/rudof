@@ -357,9 +357,9 @@ impl PyRudof {
             .into_iter()
             .map(|info| {
                 (
-                    info.name.to_string(),
-                    info.description.to_string(),
-                    info.spec_syntax.to_string(),
+                    info.name.to_owned(),
+                    info.description.to_owned(),
+                    info.spec_syntax.to_owned(),
                 )
             })
             .collect()

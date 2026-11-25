@@ -44,7 +44,7 @@ mod tests {
         #[test]
         fn from_str_base(base in URI_REGEX, extension in PATH_REGEX) {
             let iri1 = IriS::from_str_base(&extension, Some(&base))?;
-            let iri2 = IriS::from_str_base(&format!("{}{}", base, extension), None)?;
+            let iri2 = IriS::from_str_base(&format!("{base}{extension}"), None)?;
 
             assert_eq!(iri1, iri2)
         }
@@ -52,7 +52,7 @@ mod tests {
         #[test]
         fn from_str_base_file(base in FILE_REGEX, path in PATH_REGEX) {
             let iri1 = IriS::from_str_base(&path, Some(&base))?;
-            let iri2 = IriS::from_str_base(&format!("{}{}", base, path), None)?;
+            let iri2 = IriS::from_str_base(&format!("{base}{path}"), None)?;
 
             assert_eq!(iri1, iri2)
         }

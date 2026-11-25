@@ -16,6 +16,7 @@ pub enum BasicNodeType {
 }
 
 impl NodeType {
+    #[must_use]
     pub fn merge_node_type(&mut self, node_type: &NodeType) -> Self {
         match (self, node_type) {
             (NodeType::Basic(node_type), NodeType::Basic(other)) => {

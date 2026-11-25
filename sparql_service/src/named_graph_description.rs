@@ -28,6 +28,7 @@ impl NamedGraphDescription {
         }
     }
 
+    #[must_use]
     pub fn with_graphs(mut self, graphs: Vec<GraphDescription>) -> Self {
         self.graphs = graphs;
         self
@@ -47,14 +48,18 @@ impl Display for NamedGraphDescription {
         writeln!(
             f,
             " NamedGraph {}",
-            self.id.as_ref().map(|n| n.to_string()).unwrap_or_default()
+            self.id.as_ref().map_or_default(ToString::to_string)
         )?;
         writeln!(f, " name: {}", self.name)?;
         if !self.graphs.is_empty() {
             writeln!(
                 f,
                 " graphs: {}",
-                self.graphs.iter().map(|g| g.to_string()).collect::<Vec<_>>().join("\n")
+                self.graphs
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join("\n")
             )?;
         }
         Ok(())

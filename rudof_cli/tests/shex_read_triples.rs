@@ -9,9 +9,9 @@ const DATA: &str = r#"prefix : <http://a.example/>
 :carol :name "Carol" .
 "#;
 
-const SCHEMA: &str = r#"prefix : <http://a.example/>
+const SCHEMA: &str = "prefix : <http://a.example/>
 :Person { :name . ; ^:knows . * }
-"#;
+";
 
 fn rudof_in(dir: &Path, args: &[&str]) -> String {
     let output = Command::new(env!("CARGO_BIN_EXE_rudof"))
@@ -65,7 +65,7 @@ fn the_old_validated_graph_options_are_aliases_of_visited() {
     rudof_in(dir.path(), &args);
     let written = std::fs::read_to_string(dir.path().join("sub.nt")).unwrap();
     let mut lines: Vec<&str> = written.lines().collect();
-    lines.sort();
+    lines.sort_unstable();
     assert_eq!(
         lines,
         vec![
@@ -81,10 +81,10 @@ const ISSUE_957_DATA: &str = r#"prefix : <http://a.example/>
 :bob :name "Robert", "Bob" ; :email "bob@example.org" .
 "#;
 
-const ISSUE_957_SCHEMA: &str = r#"prefix : <http://a.example/>
+const ISSUE_957_SCHEMA: &str = "prefix : <http://a.example/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person { :name xsd:string }
-"#;
+";
 
 const ISSUE_957_SHAPEMAP: &str = "<http://a.example/alice>@<http://a.example/Person>,\
 <http://a.example/bob>@<http://a.example/Person>\n";
@@ -124,7 +124,7 @@ fn sorted_lines(dir: &tempfile::TempDir, name: &str) -> Vec<String> {
 fn visited_writes_every_triple_read() {
     for command in ["shex-validate", "validate"] {
         let (_, dir) = issue_957_run_with(command, &["--visited", "visited.nt", "--visited-format", "ntriples"]);
-        let mut expected = vec![ALICE_NAME.to_string()];
+        let mut expected = vec![ALICE_NAME.to_owned()];
         expected.extend(BOB_NAMES.map(String::from));
         assert_eq!(sorted_lines(&dir, "visited.nt"), expected, "{command}");
     }

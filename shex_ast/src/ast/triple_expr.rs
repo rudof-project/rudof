@@ -1,4 +1,4 @@
-use std::{result, str::FromStr};
+use std::str::FromStr;
 
 use prefixmap::error::DerefError;
 use prefixmap::{DerefIri, IriRef, PrefixMap};
@@ -139,15 +139,16 @@ impl TripleExpr {
         }
     }
 
+    #[must_use]
     pub fn with_id(mut self, id: Option<TripleExprLabel>) -> Self {
         self = match self {
             TripleExpr::EachOf {
-                id: _,
                 expressions,
                 min,
                 max,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::EachOf {
                 id,
                 expressions,
@@ -157,12 +158,12 @@ impl TripleExpr {
                 annotations,
             },
             TripleExpr::OneOf {
-                id: _,
                 expressions,
                 min,
                 max,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::OneOf {
                 id,
                 expressions,
@@ -172,7 +173,6 @@ impl TripleExpr {
                 annotations,
             },
             TripleExpr::TripleConstraint {
-                id: _,
                 negated,
                 inverse,
                 predicate,
@@ -181,6 +181,7 @@ impl TripleExpr {
                 max,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::TripleConstraint {
                 id,
                 negated,
@@ -199,15 +200,16 @@ impl TripleExpr {
         self
     }
 
+    #[must_use]
     pub fn with_min(mut self, new_min: Option<i32>) -> Self {
         self = match self {
             TripleExpr::EachOf {
                 id,
                 expressions,
-                min: _,
                 max,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::EachOf {
                 id,
                 expressions,
@@ -219,10 +221,10 @@ impl TripleExpr {
             TripleExpr::OneOf {
                 id,
                 expressions,
-                min: _,
                 max,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::OneOf {
                 id,
                 expressions,
@@ -237,10 +239,10 @@ impl TripleExpr {
                 inverse,
                 predicate,
                 value_expr,
-                min: _,
                 max,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::TripleConstraint {
                 id,
                 negated,
@@ -259,15 +261,16 @@ impl TripleExpr {
         self
     }
 
+    #[must_use]
     pub fn with_max(mut self, new_max: Option<i32>) -> Self {
         self = match self {
             TripleExpr::EachOf {
                 id,
                 expressions,
                 min,
-                max: _,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::EachOf {
                 id,
                 expressions,
@@ -280,9 +283,9 @@ impl TripleExpr {
                 id,
                 expressions,
                 min,
-                max: _,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::OneOf {
                 id,
                 expressions,
@@ -298,9 +301,9 @@ impl TripleExpr {
                 predicate,
                 value_expr,
                 min,
-                max: _,
                 sem_acts,
                 annotations,
+                ..
             } => TripleExpr::TripleConstraint {
                 id,
                 negated,
@@ -319,6 +322,7 @@ impl TripleExpr {
         self
     }
 
+    #[must_use]
     pub fn with_sem_acts(mut self, new_sem_acts: Option<Vec<SemAct>>) -> Self {
         self = match self {
             TripleExpr::EachOf {
@@ -326,8 +330,8 @@ impl TripleExpr {
                 expressions,
                 min,
                 max,
-                sem_acts: _,
                 annotations,
+                ..
             } => TripleExpr::EachOf {
                 id,
                 expressions,
@@ -341,8 +345,8 @@ impl TripleExpr {
                 expressions,
                 min,
                 max,
-                sem_acts: _,
                 annotations,
+                ..
             } => TripleExpr::OneOf {
                 id,
                 expressions,
@@ -359,8 +363,8 @@ impl TripleExpr {
                 value_expr,
                 min,
                 max,
-                sem_acts: _,
                 annotations,
+                ..
             } => TripleExpr::TripleConstraint {
                 id,
                 negated,
@@ -379,6 +383,7 @@ impl TripleExpr {
         self
     }
 
+    #[must_use]
     pub fn with_annotations(mut self, new_annotations: Option<Vec<Annotation>>) -> Self {
         self = match self {
             TripleExpr::EachOf {
@@ -387,7 +392,7 @@ impl TripleExpr {
                 min,
                 max,
                 sem_acts,
-                annotations: _,
+                ..
             } => TripleExpr::EachOf {
                 id,
                 expressions,
@@ -420,7 +425,7 @@ impl TripleExpr {
                 min,
                 max,
                 sem_acts,
-                annotations: _,
+                ..
             } => TripleExpr::TripleConstraint {
                 id,
                 negated,
@@ -462,7 +467,7 @@ impl TripleExpr {
                     *annotations = Some(vec![annotation])
                 }
             },
-            _ => todo!(),
+            Self::Ref(_) => todo!(),
         }
     }
 }
@@ -558,7 +563,7 @@ impl FromStr for TripleExpr {
 }
 
 impl SerializeStringOrStruct for TripleExpr {
-    fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize_string_or_struct<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

@@ -28,11 +28,13 @@ impl Dataset {
         }
     }
 
+    #[must_use]
     pub fn with_default_graph(mut self, default_graph: Option<GraphDescription>) -> Self {
         self.default_graph = default_graph;
         self
     }
 
+    #[must_use]
     pub fn with_named_graphs(mut self, named_graphs: Vec<NamedGraphDescription>) -> Self {
         self.named_graphs = named_graphs;
         self
@@ -44,17 +46,17 @@ impl Display for Dataset {
         writeln!(
             f,
             "Dataset: {}",
-            self.id.as_ref().map(|v| v.to_string()).unwrap_or("No Id".to_string())
+            self.id.as_ref().map_or("No Id".to_owned(), ToString::to_string)
         )?;
         if let Some(default_graph) = &self.default_graph {
             writeln!(f, " default_graph: {default_graph}")?;
         }
         let named_graphs_str = if self.named_graphs.iter().peekable().peek().is_none() {
-            "[]".to_string()
+            "[]".to_owned()
         } else {
             format!(
                 " named graphs: {}",
-                self.named_graphs.iter().map(|ng| ng.to_string()).join("\n")
+                self.named_graphs.iter().map(ToString::to_string).join("\n")
             )
         };
         writeln!(f, " named_graphs: {named_graphs_str}")?;

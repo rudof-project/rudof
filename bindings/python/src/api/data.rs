@@ -45,7 +45,7 @@ impl PyRudof {
     #[pyo3(signature = (input = None, format = None, base = None, reader_mode = None,
                         merge = None, endpoint = None, min_request_interval_ms = None,
                         max_concurrent_requests = None, max_nodes_per_query = None))]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn read_data(
         &mut self,
         py: Python<'_>,
@@ -248,7 +248,7 @@ impl PyRudof {
     ///     DataError: If an input cannot be parsed or its format is not an RDF format.
     #[pyo3(signature = (data1, data2, format1 = None, format2 = None, base1 = None, base2 = None,
                         reader_mode = None, mode = None, exact_search_limit = None))]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn diff_data(
         &self,
         py: Python<'_>,

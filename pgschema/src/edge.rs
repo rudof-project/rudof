@@ -22,16 +22,19 @@ impl Edge {
         }
     }
 
+    #[must_use]
     pub fn with_label(mut self, label: &str) -> Self {
-        self.labels.insert(label.to_string());
+        self.labels.insert(label.to_owned());
         self
     }
 
+    #[must_use]
     pub fn with_labels(mut self, labels: impl IntoIterator<Item = LabelName>) -> Self {
         self.labels = LabelSet::from(labels);
         self
     }
 
+    #[must_use]
     pub fn with_content(mut self, content: &Record) -> Self {
         self.properties = content.clone();
         self
@@ -61,7 +64,7 @@ impl Display for Edge {
             "Edge({}) {}-[{}{}]->{}",
             self.id,
             self.source,
-            self.labels.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(", "),
+            self.labels.iter().cloned().collect::<Vec<_>>().join(", "),
             self.properties,
             self.target
         )

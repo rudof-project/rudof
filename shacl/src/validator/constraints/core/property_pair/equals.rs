@@ -32,9 +32,8 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
         let mut outcome = ValidationOutcome::new();
 
         for (fnode, nodes) in value_nodes.iter() {
-            let subject = match S::term_as_subject(fnode) {
-                Ok(s) => s,
-                Err(_) => continue,
+            let Ok(subject) = S::term_as_subject(fnode) else {
+                continue;
             };
 
             let iri: S::IRI = self.iri().clone().into();

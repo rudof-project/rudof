@@ -179,7 +179,7 @@ where
     }
 
     Err(RDFError::InvalidSHACLPathError {
-        node: rdf.get_focus().map(|t| t.to_string()).unwrap_or_default(),
+        node: rdf.get_focus().map_or_default(ToString::to_string),
         error: Box::new(RDFError::ConversionError {
             msg: "Unsupported SHACL path construct".into(),
         }),

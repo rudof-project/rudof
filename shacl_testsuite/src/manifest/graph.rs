@@ -31,7 +31,7 @@ impl ManifestGraph {
 
         let mut manifest = Self {
             store: graph.store().clone(),
-            base: base.to_string(),
+            base: base.to_owned(),
             entries: Vec::new(),
         };
 

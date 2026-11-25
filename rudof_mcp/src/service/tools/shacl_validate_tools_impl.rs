@@ -125,7 +125,7 @@ pub async fn validate_shacl_impl(
     }
     if let Err(e) = loading_shacl_schema.execute() {
         return Ok(ToolExecutionError::with_hint(
-            format!("Failed to load SHACL shapes: {}", e),
+            format!("Failed to load SHACL shapes: {e}"),
             "Check the shapes content and shapes_format parameter",
         )
         .into_call_tool_result());
@@ -134,7 +134,7 @@ pub async fn validate_shacl_impl(
     let validation = rudof.validate_shacl().with_shacl_validation_mode(&parsed_mode);
     if let Err(e) = validation.execute() {
         return Ok(ToolExecutionError::with_hint(
-            format!("SHACL validation failed: {}", e),
+            format!("SHACL validation failed: {e}"),
             "Ensure the RDF data is loaded and the SHACL shapes are correct",
         )
         .into_call_tool_result());
@@ -284,7 +284,10 @@ mod tests {
         let violation = &response.results[0];
         assert_eq!(violation.focus_node().to_string(), "http://example.org/alice");
         assert_eq!(
-            violation.path().and_then(|path| path.pred()).map(|iri| iri.as_str()),
+            violation
+                .path()
+                .and_then(|path| path.pred())
+                .map(rudof_iri::IriS::as_str),
             Some("http://example.org/age")
         );
         assert_eq!(
@@ -299,7 +302,7 @@ mod tests {
         let service = RudofMcpService::new();
         let response = validate(
             &service,
-            r#"
+            "
             prefix :    <http://example.org/>
             prefix sh:  <http://www.w3.org/ns/shacl#>
             prefix xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -309,7 +312,7 @@ mod tests {
             :AgeShape a sh:NodeShape ;
               sh:targetSubjectsOf :age ;
               sh:property [ sh:path :age ; sh:datatype xsd:integer ] .
-            "#,
+            ",
         )
         .await;
 

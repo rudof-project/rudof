@@ -167,9 +167,10 @@ impl DataGenerator {
                 violations::write_labels(path, &injected.labels)?;
             }
             if let Some(reading) = &violations.rdf {
-                let rdf_labels = injected.rdf_labels.as_ref().ok_or_else(|| {
-                    DataGeneratorError::Config("[violations.rdf] needs a PG-Schema input".to_string())
-                })?;
+                let rdf_labels = injected
+                    .rdf_labels
+                    .as_ref()
+                    .ok_or_else(|| DataGeneratorError::Config("[violations.rdf] needs a PG-Schema input".to_owned()))?;
                 violations::write_labels(&reading.labels, rdf_labels)?;
             }
         }
@@ -179,7 +180,7 @@ impl DataGenerator {
             self.processor.get_unified_model(),
             self.processor.get_translation_metrics(),
         ) {
-            Some(crate::metrics::conformance::ConformanceMetrics::from_graph_and_model(
+            Some(ConformanceMetrics::from_graph_and_model(
                 &graph,
                 unified_model,
                 translation_metrics.clone(),
@@ -237,11 +238,11 @@ impl DataGenerator {
         use rudof_rdf::rdf_core::NeighsRDF;
         let target = targets
             .coherence
-            .ok_or_else(|| DataGeneratorError::Config("[targets] sets no metric".to_string()))?;
+            .ok_or_else(|| DataGeneratorError::Config("[targets] sets no metric".to_owned()))?;
         let model = self
             .processor
             .get_unified_model()
-            .ok_or_else(|| DataGeneratorError::Config("[targets] needs a loaded schema".to_string()))?;
+            .ok_or_else(|| DataGeneratorError::Config("[targets] needs a loaded schema".to_owned()))?;
         let shapes = self.convert_unified_to_shape_infos(model);
 
         let mut best: Option<(TargetReport, ParallelGenerator, rudof_rdf::rdf_impl::OxigraphInMemory)> = None;
@@ -295,7 +296,7 @@ impl DataGenerator {
         }
 
         let (report, generator, graph) =
-            best.ok_or_else(|| DataGeneratorError::GraphGeneration("[targets] generated no graph".to_string()))?;
+            best.ok_or_else(|| DataGeneratorError::GraphGeneration("[targets] generated no graph".to_owned()))?;
         if !report.within_tolerance {
             tracing::warn!(
                 "[targets] coherence {} not reached: the closest graph has {:.4} (fill {:.4})",
@@ -317,7 +318,7 @@ impl DataGenerator {
         let model = self
             .processor
             .get_unified_model()
-            .ok_or_else(|| DataGeneratorError::Config("property graph output needs a loaded schema".to_string()))?;
+            .ok_or_else(|| DataGeneratorError::Config("property graph output needs a loaded schema".to_owned()))?;
         let triples: Vec<oxrdf::Triple> = graph
             .triples()
             .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?
@@ -352,7 +353,7 @@ impl DataGenerator {
         let model = self
             .processor
             .get_unified_model()
-            .ok_or_else(|| DataGeneratorError::Config("violations need a loaded schema".to_string()))?;
+            .ok_or_else(|| DataGeneratorError::Config("violations need a loaded schema".to_owned()))?;
         let mut triples: Vec<oxrdf::Triple> = graph
             .triples()
             .map_err(|e| DataGeneratorError::GraphGeneration(e.to_string()))?
@@ -409,7 +410,7 @@ impl DataGenerator {
         let model = self
             .processor
             .get_unified_model()
-            .ok_or_else(|| DataGeneratorError::Config("generation needs a loaded schema".to_string()))?;
+            .ok_or_else(|| DataGeneratorError::Config("generation needs a loaded schema".to_owned()))?;
         if adapters::pgschema::is_property_graph(model) {
             let triples: Vec<oxrdf::Triple> = graph
                 .triples()
@@ -426,18 +427,15 @@ impl DataGenerator {
     /// A ShEx ShapeMap (compact syntax) associating every generated node with
     /// the shape that generated it.
     pub async fn shape_map(&self) -> String {
-        self.generator
+        let entries = self
+            .generator
             .entity_shapes()
             .await
             .into_iter()
             .map(|(node, shape)| format!("<{node}>@<{shape}>"))
             .collect::<Vec<_>>()
-            .join(
-                ",
-",
-            )
-            + "
-"
+            .join(",\n");
+        format!("{entries}\n")
     }
 
     /// Run the complete generation pipeline (legacy ShEx support)
@@ -495,8 +493,8 @@ impl DataGenerator {
     // Convert unified model to legacy shape infos for backward compatibility
     fn convert_unified_to_shape_infos(
         &self,
-        unified_model: &crate::ir::UnifiedConstraintModel,
-    ) -> Vec<crate::ir::shape_info::ShapeInfo> {
+        unified_model: &ir::UnifiedConstraintModel,
+    ) -> Vec<ir::shape_info::ShapeInfo> {
         use crate::ir::shape_info::{PropertyInfo, ShapeDependency, ShapeInfo};
 
         let mut shape_infos = Vec::new();
@@ -509,11 +507,9 @@ impl DataGenerator {
             for prop in &unified_shape.properties {
                 // A shape reference, or for `sh:class` the shape whose instances
                 // carry the class, is generated as a link to one of its instances.
-                let target_of = |c: &crate::ir::UnifiedConstraint| match c {
-                    crate::ir::UnifiedConstraint::ShapeReference(sr) => Some(sr.clone()),
-                    crate::ir::UnifiedConstraint::Class(class) => {
-                        unified_model.shape_for_class(class).map(String::from)
-                    },
+                let target_of = |c: &ir::UnifiedConstraint| match c {
+                    ir::UnifiedConstraint::ShapeReference(sr) => Some(sr.clone()),
+                    ir::UnifiedConstraint::Class(class) => unified_model.shape_for_class(class).map(String::from),
                     _ => None,
                 };
 
@@ -563,7 +559,7 @@ impl DataGenerator {
                     annotations: None,
                     extends: None,
                 }),
-                type_: "".to_string(), // Empty string for type
+                type_: String::new(), // Empty string for type
                 is_abstract: false,
             };
 

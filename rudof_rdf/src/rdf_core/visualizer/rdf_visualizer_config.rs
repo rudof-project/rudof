@@ -148,10 +148,10 @@ impl RDFVisualizationConfig {
             .with_round_corner(0)
     }
 
-    #[inline] fn default_subject_label() -> String { "subject".to_string() }
-    #[inline] fn default_predicate_label() -> String { "predicate".to_string() }
-    #[inline] fn default_object_label() -> String { "object".to_string() }
-    #[inline] fn default_reifies_label() -> String { "reifies".to_string() }
+    #[inline] fn default_subject_label() -> String { "subject".to_owned() }
+    #[inline] fn default_predicate_label() -> String { "predicate".to_owned() }
+    #[inline] fn default_object_label() -> String { "object".to_owned() }
+    #[inline] fn default_reifies_label() -> String { "reifies".to_owned() }
 
     #[inline] fn default_unasserted_triple_shape() -> UmlShape { UmlShape::Cloud }
     #[inline] fn default_asserted_triple_shape() -> UmlShape { UmlShape::Rectangle }
@@ -175,9 +175,9 @@ impl RDFVisualizationConfig {
             .with_line_thickness(LineStyle::Dashed)
     }
 
-    #[inline] fn default_subject_text() -> String { "subj".to_string() }
-    #[inline] fn default_predicate_text() -> String { "pred".to_string() }
-    #[inline] fn default_object_text() -> String { "obj".to_string() }
+    #[inline] fn default_subject_text() -> String { "subj".to_owned() }
+    #[inline] fn default_predicate_text() -> String { "pred".to_owned() }
+    #[inline] fn default_object_text() -> String { "obj".to_owned() }
 }
 
 impl RDFVisualizationConfig {
@@ -210,108 +210,126 @@ impl RDFVisualizationConfig {
     }
 
     /// Sets the asserted nodes style
+    #[must_use]
     pub fn with_asserted(mut self, style: NodeStyle) -> Self {
         self.asserted_style = style;
         self
     }
 
     /// Sets the uri nodes style
+    #[must_use]
     pub fn with_uri(mut self, style: NodeStyle) -> Self {
         self.uri_style = style;
         self
     }
 
     /// Sets the blank nodes style
+    #[must_use]
     pub fn with_bnode(mut self, style: NodeStyle) -> Self {
         self.bnode_style = style;
         self
     }
 
     /// Sets the literal nodes style
+    #[must_use]
     pub fn with_literal(mut self, style: NodeStyle) -> Self {
         self.literal_style = style;
         self
     }
 
     /// Sets the non asserted nodes style
+    #[must_use]
     pub fn with_non_asserted(mut self, style: NodeStyle) -> Self {
         self.non_asserted_style = style;
         self
     }
 
     /// Sets the reifier nodes style
+    #[must_use]
     pub fn with_reifier(mut self, style: NodeStyle) -> Self {
         self.reifier_style = style;
         self
     }
 
     /// Sets the subject triple term label
+    #[must_use]
     pub fn with_triple_term_subject_label(mut self, label: String) -> Self {
         self.triple_term_subject_label = label;
         self
     }
 
     /// Sets the predicate triple term label
+    #[must_use]
     pub fn with_triple_term_predicate_label(mut self, label: String) -> Self {
         self.triple_term_predicate_label = label;
         self
     }
 
     /// Sets the object triple term label
+    #[must_use]
     pub fn with_triple_term_object_label(mut self, label: String) -> Self {
         self.triple_term_object_label = label;
         self
     }
 
     /// Sets the reification label
+    #[must_use]
     pub fn with_reifies_label(mut self, label: String) -> Self {
         self.reifies_label = label;
         self
     }
 
     /// Sets the unasserted triples shape
+    #[must_use]
     pub fn with_unasserted_triple_shapes(mut self, shape: UmlShape) -> Self {
         self.unasserted_triple_shape = shape;
         self
     }
 
     /// Sets the asserted triples shape
+    #[must_use]
     pub fn with_asserted_triple_shapes(mut self, shape: UmlShape) -> Self {
         self.asserted_triple_shape = shape;
         self
     }
 
     // Sets the subject arrow style
+    #[must_use]
     pub fn with_subject_arrow_style(mut self, style: ArrowStyle) -> Self {
         self.subject_arrow_style = style;
         self
     }
 
     /// Sets the predicate arrow style
+    #[must_use]
     pub fn with_predicate_arrow_style(mut self, style: ArrowStyle) -> Self {
         self.predicate_arrow_style = style;
         self
     }
 
     /// Sets the object arrow style
+    #[must_use]
     pub fn with_object_arrow_style(mut self, style: ArrowStyle) -> Self {
         self.object_arrow_style = style;
         self
     }
 
     /// Sets the subject text
+    #[must_use]
     pub fn with_subject_text(mut self, text: String) -> Self {
         self.subject_text = text;
         self
     }
 
     /// Sets the predicate text
+    #[must_use]
     pub fn with_predicate_text(mut self, text: String) -> Self {
         self.predicate_text = text;
         self
     }
 
     /// Sets the object text
+    #[must_use]
     pub fn with_object_text(mut self, text: String) -> Self {
         self.object_text = text;
         self

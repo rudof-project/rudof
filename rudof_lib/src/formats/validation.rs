@@ -211,9 +211,7 @@ impl FromStr for ValidationMode {
             "shex" => Ok(ValidationMode::ShEx),
             "shacl" => Ok(ValidationMode::Shacl),
             "pgschema" => Ok(ValidationMode::PGSchema),
-            other => Err(ValidationError::UnsupportedValidationMode {
-                mode: other.to_string(),
-            }),
+            other => Err(ValidationError::UnsupportedValidationMode { mode: other.to_owned() }),
         }
     }
 }
@@ -238,9 +236,7 @@ impl FromStr for ShaclValidationMode {
         match s.to_lowercase().as_str() {
             "native" => Ok(ShaclValidationMode::Native),
             "sparql" => Ok(ShaclValidationMode::Sparql),
-            other => Err(ValidationError::UnsupportedSHACLValidationMode {
-                mode: other.to_string(),
-            }),
+            other => Err(ValidationError::UnsupportedSHACLValidationMode { mode: other.to_owned() }),
         }
     }
 }
@@ -274,9 +270,7 @@ impl FromStr for ValidationSortByMode {
         match s.to_lowercase().as_str() {
             "node" => Ok(ValidationSortByMode::Node),
             "details" => Ok(ValidationSortByMode::Details),
-            other => Err(ValidationError::UnsupportedValidationSortByMode {
-                mode: other.to_string(),
-            }),
+            other => Err(ValidationError::UnsupportedValidationSortByMode { mode: other.to_owned() }),
         }
     }
 }
@@ -334,7 +328,7 @@ impl FromStr for ShExDetailsLayout {
             "below" => Ok(ShExDetailsLayout::Below),
             "table" => Ok(ShExDetailsLayout::Table),
             other => Err(ValidationError::UnsupportedShExDetailsLayout {
-                layout: other.to_string(),
+                layout: other.to_owned(),
             }),
         }
     }
@@ -358,9 +352,7 @@ impl FromStr for ShExValidationSortByMode {
             "shape" => Ok(ShExValidationSortByMode::Shape),
             "status" => Ok(ShExValidationSortByMode::Status),
             "details" => Ok(ShExValidationSortByMode::Details),
-            other => Err(ValidationError::UnsupportedShExValidationSortByMode {
-                mode: other.to_string(),
-            }),
+            other => Err(ValidationError::UnsupportedShExValidationSortByMode { mode: other.to_owned() }),
         }
     }
 }
@@ -409,9 +401,7 @@ impl FromStr for ShaclValidationSortByMode {
             "path" => Ok(ShaclValidationSortByMode::Path),
             "sourceshape" => Ok(ShaclValidationSortByMode::SourceShape),
             "details" => Ok(ShaclValidationSortByMode::Details),
-            other => Err(ValidationError::UnsupportedShaclValidationSortByMode {
-                mode: other.to_string(),
-            }),
+            other => Err(ValidationError::UnsupportedShaclValidationSortByMode { mode: other.to_owned() }),
         }
     }
 }
@@ -485,7 +475,7 @@ impl FromStr for ResultValidationFormat {
             "json" => Ok(ResultValidationFormat::Json),
             "csv" => Ok(ResultValidationFormat::Csv),
             other => Err(ValidationError::UnsupportedValidationResultFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }
@@ -603,7 +593,7 @@ impl FromStr for ResultShExValidationFormat {
             "json" => Ok(ResultShExValidationFormat::Json),
             "csv" => Ok(ResultShExValidationFormat::Csv),
             other => Err(ValidationError::UnsupportedShExValidationResultFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }
@@ -666,7 +656,7 @@ impl FromStr for ResultShaclValidationFormat {
             "json" => Ok(ResultShaclValidationFormat::Json),
             "csv" => Ok(ResultShaclValidationFormat::Csv),
             other => Err(ValidationError::UnsupportedShaclValidationResultFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }
@@ -677,14 +667,14 @@ impl FromStr for ResultShaclValidationFormat {
 // ============================================================================
 
 impl Display for ResultPgSchemaValidationFormat {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             ResultPgSchemaValidationFormat::Compact => "compact",
             ResultPgSchemaValidationFormat::Details => "details",
             ResultPgSchemaValidationFormat::Json => "json",
             ResultPgSchemaValidationFormat::Csv => "csv",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -698,7 +688,7 @@ impl FromStr for ResultPgSchemaValidationFormat {
             "json" => Ok(ResultPgSchemaValidationFormat::Json),
             "csv" => Ok(ResultPgSchemaValidationFormat::Csv),
             other => Err(ValidationError::NoSupportedPgSchemaValidationResultFormat {
-                format: other.to_string(),
+                format: other.to_owned(),
             }),
         }
     }

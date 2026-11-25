@@ -133,5 +133,5 @@ fn clean(str: &str) -> String {
 }
 
 fn get_str_from_rcd(rcd: &StringRecord, idx: usize) -> Option<String> {
-    rcd.get(idx).map(|str| str.to_string())
+    rcd.get(idx).map(ToOwned::to_owned)
 }

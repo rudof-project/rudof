@@ -259,7 +259,7 @@ mod tests {
     macro_rules! assert_every_variant_converts {
         ($param:ident, $lib:ident) => {
             for param in $param::ALL {
-                let _: $lib = (*param).into();
+                let _converted: $lib = (*param).into();
             }
         };
     }

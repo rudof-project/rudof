@@ -13,6 +13,7 @@ use rudof_lib::{Rudof, RudofConfig};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::fmt::Write as _;
 use std::fmt::{Display, Formatter};
 use std::path::{Path, PathBuf};
 
@@ -61,7 +62,7 @@ pub struct ViolationsRequest {
     /// Probability that an entity receives one violation, from 0.0 to 1.0.
     pub rate: f64,
 
-    /// Operator names, e.g. ["drop-required", "dangling-reference"]. All operators
+    /// Operator names, e.g. `["drop-required", "dangling-reference"]`. All operators
     /// when omitted.
     pub operators: Option<Vec<String>>,
 
@@ -194,7 +195,7 @@ pub async fn generate_data_impl(
         triple_count, response.schema_format
     );
     if let Some(labels) = &response.violations {
-        summary.push_str(&format!(" The report lists {} nodes or edges to flag.", labels.len()));
+        write!(summary, " The report lists {} nodes or edges to flag.", labels.len()).unwrap();
     }
     if load {
         summary.push_str(" The data is loaded: pass `shapemap` to validate_shex to check it.");
@@ -222,6 +223,10 @@ struct Generated {
 }
 
 async fn generate(request: &GenerateDataRequest, dir: &Path) -> ToolResult<Generated> {
+    async fn read(path: &Path) -> ToolResult<String> {
+        tokio::fs::read_to_string(path).await.map_err(generation_error)
+    }
+
     let pg = request.schema_format == GenerationSchemaFormatParam::PgSchema;
     let schema_path = schema_path(&request.schema, request.schema_format, dir)?;
     let config = config(request, dir)?;
@@ -240,9 +245,6 @@ async fn generate(request: &GenerateDataRequest, dir: &Path) -> ToolResult<Gener
     })?;
     generator.generate().await.map_err(generation_error)?;
 
-    async fn read(path: &Path) -> ToolResult<String> {
-        tokio::fs::read_to_string(path).await.map_err(generation_error)
-    }
     let (property_graph, type_map) = if pg {
         (
             Some(read(&dir.join("graph.pg")).await?),
@@ -287,18 +289,17 @@ fn schema_path(schema: &str, format: GenerationSchemaFormatParam, dir: &Path) ->
 /// The generator configuration: the TOML in `config`, overridden by the other
 /// parameters, with every output written to `dir`.
 fn config(request: &GenerateDataRequest, dir: &Path) -> ToolResult<GeneratorConfig> {
-    let mut config = match &request.config {
-        Some(toml) => GeneratorConfig::from_toml_str(toml).map_err(|e| {
-            ToolExecutionError::with_hint(
-                format!("Invalid generator configuration: {e}"),
-                "Pass a TOML configuration as accepted by `rudof generate --generator-config` (format v2), or omit `config`",
-            )
-        })?,
-        None => {
-            let mut config = GeneratorConfig::default();
-            config.generation.entity_count = DEFAULT_ENTITIES;
-            config
-        },
+    let mut config = if let Some(toml) = &request.config {
+        GeneratorConfig::from_toml_str(toml).map_err(|e| {
+        ToolExecutionError::with_hint(
+            format!("Invalid generator configuration: {e}"),
+            "Pass a TOML configuration as accepted by `rudof generate --generator-config` (format v2), or omit `config`",
+        )
+    })?
+    } else {
+        let mut config = GeneratorConfig::default();
+        config.generation.entity_count = DEFAULT_ENTITIES;
+        config
     };
     if let Some(entities) = request.entities {
         config.generation.entity_count = entities;
@@ -415,23 +416,23 @@ mod tests {
     use super::*;
     use crate::service::tools::shex_validate_tools_impl::{ValidateShexRequest, validate_shex_impl};
 
-    const SHEX: &str = r#"
+    const SHEX: &str = "
         prefix :    <http://example.org/>
         prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
         :Person { :name xsd:string ; :worksFor @:Org }
         :Org    { :label xsd:string }
-    "#;
+    ";
 
-    const PGSCHEMA: &str = r#"
+    const PGSCHEMA: &str = "
         CREATE NODE TYPE ( PersonType : Person { name: STRING }) ;
         CREATE NODE TYPE ( OrgType : Org { label: STRING }) ;
         CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
-    "#;
+    ";
 
     fn request(schema: &str, format: GenerationSchemaFormatParam) -> GenerateDataRequest {
         GenerateDataRequest {
-            schema: schema.to_string(),
+            schema: schema.to_owned(),
             schema_format: format,
             entities: Some(10),
             seed: Some(7),
@@ -455,13 +456,13 @@ mod tests {
         let result = validate_shex_impl(
             service,
             Parameters(ValidateShexRequest {
-                schema: schema.to_string(),
+                schema: schema.to_owned(),
                 schema_format: None,
                 base_schema: None,
                 base_data: None,
                 maybe_node: None,
                 maybe_shape: None,
-                shapemap: Some(shapemap.to_string()),
+                shapemap: Some(shapemap.to_owned()),
                 result_format: None,
                 sort_by: None,
                 strict_iris: None,
@@ -494,7 +495,7 @@ mod tests {
         second.load = Some(false);
 
         let triples = |turtle: &str| -> std::collections::BTreeSet<String> {
-            to_ntriples(turtle).unwrap().lines().map(str::to_string).collect()
+            to_ntriples(turtle).unwrap().lines().map(str::to_owned).collect()
         };
         assert_eq!(
             triples(&run(&service, first).await.data),
@@ -509,7 +510,7 @@ mod tests {
         broken.entities = Some(40);
         broken.violations = Some(ViolationsRequest {
             rate: 0.3,
-            operators: Some(vec!["drop-required".to_string()]),
+            operators: Some(vec!["drop-required".to_owned()]),
             closed: None,
             keys_required: None,
         });
@@ -558,7 +559,7 @@ mod tests {
         let mut broken = request(SHEX, GenerationSchemaFormatParam::ShEx);
         broken.violations = Some(ViolationsRequest {
             rate: 0.1,
-            operators: Some(vec!["no-such-operator".to_string()]),
+            operators: Some(vec!["no-such-operator".to_owned()]),
             closed: None,
             keys_required: None,
         });

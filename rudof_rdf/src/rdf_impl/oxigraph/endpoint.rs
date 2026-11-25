@@ -34,9 +34,7 @@ impl FromStr for EndpointStrategy {
         match s.to_ascii_lowercase().as_str() {
             "sparql" => Ok(EndpointStrategy::Sparql),
             "dereference" => Ok(EndpointStrategy::Dereference),
-            other => Err(OxigraphEndpointError::UnknownEndpointStrategy {
-                name: other.to_string(),
-            }),
+            other => Err(OxigraphEndpointError::UnknownEndpointStrategy { name: other.to_owned() }),
         }
     }
 }
@@ -248,6 +246,7 @@ impl OxigraphEndpoint {
 
     /// Selects how this endpoint answers lookups — SPARQL queries or HTTP
     /// dereferencing. See [`EndpointStrategy`].
+    #[must_use]
     pub fn with_strategy(mut self, strategy: EndpointStrategy) -> OxigraphEndpoint {
         self.strategy = strategy;
         self
@@ -264,7 +263,7 @@ impl OxigraphEndpoint {
     /// endpoint (a QLever container, a test mock, a triplestore on the same
     /// machine) has no public rate-limit policy to respect.
     pub fn default_min_request_interval_ms(iri: &IriS) -> u64 {
-        let is_loopback = Url::parse(iri.as_str()).ok().is_some_and(|url| match url.host() {
+        let is_loopback = Url::parse(iri.as_str()).is_ok_and(|url| match url.host() {
             Some(url::Host::Domain(domain)) => domain.eq_ignore_ascii_case("localhost"),
             Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
             Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
@@ -280,6 +279,7 @@ impl OxigraphEndpoint {
     /// Sets the minimum interval (in milliseconds) enforced between requests
     /// to this endpoint. `0` disables the proactive rate limiter; a `429 Too
     /// Many Requests` response still raises it adaptively afterwards.
+    #[must_use]
     pub fn with_min_request_interval_ms(self, ms: u64) -> OxigraphEndpoint {
         self.set_min_request_interval_ms(ms);
         self
@@ -308,6 +308,7 @@ impl OxigraphEndpoint {
 
     /// Sets how many requests [`Self::prefetch_outgoing_arcs`] may keep in
     /// flight at once (at least 1).
+    #[must_use]
     pub fn with_max_concurrent_requests(mut self, n: usize) -> OxigraphEndpoint {
         self.max_concurrent_requests = n.max(1);
         self
@@ -320,6 +321,7 @@ impl OxigraphEndpoint {
 
     /// Sets how many subjects one query of [`Self::prefetch_outgoing_arcs`] may
     /// ask about (at least 1; `1` disables batching).
+    #[must_use]
     pub fn with_max_nodes_per_query(mut self, n: usize) -> OxigraphEndpoint {
         self.max_nodes_per_query = n.max(1);
         self
@@ -331,6 +333,7 @@ impl OxigraphEndpoint {
     }
 
     /// Applies every limit `limits` sets, leaving the others unchanged.
+    #[must_use]
     pub fn with_limits(self, limits: &EndpointLimits) -> OxigraphEndpoint {
         let mut endpoint = self;
         if let Some(ms) = limits.min_request_interval_ms {
@@ -398,7 +401,7 @@ impl OxigraphEndpoint {
                         })
                         .filter_map(|s| match s {
                             OxSubject::NamedNode(n) => Some(n),
-                            _ => None,
+                            OxSubject::BlankNode(_) => None,
                         })
                         .collect()
                 };
@@ -451,7 +454,7 @@ impl OxigraphEndpoint {
     /// subject. See `outgoing_arcs_from_list` for why the query is a UNION of
     /// fully bound patterns; `VALUES` binds `?s` to each subject in turn.
     async fn fetch_outgoing_batch(&self, subjects: &[OxNamedNode], preds: &[OxNamedNode]) -> Result<()> {
-        let values = subjects.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(" ");
+        let values = subjects.iter().map(ToString::to_string).collect::<Vec<_>>().join(" ");
         let union_clauses = preds
             .iter()
             .map(|p| format!("{{ ?s {p} ?o BIND({p} AS ?p) }}"))
@@ -508,6 +511,8 @@ impl OxigraphEndpoint {
     /// bursts cannot exceed the current rate regardless of how many async tasks
     /// are running against the same endpoint.
     async fn enforce_rate_limit(&self) -> Result<()> {
+        const PROGRESS_EVERY: u64 = 10;
+
         let min_interval =
             std::time::Duration::from_millis(self.rate_limit_ms.load(std::sync::atomic::Ordering::Relaxed));
         let wait = {
@@ -530,7 +535,6 @@ impl OxigraphEndpoint {
         // screen in the meantime. Surface periodic progress at `debug` level —
         // quiet by default, opt in with `RUST_LOG=debug` or (inside the shell,
         // without restarting) `config set logging.level debug`.
-        const PROGRESS_EVERY: u64 = 10;
         let count = self.request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
         if count == 1 || count.is_multiple_of(PROGRESS_EVERY) {
             debug!(endpoint = %self.endpoint_iri, requests_sent = count, "Querying remote SPARQL endpoint...");
@@ -546,6 +550,7 @@ impl OxigraphEndpoint {
     /// Sets where SPARQL Updates are sent, for a server whose update service
     /// is at a different path from its query service (`rudof.toml`'s
     /// `update_url`). `None` leaves them going to the query IRI.
+    #[must_use]
     pub fn with_update_iri(mut self, iri: Option<IriS>) -> OxigraphEndpoint {
         self.update_iri = iri;
         self
@@ -603,6 +608,7 @@ impl OxigraphEndpoint {
     /// let custom_prefixmap = PrefixMap::new();
     /// let endpoint = endpoint.unwrap().with_prefixmap(custom_prefixmap);
     /// ```
+    #[must_use]
     pub fn with_prefixmap(mut self, pm: PrefixMap) -> OxigraphEndpoint {
         self.prefixmap = Arc::new(pm);
         self
@@ -831,7 +837,7 @@ impl OxigraphEndpoint {
     /// caller with a synchronous interface (a sink of triples, say) uses.
     #[cfg(not(target_family = "wasm"))]
     pub fn update(&self, update: &str) -> Result<()> {
-        let (this, update) = (self.clone(), update.to_string());
+        let (this, update) = (self.clone(), update.to_owned());
         http::block_on(async move { this.update_async(&update).await })
     }
 
@@ -973,7 +979,7 @@ impl OxigraphEndpoint {
         debug!(
             object = %object,
             "incoming_arcs_from_list: dereference strategy only sees links from entities already \
-             dereferenced this session — results may be incomplete"
+             dereferenced this session \u{2014} results may be incomplete"
         );
         let mut results: HashMap<OxNamedNode, HashSet<OxSubject>> = HashMap::new();
         let cache = self.dereference_cache.read().unwrap();
@@ -1021,7 +1027,7 @@ impl FromStr for OxigraphEndpoint {
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         use once_cell::sync::Lazy;
         // Regex is compiled once and cached for all future calls
-        static RE_IRI: Lazy<Regex> = Lazy::new(|| Regex::new(r"<(.*)>").unwrap());
+        static RE_IRI: Lazy<Regex> = Lazy::new(|| Regex::new("<(.*)>").unwrap());
 
         if let Some(iri_str) = RE_IRI.captures(s) {
             // Parse IRI from angle brackets
@@ -1031,7 +1037,7 @@ impl FromStr for OxigraphEndpoint {
             // Try to match predefined endpoint names
             match s.to_lowercase().as_str() {
                 "wikidata" => OxigraphEndpoint::wikidata(),
-                name => Err(OxigraphEndpointError::UnknownEndpointName { name: name.to_string() }),
+                name => Err(OxigraphEndpointError::UnknownEndpointName { name: name.to_owned() }),
             }
         }
     }
@@ -1099,7 +1105,7 @@ impl AsyncRDF for OxigraphEndpoint {
     ///
     /// Pre-allocates the HashSet with capacity based on the number of results.
     async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
-        let query = format!(r#"select ?pred where {{ {subject} ?pred ?obj . }}"#);
+        let query = format!("select ?pred where {{ {subject} ?pred ?obj . }}");
         let solutions =
             make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri, &self.rate_limit_ms).await?;
 
@@ -1119,7 +1125,7 @@ impl AsyncRDF for OxigraphEndpoint {
         subject: &OxSubject,
         pred: &OxNamedNode,
     ) -> Result<HashSet<OxTerm>> {
-        let query = format!(r#"select ?obj where {{ {subject} {pred} ?obj . }}"#);
+        let query = format!("select ?obj where {{ {subject} {pred} ?obj . }}");
         let solutions =
             make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri, &self.rate_limit_ms).await?;
 
@@ -1140,7 +1146,7 @@ impl AsyncRDF for OxigraphEndpoint {
         object: &OxTerm,
         pred: &OxNamedNode,
     ) -> Result<HashSet<OxSubject>> {
-        let query = format!(r#"select ?subj where {{ ?subj {pred} {object} . }}"#);
+        let query = format!("select ?subj where {{ ?subj {pred} {object} . }}");
         let solutions =
             make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri, &self.rate_limit_ms).await?;
 
@@ -1224,18 +1230,9 @@ impl NeighsRDF for OxigraphEndpoint {
         }
 
         // Build SPARQL query from matchers, only projecting wildcard positions
-        let s_str = subject
-            .value()
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "?s".to_string());
-        let p_str = predicate
-            .value()
-            .map(|p| p.to_string())
-            .unwrap_or_else(|| "?p".to_string());
-        let o_str = object
-            .value()
-            .map(|o| o.to_string())
-            .unwrap_or_else(|| "?o".to_string());
+        let s_str = subject.value().map_or_else(|| "?s".to_owned(), ToString::to_string);
+        let p_str = predicate.value().map_or_else(|| "?p".to_owned(), ToString::to_string);
+        let o_str = object.value().map_or_else(|| "?o".to_owned(), ToString::to_string);
 
         let mut select_vars = Vec::new();
         if subject.value().is_none() {
@@ -1249,12 +1246,12 @@ impl NeighsRDF for OxigraphEndpoint {
         }
         // SELECT * is valid when all positions are bound (returns one empty row if the triple exists)
         let select_clause = if select_vars.is_empty() {
-            "*".to_string()
+            "*".to_owned()
         } else {
             select_vars.join(" ")
         };
 
-        let query = format!("SELECT {} WHERE {{ {} {} {} }}", select_clause, s_str, p_str, o_str);
+        let query = format!("SELECT {select_clause} WHERE {{ {s_str} {p_str} {o_str} }}");
 
         let solutions = self.query_select(&query)?;
 
@@ -1370,7 +1367,7 @@ impl NeighsRDF for OxigraphEndpoint {
             subject_entry.entry((*pred).clone()).or_default();
         }
         // Fill in actual values.
-        for solution in solutions.into_iter() {
+        for solution in solutions {
             let Some(p_term) = solution.find_solution("p") else {
                 continue;
             };
@@ -1465,7 +1462,7 @@ impl NeighsRDF for OxigraphEndpoint {
         for pred in &uncached {
             object_entry.entry((*pred).clone()).or_default();
         }
-        for solution in solutions.into_iter() {
+        for solution in solutions {
             let Some(p_term) = solution.find_solution("p") else {
                 continue;
             };
@@ -1496,7 +1493,7 @@ impl QueryRDF for OxigraphEndpoint {
     ///
     /// This is a blocking wrapper around `query_construct_async`.
     fn query_construct(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
-        let (this, query, format) = (self.clone(), query.to_string(), format.clone());
+        let (this, query, format) = (self.clone(), query.to_owned(), format.clone());
         http::block_on(async move { this.query_construct_async(&query, &format).await })
     }
 
@@ -1504,7 +1501,7 @@ impl QueryRDF for OxigraphEndpoint {
     ///
     /// This is a blocking wrapper around `query_select_async`.
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        let (this, query) = (self.clone(), query.to_string());
+        let (this, query) = (self.clone(), query.to_owned());
         http::block_on(async move { this.query_select_async(&query).await })
     }
 
@@ -1512,7 +1509,7 @@ impl QueryRDF for OxigraphEndpoint {
     ///
     /// This is a blocking wrapper around `query_ask_async`.
     fn query_ask(&self, query: &str) -> Result<bool> {
-        let (this, query) = (self.clone(), query.to_string());
+        let (this, query) = (self.clone(), query.to_owned());
         http::block_on(async move { this.query_ask_async(&query).await })
     }
 }
@@ -1563,7 +1560,7 @@ fn parse_turtle_lenient(body: &str, base: &str) -> std::result::Result<Vec<OxTri
         .map_err(|e| e.to_string())?;
     Ok(parser
         .for_slice(body.as_bytes())
-        .filter_map(|result| result.ok())
+        .filter_map(std::result::Result::ok)
         .collect())
 }
 
@@ -1612,7 +1609,7 @@ fn http_status_error(url: &Url, status: u16, body: &str) -> OxigraphEndpointErro
     let body = body.trim();
     let mut body = match body.char_indices().nth(MAX_ERROR_BODY_CHARS) {
         Some((end, _)) => format!("{}…", &body[..end]),
-        None => body.to_string(),
+        None => body.to_owned(),
     };
     if body.is_empty() {
         body.push_str("(empty body)");
@@ -1704,7 +1701,7 @@ async fn http_get_with_retry(
             // request never reached `is_retryable_status` below, so it needs its
             // own retry path with the same exponential backoff.
             Err(SendError::Transient(err)) if retry < MAX_RETRIES => {
-                let delay_secs = (1u64 << retry).min(5);
+                let delay_secs = (1_u64 << retry).min(5);
                 warn!(url = %url, error = %err, delay_secs, retry, "HTTP request failed: retrying after delay");
                 http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
                 continue;
@@ -1726,7 +1723,7 @@ async fn http_get_with_retry(
             // Only the exponential-backoff *fallback* (used when the header is
             // absent, e.g. for 502/503/504 blips that aren't rate-limit responses)
             // is our own guess, so that one stays capped at 5 s.
-            let delay_secs = retry_after_secs(&response).unwrap_or((1u64 << retry).min(5));
+            let delay_secs = retry_after_secs(&response).unwrap_or((1_u64 << retry).min(5));
             warn!(url = %url, status, delay_secs, retry, "HTTP request failed: retrying after delay");
             http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
             continue;
@@ -1764,10 +1761,10 @@ async fn http_post_update_with_retry(
             return Err(OxigraphEndpointError::Cancelled);
         }
         trace!(url = %url, retry, "HTTP POST attempt");
-        let response = match client.post(url, SPARQL_UPDATE, update.to_string()).await {
+        let response = match client.post(url, SPARQL_UPDATE, update.to_owned()).await {
             Ok(response) => response,
             Err(SendError::Transient(err)) if retry < MAX_RETRIES => {
-                let delay_secs = (1u64 << retry).min(5);
+                let delay_secs = (1_u64 << retry).min(5);
                 warn!(url = %url, error = %err, delay_secs, retry, "SPARQL Update could not be sent: retrying after delay");
                 http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
                 continue;
@@ -1780,7 +1777,7 @@ async fn http_post_update_with_retry(
         if status == TOO_MANY_REQUESTS {
             raise_rate_limit(url, rate_limit_ms);
             if retry < MAX_RETRIES {
-                let delay_secs = retry_after_secs(&response).unwrap_or((1u64 << retry).min(5));
+                let delay_secs = retry_after_secs(&response).unwrap_or((1_u64 << retry).min(5));
                 warn!(url = %url, delay_secs, retry, "SPARQL Update rate limited: retrying after delay");
                 http::sleep(std::time::Duration::from_secs(delay_secs)).await?;
                 continue;
@@ -1853,8 +1850,8 @@ fn parse_sparql_ask_results(body: &str) -> Result<bool> {
 
     match json_parser.for_reader(sanitized.as_bytes())? {
         ReaderQueryResultsParserOutput::Boolean(b) => Ok(b),
-        _ => Err(OxigraphEndpointError::ParsingBody {
-            body: format!("Expected boolean ASK result, got: {}", body),
+        ReaderQueryResultsParserOutput::Solutions(_) => Err(OxigraphEndpointError::ParsingBody {
+            body: format!("Expected boolean ASK result, got: {body}"),
         }),
     }
 }
@@ -1911,10 +1908,10 @@ fn parse_sparql_json_results(body: &str) -> Result<Vec<OxQuerySolution>> {
         solutions
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(|e| OxigraphEndpointError::ParsingBody {
-                body: format!("Error parsing solution: {}", e),
+                body: format!("Error parsing solution: {e}"),
             })
     } else {
-        Err(OxigraphEndpointError::ParsingBody { body: body.to_string() })
+        Err(OxigraphEndpointError::ParsingBody { body: body.to_owned() })
     }
 }
 
@@ -1954,7 +1951,7 @@ fn get_iri_solution(solution: &OxQuerySolution, name: &str) -> Result<OxNamedNod
     solution
         .get(name)
         .ok_or_else(|| OxigraphEndpointError::NotFoundInSolution {
-            value: name.to_string(),
+            value: name.to_owned(),
             solution: format!("{solution:?}"),
         })
         .and_then(|v| match v {
@@ -2006,7 +2003,7 @@ mod rate_limit_tests {
     #[tokio::test]
     async fn zero_interval_does_not_wait() {
         let e = endpoint("https://example.org/sparql").with_min_request_interval_ms(0);
-        let start = std::time::Instant::now();
+        let start = Instant::now();
         for _ in 0..10 {
             e.enforce_rate_limit().await.unwrap();
         }
@@ -2017,7 +2014,7 @@ mod rate_limit_tests {
     #[tokio::test]
     async fn configured_interval_is_enforced() {
         let e = endpoint("http://localhost/sparql").with_min_request_interval_ms(100);
-        let start = std::time::Instant::now();
+        let start = Instant::now();
         for _ in 0..3 {
             e.enforce_rate_limit().await.unwrap();
         }
@@ -2127,7 +2124,7 @@ mod prefetch_tests {
                             "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                             body.len()
                         );
-                        let _ = stream.write_all(response.as_bytes());
+                        drop(stream.write_all(response.as_bytes()));
                     });
                 }
             });
@@ -2239,9 +2236,9 @@ mod update_tests {
                     let mut reader = BufReader::new(stream.try_clone().unwrap());
                     let mut line = String::new();
                     reader.read_line(&mut line).unwrap();
-                    let request_line = line.trim_end().to_string();
+                    let request_line = line.trim_end().to_owned();
 
-                    let (mut content_type, mut length) = (None, 0usize);
+                    let (mut content_type, mut length) = (None, 0_usize);
                     loop {
                         line.clear();
                         if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
@@ -2249,7 +2246,7 @@ mod update_tests {
                         }
                         let (name, value) = line.split_once(':').unwrap();
                         match name.to_ascii_lowercase().as_str() {
-                            "content-type" => content_type = Some(value.trim().to_string()),
+                            "content-type" => content_type = Some(value.trim().to_owned()),
                             "content-length" => length = value.trim().parse().unwrap(),
                             _ => {},
                         }
@@ -2267,7 +2264,7 @@ mod update_tests {
                         "HTTP/1.1 {status} X\r\n{headers}Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
                         body.len()
                     );
-                    let _ = (&stream).write_all(response.as_bytes());
+                    drop((&stream).write_all(response.as_bytes()));
                 }
             });
         }

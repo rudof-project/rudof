@@ -94,11 +94,7 @@ impl RDFRegex {
         Ok(RDFRegex {
             regex,
             source: pattern.into_owned(),
-            flags: if flags.is_empty() {
-                None
-            } else {
-                Some(flags.to_string())
-            },
+            flags: if flags.is_empty() { None } else { Some(flags.to_owned()) },
         })
     }
 

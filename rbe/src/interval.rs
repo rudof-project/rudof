@@ -59,6 +59,7 @@ impl Interval {
     }
 
     /// Returns the intersection of two intervals. The intersection of two intervals [n1, m1] and [n2, m2] is defined as the largest interval that is contained in both intervals. This can be calculated by taking the maximum of the lower bounds (n1 and n2) and the minimum of the upper bounds (m1 and m2).
+    #[must_use]
     pub fn intersection(&self, other: &Interval) -> Interval {
         let n = self.n.max(&other.n);
         let m = self.m.min(&other.m);
@@ -66,6 +67,7 @@ impl Interval {
     }
 
     /// Returns the union of two intervals. The union of two intervals [n1, m1] and [n2, m2] is defined as the smallest interval that contains both intervals. This can be calculated by taking the minimum of the lower bounds (n1 and n2) and the maximum of the upper bounds (m1 and m2).
+    #[must_use]
     pub fn addition(&self, other: &Interval) -> Interval {
         let n = self.n.plus(&other.n);
         let m = self.m.plus(&other.m);

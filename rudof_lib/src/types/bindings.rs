@@ -46,14 +46,13 @@ impl Bindings {
 impl TryFrom<&QuerySolutions<RdfData>> for Bindings {
     type Error = QueryError;
 
-    fn try_from(solutions: &QuerySolutions<RdfData>) -> std::result::Result<Self, Self::Error> {
+    fn try_from(solutions: &QuerySolutions<RdfData>) -> Result<Self, Self::Error> {
         // Every solution of a SELECT carries the same variables, so the first one names the
         // columns; a result with no solutions has none to take them from.
         let variables: Vec<String> = solutions
             .iter()
             .next()
-            .map(|solution| solution.variables_iter().map(|var| var.as_str().to_string()).collect())
-            .unwrap_or_default();
+            .map_or_default(|solution| solution.variables_iter().map(|var| var.as_str().to_owned()).collect());
 
         let mut rows = Vec::with_capacity(solutions.count());
         for solution in solutions.iter() {

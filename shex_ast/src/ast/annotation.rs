@@ -8,7 +8,7 @@ use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
 };
-use std::{fmt, result};
+use std::fmt;
 
 use super::object_value::ObjectValue;
 
@@ -58,7 +58,7 @@ impl DerefIri for Annotation {
 }
 
 impl Serialize for Annotation {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -91,7 +91,7 @@ impl<'de> Deserialize<'de> for Annotation {
                 impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                         formatter.write_str("`type` or `predicate` or `object` for annotation")
                     }
 
@@ -117,7 +117,7 @@ impl<'de> Deserialize<'de> for Annotation {
         impl<'de> Visitor<'de> for AnnotationVisitor {
             type Value = Annotation;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("struct Annotation")
             }
 
@@ -145,7 +145,7 @@ impl<'de> Deserialize<'de> for Annotation {
                             if value != "Annotation" {
                                 return Err(de::Error::custom(format!("Expected type `Annotation`, found: {value}")));
                             }
-                            type_ = Some("Annotation".to_string());
+                            type_ = Some("Annotation".to_owned());
                         },
                         Field::Object => {
                             if object.is_some() {

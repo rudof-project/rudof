@@ -16,7 +16,7 @@ pub fn serialize_pgschema_validation_results<W: io::Write>(
 
     match result_pg_shema_validation_format {
         ResultPgSchemaValidationFormat::Compact => {
-            write!(writer, "{}", pgschema_validation_results)
+            write!(writer, "{pgschema_validation_results}")
                 .map_err(|e| PgSchemaError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultPgSchemaValidationFormat::Json => {
@@ -31,8 +31,8 @@ pub fn serialize_pgschema_validation_results<W: io::Write>(
         },
         ResultPgSchemaValidationFormat::Details => {
             return Err(PgSchemaError::FailedSerializingValidationResults {
-                format: "details".to_string(),
-                error: "not implemented yet".to_string(),
+                format: "details".to_owned(),
+                error: "not implemented yet".to_owned(),
             }
             .into());
         },

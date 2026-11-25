@@ -27,16 +27,19 @@ impl Assertion {
         }
     }
 
+    #[must_use]
     pub fn with_asserted_by(mut self, asserted_by: Object) -> Self {
         self.asserted_by = Some(asserted_by);
         self
     }
 
+    #[must_use]
     pub fn with_extra(mut self, extra: Vec<(IriS, Object)>) -> Self {
         self.extra = extra;
         self
     }
 
+    #[must_use]
     pub fn with_extra_item(mut self, predicate: IriS, object: Object) -> Self {
         self.extra.push((predicate, object));
         self

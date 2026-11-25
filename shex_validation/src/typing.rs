@@ -37,7 +37,7 @@ fn qualify_shape_label(label: &ShapeLabel, prefixmap: &PrefixMap) -> String {
     match label {
         ShapeLabel::Iri(iri) => prefixmap.qualify(iri),
         ShapeLabel::BNode(bnode) => bnode.to_string(),
-        ShapeLabel::Start => "Start".to_string(),
+        ShapeLabel::Start => "Start".to_owned(),
     }
 }
 
@@ -81,7 +81,7 @@ impl rudof_typing::TypingObserver<Node, ShapeLabelIdx, ValidatorError, Reason> f
     fn on_insert(&self, key: &(Node, ShapeLabelIdx), value: &ValidationResult) {
         let (node, idx) = key;
         let node = node.show_qualified(&self.nodes_prefixmap);
-        let shape = self.labels.get(idx).map(String::as_str).unwrap_or("?");
+        let shape = self.labels.get(idx).map_or("?", String::as_str);
         match value {
             Either::Right(reasons) => {
                 let status = "conformant".color(self.conformant_color);
@@ -106,9 +106,7 @@ mod tests {
 
     #[test]
     fn qualify_shape_label_qualifies_iris_against_the_prefixmap() {
-        let prefixmap: PrefixMap = std::collections::HashMap::from([("ex", "http://a.example/")])
-            .try_into()
-            .unwrap();
+        let prefixmap: PrefixMap = HashMap::from([("ex", "http://a.example/")]).try_into().unwrap();
         let label = ShapeLabel::iri(IriS::new_unchecked("http://a.example/S"));
         assert_eq!(qualify_shape_label(&label, &prefixmap), "ex:S");
     }

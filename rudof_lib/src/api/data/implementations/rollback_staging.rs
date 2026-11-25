@@ -16,7 +16,7 @@ use crate::{
 pub fn rollback_staging(rudof: &mut Rudof) -> Result<()> {
     let frame = rudof.staging.pop().ok_or_else(|| {
         Box::new(DataError::NoStagingFrame {
-            operation: "rollback_staging".to_string(),
+            operation: "rollback_staging".to_owned(),
         })
     })?;
 

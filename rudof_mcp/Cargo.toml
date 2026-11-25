@@ -17,6 +17,7 @@ base64.workspace = true
 clap.workspace = true
 rmcp.workspace = true
 rudof_lib = { workspace = true, default-features = true, features = ["http-client"] }
+rudof_iri.workspace = true
 rudof_generate.workspace = true
 schemars.workspace = true
 serde.workspace = true
@@ -31,3 +32,6 @@ tempfile.workspace = true
 # The crate itself only needs the server side; the tests drive a real client.
 rmcp = { workspace = true, features = ["client"] }
 tempfile.workspace = true
+
+[lints]
+workspace = true

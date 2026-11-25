@@ -19,6 +19,7 @@ impl GraphCollection {
         }
     }
 
+    #[must_use]
     pub fn with_collection<I: Iterator<Item = NamedGraphDescription>>(mut self, graphs: I) -> Self {
         self.collection = HashSet::from_iter(graphs);
         self

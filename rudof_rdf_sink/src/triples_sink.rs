@@ -35,7 +35,7 @@ mod tests {
     #[test]
     fn handles_are_equal_only_when_they_share_the_sink() {
         let sink = Arc::new(Mutex::new(CountingSink::new()));
-        let a = TriplesSink::new(sink.clone());
+        let a = TriplesSink::new(Arc::clone(&sink));
         assert_eq!(a, TriplesSink::new(sink));
         assert_ne!(a, TriplesSink::new(Arc::new(Mutex::new(CountingSink::new()))));
     }

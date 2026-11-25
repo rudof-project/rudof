@@ -124,7 +124,7 @@ impl Command for ShaclValidateCommand {
         let valid_graph = self.args.valid.as_ref().map(|_| new_sink(ctx)).transpose()?;
         let invalid_graph = self.args.invalid.as_ref().map(|_| new_sink(ctx)).transpose()?;
         let graph_or_count = |graph: &Option<Arc<Mutex<GraphSink>>>| match graph {
-            Some(graph) => Some(TriplesSink::new(graph.clone())),
+            Some(graph) => Some(TriplesSink::new(Arc::clone(graph))),
             None if self.args.statistics => Some(TriplesSink::new(Arc::new(Mutex::new(CountingSink::new())))),
             None => None,
         };
@@ -136,7 +136,7 @@ impl Command for ShaclValidateCommand {
             .validate_shacl()
             .with_shacl_validation_mode(&shacl_validation_mode);
         if let Some(sink) = &read_graph {
-            validation = validation.with_read_sink(TriplesSink::new(sink.clone()));
+            validation = validation.with_read_sink(TriplesSink::new(Arc::clone(sink)));
         }
         if let Some(sink) = &valid_sink {
             validation = validation.with_valid_sink(sink.clone());

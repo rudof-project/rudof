@@ -6,7 +6,7 @@ mod tests {
     use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
     use std::io::Cursor;
 
-    const SCHEMA: &str = r#"
+    const SCHEMA: &str = "
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix ex: <http://example.org/> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -40,7 +40,7 @@ mod tests {
                 sh:minCount 1 ;
                 sh:maxCount 1 ;
             ] .
-    "#;
+    ";
 
     fn load_schema(ast: &str) -> IRSchema {
         let rdf = OxigraphInMemory::from_reader(

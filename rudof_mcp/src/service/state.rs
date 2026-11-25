@@ -66,9 +66,7 @@ impl PersistedState {
 
 /// Get the state file path from environment or use default.
 pub fn get_state_path() -> PathBuf {
-    std::env::var(STATE_PATH_ENV_VAR)
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from(DEFAULT_STATE_PATH))
+    std::env::var(STATE_PATH_ENV_VAR).map_or_else(|_| PathBuf::from(DEFAULT_STATE_PATH), PathBuf::from)
 }
 
 /// Check if the state directory exists and is writable.
@@ -175,9 +173,9 @@ pub enum StatePersistenceError {
 impl std::fmt::Display for StatePersistenceError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Io(e) => write!(f, "IO error: {}", e),
-            Self::Json(e) => write!(f, "JSON error: {}", e),
-            Self::RdfSerialization(e) => write!(f, "RDF serialization error: {}", e),
+            Self::Io(e) => write!(f, "IO error: {e}"),
+            Self::Json(e) => write!(f, "JSON error: {e}"),
+            Self::RdfSerialization(e) => write!(f, "RDF serialization error: {e}"),
         }
     }
 }
@@ -205,7 +203,7 @@ mod tests {
     #[test]
     fn test_persisted_state_with_rdf_data() {
         let rdf = "<http://example.org/s> <http://example.org/p> <http://example.org/o> .\n";
-        let state = PersistedState::with_rdf_data(rdf.to_string(), 1);
+        let state = PersistedState::with_rdf_data(rdf.to_owned(), 1);
         assert!(state.has_rdf_data());
         assert_eq!(state.triple_count, Some(1));
         assert!(state.last_saved.is_some());
@@ -217,7 +215,7 @@ mod tests {
         let path = temp_file.path().to_path_buf();
 
         let rdf = "<http://example.org/s> <http://example.org/p> <http://example.org/o> .\n";
-        let state = PersistedState::with_rdf_data(rdf.to_string(), 1);
+        let state = PersistedState::with_rdf_data(rdf.to_owned(), 1);
 
         // Save
         save_state_to_path(&state, &path).unwrap();
@@ -233,6 +231,6 @@ mod tests {
     fn test_load_nonexistent_file() {
         let path = PathBuf::from("/nonexistent/path/state.json");
         let result = load_state_from_path(&path);
-        assert!(result.is_err());
+        result.unwrap_err();
     }
 }

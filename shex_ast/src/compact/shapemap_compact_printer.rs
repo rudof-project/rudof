@@ -22,24 +22,29 @@ pub struct ShapemapFormatter {
 }
 
 impl ShapemapFormatter {
+    #[must_use]
     pub fn with_keyword_color(mut self, color: Option<Color>) -> Self {
         self.keyword_color = color;
         self
     }
+    #[must_use]
     pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> Self {
         self.qualify_prefix_color = color;
         self
     }
+    #[must_use]
     pub fn with_semicolon_prefix_color(mut self, color: Option<Color>) -> Self {
         self.qualify_semicolon_color = color;
         self
     }
 
+    #[must_use]
     pub fn with_qualify_localname_color(mut self, color: Option<Color>) -> Self {
         self.qualify_localname_color = color;
         self
     }
 
+    #[must_use]
     pub fn without_colors(mut self) -> Self {
         self.keyword_color = None;
         self.qualify_localname_color = None;
@@ -234,15 +239,8 @@ where
         match literal {
             // A base direction is dropped: the compact shapemap syntax has no room for one.
             ConcreteLiteral::StringLiteral { lexical_form, lang, .. } => self.pp_string_literal(lexical_form, lang),
-            ConcreteLiteral::DatatypeLiteral {
-                lexical_form: _,
-                datatype: _,
-            } => todo!(),
-            ConcreteLiteral::WrongDatatypeLiteral {
-                lexical_form: _,
-                datatype: _,
-                error: _,
-            } => todo!(),
+            ConcreteLiteral::DatatypeLiteral { .. } => todo!(),
+            ConcreteLiteral::WrongDatatypeLiteral { .. } => todo!(),
             ConcreteLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
             ConcreteLiteral::BooleanLiteral(_) => todo!(),
             ConcreteLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
@@ -255,7 +253,7 @@ where
             NumericLiteral::Decimal(d) => self.pp_decimal(d),
             NumericLiteral::Double(d) => self.pp_double(d),
             NumericLiteral::Long(l) => self.pp_isize(&(*l as isize)),
-            NumericLiteral::Float(f) => self.pp_float(&(*f as f64)),
+            NumericLiteral::Float(f) => self.pp_float(&f64::from(*f)),
             NumericLiteral::Byte(b) => self.pp_byte(b),
             NumericLiteral::Short(s) => self.pp_short(s),
             NumericLiteral::NonNegativeInteger(n) => self.pp_non_negative_integer(n),
@@ -357,7 +355,7 @@ where
         U: Into<Cow<'a, str>>,
     {
         if let Some(color) = self.keyword_color {
-            let data: Cow<str> = s.into();
+            let data: Cow<'_, str> = s.into();
             let s: String = match data {
                 Cow::Owned(t) => t,
                 Cow::Borrowed(t) => t.into(),

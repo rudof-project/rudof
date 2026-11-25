@@ -115,10 +115,10 @@ impl<S: Rdf> QuerySolutions<S> {
     }
 }
 
-impl<S: Rdf + serde::Serialize> QuerySolutions<S> {
+impl<S: Rdf + Serialize> QuerySolutions<S> {
     /// Serializes the query solutions as pretty-printed JSON.
     pub fn as_json(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap_or_else(|_| "[]".to_string())
+        serde_json::to_string_pretty(&self).unwrap_or_else(|_| "[]".to_owned())
     }
 }
 
@@ -164,7 +164,7 @@ fn write_csv_table<S: Rdf>(
     let first = &query_solutions.solutions[0];
     let variable_count = first.variables_iter().count();
     let mut variables = Vec::with_capacity(variable_count);
-    variables.extend(first.variables_iter().map(|v| v.to_string()));
+    variables.extend(first.variables_iter().map(ToString::to_string));
     wtr.write_record(variables)
         .map_err(|e| RDFError::WritingTableError { error: format!("{e}") })?;
     for result in &query_solutions.solutions {
@@ -175,7 +175,7 @@ fn write_csv_table<S: Rdf>(
                     let object = S::term_as_object(term)?;
                     match object {
                         Object::Iri(iri) => prefixmap.qualify(&iri),
-                        Object::BlankNode(blank_node) => format!("_:{}", blank_node),
+                        Object::BlankNode(blank_node) => format!("_:{blank_node}"),
                         Object::Literal(literal) => literal.to_string(),
                         Object::Triple {
                             subject,
@@ -216,7 +216,7 @@ fn write_ascii_table<S: Rdf>(
     let variable_count = first.variables_iter().count();
     let mut variables = Vec::with_capacity(variable_count + 1);
     variables.push(String::new()); // First column = index
-    variables.extend(first.variables_iter().map(|v| v.to_string()));
+    variables.extend(first.variables_iter().map(ToString::to_string));
     builder.push_record(variables);
 
     // Build data rows
@@ -230,7 +230,7 @@ fn write_ascii_table<S: Rdf>(
                     let object = S::term_as_object(term)?;
                     match object {
                         Object::Iri(iri) => prefixmap.qualify(&iri),
-                        Object::BlankNode(blank_node) => format!("_:{}", blank_node),
+                        Object::BlankNode(blank_node) => format!("_:{blank_node}"),
                         Object::Literal(literal) => literal.to_string(),
                         Object::Triple {
                             subject,

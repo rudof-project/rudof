@@ -88,7 +88,7 @@ fn serialize_section(
     }
     if let Err(e) = serialization.execute() {
         return Ok(Err(ToolExecutionError::with_hint(
-            format!("Failed to serialize ShEx schema: {}", e),
+            format!("Failed to serialize ShEx schema: {e}"),
             "Try a different result_schema_format or verify the shape selector",
         )));
     }
@@ -142,7 +142,7 @@ pub async fn show_shex_impl(
     }
     if let Err(e) = shex_schema_loading.execute() {
         return Ok(ToolExecutionError::with_hint(
-            format!("Failed to parse ShEx schema: {}", e),
+            format!("Failed to parse ShEx schema: {e}"),
             "Check the schema content and schema_format parameter",
         )
         .into_call_tool_result());
@@ -153,19 +153,21 @@ pub async fn show_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    let statistics = match show_statistics.unwrap_or(false) {
-        true => match serialize_section(&rudof, &parsed_result_format, None, ShexSection::Statistics)? {
+    let statistics = if show_statistics.unwrap_or(false) {
+        match serialize_section(&rudof, &parsed_result_format, None, ShexSection::Statistics)? {
             Ok(value) => Some(value),
             Err(e) => return Ok(e.into_call_tool_result()),
-        },
-        false => None,
+        }
+    } else {
+        None
     };
-    let dependencies = match show_dependencies.unwrap_or(false) {
-        true => match serialize_section(&rudof, &parsed_result_format, None, ShexSection::Dependencies)? {
+    let dependencies = if show_dependencies.unwrap_or(false) {
+        match serialize_section(&rudof, &parsed_result_format, None, ShexSection::Dependencies)? {
             Ok(value) => Some(value),
             Err(e) => return Ok(e.into_call_tool_result()),
-        },
-        false => None,
+        }
+    } else {
+        None
     };
 
     let result_size_bytes = schema_output.len();
@@ -181,8 +183,7 @@ pub async fn show_shex_impl(
     let structured = serialize_structured(&response, "show_shex_impl")?;
 
     let summary = format!(
-        "ShEx schema serialized.\nResult format: {}\nSchema size: {} bytes",
-        result_schema_format, result_size_bytes
+        "ShEx schema serialized.\nResult format: {result_schema_format}\nSchema size: {result_size_bytes} bytes"
     );
 
     let preview_language = match result_schema_format.as_str() {
@@ -198,7 +199,7 @@ pub async fn show_shex_impl(
 
     let mut result = CallToolResult::success(vec![
         ContentBlock::text(summary),
-        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
+        ContentBlock::text(format!("## Results Preview\n\n{results_preview}")),
     ]);
     result.structured_content = Some(structured);
 
@@ -266,7 +267,7 @@ pub async fn check_shex_impl(
         Ok(well_formed) => well_formed,
         Err(e) => {
             return Ok(ToolExecutionError::with_hint(
-                format!("Failed to check the ShEx schema: {}", e),
+                format!("Failed to check the ShEx schema: {e}"),
                 "Check the schema content and schema_format parameter",
             )
             .into_call_tool_result());
@@ -289,13 +290,13 @@ pub async fn check_shex_impl(
 
     let structured = serialize_structured(&response, "check_shex_impl")?;
 
-    let summary = format!("ShEx schema checked.\nWell formed: {}", well_formed);
+    let summary = format!("ShEx schema checked.\nWell formed: {well_formed}");
 
     let results_preview = code_block_preview("text", &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
         ContentBlock::text(summary),
-        ContentBlock::text(format!("## Results Preview\n\n{}", results_preview)),
+        ContentBlock::text(format!("## Results Preview\n\n{results_preview}")),
     ]);
     result.structured_content = Some(structured);
 
@@ -313,7 +314,7 @@ mod tests {
         let result = show_shex_impl(
             &service,
             Parameters(ShowShexRequest {
-                schema: SCHEMA.to_string(),
+                schema: SCHEMA.to_owned(),
                 schema_format: None,
                 base_schema: None,
                 shape: None,
@@ -334,7 +335,7 @@ mod tests {
         let result = check_shex_impl(
             &service,
             Parameters(CheckShexRequest {
-                schema: schema.to_string(),
+                schema: schema.to_owned(),
                 schema_format: None,
                 base_schema: None,
             }),

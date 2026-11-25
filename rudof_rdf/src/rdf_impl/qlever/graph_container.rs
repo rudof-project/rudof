@@ -69,7 +69,7 @@ impl QleverGraphContainer {
         config: QleverConfig,
     ) -> Result<Self, QleverError> {
         if paths.is_empty() {
-            return Err(QleverError::PreFlight("from_paths called with no paths".to_string()));
+            return Err(QleverError::PreFlight("from_paths called with no paths".to_owned()));
         }
 
         // Shared dir for any conversion output, hashed from all input paths so repeated runs reuse the same converted files.
@@ -91,7 +91,7 @@ impl QleverGraphContainer {
         let already_built = {
             let fp = fingerprint_inputs(&inputs);
             let dir = config.resolve_index_dir(&fp);
-            super::IndexHandle::new(&dir, &config.index_name).is_built()
+            IndexHandle::new(&dir, &config.index_name).is_built()
         };
         let handle = build_index(&inputs, &config).await?;
         let mut server = QleverServer::start(&handle, &config).await?;
@@ -171,7 +171,7 @@ impl QleverGraphContainer {
     pub async fn query_select_async(&self, query: &str) -> Result<QuerySolutions<Self>, QleverError> {
         let sols = self.sparql.query_select_async(query).await?;
         let pm = self.sparql.prefixmap().clone();
-        let converted: Vec<QuerySolution<Self>> = sols.iter().map(|s| s.convert(|t| t.clone())).collect();
+        let converted: Vec<QuerySolution<Self>> = sols.iter().map(|s| s.convert(Clone::clone)).collect();
         Ok(QuerySolutions::new(converted, pm))
     }
 
@@ -191,6 +191,7 @@ impl QleverGraphContainer {
     }
 
     /// Replace the prefix map.
+    #[must_use]
     pub fn with_prefixmap(mut self, pm: PrefixMap) -> Self {
         self.prefixmap = Arc::new(pm.clone());
         self.sparql = self.sparql.with_prefixmap(pm);
@@ -309,7 +310,7 @@ impl QueryRDF for QleverGraphContainer {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>, QleverError> {
         let sols = self.sparql.query_select(query)?;
         let pm = self.sparql.prefixmap().clone();
-        let converted: Vec<QuerySolution<Self>> = sols.iter().map(|s| s.convert(|t| t.clone())).collect();
+        let converted: Vec<QuerySolution<Self>> = sols.iter().map(|s| s.convert(Clone::clone)).collect();
         Ok(QuerySolutions::new(converted, pm))
     }
 
@@ -448,8 +449,7 @@ async fn input_file_from_path(
         let native = NativeFormat::from_path(&inner_virtual).ok_or_else(|| {
             let suffix = inner_virtual
                 .extension()
-                .map(|e| e.to_string_lossy().into_owned())
-                .unwrap_or_default();
+                .map_or_default(|e| e.to_string_lossy().into_owned());
             QleverError::UnsupportedCompressedFormat {
                 path: path.to_path_buf(),
                 suffix,
@@ -461,8 +461,7 @@ async fn input_file_from_path(
         })?;
         let in_container_name = canonical
             .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_else(|| "data".to_string());
+            .map_or_else(|| "data".to_owned(), |n| n.to_string_lossy().to_string());
         return Ok(InputFile {
             host_path: canonical,
             in_container_name,
@@ -489,8 +488,7 @@ async fn input_file_from_path(
             host_path: canonical.clone(),
             in_container_name: canonical
                 .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_else(|| "data".to_string()),
+                .map_or_else(|| "data".to_owned(), |n| n.to_string_lossy().to_string()),
             format_ext: native,
             graph_iri: None,
             compression: None,
@@ -506,8 +504,7 @@ async fn input_file_from_path(
         host_path: converted.clone(),
         in_container_name: converted
             .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_else(|| fallback_name.to_string()),
+            .map_or_else(|| fallback_name.to_owned(), |n| n.to_string_lossy().to_string()),
         format_ext: native,
         graph_iri: None,
         compression: None,
@@ -552,15 +549,15 @@ fn source_ext(format: &RDFFormat) -> &'static str {
 }
 
 fn copy_reader_to_file<R: Read>(mut read: R, file: &mut std::fs::File) -> io::Result<()> {
-    let mut buf = [0u8; 64 * 1024];
+    let mut buf = vec![0_u8; 64 * 1024];
     loop {
         let n = read.read(&mut buf)?;
         if n == 0 {
             break;
         }
-        std::io::Write::write_all(file, &buf[..n])?;
+        io::Write::write_all(file, &buf[..n])?;
     }
-    std::io::Write::flush(file)
+    io::Write::flush(file)
 }
 
 fn fingerprint_for_path(path: &Path) -> String {

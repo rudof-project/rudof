@@ -32,11 +32,7 @@ impl Pred {
 
     pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
         let iri_str = prefixmap.qualify(&self.iri);
-        if self.is_direct {
-            iri_str
-        } else {
-            format!("^{}", iri_str)
-        }
+        if self.is_direct { iri_str } else { format!("^{iri_str}") }
     }
 }
 

@@ -24,7 +24,7 @@ pub fn coherence(triples: &[Triple], types: &[(String, String)]) -> f64 {
         }
         let subject = match &triple.subject {
             oxrdf::NamedOrBlankNode::NamedNode(n) => n.as_str(),
-            _ => continue,
+            oxrdf::NamedOrBlankNode::BlankNode(_) => continue,
         };
         if type_of.contains_key(subject) {
             properties.entry(subject).or_default().insert(predicate);
@@ -77,8 +77,8 @@ mod tests {
     fn full_coverage_is_one() {
         let triples = vec![triple("http://e/a", "http://e/p"), triple("http://e/b", "http://e/p")];
         let types = vec![
-            ("http://e/a".to_string(), "T".to_string()),
-            ("http://e/b".to_string(), "T".to_string()),
+            ("http://e/a".to_owned(), "T".to_owned()),
+            ("http://e/b".to_owned(), "T".to_owned()),
         ];
         assert_eq!(coherence(&triples, &types), 1.0);
     }
@@ -92,8 +92,8 @@ mod tests {
             triple("http://e/b", "http://e/p"),
         ];
         let types = vec![
-            ("http://e/a".to_string(), "T".to_string()),
-            ("http://e/b".to_string(), "T".to_string()),
+            ("http://e/a".to_owned(), "T".to_owned()),
+            ("http://e/b".to_owned(), "T".to_owned()),
         ];
         assert_eq!(coherence(&triples, &types), 0.75);
     }
@@ -102,8 +102,8 @@ mod tests {
     fn rdf_type_is_not_a_property() {
         let triples = vec![triple("http://e/a", "http://e/p"), triple("http://e/b", RDF_TYPE)];
         let types = vec![
-            ("http://e/a".to_string(), "T".to_string()),
-            ("http://e/b".to_string(), "T".to_string()),
+            ("http://e/a".to_owned(), "T".to_owned()),
+            ("http://e/b".to_owned(), "T".to_owned()),
         ];
         assert_eq!(coherence(&triples, &types), 0.5);
     }

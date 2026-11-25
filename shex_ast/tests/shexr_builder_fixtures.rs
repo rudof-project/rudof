@@ -32,21 +32,18 @@ fn shexr_builder_matches_shextest_schemas_corpus() {
     );
 
     let mut supported: Vec<String> = Vec::new();
-    let mut skipped = 0usize;
-    let mut unparseable = 0usize;
-    let mut unverifiable = 0usize;
+    let mut skipped = 0_usize;
+    let mut unparseable = 0_usize;
+    let mut unverifiable = 0_usize;
 
     for entry in &entries {
         let schema_path = dir.join(&entry.json);
         // A handful of manifest entries (e.g. `_all`) exercise ShExJ corner
         // cases unrelated to this builder (parsing itself, not RDF output);
         // those are out of scope here and just tallied separately.
-        let schema = match Schema::parse_schema(&schema_path) {
-            Ok(schema) => schema,
-            Err(_) => {
-                unparseable += 1;
-                continue;
-            },
+        let Ok(schema) = Schema::parse_schema(&schema_path) else {
+            unparseable += 1;
+            continue;
         };
 
         let mut actual = OxigraphInMemory::empty();

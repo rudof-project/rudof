@@ -86,7 +86,7 @@ impl Display for ASTComponent {
             },
             ASTComponent::UniqueLang(l) => write!(f, "uniqueLang({l})"),
             ASTComponent::LanguageIn(l) => {
-                let str = l.iter().map(|s| s.to_string()).join(", ");
+                let str = l.iter().map(ToString::to_string).join(", ");
                 write!(f, "languageIn[{str}]")
             },
             ASTComponent::Equals(iri) => write!(f, "equals({iri})"),
@@ -95,16 +95,16 @@ impl Display for ASTComponent {
             ASTComponent::LessThanOrEquals(iri) => write!(f, "lessThanOrEquals({iri})"),
             ASTComponent::SubsetOf(path) => write!(f, "subsetOf({path})"),
             ASTComponent::Or(obj) => {
-                let str = obj.iter().map(|s| s.to_string()).join(", ");
+                let str = obj.iter().map(ToString::to_string).join(", ");
                 write!(f, "or[{str}]")
             },
             ASTComponent::And(obj) => {
-                let str = obj.iter().map(|s| s.to_string()).join(", ");
+                let str = obj.iter().map(ToString::to_string).join(", ");
                 write!(f, "and[{str}]")
             },
             ASTComponent::Not(obj) => write!(f, "not({obj})"),
             ASTComponent::Xone(obj) => {
-                let str = obj.iter().map(|s| s.to_string()).join(", ");
+                let str = obj.iter().map(ToString::to_string).join(", ");
                 write!(f, "xone[{str}]")
             },
             ASTComponent::Closed {
@@ -114,18 +114,18 @@ impl Display for ASTComponent {
                 f,
                 "closed({is_closed}{})",
                 if ignored_properties.is_empty() {
-                    "".to_string()
+                    String::new()
                 } else {
                     format!(
                         ", Ignored props: [{}]",
-                        ignored_properties.iter().map(|p| p.to_string()).join(", ")
+                        ignored_properties.iter().map(ToString::to_string).join(", ")
                     )
                 }
             ),
             ASTComponent::Node(obj) => write!(f, "node({obj})"),
             ASTComponent::HasValue(v) => write!(f, "hasValue({v})"),
             ASTComponent::In(v) => {
-                let str = v.iter().map(|v| v.to_string()).join(", ");
+                let str = v.iter().map(ToString::to_string).join(", ");
                 write!(f, "in[{str}]")
             },
             ASTComponent::QualifiedValueShape {
@@ -139,9 +139,9 @@ impl Display for ASTComponent {
                     f,
                     "qualifiedValueShape(shape: {shape}, qualified_min_count: {q_min_count:?}, qualified_max_count: {q_max_count:?}, qualified_value_shape_disjoint: {disjoint:?}{}",
                     if siblings.is_empty() {
-                        "".to_string()
+                        String::new()
                     } else {
-                        format!(", siblings: [{}]", siblings.iter().map(|s| s.to_string()).join(", "))
+                        format!(", siblings: [{}]", siblings.iter().map(ToString::to_string).join(", "))
                     }
                 )
             },
@@ -159,17 +159,17 @@ impl Display for ASTComponent {
                 if let Some(deactivated) = deactivated {
                     format!(", deactivated: {deactivated}")
                 } else {
-                    "".to_string()
+                    String::new()
                 },
                 if let Some(msg) = message {
                     format!(", message: {msg}")
                 } else {
-                    "".to_string()
+                    String::new()
                 },
                 if let Some(prefixes) = prefixes {
                     format!(", prefixes: {prefixes}")
                 } else {
-                    "".to_string()
+                    String::new()
                 }
             ),
         }

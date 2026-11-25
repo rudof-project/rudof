@@ -55,7 +55,7 @@ pub fn load_pg_db<W: Write>(
     if skip_validation {
         writeln_progress(
             writer,
-            "SHACL validation skipped (--skip-validation): the database DDL enforces conformance".to_string(),
+            "SHACL validation skipped (--skip-validation): the database DDL enforces conformance".to_owned(),
         )?;
     } else {
         let mut load_shapes = rudof.load_shacl_shapes();
@@ -70,7 +70,7 @@ pub fn load_pg_db<W: Write>(
         }
         load_shapes.execute()?;
 
-        let shape_count = rudof.shacl_shapes.as_ref().map(|s| s.iter().count()).unwrap_or(0);
+        let shape_count = rudof.shacl_shapes.as_ref().map_or(0, |s| s.iter().count());
         writeln_progress(writer, format!("Loaded SHACL shapes ({shape_count} shapes)"))?;
 
         rudof.validate_shacl().execute()?;
@@ -79,7 +79,7 @@ pub fn load_pg_db<W: Write>(
             .shacl_validation_results
             .as_ref()
             .ok_or_else(|| PgDbError::DataSourceSpec {
-                message: "SHACL validation produced no results".to_string(),
+                message: "SHACL validation produced no results".to_owned(),
             })?;
 
         if !report.conforms() {
@@ -104,7 +104,7 @@ pub fn load_pg_db<W: Write>(
             }
             .into());
         }
-        writeln_progress(writer, "SHACL validation PASSED ✓".to_string())?;
+        writeln_progress(writer, "SHACL validation PASSED \u{2713}".to_owned())?;
     }
 
     // ── Step 3: derive schema, apply DDL, insert data ────────────────────
@@ -121,7 +121,7 @@ pub fn load_pg_db<W: Write>(
     let (node_count, rel_count) = super::db::load_data(&conn_info, &model, &all_triples, writer)?;
     writeln_progress(writer, format!("  Inserted {node_count} node(s)"))?;
     writeln_progress(writer, format!("  Inserted {rel_count} relationship(s)"))?;
-    writeln_progress(writer, "  ✓ Load complete!".to_string())?;
+    writeln_progress(writer, "  \u{2713} Load complete!".to_owned())?;
 
     Ok((node_count, rel_count))
 }

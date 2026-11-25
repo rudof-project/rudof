@@ -16,7 +16,7 @@ use tempfile::NamedTempFile;
 #[tokio::test]
 async fn test_shex_cardinality_constraints() {
     // Create a simple ShEx schema with cardinality constraints using ShEx Compact syntax
-    let shex_schema = r#"
+    let shex_schema = "
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -24,7 +24,7 @@ ex:PersonShape {
     ex:name xsd:string {1,1} ;
     ex:email xsd:string {0,3}
 }
-    "#;
+    ";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -55,7 +55,7 @@ ex:PersonShape {
 #[tokio::test]
 async fn test_shacl_cardinality_constraints() {
     // Create a SHACL schema with cardinality constraints
-    let shacl_schema = r#"
+    let shacl_schema = "
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -74,7 +74,7 @@ async fn test_shacl_cardinality_constraints() {
             sh:minCount 0 ;
             sh:maxCount 3 ;
         ] .
-    "#;
+    ";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -105,7 +105,7 @@ async fn test_shacl_cardinality_constraints() {
 #[tokio::test]
 async fn test_datatype_constraints() {
     // Create a schema with different datatypes
-    let shacl_schema = r#"
+    let shacl_schema = "
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -136,7 +136,7 @@ async fn test_datatype_constraints() {
             sh:minCount 0 ;
             sh:maxCount 1 ;
         ] .
-    "#;
+    ";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -167,7 +167,7 @@ async fn test_datatype_constraints() {
 #[tokio::test]
 async fn test_value_constraints() {
     // Create a SHACL schema with value constraints
-    let shacl_schema = r#"
+    let shacl_schema = "
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -186,7 +186,7 @@ async fn test_value_constraints() {
             sh:minCount 1 ;
             sh:maxCount 1 ;
         ] .
-    "#;
+    ";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -217,7 +217,7 @@ async fn test_value_constraints() {
 #[tokio::test]
 async fn test_shex_datatype_constraints() {
     // Create a ShEx schema with different datatypes
-    let shex_schema = r#"
+    let shex_schema = "
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -227,7 +227,7 @@ ex:PersonShape {
     ex:height xsd:decimal {0,1} ;
     ex:birthDate xsd:date {0,1}
 }
-    "#;
+    ";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -258,7 +258,7 @@ ex:PersonShape {
 #[tokio::test]
 async fn test_shex_value_constraints() {
     // Create a ShEx schema with basic value constraints
-    let shex_schema = r#"
+    let shex_schema = "
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -266,7 +266,7 @@ ex:PersonShape {
     ex:name xsd:string {1,1} ;
     ex:age xsd:integer {1,1}
 }
-    "#;
+    ";
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();

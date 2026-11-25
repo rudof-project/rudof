@@ -35,7 +35,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
                             let lang_str = lang.to_string().to_lowercase();
                             !self.langs().iter().any(|l| {
                                 let l_str = l.to_string().to_lowercase();
-                                lang_str == l_str || lang_str.starts_with(&format!("{}-", l_str))
+                                lang_str == l_str || lang_str.starts_with(&format!("{l_str}-"))
                             })
                         },
                     };
@@ -46,7 +46,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
                 "LanguageIn constraint not satisfied. Expected one of {}",
                 self.langs()
                     .iter()
-                    .map(|l| l.to_string())
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ")
             ),

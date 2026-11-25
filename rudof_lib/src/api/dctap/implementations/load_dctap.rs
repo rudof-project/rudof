@@ -41,12 +41,15 @@ fn read_dctap_excel_formats(rudof: &mut Rudof, dctap: &InputSpec) -> Result<()> 
 
             rudof.dctap = Some(dctap);
         },
-        _ => Err(DCTapError::DataSourceSpec {
-            message: format!(
-                "Failed to read data source '{}'. Excel formats require a file path.",
-                dctap.source_name()
-            ),
-        })?,
+        _ => {
+            return Err(DCTapError::DataSourceSpec {
+                message: format!(
+                    "Failed to read data source '{}'. Excel formats require a file path.",
+                    dctap.source_name()
+                ),
+            }
+            .into());
+        },
     }
 
     Ok(())

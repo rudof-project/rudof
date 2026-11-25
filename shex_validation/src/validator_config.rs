@@ -122,36 +122,43 @@ impl ValidatorConfig {
         }
     }
 
+    #[must_use]
     pub fn with_max_steps(mut self, steps: Option<usize>) -> Self {
         self.max_steps = steps;
         self
     }
 
+    #[must_use]
     pub fn with_rdf_data(mut self, cfg: RdfDataConfig) -> Self {
         self.rdf_data = cfg;
         self
     }
 
+    #[must_use]
     pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
         self.shex = cfg;
         self
     }
 
+    #[must_use]
     pub fn with_shapemap(mut self, cfg: ShapemapConfig) -> Self {
         self.shapemap = cfg;
         self
     }
 
+    #[must_use]
     pub fn with_check_negation_requirement(mut self, flag: bool) -> Self {
         self.check_negation_requirement = flag;
         self
     }
 
+    #[must_use]
     pub fn with_width(mut self, width: usize) -> Self {
         self.width = width;
         self
     }
 
+    #[must_use]
     pub fn with_external_shape_resolver_registry(mut self, r: ExternalShapeResolverRegistry) -> Self {
         self.external_resolvers = r;
         self
@@ -159,11 +166,13 @@ impl ValidatorConfig {
 
     /// Prepend a resolver to the EXTERNAL-shape resolver chain. Returns the
     /// updated config for builder-style chaining.
+    #[must_use]
     pub fn with_external_resolver<R: ExternalShapeResolver + 'static>(mut self, r: R) -> Self {
         self.external_resolvers = std::mem::take(&mut self.external_resolvers).with_resolver(r);
         self
     }
 
+    #[must_use]
     pub fn with_external_resolver_arc(mut self, r: Arc<dyn ExternalShapeResolver>) -> Self {
         self.external_resolvers = std::mem::take(&mut self.external_resolvers).with_resolver_arc(r);
         self
@@ -172,12 +181,14 @@ impl ValidatorConfig {
     /// Install an observer notified on every newly-cached `(node, shape)`
     /// validation result. Returns the updated config for builder-style
     /// chaining.
+    #[must_use]
     pub fn with_typing_observer(mut self, observer: Arc<TypingObserver>) -> Self {
         self.typing_observer = Some(observer);
         self
     }
 
     /// Install a sink that receives every triple the validator reads.
+    #[must_use]
     pub fn with_read_sink(mut self, sink: TriplesSink) -> Self {
         self.read_sink = Some(sink);
         self
@@ -189,6 +200,7 @@ impl ValidatorConfig {
     /// Unlike [`Self::with_read_sink`], triples that were read but belong only to
     /// non-conformant pairs, or that no triple constraint matched (e.g. values of
     /// an `EXTRA` predicate), are left out.
+    #[must_use]
     pub fn with_valid_sink(mut self, sink: TriplesSink) -> Self {
         self.valid_sink = Some(sink);
         self
@@ -199,21 +211,25 @@ impl ValidatorConfig {
     /// subgraph (see [`Self::with_valid_sink`]). The valid and invalid subgraphs
     /// split the triples read: a triple read while checking a non-conformant pair
     /// but also matched by a conformant one is valid.
+    #[must_use]
     pub fn with_invalid_sink(mut self, sink: TriplesSink) -> Self {
         self.invalid_sink = Some(sink);
         self
     }
 
+    #[must_use]
     pub fn with_show_intermediate_results(mut self, flag: bool) -> Self {
         self.show_intermediate_results = flag;
         self
     }
 
+    #[must_use]
     pub fn with_conformant_color(mut self, color: impl Into<String>) -> Self {
         self.conformant_color = color.into();
         self
     }
 
+    #[must_use]
     pub fn with_non_conformant_color(mut self, color: impl Into<String>) -> Self {
         self.non_conformant_color = color.into();
         self
@@ -289,8 +305,8 @@ impl ValidatorConfig {
     #[inline] fn default_check_negation_requirement() -> bool { true }
     #[inline] fn default_width() -> usize { 80 }
     #[inline] fn default_show_intermediate_results() -> bool { false }
-    #[inline] fn default_conformant_color() -> String { "green".to_string() }
-    #[inline] fn default_non_conformant_color() -> String { "red".to_string() }
+    #[inline] fn default_conformant_color() -> String { "green".to_owned() }
+    #[inline] fn default_non_conformant_color() -> String { "red".to_owned() }
 }
 
 impl Default for ValidatorConfig {
@@ -337,10 +353,10 @@ mod tests {
     #[test]
     fn partial_toml_fills_remaining_defaults() {
         let c: ValidatorConfig = toml::from_str(
-            r#"
+            "
             max_steps = 7
             check_negation = false
-        "#,
+        ",
         )
         .unwrap();
         assert_eq!(c.max_steps(), Some(7));

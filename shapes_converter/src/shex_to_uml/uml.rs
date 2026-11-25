@@ -90,7 +90,7 @@ pub struct Uml {
 
 impl Uml {
     pub fn new() -> Uml {
-        Default::default()
+        Uml::default()
     }
 
     pub fn get_logical_component_idx(&mut self, nodes: &BTreeSet<NodeId>, label_type: &UmlLabelType) -> usize {
@@ -218,10 +218,10 @@ impl Uml {
             .with_shadowing(config.shadowing())
             .with_class_skin(*config.class_skin());
 
-        for (node_id, component) in self.components.iter() {
+        for (node_id, component) in &self.components {
             diagram.add_box(component_to_diagram_box(node_id, component, config));
         }
-        for link in self.links.iter() {
+        for link in &self.links {
             diagram.add_connector(link_to_connector(link, config));
         }
         for (n1, n2) in self.extends() {
@@ -275,9 +275,9 @@ fn component_to_diagram_box(node_id: &NodeId, component: &UmlComponent, config: 
                 .collect();
             b.with_compartments(compartments)
         },
-        UmlComponent::Or { exprs: _ } => DiagramBox::new(id, Shape::Class, "OR"),
-        UmlComponent::Not { expr: _ } => DiagramBox::new(id, Shape::Class, "NOT"),
-        UmlComponent::And { exprs: _ } => DiagramBox::new(id, Shape::Class, "AND"),
+        UmlComponent::Or { .. } => DiagramBox::new(id, Shape::Class, "OR"),
+        UmlComponent::Not { .. } => DiagramBox::new(id, Shape::Class, "NOT"),
+        UmlComponent::And { .. } => DiagramBox::new(id, Shape::Class, "AND"),
     }
 }
 
@@ -317,10 +317,10 @@ fn name_to_string(name: &Name, config: &ShEx2UmlConfig) -> String {
 
 fn value_constraint_to_string(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> String {
     match vc {
-        ValueConstraint::Any => ".".to_string(),
+        ValueConstraint::Any => ".".to_owned(),
         ValueConstraint::Datatype(dt) => name_to_string(dt, config),
         ValueConstraint::Ref(r) => format!("@{}", name_to_string(r, config)),
-        ValueConstraint::None => "".to_string(),
+        ValueConstraint::None => String::new(),
         ValueConstraint::ValueSet(values) => {
             let mut str = String::new();
             str.push_str("[ ");
@@ -332,7 +332,7 @@ fn value_constraint_to_string(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> 
                 str.push_str(name_str.as_str());
             }
             str.push_str(" ]");
-            str.to_string()
+            str.clone()
         },
         ValueConstraint::Facet(names) => {
             let mut str = String::new();
@@ -343,7 +343,7 @@ fn value_constraint_to_string(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> 
                 }
                 str.push_str(name_str.as_str());
             }
-            str.to_string()
+            str.clone()
         },
         ValueConstraint::Kind(name) => name_to_string(name, config),
         ValueConstraint::And { values } => values.iter().fold(String::new(), |mut acc, vc| {
@@ -371,10 +371,10 @@ fn value_constraint_to_string(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> 
 
 fn card_to_string(card: &UmlCardinality) -> String {
     match card {
-        UmlCardinality::OneOne => " ".to_string(),
-        UmlCardinality::Star => "*".to_string(),
-        UmlCardinality::Plus => "+".to_string(),
-        UmlCardinality::Optional => "?".to_string(),
+        UmlCardinality::OneOne => " ".to_owned(),
+        UmlCardinality::Star => "*".to_owned(),
+        UmlCardinality::Plus => "+".to_owned(),
+        UmlCardinality::Optional => "?".to_owned(),
         UmlCardinality::Range(m, n) => format!("{m}-{n}"),
         UmlCardinality::Fixed(m) => format!("{{{m}}}"),
     }
@@ -408,7 +408,7 @@ mod tests {
             ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
             UmlCardinality::OneOne,
         ));
-        let (person_node, _found) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
+        let (person_node, _found) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_owned()));
         uml.add_component(person_node, UmlComponent::class(person)).unwrap();
         (uml, person_node)
     }
@@ -434,8 +434,8 @@ mod tests {
     #[test]
     fn to_diagram_builds_a_generalization_connector_for_extends() {
         let mut uml = Uml::new();
-        let (child, _) = uml.get_node_adding_label(&UmlLabel::Class(":Employee".to_string()));
-        let (parent, _) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
+        let (child, _) = uml.get_node_adding_label(&UmlLabel::Class(":Employee".to_owned()));
+        let (parent, _) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_owned()));
         uml.add_component(
             child,
             UmlComponent::class(super::super::UmlClass::new(Name::new(":Employee", None))),
@@ -472,9 +472,9 @@ mod tests {
     #[test]
     fn as_plantuml_neighs_scopes_to_the_target_and_its_links() {
         let mut uml = Uml::new();
-        let (person, _) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
-        let (company, _) = uml.get_node_adding_label(&UmlLabel::Class(":Company".to_string()));
-        let (unrelated, _) = uml.get_node_adding_label(&UmlLabel::Class(":Unrelated".to_string()));
+        let (person, _) = uml.get_node_adding_label(&UmlLabel::Class(":Person".to_owned()));
+        let (company, _) = uml.get_node_adding_label(&UmlLabel::Class(":Company".to_owned()));
+        let (unrelated, _) = uml.get_node_adding_label(&UmlLabel::Class(":Unrelated".to_owned()));
         uml.add_component(
             person,
             UmlComponent::class(super::super::UmlClass::new(Name::new(":Person", None))),

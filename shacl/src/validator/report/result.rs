@@ -42,37 +42,44 @@ impl ValidationResult {
             source: None,
             source_constraint: None,
             details: Vec::new(),
-            message: Default::default(),
+            message: MessageMap::default(),
         }
     }
 
+    #[must_use]
     pub fn with_path(mut self, path: Option<SHACLPath>) -> Self {
         self.path = path;
         self
     }
 
+    #[must_use]
     pub fn with_value(mut self, value: Option<Object>) -> Self {
         self.value = value;
         self
     }
+    #[must_use]
     pub fn with_source(mut self, source: Option<Object>) -> Self {
         self.source = source;
         self
     }
+    #[must_use]
     pub fn with_source_constraint(mut self, source_constraint: Option<Object>) -> Self {
         self.source_constraint = source_constraint;
         self
     }
+    #[must_use]
     pub fn with_details(mut self, details: Vec<ValidationResult>) -> Self {
         self.details = details;
         self
     }
 
     /// The same result without its nested `sh:detail` results, at any depth.
+    #[must_use]
     pub fn without_details(mut self) -> Self {
         self.details.clear();
         self
     }
+    #[must_use]
     pub fn with_message(mut self, message: MessageMap) -> Self {
         self.message = message;
         self
@@ -132,20 +139,20 @@ impl ValidationResult {
         let focus_node = store
             .object_for(validation_result, &ShaclVocab::sh_focus_node().into())?
             .ok_or(ValidationError::MissingRequiredField(
-                ShaclVocab::SH_FOCUS_NODE.to_string(),
+                ShaclVocab::SH_FOCUS_NODE.to_owned(),
             ))?;
 
         let severity = match store.object_for(validation_result, &ShaclVocab::sh_result_severity().into())? {
             Some(Object::Iri(severity)) => (&severity).into(),
             Some(other) => {
                 return Err(ValidationError::InvalidIriValue {
-                    field: ShaclVocab::SH_SEVERITY.to_string(),
+                    field: ShaclVocab::SH_SEVERITY.to_owned(),
                     value: other.to_string(),
                 });
             },
             None => {
                 return Err(ValidationError::MissingRequiredField(
-                    ShaclVocab::SH_SEVERITY.to_string(),
+                    ShaclVocab::SH_SEVERITY.to_owned(),
                 ));
             },
         };
@@ -153,7 +160,7 @@ impl ValidationResult {
         let constraint_component = store
             .object_for(validation_result, &ShaclVocab::sh_source_constraint_component().into())?
             .ok_or(ValidationError::MissingRequiredField(
-                ShaclVocab::SH_SOURCE_CONSTRAINT_COMPONENT.to_string(),
+                ShaclVocab::SH_SOURCE_CONSTRAINT_COMPONENT.to_owned(),
             ))?;
 
         // Process the optional fields
@@ -247,7 +254,7 @@ impl ValidationResult {
                 .add_triple(report_node.clone(), ShaclVocab::sh_detail(), detail_node.clone())
                 .map_err(error_mapper::<RDF>("Error adding detail to validation result"))?;
             let detail_subject = RDF::Subject::try_from(detail_node)
-                .map_err(|_| ValidationError::CastError("term".to_string(), "subject".to_string()))?;
+                .map_err(|_| ValidationError::CastError("term".to_owned(), "subject".to_owned()))?;
             detail.to_rdf(writer, detail_subject)?;
         }
 

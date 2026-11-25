@@ -24,6 +24,7 @@ impl OrderBy {
         }
     }
 
+    #[must_use]
     pub fn with_desc(mut self, desc: Option<bool>) -> Self {
         self.desc = desc;
         self
@@ -90,7 +91,7 @@ impl Display for OrderBy {
         let desc = if let Some(flag) = &self.desc {
             format!(" desc={flag}")
         } else {
-            "".to_string()
+            String::new()
         };
         write!(f, "OrderBy({} for {}{desc})", self.order_by(), self.nodes())
     }

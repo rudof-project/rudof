@@ -12,7 +12,7 @@ pub enum DdlDialectCli {
 }
 
 impl Display for DdlDialectCli {
-    fn fmt(&self, f: &mut Formatter) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let val = self.to_possible_value().expect("no skipped variants");
         write!(f, "{}", val.get_name())
     }

@@ -59,7 +59,7 @@ fn an_unknown_prefix_is_an_error() {
 
 #[test]
 fn a_prefixed_name_without_prefixes_is_an_error() {
-    assert!(ShExPathParser::parse("/*[predicate = :name]", None, None).is_err());
+    ShExPathParser::parse("/*[predicate = :name]", None, None).unwrap_err();
 }
 
 #[test]

@@ -37,7 +37,7 @@ pub trait PgDbOperations {
     /// Loads `data`, validates it against SHACL shapes (unless
     /// `skip_validation`), derives a property graph schema, and copies the
     /// data into the connected database.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn load_pg_db<W: io::Write>(
         &mut self,
         data: &[InputSpec],

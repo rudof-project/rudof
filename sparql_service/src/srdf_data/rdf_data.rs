@@ -19,7 +19,6 @@ use rudof_rdf::{
 };
 use serde::Serialize;
 use serde::ser::SerializeStruct;
-#[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
@@ -92,7 +91,7 @@ impl RdfData {
     #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
     pub fn with_rdf_data_config(mut self, rdf_data_config: &RdfDataConfig) -> Result<Self, RdfDataError> {
         let endpoints = rdf_data_config.endpoints();
-        for (name, endpoint_description) in endpoints.iter() {
+        for (name, endpoint_description) in endpoints {
             let sparql_endpoint =
                 OxigraphEndpoint::new(endpoint_description.query_url(), endpoint_description.prefixmap()).map_err(
                     |e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
@@ -199,8 +198,8 @@ impl RdfData {
     pub fn from_endpoint(name: &str, endpoint: OxigraphEndpoint) -> RdfData {
         RdfData {
             primary: RdfBackend::default(),
-            endpoints: HashMap::from([(name.to_string(), endpoint.clone())]),
-            use_endpoints: HashMap::from([(name.to_string(), endpoint)]),
+            endpoints: HashMap::from([(name.to_owned(), endpoint.clone())]),
+            use_endpoints: HashMap::from([(name.to_owned(), endpoint)]),
         }
     }
 
@@ -209,7 +208,7 @@ impl RdfData {
     #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
     pub fn add_endpoint(&mut self, name: &str, endpoint: OxigraphEndpoint) {
         self.endpoints
-            .entry(name.to_string())
+            .entry(name.to_owned())
             .and_modify(|e| *e = endpoint.clone())
             .or_insert(endpoint);
     }
@@ -226,7 +225,7 @@ impl RdfData {
 
     #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
     pub fn use_endpoint(&mut self, name: &str, endpoint: OxigraphEndpoint) {
-        self.use_endpoints.insert(name.to_string(), endpoint);
+        self.use_endpoints.insert(name.to_owned(), endpoint);
     }
 
     #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
@@ -248,13 +247,13 @@ impl RdfData {
 
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
         let str = match lit.clone().destruct() {
-            (value, None, None, None) => format!("\"{}\"", value),
+            (value, None, None, None) => format!("\"{value}\""),
             (value, Some(dt), None, None) => format!("\"{}\"^^{}", value, self.qualify_iri(&dt)),
-            (value, _, Some(lang), None) => format!("\"{}\"@{}", value, lang),
+            (value, _, Some(lang), None) => format!("\"{value}\"@{lang}"),
             (value, _, Some(lang), Some(direction)) => {
-                format!("\"{}\"@{}{}", value, lang, direction)
+                format!("\"{value}\"@{lang}{direction}")
             },
-            _ => panic!("Unexpected literal structure <{}>", lit),
+            _ => panic!("Unexpected literal structure <{lit}>"),
         };
         format!("{}", str.red())
     }
@@ -265,7 +264,7 @@ impl RdfData {
             error: format!("{e}"),
         })?;
         #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
-        for (name, e) in self.use_endpoints.iter() {
+        for (name, e) in &self.use_endpoints {
             writeln!(writer, "Endpoint {}: {}", name, e.iri())?
         }
         Ok(())
@@ -399,7 +398,7 @@ impl Rdf for RdfData {
             }
         }
         Err(prefixmap::error::PrefixMapError::PrefixNotFound {
-            prefix: prefix.to_string(),
+            prefix: prefix.to_owned(),
             prefixmap: Box::new(PrefixMap::new()),
         })
     }
@@ -435,7 +434,7 @@ impl QueryRDF for RdfData {
             .query_select(query_str)
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
         let primary_pm = <RdfBackend as Rdf>::prefixmap(&self.primary).unwrap_or_default();
-        let converted: Vec<QuerySolution<RdfData>> = primary_sols.iter().map(|s| s.convert(|t| t.clone())).collect();
+        let converted: Vec<QuerySolution<RdfData>> = primary_sols.iter().map(|s| s.convert(Clone::clone)).collect();
         sols.extend(converted, primary_pm);
 
         // Federated endpoints.
@@ -443,7 +442,7 @@ impl QueryRDF for RdfData {
         for (_, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;
             let new_sols_converted: Vec<QuerySolution<RdfData>> =
-                new_sols.iter().map(|s| s.convert(|t| t.clone())).collect();
+                new_sols.iter().map(|s| s.convert(Clone::clone)).collect();
             sols.extend(new_sols_converted, endpoint.prefixmap().clone());
         }
         Ok(sols)
@@ -481,7 +480,7 @@ impl NeighsRDF for RdfData {
         triples.extend(
             self.use_endpoints
                 .values()
-                .flat_map(|e| NeighsRDF::triples(e).map(|i| i.collect::<Vec<_>>()).unwrap_or_default()),
+                .flat_map(|e| NeighsRDF::triples(e).map_or_default(Iterator::collect::<Vec<_>>)),
         );
         let iter: Box<dyn Iterator<Item = OxTriple> + '_> = Box::new(triples.into_iter());
         Ok(iter)
@@ -511,11 +510,7 @@ impl NeighsRDF for RdfData {
         Ok(triples.into_iter())
     }
 
-    fn prefetch_outgoing_arcs(
-        &self,
-        subjects: &[Self::Subject],
-        preds: &[Self::IRI],
-    ) -> std::result::Result<(), Self::Err> {
+    fn prefetch_outgoing_arcs(&self, subjects: &[Self::Subject], preds: &[Self::IRI]) -> Result<(), Self::Err> {
         self.primary
             .prefetch_outgoing_arcs(subjects, preds)
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
@@ -530,15 +525,15 @@ impl NeighsRDF for RdfData {
         &self,
         subject: &Self::Subject,
         preds: &[Self::IRI],
-    ) -> std::result::Result<
+    ) -> Result<
         (
-            std::collections::HashMap<Self::IRI, std::collections::HashSet<Self::Term>>,
+            HashMap<Self::IRI, std::collections::HashSet<Self::Term>>,
             Vec<Self::IRI>,
         ),
         Self::Err,
     > {
         if preds.is_empty() {
-            return Ok((std::collections::HashMap::new(), Vec::new()));
+            return Ok((HashMap::new(), Vec::new()));
         }
         // Primary backend (in-memory or endpoint-backed): uses its own FILTER query when available
         #[cfg_attr(all(target_family = "wasm", not(feature = "jspi")), allow(unused_mut))]
@@ -624,11 +619,11 @@ impl BuildRDF for RdfData {
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })
     }
 
-    fn serialize<W: std::io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err> {
+    fn serialize<W: io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err> {
         self.serialize_with_blank_node_mode(format, BlankNodeMode::default(), writer)
     }
 
-    fn serialize_with_blank_node_mode<W: std::io::Write>(
+    fn serialize_with_blank_node_mode<W: io::Write>(
         &self,
         format: &RDFFormat,
         mode: BlankNodeMode,
@@ -690,7 +685,7 @@ mod tests {
 
         let description = EndpointDescription::new_unchecked("local", "http://localhost:7878/query")
             .with_update_query(Some(iri!("http://localhost:7878/update")));
-        let config = RdfDataConfig::new().with_endpoints(HashMap::from([("local".to_string(), description)]));
+        let config = RdfDataConfig::new().with_endpoints(HashMap::from([("local".to_owned(), description)]));
 
         let rdf_data = RdfData::new().with_rdf_data_config(&config).unwrap();
 

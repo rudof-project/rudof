@@ -46,7 +46,7 @@ where
     R: Ref,
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
-    T: std::hash::Hash + Eq + Clone,
+    T: Hash + Eq + Clone,
 {
     ClassPartitionIterator::new(neighs, exprs)
 }
@@ -64,7 +64,7 @@ where
     R: Ref,
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
-    T: std::hash::Hash + Eq + Clone,
+    T: Hash + Eq + Clone,
 {
     buckets: Vec<(&'a T, &'a Vec<RbeTable<K, V, R, Ctx, P>>)>,
     classes: Vec<Class<K, V, Ctx>>,
@@ -85,7 +85,7 @@ where
     R: Ref,
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
-    T: std::hash::Hash + Eq + Clone,
+    T: Hash + Eq + Clone,
 {
     fn new(neighs: &'a [(K, V, Ctx)], exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx, P>>>) -> Self {
         let buckets: Vec<(&T, &Vec<RbeTable<K, V, R, Ctx, P>>)> = exprs.iter().collect();
@@ -94,7 +94,7 @@ where
         // when some of its expressions mention the value's key.
         let bucket_keys: Vec<Vec<&K>> = buckets
             .iter()
-            .map(|(_, rbes)| rbes.iter().flat_map(|rbe| rbe.keys()).collect())
+            .map(|(_, rbes)| rbes.iter().flat_map(RbeTable::keys).collect())
             .collect();
 
         let mut class_map: HashMap<Vec<usize>, Vec<(K, V, Ctx)>> = HashMap::new();
@@ -162,7 +162,7 @@ where
     fn feasible_now(&self) -> bool {
         for (b, (_, rbes)) in self.buckets.iter().enumerate() {
             let pool = self.bucket_pool(b);
-            for rbe in rbes.iter() {
+            for rbe in *rbes {
                 if !rbe.feasible_neighs(&pool) {
                     return false;
                 }
@@ -175,7 +175,7 @@ where
     fn first_composition(&mut self, lvl: usize) {
         let size = self.classes[lvl].values.len();
         let e = self.classes[lvl].eligible.len();
-        let mut c = vec![0usize; e];
+        let mut c = vec![0_usize; e];
         c[0] = size;
         self.counts[lvl] = Some(c);
     }
@@ -190,7 +190,7 @@ where
             if c[i] > 0 {
                 let right_sum: usize = c[i + 1..].iter().sum();
                 c[i] -= 1;
-                for x in c[i + 1..].iter_mut() {
+                for x in &mut c[i + 1..] {
                     *x = 0;
                 }
                 c[i + 1] = right_sum + 1;
@@ -252,7 +252,7 @@ where
     R: Ref,
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
-    T: std::hash::Hash + Eq + Clone,
+    T: Hash + Eq + Clone,
 {
     type Item = Partitions<T, K, V, R, Ctx, P>;
 
@@ -351,10 +351,10 @@ mod tests {
             write!(f, "{}", self.0)
         }
     }
-    impl rbe::Key for C {}
-    impl rbe::Value for C {}
-    impl rbe::Ref for C {}
-    impl rbe::Context for C {}
+    impl Key for C {}
+    impl Value for C {}
+    impl Ref for C {}
+    impl Context for C {}
 
     /// Test-only `MatchKind` payload: accepts any value or only a given character.
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

@@ -108,13 +108,13 @@ impl NodeSelector {
                 let nodes = resolve_query(rdf, &query)?;
                 Ok(nodes)
             },
-            _ => todo!(),
+            NodeSelector::Generic { .. } => todo!(),
         }
     }
 
     pub fn sparql(query: &str) -> NodeSelector {
         NodeSelector::Sparql {
-            query: query.to_string(),
+            query: query.to_owned(),
         }
     }
 }
@@ -143,12 +143,16 @@ fn mk_vble(p: &Pattern, prefixmap: &PrefixMap) -> Result<String, PrefixMapError>
             },
             ObjectValue::Literal(sliteral) => Ok(sliteral.to_string()),
         },
-        Pattern::Wildcard => Ok("?any".to_string()),
-        Pattern::Focus => Ok("?focus".to_string()),
+        Pattern::Wildcard => Ok("?any".to_owned()),
+        Pattern::Focus => Ok("?focus".to_owned()),
     }
 }
 
 #[derive(Debug, Error)]
+#[expect(
+    clippy::empty_enums,
+    reason = "no selector can fail yet; the type keeps the API stable for when one can"
+)]
 pub enum NodeSelectorError {}
 
 impl NodeSelect for NodeSelector {
@@ -174,7 +178,7 @@ impl NodeSelect for NodeSelector {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 trait NodeSelect {
     fn select<S>(&self, rdf: S) -> Result<Vec<S::Term>, NodeSelectorError>
     where
@@ -190,7 +194,7 @@ where
     let query_solutions = rdf
         .query_select(query)
         .map_err(|e| ShapemapError::NodeSelectorQueryError {
-            query: query.to_string(),
+            query: query.to_owned(),
             error: e.to_string(),
         })?;
     // trace!("SPARQL NodeSelector query solutions: {}", query_solutions.count());
@@ -220,8 +224,7 @@ impl Display for NodeSelector {
             NodeSelector::TriplePattern { subject, path, object } => {
                 write!(
                     f,
-                    "TriplePattern {{ subject: {}, path: {}, object: {} }}",
-                    subject, path, object
+                    "TriplePattern {{ subject: {subject}, path: {path}, object: {object} }}"
                 )?;
                 Ok(())
             },
@@ -229,7 +232,7 @@ impl Display for NodeSelector {
                 write!(f, "SPARQL \"\"\"{query}\"\"\"")?;
                 Ok(())
             },
-            NodeSelector::Generic { iri: _, param: _ } => todo!(),
+            NodeSelector::Generic { .. } => todo!(),
         }
     }
 }

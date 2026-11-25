@@ -14,7 +14,7 @@ use serde::{
     de::{self, MapAccess, Visitor},
 };
 use std::fmt::{self, Display};
-use std::{result, str::FromStr};
+use std::str::FromStr;
 
 use crate::Node;
 use crate::ast::{
@@ -129,7 +129,7 @@ impl FromStr for ObjectValue {
 }
 
 impl Serialize for ObjectValue {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -251,7 +251,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                 impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                         formatter.write_str("`value` for object value")
                     }
 
@@ -278,7 +278,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
         impl<'de> Visitor<'de> for ObjectValueVisitor {
             type Value = ObjectValue;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("object value")
             }
 

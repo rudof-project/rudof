@@ -67,7 +67,7 @@ async fn shacl_property_without_min_count_is_optional() -> Result<()> {
     let schema = write(
         &dir,
         "optional.ttl",
-        r#"
+        "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -76,7 +76,7 @@ async fn shacl_property_without_min_count_is_optional() -> Result<()> {
 :Widget a sh:NodeShape ;
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:optionalNote ; sh:datatype xsd:string ; sh:maxCount 1 ] .
-"#,
+",
     );
 
     let content = generate(&schema, dir.path().join("out.ttl"), CardinalityStrategy::Minimum).await?;
@@ -96,7 +96,7 @@ async fn shacl_property_with_min_count_is_always_emitted() -> Result<()> {
     let schema = write(
         &dir,
         "required.ttl",
-        r#"
+        "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -105,7 +105,7 @@ async fn shacl_property_with_min_count_is_always_emitted() -> Result<()> {
 :Widget a sh:NodeShape ;
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:requiredNote ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
-"#,
+",
     );
 
     let content = generate(&schema, dir.path().join("out.ttl"), CardinalityStrategy::Minimum).await?;
@@ -128,7 +128,7 @@ async fn shex_property_without_cardinality_is_exactly_one() -> Result<()> {
     let schema = write(
         &dir,
         "default.shex",
-        r#"
+        "
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX ex:  <http://example.org/>
@@ -138,7 +138,7 @@ PREFIX :    <http://weso.es/shapes/>
    rdf:type  [ex:Widget]  ;
    ex:label  xsd:string
 }
-"#,
+",
     );
 
     // Checked under the maximum strategy, which is where an upper bound that
@@ -162,7 +162,7 @@ async fn maximum_strategy_respects_max_count() -> Result<()> {
     let schema = write(
         &dir,
         "bounded.ttl",
-        r#"
+        "
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -171,7 +171,7 @@ async fn maximum_strategy_respects_max_count() -> Result<()> {
 :Widget a sh:NodeShape ;
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:tag ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 3 ] .
-"#,
+",
     );
 
     let content = generate(&schema, dir.path().join("out.ttl"), CardinalityStrategy::Maximum).await?;
@@ -194,7 +194,7 @@ async fn the_unbounded_cap_is_configurable() -> Result<()> {
     let schema = write(
         &dir,
         "unbounded.shex",
-        r#"
+        "
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX ex:  <http://example.org/>
@@ -204,7 +204,7 @@ PREFIX :    <http://weso.es/shapes/>
    rdf:type  [ex:Widget]  ;
    ex:tag    xsd:string  *
 }
-"#,
+",
     );
 
     let run = async |cap: usize, name: &str| -> Result<Vec<usize>> {

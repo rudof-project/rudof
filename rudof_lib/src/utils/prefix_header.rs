@@ -1,6 +1,7 @@
 use crate::Rudof;
 use regex::Regex;
 use std::collections::HashSet;
+use std::fmt::Write as _;
 use std::sync::LazyLock;
 
 /// Which directive syntax to emit a default prefix declaration in.
@@ -45,8 +46,8 @@ pub(crate) fn default_prefix_header(rudof: &Rudof, source: &str, directive: Pref
             continue;
         }
         match directive {
-            PrefixDirective::Turtle => header.push_str(&format!("@prefix {alias}: <{iri}> .\n")),
-            PrefixDirective::Sparql => header.push_str(&format!("PREFIX {alias}: <{iri}>\n")),
+            PrefixDirective::Turtle => writeln!(header, "@prefix {alias}: <{iri}> .").unwrap(),
+            PrefixDirective::Sparql => writeln!(header, "PREFIX {alias}: <{iri}>").unwrap(),
         }
     }
     header
