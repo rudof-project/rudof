@@ -12,10 +12,11 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 ## [Unreleased]
 ### Changed
 - All crates: the root `Cargo.toml` declares the version of each dependency, and the member crates use `workspace = true` ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- All crates: the dependencies are updated to their latest versions, for example `rand` 0.10, `reqwest` 0.13, `minijinja` 3, `lbug` 0.23, `axum-server` 0.9, `zip` 9, `pyo3` 0.30 and `toml` 1 ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- All crates: the dependencies are updated to their latest versions, for example `rand` 0.10, `reqwest` 0.13, `minijinja` 3, `axum-server` 0.9, `zip` 9, `pyo3` 0.30 and `toml` 1 ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `rudof_lib`: `lbug` is pinned to exactly 0.20.4, because 0.21 and later link `-latomic`, which the manylinux wheel builds do not have, and 0.23.0 does not compile with MSVC ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- CI: new jobs build `rudof` with `lbug` on Windows (MSVC) and in the manylinux_2_34 container, so a pull request shows `lbug` build and link errors ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - `rudof_lib`: the workspace entry turns off the default features; the native crates use `default-features = true` and the wasm bindings do not ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - `rudof_generate`: with `rand` 0.10, the same seed gives different values; the golden snapshots are updated ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- `rudof_lib`: a Cypher query returns an error if `lbug` cannot convert a value of a row ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - `rudof_iri`, `rudof_rdf`: on wasm, they turn on the browser backend of `getrandom` 0.3, which `oxrdf` 0.3.5 uses through `rand` 0.9 ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - `bench-shex`, `bench-issue730`: the benchmarks use the workspace `zip` 9 with their own list of codecs ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - README: new badges for npm and Docker, and links for the planned features ([#975](https://github.com/rudof-project/rudof/issues/975)).

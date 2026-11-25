@@ -88,15 +88,7 @@ pub(crate) fn run_cypher_query(conn_info: &PgDbConnection, cypher: &str) -> Resu
     let compiling_time_ms = result.get_compiling_time();
     let execution_time_ms = result.get_execution_time();
 
-    // lbug reports values it cannot convert to Rust as an error for their row.
-    let rows = result
-        .map(|row| {
-            row.map(|values| values.into_iter().map(value_to_json).collect())
-                .map_err(|error| PgDbError::FailedCypherQuery {
-                    error: error.to_string(),
-                })
-        })
-        .collect::<std::result::Result<_, _>>()?;
+    let rows = result.map(|row| row.into_iter().map(value_to_json).collect()).collect();
 
     Ok(CypherQueryResult {
         columns,

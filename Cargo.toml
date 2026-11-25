@@ -289,7 +289,9 @@ indexmap = { version = "2.14.2", features = ["serde"] }
 indoc = "2.0.8"
 is_ci = "1.2.0"
 itertools = "0.15.0"
-lbug = "0.23.0"
+# Not 0.21 or later: they link -latomic, which the manylinux wheel builds do
+# not have, and 0.23.0 does not compile with MSVC (`max` macro of windows.h).
+lbug = "=0.20.4"
 josekit = "0.10.4"
 lazy-regex = "3.6.2"
 libtest-mimic = "0.8.2"

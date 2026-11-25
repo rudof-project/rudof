@@ -50,6 +50,69 @@ jobs:
       - name: Run cargo check on rudof_lib with oxigraph's HTTP client
         run: cargo check -p rudof_lib --all-targets --features http-client
 
+  # lbug (LadybugDB, the `pg-db` feature of rudof_lib) is a C++ library whose
+  # build and link needs change between its releases. The jobs below build and
+  # link `rudof` on the platforms where it broke before (MSVC and the manylinux
+  # container of the Python wheels), so that a change is seen in the pull
+  # request and not at release time. `cargo check` is not enough: it does not
+  # link, and errors such as a missing `-latomic` only show at link time.
+  pg-db-windows:
+    name: Build with lbug (Windows MSVC)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v5
+      # Same as the windows job of artifacts.yml: lbug links `ssl.lib` and
+      # `crypto.lib`, but the pre-installed OpenSSL names them `libssl.lib` and
+      # `libcrypto.lib`.
+      - name: Install OpenSSL
+        run: |
+          $opensslLibDir = "C:\Program Files\OpenSSL\lib"
+          $shimDir = "$env:RUNNER_TEMP\openssl-lib-shim"
+          New-Item -ItemType Directory -Force -Path $shimDir | Out-Null
+          foreach ($name in "ssl", "crypto") {
+              $match = Get-ChildItem $opensslLibDir -Recurse -Filter "*$name.lib" | Select-Object -First 1
+              if (-not $match) { throw "No $name.lib (or lib$name.lib) found under $opensslLibDir" }
+              Copy-Item $match.FullName "$shimDir\$name.lib" -Force
+          }
+          echo "LIB=$shimDir;$env:LIB" >> $env:GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV
+          echo "OPENSSL_DIR=C:/Program Files/OpenSSL/" >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Remove the MSYS2 libraries and utilities
+        run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
+      - name: Build rudof with lbug
+        run: cargo build -p rudof_cli
+
+  pg-db-manylinux:
+    name: Build with lbug (manylinux_2_34)
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_34_x86_64
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v5
+      # Same packages and compiler as the before-script-linux of python.yml.
+      # The build runs in this step because `gcc-toolset-13/enable` only
+      # changes the environment of this shell.
+      - name: Build rudof with lbug
+        shell: bash
+        run: |
+          set -euxo pipefail
+          yum install -y perl-core openssl openssl-devel pkgconfig libatomic
+          if yum install -y gcc-toolset-13 2>/dev/null; then
+              set +u
+              source /opt/rh/gcc-toolset-13/enable
+              set -u
+              export CC=gcc
+              export CXX=g++
+          fi
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          source "$HOME/.cargo/env"
+          cargo build -p rudof_cli
+
   check-wasm:
     name: Check wasm
     runs-on: ubuntu-latest
