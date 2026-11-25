@@ -86,9 +86,12 @@ tokio = { workspace = true, features = ["full"] }
 proptest.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-getrandom = { workspace = true, features = ["wasm_js"] }
+# Turn on the browser backends of getrandom 0.4 (rand 0.10) and 0.3 (rand 0.9
+# through oxrdf/oxigraph).
+getrandom.workspace = true
+getrandom03.workspace = true
 # `js` takes the current time (e.g. for SPARQL's NOW()) and randomness from
 # JavaScript: `std::time` panics on `wasm32-unknown-unknown`.
 oxigraph = { workspace = true, optional = true, features = ["js"] }
-js-sys = { version = "0.3.105", optional = true }
-wasm-bindgen = { version = "0.2.128", optional = true }
+js-sys = { workspace = true, optional = true }
+wasm-bindgen = { workspace = true, optional = true }

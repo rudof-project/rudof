@@ -11,7 +11,38 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 
 ## [Unreleased]
 ### Changed
-- `shape_path`, `shex_ast`, `shex_validation`, `rudof_lib`: ShExPath moved from `shex_ast` to the new `shape_path` crate, with no change in behaviour ([#969](https://github.com/rudof-project/rudof/issues/969)). `shape_path` does not depend on `shex_ast`, and `shex_ast::shexpath` re-exports it, so `shex_ast::shexpath::*` keeps working. `ShExJDocument::new(&Schema)` is now `shex_ast::shexpath::shexj_document(&Schema)`, and `ShExJDocument::from_value` makes a document from any ShExJ value.
+- All crates: the root `Cargo.toml` declares the version of each dependency, and the member crates use `workspace = true` ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- All crates: the dependencies are updated to their latest versions, for example `rand` 0.10, `reqwest` 0.13, `minijinja` 3, `lbug` 0.23, `axum-server` 0.9, `zip` 9, `pyo3` 0.30 and `toml` 1 ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `rudof_lib`: the workspace entry turns off the default features; the native crates use `default-features = true` and the wasm bindings do not ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `rudof_generate`: with `rand` 0.10, the same seed gives different values; the golden snapshots are updated ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `rudof_lib`: a Cypher query returns an error if `lbug` cannot convert a value of a row ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `rudof_iri`, `rudof_rdf`: on wasm, they turn on the browser backend of `getrandom` 0.3, which `oxrdf` 0.3.5 uses through `rand` 0.9 ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `bench-shex`, `bench-issue730`: the benchmarks use the workspace `zip` 9 with their own list of codecs ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- README: new badges for npm and Docker, and links for the planned features ([#975](https://github.com/rudof-project/rudof/issues/975)).
+
+### Removed
+- `shapemap_oxgraph`: an old crate that was not in the workspace ([#975](https://github.com/rudof-project/rudof/issues/975)).
+
+## 0.3.42
+### Fixed
+- `rudof_rdf`: `is_isomorphic` gave random results for RDF 1.2 graphs with blank nodes only in triple terms; it now uses the `is_subgraph` search when the canonical forms are different.
+- `shacl`: `cargo publish` does not need `shacl_testsuite` on crates.io, because the dev-dependency has only a path.
+
+### Changed
+- CI: the GitHub Pages workflow uses `configure-pages` v6, `upload-pages-artifact` v5 and `deploy-pages` v5, because the deploy job did not find the artifact.
+
+## 0.3.41
+### Added
+- `shacl`, `rudof_lib`, `rudof_cli`: SHACL validation writes the valid subgraph and the invalid subgraph with `--valid` and `--invalid`, as ShEx validation does (native engine only) ([#972](https://github.com/rudof-project/rudof/issues/972)).
+- `rudof_wasm`: `validateShex` and `validateShacl` take a `subgraphs` argument, and the report then has `validTriples`, `invalidTriples`, `validSubgraph` and `invalidSubgraph` ([#972](https://github.com/rudof-project/rudof/issues/972)).
+- `pyrudof`: `validate_shex` and `validate_shacl` take `subgraphs=True`, and the report then has `valid_triples`, `invalid_triples`, `serialize_valid_triples()` and `serialize_invalid_triples()` ([#972](https://github.com/rudof-project/rudof/issues/972)).
+
+### Fixed
+- `pyrudof`: the docstrings of the subgraph properties do not stop the Sphinx docs build.
+
+### Changed
+- `shape_path`, `shex_ast`, `shex_validation`, `rudof_lib`: ShExPath moves from `shex_ast` to the new `shape_path` crate, and `shex_ast::shexpath` re-exports it ([#969](https://github.com/rudof-project/rudof/issues/969)).
+- `shex_ast`: `ShExJDocument::new(&Schema)` is now `shex_ast::shexpath::shexj_document(&Schema)`, and `ShExJDocument::from_value` makes a document from any ShExJ value ([#969](https://github.com/rudof-project/rudof/issues/969)).
 
 ## 0.3.40
 ### Added

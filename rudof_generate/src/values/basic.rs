@@ -1,7 +1,7 @@
 use crate::Result;
 use crate::values::{FieldGenerator, GenerationContext};
-use rand::Rng;
-use rand::seq::SliceRandom;
+use rand::seq::IndexedRandom;
+use rand::{Rng, RngExt};
 
 // XSD datatypes constants
 pub const XSD_STRING: &str = "http://www.w3.org/2001/XMLSchema#string";
@@ -56,7 +56,7 @@ impl FieldGenerator for IntegerGenerator {
 
         let max = context.parameters.get("max").and_then(|v| v.as_i64()).unwrap_or(10000) as i32;
 
-        let value = rng.gen_range(min..=max);
+        let value = rng.random_range(min..=max);
         Ok(value.to_string())
     }
 
@@ -86,7 +86,7 @@ impl FieldGenerator for DecimalGenerator {
             .and_then(|v| v.as_u64())
             .unwrap_or(2) as usize;
 
-        let value = rng.gen_range(min..=max);
+        let value = rng.random_range(min..=max);
         Ok(format!("{value:.precision$}"))
     }
 
@@ -112,7 +112,7 @@ impl FieldGenerator for BooleanGenerator {
             .and_then(|v| v.as_f64())
             .unwrap_or(0.5);
 
-        let value = rng.gen_bool(true_probability);
+        let value = rng.random_bool(true_probability);
         Ok(value.to_string())
     }
 
@@ -144,9 +144,9 @@ impl FieldGenerator for DateGenerator {
             .and_then(|v| v.as_u64())
             .unwrap_or(2024) as i32;
 
-        let year = rng.gen_range(start_year..=end_year);
-        let month = rng.gen_range(1..=12);
-        let day = rng.gen_range(1..=28); // Simplified to avoid month-specific validation
+        let year = rng.random_range(start_year..=end_year);
+        let month = rng.random_range(1..=12);
+        let day = rng.random_range(1..=28); // Simplified to avoid month-specific validation
 
         Ok(format!("{year:04}-{month:02}-{day:02}"))
     }
@@ -179,12 +179,12 @@ impl FieldGenerator for DateTimeGenerator {
             .and_then(|v| v.as_u64())
             .unwrap_or(2024) as i32;
 
-        let year = rng.gen_range(start_year..=end_year);
-        let month = rng.gen_range(1..=12);
-        let day = rng.gen_range(1..=28); // Simplified to avoid month-specific validation
-        let hour = rng.gen_range(0..=23);
-        let minute = rng.gen_range(0..=59);
-        let second = rng.gen_range(0..=59);
+        let year = rng.random_range(start_year..=end_year);
+        let month = rng.random_range(1..=12);
+        let day = rng.random_range(1..=28); // Simplified to avoid month-specific validation
+        let hour = rng.random_range(0..=23);
+        let minute = rng.random_range(0..=59);
+        let second = rng.random_range(0..=59);
 
         Ok(format!(
             "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}Z"
@@ -218,7 +218,7 @@ impl FieldGenerator for UriGenerator {
 
         let domain = domains.choose(&mut rng).unwrap();
         let path = paths.choose(&mut rng).unwrap();
-        let id = rng.gen_range(1..10000);
+        let id = rng.random_range(1..10000);
 
         Ok(format!("http://{domain}/{path}/{id}"))
     }
@@ -376,9 +376,9 @@ fn generate_email(rng: &mut impl Rng) -> String {
 
     let prefix = prefixes.choose(rng).unwrap();
     let domain = domains.choose(rng).unwrap();
-    let number = rng.gen_range(1..1000);
+    let number = rng.random_range(1..1000);
 
-    if rng.gen_bool(0.3) {
+    if rng.random_bool(0.3) {
         format!("{prefix}{number}@{domain}")
     } else {
         format!("{prefix}@{domain}")
@@ -388,7 +388,7 @@ fn generate_email(rng: &mut impl Rng) -> String {
 fn generate_generic_string(rng: &mut impl Rng, _locale: &str) -> String {
     let words = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta"];
     let word = words.choose(rng).unwrap();
-    let number = rng.gen_range(1..1000);
+    let number = rng.random_range(1..1000);
 
     format!("{word}{number:03}")
 }
@@ -415,17 +415,17 @@ impl FieldGenerator for OtherXsdGenerator {
         let mut rng = context.rng();
         let local = context.datatype.strip_prefix(XSD).unwrap_or(&context.datatype);
         Ok(match local {
-            "duration" => format!("P{}DT{}H", rng.gen_range(0..365), rng.gen_range(0..24)),
-            "hexBinary" => format!("{:08X}", rng.r#gen::<u32>()),
-            "nonNegativeInteger" => rng.gen_range(0..10_000).to_string(),
-            "positiveInteger" => rng.gen_range(1..10_000).to_string(),
-            "gYear" => rng.gen_range(1950..2030).to_string(),
-            "double" | "float" => format!("{:.2}", rng.gen_range(0.0..1000.0)),
+            "duration" => format!("P{}DT{}H", rng.random_range(0..365), rng.random_range(0..24)),
+            "hexBinary" => format!("{:08X}", rng.random::<u32>()),
+            "nonNegativeInteger" => rng.random_range(0..10_000).to_string(),
+            "positiveInteger" => rng.random_range(1..10_000).to_string(),
+            "gYear" => rng.random_range(1950..2030).to_string(),
+            "double" | "float" => format!("{:.2}", rng.random_range(0.0..1000.0)),
             "time" => format!(
                 "{:02}:{:02}:{:02}",
-                rng.gen_range(0..24),
-                rng.gen_range(0..60),
-                rng.gen_range(0..60)
+                rng.random_range(0..24),
+                rng.random_range(0..60),
+                rng.random_range(0..60)
             ),
             _ => "AAAA".to_string(), // base64Binary
         })

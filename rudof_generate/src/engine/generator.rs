@@ -258,7 +258,7 @@ impl ParallelGenerator {
                 index.hash(&mut hasher);
                 StdRng::seed_from_u64(hasher.finish())
             },
-            None => StdRng::from_entropy(),
+            None => rand::make_rng(),
         }
     }
 
@@ -376,10 +376,10 @@ impl ParallelGenerator {
         // 0. Calculate effective probability with variance for THIS instance
         let mut variance_multiplier = 1.0;
         if config.property_count_variance > 0.0 {
-            use rand::Rng;
+            use rand::RngExt;
             let mut rng = self.derive_rng("variance", shape_id, entity_index);
             // random range [-variance, +variance]
-            let variance_factor = rng.gen_range(-config.property_count_variance..=config.property_count_variance);
+            let variance_factor = rng.random_range(-config.property_count_variance..=config.property_count_variance);
             variance_multiplier = 1.0 + variance_factor;
         }
 
@@ -422,10 +422,10 @@ impl ParallelGenerator {
             PropertySelectionStrategy::All | PropertySelectionStrategy::Weighted => {
                 // Weighted is treated as All for now (future work)
                 // Independent probability check for each candidate using effective_probability
-                use rand::Rng;
+                use rand::RngExt;
                 let mut rng = self.derive_rng("fill", shape_id, entity_index);
                 for prop in candidates {
-                    let roll: f64 = rng.r#gen();
+                    let roll: f64 = rng.random();
                     // A [[property]] rule overrides the shape/global fill for this property.
                     let fill = config
                         .property_rule(shape_id, &prop.property_iri)
@@ -622,12 +622,12 @@ impl ParallelGenerator {
             CardinalityStrategy::Minimum => min_card,
             CardinalityStrategy::Maximum => max_card,
             CardinalityStrategy::Random => {
-                use rand::Rng;
+                use rand::RngExt;
                 let mut rng = self.derive_rng("value_count", property_iri, entity_index);
                 if min_card == max_card {
                     min_card
                 } else {
-                    rng.gen_range(min_card..=max_card)
+                    rng.random_range(min_card..=max_card)
                 }
             },
             CardinalityStrategy::Balanced => {
@@ -709,8 +709,8 @@ impl ParallelGenerator {
                 continue;
             }
             if optional && fill < 1.0 {
-                use rand::Rng;
-                let roll: f64 = self.derive_rng("reference_fill", &salt, idx).r#gen();
+                use rand::RngExt;
+                let roll: f64 = self.derive_rng("reference_fill", &salt, idx).random();
                 if fill <= 0.0 || roll > fill {
                     continue;
                 }
@@ -775,12 +775,12 @@ impl ParallelGenerator {
             CardinalityStrategy::Minimum => min_card,
             CardinalityStrategy::Maximum => max_card,
             CardinalityStrategy::Random => {
-                use rand::Rng;
+                use rand::RngExt;
                 let mut rng = self.derive_rng("relationship_count", property_iri, entity_index);
                 if min_card == max_card {
                     min_card
                 } else {
-                    rng.gen_range(min_card..=max_card)
+                    rng.random_range(min_card..=max_card)
                 }
             },
             CardinalityStrategy::Balanced => {

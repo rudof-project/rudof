@@ -37,7 +37,7 @@ clientele.workspace = true
 tracing-test.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-rustemo-compiler = "0.9.1"
+rustemo-compiler.workspace = true
 
 [build-dependencies]
-rustemo-compiler = "0.9.1"
+rustemo-compiler.workspace = true

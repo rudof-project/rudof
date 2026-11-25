@@ -69,7 +69,7 @@ impl GenerationContext {
                 self.datatype.hash(&mut hasher);
                 rand::rngs::StdRng::seed_from_u64(hasher.finish())
             },
-            None => rand::rngs::StdRng::from_entropy(),
+            None => rand::make_rng(),
         }
     }
 

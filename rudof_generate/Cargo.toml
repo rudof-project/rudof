@@ -41,8 +41,8 @@ tokio = { workspace = true, features = ["full"] }
 tracing-subscriber.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-# getrandom02 = { package = "getrandom", version = "0.2", features = ["js"] }
-getrandom = { workspace = true, features = [ "js" ] }
+# rand draws entropy through getrandom, which needs its `wasm_js` backend in browsers.
+getrandom.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 regex.workspace = true

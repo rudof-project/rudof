@@ -26,4 +26,7 @@ reqwest = { workspace = true, features = ["blocking"] }
 reqwest.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-getrandom = { workspace = true, features = ["wasm_js"] }
+# Turn on the browser backends of getrandom 0.4 (rand 0.10) and 0.3 (rand 0.9
+# through oxrdf/oxigraph).
+getrandom.workspace = true
+getrandom03.workspace = true

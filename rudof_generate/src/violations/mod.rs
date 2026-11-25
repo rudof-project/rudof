@@ -14,7 +14,7 @@ use crate::ir::{UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstr
 use crate::{DataGeneratorError, Result};
 use oxrdf::{Literal, NamedNode, NamedOrBlankNode, Term, Triple};
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 use serde::Serialize;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -78,7 +78,7 @@ pub fn inject(
             continue;
         };
         let mut rng = rng_for(seed, node);
-        if config.rate <= 0.0 || rng.r#gen::<f64>() >= config.rate {
+        if config.rate <= 0.0 || rng.random::<f64>() >= config.rate {
             continue;
         }
         // Rotate the operator list so a run exercises all of them.
@@ -524,7 +524,7 @@ fn apply(
         shape.properties.iter().filter(|p| p.property_iri != RDF_TYPE).collect();
     props.sort_by(|a, b| a.property_iri.cmp(&b.property_iri));
     if !props.is_empty() {
-        let start = rng.gen_range(0..props.len());
+        let start = rng.random_range(0..props.len());
         props.rotate_left(start);
     }
     for prop in props {

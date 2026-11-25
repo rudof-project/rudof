@@ -60,7 +60,9 @@ pub async fn run_mcp_http(config: &McpConfig) -> Result<()> {
 
     let listener = std::net::TcpListener::bind(socket_addr)
         .with_context(|| format!("failed to bind the MCP HTTP server to {socket_addr}"))?;
-    let server = axum_server::Server::from_tcp(listener).serve(router.into_make_service());
+    let server = axum_server::from_tcp(listener)
+        .with_context(|| format!("failed to use the listener bound to {socket_addr}"))?
+        .serve(router.into_make_service());
 
     tracing::info!(
         "MCP HTTP server listening on {}",

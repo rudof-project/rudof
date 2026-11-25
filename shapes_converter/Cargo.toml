@@ -10,13 +10,13 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-chrono = "0.4.42"
+chrono.workspace = true
 dctap.workspace = true
 either.workspace = true
 rudof_config.workspace = true
 rudof_iri.workspace = true
 mie.workspace = true
-minijinja = { version = "2.24", features = ["loader"] }
+minijinja = { workspace = true, features = ["serde"] }
 prefixmap.workspace = true
 rdf_config.workspace = true
 rudof_viz.workspace = true
