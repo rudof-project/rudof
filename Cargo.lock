@@ -4348,7 +4348,7 @@ dependencies = [
  "chrono",
  "clap",
  "futures",
- "getrandom 0.2.17",
+ "getrandom 0.4.3",
  "oxrdf",
  "oxttl",
  "pgschema",

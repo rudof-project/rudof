@@ -2,11 +2,12 @@
 
 [![Latest Version](https://img.shields.io/crates/v/rudof-cli.svg)](https://crates.io/crates/rudof-cli)
 [![PyPI](https://img.shields.io/pypi/v/pyrudof)](https://pypi.org/project/pyrudof/)
-[![rudof](https://github.com/rudof-project/rudof/actions/workflows/ci.yml/badge.svg)](https://github.com/rudof-project/rudof/actions/workflows/ci.yml)
+![npm](https://img.shields.io/npm/v/@rudof/rudof.svg)
+[![CI rudof](https://github.com/rudof-project/rudof/actions/workflows/ci.yml/badge.svg)](https://github.com/rudof-project/rudof/actions/workflows/ci.yml)
 [![dependency status](https://deps.rs/repo/github/rudof-project/rudof/status.svg)](https://deps.rs/repo/github/rudof-project/rudof)
 [![CodeScene general](https://codescene.io/images/analyzed-by-codescene-badge.svg)](https://codescene.io/projects/72637)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
-
+[![Docker Image Version](https://shields.io)](https://hub.docker.com/r/angelip2303/rudof)
 
 This repo contains an RDF and Knowledge Graphs processing tool implemented in Rust.
 
@@ -36,13 +37,6 @@ as well as Python bindings.
 - [Roadmap](https://github.com/rudof-project/rudof/issues/1)
 
 
->[!NOTE]
->Starting from version 0.2.17, all `rudof` dependencies are version-aligned. Therefore, if you need to use a specific dependency, it must match the same version used by rudof.
-
->[!WARNING]
->The use of versions between 0.2.19 and 0.3.0 (inclusive) is discouraged due to some problems with the CI/CD pipeline.
->Its possible that some of the published versions in that range may not work as expected, or even does not exist.
-
 ## Features
 
 `rudof` currently supports the following:
@@ -53,12 +47,12 @@ as well as Python bindings.
 - ShEx
 - SHACL
 - DCTAP
-- Property graphs and Schemas for Property Graphs ([PGSchema]()https://dl.acm.org/doi/10.1145/3589778)
+- Property graphs and Schemas for Property Graphs like [PGSchema](https://dl.acm.org/doi/10.1145/3589778)
 
-Future features we are planning to add:
+Other features we are planning to add:
 
-- rdf-config
-- LinkML
+- [rdf-config](https://github.com/dbcls/rdf-config)
+- [LinkML](https://linkml.io/)
 
 ## Installation
 

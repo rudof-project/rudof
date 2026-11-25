@@ -26,4 +26,4 @@ reqwest = { workspace = true, features = ["blocking"] }
 reqwest.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom = { workspace = true, features = ["wasm_js"] }
