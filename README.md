@@ -1,15 +1,18 @@
 # rudof
 
+[![CI rudof](https://github.com/rudof-project/rudof/actions/workflows/ci.yml/badge.svg)](https://github.com/rudof-project/rudof/actions/workflows/ci.yml)
 [![Latest Version](https://img.shields.io/crates/v/rudof-cli.svg)](https://crates.io/crates/rudof-cli)
 [![PyPI](https://img.shields.io/pypi/v/pyrudof)](https://pypi.org/project/pyrudof/)
 ![npm](https://img.shields.io/npm/v/@rudof/rudof.svg)
-[![CI rudof](https://github.com/rudof-project/rudof/actions/workflows/ci.yml/badge.svg)](https://github.com/rudof-project/rudof/actions/workflows/ci.yml)
 [![dependency status](https://deps.rs/repo/github/rudof-project/rudof/status.svg)](https://deps.rs/repo/github/rudof-project/rudof)
 [![CodeScene general](https://codescene.io/images/analyzed-by-codescene-badge.svg)](https://codescene.io/projects/72637)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Docker Image Version](https://img.shields.io/docker/v/angelip2303/rudof?logo=docker)](https://hub.docker.com/r/angelip2303/rudof)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repo contains an RDF and Knowledge Graphs processing tool implemented in Rust.
+This repo contains an RDF and Knowledge Graphs library implemented in Rust. The library contains a command line and interactive shell interpreter with binaries available in Windows, Linux and MacOs. It also contains Python bindings and can be compiled to WebAssembly. 
+You can try an online [Web Demo](https://rudof-project.github.io/web-demo/) in WebAssembly.
 
 The implementation supports RDF and property graphs data, as well as 
 [ShEx](http://shex.io/),
