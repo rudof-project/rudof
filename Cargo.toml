@@ -42,7 +42,6 @@ license = "MIT OR Apache-2.0"
 description = "RDF and Knowledge Graphs processing tool"
 repository = "https://github.com/rudof-project/rudof"
 homepage = "https://rudof-project.github.io/rudof"
-readme = "./README.md"
 keywords = ["rdf", "linked-data", "semantic-web", "shex"]
 categories = ["database"]
 authors = [
@@ -292,14 +291,12 @@ itertools = "0.15.0"
 # Not 0.21 or later: they link -latomic, which the manylinux wheel builds do
 # not have, and 0.23.0 does not compile with MSVC (`max` macro of windows.h).
 lbug = "=0.20.4"
-josekit = "0.10.4"
 lazy-regex = "3.6.2"
 libtest-mimic = "0.8.2"
 mie = { version = "0.3.42", path = "./mie" }
 nom = "8.0.0"
 nom_locate = "5.0.0"
 once_cell = "1.21.4"
-openssl = { version = "0.10.82", features = ["vendored"] }
 oxigraph = { version = "0.5.13", default-features = false, features = [
     "rdf-12",
 ] }
@@ -321,11 +318,9 @@ proptest = { version = "1.12.0", default-features = false, features = [
     "std",
     "bit-set",
 ] }
-pyrudof = { version = "0.3.42", path = "./bindings/python" }
 rand = "0.10.4"
 rayon = "1.12.0"
 rbe = { version = "0.3.42", path = "./rbe" }
-rbe_testsuite = { version = "0.3.42", path = "./rbe_testsuite" }
 rdf_config = { version = "0.3.42", path = "./rdf_config" }
 regex = "1.13.2"
 # reqwest 0.13: `rustls` replaces `rustls-tls`, and always verifies against the
@@ -339,7 +334,6 @@ rmcp = { version = "3.11.0", features = [
     "transport-io",
     "transport-streamable-http-server",
 ] }
-rudof_cli = { version = "0.3.42", path = "./rudof_cli" }
 rudof_config = { version = "0.3.42", path = "./rudof_config" }
 rudof_earl = { version = "0.3.42", path = "./rudof_earl" }
 rudof_iri = { version = "0.3.42", path = "./rudof_iri" }
@@ -354,7 +348,6 @@ rudof_lib = { version = "0.3.42", path = "./rudof_lib", default-features = false
 rudof_mcp = { version = "0.3.42", path = "./rudof_mcp" }
 rustemo = { version = "0.9.1", default-features = false }
 rust_decimal = "1.43.0"
-rust_decimal_macros = "1.40.0"
 rustyline = { version = "19.0.0", default-features = false, features = [
     "custom-bindings",
     "with-file-history",
@@ -364,19 +357,16 @@ semver = { version = "1.0.28", features = ["serde"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 shacl = { version = "0.3.42", path = "./shacl" }
-shacl_testsuite = { version = "0.3.42", path = "./shacl_testsuite" }
 shapes_comparator = { version = "0.3.42", path = "./shapes_comparator" }
 shape_path = { version = "0.3.42", path = "./shape_path" }
 shapes_converter = { version = "0.3.42", path = "./shapes_converter" }
 shex_ast = { version = "0.3.42", path = "./shex_ast" }
-shex_testsuite = { version = "0.3.42", path = "./shex_testsuite" }
 shex_validation = { version = "0.3.42", path = "./shex_validation" }
 shlex = "2.0.1"
 sparesults = { version = "0.3.5", features = ["sparql-12"] }
 spargebra = { version = "0.4.8", features = ["sparql-12"] }
 sparql_service = { version = "0.3.42", path = "./sparql_service", default-features = false }
 stacker = "0.1.25"
-supports-color = "3.0.2"
 tabled = { version = "0.22.0", features = ["ansi"] }
 tempfile = "3.27.0"
 term_size = "0.3.2"
@@ -388,13 +378,11 @@ thiserror = "2.0.21"
 time = { version = "0.3.55", features = ["macros", "parsing", "serde"] }
 tokio = "1.54.1"
 tokio-util = "0.7.20"
-tokio-test = "0.4.6"
 toml = "1.2.3"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
 tracing-test = "0.2.6"
 url = "2.5.9"
-uuid = { version = "1.29.3", features = ["v4"] }
 walkdir = "2.5.1"
 yaml-rust2 = { version = "0.13.2" }
 # Default features off so that members can choose the codecs (Cargo does not

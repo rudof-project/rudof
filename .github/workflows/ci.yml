@@ -73,7 +73,10 @@ jobs:
           foreach ($name in "ssl", "crypto") {
               $match = Get-ChildItem $opensslLibDir -Recurse -Filter "*$name.lib" | Select-Object -First 1
               if (-not $match) { throw "No $name.lib (or lib$name.lib) found under $opensslLibDir" }
+              # lbug 0.19 links `ssl.lib`/`crypto.lib` and 0.20 or later
+              # `libssl.lib`/`libcrypto.lib`: give both names.
               Copy-Item $match.FullName "$shimDir\$name.lib" -Force
+              Copy-Item $match.FullName "$shimDir\lib$name.lib" -Force
           }
           echo "LIB=$shimDir;$env:LIB" >> $env:GITHUB_ENV
           echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV

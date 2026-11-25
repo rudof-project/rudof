@@ -53,7 +53,6 @@ shapes_converter.workspace = true
 shex_ast.workspace = true
 shlex.workspace = true
 sparql_service.workspace = true
-supports-color.workspace = true
 tabled.workspace = true
 thiserror.workspace = true
 tokio.workspace = true

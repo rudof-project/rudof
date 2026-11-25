@@ -20,9 +20,12 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 - `rudof_iri`, `rudof_rdf`: on wasm, they turn on the browser backend of `getrandom` 0.3, which `oxrdf` 0.3.5 uses through `rand` 0.9 ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - `bench-shex`, `bench-issue730`: the benchmarks use the workspace `zip` 9 with their own list of codecs ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - README: new badges for npm and Docker, and links for the planned features ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- CI: the Windows OpenSSL setup gives the libraries both names, `ssl.lib` and `libssl.lib` (and the same for `crypto`), because `lbug` 0.20 links `libssl.lib` ([#975](https://github.com/rudof-project/rudof/issues/975)).
 
 ### Removed
 - `shapemap_oxgraph`: an old crate that was not in the workspace ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- `rudof_cli`: the unused `supports-color` dependency ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- Root `Cargo.toml`: the workspace dependencies that no crate uses (`josekit`, `openssl`, `rust_decimal_macros`, `tokio-test`, `uuid` and five internal crates), and the unused `readme` field ([#975](https://github.com/rudof-project/rudof/issues/975)).
 
 ## 0.3.42
 ### Fixed
