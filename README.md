@@ -7,7 +7,7 @@
 [![dependency status](https://deps.rs/repo/github/rudof-project/rudof/status.svg)](https://deps.rs/repo/github/rudof-project/rudof)
 [![CodeScene general](https://codescene.io/images/analyzed-by-codescene-badge.svg)](https://codescene.io/projects/72637)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
-[![Docker Image Version](https://shields.io)](https://hub.docker.com/r/angelip2303/rudof)
+[![Docker Image Version](https://img.shields.io/docker/v/angelip2303/rudof?logo=docker)](https://hub.docker.com/r/angelip2303/rudof)
 
 This repo contains an RDF and Knowledge Graphs processing tool implemented in Rust.
 
