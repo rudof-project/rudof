@@ -287,7 +287,7 @@ indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
 is_ci = "1.0"
 itertools = "0.14"
-lbug = "0.19"
+lbug = "0.20.4"
 josekit = "0.10.3"
 lazy-regex = "3.4"
 libtest-mimic = "0.8"

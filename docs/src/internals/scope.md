@@ -6,15 +6,18 @@ mindmap
     ShEx
     SHACL
     DCTAP
+    PG-Schema
     LinkML
     rdf-config
     SPARQL
     RDF
+    RDF 1.2
+    Property Graphs
 ```
 
 The scope of the project is to be a useful tool for people interested in:
 
-- RDF data (which can be obtained from files as well as from SPARQL endpoints)
+- RDF and RDF 1.2 data (which can be obtained from files as well as from SPARQL endpoints)
 - RDF data models, shapes or schemas, which can be represented as ShEx, SHACL, DCTap, etc.
 - Tasks related with the previous two like:
   - Obtaining information about RDF data

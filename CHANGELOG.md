@@ -11,7 +11,33 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 
 ## [Unreleased]
 ### Changed
-- `shape_path`, `shex_ast`, `shex_validation`, `rudof_lib`: ShExPath moved from `shex_ast` to the new `shape_path` crate, with no change in behaviour ([#969](https://github.com/rudof-project/rudof/issues/969)). `shape_path` does not depend on `shex_ast`, and `shex_ast::shexpath` re-exports it, so `shex_ast::shexpath::*` keeps working. `ShExJDocument::new(&Schema)` is now `shex_ast::shexpath::shexj_document(&Schema)`, and `ShExJDocument::from_value` makes a document from any ShExJ value.
+- `rudof_lib`: `lbug` is pinned to exactly 0.20.4, because 0.21 and later link `-latomic`, which the manylinux wheel builds do not have, and 0.23.0 does not compile with MSVC ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- CI: new jobs build `rudof` with `lbug` on Windows (MSVC) and in the manylinux_2_34 container, so a pull request shows `lbug` build and link errors ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- README: new badges for npm and Docker, and links for the planned features ([#975](https://github.com/rudof-project/rudof/issues/975)).
+- CI: the Windows OpenSSL setup gives the libraries both names, `ssl.lib` and `libssl.lib` (and the same for `crypto`), because `lbug` 0.20 links `libssl.lib` ([#975](https://github.com/rudof-project/rudof/issues/975)).
+
+### Removed
+- `shapemap_oxgraph`: an old crate that was not in the workspace ([#975](https://github.com/rudof-project/rudof/issues/975)).
+
+## 0.3.42
+### Fixed
+- `rudof_rdf`: `is_isomorphic` gave random results for RDF 1.2 graphs with blank nodes only in triple terms; it now uses the `is_subgraph` search when the canonical forms are different.
+
+### Changed
+- CI: the GitHub Pages workflow uses `configure-pages` v6, `upload-pages-artifact` v5 and `deploy-pages` v5, because the deploy job did not find the artifact.
+
+## 0.3.41
+### Added
+- `shacl`, `rudof_lib`, `rudof_cli`: SHACL validation writes the valid subgraph and the invalid subgraph with `--valid` and `--invalid`, as ShEx validation does (native engine only) ([#972](https://github.com/rudof-project/rudof/issues/972)).
+- `rudof_wasm`: `validateShex` and `validateShacl` take a `subgraphs` argument, and the report then has `validTriples`, `invalidTriples`, `validSubgraph` and `invalidSubgraph` ([#972](https://github.com/rudof-project/rudof/issues/972)).
+- `pyrudof`: `validate_shex` and `validate_shacl` take `subgraphs=True`, and the report then has `valid_triples`, `invalid_triples`, `serialize_valid_triples()` and `serialize_invalid_triples()` ([#972](https://github.com/rudof-project/rudof/issues/972)).
+
+### Fixed
+- `pyrudof`: the docstrings of the subgraph properties do not stop the Sphinx docs build.
+
+### Changed
+- `shape_path`, `shex_ast`, `shex_validation`, `rudof_lib`: ShExPath moves from `shex_ast` to the new `shape_path` crate, and `shex_ast::shexpath` re-exports it ([#969](https://github.com/rudof-project/rudof/issues/969)).
+- `shex_ast`: `ShExJDocument::new(&Schema)` is now `shex_ast::shexpath::shexj_document(&Schema)`, and `ShExJDocument::from_value` makes a document from any ShExJ value ([#969](https://github.com/rudof-project/rudof/issues/969)).
 
 ## 0.3.40
 ### Added
