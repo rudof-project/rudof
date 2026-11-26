@@ -15,6 +15,6 @@ serde.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-indoc.workspace = true
-pretty_assertions.workspace = true
+indoc = "2"
+pretty_assertions = "1.4.1"
 serde_json.workspace = true

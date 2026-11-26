@@ -11,7 +11,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-anyhow.workspace = true
+anyhow = "1.0"
 clap.workspace = true
 rudof_iri.workspace = true
 prefixmap.workspace = true

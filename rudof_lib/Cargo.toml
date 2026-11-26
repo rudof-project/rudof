@@ -93,4 +93,4 @@ oxigraph.workspace = true
 sparesults.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
-wasm-bindgen-test.workspace = true
+wasm-bindgen-test = "0.3"

@@ -10,7 +10,7 @@ name = "bench-issue730"
 path = "src/main.rs"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-rudof_lib = { workspace = true, default-features = true }
+rudof_lib.workspace = true
 anyhow.workspace = true
 # Declared directly rather than via `zip.workspace = true`: Cargo won't let a
 # member override `default-features` on an inherited workspace dependency.
@@ -19,7 +19,7 @@ anyhow.workspace = true
 # transitive dependency via rudof_lib). The corpus archive this benchmark
 # reads doesn't use zstd compression, so every other default codec
 # (deflate/bzip2/lzma/xz/aes) stays enabled.
-zip = { workspace = true, features = [
+zip = { version = "2", default-features = false, features = [
     "aes-crypto",
     "bzip2",
     "deflate64",

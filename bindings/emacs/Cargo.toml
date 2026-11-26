@@ -25,10 +25,10 @@ harness = false
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 anyhow.workspace = true
-emacs = { workspace = true, features = ["emacs-28"] }
-rudof_lib = { workspace = true, default-features = true, features = ["http-client"] }
+emacs = { version = "0.21", features = ["emacs-28"] }
+rudof_lib = { workspace = true, features = ["http-client"] }
 
 [dev-dependencies]
-libtest-mimic.workspace = true
+libtest-mimic = "0.8"
 serde = { workspace = true }
 serde_json.workspace = true

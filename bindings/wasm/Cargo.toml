@@ -41,20 +41,20 @@ endpoints = ["rudof_lib/jspi", "rudof_rdf/jspi"]
 [dependencies]
 # A path dependency, because workspace inheritance can't switch off default
 # features.
-rudof_lib = { workspace = true, features = ["sparql"] }
-rudof_rdf.workspace = true
+rudof_lib = { path = "../../rudof_lib", default-features = false, features = ["sparql"] }
+rudof_rdf = { path = "../../rudof_rdf", default-features = false }
 serde.workspace = true
-rudof_generate = { workspace = true, optional = true }
+rudof_generate = { path = "../../rudof_generate", optional = true }
 futures = { workspace = true, optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-console_error_panic_hook.workspace = true
-js-sys.workspace = true
-serde-wasm-bindgen.workspace = true
-wasm-bindgen.workspace = true
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+serde-wasm-bindgen = "0.6"
+wasm-bindgen = "0.2"
 
 [dev-dependencies]
 serde_json.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
-wasm-bindgen-test.workspace = true
+wasm-bindgen-test = "0.3"

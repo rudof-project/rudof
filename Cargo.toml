@@ -42,6 +42,7 @@ license = "MIT OR Apache-2.0"
 description = "RDF and Knowledge Graphs processing tool"
 repository = "https://github.com/rudof-project/rudof"
 homepage = "https://rudof-project.github.io/rudof"
+readme = "./README.md"
 keywords = ["rdf", "linked-data", "semantic-web", "shex"]
 categories = ["database"]
 authors = [
@@ -252,88 +253,88 @@ wildcard_dependencies = "warn"
 zero_sized_map_values = "warn"
 
 [workspace.dependencies]
-anyhow = "1.0.105"
-axum = "0.8.9"
-axum-server = "0.9.2"
-base64 = "0.23.1"
-calamine = { version = "0.38.0" }
-chrono = { version = "0.4.45", features = ["serde"] }
-criterion = { version = "0.8.2", features = ["html_reports"] }
-clap = { version = "4.6.10", features = ["derive"] }
-clap_complete = { version = "4.6.12" }
-clap_complete_nushell = { version = "4.6.3" }
-clientele = { version = "0.5.0", default-features = false, features = [
+anyhow = "1.0"
+axum = "0.8.4"
+axum-server = "0.7"
+base64 = "0.22.1"
+calamine = { version = "0.31" }
+chrono = { version = "0.4", features = ["serde"] }
+criterion = { version = "0.5", features = ["html_reports"] }
+clap = { version = "4.5", features = ["derive"] }
+clap_complete = { version = "4.5" }
+clap_complete_nushell = { version = "4.5" }
+clientele = { version = "0.3.8", default-features = false, features = [
     "dotenv",
     "subcommands",
     "std",
 ] }
-include_dir = "0.7.4"
-crossterm = "0.29.0"
-colored = "3.1.1"
-const_format = "0.2.37"
-csv = "1.4.0"
-ctrlc = "3.5.3"
-dashmap = "6.2.1"
+include_dir = "0.7"
+crossterm = "0.27"
+colored = "3"
+const_format = "0.2"
+csv = "1.3.1"
+ctrlc = "3.4"
+dashmap = "6"
 dctap = { version = "0.3.42", path = "./dctap" }
-dirs = "7.0.0"
-either = { version = "1.19.0", features = ["serde"] }
-futures = "0.3.34"
+dirs = "6"
+either = { version = "1.13", features = ["serde"] }
+futures = "0.3"
 getrandom = { version = "0.4.3", features = ["wasm_js"] }
-# getrandom 0.3 is still used through rand 0.9 (oxrdf, oxigraph). Crates that
-# reach it on wasm turn on its browser backend with this entry.
-getrandom03 = { package = "getrandom", version = "0.3.4", features = ["wasm_js"] }
-hashbag = { version = "0.1.13" }
-hashlink = { version = "0.12.2" }
-indexmap = { version = "2.14.2", features = ["serde"] }
-indoc = "2.0.8"
-is_ci = "1.2.0"
-itertools = "0.15.0"
-# Not 0.21 or later: they link -latomic, which the manylinux wheel builds do
-# not have, and 0.23.0 does not compile with MSVC (`max` macro of windows.h).
-lbug = "=0.20.4"
-lazy-regex = "3.6.2"
-libtest-mimic = "0.8.2"
+# getrandom = { version = ">=0.3, <0.4", features = ["wasm_js"] }
+hashbag = { version = "0.1.12" }
+hashlink = { version = "0.10" }
+indexmap = { version = "2", features = ["serde"] }
+indoc = "2"
+is_ci = "1.0"
+itertools = "0.14"
+lbug = "0.20.4"
+josekit = "0.10.3"
+lazy-regex = "3.4"
+libtest-mimic = "0.8"
 mie = { version = "0.3.42", path = "./mie" }
-nom = "8.0.0"
-nom_locate = "5.0.0"
-once_cell = "1.21.4"
-oxigraph = { version = "0.5.13", default-features = false, features = [
+nom = "8.0"
+nom_locate = "5.0"
+once_cell = "1.18.0"
+openssl = { version = "0.10", features = ["vendored"] }
+oxigraph = { version = "0.5.9", default-features = false, features = [
     "rdf-12",
 ] }
 oxilangtag = { version = "0.1.6", features = ["serde"] }
 oxiri = { version = "0.3.1" }
-oxjsonld = { version = "0.2.7", features = ["rdf-12"] }
-oxrdf = { version = "0.3.5", features = ["oxsdatatypes", "rdf-12"] }
-oxrdfio = { version = "0.2.7", features = ["rdf-12"] }
-oxrdfxml = { version = "0.2.5", features = ["rdf-12"] }
-oxsdatatypes = "0.2.4"
-oxttl = { version = "0.2.5", features = ["rdf-12"] }
+oxjsonld = { version = "0.2.5", features = ["rdf-12"] }
+oxrdf = { version = "0.3.3", features = ["oxsdatatypes", "rdf-12"] }
+oxrdfio = { version = "0.2.5", features = ["rdf-12"] }
+oxrdfxml = { version = "0.2.3", features = ["rdf-12"] }
+oxsdatatypes = "0.2.2"
+oxttl = { version = "0.2.3", features = ["rdf-12"] }
 paste = "1.0.15"
 pgschema = { version = "0.3.42", path = "./pgschema" }
-petgraph = { version = "0.8.3", features = ["serde-1"] }
-postcard = { version = "1.2.0", features = ["use-std"] }
+petgraph = { version = "0.8", features = ["serde-1"] }
+postcard = { version = "1", features = ["use-std"] }
 prefixmap = { version = "0.3.42", path = "./prefixmap" }
-pretty = { version = "0.12.5" }
-proptest = { version = "1.12.0", default-features = false, features = [
+pretty = { version = "0.12" }
+proptest = { version = "1.11.0", default-features = false, features = [
     "std",
     "bit-set",
 ] }
-rand = "0.10.4"
-rayon = "1.12.0"
+pyrudof = { version = "0.3.42", path = "./bindings/python" }
+rand = "0.8"
+rayon = "1.7"
 rbe = { version = "0.3.42", path = "./rbe" }
+rbe_testsuite = { version = "0.3.42", path = "./rbe_testsuite" }
 rdf_config = { version = "0.3.42", path = "./rdf_config" }
-regex = "1.13.2"
-# reqwest 0.13: `rustls` replaces `rustls-tls`, and always verifies against the
-# platform's trust store (what `rustls-tls-native-roots` used to add).
-reqwest = { version = "0.13.5", default-features = false, features = [
+regex = "1.11"
+reqwest = { version = "0.12", default-features = false, features = [
     "json",
-    "rustls",
+    "rustls-tls",
+    "rustls-tls-native-roots",
 ] }
-rmcp = { version = "3.11.0", features = [
+rmcp = { version = "3.6", features = [
     "server",
     "transport-io",
     "transport-streamable-http-server",
 ] }
+rudof_cli = { version = "0.3.42", path = "./rudof_cli" }
 rudof_config = { version = "0.3.42", path = "./rudof_config" }
 rudof_earl = { version = "0.3.42", path = "./rudof_earl" }
 rudof_iri = { version = "0.3.42", path = "./rudof_iri" }
@@ -342,65 +343,54 @@ rudof_rdf_sink = { version = "0.3.42", path = "./rudof_rdf_sink" }
 rudof_typing = { version = "0.3.42", path = "./rudof_typing" }
 rudof_viz = { version = "0.3.42", path = "./rudof_viz" }
 rudof_generate = { version = "0.3.42", path = "./rudof_generate" }
-# Default features off so that the wasm bindings can leave them out: native
-# users ask for them back with `default-features = true`.
-rudof_lib = { version = "0.3.42", path = "./rudof_lib", default-features = false }
+rudof_lib = { version = "0.3.42", path = "./rudof_lib" }
 rudof_mcp = { version = "0.3.42", path = "./rudof_mcp" }
 rustemo = { version = "0.9.1", default-features = false }
-rust_decimal = "1.43.0"
-rustyline = { version = "19.0.0", default-features = false, features = [
+rust_decimal = "1.38"
+rust_decimal_macros = "1.38"
+rustyline = { version = "18.0", default-features = false, features = [
     "custom-bindings",
     "with-file-history",
 ] }
-schemars = "1.2.3"
-semver = { version = "1.0.28", features = ["serde"] }
-serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.154"
+schemars = "1.0.4"
+semver = { version = "1.0", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
 shacl = { version = "0.3.42", path = "./shacl" }
+shacl_testsuite = { version = "0.3.42", path = "./shacl_testsuite" }
 shapes_comparator = { version = "0.3.42", path = "./shapes_comparator" }
 shape_path = { version = "0.3.42", path = "./shape_path" }
 shapes_converter = { version = "0.3.42", path = "./shapes_converter" }
 shex_ast = { version = "0.3.42", path = "./shex_ast" }
+shex_testsuite = { version = "0.3.42", path = "./shex_testsuite" }
 shex_validation = { version = "0.3.42", path = "./shex_validation" }
-shlex = "2.0.1"
-sparesults = { version = "0.3.5", features = ["sparql-12"] }
-spargebra = { version = "0.4.8", features = ["sparql-12"] }
+shlex = "1.3"
+sparesults = { version = "0.3.0", features = ["sparql-12"] }
+spargebra = { version = "0.4.0", features = ["sparql-12"] }
 sparql_service = { version = "0.3.42", path = "./sparql_service", default-features = false }
-stacker = "0.1.25"
-tabled = { version = "0.22.0", features = ["ansi"] }
-tempfile = "3.27.0"
+stacker = "0.1"
+supports-color = "3.0.0"
+tabled = { version = "0.20.0", features = ["ansi"] }
+tempfile = "3.10.1"
 term_size = "0.3.2"
-testcontainers = "0.28.0"
-bollard = "0.21.1"
-nix = { version = "0.32.0", default-features = false, features = ["user"] }
-termtree = { version = "1.0.0" }
-thiserror = "2.0.21"
-time = { version = "0.3.55", features = ["macros", "parsing", "serde"] }
-tokio = "1.54.1"
-tokio-util = "0.7.20"
-toml = "1.2.3"
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
-tracing-test = "0.2.6"
-url = "2.5.9"
-walkdir = "2.5.1"
-yaml-rust2 = { version = "0.13.2" }
-# Default features off so that members can choose the codecs (Cargo does not
-# let a member drop default features enabled here).
-zip = { version = "9.8.2", default-features = false }
-console_error_panic_hook = "0.1.7"
-emacs = "0.23.0"
-js-sys = "0.3.107"
-minijinja = "3.1.0"
-pretty_assertions = "1.4.1"
-pyo3 = "0.30.1"
-pyo3-stub-gen = "0.23.3"
-pyo3-stub-gen-derive = "0.23.3"
-pythonize = "0.30.0"
-rustemo-compiler = "0.9.1"
-serde-wasm-bindgen = "0.6.5"
-wasm-bindgen = "0.2.130"
-wasm-bindgen-test = "0.3.80"
+testcontainers = "0.27"
+bollard = "0.20"
+nix = { version = "0.30", default-features = false, features = ["user"] }
+termtree = { version = "0.4" }
+thiserror = "2.0"
+time = { version = "0.3", features = ["macros", "parsing", "serde"] }
+tokio = "1.47.1"
+tokio-util = "0.7"
+tokio-test = "0.4"
+toml = "0.9"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-test = "0.2.5"
+url = "2.2.2"
+uuid = { version = "1.0", features = ["v4"] }
+walkdir = "2"
+yaml-rust2 = { version = "0.10" }
+zip = "2"
 
 # Release build optimized for size, used for the WebAssembly bindings
 # (bindings/wasm/build.sh). Native release builds are unaffected.

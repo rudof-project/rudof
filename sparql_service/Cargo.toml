@@ -21,7 +21,7 @@ http-client = ["sparql", "rudof_rdf/http-client"]
 
 [dependencies]
 colored.workspace = true
-const_format.workspace = true
+const_format = "0.2"
 rudof_config.workspace = true
 rudof_iri.workspace = true
 itertools.workspace = true
@@ -32,7 +32,7 @@ oxrdfio = { workspace = true, features = ["rdf-12"] }
 oxsdatatypes.workspace = true
 prefixmap.workspace = true
 rudof_rdf = { workspace = true, default-features = false }
-rust_decimal.workspace = true
+rust_decimal = "1.38"
 serde.workspace = true
 serde_json.workspace = true
 sparesults = { workspace = true, optional = true }

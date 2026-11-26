@@ -11,26 +11,17 @@ This ChangeLog follows the [Keep a ChangeLog guidelines](https://keepachangelog.
 
 ## [Unreleased]
 ### Changed
-- All crates: the root `Cargo.toml` declares the version of each dependency, and the member crates use `workspace = true` ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- All crates: the dependencies are updated to their latest versions, for example `rand` 0.10, `reqwest` 0.13, `minijinja` 3, `axum-server` 0.9, `zip` 9, `pyo3` 0.30 and `toml` 1 ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - `rudof_lib`: `lbug` is pinned to exactly 0.20.4, because 0.21 and later link `-latomic`, which the manylinux wheel builds do not have, and 0.23.0 does not compile with MSVC ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - CI: new jobs build `rudof` with `lbug` on Windows (MSVC) and in the manylinux_2_34 container, so a pull request shows `lbug` build and link errors ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- `rudof_lib`: the workspace entry turns off the default features; the native crates use `default-features = true` and the wasm bindings do not ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- `rudof_generate`: with `rand` 0.10, the same seed gives different values; the golden snapshots are updated ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- `rudof_iri`, `rudof_rdf`: on wasm, they turn on the browser backend of `getrandom` 0.3, which `oxrdf` 0.3.5 uses through `rand` 0.9 ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- `bench-shex`, `bench-issue730`: the benchmarks use the workspace `zip` 9 with their own list of codecs ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - README: new badges for npm and Docker, and links for the planned features ([#975](https://github.com/rudof-project/rudof/issues/975)).
 - CI: the Windows OpenSSL setup gives the libraries both names, `ssl.lib` and `libssl.lib` (and the same for `crypto`), because `lbug` 0.20 links `libssl.lib` ([#975](https://github.com/rudof-project/rudof/issues/975)).
 
 ### Removed
 - `shapemap_oxgraph`: an old crate that was not in the workspace ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- `rudof_cli`: the unused `supports-color` dependency ([#975](https://github.com/rudof-project/rudof/issues/975)).
-- Root `Cargo.toml`: the workspace dependencies that no crate uses (`josekit`, `openssl`, `rust_decimal_macros`, `tokio-test`, `uuid` and five internal crates), and the unused `readme` field ([#975](https://github.com/rudof-project/rudof/issues/975)).
 
 ## 0.3.42
 ### Fixed
 - `rudof_rdf`: `is_isomorphic` gave random results for RDF 1.2 graphs with blank nodes only in triple terms; it now uses the `is_subgraph` search when the canonical forms are different.
-- `shacl`: `cargo publish` does not need `shacl_testsuite` on crates.io, because the dev-dependency has only a path.
 
 ### Changed
 - CI: the GitHub Pages workflow uses `configure-pages` v6, `upload-pages-artifact` v5 and `deploy-pages` v5, because the deploy job did not find the artifact.

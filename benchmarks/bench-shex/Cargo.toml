@@ -24,7 +24,7 @@ anyhow.workspace = true
 # default codec (deflate/bzip2/lzma/xz/aes) stays enabled. Declared directly
 # rather than via `zip.workspace = true`: Cargo won't let a member override
 # `default-features` on an inherited workspace dependency.
-zip = { workspace = true, features = [
+zip = { version = "2", default-features = false, features = [
     "aes-crypto",
     "bzip2",
     "deflate64",
@@ -36,7 +36,7 @@ zip = { workspace = true, features = [
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 criterion.workspace = true
-rudof_lib = { workspace = true, default-features = true }
+rudof_lib.workspace = true
 
 [[bench]]
 name = "parse"
