@@ -7,8 +7,8 @@ use proptest::prelude::*;
 use rudof_iri::IriS;
 use std::borrow::Cow;
 
-const PREFIX_REGEX: &str = "[a-zA-Z]{1,3}";
-const LOCAL_REGEX: &str = "[a-zA-Z]+";
+const PREFIX_REGEX: &str = r"[a-zA-Z]{1,3}";
+const LOCAL_REGEX: &str = r"[a-zA-Z]+";
 const URI_REGEX: &str = r"https?://[a-zA-Z0-9]{3,}(\.[a-zA-Z0-9]{3,})+(\/[a-zA-Z0-9/]{1,3})*\/";
 
 mod deref_tests {
@@ -62,7 +62,7 @@ mod deref_tests {
             let mut result = Vec::<IriRef>::new();
 
             for local in &locals {
-                iris_ref.push(IriRef::Prefixed { prefix: String::new(), local: local.clone() });
+                iris_ref.push(IriRef::Prefixed { prefix: String::from(""), local: local.clone() });
                 result.push(IriRef::Iri(IriS::new(&format!("http://example.org/{}", local.clone()))?));
             }
 
@@ -88,7 +88,7 @@ mod iri_ref_tests {
         fn get_iri_returns_error_for_prefixed_variant(prefix in PREFIX_REGEX, local in LOCAL_REGEX) {
             let iri_ref = IriRef::Prefixed { prefix, local };
             let result = iri_ref.get_iri();
-            result.unwrap_err();
+            assert!(result.is_err());
         }
 
         #[test]
@@ -120,7 +120,7 @@ mod iri_ref_tests {
             let pm = PrefixMap::new();
             let iri_ref = IriRef::Prefixed { prefix, local };
             let err = iri_ref.get_iri_prefixmap(&pm);
-            err.unwrap_err();
+            assert!(err.is_err());
         }
 
         #[test]
@@ -131,7 +131,7 @@ mod iri_ref_tests {
                     assert_eq!(p, prefix);
                     assert_eq!(l, local);
                 }
-                IriRef::Iri(_) => panic!("Expected Prefixed variant"),
+                _ => panic!("Expected Prefixed variant"),
             }
         }
 
@@ -141,7 +141,7 @@ mod iri_ref_tests {
             let iri_ref = IriRef::iri(iri.clone());
             match iri_ref {
                 IriRef::Iri(i) => assert_eq!(i, iri),
-                IriRef::Prefixed { .. } => panic!("Expected Iri variant"),
+                _ => panic!("Expected Iri variant"),
             }
         }
     }

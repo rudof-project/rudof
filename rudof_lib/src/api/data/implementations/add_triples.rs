@@ -36,7 +36,7 @@ pub(crate) fn apply_additions(rudof: &mut Rudof, triples: Vec<OxTriple>) -> Resu
             )
             .map_err(|error| {
                 Box::new(DataError::FailedTripleUpdate {
-                    operation: "add".to_owned(),
+                    operation: "add".to_string(),
                     error: error.to_string(),
                 })
             })?;
@@ -47,7 +47,7 @@ pub(crate) fn apply_additions(rudof: &mut Rudof, triples: Vec<OxTriple>) -> Resu
         rdf.add_triple(triple.subject.clone(), triple.predicate.clone(), triple.object.clone())
             .map_err(|error| {
                 Box::new(DataError::FailedTripleUpdate {
-                    operation: "add".to_owned(),
+                    operation: "add".to_string(),
                     error: error.to_string(),
                 })
             })?;

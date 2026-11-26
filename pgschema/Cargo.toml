@@ -4,6 +4,7 @@ version.workspace = true
 edition = "2024"
 license = "MIT"
 description = "Prototype for PG-SChema with property constraints"
+homepage = "https://github.com/wesopapers/pgschemapc"
 repository = "https://github.com/wesopapers/pgschemapc"
 keywords = ["pgschema", "property-graphs", "property-constraints"]
 categories = [
@@ -14,6 +15,7 @@ categories = [
 ]
 
 [dependencies]
+anyhow.workspace = true
 colored.workspace = true
 csv.workspace = true
 either.workspace = true
@@ -29,6 +31,7 @@ tracing.workspace = true
 # Only used by the command line interface (`cli` module)
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 clap.workspace = true
+clientele.workspace = true
 
 [dev-dependencies]
 tracing-test.workspace = true
@@ -38,6 +41,3 @@ rustemo-compiler.workspace = true
 
 [build-dependencies]
 rustemo-compiler.workspace = true
-
-[lints]
-workspace = true

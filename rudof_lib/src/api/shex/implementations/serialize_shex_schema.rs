@@ -88,7 +88,7 @@ fn init_defaults(
     shex_format: Option<&ShExFormat>,
 ) -> (String, bool, bool, bool, bool, bool, ShExFormat) {
     (
-        shape_label.map_or_default(ToOwned::to_owned),
+        shape_label.map(|s| s.to_string()).unwrap_or_default(),
         show_schema.unwrap_or(true),
         show_statistics.unwrap_or(false),
         show_dependencies.unwrap_or(false),
@@ -162,7 +162,7 @@ fn serialize_schema_ir<W: io::Write>(rudof: &Rudof, writer: &mut W) -> Result<()
     let shex_schema_ir = rudof.shex_schema_ir.as_ref().ok_or(ShExError::NoShExSchemaLoaded)?;
     writeln!(writer, "# ShEx Schema Internal Representation (IR):")
         .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
-    writeln!(writer, "{shex_schema_ir}").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
+    writeln!(writer, "{}", shex_schema_ir).map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
     Ok(())
 }
 
@@ -174,10 +174,9 @@ fn serialize_schema(
     viz_engine: VizEngine,
     writer: &mut impl io::Write,
 ) -> Result<()> {
-    let formatter = if show_colors {
-        ShExFormatter::default()
-    } else {
-        ShExFormatter::default().without_colors()
+    let formatter = match show_colors {
+        true => ShExFormatter::default(),
+        false => ShExFormatter::default().without_colors(),
     };
 
     // Only fetched when the requested format actually needs the parsed AST --
@@ -217,7 +216,8 @@ fn serialize_schema(
             let shex_schema_ir = rudof.shex_schema_ir.as_ref().ok_or(ShExError::NoShExSchemaLoaded)?;
             writeln!(writer, "# ShEx Schema Internal Representation (IR):")
                 .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
-            writeln!(writer, "{shex_schema_ir}").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
+            writeln!(writer, "{}", shex_schema_ir)
+                .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
         },
         ShExFormat::Turtle
         | ShExFormat::NTriples
@@ -256,7 +256,7 @@ fn serialize_schema(
                 error: "this format can be used to read a ShEx schema, but not to write one out; \
                         use shexc, shexj, json, jsonld, internal, binary, turtle, ntriples, rdfxml, trig, n3 or \
                         nquads instead"
-                    .to_owned(),
+                    .to_string(),
             }
             .into());
         },
@@ -371,7 +371,7 @@ fn serialize_shape<W: io::Write>(rudof: &Rudof, shape_label: &str, writer: &mut 
             writeln!(
                 writer,
                 "  # Predicates: [{}]",
-                preds.iter().map(ToString::to_string).collect::<Vec<_>>().join(" ")
+                preds.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(" ")
             )
             .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
         } else {
@@ -390,7 +390,7 @@ fn show_triple_exprs(idx: &ShapeLabelIdx, schema: &SchemaIR, writer: &mut impl i
                 "    Current -> {}",
                 current
                     .iter()
-                    .map(ToString::to_string)
+                    .map(|t| t.to_string())
                     .collect::<Vec<String>>()
                     .join(", ")
             )
@@ -405,11 +405,7 @@ fn show_triple_exprs(idx: &ShapeLabelIdx, schema: &SchemaIR, writer: &mut impl i
                     writer,
                     "    {} -> {}",
                     label.as_ref().unwrap(),
-                    exprs
-                        .iter()
-                        .map(ToString::to_string)
-                        .collect::<Vec<String>>()
-                        .join(", ")
+                    exprs.iter().map(|t| t.to_string()).collect::<Vec<String>>().join(", ")
                 )
                 .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
             }
@@ -423,7 +419,7 @@ fn show_triple_exprs(idx: &ShapeLabelIdx, schema: &SchemaIR, writer: &mut impl i
 fn parse_shape_selector(shape_label: &str) -> Result<ShapeSelector> {
     let selector =
         ShapeMapParser::parse_shape_selector(shape_label).map_err(|e| ShExError::ShapeSelectorParseError {
-            shape_selector: shape_label.to_owned(),
+            shape_selector: shape_label.to_string(),
             error: e.to_string(),
         })?;
     Ok(selector)

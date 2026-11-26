@@ -157,7 +157,7 @@ async fn shex_shape_reference_conforms() {
 #[tokio::test]
 async fn shex_pattern_conforms() {
     assert_shex_conforms(
-        "ex:PersonShape { a [ex:Person] ; ex:code xsd:string /^[A-Z]{3}-[0-9]{4}$/ }",
+        r#"ex:PersonShape { a [ex:Person] ; ex:code xsd:string /^[A-Z]{3}-[0-9]{4}$/ }"#,
         keep,
     )
     .await;
@@ -398,7 +398,7 @@ const LIB_SHEX: &str = "PREFIX ex: <http://example.org/>\nPREFIX xsd: <http://ww
 
 #[tokio::test]
 async fn generate_with_validation_reports_shex_conformance() {
-    let outcome = Box::pin(generate_and_validate("s.shex", LIB_SHEX, None)).await;
+    let outcome = generate_and_validate("s.shex", LIB_SHEX, None).await;
     assert_eq!(outcome.language, "ShEx");
     assert_eq!(outcome.checked, 25);
     assert!(outcome.conforms(), "{outcome:?}");
@@ -409,7 +409,7 @@ async fn generate_with_validation_reports_shacl_conformance() {
     let shapes = shacl_schema(&format!(
         "{SHACL_PERSON}\n  sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] ."
     ));
-    let outcome = Box::pin(generate_and_validate("s.ttl", &shapes, None)).await;
+    let outcome = generate_and_validate("s.ttl", &shapes, None).await;
     assert_eq!(outcome.language, "SHACL");
     assert!(outcome.conforms() && outcome.checked == 25, "{outcome:?}");
 }
@@ -418,7 +418,7 @@ async fn generate_with_validation_reports_shacl_conformance() {
 async fn generate_with_validation_catches_dropped_required_properties() {
     // Deliberately dropped required properties must be seen by the validation loop.
     let config = "version = 2\n[violations]\nrate = 1.0\noperators = [\"drop-required\"]\n";
-    let outcome = Box::pin(generate_and_validate("s.shex", LIB_SHEX, Some(config))).await;
+    let outcome = generate_and_validate("s.shex", LIB_SHEX, Some(config)).await;
     assert!(
         !outcome.conforms(),
         "dropped required properties must be reported: {outcome:?}"

@@ -45,7 +45,6 @@ pub enum GraphRelation {
 
 impl GraphRelation {
     /// The relation seen from the other side: `compare(b, a) == compare(a, b).inverse()`.
-    #[must_use]
     pub fn inverse(self) -> Self {
         match self {
             GraphRelation::Subgraph => GraphRelation::Supergraph,
@@ -136,7 +135,7 @@ pub(super) fn embedding<'a, 'b>(
         return None;
     }
     let mut pending = Vec::new();
-    for t in first {
+    for t in first.iter() {
         if triple_is_ground(t) {
             if !second.contains(t) {
                 return None;
@@ -231,7 +230,7 @@ pub fn is_subgraph(first: &Graph, second: &Graph) -> bool {
 /// Returns the [`GraphRelation`] between `first` and `second`, with the
 /// default [`SubgraphMode::Injective`].
 pub fn compare_graphs(first: &Graph, second: &Graph) -> GraphRelation {
-    use std::cmp::Ordering::{Equal, Greater, Less};
+    use std::cmp::Ordering::*;
     match first.len().cmp(&second.len()) {
         Equal if is_isomorphic(first, second) => GraphRelation::Isomorphic,
         Less if is_subgraph(first, second) => GraphRelation::Subgraph,
@@ -319,7 +318,7 @@ pub(super) fn unify_triple<'a, 'b>(t1: TripleRef<'a>, t2: TripleRef<'b>, mapping
     t1.predicate == t2.predicate
         && match t1.subject {
             NamedOrBlankNodeRef::BlankNode(b1) => mapping.bind(b1, t2.subject.into()),
-            s1 @ NamedOrBlankNodeRef::NamedNode(_) => s1 == t2.subject,
+            s1 => s1 == t2.subject,
         }
         && unify_term(t1.object, t2.object, mapping)
 }

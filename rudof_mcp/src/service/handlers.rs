@@ -32,7 +32,7 @@ impl ServerHandler for RudofMcpService {
     /// - **completions**: Enabled for argument suggestions
     // `enable_logging_with` is deprecated by SEP-2577; the protocol still
     // supports it and there is no replacement API, so it stays in use.
-    #[expect(deprecated)]
+    #[allow(deprecated)]
     fn get_info(&self) -> ServerConfig {
         tracing::debug!("Generating ServerConfig");
 
@@ -62,17 +62,17 @@ impl ServerHandler for RudofMcpService {
             .with_instructions(
                 "Rudof MCP server for RDF processing, SPARQL querying and graph validation using ShEx and SHACL.\n\
                 \n\
-                IMPORTANT \u{2014} stateful datastore: the server holds a single in-memory RDF graph shared \
+                IMPORTANT — stateful datastore: the server holds a single in-memory RDF graph shared \
                 across all tool calls. Call `load_rdf_data_from_sources` before any tool. \
-                Supports URLs, local files, and inline text as data sources \u{2014} each call merges \
+                Supports URLs, local files, and inline text as data sources — each call merges \
                 triples into the existing store (cumulative). SPARQL endpoints are also supported \
                 as a source via `load_rdf_data_from_sources` but queried live; their results are not merged into the store.\n\
                 \n\
                 Typical call sequences:\n\
-                - Explore data: load \u{2192} node_info or execute_sparql_query\n\
-                - Validate with ShEx or SHACL: load \u{2192} validate_shex / validate_shacl\n\
-                - Query data: load \u{2192} execute_sparql_query (SELECT, CONSTRUCT and ASK)\n\
-                - Visualize graph: load \u{2192} export_image (SVG/PNG) or export_plantuml\n\
+                - Explore data: load → node_info or execute_sparql_query\n\
+                - Validate with ShEx or SHACL: load → validate_shex / validate_shacl\n\
+                - Query data: load → execute_sparql_query (SELECT, CONSTRUCT and ASK)\n\
+                - Visualize graph: load → export_image (SVG/PNG) or export_plantuml\n\
                 - Check a schema without data: check_shex or show_shex (no load needed)\n\
                 ",
             )
@@ -105,18 +105,18 @@ impl ServerHandler for RudofMcpService {
     /// Return a list of available resource templates
     async fn list_resource_templates(
         &self,
-        request: Option<PaginatedRequestParams>,
+        _request: Option<PaginatedRequestParams>,
         context: RequestContext<RoleServer>,
     ) -> Result<ListResourceTemplatesResult, McpError> {
         tracing::debug!("Listing available resource templates");
 
         // Delegate to resource_templates module
-        resource_templates::list_resource_templates(request, context).await
+        resource_templates::list_resource_templates(_request, context).await
     }
 
     /// Handle MCP initialization, logging HTTP context if available, and return server info
     // `LoggingLevel` is deprecated by SEP-2577; see the `get_info` note above.
-    #[expect(deprecated)]
+    #[allow(deprecated)]
     async fn initialize(
         &self,
         request: InitializeRequestParams,
@@ -147,7 +147,7 @@ impl ServerHandler for RudofMcpService {
     /// This updates the MCP logging notification level, controlling which log messages
     /// are sent to the client via MCP notifications.
     // `SetLevelRequestParams` is deprecated by SEP-2577; see the `get_info` note above.
-    #[expect(deprecated)]
+    #[allow(deprecated)]
     async fn set_level(
         &self,
         request: SetLevelRequestParams,
@@ -168,7 +168,7 @@ impl ServerHandler for RudofMcpService {
 
     // Construct a ToolCallContext and delegate to the generated router
     // `LoggingLevel` is deprecated by SEP-2577; see the `get_info` note above.
-    #[expect(deprecated)]
+    #[allow(deprecated)]
     async fn call_tool(
         &self,
         request: CallToolRequestParams,
@@ -183,10 +183,10 @@ impl ServerHandler for RudofMcpService {
             .with_field("has_arguments", request.arguments.is_some());
         send_log(
             LoggingLevel::Debug,
-            Some("tools".to_owned()),
+            Some("tools".to_string()),
             log_data,
-            std::sync::Arc::clone(&self.current_min_log_level),
-            std::sync::Arc::clone(&self.log_rate_limiter),
+            self.current_min_log_level.clone(),
+            self.log_rate_limiter.clone(),
             &context.peer,
         )
         .await;
@@ -195,30 +195,33 @@ impl ServerHandler for RudofMcpService {
         let result = self.tool_router.call(ctx).await;
 
         // Log tool completion (respects log level filtering)
-        if result.is_ok() {
-            let log_data = LogData::new("Tool executed successfully").with_field("tool_name", tool_name.clone());
-            send_log(
-                LoggingLevel::Debug,
-                Some("tools".to_owned()),
-                log_data,
-                std::sync::Arc::clone(&self.current_min_log_level),
-                std::sync::Arc::clone(&self.log_rate_limiter),
-                &context.peer,
-            )
-            .await;
-        } else {
-            let log_data = LogData::new("Tool execution failed")
-                .with_field("tool_name", tool_name.clone())
-                .with_field("error", "[redacted]");
-            send_log(
-                LoggingLevel::Error,
-                Some("tools".to_owned()),
-                log_data,
-                std::sync::Arc::clone(&self.current_min_log_level),
-                std::sync::Arc::clone(&self.log_rate_limiter),
-                &context.peer,
-            )
-            .await;
+        match &result {
+            Ok(_) => {
+                let log_data = LogData::new("Tool executed successfully").with_field("tool_name", tool_name.clone());
+                send_log(
+                    LoggingLevel::Debug,
+                    Some("tools".to_string()),
+                    log_data,
+                    self.current_min_log_level.clone(),
+                    self.log_rate_limiter.clone(),
+                    &context.peer,
+                )
+                .await;
+            },
+            Err(_) => {
+                let log_data = LogData::new("Tool execution failed")
+                    .with_field("tool_name", tool_name.clone())
+                    .with_field("error", "[redacted]");
+                send_log(
+                    LoggingLevel::Error,
+                    Some("tools".to_string()),
+                    log_data,
+                    self.current_min_log_level.clone(),
+                    self.log_rate_limiter.clone(),
+                    &context.peer,
+                )
+                .await;
+            },
         }
 
         result

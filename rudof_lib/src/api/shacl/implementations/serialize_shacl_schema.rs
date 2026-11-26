@@ -13,28 +13,31 @@ pub fn serialize_shacl_schema<W: io::Write>(
 
     let shacl_shapes = rudof.shacl_shapes.as_ref().ok_or(ShaclError::NoShaclShapesLoaded)?;
 
-    if shacl_format == ShaclFormat::Internal {
-        write!(writer, "{shacl_shapes}").map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
-    } else {
-        let rdf_format: RDFFormat = shacl_format.try_into()?;
-        let mut shacl_writer: ShaclWriter<OxigraphInMemory> = ShaclWriter::new();
+    match shacl_format {
+        ShaclFormat::Internal => {
+            write!(writer, "{shacl_shapes}").map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
+        },
+        _ => {
+            let rdf_format: RDFFormat = shacl_format.try_into()?;
+            let mut shacl_writer: ShaclWriter<OxigraphInMemory> = ShaclWriter::new();
 
-        shacl_writer
-            .register(shacl_shapes)
-            .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
+            shacl_writer
+                .register(shacl_shapes)
+                .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
 
-        if rdf_format == RDFFormat::JsonLd && rudof.config.rdf_data().pretty_json() {
-            let mut buf = Vec::new();
-            shacl_writer
-                .serialize(&rdf_format, &mut buf)
-                .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
-            write_pretty_json(writer, &buf, rudof.config.rdf_data().colorize_json())
-                .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
-        } else {
-            shacl_writer
-                .serialize(&rdf_format, writer)
-                .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
-        }
+            if rdf_format == RDFFormat::JsonLd && rudof.config.rdf_data().pretty_json() {
+                let mut buf = Vec::new();
+                shacl_writer
+                    .serialize(&rdf_format, &mut buf)
+                    .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
+                write_pretty_json(writer, &buf, rudof.config.rdf_data().colorize_json())
+                    .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
+            } else {
+                shacl_writer
+                    .serialize(&rdf_format, writer)
+                    .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
+            }
+        },
     }
 
     Ok(())

@@ -35,7 +35,7 @@ pub async fn run_mcp_http(config: &McpConfig) -> Result<()> {
     let allowed_origins = if config.allowed_origins.is_empty() {
         DEFAULT_ALLOWED_ORIGINS
             .iter()
-            .map(|origin| (*origin).to_owned())
+            .map(|origin| (*origin).to_string())
             .collect()
     } else {
         config.allowed_origins.clone()
@@ -144,8 +144,8 @@ mod tests {
 
     fn config_with(bind_address: &str, allowed_hosts: &[&str]) -> McpConfig {
         McpConfig {
-            bind_address: bind_address.to_owned(),
-            allowed_hosts: allowed_hosts.iter().map(|host| (*host).to_owned()).collect(),
+            bind_address: bind_address.to_string(),
+            allowed_hosts: allowed_hosts.iter().map(|host| (*host).to_string()).collect(),
             ..McpConfig::default()
         }
     }
@@ -154,24 +154,24 @@ mod tests {
     fn loopback_hosts_are_always_accepted() {
         let hosts = allowed_hosts(&config_with("127.0.0.1", &[]));
 
-        assert!(hosts.contains(&"localhost".to_owned()));
-        assert!(hosts.contains(&"127.0.0.1".to_owned()));
-        assert!(hosts.contains(&"::1".to_owned()));
+        assert!(hosts.contains(&"localhost".to_string()));
+        assert!(hosts.contains(&"127.0.0.1".to_string()));
+        assert!(hosts.contains(&"::1".to_string()));
     }
 
     #[test]
     fn a_concrete_bind_address_is_accepted_as_a_host() {
         let hosts = allowed_hosts(&config_with("10.0.0.5", &[]));
 
-        assert!(hosts.contains(&"10.0.0.5".to_owned()));
+        assert!(hosts.contains(&"10.0.0.5".to_string()));
     }
 
     #[test]
     fn a_wildcard_bind_address_is_not_accepted_as_a_host() {
         let hosts = allowed_hosts(&config_with("0.0.0.0", &["example.com"]));
 
-        assert!(!hosts.contains(&"0.0.0.0".to_owned()));
-        assert!(hosts.contains(&"example.com".to_owned()));
+        assert!(!hosts.contains(&"0.0.0.0".to_string()));
+        assert!(hosts.contains(&"example.com".to_string()));
     }
 
     #[test]

@@ -172,7 +172,7 @@ where
                 "Cardinality failed for expr. Current number: {current_number}, expected cardinality: {expected_cardinality}"
             ),
             RbeError::CardinalityZeroZeroDeriv { .. } => {
-                "Cardinality(0,0) but found symbol after derivative".to_owned()
+                "Cardinality(0,0) but found symbol after derivative".to_string()
             },
             RbeError::ShouldFailButPassed { name } => format!("Should fail but passed: {name}"),
             RbeError::OrValuesFail { e, failures } => format!(
@@ -180,7 +180,7 @@ where
                 e.show_qualified(show_key, show_value),
                 failures.show_qualified(show_key, show_value)
             ),
-            RbeError::MkOrValuesFail => "All values in or branch failed".to_owned(),
+            RbeError::MkOrValuesFail => "All values in or branch failed".to_string(),
             RbeError::DerivIterError {
                 error_msg,
                 expr,

@@ -44,16 +44,16 @@ impl CoShaMoConverter {
             if let Some(shape) = schema.find_shape(label).map_err(|e| {
                 trace!("Schema: {schema}");
                 ComparatorError::ShapeNotFound {
-                    label: label.to_owned(),
+                    label: label.to_string(),
                     available_shapes: if let Some(shapes) = schema.shapes() {
                         shapes
                             .iter()
                             .map(|s| s.id().to_string())
                             .collect::<Vec<_>>()
                             .join(", ")
-                            .clone()
+                            .to_string()
                     } else {
-                        "No Shapes".to_owned()
+                        "No Shapes".to_string()
                     },
                     error: e.to_string(),
                 }
@@ -62,18 +62,18 @@ impl CoShaMoConverter {
             } else {
                 trace!("Returned None when trying to find {label} at schema: {schema}");
                 Err(ComparatorError::ShapeNotFound {
-                    label: label.to_owned(),
+                    label: label.to_string(),
                     available_shapes: if let Some(shapes) = schema.shapes() {
                         shapes
                             .iter()
                             .map(|s| s.id().to_string())
                             .collect::<Vec<_>>()
                             .join(", ")
-                            .clone()
+                            .to_string()
                     } else {
-                        "No Shapes".to_owned()
+                        "No Shapes".to_string()
                     },
-                    error: "Shape not found".to_owned(),
+                    error: "Shape not found".to_string(),
                 })
             }
         } else {
@@ -88,7 +88,14 @@ impl CoShaMoConverter {
 
     fn triple_expr2coshamo(&mut self, triple_expr: &TripleExpr, coshamo: &mut CoShaMo) -> Result<(), ComparatorError> {
         match triple_expr {
-            TripleExpr::EachOf { expressions, .. } => {
+            TripleExpr::EachOf {
+                id: _,
+                expressions,
+                min: _,
+                max: _,
+                sem_acts: _,
+                annotations: _,
+            } => {
                 for e in expressions {
                     let (iri, tc) = self.triple_expr_as_constraint2coshamo(&e.te, coshamo)?;
                     let iri_s = self.get_iri(&iri)?;
@@ -96,14 +103,26 @@ impl CoShaMoConverter {
                 }
                 Ok(())
             },
-            TripleExpr::OneOf { .. } => Err(ComparatorError::NotImplemented {
-                feature: "OneOf".to_owned(),
+            TripleExpr::OneOf {
+                id: _,
+                expressions: _,
+                min: _,
+                max: _,
+                sem_acts: _,
+                annotations: _,
+            } => Err(ComparatorError::NotImplemented {
+                feature: "OneOf".to_string(),
             }),
             TripleExpr::TripleConstraint {
+                id: _,
+                negated: _,
+                inverse: _,
                 predicate,
                 value_expr,
+                min: _,
+                max: _,
+                sem_acts: _,
                 annotations,
-                ..
             } => {
                 self.triple_constraint2coshamo(predicate, value_expr, annotations)?;
                 let iri_s = self.get_iri(predicate)?;
@@ -137,10 +156,10 @@ impl CoShaMoConverter {
     ) -> Result<(IriRef, ValueDescription), ComparatorError> {
         match triple_expr {
             TripleExpr::EachOf { .. } => Err(ComparatorError::NotImplemented {
-                feature: "EachOf as constraint".to_owned(),
+                feature: "EachOf as constraint".to_string(),
             }),
             TripleExpr::OneOf { .. } => Err(ComparatorError::NotImplemented {
-                feature: "OneOf as constraint".to_owned(),
+                feature: "OneOf as constraint".to_string(),
             }),
             TripleExpr::TripleConstraint {
                 predicate, value_expr, ..
@@ -152,7 +171,7 @@ impl CoShaMoConverter {
                 ))
             },
             TripleExpr::Ref(_) => Err(ComparatorError::NotImplemented {
-                feature: "TripleExprRef as constraint".to_owned(),
+                feature: "TripleExprRef as constraint".to_string(),
             }),
         }
     }
@@ -182,16 +201,16 @@ impl CoShaMoConverter {
                     feature: format!("Shape as ValueExpr, shape: {s:?}"),
                 }),
                 ShapeExpr::ShapeOr { .. } => Err(ComparatorError::NotImplemented {
-                    feature: "ShapeOr as ValueExpr".to_owned(),
+                    feature: "ShapeOr as ValueExpr".to_string(),
                 }),
                 ShapeExpr::ShapeAnd { .. } => Err(ComparatorError::NotImplemented {
-                    feature: "ShapeAnd as ValueExpr".to_owned(),
+                    feature: "ShapeAnd as ValueExpr".to_string(),
                 }),
                 ShapeExpr::ShapeNot { .. } => Err(ComparatorError::NotImplemented {
-                    feature: "ShapeNot as ValueExpr".to_owned(),
+                    feature: "ShapeNot as ValueExpr".to_string(),
                 }),
                 ShapeExpr::External => Err(ComparatorError::NotImplemented {
-                    feature: "External as ValueExpr".to_owned(),
+                    feature: "External as ValueExpr".to_string(),
                 }),
                 ShapeExpr::Ref(r) => {
                     let r: String = r.into();
@@ -208,17 +227,17 @@ impl CoShaMoConverter {
 
         // convert the shape to CoShaMo
         match shape {
-            ShapeExpr::ShapeOr { .. } => Err(ComparatorError::NotImplemented {
-                feature: "ShapeOr".to_owned(),
+            ShapeExpr::ShapeOr { shape_exprs: _ } => Err(ComparatorError::NotImplemented {
+                feature: "ShapeOr".to_string(),
             }),
-            ShapeExpr::ShapeAnd { .. } => Err(ComparatorError::NotImplemented {
-                feature: "ShapeAnd".to_owned(),
+            ShapeExpr::ShapeAnd { shape_exprs: _ } => Err(ComparatorError::NotImplemented {
+                feature: "ShapeAnd".to_string(),
             }),
-            ShapeExpr::ShapeNot { .. } => Err(ComparatorError::NotImplemented {
-                feature: "ShapeNot".to_owned(),
+            ShapeExpr::ShapeNot { shape_expr: _ } => Err(ComparatorError::NotImplemented {
+                feature: "ShapeNot".to_string(),
             }),
             ShapeExpr::NodeConstraint(_) => Err(ComparatorError::NotImplemented {
-                feature: "NodeConstraint".to_owned(),
+                feature: "NodeConstraint".to_string(),
             }),
             ShapeExpr::Shape(shape) => {
                 if let Some(triple_expr) = shape.triple_expr() {
@@ -229,10 +248,10 @@ impl CoShaMoConverter {
                 Ok(coshamo)
             },
             ShapeExpr::External => Err(ComparatorError::NotImplemented {
-                feature: "External".to_owned(),
+                feature: "External".to_string(),
             }),
             ShapeExpr::Ref(_) => Err(ComparatorError::NotImplemented {
-                feature: "Reference".to_owned(),
+                feature: "Reference".to_string(),
             }),
         }
     }

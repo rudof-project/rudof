@@ -125,7 +125,7 @@ pub enum ValidatorError {
     #[error("Serialization of error failed: {source_error} with error: {error}")]
     ErrorSerializationError { source_error: String, error: String },
 
-    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s, ks, _errs)| format!("({n}, {s}, preds: [{}])", ks.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", "))).collect::<Vec<_>>().join(", "))]
+    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s, ks, _errs)| format!("({n}, {s}, preds: [{}])", ks.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(", "))).collect::<Vec<_>>().join(", "))]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx, Vec<Pred>, Vec<ValidatorError>)>,
     },
@@ -215,7 +215,7 @@ pub enum ValidatorError {
     #[error("Shape not found for index {idx}")]
     ShapeExprNotFound { idx: ShapeLabelIdx },
 
-    #[error("Shape {idx} failed for node {node} with errors {}", errors.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", "))]
+    #[error("Shape {idx} failed for node {node} with errors {}", errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", "))]
     ShapeFailed {
         node: Box<Node>,
         shape: Box<Shape>,
@@ -377,7 +377,7 @@ impl ValidatorError {
                 }
             },
             ValidatorError::ShapeFailed { errors, .. } => {
-                *errors = errors.iter().map(ValidatorError::without_nested_references).collect();
+                *errors = errors.iter().map(|e| e.without_nested_references()).collect();
             },
             _ => {},
         }
@@ -586,7 +586,7 @@ impl ValidatorError {
                     show_shape_expr(shape_expr, schema, width)
                 )
             },
-            ValidatorError::FailedPending { .. } => "References failed".to_owned(),
+            ValidatorError::FailedPending { .. } => "References failed".to_string(),
             ValidatorError::RbeError(err) => {
                 let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
                 let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
@@ -611,41 +611,46 @@ impl ValidatorError {
                     show_preds(declared)
                 )
             },
-            ValidatorError::ParentShapeFailed { .. } => "Parent shape failed".to_owned(),
+            ValidatorError::ParentShapeFailed { .. } => "Parent shape failed".to_string(),
             ValidatorError::ShapeExtendsNoMainShape { .. } => {
-                "Shape extends another shape but the parent shape has no main shape".to_owned()
+                "Shape extends another shape but the parent shape has no main shape".to_string()
             },
-            ValidatorError::ParentShapeNodeConstraintFailed { .. } => "Parent shape node constraint failed".to_owned(),
-            ValidatorError::ParentShapeMainShapeFailed { .. } => "Parent shape main shape failed".to_owned(),
+            ValidatorError::ParentShapeNodeConstraintFailed { .. } => "Parent shape node constraint failed".to_string(),
+            ValidatorError::ParentShapeMainShapeFailed { .. } => "Parent shape main shape failed".to_string(),
             ValidatorError::FillingShapeMapNodes { .. } => {
-                "Filling node from node selector to validate failed".to_owned()
+                "Filling node from node selector to validate failed".to_string()
             },
-            ValidatorError::AbstractShapeNoDescendants { .. } => "Abstract shape has no descendants".to_owned(),
-            ValidatorError::NodeShapeError { .. } => "Creating shapemap from node and shape failed".to_owned(),
-            ValidatorError::TermToRDFNodeFailed { .. } => "Converting Term to RDFNode failed".to_owned(),
-            ValidatorError::ReasonSerializationError { .. } => "Serialization of reason failed".to_owned(),
-            ValidatorError::ErrorSerializationError { .. } => "Serialization of error failed".to_owned(),
-            ValidatorError::NegCycleError { .. } => "Negation cycle error".to_owned(),
-            ValidatorError::SRDFError { .. } => "SRDF error".to_owned(),
-            ValidatorError::ReadSinkFailed { .. } => "Recording a triple in a sink failed".to_owned(),
-            ValidatorError::NotFoundShapeLabel { .. } => "Shape label not found".to_owned(),
-            ValidatorError::NotFoundShapeLabelWithIndex { .. } => "Shape label not found with index".to_owned(),
-            ValidatorError::ConversionObjectIri { .. } => "Conversion of object IRI failed".to_owned(),
-            ValidatorError::SchemaIRError { .. } => "Schema IRI error".to_owned(),
-            ValidatorError::ShapeMapError { .. } => "Shape map error".to_owned(),
-            ValidatorError::RbeFailed() => "Regular expression failed".to_owned(),
-            ValidatorError::PrefixMapError(err) => format!("Prefix map error: {err}"),
-            ValidatorError::ShapeLabelNotFoundError { .. } => "Shape label not found".to_owned(),
-            ValidatorError::ShapeExtendsError { .. } => "Shape extends error".to_owned(),
+            ValidatorError::AbstractShapeNoDescendants { .. } => "Abstract shape has no descendants".to_string(),
+            ValidatorError::NodeShapeError { .. } => "Creating shapemap from node and shape failed".to_string(),
+            ValidatorError::TermToRDFNodeFailed { .. } => "Converting Term to RDFNode failed".to_string(),
+            ValidatorError::ReasonSerializationError { .. } => "Serialization of reason failed".to_string(),
+            ValidatorError::ErrorSerializationError { .. } => "Serialization of error failed".to_string(),
+            ValidatorError::NegCycleError { .. } => "Negation cycle error".to_string(),
+            ValidatorError::SRDFError { .. } => "SRDF error".to_string(),
+            ValidatorError::ReadSinkFailed { .. } => "Recording a triple in a sink failed".to_string(),
+            ValidatorError::NotFoundShapeLabel { .. } => "Shape label not found".to_string(),
+            ValidatorError::NotFoundShapeLabelWithIndex { .. } => "Shape label not found with index".to_string(),
+            ValidatorError::ConversionObjectIri { .. } => "Conversion of object IRI failed".to_string(),
+            ValidatorError::SchemaIRError { .. } => "Schema IRI error".to_string(),
+            ValidatorError::ShapeMapError { .. } => "Shape map error".to_string(),
+            ValidatorError::RbeFailed() => "Regular expression failed".to_string(),
+            ValidatorError::PrefixMapError(err) => format!("Prefix map error: {}", err),
+            ValidatorError::ShapeLabelNotFoundError { .. } => "Shape label not found".to_string(),
+            ValidatorError::ShapeExtendsError { .. } => "Shape extends error".to_string(),
             ValidatorError::AddingNonConformantError { node, label, error } => {
-                format!("Adding non-conformant for node: {node} and label: {label}, error: {error}")
+                format!(
+                    "Adding non-conformant for node: {} and label: {}, error: {}",
+                    node, label, error
+                )
             },
-            ValidatorError::AddingConformantError { node, label, error } => {
-                format!("Adding conformant for node: {node} and label: {label}, error: {error}")
-            },
-            ValidatorError::AddingPendingError { node, label, error } => {
-                format!("Adding pending for node: {node} and label: {label}, error: {error}")
-            },
+            ValidatorError::AddingConformantError { node, label, error } => format!(
+                "Adding conformant for node: {} and label: {}, error: {}",
+                node, label, error
+            ),
+            ValidatorError::AddingPendingError { node, label, error } => format!(
+                "Adding pending for node: {} and label: {}, error: {}",
+                node, label, error
+            ),
             ValidatorError::ShapeExprNotFound { idx } => {
                 format!("Shape expression {} not found", show_label(idx, schema, width))
             },
@@ -878,9 +883,9 @@ mod tests {
     fn neg_cycle_error_shows_the_shape_labels() {
         let error = ValidatorError::NegCycleError {
             neg_cycles: vec![vec![(
-                ":N".to_owned(),
-                ":N2".to_owned(),
-                vec![":N".to_owned(), ":N2".to_owned()],
+                ":N".to_string(),
+                ":N2".to_string(),
+                vec![":N".to_string(), ":N2".to_string()],
             )]],
         };
         assert_eq!(

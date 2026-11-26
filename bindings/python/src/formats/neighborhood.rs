@@ -96,7 +96,7 @@ impl PyNeighborArc {
 
 /// The rendered term, or a marker for one `rudof_rdf` cannot render yet.
 fn or_placeholder(term: Result<String>) -> String {
-    term.unwrap_or_else(|_| "<unrenderable>".to_owned())
+    term.unwrap_or_else(|_| "<unrenderable>".to_string())
 }
 
 /// Iterator over the arcs around a node, in depth-first order.

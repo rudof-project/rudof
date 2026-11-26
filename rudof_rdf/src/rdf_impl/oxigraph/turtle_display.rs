@@ -54,7 +54,7 @@ fn show_literal(l: LiteralRef<'_>, pm: &PrefixMap) -> String {
         return l.to_string();
     }
     if has_short_form(l.value(), datatype) {
-        return l.value().to_owned();
+        return l.value().to_string();
     }
     format!("{}^^{}", Literal::new_simple_literal(l.value()), show_iri(datatype, pm))
 }

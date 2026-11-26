@@ -65,7 +65,7 @@ impl Expression {
                 let node_obj = S::term_as_object(node)?;
                 // The focus node of the shape is the focus node, and the value node is bound
                 // to the scope variable `value`
-                let scope = HashMap::from([(EXPR_VALUE_VAR.to_owned(), node.clone())]);
+                let scope = HashMap::from([(EXPR_VALUE_VAR.to_string(), node.clone())]);
 
                 engine.node_expr_state().steps = 0;
                 let values = self.expr().evaluate(store, fnode, &scope, engine, shapes_graph)?;

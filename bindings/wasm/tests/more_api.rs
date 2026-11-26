@@ -14,11 +14,11 @@ prefix : <http://example.org/>
 :bob   :name "Bob"   ; :age "unknown" .
 "#;
 
-const SHEX_SCHEMA: &str = "
+const SHEX_SCHEMA: &str = r#"
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person { :name xsd:string ; :age xsd:integer ; :knows @:Person * }
-";
+"#;
 
 fn session_with_data() -> Session {
     let mut rudof = Session::new(None);
@@ -53,9 +53,11 @@ fn compare_data_rdf12_and_errors() {
         .compare_data(annotated, reified, None, None, None, None, None, None)
         .unwrap();
     assert_eq!(relation, "isomorphic");
-    rudof
-        .compare_data(annotated, reified, Some("nope"), None, None, None, None, None)
-        .unwrap_err();
+    assert!(
+        rudof
+            .compare_data(annotated, reified, Some("nope"), None, None, None, None, None)
+            .is_err()
+    );
 }
 
 #[test]
@@ -76,9 +78,11 @@ fn compare_data_modes() {
         .compare_data(general, redundant, None, None, None, None, None, Some("homomorphic"))
         .unwrap();
     assert_eq!(relation, "equivalent");
-    rudof
-        .compare_data(general, specific, None, None, None, None, None, Some("subset"))
-        .unwrap_err();
+    assert!(
+        rudof
+            .compare_data(general, specific, None, None, None, None, None, Some("subset"))
+            .is_err()
+    );
 }
 
 #[test]
@@ -93,9 +97,11 @@ fn compare_loaded_data_with_other() {
         rudof.compare_loaded_data(DATA, None, None, None, None).unwrap(),
         "isomorphic"
     );
-    Session::new(None)
-        .compare_loaded_data(DATA, None, None, None, None)
-        .unwrap_err();
+    assert!(
+        Session::new(None)
+            .compare_loaded_data(DATA, None, None, None, None)
+            .is_err()
+    );
 }
 
 // Node inspection
@@ -243,8 +249,8 @@ fn staging() {
     let before = count(&rudof);
 
     let delta = [
-        (":carol".to_owned(), ":name".to_owned(), "\"Carol\"".to_owned()),
-        (":carol".to_owned(), ":knows".to_owned(), ":alice".to_owned()),
+        (":carol".to_string(), ":name".to_string(), "\"Carol\"".to_string()),
+        (":carol".to_string(), ":knows".to_string(), ":alice".to_string()),
     ];
 
     // Staged, then discarded: the data goes back to what it was.
@@ -290,7 +296,7 @@ fn node_neighborhood() {
     assert!(limited.truncated);
 
     // Predicates are written as in the command line: prefixed names or <IRI>s.
-    let names = [":name".to_owned()];
+    let names = [":name".to_string()];
     let only_names = rudof
         .node_neighborhood(":alice", Some(&names), None, None, None, None)
         .unwrap();
@@ -301,12 +307,12 @@ fn node_neighborhood() {
 
 #[test]
 fn materialize_after_validation() {
-    let schema = "
+    let schema = r#"
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 prefix Map: <http://shex.io/extensions/Map/>
 :Person { :name xsd:string %Map:{ <http://example.org/vars/name> %} }
-";
+"#;
     let mut rudof = session_with_data();
     rudof.read_shex(schema, None, None, None).unwrap();
     rudof.read_shapemap(":alice@:Person", None, None, None).unwrap();
@@ -414,13 +420,13 @@ fn convert_schemas() {
         .unwrap();
     assert!(uml.contains("@startuml"), "{uml}");
 
-    let shacl_shapes = "
+    let shacl_shapes = r#"
 prefix : <http://example.org/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :PersonShape a sh:NodeShape ;
   sh:property [ sh:path :name ; sh:datatype xsd:string ] .
-";
+"#;
     let shex = rudof
         .convert_schemas(shacl_shapes, "shacl", "shex", "turtle", "shexc", None, None, None)
         .unwrap();
@@ -443,7 +449,7 @@ fn convert_shacl_to_shex() {
     let mut rudof = Session::new(None);
     // sh:minCount/sh:maxCount are cardinalities, several components are
     // combined with AND and sh:node is a reference to the shape.
-    let shacl_shapes = "
+    let shacl_shapes = r#"
 prefix : <http://example.org/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -453,7 +459,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
   sh:property [ sh:path :pet ; sh:class :Animal ; sh:node :PetShape ; sh:maxCount 3 ] .
 :PetShape a sh:NodeShape ;
   sh:property [ sh:path :name ; sh:datatype xsd:string ] .
-";
+"#;
     let shexc = rudof
         .convert_schemas(shacl_shapes, "shacl", "shex", "turtle", "shexc", None, None, None)
         .unwrap();
@@ -562,11 +568,11 @@ fn shex_formats_round_trip() {
 #[cfg(feature = "comparison")]
 #[test]
 fn compare_schemas() {
-    let other = "
+    let other = r#"
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person { :name xsd:string ; :email xsd:string }
-";
+"#;
     let mut rudof = Session::new(None);
     let comparison = rudof
         .compare_schemas(
@@ -604,7 +610,7 @@ fn dctap() {
         assert!(shex.contains("name"), "{shex}");
     }
     rudof.reset_dctap();
-    rudof.serialize_dctap(None).unwrap_err();
+    assert!(rudof.serialize_dctap(None).is_err());
 }
 
 #[cfg(feature = "rdf-config")]
@@ -621,23 +627,23 @@ fn rdf_config() {
     let serialized = rudof.serialize_rdf_config(Some("yaml")).unwrap();
     assert!(serialized.contains("Person"), "{serialized}");
     rudof.reset_rdf_config();
-    rudof.serialize_rdf_config(None).unwrap_err();
+    assert!(rudof.serialize_rdf_config(None).is_err());
 }
 
 #[test]
 fn service_description() {
-    let service = "
+    let service = r#"
 @prefix sd: <http://www.w3.org/ns/sparql-service-description#> .
 <http://example.org/sparql> a sd:Service ;
     sd:endpoint <http://example.org/sparql> ;
     sd:supportedLanguage sd:SPARQL11Query .
-";
+"#;
     let mut rudof = Session::new(None);
     rudof.read_service_description(service, None, None, None).unwrap();
     let serialized = rudof.serialize_service_description(None).unwrap();
     assert!(serialized.contains("example.org/sparql"), "{serialized}");
     rudof.reset_service_description();
-    rudof.serialize_service_description(None).unwrap_err();
+    assert!(rudof.serialize_service_description(None).is_err());
 }
 
 // Property graph schemas
@@ -660,12 +666,12 @@ fn pgschema_validation() {
         .unwrap();
     rudof
         .read_pgschema(
-            "
+            r#"
 CREATE NODE TYPE ( AdultStudentType: Student {
     name: STRING ,
     age: INTEGER CHECK > 18
 })
-",
+"#,
             None,
         )
         .unwrap();
@@ -696,7 +702,7 @@ CREATE NODE TYPE ( AdultStudentType: Student {
     }
 
     rudof.reset_pgschema_validation();
-    rudof.serialize_pgschema_validation_results(None).unwrap_err();
+    assert!(rudof.serialize_pgschema_validation_results(None).is_err());
 }
 
 // Resets
@@ -708,8 +714,8 @@ fn reset_validation_results() {
     rudof.read_shapemap(":alice@:Person", None, None, None).unwrap();
     rudof.validate_shex(false, None, false).unwrap();
     rudof.reset_validation_results();
-    rudof.serialize_shex_validation_results(None, None).unwrap_err();
-    rudof.validate_shex(false, None, false).unwrap_err();
+    assert!(rudof.serialize_shex_validation_results(None, None).is_err());
+    assert!(rudof.validate_shex(false, None, false).is_err());
 }
 
 // Operations that need the network, which is not available on wasm
@@ -769,13 +775,13 @@ fn diff_data_lists_the_triples_only_in_each_graph() {
     assert!(diff.exact);
     assert_eq!(
         diff.only_in_first,
-        vec!["_:b <http://example.org/name> \"Bob\"".to_owned()]
+        vec!["_:b <http://example.org/name> \"Bob\"".to_string()]
     );
     assert_eq!(
         diff.only_in_second,
-        vec!["_:c <http://example.org/name> \"Robert\"".to_owned()]
+        vec!["_:c <http://example.org/name> \"Robert\"".to_string()]
     );
-    assert_eq!(diff.first_to_second, vec![["_:b".to_owned(), "_:c".to_owned()]]);
+    assert_eq!(diff.first_to_second, vec![["_:b".to_string(), "_:c".to_string()]]);
     assert!(
         diff.report
             .contains("PREFIX : <http://example.org/>\nOnly in the first graph (1):\n  _:b :name \"Bob\" .\n"),

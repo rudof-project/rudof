@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{result, str::FromStr};
 
 use crate::ast::serde_string_or_struct::*;
 use serde::{Deserialize, Serialize, Serializer};
@@ -32,7 +32,7 @@ impl FromStr for StringOrLiteralStemWrapper {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(StringOrLiteralStemWrapper {
-            s: StringOrLiteralStem::String(s.to_owned()),
+            s: StringOrLiteralStem::String(s.to_string()),
         })
     }
 }
@@ -41,7 +41,7 @@ impl FromStr for StringOrLiteralStem {
     type Err = StringOrLiteralStemError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(StringOrLiteralStem::String(s.to_owned()))
+        Ok(StringOrLiteralStem::String(s.to_string()))
     }
 }
 
@@ -52,13 +52,13 @@ pub enum StringOrLiteralStemError {
 }
 
 impl SerializeStringOrStruct for StringOrLiteralStem {
-    fn serialize_string_or_struct<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_string_or_struct<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match &self {
             StringOrLiteralStem::String(r) => r.serialize(serializer),
-            StringOrLiteralStem::LiteralStem { .. } => self.serialize(serializer),
+            _ => self.serialize(serializer),
         }
     }
 }

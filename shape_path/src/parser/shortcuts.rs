@@ -9,7 +9,7 @@ use nom::{Parser, branch::alt, combinator::map, sequence::preceded};
 use prefixmap::IriRef;
 
 /// `shortcut ::= ("@" | "~" | "$") iri`
-pub(super) fn shortcut(i: Span<'_>) -> IRes<'_, Vec<Step>> {
+pub(super) fn shortcut(i: Span) -> IRes<Vec<Step>> {
     alt((
         map(preceded(token("@"), iri), shape_label_shortcut),
         map(preceded(token("~"), iri), predicate_shortcut),

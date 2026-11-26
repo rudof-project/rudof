@@ -30,7 +30,7 @@ use nom::{
 ///        | nonChildAxis termType? filter*
 ///        | "(" shapePath ")" termType? filter*
 /// ```
-pub(super) fn step(i: Span<'_>) -> IRes<'_, Step> {
+pub(super) fn step(i: Span) -> IRes<Step> {
     alt((
         map(
             (
@@ -70,7 +70,7 @@ fn with_filters(step: Step, term_type: Option<TermType>, filters: Vec<Filter>) -
 }
 
 /// `nonChildAxis ::= "thisShapeExpr::" | "thisTripleExpr::" | "self::" | "parent::" | "ancestor::"`
-fn non_child_axis(i: Span<'_>) -> IRes<'_, Axis> {
+fn non_child_axis(i: Span) -> IRes<Axis> {
     alt((
         value(Axis::ThisShapeExpr, token("thisShapeExpr::")),
         value(Axis::ThisTripleExpr, token("thisTripleExpr::")),
@@ -83,16 +83,16 @@ fn non_child_axis(i: Span<'_>) -> IRes<'_, Axis> {
 
 /// `termType ::= shapeExprType | tripleExprType | valueType | "Schema" | "SemAct" | "Annotation"`,
 /// see [`TermType`].
-fn term_type(i: Span<'_>) -> IRes<'_, TermType> {
+fn term_type(i: Span) -> IRes<TermType> {
     map_error(map_opt(word, |w| TermType::from_keyword(w.fragment())), || {
         ParseError::Custom {
-            msg: "Expected a ShExPath term type".to_owned(),
+            msg: "Expected a ShExPath term type".to_string(),
         }
     })(i)
 }
 
 /// `attributeOrAny ::= "*" | attribute`
-fn attribute_or_any(i: Span<'_>) -> IRes<'_, AttributeOrAny> {
+fn attribute_or_any(i: Span) -> IRes<AttributeOrAny> {
     alt((
         value(AttributeOrAny::Any, token("*")),
         map(attribute, AttributeOrAny::Attribute),
@@ -101,10 +101,10 @@ fn attribute_or_any(i: Span<'_>) -> IRes<'_, AttributeOrAny> {
 }
 
 /// `attribute ::= "type" | "id" | ...`, see [`Attribute`].
-fn attribute(i: Span<'_>) -> IRes<'_, Attribute> {
+fn attribute(i: Span) -> IRes<Attribute> {
     map_error(map_opt(word, |w| Attribute::from_keyword(w.fragment())), || {
         ParseError::Custom {
-            msg: "Expected a ShExPath attribute".to_owned(),
+            msg: "Expected a ShExPath attribute".to_string(),
         }
     })(i)
 }

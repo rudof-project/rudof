@@ -129,7 +129,7 @@ fn extract_shacl_shapes_from_data(rudof: &mut Rudof) -> Result<()> {
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if !data.is_rdf() {
-        return Err(Box::new(DataError::NoRdfDataLoaded).into());
+        Err(Box::new(DataError::NoRdfDataLoaded))?
     }
 
     let rdf_data = data.unwrap_rdf_mut();
@@ -138,16 +138,16 @@ fn extract_shacl_shapes_from_data(rudof: &mut Rudof) -> Result<()> {
         ShaclParser::new(rdf_data.clone())
             .parse()
             .map_err(|error| ShaclError::FailedParsingShaclSchema {
-                source_name: "loaded RDF data".to_owned(),
-                format: "loaded RDF data format".to_owned(),
+                source_name: "loaded RDF data".to_string(),
+                format: "loaded RDF data format".to_string(),
                 error: error.to_string(),
             })?;
 
     rudof.shacl_shapes = Some(
         IRSchema::compile_with_recursion(&shacl_schema, recursion_semantics).map_err(|e: IRError| {
             ShaclError::FailedParsingShaclSchema {
-                source_name: "loaded RDF data".to_owned(),
-                format: "loaded RDF data format".to_owned(),
+                source_name: "loaded RDF data".to_string(),
+                format: "loaded RDF data format".to_string(),
                 error: e.to_string(),
             }
         })?,

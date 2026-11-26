@@ -42,7 +42,7 @@ pub async fn explore_rdf_node_prompt_impl(
     let predicates = args.predicates.unwrap_or_default();
 
     let predicates_display = if predicates.is_empty() {
-        "none (showing all predicates)".to_owned()
+        "none (showing all predicates)".to_string()
     } else {
         format!("`{}`", predicates.join("`, `"))
     };
@@ -57,7 +57,10 @@ pub async fn explore_rdf_node_prompt_impl(
     let messages = vec![
         PromptMessage::new_text(
             Role::User,
-            format!("Explore RDF node `{node}` with mode: **{mode_str}**, predicates: {predicates_display}"),
+            format!(
+                "Explore RDF node `{}` with mode: **{}**, predicates: {}",
+                node, mode_str, predicates_display
+            ),
         ),
         PromptMessage::new_text(
             Role::Assistant,
@@ -120,7 +123,7 @@ pub async fn explore_rdf_node_prompt_impl(
                 node,
                 node,
                 mode_str,
-                serde_json::to_string(&predicates).unwrap_or_else(|_| "[]".to_owned()),
+                serde_json::to_string(&predicates).unwrap_or_else(|_| "[]".to_string()),
                 node,
                 node,
                 node,
@@ -130,6 +133,7 @@ pub async fn explore_rdf_node_prompt_impl(
     ];
 
     Ok(GetPromptResult::new(messages).with_description(format!(
-        "Explore RDF node {node} ({mode_description}, predicates: {predicates_display})"
+        "Explore RDF node {} ({}, predicates: {})",
+        node, mode_description, predicates_display
     )))
 }

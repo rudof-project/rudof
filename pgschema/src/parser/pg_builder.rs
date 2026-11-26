@@ -15,7 +15,7 @@ use crate::{
     value::Value,
 };
 
-pub struct PgBuilder;
+pub struct PgBuilder {}
 
 impl Default for PgBuilder {
     fn default() -> Self {
@@ -27,7 +27,7 @@ impl PgBuilder {
     pub fn new() -> Self {
         PgBuilder {}
     }
-    pub fn parse_pg(&self, input: &str) -> Result<PropertyGraph, PgsError> {
+    pub fn parse_pg(&self, input: &str) -> Result<crate::pg::PropertyGraph, PgsError> {
         let pg_content = PgParser::new()
             .parse(input)
             .map_err(|e| PgsError::PGParserError { error: e.to_string() })?;
@@ -113,7 +113,7 @@ fn get_properties(property_spec: Vec<Property>) -> Result<Record, PgsError> {
 }
 
 fn get_property(property: Property) -> Result<(String, HashSet<Value>), PgsError> {
-    let key = property.key.as_str().to_owned();
+    let key = property.key.as_str().to_string();
     let values = get_values(property.values)?;
     Ok((key, values))
 }
@@ -147,7 +147,7 @@ fn get_value(value: SingleValue) -> Result<Value, PgsError> {
         SingleValue::NumberValue(str_number_) => {
             let number = str_number_
                 .parse::<i32>()
-                .map_err(|_| PgsError::InvalidNumber(format!("Invalid number value: {str_number_}")))?;
+                .map_err(|_| PgsError::InvalidNumber(format!("Invalid number value: {}", str_number_)))?;
             Ok(Value::int(number))
         },
         SingleValue::DateValue(date) => {

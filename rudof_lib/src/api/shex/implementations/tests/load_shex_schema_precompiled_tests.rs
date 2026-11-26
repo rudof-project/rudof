@@ -15,12 +15,12 @@ use std::io::Write;
 fn compile_sample_schema() -> (tempfile::NamedTempFile, InputSpec) {
     let mut rudof = Rudof::new(RudofConfig::default());
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer ?
-           }",
+           }"#,
     );
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 

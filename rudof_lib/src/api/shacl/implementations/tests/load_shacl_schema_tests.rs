@@ -22,7 +22,7 @@ fn test_extract_shacl_shapes_from_loaded_data() {
 
     // Load RDF data that contains SHACL shapes
     let data_with_shapes = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -47,7 +47,7 @@ fn test_extract_shacl_shapes_from_loaded_data() {
                 sh:path ex:companyName ;
                 sh:datatype xsd:string ;
             ] .
-        ",
+        "#,
     );
 
     // Load data into rudof
@@ -74,7 +74,8 @@ fn test_extract_shacl_shapes_from_loaded_data() {
     assert!(serialized.contains("name") || serialized.contains("age"));
 
     println!(
-        "\n===== test_extract_shacl_shapes_from_loaded_data =====\n{serialized}============================================"
+        "\n===== test_extract_shacl_shapes_from_loaded_data =====\n{}============================================",
+        serialized
     );
 }
 
@@ -134,7 +135,8 @@ fn test_extract_shacl_shapes_mixed_data() {
     assert!(serialized.contains("name"));
 
     println!(
-        "\n===== test_extract_shacl_shapes_mixed_data =====\n{serialized}============================================"
+        "\n===== test_extract_shacl_shapes_mixed_data =====\n{}============================================",
+        serialized
     );
 }
 
@@ -172,7 +174,7 @@ fn test_extract_shacl_shapes_from_data_no_shapes() {
 
     // The result depends on implementation - it might succeed with empty schema
     // or might succeed with no shapes found
-    result.unwrap();
+    assert!(result.is_ok());
 
     println!("\n===== test_extract_shacl_shapes_from_data_no_shapes =====");
 }
@@ -267,7 +269,8 @@ fn test_extract_and_serialize_complex_shapes() {
     assert!(serialized.contains("email") || serialized.contains("age"));
 
     println!(
-        "\n===== test_extract_and_serialize_complex_shapes =====\n{serialized}============================================"
+        "\n===== test_extract_and_serialize_complex_shapes =====\n{}============================================",
+        serialized
     );
 }
 
@@ -277,7 +280,7 @@ fn test_extract_shapes_then_load_separate_schema() {
 
     // First load data with shapes
     let data_with_shapes = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -289,7 +292,7 @@ fn test_extract_shapes_then_load_separate_schema() {
                 sh:path ex:prop1 ;
                 sh:datatype xsd:string ;
             ] .
-        ",
+        "#,
     );
 
     load_data(
@@ -312,7 +315,7 @@ fn test_extract_shapes_then_load_separate_schema() {
 
     // Now load a separate schema - should replace the extracted one
     let separate_schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -324,7 +327,7 @@ fn test_extract_shapes_then_load_separate_schema() {
                 sh:path ex:prop2 ;
                 sh:datatype xsd:integer ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(
@@ -342,7 +345,8 @@ fn test_extract_shapes_then_load_separate_schema() {
     assert!(serialized2.contains("Shape2") || serialized2.contains("Class2"));
 
     println!(
-        "\n===== test_extract_shapes_then_load_separate_schema =====\n{serialized2}============================================"
+        "\n===== test_extract_shapes_then_load_separate_schema =====\n{}============================================",
+        serialized2
     );
 }
 
@@ -391,7 +395,8 @@ fn test_extract_shacl_shapes_with_lists() {
     assert!(serialized.contains("status") || serialized.contains("role"));
 
     println!(
-        "\n===== test_extract_shacl_shapes_with_lists =====\n{serialized}============================================"
+        "\n===== test_extract_shacl_shapes_with_lists =====\n{}============================================",
+        serialized
     );
 }
 
@@ -400,7 +405,7 @@ fn test_extract_shapes_multiple_data_sources() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let data_source1 = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -412,11 +417,11 @@ fn test_extract_shapes_multiple_data_sources() {
                 sh:path ex:name ;
                 sh:datatype xsd:string ;
             ] .
-        ",
+        "#,
     );
 
     let data_source2 = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -428,7 +433,7 @@ fn test_extract_shapes_multiple_data_sources() {
                 sh:path ex:companyName ;
                 sh:datatype xsd:string ;
             ] .
-        ",
+        "#,
     );
 
     // Load multiple data sources
@@ -454,7 +459,8 @@ fn test_extract_shapes_multiple_data_sources() {
     assert!(serialized.contains("CompanyShape") || serialized.contains("company"));
 
     println!(
-        "\n===== test_extract_shapes_multiple_data_sources =====\n{serialized}============================================"
+        "\n===== test_extract_shapes_multiple_data_sources =====\n{}============================================",
+        serialized
     );
 }
 
@@ -463,7 +469,7 @@ fn test_extract_shapes_with_merge() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let data_source1 = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -475,7 +481,7 @@ fn test_extract_shapes_with_merge() {
                 sh:path ex:name ;
                 sh:datatype xsd:string ;
             ] .
-        ",
+        "#,
     );
 
     // Load first data source
@@ -493,7 +499,7 @@ fn test_extract_shapes_with_merge() {
     .unwrap();
 
     let data_source2 = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -505,7 +511,7 @@ fn test_extract_shapes_with_merge() {
                 sh:path ex:companyName ;
                 sh:datatype xsd:string ;
             ] .
-        ",
+        "#,
     );
 
     // Load second data source with merge=true
@@ -530,5 +536,8 @@ fn test_extract_shapes_with_merge() {
     assert!(serialized.contains("PersonShape") || serialized.contains("person"));
     assert!(serialized.contains("CompanyShape") || serialized.contains("company"));
 
-    println!("\n===== test_extract_shapes_with_merge =====\n{serialized}============================================");
+    println!(
+        "\n===== test_extract_shapes_with_merge =====\n{}============================================",
+        serialized
+    );
 }

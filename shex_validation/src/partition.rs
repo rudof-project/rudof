@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::fmt::Write as _;
 
 use prefixmap::{PrefixMap, PrefixMapError};
 use rbe::RbeTable;
@@ -40,10 +39,10 @@ impl PartitionsDisplay {
 impl Display for PartitionsDisplay {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
-        for partition in &self.partitions {
-            write!(result, "{partition}").unwrap();
+        for partition in self.partitions.iter() {
+            result.push_str(&format!("{}", partition));
         }
-        write!(f, "{result}")
+        write!(f, "{}", result)
     }
 }
 
@@ -75,7 +74,7 @@ impl PartitionDisplay {
     ) -> Result<String, PrefixMapError> {
         let mut result = String::new();
         if let Some(label) = self.maybe_label {
-            write!(result, "Shape {} = ", show_idx(&label, schema)).unwrap();
+            result.push_str(&format!("Shape {} = ", show_idx(&label, schema)));
         } else {
             result.push_str("Base = ");
         }
@@ -83,13 +82,8 @@ impl PartitionDisplay {
             .rbes
             .iter()
             .map(|rbe| show_rbe_qualified(rbe, nodes_prefixmap, schema, width))
-            .try_fold(String::new(), |mut acc, rbe_str| {
-                rbe_str.map(|s| {
-                    acc.push_str(&s);
-                    acc
-                })
-            })?;
-        write!(result, "Expressions = [{rbe_str}], ").unwrap();
+            .try_fold(String::new(), |acc, rbe_str| rbe_str.map(|s| acc + &s))?;
+        result.push_str(&format!("Expressions = [{}], ", rbe_str));
         let neighs_str = self
             .neighs
             .iter()
@@ -102,7 +96,7 @@ impl PartitionDisplay {
             })
             .collect::<Vec<_>>()
             .join(", ");
-        write!(result, "Neighbors: [{neighs_str}]").unwrap();
+        result.push_str(&format!("Neighbors: [{}]", neighs_str));
         Ok(result)
     }
 }
@@ -110,7 +104,8 @@ impl PartitionDisplay {
 fn show_idx(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
     schema
         .shape_label_from_idx(idx)
-        .map_or_else(|| idx.to_string(), |l| schema.show_label(l))
+        .map(|l| schema.show_label(l))
+        .unwrap_or_else(|| idx.to_string())
 }
 
 fn show_rbe_qualified(
@@ -131,19 +126,24 @@ impl Display for PartitionDisplay {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
         if let Some(label) = self.maybe_label {
-            write!(result, "Shape {label} = ").unwrap();
+            result.push_str(&format!("Shape {} = ", label));
         } else {
             result.push_str("Base = ");
         }
-        let rbe_str = self.rbes.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ");
-        writeln!(result, " Expressions [{rbe_str}]").unwrap();
+        let rbe_str = self
+            .rbes
+            .iter()
+            .map(|rbe| rbe.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        result.push_str(&format!(" Expressions [{}]\n", rbe_str));
         let neighs_str = self
             .neighs
             .iter()
             .map(|(pred, node, _context)| format!("{} {}", pred.iri(), node))
             .collect::<Vec<_>>()
             .join(", ");
-        writeln!(result, " Neighbors: [{neighs_str}]").unwrap();
-        write!(f, "{result}")
+        result.push_str(&format!(" Neighbors: [{}]\n", neighs_str));
+        write!(f, "{}", result)
     }
 }

@@ -76,7 +76,7 @@ impl CommandContext {
 
         // Load config
         #[allow(unused_mut)]
-        let mut config = RudofConfig::discover(common.config().map(std::path::PathBuf::as_path))?;
+        let mut config = RudofConfig::discover(common.config().map(|p| p.as_path()))?;
 
         // `--qlever-index-dir` overrides `[rdf.qlever] index_dir` from the
         // loaded config, so the index location can be pinned/shared without

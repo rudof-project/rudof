@@ -73,7 +73,7 @@ impl<'a, RDF: BuildRDF> Ctx<'a, RDF> {
             return Ok(node.clone());
         }
         let node = self.bnode()?;
-        self.bnodes.insert(label.to_owned(), node.clone());
+        self.bnodes.insert(label.to_string(), node.clone());
         Ok(node)
     }
 
@@ -427,7 +427,7 @@ impl<'a, RDF: BuildRDF> Ctx<'a, RDF> {
             ),
             ValueSetValue::LanguageStem { stem } => {
                 let s = match stem {
-                    LangOrWildcard::Lang(lang) => lang.as_str().to_owned(),
+                    LangOrWildcard::Lang(lang) => lang.as_str().to_string(),
                     LangOrWildcard::Wildcard => String::new(),
                 };
                 self.typed_string_node(ShexRVocab::sx_language_stem(), ShexRVocab::sx_stem(), &s)
@@ -589,7 +589,7 @@ impl<'a, RDF: BuildRDF> Ctx<'a, RDF> {
             ShapeExprLabel::IriRef { value } => Ok(self.schema.resolve_iriref(value).into()),
             ShapeExprLabel::BNode { value } => self.bnode_for_label(value.value()),
             ShapeExprLabel::Start => Err(ShExRBuilderError::Unsupported {
-                what: "shape label: Start".to_owned(),
+                what: "shape label: Start".to_string(),
             }),
         }
     }
@@ -688,7 +688,7 @@ mod tests {
         let te = TripleExpr::triple_constraint(
             None,
             None,
-            IriRef::iri(IriS::new_unchecked("http://a.example/p1")),
+            IriRef::iri(rudof_iri::IriS::new_unchecked("http://a.example/p1")),
             None,
             None,
             None,
@@ -731,7 +731,7 @@ mod tests {
         let te = TripleExpr::triple_constraint(
             None,
             None,
-            IriRef::iri(IriS::new_unchecked("http://a.example/p1")),
+            IriRef::iri(rudof_iri::IriS::new_unchecked("http://a.example/p1")),
             Some(ShapeExpr::shape_ref(ShapeExprLabel::bnode(BNode::new("b1")))),
             None,
             None,

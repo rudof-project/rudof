@@ -17,11 +17,13 @@ async fn test_pattern_generator_alphanumeric_patterns() {
 
     // Test license plate pattern (mix of letters and numbers)
     let mut context = GenerationContext::new(
-        "http://example.org/licensePlate".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/licensePlate".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
-    context.parameters.insert("pattern".to_owned(), json!("[A-Z]{3}\\d{3}"));
+    context
+        .parameters
+        .insert("pattern".to_string(), json!("[A-Z]{3}\\d{3}"));
 
     let license_regex = Regex::new(r"^[A-Z]{3}\d{3}$").unwrap();
     for _ in 0..10 {
@@ -58,13 +60,13 @@ async fn test_pattern_generator_optional_groups() {
 
     // Test phone with optional extension pattern
     let mut context = GenerationContext::new(
-        "http://example.org/phoneWithExt".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/phoneWithExt".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     context
         .parameters
-        .insert("pattern".to_owned(), json!("\\d{3}-\\d{3}-\\d{4}( ext\\. \\d{1,4})?"));
+        .insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}( ext\\. \\d{1,4})?"));
 
     let mut with_ext_count = 0;
     let mut without_ext_count = 0;
@@ -109,15 +111,15 @@ async fn test_pattern_generator_character_classes() {
 
     // Test hexadecimal color pattern
     let mut context = GenerationContext::new(
-        "http://example.org/hexColor".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/hexColor".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     context
         .parameters
-        .insert("pattern".to_owned(), json!("#[0-9A-Fa-f]{6}"));
+        .insert("pattern".to_string(), json!("#[0-9A-Fa-f]{6}"));
 
-    let hex_regex = Regex::new("^#[0-9A-Fa-f]{6}$").unwrap();
+    let hex_regex = Regex::new(r"^#[0-9A-Fa-f]{6}$").unwrap();
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
         println!("Generated hex color: {result}");
@@ -127,7 +129,7 @@ async fn test_pattern_generator_character_classes() {
             "Hex color should match #RRGGBB format: {result}"
         );
         assert_eq!(result.len(), 7, "Hex color should be 7 characters including #");
-        assert!(result.starts_with('#'), "Should start with #");
+        assert!(result.starts_with("#"), "Should start with #");
 
         // Validate hex characters
         let hex_part = &result[1..];
@@ -146,13 +148,13 @@ async fn test_pattern_generator_anchors() {
 
     // Test pattern with start/end anchors
     let mut context = GenerationContext::new(
-        "http://example.org/productCode".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/productCode".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     context
         .parameters
-        .insert("pattern".to_owned(), json!("^PROD-\\d{4}-[A-Z]{2}$"));
+        .insert("pattern".to_string(), json!("^PROD-\\d{4}-[A-Z]{2}$"));
 
     let prod_regex = Regex::new(r"^PROD-\d{4}-[A-Z]{2}$").unwrap();
     for _ in 0..5 {
@@ -176,13 +178,13 @@ async fn test_pattern_generator_special_characters() {
 
     // Test social security number pattern with literal dashes
     let mut context = GenerationContext::new(
-        "http://example.org/ssn".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/ssn".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     context
         .parameters
-        .insert("pattern".to_owned(), json!("\\d{3}-\\d{2}-\\d{4}"));
+        .insert("pattern".to_string(), json!("\\d{3}-\\d{2}-\\d{4}"));
 
     let ssn_regex = Regex::new(r"^\d{3}-\d{2}-\d{4}$").unwrap();
     for _ in 0..5 {
@@ -210,14 +212,14 @@ async fn test_pattern_generator_escape_sequences() {
 
     // Test pattern with escaped special characters
     let mut context = GenerationContext::new(
-        "http://example.org/escapedPattern".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/escapedPattern".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     // Pattern for version numbers like "v1.2.3"
     context
         .parameters
-        .insert("pattern".to_owned(), json!("v\\d+\\.\\d+\\.\\d+"));
+        .insert("pattern".to_string(), json!("v\\d+\\.\\d+\\.\\d+"));
 
     let version_regex = Regex::new(r"^v\d+\.\d+\.\d+$").unwrap();
     for _ in 0..5 {
@@ -228,7 +230,7 @@ async fn test_pattern_generator_escape_sequences() {
             version_regex.is_match(&result),
             "Version should match vX.Y.Z format: {result}"
         );
-        assert!(result.starts_with('v'), "Should start with v");
+        assert!(result.starts_with("v"), "Should start with v");
 
         // Count dots
         let dot_count = result.matches('.').count();
@@ -243,13 +245,13 @@ async fn test_pattern_generator_performance() {
     let generator = PatternGenerator;
 
     let mut context = GenerationContext::new(
-        "http://example.org/perfTest".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/perfTest".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     context
         .parameters
-        .insert("pattern".to_owned(), json!("\\d{3}-\\d{3}-\\d{4}"));
+        .insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}"));
 
     let iterations = 1000;
     let start = Instant::now();
@@ -282,22 +284,22 @@ async fn test_pattern_generator_edge_cases() {
 
     // Test very simple pattern
     let mut simple_context = GenerationContext::new(
-        "http://example.org/simple".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/simple".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
-    simple_context.parameters.insert("pattern".to_owned(), json!("a"));
+    simple_context.parameters.insert("pattern".to_string(), json!("a"));
 
     let simple_result = generator.generate(&simple_context).unwrap();
     assert_eq!(simple_result, "a", "Simple pattern should generate exact match");
 
     // Test pattern with only quantifiers
     let mut quant_context = GenerationContext::new(
-        "http://example.org/quantifiers".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/quantifiers".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
-    quant_context.parameters.insert("pattern".to_owned(), json!("\\d{5}"));
+    quant_context.parameters.insert("pattern".to_string(), json!("\\d{5}"));
 
     let quant_result = generator.generate(&quant_context).unwrap();
     assert_eq!(quant_result.len(), 5, "Should generate exactly 5 digits");
@@ -308,11 +310,11 @@ async fn test_pattern_generator_edge_cases() {
 
     // Test pattern with alternation (simplified)
     let mut alt_context = GenerationContext::new(
-        "http://example.org/alternation".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/alternation".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
-    alt_context.parameters.insert("pattern".to_owned(), json!("(cat|dog)"));
+    alt_context.parameters.insert("pattern".to_string(), json!("(cat|dog)"));
 
     let alt_result = generator.generate(&alt_context).unwrap();
     println!("Alternation result: {alt_result}");
@@ -332,13 +334,13 @@ async fn test_pattern_generator_case_sensitivity() {
 
     // Test pattern requiring both upper and lower case
     let mut context = GenerationContext::new(
-        "http://example.org/mixedCase".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/mixedCase".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     context
         .parameters
-        .insert("pattern".to_owned(), json!("[A-Z]{2}[a-z]{2}\\d{2}"));
+        .insert("pattern".to_string(), json!("[A-Z]{2}[a-z]{2}\\d{2}"));
 
     let mixed_regex = Regex::new(r"^[A-Z]{2}[a-z]{2}\d{2}$").unwrap();
     for _ in 0..5 {
@@ -379,13 +381,13 @@ async fn test_pattern_generator_real_world_patterns() {
 
     // Test ISBN-10 pattern
     let mut isbn_context = GenerationContext::new(
-        "http://example.org/isbn10".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/isbn10".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     isbn_context
         .parameters
-        .insert("pattern".to_owned(), json!("\\d{1}-\\d{3}-\\d{5}-\\d{1}"));
+        .insert("pattern".to_string(), json!("\\d{1}-\\d{3}-\\d{5}-\\d{1}"));
 
     let isbn_result = generator.generate(&isbn_context).unwrap();
     println!("Generated ISBN-10: {isbn_result}");
@@ -398,19 +400,19 @@ async fn test_pattern_generator_real_world_patterns() {
 
     // Test UUID-like pattern (simplified)
     let mut uuid_context = GenerationContext::new(
-        "http://example.org/uuid".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/uuid".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
     uuid_context.parameters.insert(
-        "pattern".to_owned(),
+        "pattern".to_string(),
         json!("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"),
     );
 
     let uuid_result = generator.generate(&uuid_context).unwrap();
     println!("Generated UUID-like: {uuid_result}");
 
-    let uuid_regex = Regex::new("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap();
+    let uuid_regex = Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap();
     assert!(
         uuid_regex.is_match(&uuid_result),
         "UUID should match standard format: {uuid_result}"
@@ -430,11 +432,11 @@ async fn test_pattern_generator_fallback_behavior() {
 
     // Test with empty pattern - should use heuristics
     let mut empty_context = GenerationContext::new(
-        "http://example.org/phoneNumber".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/phoneNumber".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
-    empty_context.parameters.insert("pattern".to_owned(), json!(""));
+    empty_context.parameters.insert("pattern".to_string(), json!(""));
 
     let empty_result = generator.generate(&empty_context).unwrap();
     println!("Empty pattern fallback: {empty_result}");
@@ -442,16 +444,16 @@ async fn test_pattern_generator_fallback_behavior() {
 
     // Test with no pattern parameter - should use heuristics
     let no_pattern_context = GenerationContext::new(
-        "http://example.org/emailAddress".to_owned(),
-        "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-        "test_subject".to_owned(),
+        "http://example.org/emailAddress".to_string(),
+        "http://www.w3.org/2001/XMLSchema#string".to_string(),
+        "test_subject".to_string(),
     );
 
     let no_pattern_result = generator.generate(&no_pattern_context).unwrap();
     println!("No pattern fallback: {no_pattern_result}");
     assert!(!no_pattern_result.is_empty(), "Should generate fallback for no pattern");
     assert!(
-        no_pattern_result.contains('@'),
+        no_pattern_result.contains("@"),
         "Email heuristic should work without pattern"
     );
 }
@@ -481,11 +483,11 @@ async fn test_pattern_generator_comprehensive_coverage() {
     let mut generated_count = 0;
     for (pattern, description) in &test_patterns {
         let mut context = GenerationContext::new(
-            format!("http://example.org/{}", description.replace(' ', "_")),
-            "http://www.w3.org/2001/XMLSchema#string".to_owned(),
-            "test_subject".to_owned(),
+            format!("http://example.org/{}", description.replace(" ", "_")),
+            "http://www.w3.org/2001/XMLSchema#string".to_string(),
+            "test_subject".to_string(),
         );
-        context.parameters.insert("pattern".to_owned(), json!(pattern));
+        context.parameters.insert("pattern".to_string(), json!(pattern));
 
         match pattern_gen.generate(&context) {
             Ok(result) => {

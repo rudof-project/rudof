@@ -310,7 +310,7 @@ pub trait NeighsRDF: Rdf {
         let triple_term = Self::triple_as_term(triple);
         let rdf_reifies: Self::IRI = RdfVocab::rdf_reifies().into();
         let reifiers = Self::triples_with_predicate_object(self, &rdf_reifies, &triple_term)?
-            .map(Triple::into_subject)
+            .map(|t| t.into_subject())
             .collect::<HashSet<_>>();
         // Find x such that: x rdf:reifies <<( s p o )>>
         Ok(reifiers.into_iter())
@@ -477,11 +477,11 @@ fn path_objects<R: NeighsRDF>(
                 rdf.subjects_for(&pred, subject)
             },
             path => {
-                let inverse = Rc::clone(
-                    memo.inverses
-                        .entry(ptr::from_ref(path))
-                        .or_insert_with(|| Rc::new(path.inverted())),
-                );
+                let inverse = memo
+                    .inverses
+                    .entry(ptr::from_ref(path))
+                    .or_insert_with(|| Rc::new(path.inverted()))
+                    .clone();
                 path_objects(rdf, subject, &inverse, memo)
             },
         },

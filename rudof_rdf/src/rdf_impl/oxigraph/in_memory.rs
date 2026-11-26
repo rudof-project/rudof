@@ -66,7 +66,7 @@ pub struct OxigraphInMemory {
 }
 
 impl Debug for OxigraphInMemory {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("OxigraphInMemory")
             .field("triples_count", &self.graph.len())
             .field("prefixmap", &self.pm)
@@ -254,24 +254,24 @@ impl OxigraphInMemory {
         let graph = self.graph_mut();
 
         for triple_result in turtle_reader.by_ref() {
-            let Some(triple) = handle_parse_error(triple_result, reader_mode, |e| {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| {
                 OxigraphInMemoryError::TurtleParseError {
-                    source_name: source_name.to_owned(),
+                    source_name: source_name.to_string(),
                     error: e,
                 }
-            })?
-            else {
-                continue;
+            })? {
+                Some(t) => t,
+                None => continue,
             };
             let triple_ref = triple.as_ref();
             if let Err(e) = validate_triple_iris(triple_ref) {
                 match handle_parse_error(Err::<(), _>(e), reader_mode, |e| {
                     OxigraphInMemoryError::TurtleParseError {
-                        source_name: source_name.to_owned(),
+                        source_name: source_name.to_string(),
                         error: format!("Invalid IRI in triple: {e}"),
                     }
                 })? {
-                    Some(()) => unreachable!(),
+                    Some(_) => unreachable!(),
                     None => continue,
                 }
             }
@@ -322,7 +322,7 @@ impl OxigraphInMemory {
             Some(iri) => parser.with_base_iri(iri)?,
         };
         let error = |e: String| OxigraphInMemoryError::TriGParseError {
-            source_name: source_name.to_owned(),
+            source_name: source_name.to_string(),
             error: e,
         };
 
@@ -330,13 +330,14 @@ impl OxigraphInMemory {
         let graph = self.graph_mut();
 
         for quad_result in trig_reader.by_ref() {
-            let Some(quad) = handle_parse_error(quad_result, reader_mode, error)? else {
-                continue;
+            let quad = match handle_parse_error(quad_result, reader_mode, error)? {
+                Some(q) => q,
+                None => continue,
             };
             let triple_ref = TripleRef::from(quad.as_ref());
             if let Err(e) = validate_triple_iris(triple_ref) {
                 match handle_parse_error(Err::<(), _>(format!("Invalid IRI in triple: {e}")), reader_mode, error)? {
-                    Some(()) => unreachable!(),
+                    Some(_) => unreachable!(),
                     None => continue,
                 }
             }
@@ -381,7 +382,7 @@ impl OxigraphInMemory {
             Some(iri) => parser.with_base_iri(iri)?,
         };
         let error = |e: String| OxigraphInMemoryError::N3ParseError {
-            source_name: source_name.to_owned(),
+            source_name: source_name.to_string(),
             error: e,
         };
 
@@ -389,15 +390,17 @@ impl OxigraphInMemory {
         let graph = self.graph_mut();
 
         for quad_result in n3_reader.by_ref() {
-            let Some(quad) = handle_parse_error(quad_result, reader_mode, error)? else {
-                continue;
+            let quad = match handle_parse_error(quad_result, reader_mode, error)? {
+                Some(q) => q,
+                None => continue,
             };
-            let Some(triple) = handle_parse_error(n3_quad_to_triple(quad), reader_mode, error)? else {
-                continue;
+            let triple = match handle_parse_error(n3_quad_to_triple(quad), reader_mode, error)? {
+                Some(t) => t,
+                None => continue,
             };
             if let Err(e) = validate_triple_iris(triple.as_ref()) {
                 match handle_parse_error(Err::<(), _>(format!("Invalid IRI in triple: {e}")), reader_mode, error)? {
-                    Some(()) => unreachable!(),
+                    Some(_) => unreachable!(),
                     None => continue,
                 }
             }
@@ -442,14 +445,14 @@ impl OxigraphInMemory {
         let graph = self.graph_mut();
 
         for triple_result in nt_reader.by_ref() {
-            let Some(triple) =
-                handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NTriplesError {
-                    data: "Reading N-Triples".to_owned(),
+            let triple =
+                match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NTriplesError {
+                    data: "Reading N-Triples".to_string(),
                     error: e,
-                })?
-            else {
-                continue;
-            };
+                })? {
+                    Some(t) => t,
+                    None => continue,
+                };
             graph.insert(triple.as_ref());
         }
 
@@ -476,13 +479,12 @@ impl OxigraphInMemory {
         let graph = self.graph_mut();
 
         for triple_result in xml_reader.by_ref() {
-            let Some(triple) =
-                handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::RDFXMLError {
-                    data: "Reading RDF/XML".to_owned(),
-                    error: e,
-                })?
-            else {
-                continue;
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::RDFXMLError {
+                data: "Reading RDF/XML".to_string(),
+                error: e,
+            })? {
+                Some(t) => t,
+                None => continue,
             };
             let triple_ref = cnv_triple(&triple);
             graph.insert(triple_ref);
@@ -511,13 +513,12 @@ impl OxigraphInMemory {
         let graph = self.graph_mut();
 
         for triple_result in nq_reader.by_ref() {
-            let Some(triple) =
-                handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NQuadsError {
-                    data: "Reading NQuads".to_owned(),
-                    error: e,
-                })?
-            else {
-                continue;
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NQuadsError {
+                data: "Reading NQuads".to_string(),
+                error: e,
+            })? {
+                Some(t) => t,
+                None => continue,
             };
             graph.insert(triple.as_ref());
         }
@@ -545,13 +546,12 @@ impl OxigraphInMemory {
         let graph = self.graph_mut();
 
         for triple_result in jsonld_reader.by_ref() {
-            let Some(triple) =
-                handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::JsonLDError {
-                    data: "Reading JSON-LD".to_owned(),
-                    error: e,
-                })?
-            else {
-                continue;
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::JsonLDError {
+                data: "Reading JSON-LD".to_string(),
+                error: e,
+            })? {
+                Some(t) => t,
+                None => continue,
             };
             graph.insert(triple.as_ref());
         }
@@ -1022,7 +1022,7 @@ impl AsyncRDF for OxigraphInMemory {
     async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>, OxigraphInMemoryError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
-            let predicate: OxNamedNode = triple.predicate.into();
+            let predicate: OxNamedNode = triple.predicate.to_owned().into();
             results.insert(predicate);
         }
         Ok(results)
@@ -1045,9 +1045,9 @@ impl AsyncRDF for OxigraphInMemory {
     ) -> Result<HashSet<OxTerm>, OxigraphInMemoryError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
-            let predicate: OxNamedNode = triple.predicate.into();
+            let predicate: OxNamedNode = triple.predicate.to_owned().into();
             if predicate.eq(pred) {
-                let object: OxTerm = triple.object.into();
+                let object: OxTerm = triple.object.to_owned().into();
                 results.insert(object);
             }
         }
@@ -1071,9 +1071,9 @@ impl AsyncRDF for OxigraphInMemory {
     ) -> Result<HashSet<OxSubject>, OxigraphInMemoryError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_object(object) {
-            let predicate: OxNamedNode = triple.predicate.into();
+            let predicate: OxNamedNode = triple.predicate.to_owned().into();
             if predicate.eq(pred) {
-                let subject: OxSubject = triple.subject.into();
+                let subject: OxSubject = triple.subject.to_owned().into();
                 results.insert(subject);
             }
         }
@@ -1120,7 +1120,7 @@ impl BuildRDF for OxigraphInMemory {
     ///
     /// * `base` - Optional base IRI to set
     fn add_base(&mut self, base: &Option<IriS>) {
-        self.base.clone_from(base);
+        self.base = base.clone();
     }
 
     /// Adds a prefix mapping to the graph's prefix map.
@@ -1329,7 +1329,7 @@ fn rdf_type() -> OxNamedNode {
 /// # Returns
 ///
 /// A quad representing the triple in the specified graph.
-fn triple_to_quad(t: TripleRef<'_>, graph_name: GraphName) -> Quad {
+fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
     let subj: oxrdf::NamedOrBlankNode = t.subject.into();
     let pred: oxrdf::NamedNode = t.predicate.into();
     let obj: oxrdf::Term = t.object.into();
@@ -1352,7 +1352,7 @@ fn triple_to_quad(t: TripleRef<'_>, graph_name: GraphName) -> Quad {
 /// * `Ok(Some(value))` - Parsing succeeded
 /// * `Ok(None)` - Parsing failed in lax mode (skip this item)
 /// * `Err(error)` - Parsing failed in strict mode
-fn validate_triple_iris(triple: TripleRef<'_>) -> Result<(), String> {
+fn validate_triple_iris(triple: TripleRef) -> Result<(), String> {
     if let oxrdf::NamedOrBlankNodeRef::NamedNode(n) = triple.subject {
         OxNamedNode::new(n.as_str()).map_err(|e| e.to_string())?;
     }
@@ -1387,12 +1387,12 @@ fn n3_quad_to_triple(quad: N3Quad) -> Result<OxTriple, String> {
         N3Term::BlankNode(b) => OxTerm::BlankNode(b),
         N3Term::Literal(l) => OxTerm::Literal(l),
         N3Term::Triple(t) => OxTerm::Triple(t),
-        other @ N3Term::Variable(_) => return Err(not_rdf(&other, "object")),
+        other => return Err(not_rdf(&other, "object")),
     };
     Ok(OxTriple::new(subject, predicate, object))
 }
 
-fn handle_parse_error<T, E: Display>(
+fn handle_parse_error<T, E: std::fmt::Display>(
     result: Result<T, E>,
     reader_mode: &ReaderMode,
     error_constructor: impl FnOnce(String) -> OxigraphInMemoryError,
@@ -1499,7 +1499,7 @@ impl QueryRDF for OxigraphInMemory {
             .on_store(store)
             .execute()
             .map_err(|e| OxigraphInMemoryError::RunningQueryError {
-                query: query_str.to_owned(),
+                query: query_str.to_string(),
                 msg: format!("Error executing query: {e}"),
             })?;
 
@@ -1513,18 +1513,18 @@ impl QueryRDF for OxigraphInMemory {
                 let mut writer = RdfSerializer::from_format(RdfFormat::Turtle).for_writer(&mut buffer);
                 for triple in triples {
                     let triple = triple.map_err(|e| OxigraphInMemoryError::RunningQueryError {
-                        query: query_str.to_owned(),
+                        query: query_str.to_string(),
                         msg: format!("Error iterating CONSTRUCT results: {e}"),
                     })?;
                     writer
                         .serialize_triple(triple.as_ref())
                         .map_err(|e| OxigraphInMemoryError::RunningQueryError {
-                            query: query_str.to_owned(),
+                            query: query_str.to_string(),
                             msg: format!("Error serializing CONSTRUCT triple: {e}"),
                         })?;
                 }
                 writer.finish().map_err(|e| OxigraphInMemoryError::RunningQueryError {
-                    query: query_str.to_owned(),
+                    query: query_str.to_string(),
                     msg: format!("Error finalizing CONSTRUCT output: {e}"),
                 })?;
                 Ok(String::from_utf8(buffer).unwrap_or_default())
@@ -1546,7 +1546,7 @@ impl QueryRDF for OxigraphInMemory {
         if let Some(store) = &self.store {
             let parsed_query = SparqlEvaluator::new().parse_query(query_str).map_err(|e| {
                 OxigraphInMemoryError::ParsingQueryError {
-                    msg: format!("Error parsing query: {e}"),
+                    msg: format!("Error parsing query: {}", e),
                 }
             })?;
 
@@ -1555,8 +1555,8 @@ impl QueryRDF for OxigraphInMemory {
                     .on_store(store)
                     .execute()
                     .map_err(|e| OxigraphInMemoryError::RunningQueryError {
-                        query: query_str.to_owned(),
-                        msg: format!("Error executing query: {e}"),
+                        query: query_str.to_string(),
+                        msg: format!("Error executing query: {}", e),
                     })?;
 
             let solutions = cnv_query_results(query_results)?;
@@ -1580,7 +1580,7 @@ impl QueryRDF for OxigraphInMemory {
             .on_store(store)
             .execute()
             .map_err(|e| OxigraphInMemoryError::RunningQueryError {
-                query: query_str.to_owned(),
+                query: query_str.to_string(),
                 msg: format!("Error executing query: {e}"),
             })?;
         if let QueryResults::Boolean(b) = result {
@@ -1606,20 +1606,20 @@ impl QueryRDF for OxigraphInMemory {
 /// A vector of query solutions.
 #[cfg(feature = "sparql")]
 fn cnv_query_results(
-    query_results: QueryResults<'_>,
+    query_results: QueryResults,
 ) -> Result<Vec<QuerySolution<OxigraphInMemory>>, OxigraphInMemoryError> {
     let QueryResults::Solutions(solutions) = query_results else {
         return Ok(Vec::new());
     };
 
-    #[expect(clippy::unused_enumerate_index)]
+    #[allow(clippy::unused_enumerate_index)]
     solutions
         .enumerate()
         .map(|(_, solution_result)| {
             solution_result
                 .map(cnv_query_solution)
                 .map_err(|e| OxigraphInMemoryError::QueryResultError {
-                    msg: format!("Error getting query solution: {e}"),
+                    msg: format!("Error getting query solution: {}", e),
                 })
         })
         .collect()

@@ -36,14 +36,13 @@ impl ShapeDecl {
 
     pub fn new(label: ShapeExprLabel, shape_expr: ShapeExpr, is_abstract: bool) -> Self {
         ShapeDecl {
-            type_: "ShapeDecl".to_owned(),
+            type_: "ShapeDecl".to_string(),
             is_abstract,
             id: label,
             shape_expr,
         }
     }
 
-    #[must_use]
     pub fn with_is_abstract(mut self, is_abstract: bool) -> Self {
         self.is_abstract = is_abstract;
         self

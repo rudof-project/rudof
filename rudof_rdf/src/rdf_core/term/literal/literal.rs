@@ -6,6 +6,7 @@ use rust_decimal::Decimal;
 use std::{
     fmt::{self, Debug, Display},
     hash::Hash,
+    result,
 };
 
 use crate::rdf_core::vocabs::{RdfVocab, XsdVocab};
@@ -159,7 +160,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 /// floating-point values or literals with different datatypes). Use [`PartialOrd`]
 /// when comparing arbitrary literals to avoid panics.
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, JsonSchema, Clone)]
-#[expect(clippy::enum_variant_names)]
+#[allow(clippy::enum_variant_names)]
 pub enum ConcreteLiteral {
     /// A plain string literal, optionally with a language tag and, with one, a base
     /// direction.
@@ -230,7 +231,7 @@ impl ConcreteLiteral {
     /// ```
     pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
         let mut s = String::new();
-        self.display_qualified(&mut s, prefixmap).unwrap_or_default();
+        let _ = self.display_qualified(&mut s, prefixmap);
         s
     }
 
@@ -924,7 +925,7 @@ impl ConcreteLiteral {
     /// Returns an error if the string cannot be parsed as a `Decimal`.
     pub fn parse_decimal(s: &str) -> Result<Decimal, String> {
         if s.contains('e') || s.contains('E') {
-            return Err("Invalid decimal: unknown character".to_owned());
+            return Err("Invalid decimal: unknown character".to_string());
         }
         s.parse::<Decimal>()
             .map_err(|e| format!("Cannot convert {s} to decimal: {e}"))
@@ -1000,7 +1001,7 @@ impl Default for ConcreteLiteral {
 /// If two literals are not comparable under these rules, `None` is returned.
 ///
 /// See: <https://www.w3.org/TR/sparql11-query/#OperatorMapping>
-#[expect(clippy::non_canonical_partial_ord_impl)]
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for ConcreteLiteral {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match (self, other) {
@@ -1160,10 +1161,10 @@ impl From<ConcreteLiteral> for oxrdf::Literal {
     fn from(value: ConcreteLiteral) -> Self {
         // Helper for datatype literals to reduce repetition
         fn typed_literal(lexical: String, datatype: &IriRef) -> oxrdf::Literal {
-            datatype.get_iri().map_or_else(
-                |_| lexical.clone().into(),
-                |dt: &IriS| oxrdf::Literal::new_typed_literal(lexical.clone(), oxrdf::NamedNode::from(dt.clone())),
-            )
+            datatype
+                .get_iri()
+                .map(|dt: &IriS| oxrdf::Literal::new_typed_literal(lexical.clone(), oxrdf::NamedNode::from(dt.clone())))
+                .unwrap_or_else(|_| lexical.into())
         }
 
         match value {
@@ -1207,7 +1208,7 @@ impl From<&ConcreteLiteral> for oxrdf::Literal {
 /// # Parameters
 /// - `value`: A reference to the boolean value to serialize.
 /// - `serializer`: The serializer to use (implements the `Serializer` trait).
-fn serialize_boolean_literal<S>(value: &bool, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_boolean_literal<S>(value: &bool, serializer: S) -> result::Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -1343,7 +1344,7 @@ fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<Concr
 
     // Unknown or custom datatype: do not validate lexical form
     Ok(ConcreteLiteral::DatatypeLiteral {
-        lexical_form: lexical_form.to_owned(),
+        lexical_form: lexical_form.to_string(),
         datatype: datatype.clone(),
     })
 }
@@ -1363,9 +1364,9 @@ where
     match parser(lexical_form) {
         Ok(value) => constructor(value),
         Err(err) => ConcreteLiteral::WrongDatatypeLiteral {
-            lexical_form: lexical_form.to_owned(),
+            lexical_form: lexical_form.to_string(),
             datatype: datatype.clone(),
-            error: err.clone(),
+            error: err.to_string(),
         },
     }
 }
@@ -1389,15 +1390,15 @@ where
         Ok(value) => match constructor(value) {
             Ok(literal) => literal,
             Err(err) => ConcreteLiteral::WrongDatatypeLiteral {
-                lexical_form: lexical_form.to_owned(),
+                lexical_form: lexical_form.to_string(),
                 datatype: datatype.clone(),
                 error: err.to_string(),
             },
         },
         Err(err) => ConcreteLiteral::WrongDatatypeLiteral {
-            lexical_form: lexical_form.to_owned(),
+            lexical_form: lexical_form.to_string(),
             datatype: datatype.clone(),
-            error: err.clone(),
+            error: err.to_string(),
         },
     }
 }

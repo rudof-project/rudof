@@ -33,48 +33,48 @@ const DUMMY_GRAPH: &str = r#"
         :x :s 4 .
     "#;
 
-const DUMMY_GRAPH_1: &str = "
+const DUMMY_GRAPH_1: &str = r#"
         prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         :x :p [ :p 1 ] .
-    ";
+    "#;
 
-const DUMMY_GRAPH_2: &str = "
+const DUMMY_GRAPH_2: &str = r#"
         prefix : <http://example.org/>
         :x :p (1 2) .
-    ";
+    "#;
 
-const DUMMY_GRAPH_3: &str = "
+const DUMMY_GRAPH_3: &str = r#"
         prefix : <http://example.org/>
         :x :p 1, 2, 3, 2 .
-    ";
+    "#;
 
-const DUMMY_GRAPH_5: &str = "
+const DUMMY_GRAPH_5: &str = r#"
         prefix : <http://example.org/>
         :x :p 1, 2 ;
         :q true .
-    ";
+    "#;
 
-const DUMMY_GRAPH_6: &str = "
+const DUMMY_GRAPH_6: &str = r#"
         prefix : <http://example.org/>
         :x :p 1 .
-    ";
+    "#;
 
-const DUMMY_GRAPH_7: &str = "
+const DUMMY_GRAPH_7: &str = r#"
         prefix : <http://example.org/>
         :x :p true .
-    ";
+    "#;
 
-const DUMMY_GRAPH_8: &str = "
+const DUMMY_GRAPH_8: &str = r#"
         prefix : <http://example.org/>
         :x :p true ;
         :q 1    .
-    ";
+    "#;
 
-const DUMMY_GRAPH_9: &str = "
+const DUMMY_GRAPH_9: &str = r#"
         prefix : <http://example.org/>
         :x :p 1 .
-    ";
+    "#;
 
 const DUMMY_GRAPH_10: &str = r#"
         prefix : <http://example.org/>
@@ -227,12 +227,12 @@ fn test_rdf_list_long() {
 #[test]
 fn test_rdf_list_cyclic() {
     let mut graph = graph_from_str(
-        "prefix : <http://example.org/>
+        r#"prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         :x :p _:a .
         _:a rdf:first 1 ; rdf:rest _:b .
         _:b rdf:first 2 ; rdf:rest _:a .
-    ",
+    "#,
     );
     let x = OxNamedNode::new_unchecked("http://example.org/x").into();
     let p = OxNamedNode::new_unchecked("http://example.org/p").into();
@@ -250,7 +250,7 @@ fn test_parser_property_integers() {
     let p = OxNamedNode::new_unchecked("http://example.org/p").into();
     let parser = IntegersPropertyParser::new(p);
     let mut result = parser.parse(&x, &mut graph).unwrap();
-    result.sort_unstable();
+    result.sort();
 
     assert_eq!(result, vec![1, 2, 3]);
 }
@@ -308,15 +308,15 @@ fn test_parser_map() {
 
 #[test]
 fn test_parser_and_then() {
+    let mut graph = graph_from_str(DUMMY_GRAPH_10);
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
+
     fn cnv_int(s: String) -> Result<isize, RDFError> {
         s.parse().map_err(|_| RDFError::DefaultError {
             msg: format!("Error converting {s}"),
         })
     }
-
-    let mut graph = graph_from_str(DUMMY_GRAPH_10);
-    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
-    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
 
     let parser = SingleStringPropertyParser::new(p).and_then(cnv_int);
     assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
@@ -324,15 +324,15 @@ fn test_parser_and_then() {
 
 #[test]
 fn test_parser_flat_map() {
+    let mut graph = graph_from_str(DUMMY_GRAPH_10);
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
+
     fn cnv_int(s: String) -> Result<isize, RDFError> {
         s.parse().map_err(|_| RDFError::DefaultError {
             msg: format!("Error converting {s}"),
         })
     }
-
-    let mut graph = graph_from_str(DUMMY_GRAPH_10);
-    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
-    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
 
     let parser = SingleStringPropertyParser::new(p).flat_map(cnv_int);
     assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
@@ -355,7 +355,7 @@ fn test_rdf_parser_macro() {
     let term = x.clone().into();
     let parser = is_term(&term);
     let result = parser.parse(&iri_s, &mut graph);
-    result.unwrap();
+    assert!(result.is_ok())
 }
 
 #[test]
@@ -363,7 +363,7 @@ fn test_not() {
     let mut graph = graph_from_str(DUMMY_GRAPH_9);
     let x = OxNamedNode::new_unchecked("http://example.org/x").into();
     let q = OxNamedNode::new_unchecked("http://example.org/q").into();
-    SingleValuePropertyParser::new(q).not().parse(&x, &mut graph).unwrap();
+    assert!(SingleValuePropertyParser::new(q).not().parse(&x, &mut graph).is_ok())
 }
 
 #[test]
@@ -388,11 +388,11 @@ fn test_add_triple_ref() {
 
 #[test]
 fn test_parse_trig() {
-    let trig = "
+    let trig = r#"
 prefix : <http://example.org/>
 :x :p 1 .
 :g { :y :p 2 . :z :p <rel> }
-";
+"#;
     let graph =
         OxigraphInMemory::from_str(trig, &RDFFormat::TriG, Some("http://base.org/"), &ReaderMode::Strict).unwrap();
     // The triples of the named graph are merged into the graph, as with N-Quads
@@ -445,7 +445,7 @@ fn test_strict_mode_validates_the_terms_it_reads() {
         // A language tag that is not well-formed BCP 47: a subtag of more than eight characters
         (
             RDFFormat::Turtle,
-            "prefix : <http://example.org/> :x :p \"a\"@abcdefghijkl .".to_owned(),
+            "prefix : <http://example.org/> :x :p \"a\"@abcdefghijkl .".to_string(),
         ),
         (
             RDFFormat::TriG,
@@ -453,7 +453,7 @@ fn test_strict_mode_validates_the_terms_it_reads() {
         ),
         (
             RDFFormat::N3,
-            "@prefix : <http://example.org/> . :x :p \"a\"@abcdefghijkl .".to_owned(),
+            "@prefix : <http://example.org/> . :x :p \"a\"@abcdefghijkl .".to_string(),
         ),
     ] {
         let err = OxigraphInMemory::from_str(&data, &format, None, &ReaderMode::Strict).unwrap_err();

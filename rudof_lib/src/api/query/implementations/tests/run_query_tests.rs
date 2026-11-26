@@ -56,14 +56,14 @@ fn test_run_and_serialize_select_query() {
     let mut rudof = setup_test_rudof_with_data();
 
     let query_input = InputSpec::str(
-        "
+        r#"
 prefix : <http://example.org/>
 prefix schema: <http://schema.org/>
 
 select ?person ?name ?status where {
   ?person schema:name ?name ;
           :status ?status .
-}",
+}"#,
     );
 
     load_sparql_query(&mut rudof, &query_input, None).unwrap();
@@ -75,7 +75,8 @@ select ?person ?name ?status where {
     assert!(serialized.contains("Bob"));
 
     println!(
-        "\n===== test_run_and_serialize_select_query =====\n{serialized}\n============================================"
+        "\n===== test_run_and_serialize_select_query =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -84,12 +85,12 @@ fn test_select_bindings_are_qualified_as_objects() {
     let mut rudof = setup_test_rudof_with_data();
 
     let query_input = InputSpec::str(
-        "
+        r#"
 prefix schema: <http://schema.org/>
 
 select ?person ?name where {
   ?person schema:name ?name .
-}",
+}"#,
     );
 
     load_sparql_query(&mut rudof, &query_input, None).unwrap();

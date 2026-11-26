@@ -99,7 +99,7 @@ impl ResetTarget {
 /// Request parameters for resetting session state.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ResetSessionStateRequest {
-    /// Which pieces of session state to clear. Omit, pass `[]`, or pass `["all"]`
+    /// Which pieces of session state to clear. Omit, pass [], or pass ["all"]
     /// to clear everything.
     pub targets: Option<Vec<ResetTarget>>,
 }
@@ -190,7 +190,7 @@ mod tests {
         rudof
             .load_data()
             .with_data(&[RudofInputSpec::Str(
-                "<http://a.example/s> <http://a.example/p> <http://a.example/o> .".to_owned(),
+                "<http://a.example/s> <http://a.example/p> <http://a.example/o> .".to_string(),
             )])
             .with_data_format(&DataFormat::NTriples)
             .execute()
@@ -246,7 +246,7 @@ mod tests {
         let request: Result<ResetSessionStateRequest, _> =
             serde_json::from_value(serde_json::json!({"targets": ["not-a-real-target"]}));
 
-        request.unwrap_err();
+        assert!(request.is_err());
     }
 
     #[test]

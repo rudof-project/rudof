@@ -58,7 +58,7 @@ async fn sorted_ntriples(fixture: &Fixture, threads: usize) -> String {
     let data = generate(fixture, cfg).await;
     let mut lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
     lines.sort_unstable();
-    format!("{}\n", lines.join("\n"))
+    lines.join("\n") + "\n"
 }
 
 async fn check(name: &str, fixture: Fixture) {

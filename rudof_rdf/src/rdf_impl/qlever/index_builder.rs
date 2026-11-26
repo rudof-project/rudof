@@ -66,7 +66,7 @@ impl IndexHandle {
 /// Idempotent: if the on-disk index files are already present, this returns without doing any Docker work.
 pub async fn build_index(inputs: &[InputFile], config: &QleverConfig) -> Result<IndexHandle, QleverError> {
     if inputs.is_empty() {
-        return Err(QleverError::PreFlight("build_index called with no inputs".to_owned()));
+        return Err(QleverError::PreFlight("build_index called with no inputs".to_string()));
     }
 
     let fingerprint = fingerprint_inputs(inputs);
@@ -154,7 +154,7 @@ fn build_argv_and_binds(
         ));
     }
 
-    let mut argv: Vec<String> = vec![cli.index_builder_cmd().to_owned()];
+    let mut argv: Vec<String> = vec![cli.index_builder_cmd().to_string()];
     argv.push("-i".into());
     argv.push(config.index_name.clone());
 
@@ -183,9 +183,9 @@ fn build_argv_and_binds(
             argv.push("-f".into());
             argv.push("-".into());
             argv.push("-F".into());
-            argv.push(input.format_ext.cli_arg().to_owned());
+            argv.push(input.format_ext.cli_arg().to_string());
             argv.push("-g".into());
-            argv.push(input.graph_arg().to_owned());
+            argv.push(input.graph_arg().to_string());
             continue;
         }
 
@@ -195,19 +195,20 @@ fn build_argv_and_binds(
             .ok_or_else(|| QleverError::PreFlight(format!("input has no parent dir: {}", input.host_path.display())))?
             .to_path_buf();
 
-        let container_dir = if let Some(d) = dir_mounts.get(&parent) {
-            d.clone()
-        } else {
-            let mount_name = if parent == index_dir {
-                CONTAINER_WORKING_DIR.to_owned()
-            } else {
-                let n = dir_mounts.len();
-                let d = format!("/inputs/{n}");
-                binds.push(format!("{}:{}:ro", parent.display(), d));
-                d
-            };
-            dir_mounts.insert(parent.clone(), mount_name.clone());
-            mount_name
+        let container_dir = match dir_mounts.get(&parent) {
+            Some(d) => d.clone(),
+            None => {
+                let mount_name = if parent == index_dir {
+                    CONTAINER_WORKING_DIR.to_string()
+                } else {
+                    let n = dir_mounts.len();
+                    let d = format!("/inputs/{n}");
+                    binds.push(format!("{}:{}:ro", parent.display(), d));
+                    d
+                };
+                dir_mounts.insert(parent.clone(), mount_name.clone());
+                mount_name
+            },
         };
 
         let file_name = input
@@ -221,9 +222,9 @@ fn build_argv_and_binds(
         argv.push("-f".into());
         argv.push(container_path);
         argv.push("-F".into());
-        argv.push(input.format_ext.cli_arg().to_owned());
+        argv.push(input.format_ext.cli_arg().to_string());
         argv.push("-g".into());
-        argv.push(input.graph_arg().to_owned());
+        argv.push(input.graph_arg().to_string());
     }
 
     Ok((argv, binds))
@@ -245,8 +246,8 @@ pub(crate) async fn run_one_shot(
     // prints a welcome message and exits 1.
     let body = ContainerCreateBody {
         image: Some(config.image()),
-        cmd: Some(vec!["-c".into(), cmd.to_owned()]),
-        working_dir: Some(CONTAINER_WORKING_DIR.to_owned()),
+        cmd: Some(vec!["-c".into(), cmd.to_string()]),
+        working_dir: Some(CONTAINER_WORKING_DIR.to_string()),
         user: user_string(config),
         host_config: Some(host_config),
         ..Default::default()
@@ -284,7 +285,7 @@ pub(crate) async fn run_one_shot(
     let exit_code = wait_code.or(inspect_code).unwrap_or(-1);
 
     let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
-    drop(docker.remove_container(&id, Some(remove_opts)).await);
+    let _ = docker.remove_container(&id, Some(remove_opts)).await;
 
     if exit_code != 0 {
         return Err(container_nonzero_exit(what, exit_code, oom_killed, log_buf));
@@ -311,8 +312,8 @@ pub(crate) async fn run_one_shot_with_stdin(
 
     let body = ContainerCreateBody {
         image: Some(config.image()),
-        cmd: Some(vec!["-c".into(), cmd.to_owned()]),
-        working_dir: Some(CONTAINER_WORKING_DIR.to_owned()),
+        cmd: Some(vec!["-c".into(), cmd.to_string()]),
+        working_dir: Some(CONTAINER_WORKING_DIR.to_string()),
         user: user_string(config),
         host_config: Some(host_config),
         open_stdin: Some(true),
@@ -365,7 +366,7 @@ pub(crate) async fn run_one_shot_with_stdin(
         };
         tokio::select! {
             biased;
-            () = stdin_cancel.cancelled() => Ok(()),
+            _ = stdin_cancel.cancelled() => Ok(()),
             res = pump => match res {
                 Ok(()) => Ok(()),
                 Err(e) if matches!(e.kind(), std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::WriteZero) => {
@@ -396,7 +397,7 @@ pub(crate) async fn run_one_shot_with_stdin(
     // 3. Drain decompressor stderr into a bounded ring buffer.
     let stderr_task = async move {
         let mut tail: Vec<u8> = Vec::with_capacity(STDERR_TAIL_LIMIT);
-        let mut buf = [0_u8; 4096];
+        let mut buf = [0u8; 4096];
         loop {
             let n = child_stderr.read(&mut buf).await?;
             if n == 0 {
@@ -446,19 +447,19 @@ pub(crate) async fn run_one_shot_with_stdin(
         Ok(Ok(s)) => s,
         Ok(Err(e)) => {
             warn!(target: "rudof_rdf::qlever", "decompressor wait failed: {e}");
-            drop(child.kill().await);
+            let _ = child.kill().await;
             std::process::ExitStatus::default()
         },
         Err(_) => {
             warn!(target: "rudof_rdf::qlever", "decompressor did not exit within 5s after container exit; killing");
-            drop(child.kill().await);
-            drop(child.wait().await);
+            let _ = child.kill().await;
+            let _ = child.wait().await;
             std::process::ExitStatus::default()
         },
     };
 
     let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
-    drop(docker.remove_container(&id, Some(remove_opts)).await);
+    let _ = docker.remove_container(&id, Some(remove_opts)).await;
 
     // If the container exited non-zero, that's the headline error: the
     // decompressor's BrokenPipe is just downstream noise.
@@ -527,7 +528,7 @@ fn container_nonzero_exit(what: &str, status: i64, oom_killed: bool, mut logs: S
         logs.insert_str(0, hint);
     }
     QleverError::ContainerNonZeroExit {
-        what: what.to_owned(),
+        what: what.to_string(),
         status,
         logs,
     }
@@ -540,13 +541,13 @@ fn parse_size_to_bytes(s: &str) -> Result<i64, String> {
         return Err("empty".into());
     }
     let (num_str, mult): (&str, u64) = if let Some(rest) = s.strip_suffix("GiB").or_else(|| s.strip_suffix("Gi")) {
-        (rest, 1024_u64.pow(3))
+        (rest, 1024u64.pow(3))
     } else if let Some(rest) = s.strip_suffix("MiB").or_else(|| s.strip_suffix("Mi")) {
-        (rest, 1024_u64.pow(2))
+        (rest, 1024u64.pow(2))
     } else if let Some(rest) = s.strip_suffix("KiB").or_else(|| s.strip_suffix("Ki")) {
         (rest, 1024)
     } else if let Some(rest) = s.strip_suffix("TiB").or_else(|| s.strip_suffix("Ti")) {
-        (rest, 1024_u64.pow(4))
+        (rest, 1024u64.pow(4))
     } else if let Some(rest) = s.strip_suffix("GB") {
         (rest, 1_000_000_000)
     } else if let Some(rest) = s.strip_suffix("MB") {
@@ -556,13 +557,13 @@ fn parse_size_to_bytes(s: &str) -> Result<i64, String> {
     } else if let Some(rest) = s.strip_suffix("TB") {
         (rest, 1_000_000_000_000)
     } else if let Some(rest) = s.strip_suffix('G').or_else(|| s.strip_suffix('g')) {
-        (rest, 1024_u64.pow(3))
+        (rest, 1024u64.pow(3))
     } else if let Some(rest) = s.strip_suffix('M').or_else(|| s.strip_suffix('m')) {
-        (rest, 1024_u64.pow(2))
+        (rest, 1024u64.pow(2))
     } else if let Some(rest) = s.strip_suffix('K').or_else(|| s.strip_suffix('k')) {
         (rest, 1024)
     } else if let Some(rest) = s.strip_suffix('T').or_else(|| s.strip_suffix('t')) {
-        (rest, 1024_u64.pow(4))
+        (rest, 1024u64.pow(4))
     } else {
         (s, 1)
     };
@@ -656,7 +657,7 @@ fn shell_join(argv: &[String]) -> String {
 
 fn shell_quote(s: &str) -> String {
     if s.bytes().all(safe_char) {
-        s.to_owned()
+        s.to_string()
     } else {
         // wrap in single quotes and escape any internal single quotes
         let escaped = s.replace('\'', "'\\''");
@@ -701,7 +702,8 @@ pub async fn convert_to_native(
 
     let target_name = source
         .file_stem()
-        .map_or_else(|| "input".to_owned(), |s| s.to_string_lossy().to_string());
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "input".to_string());
     let target = dest_dir.join(format!("{target_name}.{target_ext}"));
 
     let source_format_ox = rdf_format_to_oxrdfio(source_format);
@@ -748,7 +750,7 @@ pub(super) fn rdf_format_to_oxrdfio(f: &crate::rdf_core::RDFFormat) -> oxrdfio::
         RDFFormat::NQuads => Ox::NQuads,
         RDFFormat::TriG => Ox::TriG,
         RDFFormat::JsonLd => Ox::JsonLd {
-            profile: oxjsonld::JsonLdProfileSet::default(),
+            profile: Default::default(),
         },
         // N3 is not in oxrdfio (fall back to Turtle).
         RDFFormat::N3 => Ox::Turtle,
@@ -763,7 +765,7 @@ mod tests {
     fn input(host: &str, fmt: NativeFormat) -> InputFile {
         InputFile {
             host_path: PathBuf::from(host),
-            in_container_name: host.rsplit('/').next().unwrap().to_owned(),
+            in_container_name: host.rsplit('/').next().unwrap().to_string(),
             format_ext: fmt,
             graph_iri: None,
             compression: None,
@@ -773,7 +775,7 @@ mod tests {
     fn input_compressed(host: &str, fmt: NativeFormat, c: super::super::decompressor::Compression) -> InputFile {
         InputFile {
             host_path: PathBuf::from(host),
-            in_container_name: host.rsplit('/').next().unwrap().to_owned(),
+            in_container_name: host.rsplit('/').next().unwrap().to_string(),
             format_ext: fmt,
             graph_iri: None,
             compression: Some(c),
@@ -950,9 +952,9 @@ mod tests {
             parse_size_to_bytes("1.5G").unwrap(),
             (1.5_f64 * 1024.0 * 1024.0 * 1024.0) as i64
         );
-        parse_size_to_bytes("").unwrap_err();
-        parse_size_to_bytes("nope").unwrap_err();
-        parse_size_to_bytes("-1G").unwrap_err();
+        assert!(parse_size_to_bytes("").is_err());
+        assert!(parse_size_to_bytes("nope").is_err());
+        assert!(parse_size_to_bytes("-1G").is_err());
     }
 
     #[test]
@@ -985,7 +987,7 @@ mod tests {
 
     #[test]
     fn container_nonzero_exit_prepends_oom_hint() {
-        let err = container_nonzero_exit("index-builder", 137, true, "WARN: parallel parser\n".to_owned());
+        let err = container_nonzero_exit("index-builder", 137, true, "WARN: parallel parser\n".to_string());
         match err {
             QleverError::ContainerNonZeroExit { logs, status, .. } => {
                 assert_eq!(status, 137);
@@ -1001,7 +1003,7 @@ mod tests {
 
     #[test]
     fn container_nonzero_exit_no_hint_when_not_oom() {
-        let err = container_nonzero_exit("index-builder", 1, false, "boom\n".to_owned());
+        let err = container_nonzero_exit("index-builder", 1, false, "boom\n".to_string());
         match err {
             QleverError::ContainerNonZeroExit { logs, .. } => {
                 assert!(!logs.contains("OOM-killed"), "unexpected OOM hint: {logs}");

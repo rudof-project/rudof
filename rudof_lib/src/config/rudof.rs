@@ -160,7 +160,7 @@ impl RudofConfig {
             toml::Value::Table(table)
                 .try_into()
                 .map_err(|e: toml::de::Error| ConfigError::Parse {
-                    location: "<merged config>".to_owned(),
+                    location: "<merged config>".to_string(),
                     error: e.to_string(),
                 })?;
         config.check_version()?;
@@ -168,98 +168,83 @@ impl RudofConfig {
         Ok(config)
     }
 
-    #[must_use]
     pub fn with_version(mut self, version: Option<Version>) -> Self {
         self.version = version;
         self
     }
 
-    #[must_use]
     pub fn with_common(mut self, cfg: CommonConfig) -> Self {
         self.common = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_logging(mut self, cfg: LoggingConfig) -> Self {
         self.logging = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_rdf_data(mut self, cfg: RdfDataConfig) -> Self {
         self.rdf_data = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
         self.shex = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_shex_validator(mut self, cfg: ValidatorConfig) -> Self {
         self.shex_validator = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_shacl(mut self, cfg: ShaclConfig) -> Self {
         self.shacl = cfg;
         self
     }
 
     #[cfg(feature = "conversion")]
-    #[must_use]
     pub fn with_shex2uml(mut self, cfg: ShEx2UmlConfig) -> Self {
         self.shex2uml = cfg;
         self
     }
 
     #[cfg(feature = "conversion")]
-    #[must_use]
     pub fn with_shex2html(mut self, cfg: ShEx2HtmlConfig) -> Self {
         self.shex2html = cfg;
         self
     }
 
     #[cfg(feature = "conversion")]
-    #[must_use]
     pub fn with_shacl2shex(mut self, cfg: Shacl2ShExConfig) -> Self {
         self.shacl2shex = cfg;
         self
     }
 
     #[cfg(feature = "dctap")]
-    #[must_use]
     pub fn with_tap(mut self, cfg: TapConfig) -> Self {
         self.tap = cfg;
         self
     }
 
     #[cfg(feature = "conversion")]
-    #[must_use]
     pub fn with_tap2shex(mut self, cfg: Tap2ShExConfig) -> Self {
         self.tap2shex = cfg;
         self
     }
 
     #[cfg(feature = "conversion")]
-    #[must_use]
     pub fn with_shex2sparql(mut self, cfg: ShEx2SparqlConfig) -> Self {
         self.shex2sparql = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_service(mut self, cfg: ServiceConfig) -> Self {
         self.service = cfg;
         self
     }
 
     #[cfg(feature = "comparison")]
-    #[must_use]
     pub fn with_comparator(mut self, cfg: ComparatorConfig) -> Self {
         self.comparator = cfg;
         self
@@ -458,7 +443,7 @@ impl Default for RudofConfig {
 impl TomlConfig for RudofConfig {
     fn from_toml_str(s: &str) -> Result<Self, ConfigError> {
         let mut config: RudofConfig = toml::from_str(s).map_err(|e| ConfigError::Parse {
-            location: "<string>".to_owned(),
+            location: "<string>".to_string(),
             error: e.to_string(),
         })?;
         config.check_version()?;
@@ -500,7 +485,7 @@ mod tests {
         }
         assert_eq!(merged["base_iri"].as_str(), Some("http://nested/"));
 
-        drop(fs::remove_dir_all(&tmp));
+        fs::remove_dir_all(&tmp).ok();
     }
 
     #[test]
@@ -532,11 +517,11 @@ mod tests {
     fn resolve_propagates_common_base_to_sections() {
         let cfg = RudofConfig::from_str("base_iri = \"http://default/\"\n").unwrap();
         let base = Some("http://default/");
-        assert_eq!(cfg.rdf_data().base().map(rudof_iri::IriS::as_str), base);
-        assert_eq!(cfg.shex().base().map(rudof_iri::IriS::as_str), base);
-        assert_eq!(cfg.service().base().map(rudof_iri::IriS::as_str), base);
+        assert_eq!(cfg.rdf_data().base().map(|i| i.as_str()), base);
+        assert_eq!(cfg.shex().base().map(|i| i.as_str()), base);
+        assert_eq!(cfg.service().base().map(|i| i.as_str()), base);
         #[cfg(feature = "conversion")]
-        assert_eq!(cfg.tap2shex().base_iri().map(rudof_iri::IriS::as_str), base);
+        assert_eq!(cfg.tap2shex().base_iri().map(|i| i.as_str()), base);
     }
 
     #[test]
@@ -549,11 +534,8 @@ mod tests {
             "#,
         )
         .unwrap();
-        assert_eq!(
-            cfg.rdf_data().base().map(rudof_iri::IriS::as_str),
-            Some("http://rdf-specific/")
-        );
-        assert_eq!(cfg.shex().base().map(rudof_iri::IriS::as_str), Some("http://common/"));
+        assert_eq!(cfg.rdf_data().base().map(|i| i.as_str()), Some("http://rdf-specific/"));
+        assert_eq!(cfg.shex().base().map(|i| i.as_str()), Some("http://common/"));
     }
 
     #[test]
@@ -623,9 +605,6 @@ mod tests {
             layered.shex_validator().max_steps(),
             defaults.shex_validator().max_steps()
         );
-        assert_eq!(
-            layered.rdf_data().base().map(rudof_iri::IriS::as_str),
-            Some("http://layered/")
-        );
+        assert_eq!(layered.rdf_data().base().map(|i| i.as_str()), Some("http://layered/"));
     }
 }

@@ -87,8 +87,8 @@ pub async fn export_rdf_data(
     };
 
     Ok(ReadResourceResult::new(vec![ResourceContents::TextResourceContents {
-        uri: uri.to_owned(),
-        mime_type: Some(mime_type.to_owned()),
+        uri: uri.to_string(),
+        mime_type: Some(mime_type.to_string()),
         text,
         meta: None,
     }]))

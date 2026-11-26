@@ -5,7 +5,7 @@ use crate::{
     TapReaderWarning, TapShape, TapStatement, Value, ValueConstraint, ValueConstraintType,
 };
 use csv::{Position, Reader as CsvReader, StringRecord};
-use std::io;
+use std::io::{self};
 use tracing::trace;
 
 enum StringRecordReader<R> {
@@ -169,7 +169,7 @@ impl<R: io::Read> TapReader<R> {
 
     fn get_shape_label(&mut self, rcd: &StringRecord) -> Result<Option<String>> {
         if let Some(str) = self.state.headers().shape_label(rcd) {
-            Ok(Some(str.trim().to_owned()))
+            Ok(Some(str.trim().to_string()))
         } else {
             Ok(None)
         }
@@ -420,7 +420,7 @@ fn parse_node_type(str: &str, pos: &Position) -> Result<NodeType> {
         "BNODE" => Ok(NodeType::Basic(BasicNodeType::BNode)),
         "LITERAL" => Ok(NodeType::Basic(BasicNodeType::Literal)),
         _ => Err(TapError::UnexpectedNodeType {
-            str: str.to_owned(),
+            str: str.to_string(),
             pos: pos.clone(),
         }),
     }
@@ -446,8 +446,8 @@ fn parse_boolean(str: &str, field: &str, pos: &Position) -> Result<bool> {
         "1" => Ok(true),
         "0" => Ok(false),
         _ => Err(TapError::ShouldBeBoolean {
-            field: field.to_owned(),
-            value: str.to_owned(),
+            field: field.to_string(),
+            value: str.to_string(),
             pos: pos.clone(),
         }),
     }
@@ -469,7 +469,7 @@ fn get_strs(str: &str) -> impl Iterator<Item = &str> {
 /// A borrowed iterator over Shapes
 ///
 /// The lifetime parameter `'r` refers to the lifetime of the underlying `TapReader`.
-pub struct ShapesIter<'r, R> {
+pub struct ShapesIter<'r, R: 'r> {
     reader: &'r mut TapReader<R>,
 }
 

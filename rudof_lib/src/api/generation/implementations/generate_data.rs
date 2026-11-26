@@ -89,7 +89,7 @@ fn init_defaults(
         config.generation.entity_count = entity_count;
     }
     if let Some(output_path) = output {
-        config.output.path.clone_from(output_path);
+        config.output.path = output_path.clone();
     }
 
     if let Some(seed_value) = seed {
@@ -109,21 +109,18 @@ fn init_defaults(
         InputSpec::Path(path) => path.clone(),
         InputSpec::Stdin => {
             return Err(GenerationError::UnsupportedGenerationSchemaInput {
-                input: "stdin".to_owned(),
-            }
-            .into());
+                input: "stdin".to_string(),
+            })?;
         },
         InputSpec::Url(_url) => {
             return Err(GenerationError::UnsupportedGenerationSchemaInput {
-                input: "url".to_owned(),
-            }
-            .into());
+                input: "url".to_string(),
+            })?;
         },
         InputSpec::Str(_s) => {
             return Err(GenerationError::UnsupportedGenerationSchemaInput {
-                input: "string".to_owned(),
-            }
-            .into());
+                input: "string".to_string(),
+            })?;
         },
     };
 

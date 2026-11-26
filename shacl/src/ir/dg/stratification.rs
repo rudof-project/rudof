@@ -73,23 +73,6 @@ impl DependencyGraph {
     ///    previous rule), or [`ShapeRecursionKind::Positive`] if it has
     ///    none.
     pub fn shape_recursion_kinds(&self) -> HashMap<ShapeLabelIdx, ShapeRecursionKind> {
-        fn depends_on_recursive(
-            i: usize,
-            recursive_scc: &[bool],
-            successors: &[HashSet<usize>],
-            memo: &mut [Option<bool>],
-        ) -> bool {
-            if let Some(v) = memo[i] {
-                return v;
-            }
-            let result = recursive_scc[i]
-                || successors[i]
-                    .iter()
-                    .any(|&succ| depends_on_recursive(succ, recursive_scc, successors, memo));
-            memo[i] = Some(result);
-            result
-        }
-
         // Iterative, unlike tarjan_scc; both list the SCCs in postorder, which depends_on_recursive relies on
         let sccs = kosaraju_scc(&self.graph);
 
@@ -131,6 +114,22 @@ impl DependencyGraph {
 
         // The condensation of a graph's SCCs is always a DAG, so this
         // memoized recursion always terminates.
+        fn depends_on_recursive(
+            i: usize,
+            recursive_scc: &[bool],
+            successors: &[HashSet<usize>],
+            memo: &mut [Option<bool>],
+        ) -> bool {
+            if let Some(v) = memo[i] {
+                return v;
+            }
+            let result = recursive_scc[i]
+                || successors[i]
+                    .iter()
+                    .any(|&succ| depends_on_recursive(succ, recursive_scc, successors, memo));
+            memo[i] = Some(result);
+            result
+        }
 
         let mut memo: Vec<Option<bool>> = vec![None; sccs.len()];
         let depends_on_recursive: Vec<bool> = (0..sccs.len())

@@ -30,7 +30,7 @@ pub async fn get_version_impl(
 ) -> Result<CallToolResult, McpError> {
     let version = {
         let rudof = service.rudof.lock().await;
-        rudof.version().execute().to_owned()
+        rudof.version().execute().to_string()
     };
 
     let response = GetVersionResponse {

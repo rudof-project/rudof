@@ -36,43 +36,36 @@ impl Software {
         }
     }
 
-    #[must_use]
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
     }
 
-    #[must_use]
     pub fn with_description(mut self, description: impl Into<String>) -> Self {
         self.description = Some(description.into());
         self
     }
 
-    #[must_use]
     pub fn with_homepage(mut self, homepage: IriS) -> Self {
         self.homepage = Some(homepage);
         self
     }
 
-    #[must_use]
     pub fn with_developer(mut self, developer: Object) -> Self {
         self.developers.push(developer);
         self
     }
 
-    #[must_use]
     pub fn with_developers(mut self, developers: Vec<Object>) -> Self {
         self.developers = developers;
         self
     }
 
-    #[must_use]
     pub fn with_programming_language(mut self, language: impl Into<String>) -> Self {
         self.programming_language = Some(language.into());
         self
     }
 
-    #[must_use]
     pub fn with_release(mut self, release: Release) -> Self {
         self.release = Some(release);
         self

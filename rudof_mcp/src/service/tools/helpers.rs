@@ -105,7 +105,7 @@ pub fn code_block_preview(language: &str, text: &str, max_chars: usize) -> Strin
     let truncated = text.chars().count() > max_chars;
     let preview: String = text.chars().take(max_chars).collect();
     let display = if truncated { preview.as_str() } else { text };
-    let mut block = format!("```{language}\n{display}\n```");
+    let mut block = format!("```{}\n{}\n```", language, display);
     if truncated {
         block.push_str("\n\nPreview truncated. Full output is available in structuredContent.");
     }

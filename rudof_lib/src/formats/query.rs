@@ -109,11 +109,11 @@ impl FromStr for ResultQueryFormat {
             .find(|(aliases, _)| aliases.iter().any(|a| a.eq_ignore_ascii_case(s)))
             .map(|(_, format)| *format)
             .ok_or_else(|| QueryError::UnsupportedResultQueryFormat {
-                format: s.to_owned(),
+                format: s.to_string(),
                 formats: Self::FORMATS
                     .iter()
                     .flat_map(|(aliases, _)| aliases.iter())
-                    .map(ToString::to_string)
+                    .map(|a| a.to_string())
                     .collect(),
             })
     }
@@ -123,7 +123,7 @@ impl FromStr for ResultQueryFormat {
 // ============================================================================
 
 impl Display for QueryType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             QueryType::Select => "select",
             QueryType::Construct => "construct",
@@ -152,7 +152,7 @@ impl FromStr for QueryType {
             .find(|(name, _)| name.eq_ignore_ascii_case(s))
             .map(|(_, variant)| *variant)
             .ok_or_else(|| QueryError::UnsupportedQueryType {
-                query_type: s.to_owned(),
+                query_type: s.to_string(),
                 variants: QueryType::VARIANTS.iter().map(|(name, _)| name.to_string()).collect(),
             })
     }

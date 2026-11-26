@@ -65,6 +65,3 @@ required-features = ["sparql"]
 [[test]]
 name = "read_sink"
 required-features = ["sparql"]
-
-[lints]
-workspace = true

@@ -100,7 +100,7 @@ impl FromStr for ShaclFormat {
             "jsonld" => Ok(ShaclFormat::JsonLd),
             "json" => Ok(ShaclFormat::Json),
             other => Err(ShaclError::UnsupportedShaclSchemaFormat {
-                format: other.to_owned(),
+                format: other.to_string(),
             }),
         }
     }

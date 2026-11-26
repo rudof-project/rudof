@@ -9,7 +9,7 @@ use std::io::Write;
 /// Dumps the effective [`RudofConfig`](rudof_lib::RudofConfig) that rudof resolved
 /// from all configuration sources as TOML
 pub struct ConfigCommand {
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     args: ConfigArgs,
 }
 

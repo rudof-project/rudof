@@ -355,7 +355,7 @@ mod prop_tests {
     fn arb_rbe_struct() -> impl Strategy<Value = RbeStruct<char>> {
         let leaf = prop_oneof![
             2 => Just(RbeStruct::<char>::empty()),
-            8 => (arb_char(), 0_usize..=2_usize, 0_usize..=2_usize)
+            8 => (arb_char(), 0usize..=2usize, 0usize..=2usize)
                     .prop_map(|(sym, min, extra)| RbeStruct::symbol(sym, min, Max::IntMax(min + extra))),
         ];
         leaf.prop_recursive(3, 32, 3, |inner| {

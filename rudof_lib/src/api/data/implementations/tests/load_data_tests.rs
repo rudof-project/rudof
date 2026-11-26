@@ -21,7 +21,7 @@ fn serialize_to_string(rudof: &mut Rudof, format: Option<ResultDataFormat>) -> S
 fn test_load_data_rdf_success() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf = InputSpec::str("@prefix ex: <http://example.org/> . ex:alice a ex:Person .");
+    let rdf = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -41,14 +41,17 @@ fn test_load_data_rdf_success() {
     assert!(serialized.contains("ex:alice"));
     assert!(serialized.contains("ex:Person"));
 
-    println!("\n===== test_load_data_rdf_success =====\n{serialized}============================================");
+    println!(
+        "\n===== test_load_data_rdf_success =====\n{}============================================",
+        serialized
+    );
 }
 
 #[test]
 fn test_serialize_data_rdf_jsonld() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf = InputSpec::str("@prefix ex: <http://example.org/> . ex:alice a ex:Person .");
+    let rdf = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -75,7 +78,7 @@ fn test_serialize_data_rdf_jsonld() {
 fn test_serialize_data_rdf_json_alias() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf = InputSpec::str("@prefix ex: <http://example.org/> . ex:alice a ex:Person .");
+    let rdf = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -102,9 +105,9 @@ fn test_serialize_data_rdf_json_alias() {
 fn test_load_data_rdf_merge() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let data1 = InputSpec::str("@prefix ex: <http://example.org/> . ex:a a ex:Person .");
+    let data1 = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#);
 
-    let data2 = InputSpec::str("@prefix ex: <http://example.org/> . ex:b a ex:Person .");
+    let data2 = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:b a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -137,16 +140,19 @@ fn test_load_data_rdf_merge() {
     assert!(serialized.contains("ex:a"));
     assert!(serialized.contains("ex:b"));
 
-    println!("\n===== test_load_data_rdf_merge =====\n{serialized}============================================");
+    println!(
+        "\n===== test_load_data_rdf_merge =====\n{}============================================",
+        serialized
+    );
 }
 
 #[test]
 fn test_load_data_rdf_replace() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let data1 = InputSpec::str("@prefix ex: <http://example.org/> . ex:a a ex:Person .");
+    let data1 = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#);
 
-    let data2 = InputSpec::str("@prefix ex: <http://example.org/> . ex:b a ex:Person .");
+    let data2 = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:b a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -179,7 +185,10 @@ fn test_load_data_rdf_replace() {
     assert!(!serialized.contains("ex:a"));
     assert!(serialized.contains("ex:b"));
 
-    println!("\n===== test_load_data_rdf_replace =====\n{serialized}============================================");
+    println!(
+        "\n===== test_load_data_rdf_replace =====\n{}============================================",
+        serialized
+    );
 }
 
 #[test]
@@ -236,7 +245,10 @@ fn test_load_data_pg_success() {
     assert!(serialized.contains("Alice"));
     assert!(serialized.contains("Robert"));
 
-    println!("\n===== test_load_data_pg_success =====\n{serialized}============================================");
+    println!(
+        "\n===== test_load_data_pg_success =====\n{}============================================",
+        serialized
+    );
 }
 
 #[cfg(feature = "pgschema")]
@@ -279,7 +291,10 @@ fn test_load_data_pg_merge() {
     assert!(serialized.contains("alice"));
     assert!(serialized.contains("bob"));
 
-    println!("\n===== test_load_data_pg_merge =====\n{serialized}============================================");
+    println!(
+        "\n===== test_load_data_pg_merge =====\n{}============================================",
+        serialized
+    );
 }
 
 #[cfg(feature = "pgschema")]
@@ -322,7 +337,10 @@ fn test_load_data_pg_replace() {
     assert!(!serialized.contains("alice"));
     assert!(serialized.contains("bob"));
 
-    println!("\n===== test_load_data_pg_replace =====\n{serialized}============================================");
+    println!(
+        "\n===== test_load_data_pg_replace =====\n{}============================================",
+        serialized
+    );
 }
 
 #[cfg(feature = "pgschema")]
@@ -396,8 +414,8 @@ fn test_load_data_endpoint_uses_configured_prefixmap_for_known_endpoint() {
         .get("https://dbpedia.org/sparql")
         .expect("Configured DBpedia endpoint should be active");
 
-    endpoint.prefixmap().resolve_prefix_local("dbr", "Oviedo").unwrap();
-    endpoint.prefixmap().resolve_prefix_local("foaf", "depiction").unwrap();
+    assert!(endpoint.prefixmap().resolve_prefix_local("dbr", "Oviedo").is_ok());
+    assert!(endpoint.prefixmap().resolve_prefix_local("foaf", "depiction").is_ok());
 }
 
 /// The minimum request interval of the active endpoint registered under `name`.
@@ -477,7 +495,7 @@ fn test_load_data_endpoint_min_request_interval_override() {
 fn test_load_data_conflicting_sources() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf = InputSpec::str("@prefix ex: <http://example.org/> . ex:a a ex:Person .");
+    let rdf = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#);
 
     let result = load_data(
         &mut rudof,
@@ -527,7 +545,7 @@ fn test_load_data_via_qlever_rejects_pg_format() {
         .expect_err("Pg should be rejected up front");
     match err {
         RudofError::Data(boxed) => assert!(
-            matches!(&*boxed, DataError::NonRdfFormat { format } if format == "pg"),
+            matches!(*boxed, DataError::NonRdfFormat { ref format } if format == "pg"),
             "expected NonRdfFormat(pg), got {boxed:?}"
         ),
         other => panic!("expected RudofError::Data, got {other:?}"),
@@ -548,7 +566,7 @@ fn test_load_data_via_qlever_rejects_non_path_inputs() {
         .expect_err("non-Path inputs should be rejected");
     match err {
         RudofError::Data(boxed) => assert!(
-            matches!(&*boxed, DataError::DataSourceSpec { message } if message.contains("file-system inputs")),
+            matches!(*boxed, DataError::DataSourceSpec { ref message } if message.contains("file-system inputs")),
             "expected DataSourceSpec mentioning file-system inputs, got {boxed:?}"
         ),
         other => panic!("expected RudofError::Data, got {other:?}"),

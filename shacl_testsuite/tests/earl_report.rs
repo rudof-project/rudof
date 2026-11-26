@@ -20,8 +20,8 @@ fn the_walker_finds_both_approved_entries_with_urn_test_iris() {
     assert_eq!(
         iris,
         vec![
-            "urn:x-shacl-test:/fixture-fail".to_owned(),
-            "urn:x-shacl-test:/fixture-pass".to_owned(),
+            "urn:x-shacl-test:/fixture-fail".to_string(),
+            "urn:x-shacl-test:/fixture-pass".to_string(),
         ]
     );
 }

@@ -81,7 +81,7 @@ fn prepare_loaded_data_schema_and_shapemap(
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if !data.is_rdf() {
-        return Err(Box::new(DataError::NoRdfDataLoaded).into());
+        Err(Box::new(DataError::NoRdfDataLoaded))?
     }
 
     let shex_schema_ir = rudof.shex_schema_ir.as_ref().ok_or(ShExError::NoShExSchemaLoaded)?;

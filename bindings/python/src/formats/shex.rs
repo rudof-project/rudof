@@ -123,7 +123,7 @@ impl PyShExValidationEntry {
 #[cfg_attr(feature = "stub-gen", pyo3_stub_gen_derive::gen_stub_pyclass)]
 #[pyclass(frozen, name = "ShExValidationReport", module = "pyrudof._pyrudof")]
 pub struct PyShExValidationReport {
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     pub(crate) inner: ResultShapeMap,
     pub(crate) entries: Vec<PyShExValidationEntry>,
     pub(crate) recorded: RecordedTriples,
@@ -165,7 +165,7 @@ impl RecordedTriples {
 
 /// Serializes `graph` in `format` (Turtle by default).
 pub(crate) fn serialize_graph(graph: &OxigraphInMemory, format: Option<&PyRDFFormat>) -> Result<String> {
-    let format = RDFFormat::try_from(format.map_or(DataFormat::Turtle, DataFormat::from))?;
+    let format = RDFFormat::try_from(format.map(DataFormat::from).unwrap_or(DataFormat::Turtle))?;
     let mut buffer = Vec::new();
     graph
         .serialize(&format, &mut buffer)
@@ -245,7 +245,7 @@ impl PyShExValidationReport {
     /// ``None`` unless :meth:`Rudof.validate_shex` was called with ``subgraphs=True``.
     #[getter]
     fn valid_triples(&self) -> Option<usize> {
-        self.recorded.valid.as_ref().map(OxigraphInMemory::len)
+        self.recorded.valid.as_ref().map(|g| g.len())
     }
 
     /// How many triples are in the invalid subgraph, that is, the triples read that are not valid.
@@ -253,7 +253,7 @@ impl PyShExValidationReport {
     /// ``None`` unless :meth:`Rudof.validate_shex` was called with ``subgraphs=True``.
     #[getter]
     fn invalid_triples(&self) -> Option<usize> {
-        self.recorded.invalid.as_ref().map(OxigraphInMemory::len)
+        self.recorded.invalid.as_ref().map(|g| g.len())
     }
 
     /// Serializes the distinct triples the validation read.

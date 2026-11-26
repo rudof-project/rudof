@@ -2,6 +2,7 @@ use prefixmap::IriRef;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 use std::fmt::Display;
+use std::result;
 
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub enum IriExclusion {
@@ -10,7 +11,7 @@ pub enum IriExclusion {
 }
 
 impl Serialize for IriExclusion {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

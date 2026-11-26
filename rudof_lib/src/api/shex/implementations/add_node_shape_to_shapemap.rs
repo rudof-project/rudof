@@ -20,7 +20,7 @@ pub fn add_node_shape_to_shapemap(
     let normalized_node = crate::utils::normalize_iri_str(node, iri_mode);
     let node_selector =
         ShapeMapParser::parse_node_selector(&normalized_node).map_err(|e| ShExError::NodeSelectorParseError {
-            node_selector: node.to_owned(),
+            node_selector: node.to_string(),
             error: e.to_string(),
         })?;
 
@@ -28,7 +28,7 @@ pub fn add_node_shape_to_shapemap(
         Some(s) => {
             let normalized_shape = crate::utils::normalize_iri_str(s, iri_mode);
             ShapeMapParser::parse_shape_selector(&normalized_shape).map_err(|e| ShExError::ShapeSelectorParseError {
-                shape_selector: s.to_owned(),
+                shape_selector: s.to_string(),
                 error: e.to_string(),
             })?
         },
@@ -44,10 +44,7 @@ pub fn add_node_shape_to_shapemap(
         .as_mut()
         .filter(|data| data.is_rdf())
         .and_then(|data| data.unwrap_rdf_mut().prefixmap());
-    let shapes_prefixmap: Option<PrefixMap> = rudof
-        .shex_validator
-        .as_ref()
-        .map(shex_validation::Validator::shapes_prefixmap);
+    let shapes_prefixmap: Option<PrefixMap> = rudof.shex_validator.as_ref().map(|v| v.shapes_prefixmap());
 
     let shapemap = rudof.shapemap.get_or_insert_with(QueryShapeMap::new);
     if let Some(pm) = &nodes_prefixmap {

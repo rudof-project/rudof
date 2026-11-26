@@ -21,7 +21,6 @@ impl PathValues {
         }
     }
 
-    #[must_use]
     pub fn with_focus_node(mut self, fnode: Option<IRNodeExpr>) -> Self {
         self.focus_nodes = fnode.map(Box::new);
         self

@@ -29,9 +29,9 @@ pub fn check_shex_schema<W: io::Write>(
         base_schema,
         Some(&DataReaderMode::Lax),
     ) {
-        Ok(()) => true,
+        Ok(_) => true,
         Err(e) => {
-            writeln!(writer, "Schema is malformed. Error during parsing:\n{e}\n")
+            writeln!(writer, "Schema is malformed. Error during parsing:\n{}\n", e)
                 .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
             false
         },
@@ -62,14 +62,15 @@ pub fn check_shex_schema<W: io::Write>(
                 .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
 
             for shape in &shapes {
-                writeln!(writer, "    - {shape}").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
+                writeln!(writer, "    - {}", shape)
+                    .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
             }
 
             writeln!(writer, "\n  Negative cycle path:")
                 .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
 
             for path in &edges {
-                writeln!(writer, "    {path}").map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
+                writeln!(writer, "    {}", path).map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
             }
 
             writeln!(writer).map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;

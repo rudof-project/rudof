@@ -6,8 +6,8 @@ use rudof_iri::IriS;
 use std::fmt::Write;
 use std::str::FromStr;
 
-const PREFIX_REGEX: &str = "[a-zA-Z]{1,3}";
-const LOCAL_REGEX: &str = "[a-zA-Z]+";
+const PREFIX_REGEX: &str = r"[a-zA-Z]{1,3}";
+const LOCAL_REGEX: &str = r"[a-zA-Z]+";
 const URI_REGEX: &str = r"https?://[a-zA-Z0-9]{3,}(\.[a-zA-Z0-9]{3,})+(\/[a-zA-Z0-9/]{1,3})*\/";
 
 mod prefixmap_tests {

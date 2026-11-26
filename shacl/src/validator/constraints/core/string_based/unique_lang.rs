@@ -26,7 +26,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
     ) -> Result<ValidationOutcome, ValidationError> {
         // If unique_lang is not activated, just return without any check
         if !self.unique_lang() {
-            return Ok(ValidationOutcome::default());
+            return Ok(Default::default());
         }
 
         let mut outcome = ValidationOutcome::new();
@@ -51,7 +51,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                     had_duplicate = true;
                     let msg = format!(
                         "Unique lang failed for lang {k} with values: {}",
-                        v.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                        v.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", ")
                     );
                     let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
                         .with_path(maybe_path.cloned())

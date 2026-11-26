@@ -44,14 +44,16 @@ impl EdgeSemantics {
         graph: &PropertyGraph,
     ) -> Either<Vec<PgsError>, Vec<Evidence>> {
         let source = edge.source();
-        let Some(source_node) = graph.node(source) else {
-            return Either::Left(vec![PgsError::MissingNodeId { id: source.to_string() }]);
+        let source_node = match graph.node(source) {
+            Some(node) => node,
+            None => return Either::Left(vec![PgsError::MissingNodeId { id: source.to_string() }]),
         };
         let edge_labels = edge.labels();
         let edge_content = edge.content();
         let target = edge.target();
-        let Some(target_node) = graph.node(target) else {
-            return Either::Left(vec![PgsError::MissingNodeId { id: target.to_string() }]);
+        let target_node = match graph.node(target) {
+            Some(node) => node,
+            None => return Either::Left(vec![PgsError::MissingNodeId { id: target.to_string() }]),
         };
 
         let source_conforms = self.source.conforms(source_node.labels(), source_node.content());

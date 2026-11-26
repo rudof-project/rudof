@@ -61,6 +61,3 @@ harness = false
 [[bench]]
 name = "validate_precompiled"
 harness = false
-
-[lints]
-workspace = true

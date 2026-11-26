@@ -8,10 +8,10 @@ const DATA: &str = r#"prefix : <http://a.example/>
 :carol :name "Carol" .
 "#;
 
-const SHAPES: &str = "prefix : <http://a.example/>
+const SHAPES: &str = r#"prefix : <http://a.example/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 :Person sh:targetNode :alice ; sh:property [ sh:path :name ; sh:minCount 1 ] .
-";
+"#;
 
 fn rudof_in(dir: &Path, args: &[&str]) -> (bool, String, String) {
     let output = Command::new(env!("CARGO_BIN_EXE_rudof"))
@@ -110,13 +110,13 @@ fn visited_in_turtle_uses_the_prefixes_of_the_data() {
 }
 
 /// Issue #972: the valid and invalid subgraphs of a SHACL validation.
-const SUBGRAPH_SHAPES: &str = "prefix : <http://a.example/>
+const SUBGRAPH_SHAPES: &str = r#"prefix : <http://a.example/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person sh:targetNode :alice, :carol ;
   sh:property [ sh:path :name ; sh:minCount 1 ] ;
   sh:property [ sh:path :age ; sh:minCount 1 ; sh:datatype xsd:integer ] .
-";
+"#;
 
 fn subgraph_fixture() -> tempfile::TempDir {
     let dir = fixture();
@@ -126,7 +126,7 @@ fn subgraph_fixture() -> tempfile::TempDir {
 
 fn sorted_lines(dir: &Path, name: &str) -> Vec<String> {
     let text = std::fs::read_to_string(dir.join(name)).unwrap();
-    let mut lines: Vec<String> = text.lines().map(str::to_owned).collect();
+    let mut lines: Vec<String> = text.lines().map(str::to_string).collect();
     lines.sort();
     lines
 }

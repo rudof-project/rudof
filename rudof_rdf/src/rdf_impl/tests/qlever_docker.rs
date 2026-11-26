@@ -144,11 +144,9 @@ async fn stdin_stream_does_not_hang_when_container_oom_killed() {
     let fut = QleverGraphContainer::from_path(&bz2_path, config);
     let res = tokio::time::timeout(Duration::from_secs(60), fut).await;
     match res {
-        Err(elapsed) => panic!(
-            "build_index hung > 60s ({elapsed}) on dying container \u{2014} regression of the OOM-stdin-hang bug"
-        ),
+        Err(_) => panic!("build_index hung > 60s on dying container — regression of the OOM-stdin-hang bug"),
         Ok(Ok(_)) => panic!("build_index unexpectedly succeeded with an 8 MiB container cap"),
-        Ok(Err(e)) => eprintln!("ok \u{2014} got expected error in bounded time: {e}"),
+        Ok(Err(e)) => eprintln!("ok — got expected error in bounded time: {e}"),
     }
 }
 

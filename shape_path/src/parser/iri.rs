@@ -19,11 +19,11 @@ use prefixmap::IriRef;
 use rudof_iri::IriS;
 
 /// `[136s] iri ::= IRIREF | prefixedName`
-pub(super) fn iri(i: Span<'_>) -> IRes<'_, IriRef> {
+pub(super) fn iri(i: Span) -> IRes<IriRef> {
     alt((iri_ref_s, prefixed_name())).parse(i)
 }
 
-fn iri_ref_s(i: Span<'_>) -> IRes<'_, IriRef> {
+fn iri_ref_s(i: Span) -> IRes<IriRef> {
     let (i, iri) = iri_ref(i)?;
     Ok((i, iri.into()))
 }
@@ -35,13 +35,13 @@ fn prefixed_name<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, IriRef> {
     })
 }
 
-fn pname_ns_iri_ref(i: Span<'_>) -> IRes<'_, IriRef> {
+fn pname_ns_iri_ref(i: Span) -> IRes<IriRef> {
     let (i, pname_ns) = pname_ns(i)?;
     Ok((i, IriRef::prefixed(*pname_ns.fragment(), "")))
 }
 
 /// `[141s] <PNAME_LN> ::= PNAME_NS PN_LOCAL`
-fn pname_ln(i: Span<'_>) -> IRes<'_, IriRef> {
+fn pname_ln(i: Span) -> IRes<IriRef> {
     let (i, (prefix, local)) = (pname_ns, pn_local).parse(i)?;
     Ok((i, IriRef::prefixed(*prefix.fragment(), local)))
 }
@@ -56,7 +56,7 @@ fn is_pn_local_start(c: char) -> bool {
     c == ':' || c.is_ascii_digit() || is_pn_chars_u(c)
 }
 
-fn pn_local_rest(i: Span<'_>) -> IRes<'_, Span<'_>> {
+fn pn_local_rest(i: Span) -> IRes<Span> {
     recognize(many0(alt((take_while1(is_pn_chars_colon), plx, recognize(char('.')))))).parse(i)
 }
 
@@ -64,17 +64,17 @@ fn is_pn_chars_colon(c: char) -> bool {
     c == ':' || is_pn_chars(c)
 }
 
-fn plx(i: Span<'_>) -> IRes<'_, Span<'_>> {
+fn plx(i: Span) -> IRes<Span> {
     alt((percent, pn_local_esc)).parse(i)
 }
 
 /// `[173s] <PN_LOCAL_ESC> ::= "\\" ( "_" | "~" | "." | "-" | "!" | "$" | "&" | "'" |
 ///             "(" | ")" | "*" | "+" | "," | ";" | "=" | "/" | "?" | "#" | "@" | "%" )`
-fn pn_local_esc(i: Span<'_>) -> IRes<'_, Span<'_>> {
+fn pn_local_esc(i: Span) -> IRes<Span> {
     recognize((char('\\'), one_if(|c| "_~.-!$&'()*+,;=/?#@%".contains(c)))).parse(i)
 }
 
-fn percent(i: Span<'_>) -> IRes<'_, Span<'_>> {
+fn percent(i: Span) -> IRes<Span> {
     recognize((char('%'), one_if(is_hex), one_if(is_hex))).parse(i)
 }
 
@@ -83,7 +83,7 @@ fn is_hex(c: char) -> bool {
 }
 
 /// `[18t] <IRIREF> ::= "<" ([^#0000- <>\"{}|^`\\] | UCHAR)* ">"`
-fn iri_ref(i: Span<'_>) -> IRes<'_, IriS> {
+fn iri_ref(i: Span) -> IRes<IriS> {
     let (i, chars) = delimited(char('<'), many0(alt((satisfy(is_iri_char), uchar))), char('>')).parse(i)?;
     let iri: String = chars.into_iter().collect();
     Ok((i, IriS::new_unchecked(iri.as_str())))
@@ -94,7 +94,7 @@ fn is_iri_char(c: char) -> bool {
 }
 
 /// `[26t] <UCHAR> ::= "\\u" HEX HEX HEX HEX | "\\U" HEX HEX HEX HEX HEX HEX HEX HEX`
-fn uchar(i: Span<'_>) -> IRes<'_, char> {
+fn uchar(i: Span) -> IRes<char> {
     let hex = || one_of("0123456789ABCDEFabcdef");
     let (rest, digits) = alt((
         preceded(tag(r"\u"), recognize(count(hex(), 4))),
@@ -108,13 +108,13 @@ fn uchar(i: Span<'_>) -> IRes<'_, char> {
 }
 
 /// `[140s] <PNAME_NS> ::= PN_PREFIX? ":"`
-fn pname_ns(i: Span<'_>) -> IRes<'_, Span<'_>> {
+fn pname_ns(i: Span) -> IRes<Span> {
     let (i, (prefix, _)) = (opt(pn_prefix), char(':')).parse(i)?;
     Ok((i, prefix.unwrap_or(Span::from(""))))
 }
 
 /// `[168s] <PN_PREFIX> ::= PN_CHARS_BASE ( (PN_CHARS | ".")* PN_CHARS )?`
-fn pn_prefix(i: Span<'_>) -> IRes<'_, Span<'_>> {
+fn pn_prefix(i: Span) -> IRes<Span> {
     recognize((
         satisfy(is_pn_chars_base),
         take_while(is_pn_chars),

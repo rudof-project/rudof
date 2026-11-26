@@ -125,10 +125,10 @@ fn schema_format_is_rejected_in_data_mode() {
 
 #[test]
 fn schema_mode_is_still_the_default() {
-    let schema = "PREFIX : <http://example.org/>
+    let schema = r#"PREFIX : <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person { :name xsd:string }
-";
+"#;
     let dir = tempfile::tempdir().expect("temp dir");
     let path = dir.path().join("person.shex");
     std::fs::write(&path, schema).expect("write schema");
@@ -220,8 +220,8 @@ fn approximate_diffs_are_reported() {
         path.to_string_lossy().into_owned()
     };
     let lookalikes = |p: &str| (0..20).map(|i| format!("_:{p}{i} :p :o .\n")).collect::<String>();
-    let first = write("first.ttl", format!("{}_:a0 :q 1 .\n_:a1 :r 1 .\n", lookalikes("a")));
-    let second = write("second.ttl", format!("{}_:b7 :q 2 .\n_:b3 :r 2 .\n", lookalikes("b")));
+    let first = write("first.ttl", lookalikes("a") + "_:a0 :q 1 .\n_:a1 :r 1 .\n");
+    let second = write("second.ttl", lookalikes("b") + "_:b7 :q 2 .\n_:b3 :r 2 .\n");
     let out = compare(&first, &second, &["--show-diff", "--exact-search-limit", "10"]);
     assert!(out.stdout.contains("The diff is approximate"), "{}", out.stdout);
     let out = compare(&first, &second, &["--show-diff"]);

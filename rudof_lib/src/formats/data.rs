@@ -149,7 +149,7 @@ impl FromStr for DataFormat {
             "jsonld" => Ok(DataFormat::JsonLd),
             "pg" => Ok(DataFormat::Pg),
             other => Err(DataError::UnsupportedDataFormat {
-                format: other.to_owned(),
+                format: other.to_string(),
             }),
         }
     }
@@ -238,7 +238,9 @@ impl FromStr for DataReaderMode {
         match s.to_lowercase().as_str() {
             "strict" => Ok(DataReaderMode::Strict),
             "lax" => Ok(DataReaderMode::Lax),
-            other => Err(DataError::UnsupportedReaderMode { mode: other.to_owned() }),
+            other => Err(DataError::UnsupportedReaderMode {
+                mode: other.to_string(),
+            }),
         }
     }
 }
@@ -293,7 +295,7 @@ impl FromStr for ResultDataFormat {
             "plantuml" => Ok(ResultDataFormat::PlantUML),
             "svg" => Ok(ResultDataFormat::Svg),
             "png" => Ok(ResultDataFormat::Png),
-            _ => Err(DataError::UnsupportedResultDataFormat { format: s.to_owned() }),
+            _ => Err(DataError::UnsupportedResultDataFormat { format: s.to_string() }),
         }
     }
 }

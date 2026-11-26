@@ -19,8 +19,8 @@ impl Display for UmlCardinality {
             UmlCardinality::Star => write!(f, "0..*"),
             UmlCardinality::Plus => write!(f, "1..*"),
             UmlCardinality::Optional => write!(f, "0..1"),
-            UmlCardinality::Range(min, max) => write!(f, "{min}..{max}"),
-            UmlCardinality::Fixed(n) => write!(f, "{n}"),
+            UmlCardinality::Range(min, max) => write!(f, "{}..{}", min, max),
+            UmlCardinality::Fixed(n) => write!(f, "{}", n),
         }
     }
 }

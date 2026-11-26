@@ -15,7 +15,7 @@ pub struct ShEx2SparqlConfig {
 #[allow(dead_code)]
 #[rustfmt::skip]
 impl ShEx2SparqlConfig {
-    #[inline] fn default_this_variable_name() -> String { "this".to_owned() }
+    #[inline] fn default_this_variable_name() -> String { "this".to_string() }
     #[inline] fn default_shex() -> ShExConfig { ShExConfig::default() }
 }
 
@@ -27,13 +27,11 @@ impl ShEx2SparqlConfig {
         }
     }
 
-    #[must_use]
     pub fn with_this_variable_name(mut self, name: String) -> Self {
         self.this_variable_name = name;
         self
     }
 
-    #[must_use]
     pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
         self.shex = cfg;
         self
@@ -79,7 +77,7 @@ mod tests {
 
     #[test]
     fn toml_round_trip() {
-        let c = ShEx2SparqlConfig::default().with_this_variable_name("self".to_owned());
+        let c = ShEx2SparqlConfig::default().with_this_variable_name("self".to_string());
         let s = c.to_toml_string().unwrap();
         let d = ShEx2SparqlConfig::from_toml_str(&s).unwrap();
         assert_eq!(c, d);

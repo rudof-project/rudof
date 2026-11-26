@@ -129,9 +129,8 @@ impl<'a> GenerateDataBuilder<'a> {
         };
         let InputSpec::Path(schema) = self.schema else {
             return Err(GenerationError::UnsupportedGenerationSchemaInput {
-                input: "non-file schema".to_owned(),
-            }
-            .into());
+                input: "non-file schema".to_string(),
+            })?;
         };
         let data_format = self.result_generation_format.copied().unwrap_or_default();
         validate_generated(

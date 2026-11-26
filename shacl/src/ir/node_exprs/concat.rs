@@ -43,7 +43,7 @@ impl Display for Concat {
         let items = self
             .concat()
             .iter()
-            .map(ToString::to_string)
+            .map(|ne| ne.to_string())
             .collect::<Vec<_>>()
             .join(", ");
         write!(f, "Concat[{items}]")

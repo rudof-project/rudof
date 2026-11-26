@@ -154,9 +154,9 @@ impl VisualRDFGraph {
         let asserted = rdf
             .contains(&subject, &predicate, &object)
             .map_err(|e| RDFError::FailedCheckingAssertion {
-                subject: subject_str.clone(),
-                predicate: predicate_str.clone(),
-                object: object_str.clone(),
+                subject: subject_str.to_string(),
+                predicate: predicate_str.to_string(),
+                object: object_str.to_string(),
                 error: e.to_string(),
             })?;
         let triple = if asserted {
@@ -473,12 +473,12 @@ mod tests {
         assert!(text.contains("hide stereotype"));
     }
 
-    const REIFIED_GRAPH: &str = "
+    const REIFIED_GRAPH: &str = r#"
         prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         :belief1 rdf:reifies <<( :alice :knows :bob )>> ;
             :since 2020 .
-    ";
+    "#;
 
     /// A predicate is only ever visualized as its own box when it appears inside a triple term
     /// (e.g. RDF-star reification, as above) — regular predicates stay hidden. This is the case

@@ -25,15 +25,15 @@ pub(crate) fn node_shape<RDF: FocusRDF>(budget: Arc<ParseBudget>) -> impl RDFNod
                     .flat_map(move |msg| Ok(ns.clone().with_message(msg)))
             })
             .then({
-                let budget = Arc::clone(&budget);
-                move |ns| targets(Arc::clone(&budget)).flat_map(move |ts| Ok(ns.clone().with_targets(ts)))
+                let budget = budget.clone();
+                move |ns| targets(budget.clone()).flat_map(move |ts| Ok(ns.clone().with_targets(ts)))
             })
             .then(move |ns| {
-                let budget = Arc::clone(&budget);
+                let budget = budget.clone();
                 property()
                     .flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
                     .then(move |ns_with_ps| {
-                        components(Arc::clone(&budget)).flat_map(move |cs| Ok(ns_with_ps.clone().with_components(cs)))
+                        components(budget.clone()).flat_map(move |cs| Ok(ns_with_ps.clone().with_components(cs)))
                     })
             }),
     )

@@ -38,43 +38,36 @@ impl ShapemapConfig {
         }
     }
 
-    #[must_use]
     pub fn with_nodes_prefixmap(mut self, pm: PrefixMap) -> Self {
         self.nodes_prefixmap = pm;
         self
     }
 
-    #[must_use]
     pub fn with_shapes_prefixmap(mut self, pm: PrefixMap) -> Self {
         self.shapes_prefixmap = pm;
         self
     }
 
-    #[must_use]
     pub fn with_ok_text(mut self, text: String) -> Self {
         self.ok_text = text;
         self
     }
 
-    #[must_use]
     pub fn with_fail_text(mut self, text: String) -> Self {
         self.fail_text = text;
         self
     }
 
-    #[must_use]
     pub fn with_ok_color(mut self, color: Color) -> Self {
         self.ok_color = color;
         self
     }
 
-    #[must_use]
     pub fn with_fail_color(mut self, color: Color) -> Self {
         self.fail_color = color;
         self
     }
 
-    #[must_use]
     pub fn with_pending_color(mut self, color: Color) -> Self {
         self.pending_color = color;
         self
@@ -117,8 +110,8 @@ impl ShapemapConfig {
 impl ShapemapConfig {
     #[inline] fn default_nodes_prefixmap() -> PrefixMap { PrefixMap::new() }
     #[inline] fn default_shapes_prefixmap() -> PrefixMap { PrefixMap::new() }
-    #[inline] fn default_ok_text() -> String { "OK".to_owned() }
-    #[inline] fn default_fail_text() -> String { "FAIL".to_owned() }
+    #[inline] fn default_ok_text() -> String { "OK".to_string() }
+    #[inline] fn default_fail_text() -> String { "FAIL".to_string() }
     #[inline] fn default_ok_color() -> Color { Color::Green }
     #[inline] fn default_fail_color() -> Color { Color::Red }
     #[inline] fn default_pending_color() -> Color { Color::Magenta }
@@ -153,7 +146,7 @@ mod tests {
 
     #[test]
     fn toml_round_trip() {
-        let c = ShapemapConfig::default().with_ok_text("YES".to_owned());
+        let c = ShapemapConfig::default().with_ok_text("YES".to_string());
         let s = c.to_toml_string().unwrap();
         let d = ShapemapConfig::from_toml_str(&s).unwrap();
         assert_eq!(c, d);

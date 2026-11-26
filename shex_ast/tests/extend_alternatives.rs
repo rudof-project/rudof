@@ -31,10 +31,10 @@ fn idx(ir: &SchemaIR, iri_str: &str) -> ShapeLabelIdx {
 #[test]
 fn ref_parent_single_alternative() {
     let ir = compile(
-        "PREFIX : <http://e/>
+        r#"PREFIX : <http://e/>
            :A { :p . }
            :B @:A
-           :C EXTENDS @:B { :q . }",
+           :C EXTENDS @:B { :q . }"#,
     );
     let alts = ir.extend_alternatives(&idx(&ir, "http://e/B"));
     assert_eq!(alts.len(), 1);
@@ -45,11 +45,11 @@ fn ref_parent_single_alternative() {
 #[test]
 fn or_parent_one_alternative_per_branch() {
     let ir = compile(
-        "PREFIX : <http://e/>
+        r#"PREFIX : <http://e/>
            :A1 CLOSED { :p . }
            :A2 CLOSED { :r . }
            :AOr @:A1 OR @:A2
-           :C EXTENDS @:AOr { :q . }",
+           :C EXTENDS @:AOr { :q . }"#,
     );
     let alts = ir.extend_alternatives(&idx(&ir, "http://e/AOr"));
     assert_eq!(alts.len(), 2);
@@ -59,7 +59,7 @@ fn or_parent_one_alternative_per_branch() {
     assert!(alts.iter().all(|a| a.constraints().is_empty()));
 }
 
-const PERSON_EXTENDS: &str = "
+const PERSON_EXTENDS: &str = r#"
 BASE <http://schema.example/>
 PREFIX ex: <http://a.example/ns#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -99,7 +99,7 @@ PREFIX schema: <http://schema.org/>
 
 <Person> EXTENDS @<Contact1> EXTENDS @<Tools>
          CLOSED { ex:badgeNumber xsd:integer }
-";
+"#;
 
 #[test]
 fn person_contact_two_alternatives_with_shared_item() {
@@ -161,9 +161,9 @@ fn person_six_selections_with_item_diamond_deduplicated() {
 #[test]
 fn plain_shape_parent_is_single_bucket() {
     let ir = compile(
-        "PREFIX : <http://e/>
+        r#"PREFIX : <http://e/>
            :A { :p . }
-           :C EXTENDS @:A { :q . }",
+           :C EXTENDS @:A { :q . }"#,
     );
     let alts = ir.extend_alternatives(&idx(&ir, "http://e/A"));
     assert_eq!(alts.len(), 1);

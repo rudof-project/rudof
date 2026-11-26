@@ -66,8 +66,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clas
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
-        let Some(class_sparql) = object_as_sparql(self.class_rule()) else {
-            return Ok(ValidationOutcome::new());
+        let class_sparql = match object_as_sparql(self.class_rule()) {
+            Some(s) => s,
+            None => return Ok(ValidationOutcome::new()),
         };
         let class_term: S::Term = self.class_rule().clone().into();
         let component_obj = Object::iri(component.into());

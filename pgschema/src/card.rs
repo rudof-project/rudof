@@ -27,7 +27,6 @@ impl Card {
         }
     }
 
-    #[must_use]
     pub fn intersection(&self, other: &Card) -> Card {
         match (self, other) {
             (Card::ZeroOrOne, _) | (_, Card::ZeroOrOne) => Card::ZeroOrOne,
@@ -46,7 +45,7 @@ impl Display for Card {
             Card::One => write!(f, "1"),
             Card::ZeroOrMore => write!(f, "0..*"),
             Card::OneOrMore => write!(f, "1..*"),
-            Card::Range(min, max) => write!(f, "{min}..{max}"),
+            Card::Range(min, max) => write!(f, "{}..{}", min, max),
         }
     }
 }
@@ -58,7 +57,6 @@ pub enum Max {
 }
 
 impl Max {
-    #[must_use]
     pub fn min(&self, other: &Max) -> Max {
         match (self, other) {
             (Max::Unbounded, _) => Max::Unbounded,
@@ -71,8 +69,8 @@ impl Max {
 impl Display for Max {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Max::Unbounded => write!(f, "\u{221e}"),
-            Max::Bounded(n) => write!(f, "{n}"),
+            Max::Unbounded => write!(f, "∞"),
+            Max::Bounded(n) => write!(f, "{}", n),
         }
     }
 }

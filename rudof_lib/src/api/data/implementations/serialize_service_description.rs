@@ -18,7 +18,7 @@ pub fn serialize_service_description<W: io::Write>(
                 })
             })?;
     } else {
-        return Err(Box::new(DataError::NoServiceDescription).into());
+        Err(Box::new(DataError::NoServiceDescription))?
     }
 
     Ok(())

@@ -103,16 +103,16 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         // elements of `sh:and` list
         let sh_and_values = self.get_triples_list(&ShaclVocab::sh_and().into(), "sh:and", budget, |v, ctx| {
             ShaclParserError::ValueNotExpected {
-                iri: ctx.to_owned(),
-                expected: "subject".to_owned(),
+                iri: ctx.to_string(),
+                expected: "subject".to_string(),
                 found: v.to_string(),
             }
         })?;
         // elements of `sh:or` list
         let sh_or_values = self.get_triples_list(&ShaclVocab::sh_or().into(), "sh:or", budget, |v, ctx| {
             ShaclParserError::ValueNotExpected {
-                iri: ctx.to_owned(),
-                expected: "object".to_owned(),
+                iri: ctx.to_string(),
+                expected: "object".to_string(),
                 found: v.to_string(),
             }
         })?;
@@ -128,8 +128,8 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         // elements of `sh:xone` list
         let sh_xone_values = self.get_triples_list(&ShaclVocab::sh_xone().into(), "sh:xone", budget, |v, ctx| {
             ShaclParserError::ValueNotExpected {
-                iri: ctx.to_owned(),
-                expected: "subject".to_owned(),
+                iri: ctx.to_string(),
+                expected: "subject".to_string(),
                 found: v.to_string(),
             }
         })?;
@@ -198,7 +198,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
 
         for subject in self.objects_with_predicate(pred)? {
             self.rdf_parser.set_focus(&subject.into());
-            let vs = list_with_budget(Arc::clone(budget)).parse_focused(self.rdf_parser.rdf_mut())?;
+            let vs = list_with_budget(budget.clone()).parse_focused(self.rdf_parser.rdf_mut())?;
             for v in vs {
                 if let Ok(subj) = term_to_subject::<RDF>(&v, context) {
                     rs.insert(subj);
@@ -228,12 +228,12 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
 fn term_to_subject<RDF: FocusRDF>(term: &RDF::Term, context: &str) -> Result<RDF::Subject, ShaclParserError> {
     RDF::term_as_subject(term).map_err(|_| ShaclParserError::ExpectedSubject {
         term: term.to_string(),
-        context: context.to_owned(),
+        context: context.to_string(),
     })
 }
 
 fn shape<RDF: FocusRDF + 'static>(budget: Arc<ParseBudget>) -> impl RDFNodeParse<RDF, Output = ASTShape> {
-    node_shape(Arc::clone(&budget))
+    node_shape(budget.clone())
         .then(move |ns| SuccessParser::new(ASTShape::NodeShape(Box::new(ns))))
         .or(property_shape(budget).then(|ps| SuccessParser::new(ASTShape::PropertyShape(Box::new(ps)))))
 }

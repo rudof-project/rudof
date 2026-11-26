@@ -71,7 +71,6 @@ impl CachedRdfData {
     }
 
     /// Sets how many nodes one prefetch query asks about (at least 1).
-    #[must_use]
     pub fn with_batch_size(mut self, batch_size: usize) -> Self {
         self.batch_size = batch_size.max(1);
         self
@@ -126,7 +125,7 @@ impl CachedRdfData {
         };
         let preds = unique(preds.iter().cloned());
         for batch in todo.chunks(self.batch_size) {
-            let values = batch.iter().map(ToString::to_string).collect::<Vec<_>>().join(" ");
+            let values = batch.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(" ");
             let query = format!(
                 "SELECT ?s ?p ?o WHERE {{ VALUES ?s {{ {values} }} {} }}",
                 union_of(&preds, |p| format!("{{ ?s {p} ?o BIND({p} AS ?p) }}"))
@@ -166,7 +165,7 @@ impl CachedRdfData {
         };
         let preds = unique(preds.iter().cloned());
         for batch in todo.chunks(self.batch_size) {
-            let values = batch.iter().map(ToString::to_string).collect::<Vec<_>>().join(" ");
+            let values = batch.iter().map(|o| o.to_string()).collect::<Vec<_>>().join(" ");
             let query = format!(
                 "SELECT ?s ?p ?o WHERE {{ VALUES ?o {{ {values} }} {} }}",
                 union_of(&preds, |p| format!("{{ ?s {p} ?o BIND({p} AS ?p) }}"))
@@ -202,7 +201,7 @@ impl CachedRdfData {
             .collect()
         };
         for batch in todo.chunks(self.batch_size) {
-            let values = batch.iter().map(ToString::to_string).collect::<Vec<_>>().join(" ");
+            let values = batch.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(" ");
             let query = format!("SELECT ?s ?p ?o WHERE {{ VALUES ?s {{ {values} }} ?s ?p ?o }}");
             let Some(rows) = self.run_prefetch(&query)? else {
                 continue;
@@ -438,7 +437,7 @@ impl QueryRDF for CachedRdfData {
         let solutions = self.inner.query_select(query)?;
         let pm = self.inner.prefixmap().unwrap_or_default();
         let mut converted = QuerySolutions::empty();
-        converted.extend(solutions.iter().map(|s| s.convert(Clone::clone)).collect(), pm);
+        converted.extend(solutions.iter().map(|s| s.convert(|t| t.clone())).collect(), pm);
         Ok(converted)
     }
 

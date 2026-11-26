@@ -34,7 +34,7 @@ impl FromStr for GenerationSchemaFormat {
             "shex" => Ok(GenerationSchemaFormat::ShEx),
             "shacl" => Ok(GenerationSchemaFormat::Shacl),
             other => Err(GenerationError::UnsupportedGenerationSchemaFormat {
-                format: other.to_owned(),
+                format: other.to_string(),
             }),
         }
     }

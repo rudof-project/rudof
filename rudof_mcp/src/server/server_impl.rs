@@ -52,9 +52,9 @@ impl Default for McpConfig {
     fn default() -> Self {
         Self {
             transport: TransportType::Stdio,
-            bind_address: DEFAULT_BIND_ADDRESS.to_owned(),
+            bind_address: DEFAULT_BIND_ADDRESS.to_string(),
             port: DEFAULT_PORT,
-            route_path: DEFAULT_ROUTE_PATH.to_owned(),
+            route_path: DEFAULT_ROUTE_PATH.to_string(),
             allowed_origins: Vec::new(),
             allowed_hosts: Vec::new(),
         }

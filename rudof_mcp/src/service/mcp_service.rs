@@ -10,7 +10,7 @@ use crate::service::tools::helpers::RDF_FORMAT_LIST;
 use crate::service::{logging::LogRateLimiter, state};
 // `LoggingLevel` is deprecated by SEP-2577; the protocol still supports
 // MCP logging and there is no replacement API, so it stays in use here.
-#[expect(deprecated)]
+#[allow(deprecated)]
 use rmcp::{
     handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
     model::LoggingLevel,
@@ -36,7 +36,7 @@ pub enum ServiceCreationError {
 impl std::fmt::Display for ServiceCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::RudofError(e) => write!(f, "Failed to initialize Rudof: {e}"),
+            Self::RudofError(e) => write!(f, "Failed to initialize Rudof: {}", e),
         }
     }
 }
@@ -81,7 +81,7 @@ pub struct RudofMcpService {
     ///
     /// Set via `logging/setLevel` requests. Only log messages at or
     /// above this severity level are sent to the client.
-    #[expect(deprecated)]
+    #[allow(deprecated)]
     pub current_min_log_level: Arc<RwLock<Option<LoggingLevel>>>,
 
     /// Rate limiter for outbound MCP logging notifications.
@@ -220,25 +220,25 @@ impl RudofMcpService {
 
         match (prompt_name, argument_name) {
             // Base IRI suggestions
-            (_, "base" | "base_iri") => {
+            (_, "base") | (_, "base_iri") => {
                 vec![
-                    "http://example.org/".to_owned(),
-                    "https://schema.org/".to_owned(),
-                    "http://www.w3.org/2001/XMLSchema#".to_owned(),
+                    "http://example.org/".to_string(),
+                    "https://schema.org/".to_string(),
+                    "http://www.w3.org/2001/XMLSchema#".to_string(),
                 ]
             },
             // Focus argument for analyze_rdf_data prompt
-            ("analyze_rdf_data" | _, "focus") => {
+            ("analyze_rdf_data", "focus") | (_, "focus") => {
                 vec![
-                    "all".to_owned(),
-                    "structure".to_owned(),
-                    "quality".to_owned(),
-                    "statistics".to_owned(),
+                    "all".to_string(),
+                    "structure".to_string(),
+                    "quality".to_string(),
+                    "statistics".to_string(),
                 ]
             },
             // Technology argument for validation_guide prompt
-            ("validation_guide" | _, "technology") => {
-                vec!["shex".to_owned(), "shacl".to_owned()]
+            ("validation_guide", "technology") | (_, "technology") => {
+                vec!["shex".to_string(), "shacl".to_string()]
             },
             _ => vec![],
         }
@@ -258,10 +258,10 @@ impl RudofMcpService {
 
         match argument_name {
             // The `{format}` of the `rudof://current-data/{format}` template
-            "format" => RDF_FORMAT_LIST.iter().map(ToString::to_string).collect(),
+            "format" => RDF_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
             "endpoint" => vec![
-                "https://query.wikidata.org/sparql".to_owned(),
-                "https://dbpedia.org/sparql".to_owned(),
+                "https://query.wikidata.org/sparql".to_string(),
+                "https://dbpedia.org/sparql".to_string(),
             ],
             _ => vec![],
         }

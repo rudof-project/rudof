@@ -28,7 +28,7 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for TargetsNodeParser<RDF> {
         let values = ValuesPropertyParser::new(ShaclVocab::sh_target_node()).parse_focused(rdf)?;
 
         let mut targets = Vec::with_capacity(values.len());
-        for value in &values {
+        for value in values.iter() {
             let expr = self
                 .budget
                 .spend(rdf, |rdf, steps| node_expr_from_term(value, rdf, 0, steps));

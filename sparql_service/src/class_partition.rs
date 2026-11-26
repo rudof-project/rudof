@@ -22,13 +22,11 @@ impl ClassPartition {
         }
     }
 
-    #[must_use]
     pub fn with_id(mut self, id: &IriOrBlankNode) -> Self {
         self.id = Some(id.clone());
         self
     }
 
-    #[must_use]
     pub fn with_property_partition(mut self, property_partition: Vec<PropertyPartition>) -> Self {
         self.property_partition = property_partition;
         self
@@ -51,7 +49,7 @@ impl Display for ClassPartition {
             self.class,
             self.property_partition
                 .iter()
-                .map(ToString::to_string)
+                .map(|pp| pp.to_string())
                 .collect::<Vec<_>>()
                 .join("\n"),
             self.class

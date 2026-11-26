@@ -62,7 +62,7 @@ impl FromStr for TestMode {
             "semiauto" => Ok(TestMode::SemiAuto),
             "undisclosed" => Ok(TestMode::Undisclosed),
             "unknownmode" | "unknown" => Ok(TestMode::UnknownMode),
-            other => Err(EarlError::UnknownTestMode(other.to_owned())),
+            other => Err(EarlError::UnknownTestMode(other.to_string())),
         }
     }
 }

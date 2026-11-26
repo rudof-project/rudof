@@ -11,6 +11,3 @@ repository.workspace = true
 
 [dependencies]
 either.workspace = true
-
-[lints]
-workspace = true

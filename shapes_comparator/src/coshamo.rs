@@ -19,7 +19,6 @@ impl CoShaMo {
         }
     }
 
-    #[must_use]
     pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {
         self.prefixmap = prefixmap;
         self
@@ -46,14 +45,14 @@ impl CoShaMo {
 
     pub fn compare(&self, other: &CoShaMo) -> ShaCo {
         let mut shaco = ShaCo::new();
-        for (property1, descr1) in &self.constraints {
+        for (property1, descr1) in self.constraints.iter() {
             if let Some(descr2) = other.constraints.get(property1) {
                 shaco.add_equals_property(property1.clone(), descr1.clone(), descr2.clone());
             } else {
                 shaco.add_diff_property1(property1.clone(), descr1.clone());
             }
         }
-        for (property2, descr2) in &other.constraints {
+        for (property2, descr2) in other.constraints.iter() {
             if self.constraints.contains_key(property2) {
                 // Nothing to do, as it should have already been inserted in equals properties
             } else {
@@ -88,13 +87,11 @@ impl ValueDescription {
         }
     }
 
-    #[must_use]
     pub fn with_value_constraint(mut self, vc: ValueConstraint) -> Self {
         self.value_constraint = vc;
         self
     }
 
-    #[must_use]
     pub fn with_percentage(mut self, percentage: Percentage) -> Self {
         self.percentage = Some(percentage);
         self
@@ -125,11 +122,11 @@ impl ValueConstraint {
     }
 
     pub fn nodekind(str: &str) -> Self {
-        ValueConstraint::NodeKind(str.to_owned())
+        ValueConstraint::NodeKind(str.to_string())
     }
 
     pub fn reference(r: &str) -> Result<Self, ComparatorError> {
-        Ok(ValueConstraint::Ref(r.to_owned()))
+        Ok(ValueConstraint::Ref(r.to_string()))
     }
 }
 
@@ -157,7 +154,7 @@ impl Display for Percentage {
 impl Display for CoShaMo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Common Shape Model:")?;
-        for (property, descr) in &self.constraints {
+        for (property, descr) in self.constraints.iter() {
             writeln!(f, "- Property: {property}")?;
             writeln!(f, "{descr}")?;
         }

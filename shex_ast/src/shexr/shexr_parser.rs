@@ -406,7 +406,7 @@ fn current_type<RDF: FocusRDF>(rdf: &mut RDF) -> Result<Option<String>, RDFError
     rdf.set_focus(&node);
     match type_term {
         None => Ok(None),
-        Some(t) => Ok(term_to_iri::<RDF>(&t).ok().map(|iri| iri.as_str().to_owned())),
+        Some(t) => Ok(term_to_iri::<RDF>(&t).ok().map(|iri| iri.as_str().to_string())),
     }
 }
 
@@ -874,10 +874,10 @@ fn parse_language_exclusion<RDF: FocusRDF>(rdf: &mut RDF) -> Result<LanguageExcl
 }
 
 fn parse_sem_act<RDF: FocusRDF>(rdf: &mut RDF) -> Result<SemAct, RDFError> {
-    use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::SingleStringPropertyParser;
     let node = rdf.get_focus().cloned().ok_or(RDFError::NoFocusNodeError)?;
     let name = SingleIriPropertyParser::new(ShexRVocab::sx_name()).parse_focused(rdf)?;
     rdf.set_focus(&node);
+    use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::SingleStringPropertyParser;
     let code = SingleStringPropertyParser::new(ShexRVocab::sx_code())
         .optional()
         .parse_focused(rdf)?;

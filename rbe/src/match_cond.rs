@@ -92,7 +92,7 @@ where
     }
 
     pub fn show(&self) -> String {
-        format!("{self}")
+        format!("{}", self)
     }
 }
 
@@ -116,7 +116,7 @@ where
             },
             MatchCond::And(cs) => {
                 write!(f, "And(")?;
-                cs.iter().try_fold((), |(), c| write!(f, "|{c}"))?;
+                cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
                 write!(f, ")")
             },
         }
@@ -170,13 +170,11 @@ where
         }
     }
 
-    #[must_use]
     pub fn with_name(mut self, name: &str) -> Self {
-        self.name = Some(name.to_owned());
+        self.name = Some(name.to_string());
         self
     }
 
-    #[must_use]
     pub fn with_kind(mut self, kind: P) -> Self {
         self.kind = Some(kind);
         self
@@ -303,7 +301,7 @@ mod tests {
     #[test]
     fn test_even_cond_3_fail() {
         let cond_even: SingleCond<char, i32, String, char, TestKind> = SingleCond::new().with_kind(TestKind::Even);
-        cond_even.matches(&3, &'a').unwrap_err();
+        assert!(cond_even.matches(&3, &'a').is_err());
     }
 
     #[test]
@@ -311,9 +309,7 @@ mod tests {
         fn cond_name(name: String) -> SingleCond<char, String, String, char, TestKind> {
             SingleCond::new().with_kind(TestKind::EqualsName(name))
         }
-        cond_name("foo".to_owned())
-            .matches(&"baz".to_owned(), &'a')
-            .unwrap_err();
+        assert!(cond_name("foo".to_string()).matches(&"baz".to_string(), &'a').is_err());
     }
 
     #[test]
@@ -324,7 +320,7 @@ mod tests {
                 .with_kind(TestKind::EqualsName(name))
         }
         assert_eq!(
-            cond_name("foo".to_owned()).matches(&"foo".to_owned(), &'a'),
+            cond_name("foo".to_string()).matches(&"foo".to_string(), &'a'),
             Ok(Pending::empty())
         );
     }

@@ -8,7 +8,7 @@ use crate::manifest_map::ManifestMap;
 #[cfg(not(target_family = "wasm"))]
 use crate::manifest_mode::ManifestShExSyntaxMode;
 #[cfg(not(target_family = "wasm"))]
-use ValidationType::{Failure, Validation};
+use ValidationType::*;
 #[cfg(not(target_family = "wasm"))]
 use prefixmap::IriRef;
 #[cfg(not(target_family = "wasm"))]
@@ -20,7 +20,7 @@ use rudof_rdf::{
     rdf_core::RDFFormat,
     rdf_impl::{OxigraphInMemory, ReaderMode},
 };
-use serde::de;
+use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
 #[cfg(not(target_family = "wasm"))]
 use shex_ast::ir::external_resolver::SchemaExternalResolver;
@@ -145,7 +145,7 @@ impl<'de> Deserialize<'de> for Focus {
         impl<'de> de::Visitor<'de> for FocusVisitor {
             type Value = Focus;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("Focus")
             }
 
@@ -153,7 +153,7 @@ impl<'de> Deserialize<'de> for Focus {
             where
                 E: de::Error,
             {
-                Ok(Focus::Single(value.to_owned()))
+                Ok(Focus::Single(value.to_string()))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
@@ -200,14 +200,14 @@ fn change_extension(name: String, old_extension: String, new_extension: String) 
 fn parse_schema(
     path: &Path,
     _base: Option<&str>,
-    entry_name: &str,
+    entry_name: &String,
     manifest_shex_syntax_mode: ManifestShExSyntaxMode,
 ) -> Result<SchemaJson, Box<ManifestError>> {
     match manifest_shex_syntax_mode {
         ManifestShExSyntaxMode::ShExJ => SchemaJson::parse_schema(path).map_err(|e| {
             Box::new(ManifestError::SchemaJsonError {
                 error: Box::new(e),
-                entry_name: entry_name.to_owned(),
+                entry_name: entry_name.to_string(),
             })
         }),
         ManifestShExSyntaxMode::ShExC => {
@@ -215,7 +215,7 @@ fn parse_schema(
             ShExParser::parse_buf(path, Some(base)).map_err(|e| {
                 Box::new(ManifestError::ShExCParsingError {
                     error: Box::new(e),
-                    entry_name: entry_name.to_owned(),
+                    entry_name: entry_name.to_string(),
                     shex_path: Box::new(path.to_path_buf()),
                 })
             })
@@ -423,7 +423,7 @@ fn parse_focus(focus: &Focus, base: Option<&str>) -> Result<Node, Box<ManifestEr
 fn parse_node(str: &str, base: Option<&str>) -> Result<Node, Box<ManifestError>> {
     Node::parse(str, base).map_err(|e| {
         Box::new(ManifestError::ParsingFocusNode {
-            value: str.to_owned(),
+            value: str.to_string(),
             error: Box::new(e),
         })
     })
@@ -433,12 +433,12 @@ fn parse_node(str: &str, base: Option<&str>) -> Result<Node, Box<ManifestError>>
 fn parse_shape(str: &str, base: Option<&str>) -> Result<ShapeLabel, Box<ManifestError>> {
     let node = Node::parse(str, base).map_err(|e| {
         Box::new(ManifestError::ParsingShapeLabel {
-            value: str.to_owned(),
+            value: str.to_string(),
             error: e.to_string(),
         })
     })?;
     let shape_label = ShapeLabel::from_object(node.as_object()).map_err(|e| ManifestError::ParsingShapeLabel {
-        value: str.to_owned(),
+        value: str.to_string(),
         error: e.to_string(),
     })?;
     Ok(shape_label)
@@ -449,7 +449,9 @@ fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
     match str {
         "sht:ValidationTest" => Ok(Validation),
         "sht:ValidationFailure" => Ok(Failure),
-        _ => Err(Box::new(ManifestError::ParsingValidationType { value: str.to_owned() })),
+        _ => Err(Box::new(ManifestError::ParsingValidationType {
+            value: str.to_string(),
+        })),
     }
 }
 
@@ -461,7 +463,7 @@ pub(crate) fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
             error: err,
         })
     })?;
-    let url = Url::from_file_path(canonical).map_err(|()| ManifestError::FromFilePath {
+    let url = Url::from_file_path(canonical).map_err(|_| ManifestError::FromFilePath {
         path: path.to_path_buf(),
     })?;
     let iri = IriS::new_unchecked(url.as_str());
@@ -469,14 +471,15 @@ pub(crate) fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn get_path_schema(schema: &str, folder: &Path, manifest_shex_syntax_mode: ManifestShExSyntaxMode) -> PathBuf {
+fn get_path_schema(schema: &String, folder: &Path, manifest_shex_syntax_mode: ManifestShExSyntaxMode) -> PathBuf {
     let new_schema_name = match manifest_shex_syntax_mode {
-        ManifestShExSyntaxMode::ShExJ => change_extension(schema.to_owned(), ".shex".to_owned(), ".json".to_owned()),
-        ManifestShExSyntaxMode::ShExC => schema.to_owned(),
+        ManifestShExSyntaxMode::ShExJ => change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string()),
+        ManifestShExSyntaxMode::ShExC => schema.to_string(),
     };
     let json_path = Path::new(&new_schema_name);
-
-    PathBuf::from(folder).join(json_path)
+    let mut attempt = PathBuf::from(folder);
+    attempt.push(json_path);
+    attempt
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -507,14 +510,14 @@ impl Manifest for ManifestValidation {
         manifest_shex_syntax_mode: ManifestShExSyntaxMode,
     ) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_owned() })),
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => entry.run(base, manifest_shex_syntax_mode),
         }
     }
 
     fn has_traits(&self, name: &str) -> Result<Vec<String>, Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_owned() })),
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => Ok(entry.traits().clone()),
         }
     }

@@ -52,7 +52,7 @@ impl IriRef {
         }
     }
 
-    /// Creates an [`IriRef`] from an [`IriS`]
+    /// Creates an ['IriRef'] from an [`IriS`]
     pub fn iri(iri: IriS) -> IriRef {
         IriRef::Iri(iri)
     }
@@ -69,8 +69,9 @@ impl DerefIri for IriRef {
                 Ok(IriRef::Iri(resolved))
             },
             IriRef::Prefixed { prefix, local } => {
-                let Some(prefixmap) = prefixmap else {
-                    return Err(DerefError::NoPrefixMapPrefixedName { prefix, local });
+                let prefixmap = match prefixmap {
+                    None => return Err(DerefError::NoPrefixMapPrefixedName { prefix, local }),
+                    Some(pm) => pm,
                 };
 
                 let iri =
@@ -124,7 +125,7 @@ impl From<IriS> for IriRef {
 impl From<IriRef> for String {
     fn from(iri_ref: IriRef) -> String {
         match iri_ref {
-            IriRef::Iri(i) => i.as_str().to_owned(),
+            IriRef::Iri(i) => i.as_str().to_string(),
             IriRef::Prefixed { prefix, local } => format!("{prefix}:{local}"),
         }
     }

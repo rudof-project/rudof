@@ -11,7 +11,7 @@ pub struct DatatypeId {
 impl DatatypeId {
     pub fn new(str: &str, line: u64) -> DatatypeId {
         DatatypeId {
-            str: str.to_owned(),
+            str: str.to_string(),
             line,
         }
     }

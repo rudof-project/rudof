@@ -81,7 +81,7 @@ impl ConformsToShape {
             1 => Ok(nodes.into_iter().next()),
             found => Err(NodeExprEvalError::MultipleArgumentNodes {
                 expr: self.to_string(),
-                arg: arg.to_owned(),
+                arg: arg.to_string(),
                 found,
             }
             .into()),

@@ -39,7 +39,7 @@ impl FromStr for RdfConfigFormat {
         match s.to_lowercase().as_str() {
             "yaml" => Ok(RdfConfigFormat::Yaml),
             other => Err(RdfConfigError::UnsupportedRdfConfigFormat {
-                format: other.to_owned(),
+                format: other.to_string(),
             }),
         }
     }
@@ -65,7 +65,7 @@ impl FromStr for ResultRdfConfigFormat {
             "internal" => Ok(ResultRdfConfigFormat::Internal),
             "yaml" => Ok(ResultRdfConfigFormat::Yaml),
             other => Err(RdfConfigError::UnsupportedResultRdfConfigFormat {
-                format: other.to_owned(),
+                format: other.to_string(),
             }),
         }
     }

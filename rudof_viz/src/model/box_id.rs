@@ -37,7 +37,7 @@ mod tests {
     fn round_trips_through_usize() {
         let id = BoxId::new(42);
         assert_eq!(id.as_usize(), 42);
-        assert_eq!(BoxId::from(42_usize), id);
+        assert_eq!(BoxId::from(42usize), id);
     }
 
     #[test]

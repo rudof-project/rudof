@@ -50,8 +50,8 @@ pub struct Schema {
 impl Schema {
     pub fn new(source_iri: &IriS) -> Schema {
         Schema {
-            context: "http://www.w3.org/ns/shex.jsonld".to_owned(),
-            type_: "Schema".to_owned(),
+            context: "http://www.w3.org/ns/shex.jsonld".to_string(),
+            type_: "Schema".to_string(),
             imports: None,
             start: None,
             start_acts: None,
@@ -100,7 +100,6 @@ impl Schema {
         Ok(schema)
     }
 
-    #[must_use]
     pub fn with_import(mut self, i: IriRef) -> Self {
         let iri = IriOrStr::IriRef(i);
         match self.imports {
@@ -110,7 +109,6 @@ impl Schema {
         self
     }
 
-    #[must_use]
     pub fn with_start_actions(mut self, start_actions: Option<Vec<SemAct>>) -> Self {
         self.start_acts = start_actions;
         self
@@ -127,25 +125,21 @@ impl Schema {
         };
     }
 
-    #[must_use]
     pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {
         self.prefixmap = prefixmap;
         self
     }
 
-    #[must_use]
     pub fn with_base(mut self, base: Option<IriS>) -> Self {
         self.base = base;
         self
     }
 
-    #[must_use]
     pub fn with_start(mut self, start: Option<ShapeExpr>) -> Self {
         self.start = start;
         self
     }
 
-    #[must_use]
     pub fn with_shapes(mut self, shapes: Option<Vec<ShapeDecl>>) -> Self {
         self.shapes = shapes;
         self
@@ -168,7 +162,7 @@ impl Schema {
     }
 
     pub fn add_shape(&mut self, shape_label: ShapeExprLabel, shape_expr: ShapeExpr, is_abstract: bool) {
-        let sd = ShapeDecl::new(shape_label, shape_expr, is_abstract);
+        let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr, is_abstract);
         match self.shapes {
             None => {
                 self.shapes = Some(vec![sd]);
@@ -229,7 +223,8 @@ impl Schema {
 
     pub fn parse_schema_name(schema_name: &String, folder: &Path) -> Result<Schema, SchemaJsonError> {
         let json_path = Path::new(&schema_name);
-        let attempt = PathBuf::from(folder).join(json_path);
+        let mut attempt = PathBuf::from(folder);
+        attempt.push(json_path);
         Self::parse_schema(&attempt)
     }
 
@@ -271,14 +266,14 @@ impl Schema {
         } else {
             ShapeExprLabel::IriRef {
                 value: IriRef::try_from(label).map_err(|e| SchemaJsonError::InvalidIriRef {
-                    label: label.to_owned(),
+                    label: label.to_string(),
                     error: e.to_string(),
                 })?,
             }
         };
         match label {
             ShapeExprLabel::IriRef { value } => self.find_shape_by_iri_ref(&value),
-            ShapeExprLabel::BNode { .. } => todo!(),
+            ShapeExprLabel::BNode { value: _ } => todo!(),
             ShapeExprLabel::Start => todo!(),
         }
     }
@@ -286,7 +281,7 @@ impl Schema {
     pub fn find_shape_by_label(&self, label: &ShapeExprLabel) -> Result<Option<ShapeExpr>, SchemaJsonError> {
         match label {
             ShapeExprLabel::IriRef { value } => self.find_shape_by_iri_ref(value),
-            ShapeExprLabel::BNode { .. } => todo!(),
+            ShapeExprLabel::BNode { value: _ } => todo!(),
             ShapeExprLabel::Start => todo!(),
         }
     }

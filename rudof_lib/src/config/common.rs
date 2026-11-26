@@ -28,14 +28,12 @@ impl CommonConfig {
     }
 
     /// Sets `base` and returns itself
-    #[must_use]
     pub fn with_base(mut self, base: Option<IriS>) -> Self {
         self.base = base;
         self
     }
 
     /// Sets `auto_base` and returns itself
-    #[must_use]
     pub fn with_auto_base(mut self, base_no_fail: bool) -> Self {
         self.auto_base = base_no_fail;
         self
@@ -94,7 +92,7 @@ mod tests {
 
     #[test]
     fn partial_toml_fills_remaining_defaults() {
-        let c = CommonConfig::from_toml_str("auto_base = true").unwrap();
+        let c = CommonConfig::from_toml_str(r#"auto_base = true"#).unwrap();
         assert!(c.auto_base());
     }
 

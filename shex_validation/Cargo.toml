@@ -41,6 +41,3 @@ stacker.workspace = true    # deep recursive proofs (long reference chains)
 [dev-dependencies]
 tracing-test.workspace = true
 rudof_rdf = { workspace = true, default-features = false, features = ["sparql"] }
-
-[lints]
-workspace = true

@@ -47,9 +47,9 @@ impl ValidationResult {
             .map_err(|e| PgsError::WritingCSVHeader { error: e.to_string() })?;
         for assoc in &self.associations {
             let details = match &assoc.details {
-                either::Either::Left(errors) => errors.iter().map(ToString::to_string).collect::<Vec<_>>().join("; "),
+                either::Either::Left(errors) => errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("; "),
                 either::Either::Right(evidences) => {
-                    evidences.iter().map(ToString::to_string).collect::<Vec<_>>().join("; ")
+                    evidences.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("; ")
                 },
             };
             let conforms_str = assoc.conforms.to_string();
@@ -66,7 +66,7 @@ impl ValidationResult {
                 &assoc.node_id,
                 &assoc.type_name,
                 &colored_conforms.to_string(),
-                &details.clone(),
+                &details.to_string(),
             ])
             .map_err(|e| PgsError::WritingCSVRecord { error: e.to_string() })?;
         }
@@ -80,7 +80,7 @@ impl Display for ValidationResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Result - valid?: {}: ", self.is_valid)?;
         for association in &self.associations {
-            write!(f, "\n{association}")?;
+            write!(f, "\n{}", association)?;
         }
         Ok(())
     }

@@ -27,13 +27,11 @@ impl IfExpression {
         &self.if_condition
     }
 
-    #[must_use]
     pub fn with_then(mut self, then: Option<IRNodeExpr>) -> Self {
         self.then = then.map(Box::new);
         self
     }
 
-    #[must_use]
     pub fn with_else(mut self, else_expr: Option<IRNodeExpr>) -> Self {
         self.else_expr = else_expr.map(Box::new);
         self
@@ -79,8 +77,8 @@ impl IfExpression {
 
 impl Display for IfExpression {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let then = self.then().map_or_default(ToString::to_string);
-        let else_expr = self.else_expression().map_or_default(ToString::to_string);
+        let then = self.then().map(|t| t.to_string()).unwrap_or_default();
+        let else_expr = self.else_expression().map(|e| e.to_string()).unwrap_or_default();
         write!(f, "If({}, then {}, else {})", self.if_condition(), then, else_expr)
     }
 }

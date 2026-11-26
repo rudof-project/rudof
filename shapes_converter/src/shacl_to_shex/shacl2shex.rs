@@ -166,7 +166,14 @@ impl Shacl2ShEx {
                 sem_acts,
                 annotations,
             } => match te2 {
-                TripleExpr::EachOf { expressions: exprs, .. } => TripleExpr::EachOf {
+                TripleExpr::EachOf {
+                    id: _,
+                    expressions: exprs,
+                    min: _,
+                    max: _,
+                    sem_acts: _,
+                    annotations: _,
+                } => TripleExpr::EachOf {
                     id: id.clone(),
                     expressions: Self::merge_expressions(expressions, exprs),
                     min: *min,
@@ -176,11 +183,14 @@ impl Shacl2ShEx {
                 },
                 tc @ TripleExpr::TripleConstraint {
                     id,
+                    negated: _,
+                    inverse: _,
+                    predicate: _,
+                    value_expr: _,
                     min,
                     max,
                     sem_acts,
                     annotations,
-                    ..
                 } => TripleExpr::EachOf {
                     id: id.clone(),
                     expressions: Self::merge_expressions(expressions, &vec![TripleExprWrapper { te: tc.clone() }]),
@@ -193,13 +203,23 @@ impl Shacl2ShEx {
             },
             tc @ TripleExpr::TripleConstraint {
                 id,
+                negated: _,
+                inverse: _,
+                predicate: _,
+                value_expr: _,
                 min,
                 max,
                 sem_acts,
                 annotations,
-                ..
             } => match te2 {
-                TripleExpr::EachOf { expressions: exprs, .. } => TripleExpr::EachOf {
+                TripleExpr::EachOf {
+                    id: _,
+                    expressions: exprs,
+                    min: _,
+                    max: _,
+                    sem_acts: _,
+                    annotations: _,
+                } => TripleExpr::EachOf {
                     id: id.clone(),
                     expressions: Self::merge_expressions(&vec![TripleExprWrapper { te: tc.clone() }], exprs),
                     min: *min,
@@ -209,11 +229,14 @@ impl Shacl2ShEx {
                 },
                 tc2 @ TripleExpr::TripleConstraint {
                     id,
+                    negated: _,
+                    inverse: _,
+                    predicate: _,
+                    value_expr: _,
                     min,
                     max,
                     sem_acts,
                     annotations,
-                    ..
                 } => TripleExpr::EachOf {
                     id: id.clone(),
                     expressions: vec![

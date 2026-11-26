@@ -40,26 +40,22 @@ impl ValidationReport {
     /// the underlying violations are retained in [`Self::results`]. Needed
     /// because "no errors" mode intentionally leaves `results` empty while
     /// still needing to report `conforms` correctly.
-    #[must_use]
     pub fn with_conforms(mut self, conforms: bool) -> Self {
         self.conforms = conforms;
         self
     }
 
-    #[must_use]
     pub fn with_results(mut self, results: Vec<ValidationResult>) -> Self {
         self.results = results;
         self
     }
 
-    #[must_use]
     pub fn with_evidences(mut self, evidences: Vec<Evidence>) -> Self {
         self.evidences = evidences;
         self
     }
 
     /// Sets the same prefixmap for nodes and shapes
-    #[must_use]
     pub fn with_prefixmap(mut self, pm: PrefixMap) -> Self {
         self.shapes_pm = pm.clone();
         self.nodes_pm = pm;
@@ -67,14 +63,12 @@ impl ValidationReport {
     }
 
     /// Sets the prefixmap for nodes
-    #[must_use]
     pub fn with_nodes_prefixmap(mut self, pm: PrefixMap) -> Self {
         self.nodes_pm = pm;
         self
     }
 
     /// Sets the prefixmap for shapes
-    #[must_use]
     pub fn with_shapes_prefixmap(mut self, pm: PrefixMap) -> Self {
         self.shapes_pm = pm;
         self
@@ -83,7 +77,6 @@ impl ValidationReport {
     /// The same report with every result's nested `sh:detail` results
     /// dropped. The SHACL test suite compares reports this way, since
     /// `sh:detail` is optional and processors differ in what they put there.
-    #[must_use]
     pub fn without_details(mut self) -> Self {
         self.results = self
             .results
@@ -164,7 +157,7 @@ impl ValidationReport {
                 .add_triple(report_node.clone(), conforms, false_term)
                 .map_err(error_mapper::<RDF>("Error adding conforms to bnode"))?;
 
-            for vr in &self.results {
+            for vr in self.results.iter() {
                 let result_node = writer
                     .add_bnode()
                     .map_err(error_mapper::<RDF>("Error creating bnode"))?;
@@ -174,7 +167,7 @@ impl ValidationReport {
                     .map_err(error_mapper::<RDF>("Error adding result to bnode"))?;
 
                 let result_node_subject: RDF::Subject = RDF::Subject::try_from(result_node_term)
-                    .map_err(|_| ValidationError::CastError("term".to_owned(), "subject".to_owned()))?;
+                    .map_err(|_| ValidationError::CastError("term".to_string(), "subject".to_string()))?;
                 vr.to_rdf(writer, result_node_subject)?;
             }
         }
@@ -204,7 +197,7 @@ impl Display for ValidationReport {
         } else {
             writeln!(f, "{} errors found", self.results.len())?;
 
-            for result in &self.results {
+            for result in self.results.iter() {
                 writeln!(f, "{}", self.shapes_pm.qualify(&result.severity().into()))?;
 
                 writeln!(
@@ -250,8 +243,8 @@ mod tests {
         let mut graph = OxigraphInMemory::empty();
         report.to_rdf(&mut graph).unwrap();
 
-        let conforms_pred: <OxigraphInMemory as Rdf>::IRI = ShaclVocab::sh_conforms().into();
-        let false_term: <OxigraphInMemory as Rdf>::Term = Object::boolean(false).into();
+        let conforms_pred: <OxigraphInMemory as rudof_rdf::rdf_core::Rdf>::IRI = ShaclVocab::sh_conforms().into();
+        let false_term: <OxigraphInMemory as rudof_rdf::rdf_core::Rdf>::Term = Object::boolean(false).into();
         let found = graph
             .triples_with_predicate(&conforms_pred)
             .unwrap()

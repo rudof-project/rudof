@@ -9,7 +9,6 @@ mod tests {
     use rudof_rdf::rdf_core::RDFFormat;
     use rudof_rdf::rdf_impl::ReaderMode;
     use sparql_service::RdfData;
-    use std::fmt::Write as _;
 
     #[test]
     fn test_min_exclusive_native() {
@@ -107,7 +106,7 @@ prefix : <http://example.org/>
         // own — but `:e` still fully conforms to `:PersonShape` (the
         // property is optional, no sh:minCount), and that should be
         // visible as its own evidence, not silently absent.
-        let graph = "
+        let graph = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -116,7 +115,7 @@ prefix : <http://example.org/>
   sh:property [ sh:path :knows ; sh:node :PersonShape ] .
 
 :e a :Person .
-";
+"#;
         let config = ShaclConfig::default().with_store_evidences(true);
         let report = validate_with_config(graph, &config);
         assert!(report.conforms());
@@ -124,7 +123,7 @@ prefix : <http://example.org/>
             report
                 .evidences()
                 .iter()
-                .any(|e| e.focus_node().to_string().contains('e')
+                .any(|e| e.focus_node().to_string().contains("e")
                     && e.constraint_component().to_string().contains("PersonShape")),
             "{:?}",
             report.evidences()
@@ -136,11 +135,7 @@ prefix : <http://example.org/>
         let full_config = ShaclConfig::default().with_store_evidences(true);
         let full = validate_with_config(MIN_COUNT_GRAPH, &full_config);
         // Sanity check: without the filter, both granularities are present.
-        assert!(
-            full.evidences()
-                .iter()
-                .any(crate::validator::report::Evidence::is_shape_level)
-        );
+        assert!(full.evidences().iter().any(|e| e.is_shape_level()));
         assert!(full.evidences().iter().any(|e| !e.is_shape_level()));
 
         let shapes_only_config = ShaclConfig::default()
@@ -149,10 +144,7 @@ prefix : <http://example.org/>
         let shapes_only = validate_with_config(MIN_COUNT_GRAPH, &shapes_only_config);
         assert!(!shapes_only.evidences().is_empty());
         assert!(
-            shapes_only
-                .evidences()
-                .iter()
-                .all(crate::validator::report::Evidence::is_shape_level),
+            shapes_only.evidences().iter().all(|e| e.is_shape_level()),
             "{:?}",
             shapes_only.evidences()
         );
@@ -241,7 +233,7 @@ prefix : <http://example.org/>
         // Each of the 10 conforming targets has a sh:minCount evidence and a shape evidence
         let mut graph = format!("{PREFIXES}:S sh:property [ sh:path :p ; sh:minCount 1 ] .\n");
         for i in 0..10 {
-            write!(graph, ":S sh:targetNode :n{i} .\n:n{i} :p 1 .\n").unwrap();
+            graph.push_str(&format!(":S sh:targetNode :n{i} .\n:n{i} :p 1 .\n"));
         }
         let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let schema_ir: IRSchema = ShaclParser::new(rdf.clone()).parse().unwrap().try_into().unwrap();
@@ -261,7 +253,7 @@ prefix : <http://example.org/>
     /// A schema with a purely positive, mutually-recursive pair of shapes
     /// (`:A` depends on `:B`, `:B` depends on `:A`), and data forming a
     /// 2-cycle with no independent base case: `:n1 :next :n2 :next :n1`.
-    const MUTUAL_CYCLE_GRAPH: &str = "
+    const MUTUAL_CYCLE_GRAPH: &str = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -274,7 +266,7 @@ prefix : <http://example.org/>
 
 :n1 :next :n2 .
 :n2 :next :n1 .
-";
+"#;
 
     #[test]
     fn none_mode_rejects_the_cyclic_schema_outright() {
@@ -288,13 +280,13 @@ prefix : <http://example.org/>
 
     #[test]
     fn cycle_error_shows_the_shapes_with_prefixed_names() {
-        let graph = "
+        let graph = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
 :S a sh:NodeShape ;
    sh:property [ sh:path :p ; sh:qualifiedValueShape :S ; sh:qualifiedMinCount 1 ] .
-";
+"#;
         let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let schema = ShaclParser::new(rdf).parse().unwrap();
         let error = IRSchema::compile_with_recursion(&schema, RecursionSemantics::None)
@@ -356,7 +348,7 @@ prefix : <http://example.org/>
         // terminates because n3 has no `:next`, so `sh:minCount 0` makes the
         // node-check on an absent value node vacuous). Recursive-reference
         // cutting should never even trigger, so both semantics agree.
-        let graph = "
+        let graph = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -367,7 +359,7 @@ prefix : <http://example.org/>
 :n1 a :ListNode ; :next :n2 .
 :n2 a :ListNode ; :next :n3 .
 :n3 a :ListNode .
-";
+"#;
         let lfp_config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
         let lfp = validate_with_config(graph, &lfp_config);
         assert!(lfp.conforms(), "{:?}", lfp.results());
@@ -387,12 +379,8 @@ prefix : <http://example.org/>
     /// cycle node must not (LFP).
     #[test]
     fn chain_and_cycle_in_the_same_batch_terminate_correctly() {
-        const CHAIN_LEN: usize = 15;
-
-        const CYCLE_LEN: usize = 15;
-
         let mut graph = String::from(
-            "
+            r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -400,16 +388,21 @@ prefix : <http://example.org/>
   sh:targetClass :ListNode ;
   sh:property [ sh:path :next ; sh:minCount 0 ; sh:node :ListShape ] .
 
-",
+"#,
         );
 
+        const CHAIN_LEN: usize = 15;
         for i in 0..CHAIN_LEN {
-            writeln!(graph, ":chain{i} a :ListNode ; :next :chain{} .", i + 1).unwrap();
+            graph.push_str(&format!(":chain{i} a :ListNode ; :next :chain{} .\n", i + 1));
         }
-        writeln!(graph, ":chain{CHAIN_LEN} a :ListNode .").unwrap();
+        graph.push_str(&format!(":chain{CHAIN_LEN} a :ListNode .\n"));
 
+        const CYCLE_LEN: usize = 15;
         for i in 0..CYCLE_LEN {
-            writeln!(graph, ":cycle{i} a :ListNode ; :next :cycle{} .", (i + 1) % CYCLE_LEN).unwrap();
+            graph.push_str(&format!(
+                ":cycle{i} a :ListNode ; :next :cycle{} .\n",
+                (i + 1) % CYCLE_LEN
+            ));
         }
 
         let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
@@ -429,7 +422,7 @@ prefix : <http://example.org/>
     /// `sh:not :RobotShape` constraint. `:RobotShape` is not itself
     /// recursive and doesn't depend on anything that is, so the negation is
     /// stratified: it can be settled independently of the recursive part.
-    const STRATIFIED_NEGATION_GRAPH: &str = "
+    const STRATIFIED_NEGATION_GRAPH: &str = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -443,7 +436,7 @@ prefix : <http://example.org/>
 
 :human a :Person ; :knows :human .
 :robot a :Person ; :isRobot true ; :knows :robot .
-";
+"#;
 
     #[test]
     fn stratified_negation_compiles_under_both_recursion_semantics() {
@@ -533,7 +526,7 @@ prefix : <http://example.org/>
     /// `:PersonShape`'s own cycle. There is no order in which both
     /// fixpoints can be soundly resolved, so this is rejected outright —
     /// under every recursion semantics, including `gfp`.
-    const NON_STRATIFIED_NEGATION_GRAPH: &str = "
+    const NON_STRATIFIED_NEGATION_GRAPH: &str = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -546,7 +539,7 @@ prefix : <http://example.org/>
   sh:property [ sh:path :friend ; sh:node :OtherRecursiveShape ] .
 
 :a a :Person ; :knows :a .
-";
+"#;
 
     #[test]
     fn negation_of_an_unrelated_recursive_shape_is_rejected_under_every_semantics() {
@@ -626,7 +619,7 @@ prefix : <http://example.org/>
     /// declares the `sh:node` (here, the property shape of `:S`), as the
     /// SHACL spec requires. The results that made the value node fail `:T`
     /// are attached as `sh:detail`.
-    const NODE_DETAIL_GRAPH: &str = "
+    const NODE_DETAIL_GRAPH: &str = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -639,7 +632,7 @@ prefix : <http://example.org/>
 
 :a :p :b .
 :b :p :a .
-";
+"#;
 
     #[test]
     fn node_violation_carries_the_inner_results_as_details() {
@@ -706,7 +699,7 @@ prefix : <http://example.org/>
 
     #[test]
     fn or_violation_lists_why_every_alternative_failed() {
-        let graph = "
+        let graph = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -716,7 +709,7 @@ prefix : <http://example.org/>
           [ sh:property [ sh:path :q ; sh:minCount 1 ] ] ) .
 
 :a :r 1 .
-";
+"#;
         let report = validate_with_config(graph, &ShaclConfig::default());
         let [result] = report.results().as_slice() else {
             panic!("expected one result: {:?}", report.results());
@@ -738,7 +731,7 @@ prefix : <http://example.org/>
     #[test]
     fn inverse_of_an_alternative_path() {
         // Issue #920
-        let graph = "
+        let graph = r#"
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix : <http://example.org/>
 
@@ -752,7 +745,7 @@ prefix : <http://example.org/>
 :option1 a :Option .
 :iteration1 :considers :option1 .
 :option2 a :Option .
-";
+"#;
         let report = validate_with_config(graph, &ShaclConfig::default());
         let [result] = report.results().as_slice() else {
             panic!("expected one result: {:?}", report.results());
@@ -787,7 +780,7 @@ prefix : <http://example.org/>
             .results()
             .iter()
             .filter_map(|r| r.value())
-            .map(ToString::to_string)
+            .map(|v| v.to_string())
             .collect();
         assert_eq!(values, ["\"02\"^^xsd:long"]);
     }
@@ -811,9 +804,9 @@ prefix : <http://example.org/>
         on_small_stack(|| {
             let mut graph = format!("{PREFIXES}:S sh:targetNode :a ; sh:property _:p0 .\n:a :p :a .\n");
             for i in 0..DEPTH {
-                writeln!(graph, "_:p{i} sh:path :p ; sh:property _:p{} .", i + 1).unwrap();
+                graph.push_str(&format!("_:p{i} sh:path :p ; sh:property _:p{} .\n", i + 1));
             }
-            writeln!(graph, "_:p{DEPTH} sh:path :p ; sh:node :S .").unwrap();
+            graph.push_str(&format!("_:p{DEPTH} sh:path :p ; sh:node :S .\n"));
             let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
 
             let report = validate_with_config(&graph, &config);
@@ -826,10 +819,10 @@ prefix : <http://example.org/>
         on_small_stack(|| {
             let mut graph = format!("{PREFIXES}:S sh:targetNode :a ; sh:not _:n0 .\n");
             for i in 0..DEPTH {
-                writeln!(graph, "_:n{i} sh:not _:n{} .", i + 1).unwrap();
+                graph.push_str(&format!("_:n{i} sh:not _:n{} .\n", i + 1));
             }
             // An odd number of sh:not, so :S is sh:not [ sh:class :C ]
-            writeln!(graph, "_:n{DEPTH} sh:class :C .").unwrap();
+            graph.push_str(&format!("_:n{DEPTH} sh:class :C .\n"));
 
             assert!(validate_with_config(&graph, &ShaclConfig::default()).conforms());
         });
@@ -838,15 +831,15 @@ prefix : <http://example.org/>
     #[test]
     fn long_cycle_of_node_shapes_is_rejected() {
         on_small_stack(|| {
-            let mut graph = PREFIXES.to_owned();
+            let mut graph = PREFIXES.to_string();
             for i in 0..DEPTH {
-                writeln!(graph, ":S{i} sh:node :S{} .", i + 1).unwrap();
+                graph.push_str(&format!(":S{i} sh:node :S{} .\n", i + 1));
             }
-            writeln!(graph, ":S{DEPTH} sh:node :S0 .").unwrap();
+            graph.push_str(&format!(":S{DEPTH} sh:node :S0 .\n"));
             let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
             let schema = ShaclParser::new(rdf).parse().unwrap();
 
-            IRSchema::compile_with_recursion(&schema, RecursionSemantics::None).unwrap_err();
+            assert!(IRSchema::compile_with_recursion(&schema, RecursionSemantics::None).is_err());
         });
     }
 
@@ -855,9 +848,9 @@ prefix : <http://example.org/>
         on_small_stack(|| {
             let mut graph = format!("{PREFIXES}:S0 sh:targetNode :a .\n");
             for i in 0..DEPTH {
-                writeln!(graph, ":S{i} sh:node :S{} .", i + 1).unwrap();
+                graph.push_str(&format!(":S{i} sh:node :S{} .\n", i + 1));
             }
-            writeln!(graph, ":S{DEPTH} sh:class :C .").unwrap();
+            graph.push_str(&format!(":S{DEPTH} sh:class :C .\n"));
 
             let report = validate_with_config(&graph, &ShaclConfig::default());
             let [result] = report.results().as_slice() else {
@@ -882,7 +875,7 @@ prefix : <http://example.org/>
                    sh:property [ sh:path :label ; sh:minCount 1 ] .\n"
             );
             for i in 0..DEPTH {
-                writeln!(graph, ":n{i} :label {i} ; :next :n{} .", i + 1).unwrap();
+                graph.push_str(&format!(":n{i} :label {i} ; :next :n{} .\n", i + 1));
             }
             let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
 
@@ -898,7 +891,7 @@ prefix : <http://example.org/>
             assert!(detail.details().is_empty(), "{detail}");
             report.to_rdf(&mut OxigraphInMemory::empty()).unwrap();
 
-            writeln!(graph, ":n{DEPTH} :label {DEPTH} .").unwrap();
+            graph.push_str(&format!(":n{DEPTH} :label {DEPTH} .\n"));
             let report = validate_with_config(&graph, &config);
             assert!(report.conforms(), "{:?}", report.results());
         });
@@ -945,7 +938,7 @@ prefix : <http://example.org/>
             // _:q is its own reifier shape, so it is recursive
             let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
             let schema = ShaclParser::new(rdf).parse().unwrap();
-            IRSchema::compile_with_recursion(&schema, RecursionSemantics::None).unwrap_err();
+            assert!(IRSchema::compile_with_recursion(&schema, RecursionSemantics::None).is_err());
             let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Lfp);
             assert!(!validate_with_config(&graph, &config).conforms());
             let config = ShaclConfig::default().with_recursion_semantics(RecursionSemantics::Gfp);
@@ -1003,11 +996,11 @@ prefix : <http://example.org/>
                  :S sh:targetNode :a ; sh:sparql [ sh:select \"SELECT $this WHERE {{ }}\" ; sh:prefixes :o0 ] .\n"
             );
             for i in 0..DEPTH {
-                writeln!(graph, ":o{i} owl:imports :o{} .", i + 1).unwrap();
+                graph.push_str(&format!(":o{i} owl:imports :o{} .\n", i + 1));
             }
             let rdf = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
-            ShaclParser::new(rdf).parse().unwrap();
+            assert!(ShaclParser::new(rdf).parse().is_ok());
         });
     }
 
@@ -1057,9 +1050,9 @@ prefix : <http://example.org/>
                 .map(|i| format!("_:e{i} shnex:exists _:e{} .\n", i + 1))
                 .collect();
             for (expr, error) in [
-                ("_:e0 shnex:distinct _:e0 .\n".to_owned(), "cyclic node expression"),
+                ("_:e0 shnex:distinct _:e0 .\n".to_string(), "cyclic node expression"),
                 (
-                    "_:e0 shnex:count _:e1 .\n_:e1 shnex:if _:e0 ; shnex:then 1 .\n".to_owned(),
+                    "_:e0 shnex:count _:e1 .\n_:e1 shnex:if _:e0 ; shnex:then 1 .\n".to_string(),
                     "cyclic node expression",
                 ),
                 (deep, "cyclic node expression"),
@@ -1077,10 +1070,10 @@ prefix : <http://example.org/>
         // _:e0 nests 10 shared shnex:concat, 2047 expressions, and 2000 shapes parse it again each
         let mut graph = format!("{PREFIXES}{SHNEX}_:e10 shnex:pathValues :p .\n");
         for i in 0..10 {
-            writeln!(graph, "_:e{i} shnex:concat ( _:e{j} _:e{j} ) .", j = i + 1).unwrap();
+            graph.push_str(&format!("_:e{i} shnex:concat ( _:e{j} _:e{j} ) .\n", j = i + 1));
         }
         for i in 0..2000 {
-            writeln!(graph, ":S{i} sh:targetNode :a ; sh:deactivated _:e0 .").unwrap();
+            graph.push_str(&format!(":S{i} sh:targetNode :a ; sh:deactivated _:e0 .\n"));
         }
 
         let result = try_validate(&graph).map(|_| ());
@@ -1093,7 +1086,7 @@ prefix : <http://example.org/>
             let mut graph =
                 format!("{PREFIXES}{SHNEX}:S sh:targetNode :a ; sh:class :C ; sh:deactivated _:e0 .\n:a :p :b .\n");
             for i in 0..61 {
-                writeln!(graph, "_:e{i} shnex:exists _:e{} .", i + 1).unwrap();
+                graph.push_str(&format!("_:e{i} shnex:exists _:e{} .\n", i + 1));
             }
             graph.push_str("_:e61 shnex:pathValues [ sh:inversePath [ sh:inversePath :p ] ] .\n");
 
@@ -1106,7 +1099,7 @@ prefix : <http://example.org/>
         on_small_stack(|| {
             let mut graph = format!("{PREFIXES}:S sh:targetNode :a ; sh:property [ sh:path _:p0 ] .\n");
             for i in 0..63 {
-                writeln!(graph, "_:p{i} sh:zeroOrOnePath _:p{} .", i + 1).unwrap();
+                graph.push_str(&format!("_:p{i} sh:zeroOrOnePath _:p{} .\n", i + 1));
             }
             graph.push_str("_:p63 sh:zeroOrOnePath :p .\n");
 
@@ -1122,20 +1115,22 @@ prefix : <http://example.org/>
         let mut graph = format!("{PREFIXES}{SHNEX}:S0 sh:targetNode :a .\n:S{n} sh:class :C .\n");
         for i in 0..n {
             let next = i + 1;
-            writeln!(graph, ":S{i} sh:node :S{next} ; sh:property [ sh:path _:p{i}x0 ] .").unwrap();
+            graph.push_str(&format!(
+                ":S{i} sh:node :S{next} ; sh:property [ sh:path _:p{i}x0 ] .\n"
+            ));
             for j in 0..63 {
                 let k = j + 1;
-                writeln!(graph, "_:p{i}x{j} sh:zeroOrOnePath _:p{i}x{k} .").unwrap();
+                graph.push_str(&format!("_:p{i}x{j} sh:zeroOrOnePath _:p{i}x{k} .\n"));
             }
-            writeln!(graph, "_:p{i}x63 sh:zeroOrOnePath :p .").unwrap();
-            write!(
-                graph,
+            graph.push_str(&format!("_:p{i}x63 sh:zeroOrOnePath :p .\n"));
+            graph.push_str(&format!(
                 ":S{i} sh:deactivated _:e{i}x0 .\n_:e{i}x64 shnex:var \"focusNode\" .\n"
-            )
-            .unwrap();
+            ));
             for j in 0..64 {
                 let k = j + 1;
-                writeln!(graph, "_:e{i}x{j} shnex:pathValues :p ; shnex:focusNode _:e{i}x{k} .").unwrap();
+                graph.push_str(&format!(
+                    "_:e{i}x{j} shnex:pathValues :p ; shnex:focusNode _:e{i}x{k} .\n"
+                ));
             }
         }
 
@@ -1192,13 +1187,13 @@ prefix : <http://example.org/>
         // Recomputing the next shape for every node took over 30 s for 6 shapes over 20 nodes
         let mut graph = format!("{PREFIXES}{SHNEX}:T0 sh:targetNode :n0 .\n:T6 sh:class :C .\n");
         for i in 0..6 {
-            writeln!(graph, ":T{i} sh:deactivated [ shnex:nodesMatching :T{} ] .", i + 1).unwrap();
+            graph.push_str(&format!(":T{i} sh:deactivated [ shnex:nodesMatching :T{} ] .\n", i + 1));
         }
         for i in 0..20 {
-            writeln!(graph, ":n{i} :p :n{} .", i + 1).unwrap();
+            graph.push_str(&format!(":n{i} :p :n{} .\n", i + 1));
         }
 
-        try_validate(&graph).unwrap();
+        assert!(try_validate(&graph).is_ok());
     }
 
     #[test]
@@ -1230,12 +1225,10 @@ prefix : <http://example.org/>
              :a :p :a, :b .\n:b :p :a, :b .\n_:f0 shnex:pathValues :p .\n"
         );
         for i in 1..=40 {
-            writeln!(
-                graph,
-                "_:f{i} shnex:flatMap _:f{} ; shnex:nodes [ shnex:pathValues :p ] .",
+            graph.push_str(&format!(
+                "_:f{i} shnex:flatMap _:f{} ; shnex:nodes [ shnex:pathValues :p ] .\n",
                 i - 1
-            )
-            .unwrap();
+            ));
         }
 
         let result = try_validate(&graph).map(|_| ());
@@ -1251,12 +1244,10 @@ prefix : <http://example.org/>
              :a :p :a, :b .\n:b :p :a, :b .\n_:f0 shnex:pathValues :p .\n"
         );
         for i in 1..=18 {
-            writeln!(
-                graph,
-                "_:f{i} shnex:flatMap _:f{} ; shnex:nodes [ shnex:pathValues :p ] .",
+            graph.push_str(&format!(
+                "_:f{i} shnex:flatMap _:f{} ; shnex:nodes [ shnex:pathValues :p ] .\n",
                 i - 1
-            )
-            .unwrap();
+            ));
         }
 
         let result = try_validate(&graph).map(|_| ());
@@ -1329,7 +1320,7 @@ prefix : <http://example.org/>
         }
 
         let shapes = ":S sh:targetNode :a ; sh:hasValue <<( :a :p :b )>> .";
-        try_validate(&format!("{PREFIXES}{shapes}\n")).unwrap_err();
+        assert!(try_validate(&format!("{PREFIXES}{shapes}\n")).is_err());
     }
 
     #[test]
@@ -1558,15 +1549,16 @@ prefix : <http://example.org/>
             let mut graph =
                 format!("{PREFIXES}:S sh:targetNode :n0 ; sh:property _:p1 .\n_:p{k} sh:path :next ; sh:class :C .\n");
             for i in 1..k {
-                writeln!(graph, "_:p{i} sh:path :next ; sh:class :C ; sh:property _:p{} .", i + 1).unwrap();
+                graph.push_str(&format!(
+                    "_:p{i} sh:path :next ; sh:class :C ; sh:property _:p{} .\n",
+                    i + 1
+                ));
             }
             for i in 0..k / 2 {
-                write!(
-                    graph,
+                graph.push_str(&format!(
                     ":n{i} :next :a{i}, :b{i} .\n:a{i} :next :n{j} .\n:b{i} :next :n{j} .\n",
                     j = i + 1
-                )
-                .unwrap();
+                ));
             }
             graph
         };
@@ -1589,11 +1581,11 @@ prefix : <http://example.org/>
              :T sh:property [ sh:path :p ; sh:class :C ] .\n"
         );
         for i in 0..40 {
-            writeln!(details, ":a :v :v{i} .").unwrap();
+            details.push_str(&format!(":a :v :v{i} .\n"));
             for j in 0..40 {
-                writeln!(details, ":v{i} :p :x{j} .").unwrap();
+                details.push_str(&format!(":v{i} :p :x{j} .\n"));
                 if i < 30 && j < 30 {
-                    writeln!(clique, ":n{i} :next :n{j} .").unwrap();
+                    clique.push_str(&format!(":n{i} :next :n{j} .\n"));
                 }
             }
         }
@@ -1701,12 +1693,10 @@ prefix : <http://example.org/>
         // A chain of shapes, so that the pattern is compiled and matched at many depths of the stack
         let mut graph = format!("{PREFIXES}:S0 sh:targetNode :a .\n:a :p \"b\" .\n");
         for i in 0..100 {
-            writeln!(
-                graph,
-                ":S{i} sh:node :S{} ; sh:property [ sh:path :p ; sh:pattern \"{pattern}\" ] .",
+            graph.push_str(&format!(
+                ":S{i} sh:node :S{} ; sh:property [ sh:path :p ; sh:pattern \"{pattern}\" ] .\n",
                 i + 1
-            )
-            .unwrap();
+            ));
         }
         for mode in [ShaclValidationMode::Native, ShaclValidationMode::Sparql] {
             let graph = graph.clone();
@@ -1752,9 +1742,8 @@ prefix : <http://example.org/>
                 while reader.read_line(&mut line).unwrap_or(0) > 2 {
                     line.clear();
                 }
-                drop((&stream).write_all(
-                    b"HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
-                ));
+                let _ = (&stream)
+                    .write_all(b"HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
             }
         });
 
@@ -1762,7 +1751,7 @@ prefix : <http://example.org/>
         let shapes = RdfData::from_str(&graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let schema_ir: IRSchema = ShaclParser::new(shapes).parse().unwrap().try_into().unwrap();
         for mode in [ShaclValidationMode::Native, ShaclValidationMode::Sparql] {
-            let endpoint = OxigraphEndpoint::new(&IriS::new_unchecked(&url), &prefixmap::PrefixMap::default()).unwrap();
+            let endpoint = OxigraphEndpoint::new(&IriS::new_unchecked(&url), &Default::default()).unwrap();
             let mut validator = CachedDataValidation::new(RdfData::from_endpoint("failing", endpoint));
             // It used to conform, as :a was left out of the value nodes
             let result = validator.validate(&schema_ir, &mode, &ShaclConfig::default());

@@ -36,37 +36,31 @@ impl TestResult {
         Self::new(Outcome::Failed).with_mode(TestMode::Automatic)
     }
 
-    #[must_use]
     pub fn with_mode(mut self, mode: TestMode) -> Self {
         self.mode = Some(mode);
         self
     }
 
-    #[must_use]
     pub fn with_info(mut self, info: ConcreteLiteral) -> Self {
         self.info = Some(info);
         self
     }
 
-    #[must_use]
     pub fn with_pointer(mut self, pointer: Object) -> Self {
         self.pointer = Some(pointer);
         self
     }
 
-    #[must_use]
     pub fn with_date(mut self, date: XsdDateTime) -> Self {
         self.date = Some(date);
         self
     }
 
-    #[must_use]
     pub fn with_extra(mut self, extra: Vec<(IriS, Object)>) -> Self {
         self.extra = extra;
         self
     }
 
-    #[must_use]
     pub fn with_extra_item(mut self, predicate: IriS, object: Object) -> Self {
         self.extra.push((predicate, object));
         self

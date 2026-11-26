@@ -39,31 +39,26 @@ impl ASTNodeShape {
         }
     }
 
-    #[must_use]
     pub fn with_targets(mut self, targets: Vec<ASTTarget>) -> Self {
         self.targets = targets;
         self
     }
 
-    #[must_use]
     pub fn with_severity(mut self, severity: Option<Severity>) -> Self {
         self.severity = severity;
         self
     }
 
-    #[must_use]
     pub fn with_property_shapes(mut self, property_shapes: Vec<Object>) -> Self {
         self.property_shapes = property_shapes;
         self
     }
 
-    #[must_use]
     pub fn with_components(mut self, components: Vec<ASTComponent>) -> Self {
         self.components = components;
         self
     }
 
-    #[must_use]
     pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
         self.message = message;
         self
@@ -147,13 +142,13 @@ impl Display for ASTNodeShape {
             write!(f, "{severity} ")?;
         }
         writeln!(f, "{{")?;
-        for target in &self.targets {
+        for target in self.targets.iter() {
             writeln!(f, "\t{target}")?
         }
-        for prop in self.property_shapes() {
+        for prop in self.property_shapes().iter() {
             writeln!(f, "\t{prop}")?
         }
-        for component in self.components() {
+        for component in self.components().iter() {
             writeln!(f, "\t{component}")?
         }
         writeln!(f, "}}")

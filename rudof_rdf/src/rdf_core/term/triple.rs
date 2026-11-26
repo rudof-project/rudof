@@ -315,12 +315,12 @@ impl Object {
     /// - `RDFError::ParsingIri` if IRI parsing fails
     pub fn parse(str: &str, base: Option<&str>) -> Result<Object, RDFError> {
         if let Some(bnode_id) = str.strip_prefix("_:") {
-            Ok(Object::bnode(bnode_id.to_owned()))
+            Ok(Object::bnode(bnode_id.to_string()))
         } else if str.starts_with('"') {
             todo!()
         } else {
             let iri = IriS::from_str_base(str, base).map_err(|e| RDFError::ParsingIri {
-                iri: str.to_owned(),
+                iri: str.to_string(),
                 error: e.to_string(),
             })?;
             Ok(Object::iri(iri))
@@ -337,7 +337,7 @@ impl Object {
     ///
     /// # Parameters
     /// - `prefixmap`: A prefix map containing IRI-to-prefix mappings
-    pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
+    pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
         match self {
             Object::Iri(iri) => prefixmap.qualify(iri),
             Object::BlankNode(bnode) => format!("_:{bnode}"),
@@ -536,7 +536,7 @@ impl Debug for Object {
 // Trait Implementations - Ordering
 // ============================================================================
 
-#[expect(clippy::non_canonical_partial_ord_impl)]
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for Object {
     /// Implements partial ordering for objects.
     ///

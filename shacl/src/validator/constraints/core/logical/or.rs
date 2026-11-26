@@ -32,7 +32,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let mut conforms = false;
                 let mut details = Vec::new();
-                for idx in self.shapes() {
+                for idx in self.shapes().iter() {
                     let or_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results =
                         or_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;
@@ -56,7 +56,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                         .with_source(Some(shape.id().clone()));
                     outcome.push_evidence(ev);
                 } else {
-                    let msg = "OR not satisfied".to_owned();
+                    let msg = "OR not satisfied".to_string();
                     let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())

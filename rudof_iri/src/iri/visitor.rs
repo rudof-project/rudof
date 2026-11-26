@@ -10,7 +10,7 @@ struct IriVisitor;
 impl Visitor<'_> for IriVisitor {
     type Value = IriS;
 
-    fn expecting(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
         formatter.write_str("an IRI")
     }
 

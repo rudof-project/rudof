@@ -13,10 +13,10 @@ use SubgraphMode::{Entailment, Homomorphic, Injective};
 use oxrdf::{BlankNode, Term, Triple};
 use std::collections::BTreeSet;
 
-const PREFIXES: &str = "
+const PREFIXES: &str = r#"
 PREFIX :     <http://example.org/>
 PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-";
+"#;
 
 fn ttl(data: &str) -> OxigraphInMemory {
     let doc = format!("{PREFIXES}\n{data}");
@@ -443,7 +443,7 @@ mod properties {
                 Term::BlankNode(b) => Some(b.clone().into()),
                 _ => None,
             },
-            other @ NamedOrBlankNode::NamedNode(_) => Some(other.clone()),
+            other => Some(other.clone()),
         }
     }
 
@@ -467,7 +467,7 @@ mod properties {
     }
 
     fn owned(g: &Graph) -> Vec<Triple> {
-        g.iter().map(oxrdf::TripleRef::into_owned).collect()
+        g.iter().map(|t| t.into_owned()).collect()
     }
 
     /// Checks that `m`, from `source` into `target`, gives the lists: the triples of
@@ -484,7 +484,7 @@ mod properties {
             if only.iter().collect::<HashSet<_>>().len() != only.len() {
                 return Err("duplicated triples".into());
             }
-            if !only.is_sorted_by_key(ToString::to_string) {
+            if !only.windows(2).all(|w| w[0].to_string() <= w[1].to_string()) {
                 return Err("not sorted".into());
             }
         }
@@ -592,7 +592,7 @@ mod properties {
                 }
             }
             let mut acc = HashSet::new();
-            for t in g {
+            for t in g.iter() {
                 collect(&t.into_owned(), &mut acc);
             }
             acc.into_iter().collect()
@@ -670,7 +670,7 @@ mod properties {
         fn near_miss_diffs_are_sound(
             raw in raw_triples(),
             perm in permutation(),
-            extra in (0_u8..8, 0_u8..2, 0_u8..8, Just(false), Just(0_u8), Just(0_u8)),
+            extra in (0u8..8, 0u8..2, 0u8..8, Just(false), Just(0u8), Just(0u8)),
         ) {
             let g1 = build(&raw, "a", &IDENTITY);
             let mut raw2: Vec<RawTriple> = raw.clone();
@@ -696,7 +696,7 @@ mod properties {
 
         /// Adding one triple to a renamed copy shows exactly that triple
         #[test]
-        fn one_added_triple_is_the_whole_diff(raw in raw_triples(), perm in permutation(), s in 0_u8..3, o in 0_u8..3) {
+        fn one_added_triple_is_the_whole_diff(raw in raw_triples(), perm in permutation(), s in 0u8..3, o in 0u8..3) {
             let g1 = build(&raw, "a", &IDENTITY);
             let mut g2 = build(&raw, "b", &perm);
             let extra = Triple::new(
@@ -750,14 +750,8 @@ fn large_graph_with_one_change() {
 fn search_limit_falls_back_to_the_heuristic() {
     // Many blank nodes that look alike and two changes: the heuristic cannot be
     // proven optimal, and the exact search cannot finish in 10 steps
-    let first = format!(
-        "{}_:a0 :q 1 . _:a1 :r 1 .",
-        (0..20).map(|i| format!("_:a{i} :p :o . ")).collect::<String>()
-    );
-    let second = format!(
-        "{}_:b7 :q 2 . _:b3 :r 2 .",
-        (0..20).map(|i| format!("_:b{i} :p :o . ")).collect::<String>()
-    );
+    let first: String = (0..20).map(|i| format!("_:a{i} :p :o . ")).collect::<String>() + "_:a0 :q 1 . _:a1 :r 1 .";
+    let second: String = (0..20).map(|i| format!("_:b{i} :p :o . ")).collect::<String>() + "_:b7 :q 2 . _:b3 :r 2 .";
     let d = ttl(&first).diff_with(&ttl(&second), Injective, &DiffOptions { exact_search_limit: 10 });
     assert!(!d.exact);
     assert_eq!(strings(&d.only_in_first), triples("_:a0 :q 1 . _:a1 :r 1 ."));

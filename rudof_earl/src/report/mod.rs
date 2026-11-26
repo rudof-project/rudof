@@ -53,55 +53,46 @@ impl EarlReport {
         Self::default()
     }
 
-    #[must_use]
     pub fn with_document(mut self, document: IriS) -> Self {
         self.document = Some(document);
         self
     }
 
-    #[must_use]
     pub fn with_issued(mut self, issued: XsdDateTime) -> Self {
         self.issued = Some(issued);
         self
     }
 
-    #[must_use]
     pub fn with_maker(mut self, maker: Object) -> Self {
         self.maker = Some(maker);
         self
     }
 
-    #[must_use]
     pub fn with_primary_topic(mut self, primary_topic: Object) -> Self {
         self.primary_topic = Some(primary_topic);
         self
     }
 
-    #[must_use]
     pub fn with_title(mut self, title: impl Into<String>) -> Self {
         self.title = Some(title.into());
         self
     }
 
-    #[must_use]
     pub fn with_software_item(mut self, software: Software) -> Self {
         self.software.push(software);
         self
     }
 
-    #[must_use]
     pub fn with_software(mut self, software: Vec<Software>) -> Self {
         self.software = software;
         self
     }
 
-    #[must_use]
     pub fn with_assertion(mut self, assertion: Assertion) -> Self {
         self.assertions.push(assertion);
         self
     }
 
-    #[must_use]
     pub fn with_assertions(mut self, assertions: Vec<Assertion>) -> Self {
         self.assertions = assertions;
         self

@@ -21,7 +21,6 @@ impl SemanticActionsRegistry {
     }
 
     /// Create a registry with the given extensions pre-registered.
-    #[must_use]
     pub fn with(mut self, extensions: Vec<Box<dyn SemanticActionExtension + Send + Sync>>) -> Self {
         for ext in extensions {
             self.register(ext);

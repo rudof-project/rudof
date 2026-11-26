@@ -144,11 +144,11 @@ impl Mie {
     }
 
     pub fn add_endpoint(&mut self, endpoint: Option<&str>) {
-        self.schema_info.endpoint = endpoint.map(ToOwned::to_owned);
+        self.schema_info.endpoint = endpoint.map(|e| e.to_string());
     }
 
     pub fn add_title(&mut self, title: &str) {
-        self.schema_info.title = Some(title.to_owned());
+        self.schema_info.title = Some(title.to_string());
     }
 
     pub fn add_graphs<I: Iterator<Item = IriS>>(&mut self, iter: I) {
@@ -161,20 +161,20 @@ impl Mie {
 
     pub fn to_yaml(&self) -> Yaml {
         let mut result = LinkedHashMap::new();
-        result.insert(Yaml::String("schema_info".to_owned()), self.schema_info.to_yaml());
+        result.insert(Yaml::String("schema_info".to_string()), self.schema_info.to_yaml());
         if !self.prefixes.is_empty() {
             let mut prefixes_yaml = LinkedHashMap::new();
             for (k, v) in &self.prefixes {
-                prefixes_yaml.insert(Yaml::String(k.clone()), Yaml::String(v.as_str().to_owned()));
+                prefixes_yaml.insert(Yaml::String(k.clone()), Yaml::String(v.as_str().to_string()));
             }
-            result.insert(Yaml::String("prefixes".to_owned()), Yaml::Hash(prefixes_yaml));
+            result.insert(Yaml::String("prefixes".to_string()), Yaml::Hash(prefixes_yaml));
         }
         if !self.shape_expressions.is_empty() {
             let mut shapes_yaml = LinkedHashMap::new();
             for (k, v) in &self.shape_expressions {
                 shapes_yaml.insert(Yaml::String(k.clone()), v.to_yaml());
             }
-            result.insert(Yaml::String("shape_expressions".to_owned()), Yaml::Hash(shapes_yaml));
+            result.insert(Yaml::String("shape_expressions".to_string()), Yaml::Hash(shapes_yaml));
         }
         Yaml::Hash(result)
     }
@@ -196,16 +196,16 @@ impl SchemaInfo {
     pub fn to_yaml(&self) -> Yaml {
         let mut result = LinkedHashMap::new();
         if let Some(title) = &self.title {
-            result.insert(Yaml::String("title".to_owned()), Yaml::String(title.clone()));
+            result.insert(Yaml::String("title".to_string()), Yaml::String(title.clone()));
         }
         if let Some(desc) = &self.description {
-            result.insert(Yaml::String("description".to_owned()), Yaml::String(desc.clone()));
+            result.insert(Yaml::String("description".to_string()), Yaml::String(desc.clone()));
         }
         if let Some(endpoint) = &self.endpoint {
-            result.insert(Yaml::String("endpoint".to_owned()), Yaml::String(endpoint.clone()));
+            result.insert(Yaml::String("endpoint".to_string()), Yaml::String(endpoint.clone()));
         }
         if let Some(base_uri) = &self.base_uri {
-            result.insert(Yaml::String("base_uri".to_owned()), Yaml::String(base_uri.clone()));
+            result.insert(Yaml::String("base_uri".to_string()), Yaml::String(base_uri.clone()));
         }
         /*if !self.scope.is_empty() {
             let scope_yaml: Vec<Yaml> =
@@ -220,7 +220,7 @@ impl RdfExample {
     pub fn new() -> Self {
         RdfExample {
             description: None,
-            rdf: String::new(),
+            rdf: "".to_string(),
             other_fields: HashMap::new(),
         }
     }
@@ -228,7 +228,7 @@ impl RdfExample {
     pub fn to_yaml(&self) -> Yaml {
         let mut result = LinkedHashMap::new();
         if let Some(desc) = &self.description {
-            result.insert(Yaml::String("description".to_owned()), Yaml::String(desc.clone()));
+            result.insert(Yaml::String("description".to_string()), Yaml::String(desc.clone()));
         }
         Yaml::Hash(result)
     }
@@ -238,7 +238,7 @@ impl ShapeExpression {
     pub fn to_yaml(&self) -> Yaml {
         let mut result = LinkedHashMap::new();
         if let Some(desc) = &self.description {
-            result.insert(Yaml::String("description".to_owned()), Yaml::String(desc.clone()));
+            result.insert(Yaml::String("description".to_string()), Yaml::String(desc.clone()));
         }
         Yaml::Hash(result)
     }
@@ -317,27 +317,27 @@ mod tests {
     #[test]
     fn test_mie_creation() {
         let mut prefixes = HashMap::new();
-        prefixes.insert("ex".to_owned(), iri!("http://example.org/"));
-        prefixes.insert("rdf".to_owned(), iri!("http://www.w3.org/1999/02/22-rdf-syntax-ns#"));
+        prefixes.insert("ex".to_string(), iri!("http://example.org/"));
+        prefixes.insert("rdf".to_string(), iri!("http://www.w3.org/1999/02/22-rdf-syntax-ns#"));
 
         let mut shape_expressions = HashMap::new();
         shape_expressions.insert(
-            "Protein".to_owned(),
+            "Protein".to_string(),
             ShapeExpression {
-                description: Some("A protein entity".to_owned()),
-                shape_expr: "ex:ProteinShape".to_owned(),
+                description: Some("A protein entity".to_string()),
+                shape_expr: "ex:ProteinShape".to_string(),
             },
         );
         let mut sample_rdf_entries = HashMap::new();
-        sample_rdf_entries.insert("human_kinase_example".to_owned(), RdfExample::new());
+        sample_rdf_entries.insert("human_kinase_example".to_string(), RdfExample::new());
         let sparql_query_examples = HashMap::new();
         let cross_references = HashMap::new();
         let mie = Mie {
             schema_info: SchemaInfo {
-                title: Some("Example Schema".to_owned()),
-                description: Some("An example schema for testing".to_owned()),
-                endpoint: Some("http://example.org/sparql".to_owned()),
-                base_uri: Some("http://example.org/".to_owned()),
+                title: Some("Example Schema".to_string()),
+                description: Some("An example schema for testing".to_string()),
+                endpoint: Some("http://example.org/sparql".to_string()),
+                base_uri: Some("http://example.org/".to_string()),
                 graphs: vec![iri!("http://example.org/graph1")],
             },
             prefixes,

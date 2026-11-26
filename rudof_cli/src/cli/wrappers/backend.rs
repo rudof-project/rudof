@@ -52,7 +52,7 @@ impl BackendKindCli {
 /// `conflicts_with` prevents both from being set at the same time.
 pub fn resolve_backend(args: &CommonArgsAll) -> BackendSpec {
     if let Some(url) = args.endpoint.as_deref() {
-        return BackendSpec::Endpoint(url.to_owned());
+        return BackendSpec::Endpoint(url.to_string());
     }
     match args.backend.as_ref() {
         Some(b) => b.clone().into(),
@@ -106,7 +106,7 @@ impl FromStr for BackendKindCli {
             "qlever" => Ok(BackendKindCli::Qlever),
             "lbug" => Ok(BackendKindCli::Lbug),
             "endpoint" => Err(ParseBackendError(
-                "missing endpoint URL or name; use --backend endpoint=<URL_OR_NAME>".to_owned(),
+                "missing endpoint URL or name; use --backend endpoint=<URL_OR_NAME>".to_string(),
             )),
             _ => {
                 // Preserve the original (non-lowercased) value for endpoint URLs.
@@ -116,10 +116,10 @@ impl FromStr for BackendKindCli {
                 {
                     if rest.is_empty() {
                         Err(ParseBackendError(
-                            "missing endpoint URL or name after 'endpoint='".to_owned(),
+                            "missing endpoint URL or name after 'endpoint='".to_string(),
                         ))
                     } else {
-                        Ok(BackendKindCli::Endpoint(rest.to_owned()))
+                        Ok(BackendKindCli::Endpoint(rest.to_string()))
                     }
                 } else {
                     Err(ParseBackendError(format!(
@@ -168,32 +168,32 @@ mod tests {
         let parsed: BackendKindCli = "endpoint=https://query.wikidata.org/sparql".parse().unwrap();
         assert_eq!(
             parsed,
-            BackendKindCli::Endpoint("https://query.wikidata.org/sparql".to_owned())
+            BackendKindCli::Endpoint("https://query.wikidata.org/sparql".to_string())
         );
     }
 
     #[test]
     fn parses_endpoint_name() {
         let parsed: BackendKindCli = "endpoint=wikidata".parse().unwrap();
-        assert_eq!(parsed, BackendKindCli::Endpoint("wikidata".to_owned()));
+        assert_eq!(parsed, BackendKindCli::Endpoint("wikidata".to_string()));
     }
 
     #[test]
     fn preserves_case_in_endpoint_value() {
         let parsed: BackendKindCli = "endpoint=MyGraph".parse().unwrap();
-        assert_eq!(parsed, BackendKindCli::Endpoint("MyGraph".to_owned()));
+        assert_eq!(parsed, BackendKindCli::Endpoint("MyGraph".to_string()));
     }
 
     #[test]
     fn rejects_bare_endpoint() {
-        "endpoint".parse::<BackendKindCli>().unwrap_err();
-        "endpoint=".parse::<BackendKindCli>().unwrap_err();
+        assert!("endpoint".parse::<BackendKindCli>().is_err());
+        assert!("endpoint=".parse::<BackendKindCli>().is_err());
     }
 
     #[test]
     fn rejects_unknown_value() {
-        "foo".parse::<BackendKindCli>().unwrap_err();
-        "".parse::<BackendKindCli>().unwrap_err();
+        assert!("foo".parse::<BackendKindCli>().is_err());
+        assert!("".parse::<BackendKindCli>().is_err());
     }
 
     #[test]
@@ -202,7 +202,7 @@ mod tests {
             BackendKindCli::Memory,
             BackendKindCli::Qlever,
             BackendKindCli::Lbug,
-            BackendKindCli::Endpoint("https://x/sparql".to_owned()),
+            BackendKindCli::Endpoint("https://x/sparql".to_string()),
         ];
         for c in cases {
             let s = c.to_string();
@@ -217,7 +217,7 @@ mod tests {
             output: None,
             force_overwrite: false,
             backend,
-            endpoint: endpoint.map(ToOwned::to_owned),
+            endpoint: endpoint.map(|s| s.to_string()),
             min_request_interval: None,
             max_concurrent_requests: None,
             max_nodes_per_query: None,
@@ -230,7 +230,7 @@ mod tests {
         let spec = resolve_backend(&args(None, Some("https://query.wikidata.org/sparql")));
         assert_eq!(
             spec,
-            BackendSpec::Endpoint("https://query.wikidata.org/sparql".to_owned())
+            BackendSpec::Endpoint("https://query.wikidata.org/sparql".to_string())
         );
     }
 

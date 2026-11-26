@@ -24,7 +24,7 @@ pub(crate) struct PgNodeTable {
     /// Not needed for DDL emission itself, but kept so the model can be
     /// bridged to/from a `PropertyGraphSchema` (keyed by full IRIs) without
     /// losing information.
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     pub type_iri: String,
     /// Table name in the target database.
     pub name: String,
@@ -119,8 +119,8 @@ pub(crate) fn derive_pg_schema(triples: &[OxTriple]) -> PgSchemaModel {
             let from = subject_types.get(&subj).and_then(|ts| ts.iter().next());
             let to = subject_types.get(&obj).and_then(|ts| ts.iter().next());
             if let (Some(from_class), Some(to_class)) = (from, to) {
-                model.rel_tables.entry(pred.to_owned()).or_insert_with(|| PgRelTable {
-                    pred_iri: pred.to_owned(),
+                model.rel_tables.entry(pred.to_string()).or_insert_with(|| PgRelTable {
+                    pred_iri: pred.to_string(),
                     name: sanitize_name(pred),
                     from_table: sanitize_name(from_class),
                     to_table: sanitize_name(to_class),
@@ -184,7 +184,7 @@ fn emit_gql_ddl(model: &PgSchemaModel, graph_type_name: &str) -> String {
 
 /// Property columns of a node table, including the `id` primary key column.
 pub(crate) fn node_columns(table: &PgNodeTable) -> Vec<String> {
-    let mut cols = vec!["id STRING".to_owned()];
+    let mut cols = vec!["id STRING".to_string()];
     cols.extend(table.properties.iter().map(|p| format!("{p} STRING")));
     cols
 }
@@ -238,8 +238,8 @@ pub(crate) fn esc(s: &str) -> String {
 /// Get the string representation of an RDF term (for property values).
 pub(crate) fn term_value(t: &OxTerm) -> String {
     match t {
-        OxTerm::NamedNode(n) => n.as_str().to_owned(),
-        OxTerm::Literal(lit) => lit.value().to_owned(),
+        OxTerm::NamedNode(n) => n.as_str().to_string(),
+        OxTerm::Literal(lit) => lit.value().to_string(),
         OxTerm::BlankNode(bn) => format!("_:{}", bn.as_str()),
         OxTerm::Triple(triple) => format!("<<{triple}>>"),
     }
@@ -248,7 +248,7 @@ pub(crate) fn term_value(t: &OxTerm) -> String {
 /// Get the string representation of an RDF subject.
 pub(crate) fn subject_str(s: &oxrdf::NamedOrBlankNode) -> String {
     match s {
-        oxrdf::NamedOrBlankNode::NamedNode(n) => n.as_str().to_owned(),
+        oxrdf::NamedOrBlankNode::NamedNode(n) => n.as_str().to_string(),
         oxrdf::NamedOrBlankNode::BlankNode(bn) => format!("_:{}", bn.as_str()),
     }
 }
@@ -256,8 +256,8 @@ pub(crate) fn subject_str(s: &oxrdf::NamedOrBlankNode) -> String {
 /// Get the string representation of an RDF object term.
 pub(crate) fn object_str(o: &OxTerm) -> String {
     match o {
-        OxTerm::NamedNode(n) => n.as_str().to_owned(),
-        OxTerm::Literal(lit) => lit.value().to_owned(),
+        OxTerm::NamedNode(n) => n.as_str().to_string(),
+        OxTerm::Literal(lit) => lit.value().to_string(),
         OxTerm::BlankNode(bn) => format!("_:{}", bn.as_str()),
         OxTerm::Triple(triple) => format!("<<{triple}>>"),
     }

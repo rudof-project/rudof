@@ -31,7 +31,7 @@ fn every_object_variant_is_in_the_schema() {
 
     let objects = [
         Object::iri(IriS::new_unchecked("http://example.org/a")),
-        Object::bnode("b0".to_owned()),
+        Object::bnode("b0".to_string()),
         Object::str("Alice"),
         Object::Triple {
             subject: Box::new(IriOrBlankNode::Iri(IriS::new_unchecked("http://example.org/s"))),

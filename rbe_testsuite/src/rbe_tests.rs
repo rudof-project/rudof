@@ -84,7 +84,7 @@ mod tests {
             let mut tests: RbeTests =
                 serde_json::from_str(data).with_context(|| format!("error decoding JSON for '{group_name}'"))?;
             for t in &mut tests.tests {
-                t.set_group(group_name.to_owned());
+                t.set_group(group_name.to_string());
                 if t.name().is_empty() {
                     t.set_name(format!("{index}"));
                     index += 1;
@@ -93,7 +93,7 @@ mod tests {
                 if self.visited.contains(t.full_name()) {
                     bail!("found duplicate tests for name '{}'", t.full_name());
                 }
-                self.visited.insert(t.full_name().to_owned());
+                self.visited.insert(t.full_name().to_string());
             }
 
             self.tests.extend(tests.tests);
@@ -106,15 +106,15 @@ mod tests {
     #[test]
     fn check_serialization() {
         let values = vec![
-            RbeStruct::symbol("a".to_owned(), 1, Max::IntMax(1)),
-            RbeStruct::symbol("b".to_owned(), 2, Max::IntMax(3)),
+            RbeStruct::symbol("a".to_string(), 1, Max::IntMax(1)),
+            RbeStruct::symbol("b".to_string(), 2, Max::IntMax(3)),
         ];
         let mut rbe_test = RbeTest::default();
-        rbe_test.set_group("test".to_owned());
-        rbe_test.set_name("basic".to_owned());
-        rbe_test.set_full_name("test/basic".to_owned());
+        rbe_test.set_group("test".to_string());
+        rbe_test.set_name("basic".to_string());
+        rbe_test.set_full_name("test/basic".to_string());
         rbe_test.set_rbe(RbeStruct::and(values));
-        rbe_test.set_bag(Bag::from(["a".to_owned(), "b".to_owned()]));
+        rbe_test.set_bag(Bag::from(["a".to_string(), "b".to_string()]));
         let ts = vec![rbe_test];
         let mut rbe_tests = RbeTests::default();
         rbe_tests.with_tests(ts);
@@ -172,7 +172,7 @@ mod tests {
         tests.load_slice("test", str.as_bytes()).unwrap();
         let t0 = &tests.tests().next().unwrap();
         assert_eq!("test", t0.group());
-        assert_eq!(RbeTestResult::passed("basic".to_owned()), t0.run());
+        assert_eq!(RbeTestResult::passed("basic".to_string()), t0.run());
     }
 
     // Runs all the tests
@@ -194,7 +194,7 @@ mod tests {
     // The following test can be use to check a single test case
     #[test]
     fn run_single() {
-        let name = "a_1_1_with_a_2_fail".to_owned();
+        let name = "a_1_1_with_a_2_fail".to_string();
         println!("Running single test: {name}");
         let data = include_bytes!("../tests/basic.json");
         let mut rbe_tests = RbeTests::new();

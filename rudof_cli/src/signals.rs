@@ -33,10 +33,6 @@ pub fn install_shell_ctrl_c_handler() -> Result<()> {
         // least the second Ctrl-C since then — whatever's running hasn't
         // stopped in response to the first one.
         if rudof_rdf::cancellation::is_cancelled() {
-            #[expect(
-                clippy::exit,
-                reason = "exit status 130 is the convention for a process stopped by Ctrl-C"
-            )]
             std::process::exit(130);
         }
         rudof_rdf::cancellation::request_cancellation();

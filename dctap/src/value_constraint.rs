@@ -23,7 +23,7 @@ impl ValueConstraint {
     }
 
     pub fn pattern(str: &str) -> ValueConstraint {
-        ValueConstraint::Pattern(str.to_owned())
+        ValueConstraint::Pattern(str.to_string())
     }
 }
 
@@ -56,7 +56,7 @@ pub enum Value {
 
 impl Value {
     pub fn new(str: &str) -> Value {
-        Value::Str(str.to_owned())
+        Value::Str(str.to_string())
     }
 }
 

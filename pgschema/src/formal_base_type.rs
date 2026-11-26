@@ -32,14 +32,12 @@ impl FormalBaseType {
         }
     }
 
-    #[must_use]
     pub fn with_open(mut self) -> Self {
         self.open_labels = true;
         self
     }
 
     /// Sets the labels for the FormalBaseType.
-    #[must_use]
     pub fn with_labels(mut self, label_sets: impl IntoIterator<Item = impl IntoIterator<Item = LabelName>>) -> Self {
         for labels in label_sets {
             let label_set = LabelSet::from(labels);
@@ -49,14 +47,12 @@ impl FormalBaseType {
     }
 
     /// Adds a RecordType to the content of the FormalBaseType.
-    #[must_use]
     pub fn with_record_type(mut self, record_type: RecordType) -> Self {
         self.content.insert(record_type);
         self
     }
 
     /// Sets the content of the FormalBaseType.
-    #[must_use]
     pub fn with_content(mut self, content: HashSet<RecordType>) -> Self {
         self.content = content;
         self
@@ -70,7 +66,7 @@ impl FormalBaseType {
                 labels.iter().cloned().collect::<Vec<_>>().join(", "),
                 self.labels
                     .iter()
-                    .map(ToString::to_string)
+                    .map(|lblset| lblset.to_string())
                     .collect::<Vec<_>>()
                     .join(", ")
             );
@@ -78,12 +74,12 @@ impl FormalBaseType {
                 "[{}]",
                 self.labels
                     .iter()
-                    .map(ToString::to_string)
+                    .map(|lblset| lblset.to_string())
                     .collect::<Vec<_>>()
                     .join(", ")
             );
             return Either::Left::<Vec<PgsError>, Vec<Evidence>>(vec![PgsError::LabelsDifferent {
-                record_labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").clone(),
+                record_labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
                 type_labels: expected_labels,
             }]);
         }
@@ -91,21 +87,21 @@ impl FormalBaseType {
         for record_type in &self.content {
             if record_type.conforms(content).is_right() {
                 return Either::Right(vec![Evidence::LabelsContentConforms {
-                    labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").clone(),
-                    record: format!("{content}"),
-                    type_content: format!("{record_type}"),
+                    labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
+                    record: format!("{}", content),
+                    type_content: format!("{}", record_type),
                 }]);
             };
         }
         Either::Left(vec![PgsError::RecordContentFails {
-            record: format!("{content}"),
+            record: format!("{}", content),
             type_content: self
                 .content
                 .iter()
-                .map(ToString::to_string)
+                .map(|rt| rt.to_string())
                 .collect::<Vec<_>>()
                 .join("\n")
-                .clone(),
+                .to_string(),
         }])
     }
 
@@ -124,7 +120,6 @@ impl FormalBaseType {
         self.content.insert(record_type);
     }
 
-    #[must_use]
     pub fn union(&self, other: &FormalBaseType) -> Self {
         let mut result = FormalBaseType::new();
         result.labels.extend(self.labels.iter().cloned());
@@ -134,7 +129,6 @@ impl FormalBaseType {
         result
     }
 
-    #[must_use]
     pub fn combine(&self, other: &FormalBaseType) -> Self {
         // The following line was using a simple union following the PGSchema paper,
         // but it doesn't capture the intended semantics of combining labels.
@@ -208,39 +202,47 @@ impl Display for FormalBaseType {
                 write!(
                     f,
                     "Labels([{}])",
-                    labels.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                    labels
+                        .iter()
+                        .map(|lblset| lblset.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 )
             },
             FormalBaseType { labels, content, .. } if labels.is_empty() && !content.is_empty() => {
                 write!(
                     f,
                     "Content({})",
-                    content.iter().map(|c| format!("{c}")).collect::<Vec<_>>().join(", ")
+                    content.iter().map(|c| format!("{}", c)).collect::<Vec<_>>().join(", ")
                 )
             },
             FormalBaseType { labels, content, .. } => {
-                let spec = if labels.is_empty() {
-                    String::new()
-                } else {
+                let spec = if !labels.is_empty() {
                     format!(
                         "Labels({})",
-                        labels.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                        labels
+                            .iter()
+                            .map(|lblset| lblset.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
                     )
-                };
-                let value_spec = if content.is_empty() {
-                    String::new()
                 } else {
+                    String::new()
+                };
+                let value_spec = if !content.is_empty() {
                     format!(
                         "Content({})",
-                        content.iter().map(|c| format!("{c}")).collect::<Vec<_>>().join(", ")
+                        content.iter().map(|c| format!("{}", c)).collect::<Vec<_>>().join(", ")
                     )
+                } else {
+                    String::new()
                 };
                 if !spec.is_empty() && !value_spec.is_empty() {
-                    write!(f, "{spec}, {value_spec}")
+                    write!(f, "{}, {}", spec, value_spec)
                 } else if !spec.is_empty() {
-                    write!(f, "{spec}")
+                    write!(f, "{}", spec)
                 } else if !value_spec.is_empty() {
-                    write!(f, "{value_spec}")
+                    write!(f, "{}", value_spec)
                 } else {
                     write!(f, "Empty")
                 }

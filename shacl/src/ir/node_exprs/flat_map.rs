@@ -20,7 +20,6 @@ impl FlatMap {
         }
     }
 
-    #[must_use]
     pub fn with_nodes(mut self, nodes: Option<IRNodeExpr>) -> Self {
         self.nodes = nodes.into();
         self
@@ -63,7 +62,8 @@ impl Display for FlatMap {
         let nodes = self
             .nodes()
             .as_ref()
-            .map_or_else(|| "focusNode".to_owned(), ToString::to_string);
+            .map(|n| n.to_string())
+            .unwrap_or_else(|| "focusNode".to_string());
         write!(f, "FlatMap({} for {})", self.flat_map(), nodes)
     }
 }

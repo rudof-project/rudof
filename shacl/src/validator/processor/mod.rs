@@ -161,10 +161,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         }
         if config.store_evidences() {
             let evidences = if config.evidence_shapes_only() {
-                evidences
-                    .into_iter()
-                    .filter(crate::validator::report::Evidence::is_shape_level)
-                    .collect()
+                evidences.into_iter().filter(|e| e.is_shape_level()).collect()
             } else {
                 evidences
             };

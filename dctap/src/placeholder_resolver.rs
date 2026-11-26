@@ -14,7 +14,7 @@ impl PlaceholderResolver {
     }
 
     pub fn stem(stem: &str) -> PlaceholderResolver {
-        PlaceholderResolver::Stem(stem.to_owned())
+        PlaceholderResolver::Stem(stem.to_string())
     }
 
     pub fn generate(&self, id: u64) -> String {

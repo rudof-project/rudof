@@ -179,7 +179,7 @@ mod tests {
         if let Ok(v) = &shape_expr {
             let _serialized = serde_json::to_string(v).unwrap();
         }
-        shape_expr.unwrap();
+        assert!(shape_expr.is_ok())
     }
 
     #[test]
@@ -193,6 +193,6 @@ mod tests {
         if let Ok(v) = &shape_expr {
             serde_json::to_string(v).unwrap();
         }
-        shape_expr.unwrap();
+        assert!(shape_expr.is_ok())
     }
 }

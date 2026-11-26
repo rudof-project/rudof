@@ -16,7 +16,7 @@ pub(crate) fn pattern<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<AS
                     Ok(vec![ASTComponent::Pattern { pattern, flags }])
                 },
                 _ => Err(RDFError::ParseFailError {
-                    msg: "Expected exactly one value for sh:pattern".to_owned(),
+                    msg: "Expected exactly one value for sh:pattern".to_string(),
                 }),
             })
         })

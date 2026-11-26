@@ -53,7 +53,7 @@ impl ValueSetValue {
 
     pub fn string_literal(value: &str, lang: Option<Lang>) -> ValueSetValue {
         let ov = ObjectValue::Literal(ConcreteLiteral::StringLiteral {
-            lexical_form: value.to_owned(),
+            lexical_form: value.to_string(),
             lang,
             direction: None,
         });
@@ -314,21 +314,21 @@ impl Stem {
                 })?;
                 Ok(iri_ref)
             },
-            Stem::Wildcard => Err(StemError::StemAsIriRefIsWildcard),
+            _ => Err(StemError::StemAsIriRefIsWildcard),
         }
     }
 
     fn as_language(&self) -> Result<String, StemError> {
         match self {
             Stem::Str(s) => Ok(s.clone()),
-            Stem::Wildcard => Err(StemError::NoLanguage { stem: self.clone() }),
+            _ => Err(StemError::NoLanguage { stem: self.clone() }),
         }
     }
 
     fn as_string(&self) -> Result<String, StemError> {
         match self {
             Stem::Str(s) => Ok(s.clone()),
-            Stem::Wildcard => Err(StemError::NoString { stem: self.clone() }),
+            _ => Err(StemError::NoString { stem: self.clone() }),
         }
     }
 
@@ -385,7 +385,7 @@ impl<'de> Deserialize<'de> for Stem {
                 impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                         formatter.write_str("stem value or wildcard with `type`")
                     }
 
@@ -411,7 +411,7 @@ impl<'de> Deserialize<'de> for Stem {
         impl<'de> Visitor<'de> for StemVisitor {
             type Value = Stem;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("stem value")
             }
 
@@ -419,7 +419,7 @@ impl<'de> Deserialize<'de> for Stem {
             where
                 E: de::Error,
             {
-                Ok(Stem::Str(s.to_owned()))
+                Ok(Stem::Str(s.to_string()))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<Stem, V::Error>
@@ -458,7 +458,7 @@ enum StemType {
 }
 
 #[derive(Debug)]
-#[expect(dead_code)]
+#[allow(dead_code)]
 struct StemTypeError {
     stem_type: String,
 }
@@ -468,7 +468,7 @@ impl StemType {
         match s {
             "Wildcard" => Ok(StemType::Wildcard),
             _ => Err(StemTypeError {
-                stem_type: s.to_owned(),
+                stem_type: s.to_string(),
             }),
         }
     }
@@ -498,7 +498,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                 impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                         formatter.write_str(
                             "field of value set value: `type` or `value` or `language` or `stem` or `exclusions`",
                         )
@@ -531,7 +531,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
         impl<'de> Visitor<'de> for ValueSetValueVisitor {
             type Value = ValueSetValue;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("ValueSet value")
             }
 
@@ -670,7 +670,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     Some(ValueSetValueType::LiteralStem) => match stem {
                         Some(stem) => {
                             let stem = stem.as_string().map_err(|_e| {
-                                de::Error::custom("LiteralStem: value of stem must be a string".to_owned())
+                                de::Error::custom("LiteralStem: value of stem must be a string".to_string())
                             })?;
                             Ok(ValueSetValue::LiteralStem { stem })
                         },
@@ -798,9 +798,11 @@ mod tests {
             ));
             assert_eq!(parsed, expected, "{json}");
         }
-        serde_json::from_str::<ValueSetValue>(
-            r#"{ "value": "a", "type": "http://www.w3.org/2001/XMLSchema#integer" }"#,
-        )
-        .unwrap_err();
+        assert!(
+            serde_json::from_str::<ValueSetValue>(
+                r#"{ "value": "a", "type": "http://www.w3.org/2001/XMLSchema#integer" }"#
+            )
+            .is_err()
+        );
     }
 }

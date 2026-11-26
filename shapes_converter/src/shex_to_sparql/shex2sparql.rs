@@ -70,9 +70,9 @@ fn shape_expr2patterns(
 ) -> Result<Vec<TriplePattern>, ShEx2SparqlError> {
     let mut ps = Vec::new();
     match se {
-        ShapeExpr::ShapeOr { .. } => Err(ShEx2SparqlError::not_implemented("ShapeOr")),
-        ShapeExpr::ShapeAnd { .. } => Err(ShEx2SparqlError::not_implemented("ShapeAND")),
-        ShapeExpr::ShapeNot { .. } => Err(ShEx2SparqlError::not_implemented("ShapeNot")),
+        ShapeExpr::ShapeOr { shape_exprs: _ } => Err(ShEx2SparqlError::not_implemented("ShapeOr")),
+        ShapeExpr::ShapeAnd { shape_exprs: _ } => Err(ShEx2SparqlError::not_implemented("ShapeAND")),
+        ShapeExpr::ShapeNot { shape_expr: _ } => Err(ShEx2SparqlError::not_implemented("ShapeNot")),
         ShapeExpr::NodeConstraint(nc) => {
             let msg = format!("Node constraint: {nc:?}");
             Err(ShEx2SparqlError::not_implemented(msg.as_str()))
@@ -130,13 +130,14 @@ fn triple_expr2patterns(
             // TODO: check min and max cardinalities
             if let Some(true) = inverse {
                 todo!()
+            } else {
+                // TODO: check if value_expr is a single valuevalueset
+                let subj = Var::new(config.this_variable_name.as_str());
+                let pred = predicate;
+                let obj = var_from_predicate(predicate, schema, var_builder);
+                let tp = TriplePattern::new(&subj, pred, &obj);
+                ps.push(tp)
             }
-            // TODO: check if value_expr is a single valuevalueset
-            let subj = Var::new(config.this_variable_name.as_str());
-            let pred = predicate;
-            let obj = var_from_predicate(predicate, schema, var_builder);
-            let tp = TriplePattern::new(&subj, pred, &obj);
-            ps.push(tp)
         },
         TripleExpr::Ref(_) => todo!(),
     }
@@ -154,7 +155,7 @@ fn var_from_predicate(predicate: &IriRef, schema: &Schema, var_builder: &mut Var
                 }
             },
         },
-        IriRef::Prefixed { local, .. } => Var::new(local),
+        IriRef::Prefixed { prefix: _, local } => Var::new(local),
     }
 }
 

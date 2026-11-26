@@ -58,14 +58,17 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
             return Ok(ValidationOutcome::new());
         }
 
-        let prefix_header = self.prefixes().map_or_default(|p| {
-            p.iter()
-                .map(|(prefix, iri)| format!("PREFIX {prefix}: <{iri}>\n"))
-                .collect::<String>()
-        });
+        let prefix_header = self
+            .prefixes()
+            .map(|p| {
+                p.iter()
+                    .map(|(prefix, iri)| format!("PREFIX {prefix}: <{iri}>\n"))
+                    .collect::<String>()
+            })
+            .unwrap_or_default();
 
         // Substitute $PATH placeholder if this is a property shape
-        let path_str = maybe_path.map_or_default(path_to_sparql);
+        let path_str = maybe_path.map(path_to_sparql).unwrap_or_default();
         let select_with_path = self.select().replace("$PATH", &path_str);
 
         let constraint_component = Object::Iri(component.into());
@@ -73,9 +76,9 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
 
         for (focus_node, _) in value_nodes.iter() {
             // Bind ?this via a VALUES clause and inject it in the WHERE block
-            let values_clause = format!("VALUES ?this {{ {focus_node} }}");
+            let values_clause = format!("VALUES ?this {{ {} }}", focus_node);
             let query_body = inject_values_into_where(&select_with_path, &values_clause);
-            let full_query = format!("{prefix_header}{query_body}");
+            let full_query = format!("{}{}", prefix_header, query_body);
 
             let solutions = store
                 .query_select(&full_query)
@@ -89,7 +92,7 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
                         RDF::term_as_object(failure_term)
                 {
                     return Err(ValidationError::QueryError(
-                        "SPARQL constraint produced a failure".to_owned(),
+                        "SPARQL constraint produced a failure".to_string(),
                     ));
                 }
 
@@ -130,7 +133,7 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
                             .or_else(|| (name == "this").then_some(focus_node))?;
                         RDF::term_as_object(term).ok().map(|obj| object_to_message_value(&obj))
                     };
-                    self.message().map_or_default(|m| m.interpolate(resolve))
+                    self.message().map(|m| m.interpolate(resolve)).unwrap_or_default()
                 };
 
                 any_violation = true;

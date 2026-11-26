@@ -42,10 +42,10 @@ impl ValidationStatus {
 
     pub fn code(&self) -> String {
         match self {
-            ValidationStatus::Conformant(_) => "conformant".to_owned(),
-            ValidationStatus::NonConformant(_) => "nonconformant".to_owned(),
-            ValidationStatus::Pending => "pending".to_owned(),
-            ValidationStatus::Inconsistent(_, _) => "inconsistent".to_owned(),
+            ValidationStatus::Conformant(_) => "conformant".to_string(),
+            ValidationStatus::NonConformant(_) => "nonconformant".to_string(),
+            ValidationStatus::Pending => "pending".to_string(),
+            ValidationStatus::Inconsistent(_, _) => "inconsistent".to_string(),
         }
     }
 
@@ -78,9 +78,9 @@ impl ValidationStatus {
 
     pub fn reason(&self) -> String {
         match self {
-            ValidationStatus::Conformant(conformant_info) => conformant_info.reason().to_owned(),
-            ValidationStatus::NonConformant(non_conformant_info) => non_conformant_info.reason().to_owned(),
-            ValidationStatus::Pending => "Pending".to_owned(),
+            ValidationStatus::Conformant(conformant_info) => conformant_info.reason().to_string(),
+            ValidationStatus::NonConformant(non_conformant_info) => non_conformant_info.reason().to_string(),
+            ValidationStatus::Pending => "Pending".to_string(),
             ValidationStatus::Inconsistent(conformant, non_conformant) => {
                 format!(
                     "Conformant: {}, Non-conformant: {}",

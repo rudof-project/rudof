@@ -9,11 +9,11 @@ use crate::rdf_impl::{GraphRelation, OxigraphInMemory, ReaderMode, SubgraphMode}
 use GraphRelation::*;
 use SubgraphMode::{Entailment, Homomorphic, Injective};
 
-const PREFIXES: &str = "
+const PREFIXES: &str = r#"
 PREFIX :     <http://example.org/>
 PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
-";
+"#;
 
 fn ttl(data: &str) -> OxigraphInMemory {
     let doc = format!("{PREFIXES}\n{data}");
@@ -496,7 +496,7 @@ fn subgraph_mode_parses_and_displays() {
         assert_eq!(mode.to_string().parse::<SubgraphMode>().unwrap(), mode);
     }
     assert_eq!("ENTAILMENT".parse::<SubgraphMode>().unwrap(), Entailment);
-    "subset".parse::<SubgraphMode>().unwrap_err();
+    assert!("subset".parse::<SubgraphMode>().is_err());
 }
 
 #[test]
@@ -681,13 +681,13 @@ pub(crate) mod properties {
 
     pub(crate) fn raw_triples() -> impl Strategy<Value = Vec<RawTriple>> {
         prop::collection::vec(
-            (0_u8..8, 0_u8..2, 0_u8..8, prop::bool::weighted(0.2), 0_u8..8, 0_u8..8),
+            (0u8..8, 0u8..2, 0u8..8, prop::bool::weighted(0.2), 0u8..8, 0u8..8),
             0..10,
         )
     }
 
     pub(crate) fn permutation() -> impl Strategy<Value = Vec<u8>> {
-        Just((0_u8..5).collect::<Vec<_>>()).prop_shuffle()
+        Just((0u8..5).collect::<Vec<_>>()).prop_shuffle()
     }
 
     pub(crate) const IDENTITY: [u8; 5] = [0, 1, 2, 3, 4];
@@ -759,7 +759,7 @@ pub(crate) mod properties {
         fn graph_merged_with_renamed_copy_is_equivalent(raw in raw_triples(), perm in permutation()) {
             let g = build(&raw, "a", &IDENTITY);
             let mut merged = g.clone();
-            for t in &build(&raw, "b", &perm) {
+            for t in build(&raw, "b", &perm).iter() {
                 merged.insert(t);
             }
             for mode in [Homomorphic, Entailment] {
@@ -774,7 +774,7 @@ pub(crate) mod properties {
             let g = build(&raw, "a", &IDENTITY);
             // Blank node `aN` becomes IRI `nN` (a node of the vocabulary) when `to_iri[N]`
             let mut instance = Graph::new();
-            for t in &g {
+            for t in g.iter() {
                 instance.insert(&instantiate(t, &to_iri));
             }
             prop_assert!(crate::rdf_impl::is_subgraph_with(&g, &instance, Entailment));
@@ -791,7 +791,7 @@ pub(crate) mod properties {
                     b.into_owned().into()
                 }
             },
-            other @ NamedOrBlankNodeRef::NamedNode(_) => other.into_owned(),
+            other => other.into_owned(),
         }
     }
 
@@ -810,7 +810,7 @@ pub(crate) mod properties {
         #![proptest_config(ProptestConfig::with_cases(256))]
 
         #[test]
-        fn near_miss_pairs_agree(raw in raw_triples(), perm in permutation(), extra in (0_u8..8, 0_u8..2, 0_u8..8, Just(false), Just(0_u8), Just(0_u8))) {
+        fn near_miss_pairs_agree(raw in raw_triples(), perm in permutation(), extra in (0u8..8, 0u8..2, 0u8..8, Just(false), Just(0u8), Just(0u8))) {
             let g1 = build(&raw, "a", &IDENTITY);
             let mut raw2 = raw.clone();
             if !raw2.is_empty() { raw2.pop(); }

@@ -48,19 +48,19 @@ pub(crate) fn format_parse_error_context(context: &[LocatedParseError]) -> Strin
 }
 
 impl nom::error::ParseError<Span<'_>> for LocatedParseError {
-    fn from_error_kind(input: Span<'_>, kind: ErrorKind) -> Self {
-        ShExParseError::SyntaxError(kind.description().to_owned()).at(input)
+    fn from_error_kind(input: Span, kind: ErrorKind) -> Self {
+        ShExParseError::SyntaxError(kind.description().to_string()).at(input)
     }
 
-    fn append(input: Span<'_>, kind: ErrorKind, other: Self) -> Self {
-        let mut error = ShExParseError::SyntaxError(kind.description().to_owned()).at(input);
+    fn append(input: Span, kind: ErrorKind, other: Self) -> Self {
+        let mut error = ShExParseError::SyntaxError(kind.description().to_string()).at(input);
         error.append(other);
         error
     }
 }
 
 impl FromExternalError<Span<'_>, ParseIntError> for LocatedParseError {
-    fn from_external_error(input: Span<'_>, _kind: ErrorKind, e: ParseIntError) -> Self {
+    fn from_external_error(input: Span, _kind: ErrorKind, e: ParseIntError) -> Self {
         ShExParseError::ParseIntError {
             str: input.fragment().to_string(),
             err: e,
@@ -70,7 +70,7 @@ impl FromExternalError<Span<'_>, ParseIntError> for LocatedParseError {
 }
 
 impl FromExternalError<Span<'_>, ParseFloatError> for LocatedParseError {
-    fn from_external_error(input: Span<'_>, _kind: ErrorKind, e: ParseFloatError) -> Self {
+    fn from_external_error(input: Span, _kind: ErrorKind, e: ParseFloatError) -> Self {
         ShExParseError::ParseFloatError {
             str: input.fragment().to_string(),
             err: e,
@@ -80,7 +80,7 @@ impl FromExternalError<Span<'_>, ParseFloatError> for LocatedParseError {
 }
 
 impl FromExternalError<Span<'_>, RDFError> for LocatedParseError {
-    fn from_external_error(input: Span<'_>, _kind: ErrorKind, e: RDFError) -> Self {
+    fn from_external_error(input: Span, _kind: ErrorKind, e: RDFError) -> Self {
         ShExParseError::RDFError(e).at(input)
     }
 }

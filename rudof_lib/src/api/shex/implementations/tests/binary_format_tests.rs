@@ -35,12 +35,12 @@ fn serialize_to_string(rudof: &Rudof, format: ShExFormat) -> crate::Result<Strin
 fn test_result_format_binary_writes_a_loadable_cache() {
     let mut rudof = Rudof::new(RudofConfig::default());
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer ?
-           }",
+           }"#,
     );
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
@@ -71,9 +71,9 @@ fn test_result_format_binary_writes_a_loadable_cache() {
 fn test_schema_format_binary_round_trips_through_load_shex_schema() {
     let mut rudof = Rudof::new(RudofConfig::default());
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:PersonShape { ex:name xsd:string }",
+           ex:PersonShape { ex:name xsd:string }"#,
     );
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
@@ -114,9 +114,9 @@ fn test_binary_format_round_trips_the_same_as_dedicated_flags() {
 
     let mut rudof = Rudof::new(RudofConfig::default());
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:PersonShape { ex:name xsd:string }",
+           ex:PersonShape { ex:name xsd:string }"#,
     );
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 

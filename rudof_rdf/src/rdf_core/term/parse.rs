@@ -34,7 +34,7 @@ pub fn parse_term(term: &str, base: Option<&IriS>, prefixmap: &PrefixMap) -> Res
         parser = parser
             .with_prefix(alias, iri.as_str())
             .map_err(|error| TermParseError::Prefix {
-                alias: alias.clone(),
+                alias: alias.to_string(),
                 iri: iri.to_string(),
                 error: error.to_string(),
             })?;
@@ -44,19 +44,19 @@ pub fn parse_term(term: &str, base: Option<&IriS>, prefixmap: &PrefixMap) -> Res
     let mut triples = Vec::new();
     for triple in parser.for_slice(&document) {
         triples.push(triple.map_err(|error| TermParseError::Syntax {
-            term: term.to_owned(),
+            term: term.to_string(),
             error: error.to_string(),
         })?);
     }
 
     let [triple] = triples.as_slice() else {
         return Err(TermParseError::NotASingleTerm {
-            term: term.to_owned(),
+            term: term.to_string(),
             triples: triples.len(),
         });
     };
     validate_term_iris(&triple.object).map_err(|error| TermParseError::Iri {
-        term: term.to_owned(),
+        term: term.to_string(),
         error,
     })?;
     Ok(triple.object.clone())

@@ -11,7 +11,7 @@ pub struct ExtendsId {
 impl ExtendsId {
     pub fn new(str: &str, line: u64) -> ExtendsId {
         ExtendsId {
-            str: str.to_owned(),
+            str: str.to_string(),
             label: None,
             line,
         }
@@ -26,7 +26,7 @@ impl ExtendsId {
     }
 
     pub fn add_label(&mut self, label: &str) {
-        self.label = Some(label.to_owned())
+        self.label = Some(label.to_string())
     }
 
     pub fn line(&self) -> u64 {

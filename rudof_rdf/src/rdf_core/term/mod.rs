@@ -3,7 +3,7 @@ mod iri;
 mod iri_or_blanknode;
 pub mod literal;
 mod parse;
-#[expect(clippy::module_inception)]
+#[allow(clippy::module_inception)]
 mod term;
 mod triple;
 

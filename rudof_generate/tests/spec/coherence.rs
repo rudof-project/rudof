@@ -4,7 +4,6 @@ use rudof_generate::config::OutputFormat;
 use rudof_generate::{DataGenerator, GeneratorConfig};
 #[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
-use std::fmt::Write as _;
 #[cfg(not(target_family = "wasm"))]
 use std::io::Write;
 #[cfg(not(target_family = "wasm"))]
@@ -15,7 +14,7 @@ use tempfile::NamedTempFile;
 async fn test_property_fill_probability() {
     // 1. Create a SHACL schema with many optional properties
     // We use minCount 0 to ensure they are optional by default
-    let shacl_schema = "
+    let shacl_schema = r#"
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -32,10 +31,10 @@ ex:PersonShape a sh:NodeShape ;
     sh:property [ sh:path ex:p8 ; sh:datatype xsd:integer ; sh:minCount 0 ; ] ;
     sh:property [ sh:path ex:p9 ; sh:datatype xsd:integer ; sh:minCount 0 ; ] ;
     sh:property [ sh:path ex:p10 ; sh:datatype xsd:integer ; sh:minCount 0 ; ] .
-";
+"#;
 
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{shacl_schema}").unwrap();
+    writeln!(schema_file, "{}", shacl_schema).unwrap();
     let output_file = NamedTempFile::new().unwrap();
 
     // 2. Configure generator with property_fill_probability = 0.5
@@ -68,15 +67,17 @@ ex:PersonShape a sh:NodeShape ;
     // So 3-sigma is +/- 48. Range [452, 548].
     // Let's be generous: [400, 600].
 
-    println!("Total property triples generated: {property_triples}");
+    println!("Total property triples generated: {}", property_triples);
 
     assert!(
         property_triples >= 400,
-        "Too few properties generated: {property_triples}"
+        "Too few properties generated: {}",
+        property_triples
     );
     assert!(
         property_triples <= 600,
-        "Too many properties generated: {property_triples}"
+        "Too many properties generated: {}",
+        property_triples
     );
 }
 
@@ -86,27 +87,26 @@ async fn test_max_properties_per_instance() {
     // 1. Create a SHACL schema with MANY optional properties
     // 20 properties
     let mut shacl_schema = String::from(
-        "
+        r#"
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 ex:ManyPropsShape a sh:NodeShape ;
     sh:targetClass ex:ManyProps ;
-",
+"#,
     );
 
     for i in 1..=20 {
-        writeln!(
-            shacl_schema,
-            "    sh:property [ sh:path ex:p{i} ; sh:datatype xsd:integer ; sh:minCount 0 ; ] ;"
-        )
-        .unwrap();
+        shacl_schema.push_str(&format!(
+            "    sh:property [ sh:path ex:p{} ; sh:datatype xsd:integer ; sh:minCount 0 ; ] ;\n",
+            i
+        ));
     }
     shacl_schema.push_str("    .\n");
 
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{shacl_schema}").unwrap();
+    writeln!(schema_file, "{}", shacl_schema).unwrap();
     let output_file = NamedTempFile::new().unwrap();
 
     // 2. Configure with max_properties_per_instance = 5
@@ -133,7 +133,7 @@ ex:ManyPropsShape a sh:NodeShape ;
         .count();
     let property_triples = total_triples - type_triples;
 
-    println!("Total property triples (max=5): {property_triples}");
+    println!("Total property triples (max=5): {}", property_triples);
 
     // 10 entities * 5 properties = 50 properties
     assert_eq!(
@@ -147,27 +147,26 @@ ex:ManyPropsShape a sh:NodeShape ;
 async fn test_property_selection_strategy_random() {
     // 1. Create a SHACL schema with 10 optional properties
     let mut shacl_schema = String::from(
-        "
+        r#"
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 ex:RandomPropsShape a sh:NodeShape ;
     sh:targetClass ex:RandomProps ;
-",
+"#,
     );
 
     for i in 1..=10 {
-        writeln!(
-            shacl_schema,
-            "    sh:property [ sh:path ex:p{i} ; sh:datatype xsd:integer ; sh:minCount 0 ; ] ;"
-        )
-        .unwrap();
+        shacl_schema.push_str(&format!(
+            "    sh:property [ sh:path ex:p{} ; sh:datatype xsd:integer ; sh:minCount 0 ; ] ;\n",
+            i
+        ));
     }
     shacl_schema.push_str("    .\n");
 
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{shacl_schema}").unwrap();
+    writeln!(schema_file, "{}", shacl_schema).unwrap();
     let output_file = NamedTempFile::new().unwrap();
 
     // 2. Configure with Strategy::Random and Prob=0.5
@@ -197,7 +196,7 @@ ex:RandomPropsShape a sh:NodeShape ;
         .count();
     let property_triples = total_triples - type_triples;
 
-    println!("Total property triples (Random Strategy): {property_triples}");
+    println!("Total property triples (Random Strategy): {}", property_triples);
 
     // 20 entities * 5 properties = 100 properties
     assert_eq!(
@@ -208,10 +207,11 @@ ex:RandomPropsShape a sh:NodeShape ;
     // 5. Verify that not all instances have the SAME 5 properties (random selection)
     // We can't easily parse NTriples here without a parser, but we can check if all p1..p10 are present in the file
     for i in 1..=10 {
-        let prop = format!("http://example.org/p{i}");
+        let prop = format!("http://example.org/p{}", i);
         assert!(
             output_content.contains(&prop),
-            "Property {prop} should appear at least once in 20 entities"
+            "Property {} should appear at least once in 20 entities",
+            prop
         );
     }
 }
@@ -221,27 +221,26 @@ ex:RandomPropsShape a sh:NodeShape ;
 async fn test_property_count_variance() {
     // 1. Create a SHACL schema with 20 optional properties
     let mut shacl_schema = String::from(
-        "
+        r#"
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 ex:VariancePropsShape a sh:NodeShape ;
     sh:targetClass ex:VarianceProps ;
-",
+"#,
     );
 
     for i in 1..=20 {
-        writeln!(
-            shacl_schema,
-            "    sh:property [ sh:path ex:p{i} ; sh:datatype xsd:integer ; sh:minCount 0 ; ] ;"
-        )
-        .unwrap();
+        shacl_schema.push_str(&format!(
+            "    sh:property [ sh:path ex:p{} ; sh:datatype xsd:integer ; sh:minCount 0 ; ] ;\n",
+            i
+        ));
     }
     shacl_schema.push_str("    .\n");
 
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{shacl_schema}").unwrap();
+    writeln!(schema_file, "{}", shacl_schema).unwrap();
     let output_file = NamedTempFile::new().unwrap();
 
     // 2. Configure with Variance = 0.8
@@ -271,7 +270,7 @@ ex:VariancePropsShape a sh:NodeShape ;
     let mut counts_per_subject: HashMap<String, usize> = HashMap::new();
 
     for line in output_content.lines() {
-        if line.is_empty() || line.starts_with('#') {
+        if line.is_empty() || line.starts_with("#") {
             continue;
         }
         if line.contains("http://www.w3.org/1999/02/22-rdf-syntax-ns#type") {
@@ -281,25 +280,27 @@ ex:VariancePropsShape a sh:NodeShape ;
         // Simple extraction of subject
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() >= 3 {
-            let subject = parts[0].to_owned();
+            let subject = parts[0].to_string();
             *counts_per_subject.entry(subject).or_insert(0) += 1;
         }
     }
 
-    let counts: Vec<usize> = counts_per_subject.values().copied().collect();
-    println!("Property counts per instance: {counts:?}");
+    let counts: Vec<usize> = counts_per_subject.values().cloned().collect();
+    println!("Property counts per instance: {:?}", counts);
 
     assert!(!counts.is_empty(), "Should have generated entities");
 
     let min_count = *counts.iter().min().unwrap();
     let max_count = *counts.iter().max().unwrap();
 
-    println!("Min count: {min_count}, Max count: {max_count}");
+    println!("Min count: {}, Max count: {}", min_count, max_count);
 
     // Assert significant variance
     assert!(
         max_count - min_count >= 3,
-        "Should have variance in property counts. Range got: {min_count}-{max_count}"
+        "Should have variance in property counts. Range got: {}-{}",
+        min_count,
+        max_count
     );
 
     // Also assert we are somewhat within expected range [2, 18]
@@ -313,7 +314,7 @@ ex:VariancePropsShape a sh:NodeShape ;
 #[tokio::test]
 async fn test_excluded_properties() {
     // 1. Create a SHACL schema with 2 REQUIRED properties
-    let shacl_schema = "
+    let shacl_schema = r#"
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -322,16 +323,16 @@ ex:ExcludeShape a sh:NodeShape ;
     sh:targetClass ex:Exclude ;
     sh:property [ sh:path ex:keep ; sh:datatype xsd:integer ; sh:minCount 1 ; ] ;
     sh:property [ sh:path ex:skip ; sh:datatype xsd:integer ; sh:minCount 1 ; ] .
-";
+"#;
 
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{shacl_schema}").unwrap();
+    writeln!(schema_file, "{}", shacl_schema).unwrap();
     let output_file = NamedTempFile::new().unwrap();
 
     // 2. Configure with excluded_properties = ["http://example.org/skip"]
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 10;
-    config.generation.excluded_properties = vec!["http://example.org/skip".to_owned()];
+    config.generation.excluded_properties = vec!["http://example.org/skip".to_string()];
     config.output.path = output_file.path().to_path_buf();
     config.output.format = OutputFormat::NTriples;
 
@@ -357,9 +358,8 @@ ex:ExcludeShape a sh:NodeShape ;
 #[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_type_overrides() {
-    use rudof_generate::config::TypeOverrideConfig;
     // 1. Create a SHACL schema with 2 Shapes having the same property structure
-    let shacl_schema = "
+    let shacl_schema = r#"
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -371,13 +371,14 @@ ex:ShapeHigh a sh:NodeShape ;
 ex:ShapeLow a sh:NodeShape ;
     sh:targetClass ex:Low ;
     sh:property [ sh:path ex:p1 ; sh:datatype xsd:integer ; sh:minCount 0 ; ] .
-";
+"#;
 
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{shacl_schema}").unwrap();
+    writeln!(schema_file, "{}", shacl_schema).unwrap();
     let output_file = NamedTempFile::new().unwrap();
 
     // 2. Configure default prob=1.0, but override ShapeLow to be 0.0
+    use rudof_generate::config::TypeOverrideConfig;
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 20; // 10 of each roughly
     config.generation.property_fill_probability = 1.0;
@@ -387,7 +388,7 @@ ex:ShapeLow a sh:NodeShape ;
 
     let mut overrides = HashMap::new();
     overrides.insert(
-        "http://example.org/ShapeLow".to_owned(),
+        "http://example.org/ShapeLow".to_string(),
         TypeOverrideConfig {
             property_fill_probability: Some(0.0), // Should have NO properties
             max_properties_per_instance: None,

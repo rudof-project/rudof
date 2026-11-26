@@ -12,7 +12,6 @@ use crate::adapters::pgschema::{PG_NS, local_name, parse_edge_iri};
 use crate::ir::UnifiedConstraintModel;
 use oxrdf::{NamedOrBlankNode, Term, Triple};
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::Write as _;
 
 const RDF_TYPE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
@@ -34,7 +33,7 @@ pub fn edge_id(source: &str, label: &str, target: &str) -> String {
 
 /// The name of a node type or edge type from its IRI.
 pub fn type_name(iri: &str) -> String {
-    local_name(iri, "type").unwrap_or(iri).to_owned()
+    local_name(iri, "type").unwrap_or(iri).to_string()
 }
 
 /// `(graph, type map)` for the triples of the `entities` (node IRI, shape id).
@@ -69,13 +68,11 @@ pub fn property_graph(
                 },
                 (Term::NamedNode(target), Some((edge_type, label))) => {
                     let id = edge_id(node, label, target.as_str());
-                    writeln!(
-                        edges,
-                        "({}) -({id} {{{label}}})-> ({})",
+                    edges.push_str(&format!(
+                        "({}) -({id} {{{label}}})-> ({})\n",
                         node_id(node),
                         node_id(target.as_str())
-                    )
-                    .unwrap();
+                    ));
                     map.push(format!("{id}: {edge_type}"));
                     if !known.contains(target.as_str()) {
                         dangling.insert(node_id(target.as_str()));
@@ -87,9 +84,9 @@ pub fn property_graph(
                 _ => {},
             }
         }
-        write!(graph, "({}", node_id(node)).unwrap();
+        graph.push_str(&format!("({}", node_id(node)));
         if !labels.is_empty() {
-            write!(graph, " {{{}}}", labels.into_iter().collect::<Vec<_>>().join(", ")).unwrap();
+            graph.push_str(&format!(" {{{}}}", labels.into_iter().collect::<Vec<_>>().join(", ")));
         }
         if !record.is_empty() {
             let entries: Vec<String> = record
@@ -99,25 +96,24 @@ pub fn property_graph(
                     many => format!("{key}: [{}]", many.join(", ")),
                 })
                 .collect();
-            write!(graph, " [ {} ]", entries.join(", ")).unwrap();
+            graph.push_str(&format!(" [ {} ]", entries.join(", ")));
         }
         graph.push_str(")\n");
         map.push(format!("{}: {}", node_id(node), type_name(shape_id)));
     }
     for id in dangling {
-        writeln!(graph, "({id} {{Dangling}})").unwrap();
+        graph.push_str(&format!("({id} {{Dangling}})\n"));
     }
     graph.push_str(&edges);
-    (graph, format!("{}\n", map.join(",\n")))
+    (graph, map.join(",\n") + "\n")
 }
 
 /// A record key: the key IRI's name, or the IRI's last segment for a predicate
 /// the schema does not declare.
 fn key_name(predicate: &str) -> String {
-    local_name(predicate, "key").map_or_else(
-        || node_id(predicate.rsplit(['/', '#']).next().unwrap_or(predicate)),
-        String::from,
-    )
+    local_name(predicate, "key")
+        .map(String::from)
+        .unwrap_or_else(|| node_id(predicate.rsplit(['/', '#']).next().unwrap_or(predicate)))
 }
 
 /// A literal in `.pg` syntax: integers bare, dates `DATE "…"`, booleans
@@ -126,10 +122,10 @@ fn value(lit: &oxrdf::Literal) -> String {
     let lexical = lit.value();
     let quoted = || format!("\"{}\"", lexical.replace('"', "\\\""));
     match lit.datatype().as_str().strip_prefix(XSD) {
-        Some("integer" | "int" | "long") if lexical.parse::<i32>().is_ok() => lexical.to_owned(),
+        Some("integer" | "int" | "long") if lexical.parse::<i32>().is_ok() => lexical.to_string(),
         Some("date") => format!("DATE {}", quoted()),
-        Some("boolean") if lexical == "true" || lexical == "1" => "TRUE".to_owned(),
-        Some("boolean") if lexical == "false" || lexical == "0" => "FALSE".to_owned(),
+        Some("boolean") if lexical == "true" || lexical == "1" => "TRUE".to_string(),
+        Some("boolean") if lexical == "false" || lexical == "0" => "FALSE".to_string(),
         _ => quoted(),
     }
 }

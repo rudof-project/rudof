@@ -31,7 +31,7 @@ pub fn serialize_shex_validation_results<W: io::Write>(
                     Some(terminal_width()),
                 )
                 .map_err(|e| ShExError::FailedSerializingShExValidationResults {
-                    format: "compact".to_owned(),
+                    format: "compact".to_string(),
                     error: e.to_string(),
                 })?;
         },
@@ -39,7 +39,7 @@ pub fn serialize_shex_validation_results<W: io::Write>(
             shex_validation_results
                 .as_csv(writer, sort_order.into(), true)
                 .map_err(|e| ShExError::FailedSerializingShExValidationResults {
-                    format: "csv".to_owned(),
+                    format: "csv".to_string(),
                     error: e.to_string(),
                 })?;
         },
@@ -53,14 +53,14 @@ pub fn serialize_shex_validation_results<W: io::Write>(
                     Some(terminal_width()),
                 )
                 .map_err(|e| ShExError::FailedSerializingShExValidationResults {
-                    format: "details".to_owned(),
+                    format: "details".to_string(),
                     error: e.to_string(),
                 })?;
         },
         ResultShExValidationFormat::Json => {
             let str = serde_json::to_string_pretty(&shex_validation_results).map_err(|e| {
                 ShExError::FailedSerializingShExValidationResults {
-                    format: "json".to_owned(),
+                    format: "json".to_string(),
                     error: e.to_string(),
                 }
             })?;
@@ -70,7 +70,7 @@ pub fn serialize_shex_validation_results<W: io::Write>(
         _ => {
             return Err(ShExError::FailedSerializingShExValidationResults {
                 format: result_shex_validation_format.to_string(),
-                error: "not implemented yet".to_owned(),
+                error: "not implemented yet".to_string(),
             }
             .into());
         },

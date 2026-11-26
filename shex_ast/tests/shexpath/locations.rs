@@ -16,9 +16,9 @@ fn a_location_is_a_json_pointer() {
     assert_eq!(
         location.segments(),
         [
-            Segment::Key("shapes".to_owned()),
+            Segment::Key("shapes".to_string()),
             Segment::Index(0),
-            Segment::Key("shapeExpr".to_owned())
+            Segment::Key("shapeExpr".to_string())
         ]
     );
     assert_eq!(Location::root().key("a/b~c").to_string(), "/a~1b~0c");

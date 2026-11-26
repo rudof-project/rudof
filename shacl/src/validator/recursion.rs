@@ -23,7 +23,7 @@ impl FromStr for RecursionSemantics {
             // `cautious`/`brave` are the names used up to 0.3.26, kept as aliases.
             "lfp" | "cautious" => Ok(Self::Lfp),
             "gfp" | "brave" => Ok(Self::Gfp),
-            other => Err(Self::Err::UnsupportedMode(other.to_owned())),
+            other => Err(Self::Err::UnsupportedMode(other.to_string())),
         }
     }
 }
@@ -84,7 +84,7 @@ mod tests {
             RecursionSemantics::Lfp
         );
         assert_eq!("brave".parse::<RecursionSemantics>().unwrap(), RecursionSemantics::Gfp);
-        "other".parse::<RecursionSemantics>().unwrap_err();
+        assert!("other".parse::<RecursionSemantics>().is_err());
     }
 
     #[test]

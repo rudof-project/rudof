@@ -78,14 +78,17 @@ impl Materializer {
     {
         let mut graph = G::empty();
 
-        let subject: G::Subject = if let Some(node) = initial_node {
-            let obj = node.as_object().clone();
-            G::Subject::try_from(obj).map_err(|_| MaterializeError::NodeNotSubject { node: node.to_string() })?
-        } else {
-            let bnode = graph
-                .add_bnode()
-                .map_err(|e| MaterializeError::RdfError { error: e.to_string() })?;
-            G::Subject::from(bnode)
+        let subject: G::Subject = match initial_node {
+            Some(node) => {
+                let obj = node.as_object().clone();
+                G::Subject::try_from(obj).map_err(|_| MaterializeError::NodeNotSubject { node: node.to_string() })?
+            },
+            None => {
+                let bnode = graph
+                    .add_bnode()
+                    .map_err(|e| MaterializeError::RdfError { error: e.to_string() })?;
+                G::Subject::from(bnode)
+            },
         };
 
         let start = self.find_start_shape_expr(schema)?;
@@ -208,7 +211,7 @@ impl Materializer {
                 sem_acts,
                 ..
             } => {
-                let pred_iri = schema.resolve_iriref(predicate);
+                let pred_iri: IriS = schema.resolve_iriref(predicate);
                 let pred: G::IRI = G::IRI::from(pred_iri);
 
                 match value_expr.as_deref() {

@@ -33,7 +33,7 @@ impl PgRun {
         self.labels
             .iter()
             .filter(|l| l["kind"] != "trap")
-            .map(|l| l["node"].as_str().unwrap().to_owned())
+            .map(|l| l["node"].as_str().unwrap().to_string())
             .collect()
     }
 
@@ -75,7 +75,7 @@ async fn run(schema: &str, violations_toml: &str, entities: usize) -> PgRun {
 fn pgschema_oracle_flags_a_missing_required_key() {
     let graph = "(n1 {Org} [ label: \"ACME\" ])\n(n2 {Org})\n";
     let v = validate_pgschema(graph, PERSONS, "n1: OrgType,\nn2: OrgType\n");
-    assert_eq!(v.failing, BTreeSet::from(["n2".to_owned()]), "{}", v.report);
+    assert_eq!(v.failing, BTreeSet::from(["n2".to_string()]), "{}", v.report);
 }
 
 #[tokio::test]

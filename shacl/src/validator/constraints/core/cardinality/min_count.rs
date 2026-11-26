@@ -22,7 +22,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for MinCount {
         _: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
         if self.min_count() == 0 {
-            return Ok(ValidationOutcome::default());
+            return Ok(Default::default());
         }
 
         validate_with(

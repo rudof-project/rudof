@@ -85,6 +85,7 @@ use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
 use shex_validation::Validator as ShExValidator;
 use sparql_service::ServiceDescription;
 use std::io;
+#[cfg(all(feature = "pg-db", not(target_family = "wasm")))]
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -266,7 +267,7 @@ impl Rudof {
     /// Use [`Self::list_external_resolvers`] to enumerate the built-in kinds.
     pub fn add_external_resolver(&mut self, spec: &str) -> Result<()> {
         let resolver = resolver_from_spec(spec).map_err(|e| ShExError::InvalidExternalResolverSpec {
-            spec: spec.to_owned(),
+            spec: spec.to_string(),
             error: e.to_string(),
         })?;
         let vc = self
@@ -317,7 +318,7 @@ impl Rudof {
     ///
     /// # Parameters
     /// - `path`: filesystem path to the JSON-encoded MapState file.
-    pub fn load_map_state<'a>(&'a mut self, path: &'a Path) -> LoadMapStateBuilder<'a> {
+    pub fn load_map_state<'a>(&'a mut self, path: &'a std::path::Path) -> LoadMapStateBuilder<'a> {
         LoadMapStateBuilder::new(self, path)
     }
 
@@ -503,12 +504,8 @@ impl Rudof {
     /// retries included, since the endpoint was selected.
     pub fn endpoint_request_count(&self) -> u64 {
         #[cfg(any(not(target_family = "wasm"), feature = "jspi"))]
-        if let Some(Data::RDFData(rdf_data)) = self.data.as_ref() {
-            return rdf_data
-                .use_endpoints()
-                .values()
-                .map(rudof_rdf::rdf_impl::OxigraphEndpoint::request_count)
-                .sum();
+        if let Some(crate::types::Data::RDFData(rdf_data)) = self.data.as_ref() {
+            return rdf_data.use_endpoints().values().map(|e| e.request_count()).sum();
         }
         0
     }
@@ -526,7 +523,7 @@ impl Rudof {
     pub fn data_stats(&self) -> Option<DataStats> {
         match self.data.as_ref()? {
             Data::RDFData(rdf) => Some(DataStats::Rdf {
-                triples: rdf.all_triples().map_or(0, Iterator::count),
+                triples: rdf.all_triples().map(Iterator::count).unwrap_or(0),
             }),
             #[cfg(feature = "pgschema")]
             Data::PGData(pg) => Some(DataStats::Pg {

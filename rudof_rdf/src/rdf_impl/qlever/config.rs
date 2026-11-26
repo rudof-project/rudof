@@ -36,7 +36,7 @@ pub(crate) const DEFAULT_SERVER_READINESS_TIMEOUT_SECS: u64 = 60;
 /// the few non-optional fields hardcoded defaults.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
-#[expect(clippy::struct_excessive_bools)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct QleverConfig {
     /// Docker image name. Default: `adfreiburg/qlever`.
     pub image_name: String,
@@ -165,10 +165,10 @@ pub struct QleverConfig {
 impl Default for QleverConfig {
     fn default() -> Self {
         Self {
-            image_name: DEFAULT_IMAGE_NAME.to_owned(),
-            image_tag: DEFAULT_IMAGE_TAG.to_owned(),
+            image_name: DEFAULT_IMAGE_NAME.to_string(),
+            image_tag: DEFAULT_IMAGE_TAG.to_string(),
             index_dir: None,
-            index_name: DEFAULT_INDEX_NAME.to_owned(),
+            index_name: DEFAULT_INDEX_NAME.to_string(),
             auto_delete_if_created: false,
             stxxl_memory: None,
             parser_buffer_size: None,
@@ -179,9 +179,9 @@ impl Default for QleverConfig {
             container_port: DEFAULT_CONTAINER_PORT,
             access_token: None,
             num_simultaneous_queries: None,
-            memory_max_size: Some(DEFAULT_MEMORY_MAX_SIZE.to_owned()),
-            cache_max_size: Some(DEFAULT_CACHE_MAX_SIZE.to_owned()),
-            cache_max_size_single_entry: Some(DEFAULT_CACHE_MAX_SIZE_SINGLE_ENTRY.to_owned()),
+            memory_max_size: Some(DEFAULT_MEMORY_MAX_SIZE.to_string()),
+            cache_max_size: Some(DEFAULT_CACHE_MAX_SIZE.to_string()),
+            cache_max_size_single_entry: Some(DEFAULT_CACHE_MAX_SIZE_SINGLE_ENTRY.to_string()),
             lazy_result_max_cache_size: None,
             cache_max_num_entries: None,
             no_patterns: false,
@@ -205,56 +205,48 @@ impl QleverConfig {
     }
 
     /// Builder: set the index directory.
-    #[must_use]
     pub fn with_index_dir(mut self, path: impl Into<PathBuf>) -> Self {
         self.index_dir = Some(path.into());
         self
     }
 
     /// Builder: set the index name.
-    #[must_use]
     pub fn with_index_name(mut self, name: impl Into<String>) -> Self {
         self.index_name = name.into();
         self
     }
 
     /// Builder: set the image tag.
-    #[must_use]
     pub fn with_image_tag(mut self, tag: impl Into<String>) -> Self {
         self.image_tag = tag.into();
         self
     }
 
     /// Builder: set the server memory budget (`-m`).
-    #[must_use]
     pub fn with_memory_max_size(mut self, m: impl Into<String>) -> Self {
         self.memory_max_size = Some(m.into());
         self
     }
 
     /// Builder: pin the host port.
-    #[must_use]
     pub fn with_host_port(mut self, port: u16) -> Self {
         self.host_port = Some(port);
         self
     }
 
     /// Builder: opt into auto-deleting the index on Drop.
-    #[must_use]
     pub fn with_auto_delete(mut self, yes: bool) -> Self {
         self.auto_delete_if_created = yes;
         self
     }
 
     /// Builder: `-m` STXXL memory budget for the index builder.
-    #[must_use]
     pub fn with_stxxl_memory(mut self, m: impl Into<String>) -> Self {
         self.stxxl_memory = Some(m.into());
         self
     }
 
     /// Builder: `--parser-buffer-size` for the index builder.
-    #[must_use]
     pub fn with_parser_buffer_size(mut self, b: impl Into<String>) -> Self {
         self.parser_buffer_size = Some(b.into());
         self
@@ -262,21 +254,18 @@ impl QleverConfig {
 
     /// Builder: `--parse-parallel`. Passing `false` is the most effective
     /// way to reduce the index builder's peak RAM.
-    #[must_use]
     pub fn with_parser_parallel(mut self, parallel: bool) -> Self {
         self.parser_parallel = Some(parallel);
         self
     }
 
     /// Builder: cap the container's RAM (Docker `--memory`).
-    #[must_use]
     pub fn with_container_memory(mut self, m: impl Into<String>) -> Self {
         self.container_memory = Some(m.into());
         self
     }
 
     /// Builder: cap the container's RAM + swap (Docker `--memory-swap`).
-    #[must_use]
     pub fn with_container_memory_swap(mut self, m: impl Into<String>) -> Self {
         self.container_memory_swap = Some(m.into());
         self

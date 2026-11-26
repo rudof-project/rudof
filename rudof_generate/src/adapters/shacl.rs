@@ -103,7 +103,7 @@ impl ShaclToUnified {
                     is_closed,
                     ignored_properties,
                 } => {
-                    let mut ignored: Vec<String> = ignored_properties.iter().map(|i| i.as_str().to_owned()).collect();
+                    let mut ignored: Vec<String> = ignored_properties.iter().map(|i| i.as_str().to_string()).collect();
                     ignored.sort();
                     Some((*is_closed, ignored))
                 },
@@ -244,7 +244,7 @@ impl ShaclToUnified {
             (a, b) => a.or(b),
         };
         Some(UnifiedPropertyConstraint {
-            property_iri: property_iri.to_owned(),
+            property_iri: property_iri.to_string(),
             constraints: vec![constraint],
             min_cardinality,
             max_cardinality,
@@ -301,7 +301,7 @@ impl ShaclToUnified {
             },
             ASTComponent::LanguageIn(langs) => {
                 constraints.push(UnifiedConstraint::Language {
-                    tags: langs.iter().map(|l| l.as_str().to_owned()).collect(),
+                    tags: langs.iter().map(|l| l.as_str().to_string()).collect(),
                     ranges: true,
                 });
                 true
@@ -368,13 +368,15 @@ impl ShaclToUnified {
 
     fn convert_literal_to_value(&self, literal: &ConcreteLiteral) -> UnifiedValue {
         // Simple conversion - in practice you'd want more sophisticated handling
-        UnifiedValue::Literal(literal.lexical_form().clone(), Some(literal.datatype().to_string()))
+        UnifiedValue::Literal(literal.lexical_form().to_string(), Some(literal.datatype().to_string()))
     }
 
     fn convert_value_to_unified_value(&self, value: &Value) -> UnifiedValue {
         match value {
             Value::Iri(iri) => UnifiedValue::Iri(iri.to_string()),
-            Value::Literal(lit) => UnifiedValue::Literal(lit.lexical_form().clone(), Some(lit.datatype().to_string())),
+            Value::Literal(lit) => {
+                UnifiedValue::Literal(lit.lexical_form().to_string(), Some(lit.datatype().to_string()))
+            },
         }
     }
 }

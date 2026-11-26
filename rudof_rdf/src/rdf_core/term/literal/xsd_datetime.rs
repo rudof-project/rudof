@@ -74,7 +74,7 @@ impl<'de> Deserialize<'de> for XsdDateTime {
         impl<'de> Visitor<'de> for XsdDateTimeVisitor {
             type Value = XsdDateTime;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a valid XSD DateTime string")
             }
 

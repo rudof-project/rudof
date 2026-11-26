@@ -32,7 +32,7 @@ impl<RDF: Rdf> Display for ValueNodes<RDF> {
             "ValueNodes[{}]",
             self.map
                 .iter()
-                .map(|(node, vnodes)| format!("{node} -> {vnodes}"))
+                .map(|(node, vnodes)| format!("{} -> {}", node, vnodes))
                 .collect::<Vec<_>>()
                 .join(", ")
         )

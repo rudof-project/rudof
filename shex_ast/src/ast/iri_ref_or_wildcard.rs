@@ -2,7 +2,7 @@ use prefixmap::IriRef;
 use rudof_iri::error::IriSError;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use std::str::FromStr;
+use std::{result, str::FromStr};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum IriRefOrWildcard {
@@ -20,7 +20,7 @@ impl FromStr for IriRefOrWildcard {
 }
 
 impl Serialize for IriRefOrWildcard {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

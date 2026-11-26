@@ -34,7 +34,7 @@ impl std::hash::Hash for IriOrStr {
 
 impl IriOrStr {
     pub fn new(str: &str) -> IriOrStr {
-        IriOrStr::String(str.to_owned())
+        IriOrStr::String(str.to_string())
     }
 
     pub fn iri(iri: IriS) -> IriOrStr {
@@ -60,7 +60,7 @@ impl IriOrStr {
                     None => Ok(iri_s.clone()),
                     Some(base_iri) => base_iri.resolve_str(iri_s.as_str()),
                 },
-                IriRef::Prefixed { .. } => todo!(),
+                IriRef::Prefixed { prefix: _, local: _ } => todo!(),
             },
         }
     }

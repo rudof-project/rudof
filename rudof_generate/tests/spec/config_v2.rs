@@ -231,11 +231,11 @@ fn targets_take_a_metric_and_a_tolerance() {
 
 // ---------------------------------------------------------------- behaviour
 
-const SCHEMA: &str = "PREFIX ex: <http://example.org/>
+const SCHEMA: &str = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 ex:AShape { a [ex:A] ; ex:name xsd:string ; ex:nick xsd:string ? ; ex:mail xsd:string ? }
 ex:BShape { a [ex:B] ; ex:name xsd:string ; ex:nick xsd:string ? }
-";
+"#;
 
 async fn generate_with(toml: &str) -> String {
     let fixture = Fixture::shex(SCHEMA);
@@ -338,7 +338,7 @@ fill = 0.0
 
 #[test]
 fn every_shipped_example_config_parses() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples");
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples");
     let mut checked = 0;
     for entry in walk(&dir) {
         if entry.extension().is_some_and(|e| e == "toml") {
@@ -350,7 +350,7 @@ fn every_shipped_example_config_parses() {
     assert!(checked > 0, "no example configs found in {}", dir.display());
 }
 
-fn walk(dir: &Path) -> Vec<std::path::PathBuf> {
+fn walk(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
     let mut files = Vec::new();
     for entry in std::fs::read_dir(dir).unwrap().flatten() {
         let path = entry.path();
@@ -417,11 +417,11 @@ fn the_configuration_in_the_readme_parses() {
 
 // ---------------------------------------------------------------- fill of references
 
-const REF_SCHEMA: &str = "PREFIX ex: <http://example.org/>
+const REF_SCHEMA: &str = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 ex:AShape { a [ex:A] ; ex:name xsd:string ; ex:likes @ex:BShape * ; ex:owns @ex:BShape }
 ex:BShape { a [ex:B] ; ex:name xsd:string }
-";
+"#;
 
 async fn generate_refs(toml: &str) -> (String, String) {
     let fixture = Fixture::shex(REF_SCHEMA);

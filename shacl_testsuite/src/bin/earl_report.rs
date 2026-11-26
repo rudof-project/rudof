@@ -56,7 +56,7 @@ mod run {
                 .with_release(Release::new(env!("CARGO_PKG_VERSION"))),
         );
 
-        let (mut passed, mut failed) = (0_usize, 0_usize);
+        let (mut passed, mut failed) = (0usize, 0usize);
 
         for entry in &entries {
             let result = match run_outcome(&entry.path) {

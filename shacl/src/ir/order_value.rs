@@ -11,8 +11,8 @@ pub enum OrderValue {
 impl Display for OrderValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            OrderValue::Integer(i) => write!(f, "{i}"),
-            OrderValue::Decimal(d) => write!(f, "{d}"),
+            OrderValue::Integer(i) => write!(f, "{}", i),
+            OrderValue::Decimal(d) => write!(f, "{}", d),
         }
     }
 }

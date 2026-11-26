@@ -156,9 +156,9 @@ where
         }
     }
 
-    match value {
+    match *value {
         None => serializer.serialize_none(),
-        Some(v) => serializer.serialize_some(&Wrap(v)),
+        Some(ref v) => serializer.serialize_some(&Wrap(v)),
     }
 }
 
@@ -231,9 +231,9 @@ where
         }
     }
 
-    match value {
+    match *value {
         None => serializer.serialize_none(),
-        Some(v) => serializer.serialize_some(&Wrap(v.as_ref())),
+        Some(ref v) => serializer.serialize_some(&Wrap(v.as_ref())),
     }
 }
 
@@ -241,7 +241,7 @@ where
 pub struct SeqAccessError;
 
 // This is just an unfinished attempt...
-#[expect(dead_code)]
+#[allow(dead_code)]
 pub fn deserialize_vec_box_string_or_struct<'de, T, D>(d: D) -> Result<Vec<Box<T>>, D::Error>
 where
     T: Deserialize<'de> + FromStr,
@@ -252,7 +252,7 @@ where
     struct VecBoxStringOrStruct<T>(PhantomData<T>);
     struct SeqAccessStringOrStruct<T>(PhantomData<T>);
 
-    impl<'de, T> SeqAccess<'de> for SeqAccessStringOrStruct<T>
+    impl<'de, T> de::SeqAccess<'de> for SeqAccessStringOrStruct<T>
     where
         T: Deserialize<'de> + FromStr,
         <T as FromStr>::Err: Display,
@@ -297,7 +297,7 @@ where
 }
 
 /// Like `serialize_string_or_struct`, but can also handle missing values.
-#[expect(dead_code)]
+#[allow(dead_code)]
 pub fn serialize_vec_box_string_or_struct<T, S>(_value: &[Box<T>], serializer: S) -> Result<S::Ok, S::Error>
 where
     T: SerializeStringOrStruct,

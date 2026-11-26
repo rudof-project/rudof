@@ -36,7 +36,7 @@ impl DependencyGraph {
                 for edge in edges {
                     if component.contains(&edge.target()) && edge.weight().is_neg() {
                         let mut shapes = Vec::new();
-                        for node in component {
+                        for node in component.iter() {
                             shapes.push(*node);
                         }
                         let target = edge.target();
@@ -67,7 +67,7 @@ impl DependencyGraph {
 impl Display for DependencyGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (source, target, posneg) in self.graph.edge_references() {
-            writeln!(f, "{source} -{posneg}-> {target} ",)?;
+            writeln!(f, "{} -{}-> {} ", source, posneg, target,)?;
         }
         Ok(())
     }
@@ -110,7 +110,6 @@ impl PosNeg {
         PosNeg::Neg
     }
 
-    #[must_use]
     pub fn change(&self) -> PosNeg {
         match self {
             PosNeg::Pos => PosNeg::Neg,

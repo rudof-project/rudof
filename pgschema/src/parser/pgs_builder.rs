@@ -23,7 +23,7 @@ use crate::{
     value_type::ValueType,
 };
 
-pub struct PgsBuilder;
+pub struct PgsBuilder {}
 
 impl Default for PgsBuilder {
     fn default() -> Self {
@@ -51,9 +51,9 @@ fn get_create_types(create_types: Vec<CreateType>, schema: &mut PropertyGraphSch
             CreateType::CreateNodeType(node_type) => {
                 let label_property_spec = get_label_property_spec(node_type.label_property_spec)?;
                 if let Some(type_name) = node_type.type_name_opt {
-                    drop(schema.add_node_spec(type_name.as_str(), label_property_spec)?);
+                    let _ = schema.add_node_spec(type_name.as_str(), label_property_spec)?;
                 } else {
-                    drop(schema.add_blank_node_spec(label_property_spec)?);
+                    let _ = schema.add_blank_node_spec(label_property_spec)?;
                 }
             },
             CreateType::CreateEdgeType(edge_type) => {
@@ -62,9 +62,9 @@ fn get_create_types(create_types: Vec<CreateType>, schema: &mut PropertyGraphSch
                 let label_property_spec =
                     EdgeLabelPropertySpec::new(get_label_property_spec(edge_type.label_property_spec)?);
                 if let Some(type_name) = edge_type.type_name_opt {
-                    drop(schema.add_edge_spec(type_name.as_str(), source_spec, label_property_spec, target_spec)?);
+                    let _ = schema.add_edge_spec(type_name.as_str(), source_spec, label_property_spec, target_spec)?;
                 } else {
-                    drop(schema.add_blank_edge_spec(source_spec, label_property_spec, target_spec));
+                    let _ = schema.add_blank_edge_spec(source_spec, label_property_spec, target_spec);
                 }
             },
             CreateType::CreateGraphType(_) => todo!(),
@@ -337,7 +337,7 @@ fn get_cond(cond: Cond) -> Result<BooleanExpr, PgsError> {
         },
         Cond::Regex(pattern) => {
             let cleaned = remove_quotes(pattern.as_str());
-            Ok(BooleanExpr::Regex(cleaned.to_owned()))
+            Ok(BooleanExpr::Regex(cleaned.to_string()))
         },
     }
 }
@@ -351,7 +351,7 @@ fn get_value(value: SingleValue) -> Result<Value, PgsError> {
         SingleValue::NumberValue(str_number_) => {
             let number = str_number_
                 .parse::<i32>()
-                .map_err(|_| PgsError::InvalidNumber(format!("Invalid number value: {str_number_}")))?;
+                .map_err(|_| PgsError::InvalidNumber(format!("Invalid number value: {}", str_number_)))?;
             Ok(Value::int(number))
         },
         SingleValue::DateValue(date) => {

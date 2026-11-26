@@ -17,7 +17,7 @@ fn test_load_and_serialize_basic_select_query() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let query_input = InputSpec::str(
-        "
+        r#"
 PREFIX ex: <http://example.org/>
 PREFIX schema: <http://schema.org/>
 
@@ -26,7 +26,7 @@ WHERE {
     ?person a ex:Person .
     ?person schema:name ?name .
 }
-        ",
+        "#,
     );
 
     load_sparql_query(&mut rudof, &query_input, None).unwrap();
@@ -39,7 +39,8 @@ WHERE {
     assert!(serialized.contains("WHERE") || serialized.to_uppercase().contains("WHERE"));
 
     println!(
-        "\n===== test_load_and_serialize_basic_select_query =====\n{serialized}\n============================================"
+        "\n===== test_load_and_serialize_basic_select_query =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -48,7 +49,7 @@ fn test_load_and_serialize_construct_query() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let query_input = InputSpec::str(
-        "
+        r#"
 PREFIX ex: <http://example.org/>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
@@ -61,7 +62,7 @@ WHERE {
     ?person ex:name ?name .
     ?person ex:age ?age .
 }
-        ",
+        "#,
     );
 
     load_sparql_query(&mut rudof, &query_input, None).unwrap();
@@ -73,7 +74,8 @@ WHERE {
     assert!(serialized.contains("foaf:name") || serialized.contains("name"));
 
     println!(
-        "\n===== test_load_and_serialize_construct_query =====\n{serialized}\n============================================"
+        "\n===== test_load_and_serialize_construct_query =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -82,7 +84,7 @@ fn test_load_and_serialize_query_with_filter() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let query_input = InputSpec::str(
-        "
+        r#"
 PREFIX ex: <http://example.org/>
 PREFIX schema: <http://schema.org/>
 
@@ -92,7 +94,7 @@ WHERE {
     ?person schema:age ?age .
     FILTER (?age > 18)
 }
-        ",
+        "#,
     );
 
     load_sparql_query(&mut rudof, &query_input, None).unwrap();
@@ -104,7 +106,8 @@ WHERE {
     assert!(serialized.contains("FILTER") || serialized.to_uppercase().contains("FILTER"));
 
     println!(
-        "\n===== test_load_and_serialize_query_with_filter =====\n{serialized}\n============================================"
+        "\n===== test_load_and_serialize_query_with_filter =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -113,7 +116,7 @@ fn test_load_and_serialize_query_with_optional() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let query_input = InputSpec::str(
-        "
+        r#"
 PREFIX ex: <http://example.org/>
 PREFIX schema: <http://schema.org/>
 
@@ -125,7 +128,7 @@ WHERE {
         ?person schema:email ?email .
     }
 }
-        ",
+        "#,
     );
 
     load_sparql_query(&mut rudof, &query_input, None).unwrap();
@@ -137,7 +140,8 @@ WHERE {
     assert!(serialized.contains("OPTIONAL") || serialized.to_uppercase().contains("OPTIONAL"));
 
     println!(
-        "\n===== test_load_and_serialize_query_with_optional =====\n{serialized}\n============================================"
+        "\n===== test_load_and_serialize_query_with_optional =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -165,6 +169,7 @@ ASK {
     assert!(serialized.contains("Person") || serialized.contains("ex:Person"));
 
     println!(
-        "\n===== test_load_and_serialize_ask_query =====\n{serialized}\n============================================"
+        "\n===== test_load_and_serialize_ask_query =====\n{}\n============================================",
+        serialized
     );
 }

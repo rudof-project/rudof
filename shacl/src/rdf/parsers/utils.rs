@@ -37,7 +37,7 @@ pub(crate) fn term_to_value<RDF: Rdf>(term: &RDF::Term, msg: &str) -> Result<Val
     if term.is_blank_node() {
         Err(RDFError::ExpectedIriOrBlankNodeError {
             term: term.to_string(),
-            error: msg.to_owned(),
+            error: msg.to_string(),
         })
     } else if let Ok(iri) = RDF::term_as_iri(term) {
         let iri: RDF::IRI = iri;

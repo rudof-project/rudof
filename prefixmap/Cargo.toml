@@ -19,6 +19,3 @@ thiserror.workspace = true
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 proptest.workspace = true
 #bencher.workspace = true
-
-[lints]
-workspace = true

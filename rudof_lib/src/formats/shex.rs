@@ -88,7 +88,7 @@ impl TryFrom<ShExFormat> for RDFFormat {
             ShExFormat::NQuads => Ok(RDFFormat::NQuads),
             other => Err(ShExError::FailedSerializingShExSchema {
                 format: other.to_string(),
-                error: "not an RDF serialization format".to_owned(),
+                error: "not an RDF serialization format".to_string(),
             }),
         }
     }
@@ -138,7 +138,7 @@ impl FromStr for ShExFormat {
             "png" => Ok(ShExFormat::Png),
             "binary" => Ok(ShExFormat::Binary),
             other => Err(ShExError::UnsupportedShExFormat {
-                format: other.to_owned(),
+                format: other.to_string(),
             }),
         }
     }

@@ -73,14 +73,14 @@ impl TryFrom<&str> for ShapeExprLabel {
     type Error = RefError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let re_iri = Regex::new("<(.*)>").unwrap();
+        let re_iri = Regex::new(r"<(.*)>").unwrap();
         if let Some(iri_str) = re_iri.captures(s) {
             let iri_s = IriS::from_str(&iri_str[1])?;
             Ok(ShapeExprLabel::IriRef {
                 value: IriRef::iri(iri_s),
             })
         } else {
-            let re_bnode = Regex::new("_:(.*)").unwrap();
+            let re_bnode = Regex::new(r"_:(.*)").unwrap();
             if let Some(bnode_s) = re_bnode.captures(s) {
                 Ok(ShapeExprLabel::BNode {
                     value: BNode::new(&bnode_s[1]),
@@ -100,7 +100,7 @@ impl Display for ShapeExprLabel {
         let str = match self {
             ShapeExprLabel::IriRef { value } => value.to_string(),
             ShapeExprLabel::BNode { value } => value.to_string(),
-            ShapeExprLabel::Start => "START".to_owned(),
+            ShapeExprLabel::Start => "START".to_string(),
         };
         write!(f, "{str}")
     }

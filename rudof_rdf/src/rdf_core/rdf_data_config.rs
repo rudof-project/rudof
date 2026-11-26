@@ -112,59 +112,51 @@ impl RdfDataConfig {
     /// message (a file path, or a bundled endpoint's own file name).
     fn register_endpoint_description(&mut self, source: &str, toml_str: &str) -> Result<String, RDFError> {
         let mut endpoint: EndpointDescription = toml::from_str(toml_str).map_err(|error| RDFError::TomlError {
-            path_name: source.to_owned(),
+            path_name: source.to_string(),
             error,
         })?;
         endpoint.prefixmap = endpoint.prefixmap.with_default_colors().with_hyperlink(true);
-        let name = endpoint.name().to_owned();
+        let name = endpoint.name().to_string();
         self.endpoints.insert(name.clone(), endpoint);
         Ok(name)
     }
 
-    #[must_use]
     pub fn with_base(mut self, iri: Option<IriS>) -> Self {
         self.base = iri;
         self
     }
 
-    #[must_use]
     pub fn with_endpoints(mut self, endpoints: HashMap<String, EndpointDescription>) -> Self {
         self.endpoints = endpoints;
         self
     }
 
-    #[must_use]
     pub fn with_endpoint_limits(mut self, limits: EndpointLimits) -> Self {
         self.endpoint_limits = limits;
         self
     }
 
-    #[must_use]
     pub fn with_automatic_base(mut self, flag: bool) -> Self {
         self.automatic_base = flag;
         self
     }
 
-    #[must_use]
     pub fn with_rdf_visualization(mut self, cfg: RDFVisualizationConfig) -> Self {
         self.rdf_visualization = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_pretty_json(mut self, flag: bool) -> Self {
         self.pretty_json = flag;
         self
     }
 
-    #[must_use]
     pub fn with_colorize_json(mut self, flag: bool) -> Self {
         self.colorize_json = flag;
         self
     }
 
     #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
-    #[must_use]
     pub fn with_qlever(mut self, cfg: Option<crate::rdf_impl::QleverConfig>) -> Self {
         self.qlever = cfg;
         self
@@ -316,8 +308,8 @@ mod tests {
         assert_eq!(endpoint.name(), "Example");
         assert_eq!(endpoint.query_url().as_str(), "https://example.org/sparql");
         assert_eq!(
-            endpoint.prefixmap().map.get("ex").map(|iri| iri.as_str().to_owned()),
-            Some("http://example.org/".to_owned())
+            endpoint.prefixmap().map.get("ex").map(|iri| iri.as_str().to_string()),
+            Some("http://example.org/".to_string())
         );
     }
 
@@ -348,7 +340,7 @@ mod tests {
         "#,
         )
         .unwrap();
-        assert_eq!(c.base().map(rudof_iri::IriS::as_str), Some("http://ex/"));
+        assert_eq!(c.base().map(|i| i.as_str()), Some("http://ex/"));
         assert!(!c.automatic_base());
         assert_eq!(c.endpoints(), RdfDataConfig::default().endpoints());
     }

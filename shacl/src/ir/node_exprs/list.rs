@@ -36,12 +36,7 @@ impl List {
 
 impl Display for List {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let items = self
-            .list()
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join(", ");
+        let items = self.list().iter().map(|o| o.to_string()).collect::<Vec<_>>().join(", ");
 
         write!(f, "List[{items}]")
     }

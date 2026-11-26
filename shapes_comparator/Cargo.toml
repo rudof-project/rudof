@@ -15,11 +15,10 @@ rudof_iri.workspace = true
 prefixmap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+shacl.workspace = true
 shex_ast.workspace = true
+shex_validation.workspace = true
 sparql_service.workspace = true
 rudof_rdf.workspace = true
 thiserror.workspace = true
 tracing = { workspace = true }
-
-[lints]
-workspace = true

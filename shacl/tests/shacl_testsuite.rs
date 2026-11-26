@@ -52,13 +52,13 @@ mod run {
             walker
                 .validate_entries()?
                 .into_iter()
-                .map(as_entry(suite.to_owned(), Kind::Validate)),
+                .map(as_entry(suite.to_string(), Kind::Validate)),
         );
         out.extend(
             walker
                 .node_expr_entries()?
                 .into_iter()
-                .map(as_entry(suite.to_owned(), Kind::NodeExpr)),
+                .map(as_entry(suite.to_string(), Kind::NodeExpr)),
         );
 
         Ok(out)
@@ -83,7 +83,7 @@ mod run {
         let previous = IgnoredList::load(path)?;
 
         let mut ignored = Vec::new();
-        let (mut added, mut removed) = (0_usize, 0_usize);
+        let (mut added, mut removed) = (0usize, 0usize);
 
         for entry in entries {
             match run_entry(entry) {
@@ -98,7 +98,7 @@ mod run {
                     }
                     ignored.push(IgnoredEntry {
                         test: entry.name.clone(),
-                        reason: previous.reason_for(&entry.name).map(str::to_owned),
+                        reason: previous.reason_for(&entry.name).map(str::to_string),
                         issue: None,
                     });
                 },

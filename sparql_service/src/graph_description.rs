@@ -36,43 +36,36 @@ impl GraphDescription {
         }
     }
 
-    #[must_use]
     pub fn with_triples(mut self, triples: Option<NumericLiteral>) -> Self {
         self.triples = triples;
         self
     }
 
-    #[must_use]
     pub fn with_classes(mut self, classes: Option<NumericLiteral>) -> Self {
         self.classes = classes;
         self
     }
 
-    #[must_use]
     pub fn with_properties(mut self, properties: Option<NumericLiteral>) -> Self {
         self.properties = properties;
         self
     }
 
-    #[must_use]
     pub fn with_entities(mut self, entities: Option<NumericLiteral>) -> Self {
         self.entities = entities;
         self
     }
 
-    #[must_use]
     pub fn with_documents(mut self, documents: Option<NumericLiteral>) -> Self {
         self.documents = documents;
         self
     }
 
-    #[must_use]
     pub fn with_property_partition(mut self, property_partition: Vec<PropertyPartition>) -> Self {
         self.property_partition = property_partition;
         self
     }
 
-    #[must_use]
     pub fn with_class_partition(mut self, class_partition: Vec<ClassPartition>) -> Self {
         self.class_partition = class_partition;
         self
@@ -102,7 +95,7 @@ impl Display for GraphDescription {
             writeln!(
                 f,
                 "  class_partition: {}",
-                class_partition.map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                class_partition.map(|c| c.to_string()).collect::<Vec<_>>().join(", ")
             )?;
         }
         let mut property_partition = self.property_partition.iter().peekable();
@@ -110,10 +103,7 @@ impl Display for GraphDescription {
             writeln!(
                 f,
                 "  property_partition: {}",
-                property_partition
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                property_partition.map(|p| p.to_string()).collect::<Vec<_>>().join(", ")
             )?;
         }
         Ok(())

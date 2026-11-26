@@ -107,7 +107,7 @@ fn loaded_graph(rudof: &Rudof) -> Result<&OxigraphInMemory> {
     let backend = rdf_data(rudof)?.backend();
     backend.as_in_memory().ok_or_else(|| {
         Box::new(DataError::ComparisonNeedsInMemoryData {
-            backend: backend.variant_name().to_owned(),
+            backend: backend.variant_name().to_string(),
         })
         .into()
     })

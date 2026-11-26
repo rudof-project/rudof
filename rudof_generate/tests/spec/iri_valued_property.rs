@@ -54,7 +54,7 @@ async fn a_required_iri_property_is_emitted() -> Result<()> {
     let schema = write(
         &dir,
         "iri.ttl",
-        "
+        r#"
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix ex:  <http://example.org/> .
 @prefix :    <http://weso.es/shapes/> .
@@ -62,7 +62,7 @@ async fn a_required_iri_property_is_emitted() -> Result<()> {
 :Widget a sh:NodeShape ;
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:seeAlso ; sh:nodeKind sh:IRI ; sh:minCount 1 ; sh:maxCount 1 ] .
-",
+"#,
     );
 
     let graph = generate(&schema, dir.path().join("out.ttl")).await?;
@@ -78,7 +78,7 @@ async fn the_value_of_an_iri_property_is_an_iri_not_a_literal() -> Result<()> {
     let schema = write(
         &dir,
         "iri_kind.ttl",
-        "
+        r#"
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix ex:  <http://example.org/> .
 @prefix :    <http://weso.es/shapes/> .
@@ -86,7 +86,7 @@ async fn the_value_of_an_iri_property_is_an_iri_not_a_literal() -> Result<()> {
 :Widget a sh:NodeShape ;
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:seeAlso ; sh:nodeKind sh:IRI ; sh:minCount 1 ; sh:maxCount 1 ] .
-",
+"#,
     );
 
     let graph = generate(&schema, dir.path().join("out.ttl")).await?;
@@ -108,7 +108,7 @@ async fn minted_iris_are_distinct_per_subject() -> Result<()> {
     let schema = write(
         &dir,
         "distinct.ttl",
-        "
+        r#"
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix ex:  <http://example.org/> .
 @prefix :    <http://weso.es/shapes/> .
@@ -116,7 +116,7 @@ async fn minted_iris_are_distinct_per_subject() -> Result<()> {
 :Widget a sh:NodeShape ;
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:seeAlso ; sh:nodeKind sh:IRI ; sh:minCount 1 ; sh:maxCount 1 ] .
-",
+"#,
     );
 
     let graph = generate(&schema, dir.path().join("out.ttl")).await?;
@@ -141,7 +141,7 @@ async fn a_datatype_property_still_produces_a_literal() -> Result<()> {
     let schema = write(
         &dir,
         "literal.ttl",
-        "
+        r#"
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
@@ -150,7 +150,7 @@ async fn a_datatype_property_still_produces_a_literal() -> Result<()> {
 :Widget a sh:NodeShape ;
     sh:targetClass ex:Widget ;
     sh:property [ sh:path ex:label ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
-",
+"#,
     );
 
     let graph = generate(&schema, dir.path().join("out.ttl")).await?;

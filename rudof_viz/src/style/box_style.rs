@@ -40,25 +40,21 @@ impl BoxStyle {
         }
     }
 
-    #[must_use]
     pub fn with_line_color(mut self, color: Color) -> Self {
         self.line_color = color;
         self
     }
 
-    #[must_use]
     pub fn with_line_thickness(mut self, v: u32) -> Self {
         self.line_thickness = v;
         self
     }
 
-    #[must_use]
     pub fn with_background_color(mut self, color: Color) -> Self {
         self.background_color = color;
         self
     }
 
-    #[must_use]
     pub fn with_round_corner(mut self, v: u32) -> Self {
         self.round_corner = v;
         self

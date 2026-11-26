@@ -40,8 +40,8 @@ pub fn serialize_shacl_validation_results<W: io::Write>(
         },
         ResultShaclValidationFormat::Json => {
             return Err(ShaclError::FailedSerializingShaclValidationResults {
-                format: "json".to_owned(),
-                error: "not implemented yet".to_owned(),
+                format: "json".to_string(),
+                error: "not implemented yet".to_string(),
             }
             .into());
         },

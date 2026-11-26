@@ -62,7 +62,7 @@ fn compact_printer_roundtrip_regression() {
     let baseline_failing: BTreeSet<String> = baseline_content
         .lines()
         .filter(|l| !l.trim().is_empty())
-        .map(str::to_owned)
+        .map(str::to_string)
         .collect();
 
     let regressions: Vec<&String> = current_failing.difference(&baseline_failing).collect();
@@ -92,5 +92,7 @@ fn compact_printer_roundtrip_regression() {
         ));
     }
 
-    assert!(messages.is_empty(), "{}", messages.join("\n\n"))
+    if !messages.is_empty() {
+        panic!("{}", messages.join("\n\n"));
+    }
 }

@@ -49,15 +49,15 @@ impl BooleanExpr {
 impl Display for BooleanExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BooleanExpr::And(a, b) => write!(f, "({a} AND {b})"),
-            BooleanExpr::Or(a, b) => write!(f, "({a} OR {b})"),
-            BooleanExpr::Not(expr) => write!(f, "NOT ({expr})"),
-            BooleanExpr::Equals(value) => write!(f, "(== {value})"),
-            BooleanExpr::GreaterThan(value) => write!(f, "(> {value})"),
-            BooleanExpr::LessThan(value) => write!(f, "(< {value})"),
-            BooleanExpr::GreaterThanOrEqual(value) => write!(f, "(>= {value})"),
-            BooleanExpr::LessThanOrEqual(value) => write!(f, "(<= {value})"),
-            BooleanExpr::Regex(pattern) => write!(f, "(REGEX({pattern})"),
+            BooleanExpr::And(a, b) => write!(f, "({} AND {})", a, b),
+            BooleanExpr::Or(a, b) => write!(f, "({} OR {})", a, b),
+            BooleanExpr::Not(expr) => write!(f, "NOT ({})", expr),
+            BooleanExpr::Equals(value) => write!(f, "(== {})", value),
+            BooleanExpr::GreaterThan(value) => write!(f, "(> {})", value),
+            BooleanExpr::LessThan(value) => write!(f, "(< {})", value),
+            BooleanExpr::GreaterThanOrEqual(value) => write!(f, "(>= {})", value),
+            BooleanExpr::LessThanOrEqual(value) => write!(f, "(<= {})", value),
+            BooleanExpr::Regex(pattern) => write!(f, "(REGEX({})", pattern),
             BooleanExpr::True => write!(f, "TRUE"),
             BooleanExpr::False => write!(f, "FALSE"),
         }

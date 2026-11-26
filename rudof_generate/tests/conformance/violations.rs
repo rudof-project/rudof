@@ -149,10 +149,10 @@ async fn each_shacl_operator_yields_exactly_the_labelled_failures() {
     }
 }
 
-const SHEX_REF: &str = "PREFIX ex: <http://example.org/>
+const SHEX_REF: &str = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 ex:PersonShape { a [ex:Person] ; ex:name xsd:string ; ex:worksFor @ex:OrgShape }
-ex:OrgShape { a [ex:Org] ; ex:label xsd:string }";
+ex:OrgShape { a [ex:Org] ; ex:label xsd:string }"#;
 
 #[tokio::test]
 async fn a_dangling_reference_breaks_the_referring_node() {
@@ -230,23 +230,23 @@ fn the_rate_must_be_a_probability() {
 
 #[tokio::test]
 async fn closed_extra_breaks_closed_shex_shapes_only() {
-    let schema = "PREFIX ex: <http://example.org/>
+    let schema = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-ex:PersonShape CLOSED { a [ex:Person] ; ex:name xsd:string }";
+ex:PersonShape CLOSED { a [ex:Person] ; ex:name xsd:string }"#;
     assert_shex_exact(schema, "rate = 1.0\noperators = [\"closed-extra\"]", "closed-extra").await;
 }
 
 #[tokio::test]
 async fn closed_extra_breaks_closed_shacl_shapes() {
     let shapes = format!(
-        "@prefix sh: <http://www.w3.org/ns/shacl#> .
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <{EX}> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
   sh:closed true ; sh:ignoredProperties ( rdf:type ) ;
   sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] .
-"
+"#
     );
     assert_shacl_exact(&shapes, "rate = 1.0\noperators = [\"closed-extra\"]", "closed-extra").await;
 }
@@ -266,11 +266,11 @@ async fn closed_extra_does_not_apply_to_open_shapes() {
     );
 }
 
-const SHEX_LANG: &str = "PREFIX ex: <http://example.org/>
-ex:PersonShape { a [ex:Person] ; ex:label [@en @es] }";
+const SHEX_LANG: &str = r#"PREFIX ex: <http://example.org/>
+ex:PersonShape { a [ex:Person] ; ex:label [@en @es] }"#;
 
-const SHEX_LANG_STEM: &str = "PREFIX ex: <http://example.org/>
-ex:PersonShape { a [ex:Person] ; ex:label [@en~] }";
+const SHEX_LANG_STEM: &str = r#"PREFIX ex: <http://example.org/>
+ex:PersonShape { a [ex:Person] ; ex:label [@en~] }"#;
 
 fn shacl_lang() -> String {
     format!(
@@ -410,11 +410,11 @@ async fn numeric_ranges_compare_values_not_lexical_forms() {
 fn value_set_schemas() -> Vec<(String, String)> {
     let shacl = |members: &str| {
         format!(
-            "@prefix sh: <http://www.w3.org/ns/shacl#> .
+            r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <{EX}> .
 ex:ThingShape a sh:NodeShape ; sh:targetClass ex:Thing ;
   sh:property [ sh:path ex:kind ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( {members} ) ] .
-"
+"#
         )
     };
     let shex = |members: &str| format!("PREFIX ex: <{EX}>\nex:ThingShape {{ a [ex:Thing] ; ex:kind [{members}] }}");
@@ -434,19 +434,19 @@ async fn a_lookalike_of_a_value_set_member_is_not_a_member() {
     }
 }
 
-const SHEX_SCORE: &str = "PREFIX ex: <http://example.org/>
+const SHEX_SCORE: &str = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-ex:ThingShape { a [ex:Thing] ; ex:score xsd:decimal MININCLUSIVE 0 MAXINCLUSIVE 10 }";
+ex:ThingShape { a [ex:Thing] ; ex:score xsd:decimal MININCLUSIVE 0 MAXINCLUSIVE 10 }"#;
 
 fn shacl_score() -> String {
     format!(
-        "@prefix sh: <http://www.w3.org/ns/shacl#> .
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <{EX}> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 ex:ThingShape a sh:NodeShape ; sh:targetClass ex:Thing ;
   sh:property [ sh:path ex:score ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ;
                 sh:minInclusive 0 ; sh:maxInclusive 10 ] .
-"
+"#
     )
 }
 
@@ -480,8 +480,8 @@ async fn an_operator_spreads_over_every_property_it_applies_to() {
     assert_eq!(v.failing, r.expected_failing(), "{}", v.report);
 }
 
-const SHEX_EXTRA: &str = "PREFIX ex: <http://example.org/>
-ex:ThingShape EXTRA ex:kind { a [ex:Thing] ; ex:kind [ex:A ex:B] }";
+const SHEX_EXTRA: &str = r#"PREFIX ex: <http://example.org/>
+ex:ThingShape EXTRA ex:kind { a [ex:Thing] ; ex:kind [ex:A ex:B] }"#;
 
 #[tokio::test]
 async fn extra_lets_a_shex_shape_carry_values_that_match_no_constraint() {
@@ -512,7 +512,7 @@ async fn unmatched_value_leaves_extra_predicates_alone() {
 
 fn shacl_team() -> String {
     format!(
-        "@prefix sh: <http://www.w3.org/ns/shacl#> .
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <{EX}> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 ex:TeamShape a sh:NodeShape ; sh:targetClass ex:Team ;
@@ -520,7 +520,7 @@ ex:TeamShape a sh:NodeShape ; sh:targetClass ex:Team ;
                 sh:qualifiedMinCount 2 ; sh:qualifiedMaxCount 3 ] .
 ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
   sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] .
-"
+"#
     )
 }
 
@@ -560,10 +560,10 @@ async fn a_dangling_qualified_value_fails_only_below_the_qualified_minimum() {
 
 #[tokio::test]
 async fn an_unmatched_shape_reference_fails_in_shex() {
-    let schema = "PREFIX ex: <http://example.org/>
+    let schema = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 ex:TeamShape { a [ex:Team] ; ex:member @ex:PersonShape {2,3} }
-ex:PersonShape { a [ex:Person] ; ex:name xsd:string }";
+ex:PersonShape { a [ex:Person] ; ex:name xsd:string }"#;
     assert_shex_exact(
         schema,
         "rate = 1.0\noperators = [\"unmatched-value\"]\nshapes = [\"ex:TeamShape\"]",
@@ -572,9 +572,9 @@ ex:PersonShape { a [ex:Person] ; ex:name xsd:string }";
     .await;
 }
 
-const SHEX_RECURSIVE: &str = "PREFIX ex: <http://example.org/>
+const SHEX_RECURSIVE: &str = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-ex:PersonShape { a [ex:Person] ; ex:name xsd:string ; ex:knows @ex:PersonShape {1,2} }";
+ex:PersonShape { a [ex:Person] ; ex:name xsd:string ; ex:knows @ex:PersonShape {1,2} }"#;
 
 #[tokio::test]
 async fn recursive_shapes_are_generated_valid() {
@@ -634,10 +634,10 @@ async fn an_extra_value_does_not_count_towards_a_qualified_minimum() {
 
 #[tokio::test]
 async fn an_extra_value_does_not_count_towards_a_minimum_under_shex_extra() {
-    let schema = "PREFIX ex: <http://example.org/>
+    let schema = r#"PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 ex:TeamShape EXTRA ex:member { a [ex:Team] ; ex:member @ex:PersonShape {2,4} }
-ex:PersonShape { a [ex:Person] ; ex:name xsd:string }";
+ex:PersonShape { a [ex:Person] ; ex:name xsd:string }"#;
     let r = run(
         Fixture::shex(schema),
         "rate = 0.6\noperators = [\"trap-extra-value\", \"drop-required\"]",
@@ -668,7 +668,7 @@ async fn a_failure_reaches_only_the_nodes_before_it_when_reference_chains_end() 
 
 fn shacl_employment() -> String {
     format!(
-        "@prefix sh: <http://www.w3.org/ns/shacl#> .
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <{EX}> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
@@ -676,7 +676,7 @@ ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
   sh:property [ sh:path ex:worksFor ; sh:minCount 1 ; sh:maxCount 1 ; sh:class ex:Org ] .
 ex:OrgShape a sh:NodeShape ; sh:targetClass ex:Org ;
   sh:property [ sh:path ex:label ; sh:minCount 1 ; sh:datatype xsd:string ] .
-"
+"#
     )
 }
 
@@ -718,7 +718,7 @@ async fn sh_class_requires_the_type_not_conformance() {
 /// or `[ sh:class … ]`.
 fn shacl_team_inline(qualified: &str) -> String {
     format!(
-        "@prefix sh: <http://www.w3.org/ns/shacl#> .
+        r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <{EX}> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 ex:TeamShape a sh:NodeShape ; sh:targetClass ex:Team ;
@@ -726,7 +726,7 @@ ex:TeamShape a sh:NodeShape ; sh:targetClass ex:Team ;
                 sh:qualifiedMinCount 2 ; sh:qualifiedMaxCount 3 ] .
 ex:PersonShape a sh:NodeShape ; sh:targetClass ex:Person ;
   sh:property [ sh:path ex:name ; sh:minCount 1 ; sh:datatype xsd:string ] .
-"
+"#
     )
 }
 

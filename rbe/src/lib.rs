@@ -81,7 +81,7 @@ pub struct NoState;
 
 impl State for NoState {}
 
-impl Display for NoState {
+impl std::fmt::Display for NoState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "")
     }

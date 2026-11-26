@@ -14,6 +14,7 @@ use rudof_rdf::rdf_core::vocabs::ShaclNodeExprVocab;
 use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
+use std::ops::Deref;
 
 /// Expressions evaluated for one focus node.
 const MAX_EVAL_STEPS: usize = 1_000_000;
@@ -84,14 +85,14 @@ impl IRNodeExpr {
             ASTNodeExpr::List(list) => Self::List(List::new(list)),
             ASTNodeExpr::PathValues { path, focus_node } => {
                 let fnode = if let Some(fnode) = focus_node {
-                    Some(IRNodeExpr::compile(&fnode, ast, ir)?)
+                    Some(IRNodeExpr::compile(fnode.deref(), ast, ir)?)
                 } else {
                     None
                 };
                 Self::PathValues(PathValues::new(path).with_focus_node(fnode))
             },
             ASTNodeExpr::Exists(exists) => {
-                let e = IRNodeExpr::compile(&exists, ast, ir)?;
+                let e = IRNodeExpr::compile(exists.deref(), ast, ir)?;
                 Self::Exists(Exists::new(e))
             },
             ASTNodeExpr::IfExpression {
@@ -99,7 +100,7 @@ impl IRNodeExpr {
                 then,
                 else_expression,
             } => {
-                let i = IRNodeExpr::compile(&if_condition, ast, ir)?;
+                let i = IRNodeExpr::compile(if_condition.deref(), ast, ir)?;
                 let t = then.as_deref().map(|t| IRNodeExpr::compile(t, ast, ir)).transpose()?;
                 let e = else_expression
                     .as_deref()
@@ -126,8 +127,8 @@ impl IRNodeExpr {
                 Self::Concat(Concat::new(v))
             },
             ASTNodeExpr::Remove { nodes, remove } => {
-                let r = IRNodeExpr::compile(&remove, ast, ir)?;
-                let n = IRNodeExpr::compile(&nodes, ast, ir)?;
+                let r = IRNodeExpr::compile(remove.deref(), ast, ir)?;
+                let n = IRNodeExpr::compile(nodes.deref(), ast, ir)?;
                 Self::Remove(Remove::new(r, n))
             },
             ASTNodeExpr::Filter { nodes, filter_shape } => {

@@ -55,9 +55,9 @@ where
     }
 
     pub fn merge(&mut self, other: Pending<K, V, R>) {
-        for (v, other_rs) in other.pending_map {
+        for (v, other_rs) in other.pending_map.into_iter() {
             let self_rs = self.pending_map.entry(v).or_default();
-            for (r, other_ks) in other_rs {
+            for (r, other_ks) in other_rs.into_iter() {
                 self_rs.entry(r).or_default().extend(other_ks);
             }
         }
@@ -221,11 +221,11 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Pending: {{")?;
-        for (v, rs) in &self.pending_map {
+        for (v, rs) in self.pending_map.iter() {
             write!(f, "{v}@")?;
-            for (r, ks) in rs {
+            for (r, ks) in rs.iter() {
                 write!(f, "{r}(")?;
-                for k in ks {
+                for k in ks.iter() {
                     write!(f, "{k} ")?;
                 }
                 write!(f, ") ")?;

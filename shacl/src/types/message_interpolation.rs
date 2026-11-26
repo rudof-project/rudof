@@ -34,16 +34,19 @@ where
         result.push_str(&rest[..start]);
         let block = &rest[start..];
 
-        if let Some((name, block_len)) = parse_variable_block(block) {
-            match resolve(name) {
-                Some(value) => result.push_str(&value),
-                None => result.push_str(&block[..block_len]),
-            }
-            rest = &block[block_len..];
-        } else {
-            // This brace does not start a variable block. Keep it and continue after it.
-            result.push('{');
-            rest = &block[1..];
+        match parse_variable_block(block) {
+            Some((name, block_len)) => {
+                match resolve(name) {
+                    Some(value) => result.push_str(&value),
+                    None => result.push_str(&block[..block_len]),
+                }
+                rest = &block[block_len..];
+            },
+            None => {
+                // This brace does not start a variable block. Keep it and continue after it.
+                result.push('{');
+                rest = &block[1..];
+            },
         }
     }
 
@@ -93,7 +96,6 @@ impl MessageMap {
     ///
     /// The language tag of each message does not change.
     /// Refer to [`interpolate_message`] for the replacement rules.
-    #[must_use]
     pub fn interpolate<F>(&self, resolve: F) -> MessageMap
     where
         F: Fn(&str) -> Option<String>,
@@ -170,10 +172,7 @@ mod tests {
 
     #[test]
     fn accepts_digits_underscore_and_non_ascii_letters_in_names() {
-        let result = interpolate_message(
-            "{?var_1} {$n\u{fa}mero}",
-            resolver(&[("var_1", "one"), ("n\u{fa}mero", "two")]),
-        );
+        let result = interpolate_message("{?var_1} {$número}", resolver(&[("var_1", "one"), ("número", "two")]));
         assert_eq!(result, "one two");
     }
 
@@ -185,11 +184,8 @@ mod tests {
 
     #[test]
     fn keeps_non_ascii_text() {
-        let result = interpolate_message(
-            "Wert f\u{fc}r {?v} ist ung\u{fc}ltig \u{2717}",
-            resolver(&[("v", "\u{e4}")]),
-        );
-        assert_eq!(result, "Wert f\u{fc}r \u{e4} ist ung\u{fc}ltig \u{2717}");
+        let result = interpolate_message("Wert für {?v} ist ungültig ✗", resolver(&[("v", "ä")]));
+        assert_eq!(result, "Wert für ä ist ungültig ✗");
     }
 
     #[test]
@@ -198,7 +194,7 @@ mod tests {
         assert_eq!(object_to_message_value(&lit), "hello");
 
         let typed = Object::Literal(ConcreteLiteral::DatatypeLiteral {
-            lexical_form: "2020-01-01".to_owned(),
+            lexical_form: "2020-01-01".to_string(),
             datatype: IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#date").into(),
         });
         assert_eq!(object_to_message_value(&typed), "2020-01-01");
@@ -212,7 +208,7 @@ mod tests {
 
     #[test]
     fn blank_node_value_has_prefix() {
-        let bnode = Object::bnode("b0".to_owned());
+        let bnode = Object::bnode("b0".to_string());
         assert_eq!(object_to_message_value(&bnode), "_:b0");
     }
 
@@ -221,14 +217,14 @@ mod tests {
         let en = Lang::new("en").unwrap();
         let es = Lang::new("es").unwrap();
         let messages = MessageMap::new()
-            .with_message(None, "Bad value {?v}".to_owned())
-            .with_message(Some(en.clone()), "Value {?v} is bad".to_owned())
-            .with_message(Some(es.clone()), "El valor {$v} es incorrecto".to_owned());
+            .with_message(None, "Bad value {?v}".to_string())
+            .with_message(Some(en.clone()), "Value {?v} is bad".to_string())
+            .with_message(Some(es.clone()), "El valor {$v} es incorrecto".to_string());
 
         let result = messages.interpolate(resolver(&[("v", "7")]));
 
-        assert_eq!(result.get(None), Some(&"Bad value 7".to_owned()));
-        assert_eq!(result.get(Some(&en)), Some(&"Value 7 is bad".to_owned()));
-        assert_eq!(result.get(Some(&es)), Some(&"El valor 7 es incorrecto".to_owned()));
+        assert_eq!(result.get(None), Some(&"Bad value 7".to_string()));
+        assert_eq!(result.get(Some(&en)), Some(&"Value 7 is bad".to_string()));
+        assert_eq!(result.get(Some(&es)), Some(&"El valor 7 es incorrecto".to_string()));
     }
 }

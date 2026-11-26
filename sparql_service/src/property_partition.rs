@@ -20,13 +20,11 @@ impl PropertyPartition {
         }
     }
 
-    #[must_use]
     pub fn with_id(mut self, id: &IriOrBlankNode) -> Self {
         self.id = Some(id.clone());
         self
     }
 
-    #[must_use]
     pub fn with_triples(mut self, triples: Option<NumericLiteral>) -> Self {
         self.triples = triples;
         self
@@ -47,7 +45,10 @@ impl Display for PropertyPartition {
             f,
             "Property partition:  property: {}{})",
             self.property,
-            self.triples.as_ref().map_or_default(|n| format!(", triples: {n}"))
+            self.triples
+                .as_ref()
+                .map(|n| format!(", triples: {n}"))
+                .unwrap_or_default()
         )
     }
 }

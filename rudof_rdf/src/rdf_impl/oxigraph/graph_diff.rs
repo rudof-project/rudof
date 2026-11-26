@@ -248,7 +248,7 @@ fn lists(
     let mut only_in_source = Vec::new();
     let mut images = HashSet::new();
     let mut used = HashSet::new();
-    for t in source {
+    for t in source.iter() {
         match image(t, m).filter(|i| target.contains(i)) {
             Some(i) => {
                 images.insert(i);
@@ -280,7 +280,7 @@ fn image(t: TripleRef<'_>, m: &BlankNodeMap<'_, '_>) -> Option<Triple> {
             TermRef::BlankNode(b) => b.into_owned().into(),
             _ => return None,
         },
-        s @ NamedOrBlankNodeRef::NamedNode(_) => s.into_owned(),
+        s => s.into_owned(),
     };
     let object: Term = match t.object {
         TermRef::BlankNode(b) => m.get(&b)?.into_owned(),
@@ -415,7 +415,7 @@ const REFINEMENT_ROUNDS: usize = 3;
 /// up to `REFINEMENT_ROUNDS` triples away.
 fn colours(graph: &Graph) -> HashMap<BlankNodeRef<'_>, u64> {
     let mut triples_of: HashMap<BlankNodeRef<'_>, Vec<TripleRef<'_>>> = HashMap::new();
-    for t in graph {
+    for t in graph.iter() {
         let mut bnodes = Vec::new();
         blank_nodes(t, &mut bnodes);
         bnodes.sort_by_key(|b| b.as_str());
@@ -444,7 +444,7 @@ fn colours(graph: &Graph) -> HashMap<BlankNodeRef<'_>, u64> {
 fn signature(t: TripleRef<'_>, b: BlankNodeRef<'_>, colours: &HashMap<BlankNodeRef<'_>, u64>) -> String {
     fn node(n: BlankNodeRef<'_>, b: BlankNodeRef<'_>, colours: &HashMap<BlankNodeRef<'_>, u64>) -> String {
         if n == b {
-            "@".to_owned()
+            "@".to_string()
         } else {
             format!("#{}", colours[&n])
         }
@@ -458,7 +458,7 @@ fn signature(t: TripleRef<'_>, b: BlankNodeRef<'_>, colours: &HashMap<BlankNodeR
     }
     let subject = match t.subject {
         NamedOrBlankNodeRef::BlankNode(n) => node(n, b, colours),
-        s @ NamedOrBlankNodeRef::NamedNode(_) => s.to_string(),
+        s => s.to_string(),
     };
     format!("{subject} {} {}", t.predicate, term(t.object, b, colours))
 }

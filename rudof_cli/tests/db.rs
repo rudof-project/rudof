@@ -46,7 +46,7 @@ const DATA_TTL: &str = r#"@prefix : <http://example.org/> .
     :name "Bob" .
 "#;
 
-const SHAPES_TTL: &str = "@prefix : <http://example.org/> .
+const SHAPES_TTL: &str = r#"@prefix : <http://example.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
@@ -57,7 +57,7 @@ const SHAPES_TTL: &str = "@prefix : <http://example.org/> .
         sh:datatype xsd:string ;
         sh:minCount 1 ;
     ] .
-";
+"#;
 
 #[test]
 fn ddl_cypher_dialect_emits_node_and_rel_tables() {

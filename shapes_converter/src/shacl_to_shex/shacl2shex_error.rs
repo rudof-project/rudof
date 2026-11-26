@@ -21,6 +21,6 @@ pub enum Shacl2ShExError {
 
 impl Shacl2ShExError {
     pub fn not_implemented(msg: &str) -> Shacl2ShExError {
-        Shacl2ShExError::NotImplemented { msg: msg.to_owned() }
+        Shacl2ShExError::NotImplemented { msg: msg.to_string() }
     }
 }

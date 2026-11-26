@@ -23,7 +23,7 @@ use nom::{
 };
 
 /// `shapePath ::= sequenceStep ("," sequenceStep)*`
-pub(super) fn shape_path(i: Span<'_>) -> IRes<'_, ShExPath> {
+pub(super) fn shape_path(i: Span) -> IRes<ShExPath> {
     map(separated_list1(token(","), sequence_step), |paths| {
         junction(paths, ShExPath::Sequence)
     })
@@ -31,7 +31,7 @@ pub(super) fn shape_path(i: Span<'_>) -> IRes<'_, ShExPath> {
 }
 
 /// `sequenceStep ::= unionStep ("union" unionStep)*`
-fn sequence_step(i: Span<'_>) -> IRes<'_, ShExPath> {
+fn sequence_step(i: Span) -> IRes<ShExPath> {
     map(separated_list1(keyword_no_case("union"), union_step), |paths| {
         junction(paths, ShExPath::Union)
     })
@@ -39,7 +39,7 @@ fn sequence_step(i: Span<'_>) -> IRes<'_, ShExPath> {
 }
 
 /// `unionStep ::= intersectionStep ("intersection" intersectionStep)*`
-fn union_step(i: Span<'_>) -> IRes<'_, ShExPath> {
+fn union_step(i: Span) -> IRes<ShExPath> {
     map(
         separated_list1(keyword_no_case("intersection"), intersection_step),
         |paths| junction(paths, ShExPath::Intersection),
@@ -53,7 +53,7 @@ fn junction(mut paths: Vec<ShExPath>, make: fn(Vec<ShExPath>) -> ShExPath) -> Sh
 }
 
 /// `intersectionStep ::= startStep nextStep*`
-fn intersection_step(i: Span<'_>) -> IRes<'_, ShExPath> {
+fn intersection_step(i: Span) -> IRes<ShExPath> {
     map((start_step, many0(next_step)), |(first, rest)| {
         ShExPath::path(first.into_iter().chain(rest.into_iter().flatten()))
     })
@@ -63,16 +63,16 @@ fn intersection_step(i: Span<'_>) -> IRes<'_, ShExPath> {
 /// `startStep ::= ("/" | "//")? step | shortcut`
 ///
 /// The separator has no effect on where the path begins.
-fn start_step(i: Span<'_>) -> IRes<'_, Vec<Step>> {
+fn start_step(i: Span) -> IRes<Vec<Step>> {
     alt((map(preceded(opt(separator), step), |step| vec![step]), shortcut)).parse(i)
 }
 
 /// `nextStep ::= ("/" | "//") step | shortcut`
-fn next_step(i: Span<'_>) -> IRes<'_, Vec<Step>> {
+fn next_step(i: Span) -> IRes<Vec<Step>> {
     alt((map(preceded(separator, step), |step| vec![step]), shortcut)).parse(i)
 }
 
 /// `"/" | "//"`, which currently mean the same thing.
-fn separator(i: Span<'_>) -> IRes<'_, Span<'_>> {
+fn separator(i: Span) -> IRes<Span> {
     alt((token("//"), token("/"))).parse(i)
 }

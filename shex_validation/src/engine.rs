@@ -50,7 +50,7 @@ type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 /// The errors of a referenced pair as they are embedded in the referrer's errors
 /// (see [`ValidatorError::without_nested_references`]).
 fn without_nested_references(errors: Vec<ValidatorError>) -> Vec<ValidatorError> {
-    errors.iter().map(ValidatorError::without_nested_references).collect()
+    errors.iter().map(|e| e.without_nested_references()).collect()
 }
 
 #[derive(Debug, Clone)]
@@ -170,7 +170,7 @@ impl Engine {
             let preds: Vec<R::IRI> = schema
                 .get_preds_extends(&idx)
                 .into_iter()
-                .filter(Pred::is_direct)
+                .filter(|pred| pred.is_direct())
                 .map(|pred| pred.iri().clone().into())
                 .collect();
             if let Err(error) = rdf.prefetch_outgoing_arcs(&subjects, &preds) {
@@ -279,14 +279,14 @@ impl Engine {
 
     pub(crate) fn find_errors(&self, na: &NegAtom) -> Vec<ValidatorError> {
         match self.errors.get(na) {
-            Some(vs) => vs.clone(),
+            Some(vs) => vs.to_vec(),
             None => Vec::new(),
         }
     }
 
     pub(crate) fn find_reasons(&self, pa: &PosAtom) -> Vec<Reason> {
         match self.reasons.get(pa) {
-            Some(vs) => vs.clone(),
+            Some(vs) => vs.to_vec(),
             None => Vec::new(),
         }
     }
@@ -311,7 +311,7 @@ impl Engine {
             let mut dep = HashSet::new();
 
             // Search all direct references of the shape expression
-            for idx in &se.direct_references() {
+            for idx in se.direct_references().iter() {
                 dep.insert((node.clone(), *idx));
             }
 
@@ -429,7 +429,7 @@ impl Engine {
                     },
                 }
             }
-            for (n, l) in &hyp_as_set {
+            for (n, l) in hyp_as_set.iter() {
                 typing.insert_passed(n.clone(), *l);
             }
         }
@@ -468,7 +468,7 @@ impl Engine {
                     !self.provisional[*k]
                         .1
                         .iter()
-                        .all(|d| kept.contains(d) || self.typing.get(d).is_some_and(Either::is_right))
+                        .all(|d| kept.contains(d) || self.typing.get(d).is_some_and(|r| r.is_right()))
                 })
                 .cloned()
                 .collect();
@@ -521,7 +521,7 @@ impl Engine {
                     Ok(Either::Left(vec![ValidatorError::AbstractShapeError {
                         idx: *idx,
                         node: Box::new(node.clone()),
-                        errors: ValidatorErrors::new(descendants_result.left().unwrap().clone()),
+                        errors: ValidatorErrors::new(descendants_result.left().unwrap().to_vec()),
                     }]))
                 }
             } else {
@@ -1039,8 +1039,10 @@ impl Engine {
             if let Some((ncs, main, rest)) = schema.get_main_shape_constraints(&a) {
                 // The ancestors whose split parts this ancestor's constraints may see:
                 // the transitive extends closure of its main shape.
-                let split_ancestors: Vec<ShapeLabelIdx> =
-                    main.as_ref().map_or_default(|m| extends_closure(schema, m.extends()));
+                let split_ancestors: Vec<ShapeLabelIdx> = main
+                    .as_ref()
+                    .map(|m| extends_closure(schema, m.extends()))
+                    .unwrap_or_default();
                 if let Some(main_shape) = main {
                     triple_exprs.insert(Some(a), vec![main_shape.triple_expr().clone()]);
                 }
@@ -1216,7 +1218,7 @@ impl Engine {
                 let mut errors_in_loop = Vec::new();
                 let mut reasons_in_loop = Vec::new();
                 let mut allocated: HashMap<Option<ShapeLabelIdx>, Vec<_>> = HashMap::new();
-                for (maybe_label, rbes, neighs_subset) in &partition {
+                for (maybe_label, rbes, neighs_subset) in partition.iter() {
                     allocated.insert(*maybe_label, neighs_subset.clone());
                     let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                     match result {
@@ -1303,15 +1305,16 @@ impl Engine {
                         shape: Box::new(shape.clone()),
                         reasons: Reasons::new(reasons_in_loop),
                     });
+                } else {
+                    // debug!(" Part {npart}| Partition failed",);
+                    errors_in_partitions.push(ValidatorError::PartitionFailed {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        partition: partition_display.clone(),
+                        errors: ValidatorErrors::new(errors_in_loop),
+                    });
                 }
-                // debug!(" Part {npart}| Partition failed",);
-                errors_in_partitions.push(ValidatorError::PartitionFailed {
-                    node: Box::new(node.clone()),
-                    shape: Box::new(shape.clone()),
-                    idx: *idx,
-                    partition: partition_display.clone(),
-                    errors: ValidatorErrors::new(errors_in_loop),
-                });
             }
             // If we exhaust all partitions, the shape fails
             // debug!(" Failed shape {idx}. All partitions failed",);
@@ -1347,7 +1350,7 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
-        let mut selector = vec![0_usize; parent_alternatives.len()];
+        let mut selector = vec![0usize; parent_alternatives.len()];
         let mut errors_selections = Vec::new();
         loop {
             // The current selection: one alternative per parent, merged (buckets deduplicated,
@@ -1411,10 +1414,7 @@ impl Engine {
         bucket_exprs.insert(None, vec![shape.triple_expr().clone()]);
         let mut candidate_preds = shape.preds();
         for b in sigma.bucket_shapes() {
-            if let Some(ShapeExpr::Shape(bucket_shape)) = schema
-                .find_shape_idx(b)
-                .map(shex_ast::ir::shape_expr_info::ShapeExprInfo::expr)
-            {
+            if let Some(ShapeExpr::Shape(bucket_shape)) = schema.find_shape_idx(b).map(|info| info.expr()) {
                 bucket_exprs.insert(Some(*b), vec![bucket_shape.triple_expr().clone()]);
                 for p in bucket_shape.preds() {
                     if !candidate_preds.contains(&p) {
@@ -1539,7 +1539,7 @@ impl Engine {
             let mut errors_in_loop = Vec::new();
             let mut reasons_in_loop = Vec::new();
             let mut allocated: HashMap<Option<ShapeLabelIdx>, Vec<_>> = HashMap::new();
-            for (maybe_label, rbes, neighs_subset) in &partition {
+            for (maybe_label, rbes, neighs_subset) in partition.iter() {
                 allocated.insert(*maybe_label, neighs_subset.clone());
                 let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                 match result {
@@ -1603,14 +1603,15 @@ impl Engine {
             if ok_partition {
                 reasons.extend(reasons_in_loop);
                 return Ok(Either::Right(reasons));
+            } else {
+                errors_in_partitions.push(ValidatorError::PartitionFailed {
+                    node: Box::new(node.clone()),
+                    shape: Box::new(shape.clone()),
+                    idx: *idx,
+                    partition: partition_display.clone(),
+                    errors: ValidatorErrors::new(errors_in_loop),
+                });
             }
-            errors_in_partitions.push(ValidatorError::PartitionFailed {
-                node: Box::new(node.clone()),
-                shape: Box::new(shape.clone()),
-                idx: *idx,
-                partition: partition_display.clone(),
-                errors: ValidatorErrors::new(errors_in_loop),
-            });
         }
         Ok(Either::Left(errors_in_partitions))
     }
@@ -1703,9 +1704,12 @@ impl Engine {
         if let Some((ncs, maybe_main_shape, rest_exprs)) = schema.get_main_shape_constraints(idx) {
             tracing::debug!(
                 "Main shape {idx} has node constraints: [{}], main shape: {}, rest exprs: [{}]",
-                ncs.iter().map(ToString::to_string).join(", "),
-                maybe_main_shape.clone().map_or("None".to_owned(), |ms| ms.to_string()),
-                rest_exprs.iter().map(ToString::to_string).join(", ")
+                ncs.iter().map(|nc| nc.to_string()).join(", "),
+                maybe_main_shape
+                    .clone()
+                    .map(|ms| ms.to_string())
+                    .unwrap_or("None".to_string()),
+                rest_exprs.iter().map(|e| e.to_string()).join(", ")
             );
             let mut errors = Vec::new();
             let mut reasons = Vec::new();
@@ -1922,8 +1926,8 @@ impl Engine {
             let (outgoing_arcs, reminder) = rdf
                 .outgoing_arcs_from_list(&subject, &outgoing_iris)
                 .map_err(|e| self.cnv_err::<S>(e))?;
-            for (pred, values) in outgoing_arcs {
-                for obj in values {
+            for (pred, values) in outgoing_arcs.into_iter() {
+                for obj in values.into_iter() {
                     let pred_s = self.cnv_iri::<S>(pred.clone());
                     let object = self.cnv_object::<S>(&obj)?;
                     result.push((pred_s, object))
@@ -1939,8 +1943,8 @@ impl Engine {
             let incoming_arcs = rdf
                 .incoming_arcs_from_list(&node_term, &incoming_iris)
                 .map_err(|e| self.cnv_err::<S>(e))?;
-            for (pred, subjects) in incoming_arcs {
-                for subj in subjects {
+            for (pred, subjects) in incoming_arcs.into_iter() {
+                for subj in subjects.into_iter() {
                     let pred_s = self.cnv_inverse_iri::<S>(pred.clone());
                     let subject_term: S::Term = subj.into();
                     let subject_node = self.cnv_object::<S>(&subject_term)?;
@@ -2147,10 +2151,7 @@ fn collect_all_exprs_for_shape(
 /// `None` means the constraint is not split-validatable (e.g. a negation or a shape
 /// with its own extends) and must keep the whole-neighbourhood check.
 fn try_split_constraint(schema: &SchemaIR, cidx: &ShapeLabelIdx, node: &Node, out: &mut Vec<Expr>) -> Option<bool> {
-    match schema
-        .find_shape_idx(cidx)
-        .map(shex_ast::ir::shape_expr_info::ShapeExprInfo::expr)
-    {
+    match schema.find_shape_idx(cidx).map(|info| info.expr()) {
         Some(ShapeExpr::Shape(s)) if s.extends().is_empty() => {
             out.push(s.triple_expr().clone());
             Some(true)
@@ -2288,7 +2289,7 @@ fn check_exprs_neigh(
     typing: &RefTyping,
 ) -> Result<ValidationResult> {
     let mut matched = Matched::default();
-    for rbe in exprs {
+    for rbe in exprs.iter() {
         match check_expr_neigh(rbe, neighs, node, shape, idx, typing)? {
             Either::Left(errors) => {
                 return fail(ValidatorError::ShapeFailed {
@@ -2389,7 +2390,56 @@ fn check_expr_neigh(
         );*/
         match result {
             Ok(pending_values) => {
-                if pending_values.is_empty() {
+                if !pending_values.is_empty() {
+                    /*tracing::trace!(
+                        "Pending values for expr {expr} with neighs: [{}]:\n{pending_values}",
+                        neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
+                    );*/
+                    let mut failed_pending = Vec::new();
+                    // Check if all pending values are in typing
+                    for (n, idx, ks) in pending_values.iter_vr() {
+                        let pair = (n.clone(), *idx);
+                        if !typing.contains(&pair) {
+                            /*tracing::trace!(
+                                "Pending value ({},{}) is not in typing, keys: [{}]",
+                                n.clone(),
+                                *idx,
+                                ks.iter().map(|k| k.to_string()).join(", ")
+                            );*/
+                            failed_pending.push((
+                                n.clone(),
+                                *idx,
+                                ks.iter().cloned().collect::<Vec<_>>(),
+                                without_nested_references(typing.errors_for(&pair)),
+                            ))
+                            // TODO: if (stop_at_first) break
+                            // We don't need to compute all the failed pending values once we find the first pair
+                        }
+                    }
+                    if failed_pending.is_empty() {
+                        //tracing::trace!("All pending values were in typing {pending_values}");
+                        return pass(Reason::Shape {
+                            node: node.clone(),
+                            shape: Box::new(shape.clone()),
+                            idx: *idx,
+                            matched: Matched {
+                                arcs: matched_arcs(neighs),
+                                refs: pending_values.iter_vr().map(|(n, idx, _)| (n.clone(), *idx)).collect(),
+                            },
+                        });
+                    } else {
+                        /*tracing::trace!(
+                            "Failed pending values: {}",
+                            failed_pending
+                                .iter()
+                                .map(|(n, idx, _ks)| format!("{n}@{idx}"))
+                                .join(", ")
+                        );*/
+                        errors.push(ValidatorError::FailedPending {
+                            failed_pending: failed_pending.clone(),
+                        })
+                    }
+                } else {
                     // No Pending values
                     return pass(Reason::Shape {
                         node: node.clone(),
@@ -2401,53 +2451,6 @@ fn check_expr_neigh(
                         },
                     });
                 }
-                /*tracing::trace!(
-                    "Pending values for expr {expr} with neighs: [{}]:\n{pending_values}",
-                    neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
-                );*/
-                let mut failed_pending = Vec::new();
-                // Check if all pending values are in typing
-                for (n, idx, ks) in pending_values.iter_vr() {
-                    let pair = (n.clone(), *idx);
-                    if !typing.contains(&pair) {
-                        /*tracing::trace!(
-                            "Pending value ({},{}) is not in typing, keys: [{}]",
-                            n.clone(),
-                            *idx,
-                            ks.iter().map(|k| k.to_string()).join(", ")
-                        );*/
-                        failed_pending.push((
-                            n.clone(),
-                            *idx,
-                            ks.iter().cloned().collect::<Vec<_>>(),
-                            without_nested_references(typing.errors_for(&pair)),
-                        ))
-                        // TODO: if (stop_at_first) break
-                        // We don't need to compute all the failed pending values once we find the first pair
-                    }
-                }
-                if failed_pending.is_empty() {
-                    //tracing::trace!("All pending values were in typing {pending_values}");
-                    return pass(Reason::Shape {
-                        node: node.clone(),
-                        shape: Box::new(shape.clone()),
-                        idx: *idx,
-                        matched: Matched {
-                            arcs: matched_arcs(neighs),
-                            refs: pending_values.iter_vr().map(|(n, idx, _)| (n.clone(), *idx)).collect(),
-                        },
-                    });
-                }
-                /*tracing::trace!(
-                    "Failed pending values: {}",
-                    failed_pending
-                        .iter()
-                        .map(|(n, idx, _ks)| format!("{n}@{idx}"))
-                        .join(", ")
-                );*/
-                errors.push(ValidatorError::FailedPending {
-                    failed_pending: failed_pending.clone(),
-                })
             },
             Err(err) => {
                 // debug!("Result with error: {err}");
@@ -2581,7 +2584,7 @@ fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, s
     let registry = schema.semantic_actions_registry();
     let context = SemanticActionContext::new_start_act_context().with_registry(schema.semantic_actions_registry_arc());
     for act in start_acts {
-        let parameter = act.code().map(String::as_str);
+        let parameter = act.code().map(|code| code.as_str());
         let result = registry.run_action(act.name(), parameter, &context);
         if let Err(err) = result {
             tracing::error!("Start action {act} failed with error: {err}");
@@ -2637,12 +2640,12 @@ mod tests {
     // :alice :knows :bob .
     // :carol :knows :alice .
     // :alice :age  30 .       (outgoing pred not requested in some tests)
-    const TEST_GRAPH: &str = "
+    const TEST_GRAPH: &str = r#"
         prefix : <http://example.org/>
         :alice :knows :bob .
         :carol :knows :alice .
         :alice :age 30 .
-    ";
+    "#;
 
     fn make_graph() -> OxigraphInMemory {
         OxigraphInMemory::from_str(TEST_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()

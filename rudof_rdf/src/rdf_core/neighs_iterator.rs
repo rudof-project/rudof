@@ -203,21 +203,18 @@ impl<'a, S: NeighsRDF> NeighsIterator<'a, S> {
     }
 
     /// Sets the directions to traverse, in order.
-    #[must_use]
     pub fn with_directions(mut self, directions: &[ArcDirection]) -> Self {
         self.directions = directions.iter().copied().collect();
         self
     }
 
     /// Sets the filter of predicates to traverse.
-    #[must_use]
     pub fn with_predicates(mut self, predicates: Vec<S::IRI>) -> Self {
         self.predicates = predicates;
         self
     }
 
     /// Sets the maximum depth to traverse.
-    #[must_use]
     pub fn with_max_depth(mut self, max_depth: usize) -> Self {
         self.max_depth = max_depth;
         self

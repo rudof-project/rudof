@@ -59,49 +59,41 @@ impl ShEx2UmlConfig {
         }
     }
 
-    #[must_use]
     pub fn with_plantuml_path<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.plantuml_path = path.as_ref().to_path_buf();
         self
     }
 
-    #[must_use]
     pub fn with_annotation_label(mut self, label: Vec<IriS>) -> Self {
         self.annotation_label = label;
         self
     }
 
-    #[must_use]
     pub fn with_replace_iri_by_label(mut self, flag: bool) -> Self {
         self.replace_iri_by_label = flag;
         self
     }
 
-    #[must_use]
     pub fn with_shadowing(mut self, flag: bool) -> Self {
         self.shadowing = flag;
         self
     }
 
-    #[must_use]
     pub fn with_line_type(mut self, line_type: LineType) -> Self {
         self.line_type = line_type;
         self
     }
 
-    #[must_use]
     pub fn with_direction(mut self, direction: Direction) -> Self {
         self.direction = direction;
         self
     }
 
-    #[must_use]
     pub fn with_class_skin(mut self, class_skin: ClassSkin) -> Self {
         self.class_skin = class_skin;
         self
     }
 
-    #[must_use]
     pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
         self.shex = cfg;
         self
@@ -200,7 +192,7 @@ mod tests {
 
     #[test]
     fn partial_toml_fills_remaining_defaults() {
-        let c = ShEx2UmlConfig::from_toml_str("replace_iri = true").unwrap();
+        let c = ShEx2UmlConfig::from_toml_str(r#"replace_iri = true"#).unwrap();
         assert!(c.replace_iri_by_label());
         assert_eq!(c.shadowing(), ShEx2UmlConfig::default_shadowing());
     }
@@ -236,10 +228,6 @@ mod tests {
     /// on the shared `PLANTUML` process env var if run in parallel with each
     /// other; no other test in this crate touches that var.
     #[test]
-    #[expect(
-        unsafe_code,
-        reason = "`env::set_var` and `env::remove_var` are unsafe since the 2024 edition"
-    )]
     fn plantuml_path_is_read_from_the_plantuml_env_var() {
         // SAFETY: test-only mutation of the process environment, scoped to
         // this single test.

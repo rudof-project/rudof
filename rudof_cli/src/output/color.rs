@@ -102,7 +102,7 @@ fn env_force_color() -> usize {
             f => f.parse::<usize>().unwrap_or(1).min(3),
         }
     } else if let Ok(cli_clr_force) = env::var("CLICOLOR_FORCE") {
-        usize::from(cli_clr_force != "0")
+        if cli_clr_force != "0" { 1 } else { 0 }
     } else {
         0
     }

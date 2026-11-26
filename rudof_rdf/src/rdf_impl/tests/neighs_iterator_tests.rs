@@ -2,14 +2,14 @@ use crate::rdf_core::{ArcDirection, Neigh, NeighArc, NeighsIterator, RDFFormat};
 use crate::rdf_impl::{OxigraphInMemory, ReaderMode};
 use oxrdf::NamedNode as OxNamedNode;
 
-const GRAPH: &str = "
+const GRAPH: &str = r#"
         prefix : <http://example.org/>
         :a :p :b ;
            :r :c .
         :b :q :c ;
            :s 1 .
         :e :p :a .
-    ";
+    "#;
 
 fn iri(local: &str) -> OxNamedNode {
     OxNamedNode::new_unchecked(format!("http://example.org/{local}"))

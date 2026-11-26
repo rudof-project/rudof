@@ -156,7 +156,7 @@ async fn negotiated_version(client: ClientConfig) -> ProtocolVersion {
 
     tokio::spawn(async move {
         if let Ok(server) = RudofMcpService::new().serve(server_transport).await {
-            drop(server.waiting().await);
+            let _ = server.waiting().await;
         }
     });
 
@@ -169,7 +169,7 @@ async fn negotiated_version(client: ClientConfig) -> ProtocolVersion {
         .expect("the server should have answered")
         .protocol_version
         .clone();
-    drop(service.cancel().await);
+    let _ = service.cancel().await;
     version
 }
 
@@ -205,7 +205,7 @@ async fn test_current_data_is_readable_in_every_documented_format() {
 
     tokio::spawn(async move {
         if let Ok(server) = RudofMcpService::new().serve(server_transport).await {
-            drop(server.waiting().await);
+            let _ = server.waiting().await;
         }
     });
 
@@ -216,10 +216,10 @@ async fn test_current_data_is_readable_in_every_documented_format() {
 
     let mut arguments = serde_json::Map::new();
     arguments.insert(
-        "data".to_owned(),
+        "data".to_string(),
         serde_json::json!(["<http://a.example/s> <http://a.example/p> <http://a.example/o> ."]),
     );
-    arguments.insert("data_format".to_owned(), serde_json::json!("ntriples"));
+    arguments.insert("data_format".to_string(), serde_json::json!("ntriples"));
     client
         .call_tool(CallToolRequestParams::new("load_rdf_data_from_sources").with_arguments(arguments))
         .await
@@ -235,5 +235,5 @@ async fn test_current_data_is_readable_in_every_documented_format() {
         assert!(!result.contents.is_empty(), "{uri} should return contents");
     }
 
-    drop(client.cancel().await);
+    let _ = client.cancel().await;
 }

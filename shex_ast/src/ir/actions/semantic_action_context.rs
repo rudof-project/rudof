@@ -48,7 +48,6 @@ impl SemanticActionContext {
         self.node.clone()
     }
 
-    #[must_use]
     pub fn with_node(mut self, node: Node) -> Self {
         self.node = Some(node);
         self
@@ -94,25 +93,21 @@ impl SemanticActionContext {
         }
     }
 
-    #[must_use]
     pub fn with_subject(mut self, subject: Node) -> Self {
         self.subject = Some(subject);
         self
     }
 
-    #[must_use]
     pub fn with_predicate(mut self, predicate: Pred) -> Self {
         self.predicate = Some(predicate);
         self
     }
 
-    #[must_use]
     pub fn with_object(mut self, object: Node) -> Self {
         self.object = Some(object);
         self
     }
 
-    #[must_use]
     pub fn with_registry(mut self, registry: Arc<SemanticActionsRegistry>) -> Self {
         self.registry = Some(registry);
         self

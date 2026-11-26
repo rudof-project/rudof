@@ -59,6 +59,6 @@ fn add_sem_act_types(value: &mut Value) {
 
 fn add_sem_act_type(act: &mut Value) {
     if let Value::Object(map) = act {
-        map.entry("type").or_insert_with(|| Value::String("SemAct".to_owned()));
+        map.entry("type").or_insert_with(|| Value::String("SemAct".to_string()));
     }
 }

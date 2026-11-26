@@ -99,8 +99,8 @@ mod native {
     pub(crate) async fn sleep(duration: Duration) -> Result<(), OxigraphEndpointError> {
         tokio::select! {
             biased;
-            () = cancellation::cancelled() => Err(OxigraphEndpointError::Cancelled),
-            () = tokio::time::sleep(duration) => Ok(()),
+            _ = cancellation::cancelled() => Err(OxigraphEndpointError::Cancelled),
+            _ = tokio::time::sleep(duration) => Ok(()),
         }
     }
 
@@ -127,7 +127,7 @@ mod native {
             // waiting out the full `REQUEST_TIMEOUT`.
             let sent = tokio::select! {
                 biased;
-                () = cancellation::cancelled() => return Err(SendError::Fatal(OxigraphEndpointError::Cancelled)),
+                _ = cancellation::cancelled() => return Err(SendError::Fatal(OxigraphEndpointError::Cancelled)),
                 sent = self.client.get(url.as_str()).timeout(REQUEST_TIMEOUT).send() => sent,
             };
             let response = match sent {
@@ -140,7 +140,7 @@ mod native {
                 .headers()
                 .get("Retry-After")
                 .and_then(|v| v.to_str().ok())
-                .map(str::to_owned);
+                .map(str::to_string);
             let body = response.text().await.map_err(|err| SendError::Fatal(err.into()))?;
             Ok(HttpResponse {
                 status,
@@ -163,7 +163,7 @@ mod native {
         ) -> Result<HttpResponse, SendError> {
             let sent = tokio::select! {
                 biased;
-                () = cancellation::cancelled() => return Err(SendError::Fatal(OxigraphEndpointError::Cancelled)),
+                _ = cancellation::cancelled() => return Err(SendError::Fatal(OxigraphEndpointError::Cancelled)),
                 sent = self
                     .client
                     .post(url.as_str())
@@ -182,7 +182,7 @@ mod native {
                 .headers()
                 .get("Retry-After")
                 .and_then(|v| v.to_str().ok())
-                .map(str::to_owned);
+                .map(str::to_string);
             let body = response.text().await.map_err(|err| SendError::Fatal(err.into()))?;
             Ok(HttpResponse {
                 status,

@@ -52,6 +52,3 @@ oxttl.workspace = true
 # Independent oracle for the conformance suite: rudof's own ShEx/SHACL validators.
 # Default features off keeps the lbug (C++/OpenSSL) graph database out of test builds.
 rudof_lib = { path = "../rudof_lib", default-features = false }
-
-[lints]
-workspace = true

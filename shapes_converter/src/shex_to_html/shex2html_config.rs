@@ -57,79 +57,66 @@ impl ShEx2HtmlConfig {
         }
     }
 
-    #[must_use]
     pub fn with_title(mut self, title: String) -> Self {
         self.title = title;
         self
     }
 
-    #[must_use]
     pub fn with_landing_page_name(mut self, name: String) -> Self {
         self.landing_page_name = name;
         self
     }
 
-    #[must_use]
     pub fn with_shape_template_name(mut self, name: String) -> Self {
         self.shape_template_name = name;
         self
     }
 
-    #[must_use]
     pub fn with_template_folder(mut self, folder: Option<String>) -> Self {
         self.template_folder = folder;
         self
     }
 
-    #[must_use]
     pub fn with_css_file_name(mut self, name: String) -> Self {
         self.css_file_name = name;
         self
     }
 
-    #[must_use]
     pub fn with_target_folder<P: AsRef<Path>>(mut self, folder: P) -> Self {
         self.target_folder = folder.as_ref().to_path_buf();
         self
     }
 
-    #[must_use]
     pub fn with_color_property_name(mut self, color: String) -> Self {
         self.color_property_name = color;
         self
     }
 
-    #[must_use]
     pub fn with_annotation_label(mut self, labels: Vec<IriS>) -> Self {
         self.annotation_label = labels;
         self
     }
 
-    #[must_use]
     pub fn with_replace_iri_by_label(mut self, flag: bool) -> Self {
         self.replace_iri_by_label = flag;
         self
     }
 
-    #[must_use]
     pub fn with_embed_svg_schema(mut self, flag: bool) -> Self {
         self.embed_svg_schema = flag;
         self
     }
 
-    #[must_use]
     pub fn with_embed_svg_shape(mut self, flag: bool) -> Self {
         self.embed_svg_shape = flag;
         self
     }
 
-    #[must_use]
     pub fn with_shex2uml(mut self, cfg: ShEx2UmlConfig) -> Self {
         self.shex2uml = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_shex(mut self, cfg: ShExConfig) -> Self {
         self.shex = cfg;
         self
@@ -201,13 +188,13 @@ impl ShEx2HtmlConfig {
 #[allow(dead_code)]
 #[rustfmt::skip]
 impl ShEx2HtmlConfig {
-    #[inline] fn default_title() -> String { "ShEx schema".to_owned() }
-    #[inline] fn default_landing_page_name() -> String { "index.html".to_owned() }
-    #[inline] fn default_shape_template_name() -> String { "shape.html".to_owned() }
+    #[inline] fn default_title() -> String { "ShEx schema".to_string() }
+    #[inline] fn default_landing_page_name() -> String { "index.html".to_string() }
+    #[inline] fn default_shape_template_name() -> String { "shape.html".to_string() }
     #[inline] fn default_template_folder() -> Option<String> { None }
-    #[inline] fn default_css_file_name() -> String { "shex2html.css".to_owned() }
+    #[inline] fn default_css_file_name() -> String { "shex2html.css".to_string() }
     #[inline] fn default_target_folder() -> PathBuf { Path::new(".").to_path_buf() }
-    #[inline] fn default_color_property_name() -> String { "blue".to_owned() }
+    #[inline] fn default_color_property_name() -> String { "blue".to_string() }
     #[inline] fn default_annotation_label() -> Vec<IriS> { vec![ RdfsVocab::rdfs_label() ] }
     #[inline] fn default_replace_iri_by_label() -> bool { true }
     #[inline] fn default_embed_svg_schema() -> bool { true }
@@ -243,7 +230,7 @@ mod tests {
 
     #[test]
     fn toml_round_trip() {
-        let c = ShEx2HtmlConfig::default().with_title("My schema".to_owned());
+        let c = ShEx2HtmlConfig::default().with_title("My schema".to_string());
         let s = c.to_toml_string().unwrap();
         let d = ShEx2HtmlConfig::from_toml_str(&s).unwrap();
         assert_eq!(c, d);

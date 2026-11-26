@@ -12,20 +12,20 @@ prefix : <http://example.org/>
 :bob   :name "Bob"   ; :age "unknown" .
 "#;
 
-const SHEX_SCHEMA: &str = "
+const SHEX_SCHEMA: &str = r#"
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person { :name xsd:string ; :age xsd:integer }
-";
+"#;
 
-const SHACL_SHAPES: &str = "
+const SHACL_SHAPES: &str = r#"
 prefix : <http://example.org/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :PersonShape a sh:NodeShape ;
   sh:targetSubjectsOf :name ;
   sh:property [ sh:path :age ; sh:datatype xsd:integer ] .
-";
+"#;
 
 /// A SHACL-SPARQL constraint (`sh:sparql`), which needs a SPARQL engine over
 /// the data even when the core constraints are validated natively.
@@ -43,11 +43,11 @@ prefix sh: <http://www.w3.org/ns/shacl#>
   ] .
 "#;
 
-const AGES: &str = "
+const AGES: &str = r#"
 prefix : <http://example.org/>
 :alice :age 23 .
 :carol :age 12 .
-";
+"#;
 
 fn status_of(report: &ShExValidationReport, node: &str) -> String {
     report
@@ -85,8 +85,8 @@ fn shex_with_base_and_ntriples() {
     let data = r#"<http://example.org/carol> <http://example.org/name> "Carol" .
 <http://example.org/carol> <http://example.org/age> "30"^^<http://www.w3.org/2001/XMLSchema#integer> .
 "#;
-    let schema = "prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-<Person> { <name> xsd:string ; <age> xsd:integer }";
+    let schema = r#"prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+<Person> { <name> xsd:string ; <age> xsd:integer }"#;
     let report = validate_shex(
         data,
         schema,
@@ -276,9 +276,11 @@ fn session_shacl_fetch_strategy() {
             "{strategy}"
         );
     }
-    rudof
-        .validate_shacl(None, Some("everything"), false, None, false)
-        .unwrap_err();
+    assert!(
+        rudof
+            .validate_shacl(None, Some("everything"), false, None, false)
+            .is_err()
+    );
 }
 
 #[test]
@@ -300,9 +302,7 @@ fn session_shacl_reports_the_triples_read() {
 
     let report = rudof.validate_shacl(None, None, false, None, false).unwrap();
     assert_eq!(report.triples_read, None);
-    rudof
-        .validate_shacl(Some("sparql"), None, true, None, false)
-        .unwrap_err();
+    assert!(rudof.validate_shacl(Some("sparql"), None, true, None, false).is_err());
 }
 
 #[test]
@@ -335,9 +335,7 @@ fn session_shacl_reports_the_valid_and_invalid_subgraphs() {
     assert_eq!(plain.entries, report.entries);
     assert_eq!(plain.valid_subgraph, None);
     // The SPARQL engine reads the data through queries, not triples
-    rudof
-        .validate_shacl(Some("sparql"), None, false, None, true)
-        .unwrap_err();
+    assert!(rudof.validate_shacl(Some("sparql"), None, false, None, true).is_err());
 }
 
 #[test]
@@ -481,7 +479,7 @@ fn session_prefixes() {
     assert!(
         rudof
             .prefixes()
-            .contains(&("ex".to_owned(), "http://example.org/".to_owned()))
+            .contains(&("ex".to_string(), "http://example.org/".to_string()))
     );
     rudof.rename_prefix("ex", "example").unwrap();
     assert!(rudof.prefixes().iter().any(|(alias, _)| alias == "example"));
@@ -496,7 +494,7 @@ fn session_errors_without_loaded_state() {
     let err = rudof.validate_shex(false, None, false).unwrap_err();
     assert_eq!(err.name(), "ShExError", "{err}");
     rudof.reset_all();
-    rudof.validate_shacl(None, None, false, None, false).unwrap_err();
+    assert!(rudof.validate_shacl(None, None, false, None, false).is_err());
 }
 
 #[test]

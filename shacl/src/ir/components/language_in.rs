@@ -25,7 +25,7 @@ impl Display for LanguageIn {
         let langs = self
             .langs()
             .iter()
-            .map(ToString::to_string)
+            .map(|l| l.to_string())
             .collect::<Vec<_>>()
             .join(", ");
         write!(f, "LanguageIn: [{langs}]")

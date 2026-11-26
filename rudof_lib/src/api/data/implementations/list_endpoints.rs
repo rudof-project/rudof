@@ -4,7 +4,7 @@ pub fn list_endpoints(rudof: &mut Rudof) -> Result<Vec<(String, String)>> {
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if !data.is_rdf() {
-        return Err(Box::new(DataError::NoRdfDataLoaded).into());
+        Err(Box::new(DataError::NoRdfDataLoaded))?
     }
 
     // SPARQL endpoints are not available on wasm without the `jspi` feature, so

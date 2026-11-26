@@ -77,7 +77,9 @@ impl FromStr for NodeInspectionMode {
             "outgoing" => Ok(NodeInspectionMode::Outgoing),
             "incoming" => Ok(NodeInspectionMode::Incoming),
             "both" => Ok(NodeInspectionMode::Both),
-            other => Err(NodeInspectionError::UnsupportedNodeInspectionMode { mode: other.to_owned() }),
+            other => Err(NodeInspectionError::UnsupportedNodeInspectionMode {
+                mode: other.to_string(),
+            }),
         }
     }
 }

@@ -64,37 +64,31 @@ impl ShExFormatter {
         self.localname_color
     }
 
-    #[must_use]
     pub fn with_keyword_color(mut self, color: Option<Color>) -> ShExFormatter {
         self.keyword_color = color;
         self
     }
-    #[must_use]
     pub fn with_prefix_color(mut self, color: Option<Color>) -> ShExFormatter {
         self.prefix_color = color;
         self
     }
 
-    #[must_use]
     pub fn with_semicolon_color(mut self, color: Option<Color>) -> ShExFormatter {
         self.semicolon_color = color;
         self
     }
 
-    #[must_use]
     pub fn with_string_color(mut self, color: Option<Color>) -> ShExFormatter {
         self.string_color = color;
         self
     }
 
-    #[must_use]
     pub fn with_localname_color(mut self, color: Option<Color>) -> ShExFormatter {
         self.localname_color = color;
         self
     }
 
     /// Changes the formatter to avoid showing colors
-    #[must_use]
     pub fn without_colors(self) -> ShExFormatter {
         self.with_keyword_color(None)
             .with_localname_color(None)
@@ -114,7 +108,7 @@ impl ShExFormatter {
         printer.pretty_print()
     }
 
-    pub fn write_schema<W: io::Write>(&self, schema: &Schema, writer: &mut W) -> Result<(), io::Error> {
+    pub fn write_schema<W: std::io::Write>(&self, schema: &Schema, writer: &mut W) -> Result<(), std::io::Error> {
         let arena = Arena::<()>::new();
         let mut printer = ShExCompactPrinter::new(schema, &arena);
         printer = printer.with_keyword_color(self.keyword_color);
@@ -215,7 +209,7 @@ where
     }
 
     /// Writes a ShEx schema to a `std::io::Write` object
-    pub fn pretty_print_write<W: io::Write>(&self, writer: &mut W) -> Result<(), io::Error> {
+    pub fn pretty_print_write<W: io::Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         let doc = self.pp_schema();
         doc.render(self.width, writer)
     }
@@ -781,7 +775,7 @@ where
     fn pp_pattern(&self, pattern: &Pattern) -> DocBuilder<'a, Arena<'a, A>, A> {
         let flags = match &pattern.flags {
             Some(flags) => flags.clone(),
-            None => String::new(),
+            None => "".to_string(),
         };
         // '/' terminates the ShExC regexp literal, so any literal '/' in the
         // pattern (already unescaped by the parser, since it has no other
@@ -902,7 +896,7 @@ where
             NumericLiteral::Decimal(d) => self.pp_decimal(d),
             NumericLiteral::Double(d) => self.pp_double(d),
             NumericLiteral::Long(l) => self.pp_isize(&(*l as isize)),
-            NumericLiteral::Float(f) => self.pp_float(&f64::from(*f)),
+            NumericLiteral::Float(f) => self.pp_float(&(*f as f64)),
             NumericLiteral::Byte(b) => self.pp_byte(b),
             NumericLiteral::Short(s) => self.pp_short(s),
             NumericLiteral::NonNegativeInteger(n) => self.pp_non_negative_integer(n),
@@ -1024,7 +1018,7 @@ where
         U: Into<Cow<'a, str>>,
     {
         if let Some(color) = self.keyword_color {
-            let data: Cow<'_, str> = s.into();
+            let data: Cow<str> = s.into();
             let s: String = match data {
                 Cow::Owned(t) => t,
                 Cow::Borrowed(t) => t.into(),
@@ -1081,7 +1075,7 @@ where
     fn pp_prefix_map(&self) -> impl Fn(&PrefixMap, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |pm, printer| {
             let mut pms: Vec<DocBuilder<'a, Arena<'a, A>, A>> = Vec::new();
-            for (alias, iri) in pm.map.clone() {
+            for (alias, iri) in pm.map.clone().into_iter() {
                 pms.push(
                     printer
                         .doc
@@ -1121,7 +1115,7 @@ where
     ) -> DocBuilder<'a, Arena<'a, A>, A> {
         match maybe {
             None => self.doc.nil(),
-            Some(v) => pp(&v, self),
+            Some(ref v) => pp(v, self),
         }
     }
 
@@ -1137,7 +1131,7 @@ where
     }
 
     fn is_empty(&self, d: &DocBuilder<'a, Arena<'a, A>, A>) -> bool {
-        use pretty::Doc::{Annotated, FlatAlt, Group, Nest, Nil, Union};
+        use pretty::Doc::*;
         match &**d {
             Nil => true,
             FlatAlt(t1, t2) => Self::is_empty_ref(t1) && Self::is_empty_ref(t2),
@@ -1150,7 +1144,7 @@ where
     }
 
     fn is_empty_ref(rd: &RefDoc<'a, A>) -> bool {
-        use pretty::Doc::{Annotated, FlatAlt, Group, Nest, Nil, Union};
+        use pretty::Doc::*;
         match &**rd {
             Nil => true,
             FlatAlt(t1, t2) => Self::is_empty_ref(t1) && Self::is_empty_ref(t2),

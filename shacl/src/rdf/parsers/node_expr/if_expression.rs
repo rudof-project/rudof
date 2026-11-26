@@ -18,7 +18,7 @@ pub(crate) fn if_expresion<RDF: FocusRDF>(
 
             if then.is_none() && else_expr.is_none() {
                 return Err(RDFError::DefaultError {
-                    msg: "shnex:if requires at least one shnex:then or shnex:else".to_owned(),
+                    msg: "shnex:if requires at least one shnex:then or shnex:else".to_string(),
                 });
             }
 

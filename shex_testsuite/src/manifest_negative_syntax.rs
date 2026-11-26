@@ -73,12 +73,12 @@ impl Manifest for ManifestNegativeSyntax {
         _manifest_shex_syntax_mode: ManifestShExSyntaxMode,
     ) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_owned() })),
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => entry.run(base),
         }
     }
 
-    fn has_traits(&self, _name: &str) -> Result<Vec<String>, Box<ManifestError>> {
+    fn has_traits(&self, _name: &str) -> Result<Vec<std::string::String>, Box<ManifestError>> {
         Ok(Vec::new())
     }
 }

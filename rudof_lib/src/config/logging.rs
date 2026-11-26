@@ -38,7 +38,6 @@ impl LoggingConfig {
 
     /// Sets `level` and returns itself. `None` clears it back to deferring
     /// to `$RUST_LOG`.
-    #[must_use]
     pub fn with_level(mut self, level: Option<String>) -> Self {
         self.level = level.unwrap_or_default();
         self
@@ -88,7 +87,7 @@ mod tests {
 
     #[test]
     fn toml_round_trip() {
-        let c = LoggingConfig::default().with_level(Some("trace".to_owned()));
+        let c = LoggingConfig::default().with_level(Some("trace".to_string()));
         let s = c.to_toml_string().unwrap();
         let d = LoggingConfig::from_toml_str(&s).unwrap();
         assert_eq!(c, d);

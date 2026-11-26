@@ -87,8 +87,8 @@ pub enum ManifestError {
 
     #[error(
         "Expected Failure for entry {entry} but obtained passed status [{}]\nFailure status: [{}]",
-       passed_status.iter().map(shex_ast::shapemap::ValidationStatus::code).collect::<Vec<_>>().join(", "),
-       failed_status.iter().map(shex_ast::shapemap::ValidationStatus::code).collect::<Vec<_>>().join(", "))]
+       passed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "),
+       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "))]
     ExpectedFailureButObtained {
         failed_status: Vec<ValidationStatus>,
         passed_status: Vec<ValidationStatus>,
@@ -96,8 +96,8 @@ pub enum ManifestError {
     },
 
     #[error("Expected OK for {entry} but failed. Failed status are: [{}]\nPassed status are: [{}]",
-       failed_status.iter().map(shex_ast::shapemap::ValidationStatus::code).collect::<Vec<_>>().join(", "),
-       passed_status.iter().map(shex_ast::shapemap::ValidationStatus::code).collect::<Vec<_>>().join(", "))]
+       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "),
+       passed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "))]
     ExpectedOkButObtained {
         failed_status: Vec<ValidationStatus>,
         passed_status: Vec<ValidationStatus>,

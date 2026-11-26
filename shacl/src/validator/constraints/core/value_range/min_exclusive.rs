@@ -36,9 +36,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
             value_nodes,
             ValueNodeIteration,
             |n| match S::term_as_sliteral(n) {
-                Ok(lit) => lit
-                    .partial_cmp(self.min_exclusive())
-                    .is_none_or(std::cmp::Ordering::is_le),
+                Ok(lit) => lit.partial_cmp(self.min_exclusive()).map(|o| o.is_le()).unwrap_or(true),
                 Err(_) => true,
             },
             &format!("MinExclusive({}) not satisfied", self.min_exclusive()),
@@ -60,13 +58,14 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MinE
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
     ) -> Result<ValidationOutcome, ValidationError> {
-        let Some(threshold) = object_as_sparql(&Object::literal(self.min_exclusive().clone())) else {
-            return Ok(ValidationOutcome::new());
+        let threshold = match object_as_sparql(&Object::literal(self.min_exclusive().clone())) {
+            Some(s) => s,
+            None => return Ok(ValidationOutcome::new()),
         };
 
         let query_fn = |vn: &S::Term| -> Option<String> {
             if !vn.is_literal() {
-                return Some("ASK { FILTER(false) }".to_owned());
+                return Some("ASK { FILTER(false) }".to_string());
             }
             let vn_sparql = term_as_sparql::<S>(vn)?;
             Some(formatdoc! {"

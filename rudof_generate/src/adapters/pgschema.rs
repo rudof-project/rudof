@@ -129,11 +129,12 @@ impl PgSchemaToUnified {
             metrics.represented_constraints_in_unified += 1;
             let mut properties = Vec::new();
             for (key, value_type, required) in &parts.keys {
-                if let Some(property) = key_property(key, value_type, *required) {
-                    metrics.represented_constraints_in_unified += 1;
-                    properties.push(property);
-                } else {
-                    tracing::warn!("PG-Schema key {type_name}.{key} has an unsupported value type")
+                match key_property(key, value_type, *required) {
+                    Some(property) => {
+                        metrics.represented_constraints_in_unified += 1;
+                        properties.push(property);
+                    },
+                    None => tracing::warn!("PG-Schema key {type_name}.{key} has an unsupported value type"),
                 }
             }
             parts.labels.dedup();
@@ -142,7 +143,7 @@ impl PgSchemaToUnified {
             // (`sh:hasValue L` on `rdf:type`), so that all three generate the same data.
             for label in parts.labels.iter().skip(1) {
                 properties.push(UnifiedPropertyConstraint {
-                    property_iri: RDF_TYPE.to_owned(),
+                    property_iri: RDF_TYPE.to_string(),
                     constraints: vec![UnifiedConstraint::HasValue(Value::Iri(label_iri(label)))],
                     min_cardinality: Some(1),
                     max_cardinality: Some(1),
@@ -250,11 +251,11 @@ fn keys(value: &PropertyValue, parts: &mut NodeParts) -> bool {
         PropertyValue::Empty => true,
         PropertyValue::EachOf(a, b) => keys(a, parts) & keys(b, parts),
         PropertyValue::Property(key, spec) => {
-            parts.keys.push((key.str().to_owned(), spec.to_value_type(), true));
+            parts.keys.push((key.str().to_string(), spec.to_value_type(), true));
             true
         },
         PropertyValue::OptionalProperty(key, spec) => {
-            parts.keys.push((key.str().to_owned(), spec.to_value_type(), false));
+            parts.keys.push((key.str().to_string(), spec.to_value_type(), false));
             true
         },
         PropertyValue::OneOf(_, _) => false,

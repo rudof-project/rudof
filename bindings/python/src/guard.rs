@@ -42,11 +42,11 @@ where
 fn message(payload: &(dyn Any + Send)) -> String {
     let detail = payload
         .downcast_ref::<&'static str>()
-        .map(|s| (*s).to_owned())
+        .map(|s| (*s).to_string())
         .or_else(|| payload.downcast_ref::<String>().cloned());
 
     match detail {
         Some(detail) => format!("rudof panicked: {detail}"),
-        None => "rudof panicked with a non-string payload".to_owned(),
+        None => "rudof panicked with a non-string payload".to_string(),
     }
 }

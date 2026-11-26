@@ -15,7 +15,7 @@ pub(crate) fn match_all<RDF: FocusRDF>(
         .map(|term| {
             let match_all = term_to_iri_or_blanknode::<RDF>(&term)?;
             let nodes = optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_nodes(), rdf, depth, steps)?
-                .unwrap_or_else(|| ASTNodeExpr::Var("focusNode".to_owned()));
+                .unwrap_or_else(|| ASTNodeExpr::Var("focusNode".to_string()));
             Ok(ASTNodeExpr::MatchAll {
                 match_all,
                 nodes: nodes.into(),

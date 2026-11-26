@@ -9,7 +9,6 @@ use crate::{
     },
 };
 use rudof_rdf::rdf_impl::EndpointStrategy;
-use std::fmt::Write as _;
 
 /// Helper: serialize validation results to string
 fn serialize_validation_to_string(
@@ -30,7 +29,7 @@ fn test_validate_shacl_conforming_data() {
 
     // Load SHACL schema
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -48,7 +47,7 @@ fn test_validate_shacl_conforming_data() {
                 sh:datatype xsd:integer ;
                 sh:minCount 1 ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
@@ -91,7 +90,10 @@ fn test_validate_shacl_conforming_data() {
 
     assert!(result.contains("Conforms"));
 
-    println!("\n===== test_validate_shacl_conforming_data =====\n{result}============================================");
+    println!(
+        "\n===== test_validate_shacl_conforming_data =====\n{}============================================",
+        result
+    );
 }
 
 #[test]
@@ -100,7 +102,7 @@ fn test_validate_shacl_non_conforming_data() {
 
     // Load SHACL schema
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -118,7 +120,7 @@ fn test_validate_shacl_non_conforming_data() {
                 sh:datatype xsd:integer ;
                 sh:minCount 1 ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
@@ -160,7 +162,8 @@ fn test_validate_shacl_non_conforming_data() {
     assert!(result.contains("violations"));
 
     println!(
-        "\n===== test_validate_shacl_non_conforming_data =====\n{result}============================================"
+        "\n===== test_validate_shacl_non_conforming_data =====\n{}============================================",
+        result
     );
 }
 
@@ -170,7 +173,7 @@ fn test_validate_shacl_without_data() {
 
     // Load SHACL schema but no data
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -182,7 +185,7 @@ fn test_validate_shacl_without_data() {
                 sh:path ex:name ;
                 sh:datatype xsd:string ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
@@ -232,7 +235,7 @@ fn test_validate_shacl_datatype_violations() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -244,7 +247,7 @@ fn test_validate_shacl_datatype_violations() {
                 sh:path ex:age ;
                 sh:datatype xsd:integer ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
@@ -280,7 +283,8 @@ fn test_validate_shacl_datatype_violations() {
     assert!(result.contains("Does not conform"));
 
     println!(
-        "\n===== test_validate_shacl_datatype_violations =====\n{result}============================================"
+        "\n===== test_validate_shacl_datatype_violations =====\n{}============================================",
+        result
     );
 }
 
@@ -289,7 +293,7 @@ fn test_validate_shacl_min_max_violations() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -303,14 +307,14 @@ fn test_validate_shacl_min_max_violations() {
                 sh:minInclusive 0 ;
                 sh:maxInclusive 150 ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
 
     // Data violating min/max constraints
     let data = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
 
         ex:Alice
@@ -320,7 +324,7 @@ fn test_validate_shacl_min_max_violations() {
         ex:Bob
             a ex:Person ;
             ex:age -5 .
-        ",
+        "#,
     );
 
     load_data(
@@ -344,7 +348,8 @@ fn test_validate_shacl_min_max_violations() {
     assert!(result.contains("violations"));
 
     println!(
-        "\n===== test_validate_shacl_min_max_violations =====\n{result}============================================"
+        "\n===== test_validate_shacl_min_max_violations =====\n{}============================================",
+        result
     );
 }
 
@@ -406,7 +411,8 @@ fn test_validate_shacl_pattern_violations() {
     assert!(result.contains("Does not conform"));
 
     println!(
-        "\n===== test_validate_shacl_pattern_violations =====\n{result}============================================"
+        "\n===== test_validate_shacl_pattern_violations =====\n{}============================================",
+        result
     );
 }
 
@@ -415,7 +421,7 @@ fn test_validate_shacl_node_shape_violations() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -436,7 +442,7 @@ fn test_validate_shacl_node_shape_violations() {
                 sh:path ex:address ;
                 sh:node ex:AddressShape ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
@@ -476,7 +482,8 @@ fn test_validate_shacl_node_shape_violations() {
     assert!(result.contains("Does not conform"));
 
     println!(
-        "\n===== test_validate_shacl_node_shape_violations =====\n{result}============================================"
+        "\n===== test_validate_shacl_node_shape_violations =====\n{}============================================",
+        result
     );
 }
 
@@ -485,7 +492,7 @@ fn test_serialize_validation_results_compact() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -498,18 +505,18 @@ fn test_serialize_validation_results_compact() {
                 sh:datatype xsd:string ;
                 sh:minCount 1 ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
 
     let data = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
 
         ex:Alice
             a ex:Person .
-        ",
+        "#,
     );
 
     load_data(
@@ -533,7 +540,8 @@ fn test_serialize_validation_results_compact() {
     assert!(!result.is_empty());
 
     println!(
-        "\n===== test_serialize_validation_results_compact =====\n{result}============================================"
+        "\n===== test_serialize_validation_results_compact =====\n{}============================================",
+        result
     );
 }
 
@@ -542,7 +550,7 @@ fn test_serialize_validation_results_details() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -555,18 +563,18 @@ fn test_serialize_validation_results_details() {
                 sh:datatype xsd:string ;
                 sh:minCount 1 ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
 
     let data = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
 
         ex:Alice
             a ex:Person .
-        ",
+        "#,
     );
 
     load_data(
@@ -590,7 +598,8 @@ fn test_serialize_validation_results_details() {
     assert!(!result.is_empty());
 
     println!(
-        "\n===== test_serialize_validation_results_details =====\n{result}============================================"
+        "\n===== test_serialize_validation_results_details =====\n{}============================================",
+        result
     );
 }
 
@@ -599,7 +608,7 @@ fn test_serialize_validation_results_turtle() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -612,7 +621,7 @@ fn test_serialize_validation_results_turtle() {
                 sh:datatype xsd:string ;
                 sh:minCount 1 ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
@@ -649,7 +658,8 @@ fn test_serialize_validation_results_turtle() {
     assert!(result.contains("@prefix") || result.contains("sh:") || result.contains("ValidationReport"));
 
     println!(
-        "\n===== test_serialize_validation_results_turtle =====\n{result}============================================"
+        "\n===== test_serialize_validation_results_turtle =====\n{}============================================",
+        result
     );
 }
 
@@ -669,7 +679,7 @@ fn test_validate_shacl_with_validation_mode() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -682,7 +692,7 @@ fn test_validate_shacl_with_validation_mode() {
                 sh:datatype xsd:string ;
                 sh:minCount 1 ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
@@ -718,7 +728,8 @@ fn test_validate_shacl_with_validation_mode() {
     assert!(result.contains("Conforms"));
 
     println!(
-        "\n===== test_validate_shacl_with_validation_mode =====\n{result}============================================"
+        "\n===== test_validate_shacl_with_validation_mode =====\n{}============================================",
+        result
     );
 }
 
@@ -727,7 +738,7 @@ fn test_validate_multiple_violations() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -746,7 +757,7 @@ fn test_validate_multiple_violations() {
                 sh:minCount 1 ;
                 sh:minInclusive 0 ;
             ] .
-        ",
+        "#,
     );
 
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
@@ -790,7 +801,10 @@ fn test_validate_multiple_violations() {
     assert!(result.contains("Does not conform"));
     assert!(result.contains("violations"));
 
-    println!("\n===== test_validate_multiple_violations =====\n{result}============================================");
+    println!(
+        "\n===== test_validate_multiple_violations =====\n{}============================================",
+        result
+    );
 }
 
 /// Loads a fixed schema/data pair (one conforming node, one violating node)
@@ -799,7 +813,7 @@ fn validate_with_shacl_config(config: shacl::validator::ShaclConfig) -> shacl::v
     let mut rudof = Rudof::new(RudofConfig::default().with_shacl(config));
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -812,7 +826,7 @@ fn validate_with_shacl_config(config: shacl::validator::ShaclConfig) -> shacl::v
                 sh:datatype xsd:string ;
                 sh:minCount 1 ;
             ] .
-        ",
+        "#,
     );
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
 
@@ -920,7 +934,7 @@ fn reifier_shape_violation_is_not_masked_by_a_spurious_conforms_evidence() {
     let mut rudof = Rudof::new(RudofConfig::default().with_shacl(config));
 
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -941,7 +955,7 @@ fn reifier_shape_violation_is_not_masked_by_a_spurious_conforms_evidence() {
                 sh:minCount 1 ;
                 sh:maxCount 1 ;
             ] .
-        ",
+        "#,
     );
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
 
@@ -1056,8 +1070,8 @@ fn serve_sparql(turtle: &str) -> (String, std::sync::Arc<std::sync::Mutex<Vec<St
                         "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
                         body.len()
                     );
-                    drop(stream.write_all(head.as_bytes()));
-                    drop(stream.write_all(&body));
+                    let _ = stream.write_all(head.as_bytes());
+                    let _ = stream.write_all(&body);
                 });
             }
         });
@@ -1113,13 +1127,13 @@ fn is_full_scan(query: &str) -> bool {
 #[test]
 fn test_validate_shacl_endpoint_never_fetches_every_triple() {
     // The example from the report: a target node and a value on a path.
-    let shapes = "
+    let shapes = r#"
         prefix : <http://example.org/>
         prefix sh: <http://www.w3.org/ns/shacl#>
         :Person a sh:NodeShape ;
            sh:targetNode :q42 ;
            sh:property [ sh:path :p31 ; sh:hasValue :q5 ] .
-    ";
+    "#;
     let data = "prefix : <http://example.org/> :q42 :p31 :q5 . :q1 :p31 :q2 .";
     for mode in [ShaclValidationMode::Native, ShaclValidationMode::Sparql] {
         for strategy in [
@@ -1150,16 +1164,16 @@ fn test_validate_shacl_endpoint_by_shape_matches_on_demand_with_fewer_queries() 
          :acme a :Company .\n",
     );
     for i in 0..40 {
-        write!(data, ":p{i} a :Person ; :worksFor :acme").unwrap();
+        data.push_str(&format!(":p{i} a :Person ; :worksFor :acme"));
         if i != 7 {
-            write!(data, " ; :name \"Person {i}\"").unwrap();
+            data.push_str(&format!(" ; :name \"Person {i}\""));
         }
         if i < 39 {
-            write!(data, " ; :knows :p{}", i + 1).unwrap();
+            data.push_str(&format!(" ; :knows :p{}", i + 1));
         }
         data.push_str(" .\n");
     }
-    let shapes = "
+    let shapes = r#"
         prefix : <http://example.org/>
         prefix sh: <http://www.w3.org/ns/shacl#>
         prefix xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -1168,7 +1182,7 @@ fn test_validate_shacl_endpoint_by_shape_matches_on_demand_with_fewer_queries() 
            sh:property [ sh:path :name ; sh:minCount 1 ; sh:datatype xsd:string ] ;
            sh:property [ sh:path :worksFor ; sh:minCount 1 ; sh:class :Org ] ;
            sh:property [ sh:path :knows ; sh:node :PersonShape ] .
-    ";
+    "#;
 
     let (on_demand, on_demand_queries) =
         validate_shacl_against_endpoint(&data, shapes, shacl::validator::FetchStrategy::OnDemand);
@@ -1292,11 +1306,11 @@ fn test_validate_shacl_endpoint_strategies_agree_with_in_memory() {
 fn rudof_with_alice() -> Rudof {
     let mut rudof = Rudof::new(RudofConfig::default());
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         ex:S sh:targetNode ex:Alice ; sh:property [ sh:path ex:name ; sh:minCount 1 ] .
-        ",
+        "#,
     );
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
     let data = InputSpec::str(
@@ -1331,7 +1345,7 @@ fn test_validate_shacl_read_sink_is_for_that_run_only() {
 
     rudof
         .validate_shacl()
-        .with_read_sink(TriplesSink::new(Arc::clone(&sink)))
+        .with_read_sink(TriplesSink::new(sink.clone()))
         .execute()
         .unwrap();
     assert_eq!(sink.lock().unwrap().report().triples, 1);
@@ -1362,13 +1376,13 @@ fn test_validate_shacl_valid_and_invalid_sinks_split_the_triples_read() {
 
     let mut rudof = Rudof::new(RudofConfig::default());
     let schema = InputSpec::str(
-        "
+        r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         ex:S sh:targetNode ex:Alice, ex:Bob ;
              sh:property [ sh:path ex:name ; sh:datatype xsd:string ] .
-        ",
+        "#,
     );
     load_shacl_schema(&mut rudof, Some(&schema), Some(&ShaclFormat::Turtle), None, None).unwrap();
     let data = InputSpec::str(
@@ -1395,9 +1409,9 @@ fn test_validate_shacl_valid_and_invalid_sinks_split_the_triples_read() {
 
     rudof
         .validate_shacl()
-        .with_read_sink(TriplesSink::new(Arc::clone(&read)))
-        .with_valid_sink(TriplesSink::new(Arc::clone(&valid)))
-        .with_invalid_sink(TriplesSink::new(Arc::clone(&invalid)))
+        .with_read_sink(TriplesSink::new(read.clone()))
+        .with_valid_sink(TriplesSink::new(valid.clone()))
+        .with_invalid_sink(TriplesSink::new(invalid.clone()))
         .execute()
         .unwrap();
 

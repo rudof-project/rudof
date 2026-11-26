@@ -102,14 +102,14 @@ mod tests {
     fn insert_then_get_returns_the_cached_value() {
         let mut typing: ObservableTyping<i32, i32, String, String> = ObservableTyping::default();
         assert!(typing.get(&(1, 2)).is_none());
-        typing.insert((1, 2), Either::Right(vec!["ok".to_owned()]));
-        assert_eq!(typing.get(&(1, 2)), Some(&Either::Right(vec!["ok".to_owned()])));
+        typing.insert((1, 2), Either::Right(vec!["ok".to_string()]));
+        assert_eq!(typing.get(&(1, 2)), Some(&Either::Right(vec!["ok".to_string()])));
     }
 
     #[test]
     fn get_on_a_different_key_is_none() {
         let mut typing: ObservableTyping<i32, i32, String, String> = ObservableTyping::default();
-        typing.insert((1, 2), Either::Left(vec!["bad".to_owned()]));
+        typing.insert((1, 2), Either::Left(vec!["bad".to_string()]));
         assert!(typing.get(&(1, 3)).is_none());
         assert!(typing.get(&(2, 2)).is_none());
     }
@@ -128,12 +128,11 @@ mod tests {
     #[test]
     fn observer_is_notified_on_insert_with_the_right_key_and_value() {
         let observer = Arc::new(RecordingObserver::default());
-        let mut typing: ObservableTyping<i32, i32, String, String> =
-            ObservableTyping::new(Some(Arc::<RecordingObserver>::clone(&observer)));
-        typing.insert((7, 9), Either::Right(vec!["evidence".to_owned()]));
+        let mut typing: ObservableTyping<i32, i32, String, String> = ObservableTyping::new(Some(observer.clone()));
+        typing.insert((7, 9), Either::Right(vec!["evidence".to_string()]));
         let seen = observer.seen.lock().unwrap();
         assert_eq!(seen.len(), 1);
-        assert_eq!(seen[0], (7, 9, Either::Right(vec!["evidence".to_owned()])));
+        assert_eq!(seen[0], (7, 9, Either::Right(vec!["evidence".to_string()])));
     }
 
     #[test]

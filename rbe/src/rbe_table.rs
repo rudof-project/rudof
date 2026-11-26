@@ -11,6 +11,7 @@ use crate::Ref;
 use crate::Value;
 use crate::deriv_error::DerivError;
 use crate::match_cond::MatchKind;
+use crate::rbe_error;
 use crate::rbe_struct::RbeStruct;
 use crate::values::Values;
 use core::hash::Hash;
@@ -348,7 +349,7 @@ where
         SV: Fn(&V) -> String,
     {
         let rbe_str = self.rbe.inner_rbe().map(&|c| {
-            let key = &self.component_key[c];
+            let key = self.component_key.get(c).unwrap();
             let cond = self.component_cond.get(c).unwrap();
             format!("{} {}", show_key(key), cond.show())
         });
@@ -360,7 +361,7 @@ where
             .keys()
             .map(|k| {
                 let cond = self.find_cond(k).unwrap();
-                format!("{k} {cond}")
+                format!("{} {}", k, cond)
             })
             .collect::<Vec<_>>()
             .join(", ")
@@ -390,13 +391,15 @@ where
     type Item = (Component, K, MatchCond<K, V, R, Ctx, P>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        (self.current < self.table.component_counter).then(|| {
+        if self.current < self.table.component_counter {
             let c = Component::from(self.current);
             let cond = self.table.component_cond.get(&c).unwrap().clone();
-            let key = self.table.component_key[&c].clone();
+            let key = self.table.component_key.get(&c).unwrap().clone();
             self.current += 1;
-            (c, key, cond)
-        })
+            Some((c, key, cond))
+        } else {
+            None
+        }
     }
 }
 
@@ -457,7 +460,7 @@ where
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    type Item = Result<Pending<K, V, R>, RbeError<K, V, R, Ctx, P>>;
+    type Item = Result<Pending<K, V, R>, rbe_error::RbeError<K, V, R, Ctx, P>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
@@ -552,7 +555,7 @@ where
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    type Item = Result<Pending<K, V, R>, RbeError<K, V, R, Ctx, P>>;
+    type Item = Result<Pending<K, V, R>, rbe_error::RbeError<K, V, R, Ctx, P>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_state = self.state.next();
@@ -625,7 +628,7 @@ where
             ", Keys: [{}]",
             self.key_components
                 .iter()
-                .map(|(k, c)| format!("{k} -> {{{}}}", c.iter().map(ToString::to_string).join(" ")))
+                .map(|(k, c)| format!("{k} -> {{{}}}", c.iter().map(|c| c.to_string()).join(" ")))
                 .join(", ")
         )?;
         write!(
@@ -810,8 +813,8 @@ mod tests {
 
         assert_eq!(
             iter.next(),
-            Some(Err(RbeError::MsgError {
-                msg: "Value b!='a'".to_owned()
+            Some(Err(rbe_error::RbeError::MsgError {
+                msg: "Value b!='a'".to_string()
             }))
         );
     }

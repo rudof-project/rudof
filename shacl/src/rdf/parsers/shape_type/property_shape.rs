@@ -14,12 +14,12 @@ pub(crate) fn property_shape<RDF: FocusRDF + 'static>(
     budget: Arc<ParseBudget>,
 ) -> impl RDFNodeParse<RDF, Output = ASTPropertyShape> {
     FocusParser::new().then(move |focus: RDF::Term| {
-        let budget = Arc::clone(&budget);
+        let budget = budget.clone();
         HasTypeParser::new(ShaclVocab::sh_property_shape())
             .optional()
             .with(
                 ObjectParser::new()
-                    .and(path(Arc::clone(&budget)))
+                    .and(path(budget.clone()))
                     .then(move |(id, path)| SuccessParser::new(ASTPropertyShape::new(id, path))),
             )
             .then(move |ps| SetFocusParser::new(focus.clone()).with(SuccessParser::new(ps)))
@@ -46,16 +46,15 @@ pub(crate) fn property_shape<RDF: FocusRDF + 'static>(
             })
             .then(|ps| reifier_shape().flat_map(move |r_shape| Ok(ps.clone().with_reifier_shape(r_shape))))
             .then({
-                let budget = Arc::clone(&budget);
-                move |ps| targets(Arc::clone(&budget)).flat_map(move |ts| Ok(ps.clone().with_targets(ts)))
+                let budget = budget.clone();
+                move |ps| targets(budget.clone()).flat_map(move |ts| Ok(ps.clone().with_targets(ts)))
             })
             .then(move |ps| {
-                let budget = Arc::clone(&budget);
+                let budget = budget.clone();
                 property()
                     .flat_map(move |prop_shapes| Ok(ps.clone().with_property_shapes(prop_shapes)))
                     .then(move |ps_with_props| {
-                        components(Arc::clone(&budget))
-                            .flat_map(move |cs| Ok(ps_with_props.clone().with_components(cs)))
+                        components(budget.clone()).flat_map(move |cs| Ok(ps_with_props.clone().with_components(cs)))
                     })
             })
     })

@@ -19,7 +19,7 @@ fn create_simple_shacl_schema(temp_dir: &TempDir) -> PathBuf {
     let schema_path = temp_dir.path().join("test_shacl.ttl");
     std::fs::write(
         &schema_path,
-        "
+        r#"
 @prefix :       <http://example.org/> .
 @prefix sh:     <http://www.w3.org/ns/shacl#> .
 @prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
@@ -37,7 +37,7 @@ fn create_simple_shacl_schema(temp_dir: &TempDir) -> PathBuf {
    sh:maxCount 1;
    sh:datatype xsd:integer ;
   ] .
-    ",
+    "#,
     )
     .expect("Failed to write test SHACL schema");
     schema_path

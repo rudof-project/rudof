@@ -18,7 +18,6 @@ impl ServiceConfig {
         }
     }
 
-    #[must_use]
     pub fn with_base(mut self, iri: Option<IriS>) -> Self {
         self.base = iri;
         self
@@ -59,7 +58,7 @@ mod tests {
     #[test]
     fn partial_toml_fills_remaining_defaults() {
         let c = ServiceConfig::from_toml_str(r#"base_iri = "http://ex/""#).unwrap();
-        assert_eq!(c.base().map(rudof_iri::IriS::as_str), Some("http://ex/"));
+        assert_eq!(c.base().map(|i| i.as_str()), Some("http://ex/"));
     }
 
     #[test]

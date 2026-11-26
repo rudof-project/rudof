@@ -133,7 +133,7 @@ impl ShEx2Uml {
         }
         let mut uml_class = UmlClass::new(name.clone());
         if let Some(extends) = &shape.extends {
-            for e in extends {
+            for e in extends.iter() {
                 let extended_name = self.shape_label2name(e)?;
                 let label = UmlLabel::Class(extended_name.name());
                 let (extended_node, found) = self.current_uml.get_node_adding_label(&label);
@@ -147,16 +147,26 @@ impl ShEx2Uml {
         }
         if let Some(te) = &shape.expression {
             match &te.te {
-                TripleExpr::EachOf { expressions, .. } => {
+                TripleExpr::EachOf {
+                    id: _,
+                    expressions,
+                    min: _,
+                    max: _,
+                    sem_acts: _,
+                    annotations: _,
+                } => {
                     for e in expressions {
                         match &e.te {
                             TripleExpr::TripleConstraint {
+                                id: _,
+                                negated: _,
+                                inverse: _,
                                 predicate,
                                 value_expr,
                                 min,
                                 max,
+                                sem_acts: _,
                                 annotations,
-                                ..
                             } => {
                                 let pred_name = mk_name(predicate, annotations, &self.config, &self.current_prefixmap)?;
                                 let card = mk_card(min, max)?;
@@ -165,10 +175,12 @@ impl ShEx2Uml {
                                 } else {
                                     ValueConstraint::default()
                                 };
-                                if value_constraint == ValueConstraint::None {
-                                } else {
-                                    let entry = UmlEntry::new(pred_name, value_constraint, card);
-                                    uml_class.add_entry(entry)
+                                match value_constraint {
+                                    ValueConstraint::None => {},
+                                    _ => {
+                                        let entry = UmlEntry::new(pred_name, value_constraint, card);
+                                        uml_class.add_entry(entry)
+                                    },
                                 }
                             },
                             TripleExpr::EachOf { .. } => {
@@ -183,16 +195,26 @@ impl ShEx2Uml {
                         }
                     }
                 },
-                TripleExpr::OneOf { .. } => {
+                TripleExpr::OneOf {
+                    id: _,
+                    expressions: _,
+                    min: _,
+                    max: _,
+                    sem_acts: _,
+                    annotations: _,
+                } => {
                     todo!()
                 },
                 TripleExpr::TripleConstraint {
+                    id: _,
+                    negated: _,
+                    inverse: _,
                     predicate,
                     value_expr,
                     min,
                     max,
+                    sem_acts: _,
                     annotations,
-                    ..
                 } => {
                     let pred_name = mk_name(predicate, annotations, &self.config, &self.current_prefixmap)?;
                     let card = mk_card(min, max)?;
@@ -201,10 +223,12 @@ impl ShEx2Uml {
                     } else {
                         ValueConstraint::default()
                     };
-                    if value_constraint == ValueConstraint::None {
-                    } else {
-                        let entry = UmlEntry::new(pred_name, value_constraint, card);
-                        uml_class.add_entry(entry)
+                    match value_constraint {
+                        ValueConstraint::None => {},
+                        _ => {
+                            let entry = UmlEntry::new(pred_name, value_constraint, card);
+                            uml_class.add_entry(entry)
+                        },
                     }
                 },
                 TripleExpr::Ref(_) => todo!(),
@@ -380,7 +404,7 @@ impl ShEx2Uml {
                 }
                 UmlComponent::not(nodes.clone().into_iter().next().unwrap())
             },
-            UmlLabelType::Class => {
+            _ => {
                 return Err(ShEx2UmlError::not_implemented(
                     format!("internal error: component_for_all_references with label_type {label_type:?}").as_str(),
                 ));
@@ -538,7 +562,7 @@ fn get_label(
     prefixmap: &PrefixMap,
     config: &ShEx2UmlConfig,
 ) -> Result<Option<String>, PrefixMapError> {
-    for label in &config.annotation_label {
+    for label in config.annotation_label.iter() {
         if let Some(value) = find_annotation(annotations, label, prefixmap)? {
             return Ok(Some(object_value2string(&value)));
         }
@@ -619,22 +643,22 @@ fn string_facet2name(facet: &shex_ast::ast::xs_facet::StringFacet) -> Result<Nam
 fn numeric_facet2name(facet: &shex_ast::ast::xs_facet::NumericFacet) -> Result<Name, ShEx2UmlError> {
     match facet {
         shex_ast::ast::xs_facet::NumericFacet::MinInclusive(n) => {
-            Ok(Name::new(format!("minInclusive={n}").as_str(), None))
+            Ok(Name::new(format!("minInclusive={}", n).as_str(), None))
         },
         shex_ast::ast::xs_facet::NumericFacet::MinExclusive(n) => {
-            Ok(Name::new(format!("minExclusive={n}").as_str(), None))
+            Ok(Name::new(format!("minExclusive={}", n).as_str(), None))
         },
         shex_ast::ast::xs_facet::NumericFacet::MaxInclusive(n) => {
-            Ok(Name::new(format!("maxInclusive={n}").as_str(), None))
+            Ok(Name::new(format!("maxInclusive={}", n).as_str(), None))
         },
         shex_ast::ast::xs_facet::NumericFacet::MaxExclusive(n) => {
-            Ok(Name::new(format!("maxExclusive={n}").as_str(), None))
+            Ok(Name::new(format!("maxExclusive={}", n).as_str(), None))
         },
         shex_ast::ast::xs_facet::NumericFacet::TotalDigits(n) => {
-            Ok(Name::new(format!("totalDigits={n}").as_str(), None))
+            Ok(Name::new(format!("totalDigits={}", n).as_str(), None))
         },
         shex_ast::ast::xs_facet::NumericFacet::FractionDigits(n) => {
-            Ok(Name::new(format!("fractionDigits={n}").as_str(), None))
+            Ok(Name::new(format!("fractionDigits={}", n).as_str(), None))
         },
     }
 }
@@ -680,7 +704,7 @@ mod tests {
             ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
             UmlCardinality::OneOne,
         ));
-        let (person_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":Person".to_owned()));
+        let (person_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
         expected_uml
             .add_component(person_node, UmlComponent::class(person))
             .unwrap();
@@ -710,7 +734,7 @@ mod tests {
             ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
             UmlCardinality::OneOne,
         ));
-        let (person_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":Person".to_owned()));
+        let (person_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
         expected_uml
             .add_component(person_node, UmlComponent::class(person))
             .unwrap();
@@ -756,8 +780,8 @@ mod tests {
             ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
             UmlCardinality::OneOne,
         ));
-        let (person_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":Person".to_owned()));
-        let (company_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":Company".to_owned()));
+        let (person_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":Person".to_string()));
+        let (company_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":Company".to_string()));
 
         expected_uml
             .add_component(person_node, UmlComponent::class(person))
@@ -805,7 +829,7 @@ mod tests {
             },
             UmlCardinality::OneOne,
         ));
-        let (a_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":A".to_owned()));
+        let (a_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":A".to_string()));
 
         expected_uml.add_component(a_node, UmlComponent::class(a)).unwrap();
 
@@ -831,11 +855,11 @@ mod tests {
         let mut expected_uml = Uml::new();
 
         let a = UmlClass::new(Name::new(":A", Some("http://example.org/A")));
-        let (a_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":A".to_owned()));
+        let (a_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":A".to_string()));
         let b = UmlClass::new(Name::new(":B", Some("http://example.org/B")));
-        let (b_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":B".to_owned()));
+        let (b_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":B".to_string()));
         let c = UmlClass::new(Name::new(":C", Some("http://example.org/C")));
-        let (c_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":C".to_owned()));
+        let (c_node, _found) = expected_uml.get_node_adding_label(&UmlLabel::Class(":C".to_string()));
         let ors = BTreeSet::from([b_node, c_node]);
         let or = UmlComponent::or(ors.clone());
         let or_idx = expected_uml.get_logical_component_idx(&ors, &UmlLabelType::Or);

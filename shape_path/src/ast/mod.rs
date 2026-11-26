@@ -78,7 +78,6 @@ impl Step {
     }
 
     /// This step with `filter` added after its filters.
-    #[must_use]
     pub fn with_filter(mut self, filter: Filter) -> Self {
         self.filters.push(filter);
         self

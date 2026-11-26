@@ -37,7 +37,7 @@ pub fn load_data(
     let (data_format, reader_mode, base, merge) = init_defaults(rudof, data_format, reader_mode, base, merge)?;
     match (data, endpoint) {
         (Some(_data), Some(_endpoint)) => Err(Box::new(DataError::DataSourceSpec {
-            message: "Cannot specify both data and endpoint. Please choose one or the other.".to_owned(),
+            message: "Cannot specify both data and endpoint. Please choose one or the other.".to_string(),
         })
         .into()),
         (Some(data), None) => match data_format {
@@ -46,7 +46,7 @@ pub fn load_data(
         },
         (None, Some(endpoint)) => load_data_from_endpoint(rudof, endpoint, endpoint_strategy),
         (None, None) => Err(Box::new(DataError::DataSourceSpec {
-            message: "No data source specified. Please provide either data or an endpoint.".to_owned(),
+            message: "No data source specified. Please provide either data or an endpoint.".to_string(),
         })
         .into()),
     }
@@ -137,7 +137,7 @@ fn load_data_from_specs_rdf(
 fn load_user_prefixes(input_spec: &InputSpec) -> Result<PrefixMap> {
     if matches!(input_spec, InputSpec::Stdin) {
         return Err(RudofError::InputSpec(InputSpecError::InvalidInput {
-            error: "Stdin is not supported".to_owned(),
+            error: "Stdin is not supported".to_string(),
         }));
     }
     let mut pm = PrefixMap::new();
@@ -152,7 +152,7 @@ fn load_user_prefixes(input_spec: &InputSpec) -> Result<PrefixMap> {
         .map_err(|e| RudofError::InputSpec(InputSpecError::InvalidInput { error: e.to_string() }))?;
 
     // Maybe replace with https://www.w3.org/TR/turtle/#grammar-production-PN_PREFIX
-    let prefix_regex = Regex::new("^(.*) *: *<(.*)>$").unwrap();
+    let prefix_regex = Regex::new(r"^(.*) *: *<(.*)>$").unwrap();
 
     let mut add_prefix = |content: &str| {
         if let Some(captures) = prefix_regex.captures(content) {
@@ -166,14 +166,14 @@ fn load_user_prefixes(input_spec: &InputSpec) -> Result<PrefixMap> {
             Ok(())
         } else {
             Err(RudofError::InputSpec(InputSpecError::InvalidInput {
-                error: format!("Invalid prefix declaration: '{content}'"),
+                error: format!("Invalid prefix declaration: '{}'", content),
             }))
         }
     };
 
     match input_spec {
         InputSpec::Path(_) | InputSpec::Url(_) => {
-            let lines = content.split('\n');
+            let lines = content.split("\n");
             for line in lines {
                 let line = line.trim();
                 if line.is_empty() {
@@ -201,7 +201,7 @@ fn read_rdf_data<R: Read>(
     reader_mode: &DataReaderMode,
     merge: bool,
 ) -> Result<()> {
-    if !merge || rudof.data.is_none() || matches!(&rudof.data, Some(data) if data.is_pg()) {
+    if !merge || rudof.data.is_none() || matches!(rudof.data, Some(ref data) if data.is_pg()) {
         let rdf_data = init_rdf_data_with_config(rudof)?;
         rudof.data = Some(rdf_data);
     }
@@ -214,7 +214,7 @@ fn read_rdf_data<R: Read>(
         let mut content = String::new();
         data_reader.read_to_string(&mut content).map_err(|error| {
             Box::new(DataError::FailedParsingRdfData {
-                source_name: source_name.to_owned(),
+                source_name: source_name.to_string(),
                 format: data_format.to_string(),
                 base: base.to_string(),
                 reader_mode: reader_mode.to_string(),
@@ -242,7 +242,7 @@ fn read_rdf_data<R: Read>(
 
     parse_result.map_err(|error| {
         Box::new(DataError::FailedParsingRdfData {
-            source_name: source_name.to_owned(),
+            source_name: source_name.to_string(),
             format: data_format.to_string(),
             base: base.to_string(),
             reader_mode: reader_mode.to_string(),
@@ -254,8 +254,8 @@ fn read_rdf_data<R: Read>(
 }
 
 #[cfg(feature = "pgschema")]
-fn read_pg_data<R: Read>(rudof: &mut Rudof, data_reader: &mut R, source_name: &str, merge: bool) -> Result<()> {
-    if !merge || rudof.data.is_none() || matches!(&rudof.data, Some(data) if data.is_rdf()) {
+fn read_pg_data<R: io::Read>(rudof: &mut Rudof, data_reader: &mut R, source_name: &str, merge: bool) -> Result<()> {
+    if !merge || rudof.data.is_none() || matches!(rudof.data, Some(ref data) if data.is_rdf()) {
         rudof.data = Some(Data::empty_pg());
     }
 
@@ -263,7 +263,7 @@ fn read_pg_data<R: Read>(rudof: &mut Rudof, data_reader: &mut R, source_name: &s
 
     data_reader.read_to_string(&mut data_content).map_err(|error| {
         Box::new(DataError::DataSourceSpec {
-            message: format!("Failed to read data from '{source_name}': {error}"),
+            message: format!("Failed to read data from '{}': {error}", source_name),
         })
     })?;
 
@@ -271,10 +271,9 @@ fn read_pg_data<R: Read>(rudof: &mut Rudof, data_reader: &mut R, source_name: &s
         Ok(pg) => pg,
         Err(error) => {
             return Err(Box::new(DataError::FailedParsingPgData {
-                source_name: source_name.to_owned(),
+                source_name: source_name.to_string(),
                 error: error.to_string(),
-            })
-            .into());
+            }))?;
         },
     };
 
@@ -299,35 +298,40 @@ fn load_data_from_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint_strat
 fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<OxigraphEndpoint> {
     let rdf_data = rudof.data.as_mut().unwrap().unwrap_rdf_mut();
 
-    if let Some(endpoint) = rdf_data.find_endpoint(endpoint_str) {
-        Ok(endpoint)
-    } else {
-        let normalized_endpoint = normalize_endpoint_id(endpoint_str);
-        if let Some(endpoint) = rdf_data.endpoints().iter().find_map(|(name, endpoint)| {
-            let endpoint_iri = endpoint.iri().as_str();
-            let matches_name = normalize_endpoint_id(name) == normalized_endpoint;
-            let matches_iri = normalize_endpoint_id(endpoint_iri) == normalized_endpoint;
-            (matches_name || matches_iri).then(|| endpoint.clone())
-        }) {
-            return Ok(endpoint);
-        }
+    match rdf_data.find_endpoint(endpoint_str) {
+        Some(endpoint) => Ok(endpoint),
+        None => {
+            let normalized_endpoint = normalize_endpoint_id(endpoint_str);
+            if let Some(endpoint) = rdf_data.endpoints().iter().find_map(|(name, endpoint)| {
+                let endpoint_iri = endpoint.iri().as_str();
+                let matches_name = normalize_endpoint_id(name) == normalized_endpoint;
+                let matches_iri = normalize_endpoint_id(endpoint_iri) == normalized_endpoint;
+                if matches_name || matches_iri {
+                    Some(endpoint.clone())
+                } else {
+                    None
+                }
+            }) {
+                return Ok(endpoint);
+            }
 
-        let iri = IriS::from_str(endpoint_str).map_err(|error| {
-            Box::new(DataError::InvalidEndpoint {
-                endpoint: endpoint_str.to_owned(),
-                error: (error.to_string()),
-            })
-        })?;
+            let iri = IriS::from_str(endpoint_str).map_err(|error| {
+                Box::new(DataError::InvalidEndpoint {
+                    endpoint: (endpoint_str.to_string()),
+                    error: (error.to_string()),
+                })
+            })?;
 
-        let endpoint = OxigraphEndpoint::new(&iri, &PrefixMap::new()).map_err(|error| {
-            Box::new(DataError::InvalidEndpoint {
-                endpoint: endpoint_str.to_owned(),
-                error: error.to_string(),
-            })
-        })?;
+            let endpoint = OxigraphEndpoint::new(&iri, &PrefixMap::new()).map_err(|error| {
+                Box::new(DataError::InvalidEndpoint {
+                    endpoint: endpoint_str.to_string(),
+                    error: error.to_string(),
+                })
+            })?;
 
-        // Not a registered endpoint, so only the config-wide defaults apply.
-        Ok(endpoint.with_limits(rudof.config.rdf_data().endpoint_limits()))
+            // Not a registered endpoint, so only the config-wide defaults apply.
+            Ok(endpoint.with_limits(rudof.config.rdf_data().endpoint_limits()))
+        },
     }
 }
 
@@ -390,19 +394,19 @@ pub fn load_data_via_qlever(
     // Pg is the only non-RDF DataFormat; reject it before we try anything.
     if matches!(data_format, Some(DataFormat::Pg)) {
         return Err(Box::new(DataError::NonRdfFormat {
-            format: "pg".to_owned(),
+            format: "pg".to_string(),
         })
         .into());
     }
 
     let inputs = data.ok_or_else(|| {
         Box::new(DataError::DataSourceSpec {
-            message: "--backend qlever requires at least one --data input".to_owned(),
+            message: "--backend qlever requires at least one --data input".to_string(),
         })
     })?;
     if inputs.is_empty() {
         return Err(Box::new(DataError::DataSourceSpec {
-            message: "--backend qlever requires at least one --data input".to_owned(),
+            message: "--backend qlever requires at least one --data input".to_string(),
         })
         .into());
     }

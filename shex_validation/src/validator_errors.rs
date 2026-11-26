@@ -18,18 +18,13 @@ impl ValidatorErrors {
 
     /// See [`ValidatorError::without_nested_references`].
     pub(crate) fn without_nested_references(&self) -> ValidatorErrors {
-        ValidatorErrors::new(
-            self.errs
-                .iter()
-                .map(ValidatorError::without_nested_references)
-                .collect(),
-        )
+        ValidatorErrors::new(self.errs.iter().map(|e| e.without_nested_references()).collect())
     }
 }
 
 impl Display for ValidatorErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for err in &self.errs {
+        for err in self.errs.iter() {
             writeln!(f, "  {err}")?;
         }
         Ok(())

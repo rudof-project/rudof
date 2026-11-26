@@ -29,7 +29,7 @@ pub fn resolve_prefixed_resource(
         endpoint_prefixes.filter(|pm| pm.find(alias).is_some())?
     };
 
-    pm.resolve_prefix_local(alias.to_owned(), local.to_owned())
+    pm.resolve_prefix_local(alias.to_string(), local.to_string())
         .ok()
         .map(|iri| iri.to_string())
 }

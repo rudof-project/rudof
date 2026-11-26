@@ -28,9 +28,9 @@ pub struct ConnectionDetails {
 impl ConnectionDetails {
     pub fn to_toml_string(&self) -> Result<String> {
         let mut map = toml::map::Map::new();
-        map.insert("backend".to_owned(), toml::Value::String(self.backend.clone()));
-        map.insert("path".to_owned(), toml::Value::String(self.path.display().to_string()));
-        map.insert("read_only".to_owned(), toml::Value::Boolean(self.read_only));
+        map.insert("backend".to_string(), toml::Value::String(self.backend.clone()));
+        map.insert("path".to_string(), toml::Value::String(self.path.display().to_string()));
+        map.insert("read_only".to_string(), toml::Value::Boolean(self.read_only));
         toml::to_string_pretty(&toml::Value::Table(map)).context("Failed to serialize connection details")
     }
 
@@ -40,7 +40,7 @@ impl ConnectionDetails {
             .get("backend")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow!("Connection details file is missing 'backend'"))?
-            .to_owned();
+            .to_string();
         if backend != "lbug" {
             return Err(anyhow!("Unsupported backend '{backend}' in connection details"));
         }
@@ -50,7 +50,7 @@ impl ConnectionDetails {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| anyhow!("Connection details file is missing 'path'"))?,
         );
-        let read_only = value.get("read_only").and_then(toml::Value::as_bool).unwrap_or(false);
+        let read_only = value.get("read_only").and_then(|v| v.as_bool()).unwrap_or(false);
         Ok(Self {
             backend,
             path,
@@ -70,7 +70,9 @@ impl ConnectionDetails {
     /// Returns `None` when no connection details file can be found, so that
     /// callers can report a helpful error.
     pub fn load(file: Option<&Path>) -> Result<Option<Self>> {
-        let path = file.map_or_else(|| PathBuf::from(DEFAULT_CONNECTION_FILE), Path::to_path_buf);
+        let path = file
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| PathBuf::from(DEFAULT_CONNECTION_FILE));
         if !path.exists() {
             return Ok(None);
         }
@@ -86,7 +88,7 @@ impl ConnectionDetails {
     pub fn resolve(db: Option<&Path>, connection_file: Option<&Path>) -> Result<Self> {
         if let Some(db_path) = db {
             return Ok(Self {
-                backend: "lbug".to_owned(),
+                backend: "lbug".to_string(),
                 path: db_path.to_path_buf(),
                 read_only: false,
             });

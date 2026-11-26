@@ -54,61 +54,51 @@ impl IRNodeShape {
         }
     }
 
-    #[must_use]
     pub fn with_components(mut self, components: Vec<IRComponent>) -> Self {
         self.components = components;
         self
     }
 
-    #[must_use]
     pub fn with_targets(mut self, targets: Vec<IRTarget>) -> Self {
         self.targets = targets;
         self
     }
 
-    #[must_use]
     pub fn with_property_shapes(mut self, property_shapes: Vec<ShapeLabelIdx>) -> Self {
         self.property_shapes = property_shapes;
         self
     }
 
-    #[must_use]
     pub fn with_closed_info(mut self, closed_info: ClosedInfo) -> Self {
         self.closed_info = closed_info;
         self
     }
 
-    #[must_use]
     pub fn with_deactivated(mut self, deactivated: Option<IRNodeExpr>) -> Self {
         self.deactivated = deactivated;
         self
     }
 
-    #[must_use]
     pub fn with_severity(mut self, severity: Option<Severity>) -> Self {
         self.severity = severity;
         self
     }
 
-    #[must_use]
     pub fn with_name(mut self, name: Option<MessageMap>) -> Self {
         self.name = name;
         self
     }
 
-    #[must_use]
     pub fn with_description(mut self, description: Option<MessageMap>) -> Self {
         self.description = description;
         self
     }
 
-    #[must_use]
     pub fn with_group(mut self, group: Option<Object>) -> Self {
         self.group = group;
         self
     }
 
-    #[must_use]
     pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
         self.message = message;
         self
@@ -309,7 +299,7 @@ impl Display for IRNodeShape {
         }
 
         if let Some(deactivated) = self.deactivated() {
-            writeln!(f, " Deactivated: {deactivated}")?;
+            writeln!(f, " Deactivated: {}", deactivated)?;
         }
         if self.severity() != &Severity::Violation {
             writeln!(f, " Severity: {}", self.severity())?;
@@ -336,7 +326,7 @@ impl Display for IRNodeShape {
             writeln!(
                 f,
                 " Property Shapes: [{}]",
-                property_shapes.map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                property_shapes.map(|ps| ps.to_string()).collect::<Vec<_>>().join(", ")
             )?;
         }
         Ok(())

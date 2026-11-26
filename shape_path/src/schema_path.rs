@@ -6,7 +6,6 @@ use super::{Attribute, AttributeOrAny, Axis, Filter, ShExPath, Step};
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
-use std::fmt::Write as _;
 use std::fmt::{self, Display};
 
 /// Where a [`SchemaPath`] starts.
@@ -71,7 +70,6 @@ impl SchemaPath {
     }
 
     /// This path followed by `step`.
-    #[must_use]
     pub fn with_step(mut self, step: SchemaStep) -> Self {
         self.steps.push(step);
         self
@@ -119,7 +117,7 @@ impl SchemaPath {
     fn show(&self, show_iri: impl Fn(&IriS) -> String) -> String {
         let mut out = match &self.root {
             SchemaPathRoot::Shape(label) => format!("@{}", show_iri(label)),
-            SchemaPathRoot::Start => "/start".to_owned(),
+            SchemaPathRoot::Start => "/start".to_string(),
             SchemaPathRoot::TripleExpr(label) => format!("${}", show_iri(label)),
         };
         for step in &self.steps {
@@ -128,11 +126,11 @@ impl SchemaPath {
                     out.push('~');
                     out.push_str(&show_iri(predicate));
                     if let Some(nth) = nth {
-                        write!(out, "/self::[{nth}]").unwrap();
+                        out.push_str(&format!("/self::[{nth}]"));
                     }
                 },
                 SchemaStep::ValueExpr => out.push_str("/valueExpr"),
-                SchemaStep::Operand(i) => write!(out, "/shapeExprs/*[{i}]").unwrap(),
+                SchemaStep::Operand(i) => out.push_str(&format!("/shapeExprs/*[{i}]")),
                 SchemaStep::Negated => out.push_str("/shapeExpr"),
             }
         }

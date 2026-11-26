@@ -140,8 +140,7 @@ fn the_filter_examples_of_the_spec() {
         all
     );
     assert_eq!(selects(&doc, &format!("{ISSUE_CONSTRAINTS}[assert count() = 4]")), all);
-    doc.select(&format!("{ISSUE_CONSTRAINTS}[assert count() = 5]"))
-        .unwrap_err();
+    assert!(doc.select(&format!("{ISSUE_CONSTRAINTS}[assert count() = 5]")).is_err());
     assert_eq!(selects(&doc, "/shapes/*[0]"), ["/shapes/0"]);
     assert_eq!(
         selects(&doc, "/shapes/*[id = <#IssueShape>][assert count() = 1]/shapeExpr"),

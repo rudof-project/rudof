@@ -39,7 +39,7 @@ impl SparqlQuery {
     pub fn new(source: &str) -> Result<Self, SparqlSyntaxError> {
         let query = SparqlParser::new().parse_query(source)?;
         Ok(SparqlQuery {
-            source: source.to_owned(),
+            source: source.to_string(),
             query,
         })
     }

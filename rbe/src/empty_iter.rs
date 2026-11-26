@@ -1,7 +1,7 @@
 use crate::match_cond::MatchKind;
 use crate::{
     Component, Context, Key, MatchCond, Pending, RbeError, RbeStruct, RbeTable, Ref, Value, Values, rbe::Rbe,
-    rbe_cond::RbeCond,
+    rbe_cond::RbeCond, rbe_error,
 };
 use core::hash::Hash;
 use serde::Serialize;
@@ -47,7 +47,7 @@ where
     Ctx: Context,
     P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    type Item = Result<Pending<K, V, R>, RbeError<K, V, R, Ctx, P>>;
+    type Item = Result<Pending<K, V, R>, rbe_error::RbeError<K, V, R, Ctx, P>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_first {
@@ -178,7 +178,7 @@ mod tests {
                 assert_eq!(key, 1);
                 assert_eq!(card, Cardinality::from(Min::from(1), Max::IntMax(3)));
             },
-            other => panic!("Expected Symbol, got {other:?}"),
+            other => panic!("Expected Symbol, got {:?}", other),
         }
     }
 
@@ -193,7 +193,7 @@ mod tests {
                 assert_eq!(exprs[0], RbeCond::Empty);
                 assert!(matches!(exprs[1], RbeCond::Symbol { .. }));
             },
-            other => panic!("Expected And, got {other:?}"),
+            other => panic!("Expected And, got {:?}", other),
         }
     }
 
@@ -208,7 +208,7 @@ mod tests {
                 assert_eq!(exprs[0], RbeCond::Empty);
                 assert!(matches!(exprs[1], RbeCond::Symbol { .. }));
             },
-            other => panic!("Expected Or, got {other:?}"),
+            other => panic!("Expected Or, got {:?}", other),
         }
     }
 
@@ -221,7 +221,7 @@ mod tests {
             RbeCond::Star { expr } => {
                 assert!(matches!(*expr, RbeCond::Symbol { .. }));
             },
-            other => panic!("Expected Star, got {other:?}"),
+            other => panic!("Expected Star, got {:?}", other),
         }
     }
 
@@ -234,7 +234,7 @@ mod tests {
             RbeCond::Plus { expr } => {
                 assert!(matches!(*expr, RbeCond::Symbol { .. }));
             },
-            other => panic!("Expected Plus, got {other:?}"),
+            other => panic!("Expected Plus, got {:?}", other),
         }
     }
 
@@ -248,7 +248,7 @@ mod tests {
                 assert!(matches!(*expr, RbeCond::Symbol { .. }));
                 assert_eq!(card, Cardinality::from(Min::from(2), Max::IntMax(5)));
             },
-            other => panic!("Expected Repeat, got {other:?}"),
+            other => panic!("Expected Repeat, got {:?}", other),
         }
     }
 
@@ -276,7 +276,7 @@ mod tests {
                 assert!(matches!(exprs[0], RbeCond::Or { .. }));
                 assert_eq!(exprs[1], RbeCond::Empty);
             },
-            other => panic!("Expected And, got {other:?}"),
+            other => panic!("Expected And, got {:?}", other),
         }
     }
 }

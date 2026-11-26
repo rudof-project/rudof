@@ -23,11 +23,11 @@ pub enum ConfigError {
 impl Config {
     pub fn from_file(file_name: &str) -> Result<Config, ConfigError> {
         let config_str = fs::read_to_string(file_name).map_err(|e| ConfigError::ReadingConfigError {
-            path_name: file_name.to_owned(),
+            path_name: file_name.to_string(),
             error: e,
         })?;
         toml::from_str::<Config>(&config_str).map_err(|e| ConfigError::TomlError {
-            path_name: file_name.to_owned(),
+            path_name: file_name.to_string(),
             error: e,
         })
     }
@@ -50,7 +50,7 @@ mod tests {
         "#;
         let sample = Config {
             manifest_mode: ManifestMode::Schemas,
-            excluded_entries: vec!["entry1".to_owned(), "entry2".to_owned()],
+            excluded_entries: vec!["entry1".to_string(), "entry2".to_string()],
             single_entries: None,
             manifest_shex_syntax_mode: None,
         };

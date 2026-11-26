@@ -16,7 +16,7 @@ impl SourceIdx {
 }
 
 impl Display for SourceIdx {
-    fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         write!(dest, "{}", self.0)
     }
 }

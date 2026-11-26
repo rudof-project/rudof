@@ -42,7 +42,7 @@ impl PyStaging {
     fn __enter__(&mut self, py: Python<'_>) -> Result<Py<PyRudof>> {
         if self.depth.is_some() {
             return Err(Box::new(CoreDataError::NoStagingFrame {
-                operation: "re-entering the same Staging object".to_owned(),
+                operation: "re-entering the same Staging object".to_string(),
             })
             .into());
         }
@@ -95,7 +95,7 @@ impl PyStaging {
     fn __repr__(&self) -> String {
         match self.depth {
             Some(depth) => format!("Staging(depth={depth})"),
-            None => "Staging()".to_owned(),
+            None => "Staging()".to_string(),
         }
     }
 }

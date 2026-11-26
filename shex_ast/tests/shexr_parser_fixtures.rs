@@ -35,8 +35,8 @@ fn shexr_parser_matches_shextest_schemas_corpus() {
     );
 
     let mut supported: Vec<String> = Vec::new();
-    let mut skipped = 0_usize;
-    let mut unverifiable_imports = 0_usize;
+    let mut skipped = 0usize;
+    let mut unverifiable_imports = 0usize;
 
     for entry in &entries {
         let ttl_path = dir.join(&entry.ttl);

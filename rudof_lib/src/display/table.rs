@@ -2,7 +2,6 @@ use crate::display::Color;
 use colored::{ColoredString, Colorize};
 use prefixmap::PrefixMap;
 use shacl::validator::report::{ValidationReport, ValidationResult};
-use std::fmt::Write as _;
 use std::io::{Error, Write};
 use tabled::builder::Builder;
 use tabled::settings::object::Segment;
@@ -17,7 +16,7 @@ pub trait Table {
         detailed: Option<bool>,
         colored: Option<bool>,
         termial_width: Option<usize>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), std::io::Error>;
 }
 
 impl Table for ValidationReport {
@@ -60,10 +59,9 @@ impl Table for ValidationReport {
 
         for result in self.results() {
             let severity_str = pm.qualify(&result.severity().into());
-            let severity = if colored {
-                severity_str.color(result.severity().color())
-            } else {
-                ColoredString::from(severity_str)
+            let severity = match colored {
+                true => severity_str.color(result.severity().color()),
+                false => ColoredString::from(severity_str),
             }
             .to_string();
             let node = self.nodes_prefixmap().show(result.focus_node());
@@ -79,8 +77,8 @@ impl Table for ValidationReport {
                     .message()
                     .iter()
                     .fold(String::new(), |acc, (lang, msg)| match lang {
-                        None => format!("{acc}- {msg}\n"),
-                        Some(lang) => format!("{acc}- {lang}: {msg}\n"),
+                        None => format!("{}- {}\n", acc, msg),
+                        Some(lang) => format!("{}- {}: {}\n", acc, lang, msg),
                     });
                 if !result.details().is_empty() {
                     details.push_str("Caused by (sh:detail):\n");
@@ -97,10 +95,9 @@ impl Table for ValidationReport {
         // since evidence isn't a violation.
         for evidence in self.evidences() {
             let status_str = "Conforms";
-            let status = if colored {
-                status_str.green()
-            } else {
-                ColoredString::from(status_str)
+            let status = match colored {
+                true => status_str.green(),
+                false => ColoredString::from(status_str),
             }
             .to_string();
             let node = self.nodes_prefixmap().show(evidence.focus_node());
@@ -113,7 +110,10 @@ impl Table for ValidationReport {
 
             if detailed {
                 let details = format!("- {component} satisfied\n");
-                let details = if colored { details.green().to_string() } else { details };
+                let details = match colored {
+                    true => details.green().to_string(),
+                    false => details,
+                };
                 record.push(details);
             }
             builder.push_record(record);
@@ -133,21 +133,19 @@ impl Table for ValidationReport {
 fn write_nested_results(out: &mut String, results: &[ValidationResult], pm: &PrefixMap, depth: usize) {
     let indent = "  ".repeat(depth);
     for result in results {
-        write!(
-            out,
+        out.push_str(&format!(
             "{indent}- {} {}",
             pm.show(result.focus_node()),
             pm.show(result.constraint_component())
-        )
-        .unwrap();
+        ));
         if let Some(path) = result.path() {
-            write!(out, " path: {}", pm.show(&Some(path))).unwrap();
+            out.push_str(&format!(" path: {}", pm.show(&Some(path))));
         }
         if let Some(value) = result.value() {
-            write!(out, " value: {}", pm.show(value)).unwrap();
+            out.push_str(&format!(" value: {}", pm.show(value)));
         }
         if let Some(source) = result.source() {
-            write!(out, " shape: {}", pm.show(source)).unwrap();
+            out.push_str(&format!(" shape: {}", pm.show(source)));
         }
         out.push('\n');
         write_nested_results(out, result.details(), pm, depth + 1);

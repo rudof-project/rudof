@@ -24,7 +24,7 @@ impl SemAct {
 }
 
 impl Display for SemAct {
-    fn fmt(&self, dest: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         write!(
             dest,
             "SemAct(name: {}, code: {})",

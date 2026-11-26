@@ -11,7 +11,7 @@ use std::str::FromStr;
 fn core() {
     let mut rudof = Rudof::new(RudofConfig::default());
     let version = rudof.version().execute();
-    println!("Rudof version: {version}");
+    println!("Rudof version: {}", version);
     rudof.update_config(RudofConfig::default());
     rudof.reset_all().execute();
 }
@@ -20,11 +20,11 @@ fn data_rdf() {
     let mut rudof = Rudof::new(RudofConfig::default());
     let rdf_data_input = vec![
         InputSpec::from_str(
-            "
+            r#"
             @prefix ex: <http://example.org/> .
             ex:alice a ex:Person ;
                 ex:age 30 .
-        ",
+        "#,
         )
         .unwrap(),
     ];
@@ -45,7 +45,7 @@ fn data_rdf() {
         .unwrap();
 
     let node = "ex:alice";
-    let predicates = vec!["ex:age".to_owned()];
+    let predicates = vec!["ex:age".to_string()];
     rudof
         .show_node_info(node, &mut std::io::stdout())
         .with_show_node_mode(&NodeInspectionMode::Outgoing)
@@ -88,14 +88,14 @@ fn data_endpoint() {
 
     let endpoints = rudof.list_endpoints().execute().unwrap();
     for (name, url) in endpoints {
-        println!("{name}, {url}");
+        println!("{}, {}", name, url);
     }
 }
 
 fn data_service_description() {
     let mut rudof = Rudof::new(RudofConfig::default());
     let service_description_input = InputSpec::from_str(
-        "
+        r#"
             @prefix sd: <http://www.w3.org/ns/sparql-service-description#> .
             @prefix ent: <http://www.w3.org/ns/entailment/> .
 
@@ -103,7 +103,7 @@ fn data_service_description() {
                 sd:endpoint <http://example.org/sparql> ;
                 sd:supportedLanguage sd:SPARQL11Query ;
                 sd:defaultEntailmentRegime ent:Simple .
-        ",
+        "#,
     )
     .unwrap();
 
@@ -144,13 +144,13 @@ fn shex() {
         .unwrap();
 
     let shex_schema_input = InputSpec::from_str(
-        "
+        r#"
             PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
             <PersonShape> {
                 <name> xsd:string ;
                 <age> xsd:integer
             }
-        ",
+        "#,
     )
     .unwrap();
     let base_shapes = "http://example.org/";
@@ -288,12 +288,12 @@ fn pgschema() {
         .unwrap();
 
     let pg_schema_input = InputSpec::from_str(
-        "
+        r#"
             CREATE NODE TYPE ( AdultStudentType: Student {
                 name: STRING ,
                 age: INTEGER CHECK > 18
             })
-        ",
+        "#,
     )
     .unwrap();
 
@@ -310,10 +310,10 @@ fn pgschema() {
         .unwrap();
 
     let typemap_input = InputSpec::from_str(
-        "
+        r#"
             n1: AdultStudentType,
             n2_wrong: AdultStudentType
-        ",
+        "#,
     )
     .unwrap();
 
@@ -361,7 +361,7 @@ fn query() {
         .unwrap();
 
     let query_input = InputSpec::from_str(
-        "
+        r#"
             prefix : <http://example.org/>
             prefix schema: <http://schema.org/>
 
@@ -369,7 +369,7 @@ fn query() {
               ?person schema:name ?name ;
                       :status ?status .
             }
-        ",
+        "#,
     )
     .unwrap();
 
@@ -396,11 +396,11 @@ fn query() {
 fn dctap() {
     let mut rudof = Rudof::new(RudofConfig::default());
     let dctap_input = InputSpec::from_str(
-        "shapeID,propertyID,mandatory,repeatable,valueDataType
+        r#"shapeID,propertyID,mandatory,repeatable,valueDataType
 :Person,rdf:type,true,false,
 :Person,schema:name,true,false,xsd:string
 :Person,schema:age,false,false,xsd:integer
-",
+"#,
     )
     .unwrap();
 
@@ -490,7 +490,7 @@ async fn main() {
     query();
     dctap();
     rdf_config();
-    Box::pin(generation()).await;
+    generation().await;
     prefixes();
     println!("ALL OK");
 }

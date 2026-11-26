@@ -36,7 +36,7 @@ impl RdfConfigModel {
         Ok(())
     }
 
-    pub fn from_reader<R: Read>(reader: R, source_name: String) -> Result<RdfConfigModel, RdfConfigError> {
+    pub fn from_reader<R: std::io::Read>(reader: R, source_name: String) -> Result<RdfConfigModel, RdfConfigError> {
         let mut reader = std::io::BufReader::new(reader);
         let mut buf = String::new();
         reader

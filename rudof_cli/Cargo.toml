@@ -6,6 +6,7 @@ description.workspace = true
 documentation = "https://rudof-project.github.io/rudof"
 edition.workspace = true
 license.workspace = true
+homepage.workspace = true
 repository.workspace = true
 
 [[bin]]
@@ -72,6 +73,3 @@ assets = [
     { source = "../LICENSE-MIT", dest = "/usr/share/doc/rudof/LICENSE-MIT", mode = "644", doc = true },
     { source = "../LICENSE-APACHE", dest = "/usr/share/doc/rudof/LICENSE-APACHE", mode = "644", doc = true },
 ]
-
-[lints]
-workspace = true

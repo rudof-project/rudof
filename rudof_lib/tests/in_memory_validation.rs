@@ -26,11 +26,11 @@ prefix : <http://example.org/>
 :bob   :name "Bob"   ; :age "unknown" .
 "#;
 
-const SHEX_SCHEMA: &str = "
+const SHEX_SCHEMA: &str = r#"
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person { :name xsd:string ; :age xsd:integer }
-";
+"#;
 
 const SHACL_SHAPES: &str = r#"
 prefix : <http://example.org/>

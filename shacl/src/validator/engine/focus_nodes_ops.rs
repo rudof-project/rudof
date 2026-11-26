@@ -53,7 +53,7 @@ fn target_nodes<RDF: NeighsRDF + Debug>(
         Target::WrongNode(node) => runner.target_node(store, node),
         Target::WrongClass(_) | Target::WrongImplicitClass(_) => Err(ValidationError::TargetClassNotIri),
         Target::WrongSubjectsOf(o) | Target::WrongObjectsOf(o) => {
-            Err(ValidationError::CastError(o.to_string(), "an IRI".to_owned()))
+            Err(ValidationError::CastError(o.to_string(), "an IRI".to_string()))
         },
         Target::WrongWhere(o) => Err(ValidationError::TargetWhereNotShape(o.to_string())),
     }

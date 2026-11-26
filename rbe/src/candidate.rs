@@ -25,7 +25,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Candidate")?;
-        for (key, value, component, cond) in &self.values {
+        for (key, value, component, cond) in self.values.iter() {
             write!(f, "Candidate value: {key} {value} {component} {cond}")?;
         }
         Ok(())

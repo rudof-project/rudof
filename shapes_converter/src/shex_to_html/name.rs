@@ -16,40 +16,40 @@ impl Name {
         let local_name = str.replace(':', "_");
         let local_name_html = format!("{local_name}.html");
         Name {
-            repr: str.to_owned(),
+            repr: str.to_string(),
             path: Some(target_folder.as_ref().join(Path::new(local_name_html.as_str()))),
-            href: href.map(ToOwned::to_owned),
+            href: href.map(|s| s.to_string()),
             relative_href: Some(local_name_html),
             label: None,
         }
     }
 
     pub fn name(&self) -> String {
-        self.repr.clone()
+        self.repr.to_string()
     }
 
     pub fn href(&self) -> Option<String> {
-        self.href.clone()
+        self.href.as_ref().map(|str| str.to_string())
     }
 
     pub fn get_path_localname(&self) -> Option<(PathBuf, String)> {
         if let Some(href) = &self.relative_href {
-            self.path.as_ref().map(|path| (path.to_owned(), href.clone()))
+            self.path.as_ref().map(|path| (path.to_owned(), href.to_string()))
         } else {
             None
         }
     }
 
     pub fn as_path(&self) -> Option<PathBuf> {
-        self.path.as_ref().map(ToOwned::to_owned)
+        self.path.as_ref().map(|path| path.to_owned())
     }
 
     pub fn as_href(&self) -> Option<String> {
-        self.href.clone()
+        self.href.as_ref().map(|href| href.to_string())
     }
 
     pub fn as_relative_href(&self) -> Option<String> {
-        self.relative_href.clone()
+        self.relative_href.as_ref().map(|href| href.to_string())
     }
 
     pub fn label(&self) -> Option<String> {
@@ -57,6 +57,6 @@ impl Name {
     }
 
     pub fn add_label(&mut self, label: &str) {
-        self.label = Some(label.to_owned());
+        self.label = Some(label.to_string());
     }
 }

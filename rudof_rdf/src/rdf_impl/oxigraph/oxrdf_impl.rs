@@ -88,9 +88,9 @@ impl Term for OxTerm {
     /// - For triples: the string representation of the entire triple
     fn lexical_form(&self) -> String {
         match self {
-            OxTerm::NamedNode(iri) => iri.as_str().to_owned(),
-            OxTerm::BlankNode(bnode) => bnode.as_str().to_owned(),
-            OxTerm::Literal(literal) => literal.value().to_owned(),
+            OxTerm::NamedNode(iri) => iri.as_str().to_string(),
+            OxTerm::BlankNode(bnode) => bnode.as_str().to_string(),
+            OxTerm::Literal(literal) => literal.value().to_string(),
             OxTerm::Triple(triple) => triple.to_string(),
         }
     }

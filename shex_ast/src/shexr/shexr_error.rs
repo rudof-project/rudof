@@ -43,7 +43,7 @@ impl Nodes {
 
 impl Display for Nodes {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for n in &self.values {
+        for n in self.values.iter() {
             write!(f, "{n} ")?;
         }
         writeln!(f)?;

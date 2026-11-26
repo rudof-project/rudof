@@ -25,14 +25,14 @@ async fn test_basic_generator_creation() {
 #[tokio::test]
 async fn test_shex_schema_loading() {
     // Create a simple ShEx schema
-    let shex_schema = "
+    let shex_schema = r#"
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 ex:PersonShape {
   ex:name xsd:string
 }
-";
+"#;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -57,7 +57,7 @@ ex:PersonShape {
 #[tokio::test]
 async fn test_shacl_schema_loading() {
     // Create a simple SHACL schema
-    let shacl_schema = "
+    let shacl_schema = r#"
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -70,7 +70,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
     ] .
-";
+"#;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
@@ -95,7 +95,7 @@ ex:PersonShape a sh:NodeShape ;
 #[tokio::test]
 async fn test_data_generation_produces_output() {
     // Create a simple SHACL schema
-    let shacl_schema = "
+    let shacl_schema = r#"
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -108,7 +108,7 @@ ex:PersonShape a sh:NodeShape ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
     ] .
-";
+"#;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();

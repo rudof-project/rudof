@@ -24,7 +24,6 @@ impl Record {
         Record { map: HashMap::new() }
     }
 
-    #[must_use]
     pub fn with_key_value(mut self, key: &str, value: Value) -> Self {
         self.insert(Key::new(key), value);
         self
@@ -46,7 +45,6 @@ impl Record {
         self.map.remove(key)
     }*/
 
-    #[must_use]
     pub fn combine(&self, other: &Record) -> Record {
         let mut combined = Record::new();
         for (key1, values1) in &self.map {
@@ -66,7 +64,6 @@ impl Record {
         combined
     }
 
-    #[must_use]
     pub fn union(&self, other: &Record) -> Record {
         let mut result = Record::new();
         for (key1, values1) in &self.map {
@@ -109,7 +106,7 @@ impl Display for Record {
 
 fn show_values(values: &Set<Value>) -> String {
     if values.is_empty() {
-        return "[]".to_owned();
+        return "[]".to_string();
     }
     if values.len() == 1 {
         return values.iter().next().unwrap().to_string();
@@ -119,7 +116,7 @@ fn show_values(values: &Set<Value>) -> String {
         "[{}]",
         sorted_values
             .iter()
-            .map(ToString::to_string)
+            .map(|v| v.to_string())
             .collect::<Vec<_>>()
             .join(", ")
     )

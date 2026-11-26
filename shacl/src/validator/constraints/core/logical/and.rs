@@ -31,7 +31,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                 let mut conforms = true;
                 let mut details = Vec::new();
 
-                for idx in self.shapes() {
+                for idx in self.shapes().iter() {
                     let and_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results =
                         and_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?;

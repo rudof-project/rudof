@@ -36,9 +36,9 @@ impl SimpleReprSchema {
 
     pub fn convert_shape_expr(&mut self, name: &ShapeExprLabel, shape: &ShapeExpr, schema: &Schema) -> SimpleReprShape {
         match shape {
-            ShapeExpr::ShapeOr { .. } => todo!(),
-            ShapeExpr::ShapeAnd { .. } => todo!(),
-            ShapeExpr::ShapeNot { .. } => todo!(),
+            ShapeExpr::ShapeOr { shape_exprs: _ } => todo!(),
+            ShapeExpr::ShapeAnd { shape_exprs: _ } => todo!(),
+            ShapeExpr::ShapeNot { shape_expr: _ } => todo!(),
             ShapeExpr::NodeConstraint(_) => todo!(),
             ShapeExpr::Shape(shape) => self.convert_shape(name, shape, schema),
             ShapeExpr::External => SimpleReprShape::new(name),
@@ -56,18 +56,40 @@ impl SimpleReprSchema {
 
     pub fn convert_triple_expr(&mut self, shape: &mut SimpleReprShape, te: &TripleExpr, schema: &Schema) {
         match te {
-            TripleExpr::EachOf { expressions, .. } => {
+            TripleExpr::EachOf {
+                id: _,
+                expressions,
+                min: _,
+                max: _,
+                sem_acts: _,
+                annotations: _,
+            } => {
                 for te in expressions {
                     self.convert_triple_expr(shape, &(te.te), schema);
                 }
             },
-            TripleExpr::OneOf { expressions, .. } => {
+            TripleExpr::OneOf {
+                id: _,
+                expressions,
+                min: _,
+                max: _,
+                sem_acts: _,
+                annotations: _,
+            } => {
                 for te in expressions {
                     self.convert_triple_expr(shape, &te.te, schema);
                 }
             },
             TripleExpr::TripleConstraint {
-                predicate, value_expr, ..
+                id: _,
+                negated: _,
+                inverse: _,
+                predicate,
+                value_expr,
+                min: _,
+                max: _,
+                sem_acts: _,
+                annotations: _,
             } => {
                 let iri = schema.resolve_iriref(predicate);
                 if iri == IriS::rdf_type() {

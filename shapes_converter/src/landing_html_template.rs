@@ -21,9 +21,9 @@ pub struct ShapeRef {
 impl ShapeRef {
     pub fn new(name: &str, href: &str, label: &str) -> ShapeRef {
         ShapeRef {
-            name: name.to_owned(),
-            href: href.to_owned(),
-            label: label.to_owned(),
+            name: name.to_string(),
+            href: href.to_string(),
+            label: label.to_string(),
         }
     }
 }

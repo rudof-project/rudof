@@ -6,8 +6,8 @@ use rudof_rdf::rdf_core::term::literal::Lang;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer, de};
-use std::fmt;
 use std::str::FromStr;
+use std::{fmt, result};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Exclusion {
@@ -79,7 +79,7 @@ impl Exclusion {
 }
 
 impl Serialize for Exclusion {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -125,7 +125,7 @@ impl<'de> Deserialize<'de> for Exclusion {
                 impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                         formatter.write_str("field of exclusion: `type` or `stem`")
                     }
 
@@ -152,7 +152,7 @@ impl<'de> Deserialize<'de> for Exclusion {
         impl<'de> Visitor<'de> for ExclusionVisitor {
             type Value = Exclusion;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("Exclusion value")
             }
 
@@ -160,7 +160,7 @@ impl<'de> Deserialize<'de> for Exclusion {
             where
                 E: de::Error,
             {
-                Ok(Exclusion::Untyped(s.to_owned()))
+                Ok(Exclusion::Untyped(s.to_string()))
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<Exclusion, V::Error>
@@ -225,7 +225,7 @@ impl<'de> Deserialize<'de> for Exclusion {
 }
 
 #[derive(Debug, PartialEq)]
-#[expect(clippy::enum_variant_names)]
+#[allow(clippy::enum_variant_names)]
 enum ExclusionType {
     IriStem,
     LiteralStem,
@@ -241,7 +241,7 @@ enum StemValue {
 }
 
 #[derive(Debug)]
-#[expect(dead_code)]
+#[allow(dead_code)]
 struct ExclusionTypeError {
     value: String,
 }
@@ -252,7 +252,7 @@ impl ExclusionType {
             "IriStem" => Ok(ExclusionType::IriStem),
             "LanguageStem" => Ok(ExclusionType::LanguageStem),
             "LiteralStem" => Ok(ExclusionType::LiteralStem),
-            _ => Err(ExclusionTypeError { value: s.to_owned() }),
+            _ => Err(ExclusionTypeError { value: s.to_string() }),
         }
     }
 }

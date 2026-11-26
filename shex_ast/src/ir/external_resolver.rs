@@ -94,7 +94,6 @@ impl ExternalShapeResolverRegistry {
 
     /// Prepend a resolver so it is consulted before all previously-registered
     /// resolvers (in particular, before the default `RejectAllExternalResolver`).
-    #[must_use]
     pub fn with_resolver<R: ExternalShapeResolver + 'static>(mut self, r: R) -> Self {
         self.resolvers.insert(0, Arc::new(r));
         self
@@ -102,7 +101,6 @@ impl ExternalShapeResolverRegistry {
 
     /// Same as [`Self::with_resolver`], but accepts an `Arc` directly so the
     /// caller can share a single resolver across registries.
-    #[must_use]
     pub fn with_resolver_arc(mut self, r: Arc<dyn ExternalShapeResolver>) -> Self {
         self.resolvers.insert(0, r);
         self
@@ -124,16 +122,16 @@ impl ExternalShapeResolverRegistry {
     pub fn dispatch(&self, ctx: &ExternalResolveCtx<'_>) -> DispatchOutcome {
         for r in &self.resolvers {
             match r.resolve(ctx) {
-                ExternalResolution::Abstain => {},
+                ExternalResolution::Abstain => continue,
                 ExternalResolution::Conformant { rationale } => {
                     return DispatchOutcome::Conformant {
-                        resolver: r.name().to_owned(),
+                        resolver: r.name().to_string(),
                         rationale,
                     };
                 },
                 ExternalResolution::NonConformant { rationale } => {
                     return DispatchOutcome::NonConformant {
-                        resolver: r.name().to_owned(),
+                        resolver: r.name().to_string(),
                         rationale,
                     };
                 },
@@ -155,7 +153,7 @@ impl ExternalShapeResolver for RejectAllExternalResolver {
 
     fn resolve(&self, _ctx: &ExternalResolveCtx<'_>) -> ExternalResolution {
         ExternalResolution::NonConformant {
-            rationale: "no resolver supplied a definition".to_owned(),
+            rationale: "no resolver supplied a definition".to_string(),
         }
     }
 }
@@ -212,8 +210,9 @@ impl ExternalShapeResolver for SchemaExternalResolver {
     }
 
     fn rewrite_ast(&self, mut schema: ast::Schema) -> ast::Schema {
-        let Some(lookups) = self.externs.shapes() else {
-            return schema;
+        let lookups = match self.externs.shapes() {
+            Some(s) => s,
+            None => return schema,
         };
         if let Some(decls) = schema.shapes_mut() {
             for decl in decls.iter_mut() {
@@ -296,18 +295,18 @@ pub fn resolver_from_spec(spec: &str) -> Result<Arc<dyn ExternalShapeResolver>, 
     match (kind, arg) {
         ("reject-all", None) => Ok(Arc::new(RejectAllExternalResolver)),
         ("reject-all", Some(_)) => Err(ExternalResolverError::ForbiddenArg {
-            kind: "reject-all".to_owned(),
+            kind: "reject-all".to_string(),
         }),
         ("schema", Some(path)) if !path.is_empty() => Ok(Arc::new(SchemaExternalResolver::from_path(path)?)),
         ("schema", _) => Err(ExternalResolverError::MissingArg {
-            kind: "schema".to_owned(),
-            expected: "path to a ShEx file".to_owned(),
+            kind: "schema".to_string(),
+            expected: "path to a ShEx file".to_string(),
         }),
         (other, _) => Err(ExternalResolverError::UnknownKind {
-            kind: other.to_owned(),
+            kind: other.to_string(),
             available: available_external_resolvers()
                 .into_iter()
-                .map(|i| i.name.to_owned())
+                .map(|i| i.name.to_string())
                 .collect(),
         }),
     }
@@ -339,8 +338,8 @@ mod tests {
     #[test]
     fn default_registry_rejects() {
         let reg = ExternalShapeResolverRegistry::default();
-        let names: Vec<_> = reg.resolvers().iter().map(|r| r.name().to_owned()).collect();
-        assert_eq!(names, vec!["reject-all".to_owned()]);
+        let names: Vec<_> = reg.resolvers().iter().map(|r| r.name().to_string()).collect();
+        assert_eq!(names, vec!["reject-all".to_string()]);
 
         // The reject-all terminator should answer NonConformant via dispatch.
         let node = Node::iri(IriS::new_unchecked("http://example/n"));
@@ -415,8 +414,8 @@ mod tests {
         match err {
             ExternalResolverError::UnknownKind { kind, available } => {
                 assert_eq!(kind, "bogus");
-                assert!(available.contains(&"reject-all".to_owned()));
-                assert!(available.contains(&"schema".to_owned()));
+                assert!(available.contains(&"reject-all".to_string()));
+                assert!(available.contains(&"schema".to_string()));
             },
             other => panic!("expected UnknownKind, got {other:?}"),
         }
@@ -436,8 +435,8 @@ mod tests {
         let resolver = SchemaExternalResolver::from_schema("test", externs);
 
         let reg = ExternalShapeResolverRegistry::default().with_resolver(resolver);
-        let names: Vec<_> = reg.resolvers().iter().map(|r| r.name().to_owned()).collect();
-        assert_eq!(names, vec!["test".to_owned(), "reject-all".to_owned()]);
+        let names: Vec<_> = reg.resolvers().iter().map(|r| r.name().to_string()).collect();
+        assert_eq!(names, vec!["test".to_string(), "reject-all".to_string()]);
 
         // rewrite_ast: user resolver substitutes the External; reject-all is a no-op for rewrite.
         let main = schema_with(vec![ShapeDecl::new(sext, ShapeExpr::External, false)]);

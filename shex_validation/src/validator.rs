@@ -54,9 +54,9 @@ impl Validator {
             let neg_cycles = schema.neg_cycles();
             trace!("Negation cycles: {neg_cycles:?}");
             let mut neg_cycles_displayed = Vec::new();
-            for cycle in &neg_cycles {
+            for cycle in neg_cycles.iter() {
                 let mut cycle_displayed = Vec::new();
-                for (source, target, shapes) in cycle {
+                for (source, target, shapes) in cycle.iter() {
                     let source_str = if let Some(label) = schema.shape_label_from_idx(source) {
                         schema.show_label(label)
                     } else {
@@ -68,7 +68,7 @@ impl Validator {
                         format!("internal_{target}")
                     };
                     let mut shapes_str = Vec::new();
-                    for shape in shapes {
+                    for shape in shapes.iter() {
                         let shape_str = if let Some(label) = schema.shape_label_from_idx(shape) {
                             schema.show_label(label)
                         } else {
@@ -224,7 +224,7 @@ impl Validator {
             .node_shapes(rdf)
             .map_err(|e| ValidatorError::ShapeMapError { error: e.to_string() })?;
         let mut failures = Vec::new();
-        for (node, label) in &pairs {
+        for (node, label) in pairs.iter() {
             match self.get_shape_expr_label(label, schema) {
                 Err(e) => {
                     match ShapeLabel::from_shape_expr_label(label, &schema.prefixmap()) {

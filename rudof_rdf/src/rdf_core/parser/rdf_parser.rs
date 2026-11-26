@@ -78,7 +78,7 @@ where
 
     /// Restores the focus to the initial focus when the context was created.
     pub fn restore_focus(&mut self) {
-        if let Some(initial) = &self.initial_focus {
+        if let Some(ref initial) = self.initial_focus {
             self.rdf.set_focus(initial);
         }
     }

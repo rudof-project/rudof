@@ -8,12 +8,12 @@ pub(crate) fn description<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Me
     LiteralsPropertyParser::new(ShaclVocab::sh_description()).flat_map(|lits| {
         if lits.is_empty() {
             return Err(RDFError::ParseFailError {
-                msg: "No sh:description found".to_owned(),
+                msg: "No sh:description found".to_string(),
             });
         }
         let map = lits.into_iter().fold(MessageMap::new(), |acc, lit| {
             let lang = lit.lang();
-            let text = lit.lexical_form().clone();
+            let text = lit.lexical_form().to_string();
             acc.with_message(lang, text)
         });
         Ok(map)

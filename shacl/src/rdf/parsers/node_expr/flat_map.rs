@@ -14,7 +14,7 @@ pub(crate) fn flat_map<RDF: FocusRDF>(
         .map(|term| {
             let flat_map = node_expr_from_term(&term, rdf, depth, steps)?;
             let nodes = optional_expr::<RDF>(neighs, &ShaclNodeExprVocab::shnex_nodes(), rdf, depth, steps)?
-                .unwrap_or_else(|| ASTNodeExpr::Var("focusNode".to_owned()));
+                .unwrap_or_else(|| ASTNodeExpr::Var("focusNode".to_string()));
             Ok(ASTNodeExpr::FlatMap {
                 flat_map: flat_map.into(),
                 nodes: nodes.into(),

@@ -79,7 +79,7 @@ impl<'a> Evaluator<'a> {
                 // implementation says how to evaluate one.
                 Selector::Path(_) => {
                     return Err(ShExPathError::NotImplemented {
-                        feature: "a parenthesized step".to_owned(),
+                        feature: "a parenthesized step".to_string(),
                     });
                 },
             }

@@ -3519,7 +3519,9 @@ dependencies = [
 name = "pgschema"
 version = "0.3.42"
 dependencies = [
+ "anyhow",
  "clap",
+ "clientele",
  "colored",
  "csv",
  "either",
@@ -4217,8 +4219,13 @@ name = "rdf_config"
 version = "0.3.42"
 dependencies = [
  "hashlink",
+ "indexmap 2.14.2",
  "indoc",
+ "itertools 0.15.0",
+ "serde",
+ "serde_json",
  "thiserror 2.0.21",
+ "toml",
  "tracing",
  "yaml-rust2",
 ]
@@ -4563,7 +4570,6 @@ dependencies = [
  "clap",
  "rmcp",
  "rudof_generate",
- "rudof_iri",
  "rudof_lib",
  "schemars 1.2.3",
  "serde",
@@ -5271,7 +5277,9 @@ dependencies = [
  "rudof_rdf",
  "serde",
  "serde_json",
+ "shacl",
  "shex_ast",
+ "shex_validation",
  "sparql_service",
  "thiserror 2.0.21",
  "tracing",
@@ -5287,6 +5295,7 @@ dependencies = [
  "mie",
  "minijinja",
  "prefixmap",
+ "rdf_config",
  "rudof_config",
  "rudof_iri",
  "rudof_rdf",
@@ -5340,6 +5349,7 @@ dependencies = [
  "serde_json",
  "shape_path",
  "tabled",
+ "term_size",
  "thiserror 2.0.21",
  "toml",
  "tracing",
@@ -5788,6 +5798,16 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "term_size"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e4129646ca0ed8f45d09b929036bafad5377103edd06e50bf574b353d2b08d9"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]

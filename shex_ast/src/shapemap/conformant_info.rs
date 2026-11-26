@@ -22,7 +22,6 @@ impl ConformantInfo {
         &self.app_info
     }
 
-    #[must_use]
     pub fn merge(&self, other: ConformantInfo) -> ConformantInfo {
         let merged_reason = format!("{}\n{}", self.reason, other.reason);
         ConformantInfo {

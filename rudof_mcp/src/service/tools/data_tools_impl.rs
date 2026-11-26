@@ -1,8 +1,3 @@
-#![allow(
-    clippy::empty_enums,
-    reason = "serde's `Deserialize` derive makes an empty field enum for `EmptyRequest`"
-)]
-
 use base64::{Engine as _, engine::general_purpose};
 use rmcp::{
     ErrorData as McpError,
@@ -100,10 +95,6 @@ pub struct ExportPlantUmlResponse {
 /// the specification recommends for a tool that takes no parameters.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-#[expect(
-    clippy::empty_structs_with_brackets,
-    reason = "a unit struct would serialize as `null`; MCP requires the input schema to be an object"
-)]
 pub struct EmptyRequest {}
 
 /// Load RDF data from various sources into the server's datastore.
@@ -154,7 +145,7 @@ pub async fn load_rdf_data_from_sources_impl(
         Ok(specs) => specs,
         Err(e) => {
             return Ok(ToolExecutionError::with_hint(
-                format!("Invalid data specification: {e}"),
+                format!("Invalid data specification: {}", e),
                 "Provide valid file paths, URLs, or raw RDF content. \
                  If only querying a SPARQL endpoint, set endpoint and pass data: []",
             )
@@ -216,7 +207,8 @@ pub async fn load_rdf_data_from_sources_impl(
     let structured = serialize_structured(&response, "load_rdf_data_from_sources_impl")?;
 
     let summary = format!(
-        "Successfully loaded RDF data from {sources_count} source(s) in {data_format} format. Total triples: {triple_count}"
+        "Successfully loaded RDF data from {} source(s) in {} format. Total triples: {}",
+        sources_count, data_format, triple_count
     );
 
     let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
@@ -279,10 +271,10 @@ pub async fn export_rdf_data_impl(
     let structured = serialize_structured(&response, "export_rdf_data_impl")?;
 
     let preview = code_block_preview(format.as_str(), &serialized, DEFAULT_CONTENT_PREVIEW_CHARS);
-    let summary = format!("RDF export completed.\nFormat: {format}\nSize: {size_bytes} bytes");
+    let summary = format!("RDF export completed.\nFormat: {}\nSize: {} bytes", format, size_bytes);
     let mut result = CallToolResult::success(vec![
         ContentBlock::text(summary),
-        ContentBlock::text(format!("## Data Preview\n\n{preview}")),
+        ContentBlock::text(format!("## Data Preview\n\n{}", preview)),
     ]);
     result.structured_content = Some(structured);
 
@@ -328,10 +320,10 @@ pub async fn export_plantuml_impl(
     let structured = serialize_structured(&response, "export_plantuml_impl")?;
 
     let preview = code_block_preview("plantuml", &str, DEFAULT_CONTENT_PREVIEW_CHARS);
-    let summary = format!("PlantUML export completed. Size: {size} chars");
+    let summary = format!("PlantUML export completed. Size: {} chars", size);
     let mut result = CallToolResult::success(vec![
         ContentBlock::text(summary),
-        ContentBlock::text(format!("## Diagram Preview\n\n{preview}")),
+        ContentBlock::text(format!("## Diagram Preview\n\n{}", preview)),
     ]);
     result.structured_content = Some(structured);
 
@@ -356,7 +348,7 @@ pub async fn export_image_impl(
 
     if let Err(e) = rudof.serialize_data(&mut v).with_result_data_format(&format).execute() {
         return Ok(ToolExecutionError::with_hint(
-            format!("Failed to render the RDF graph as {image_format}: {e}"),
+            format!("Failed to render the RDF graph as {}: {}", image_format, e),
             "Load RDF data first if there is none. Rendering also needs PlantUML: set the PLANTUML \
              environment variable to plantuml.jar, or call export_plantuml for the diagram source.",
         )
@@ -369,13 +361,16 @@ pub async fn export_image_impl(
 
     let response = ExportImageResponse {
         image_format,
-        mime_type: mime_type.to_owned(),
+        mime_type: mime_type.to_string(),
         size_bytes,
     };
 
     let structured = serialize_structured(&response, "export_image_impl")?;
 
-    let summary = format!("Image generated successfully ({image_format} format, {size_bytes} bytes)");
+    let summary = format!(
+        "Image generated successfully ({} format, {} bytes)",
+        image_format, size_bytes
+    );
 
     let mut result = CallToolResult::success(vec![
         ContentBlock::text(summary),

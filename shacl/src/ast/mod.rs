@@ -40,9 +40,9 @@ pub fn defined_properties_for(properties: &[Object], ast: &ASTSchema) -> Result<
                     defined_properties.insert(pred.clone());
                 }
             },
-            ASTShape::NodeShape(_) => {
+            _ => {
                 return Err(ASTError::UnexpectedShapeType {
-                    expected: "PropertyShape".to_owned(),
+                    expected: "PropertyShape".to_string(),
                     shape: Box::new(prop_shape_ref.clone()),
                 });
             },

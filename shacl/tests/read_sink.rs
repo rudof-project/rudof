@@ -40,7 +40,7 @@ fn shapes(shapes: &str) -> IRSchema {
 
 fn sink() -> (Arc<Mutex<GraphSink>>, ShaclConfig) {
     let sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
-    let config = ShaclConfig::default().with_read_sink(TriplesSink::new(Arc::clone(&sink)));
+    let config = ShaclConfig::default().with_read_sink(TriplesSink::new(sink.clone()));
     (sink, config)
 }
 

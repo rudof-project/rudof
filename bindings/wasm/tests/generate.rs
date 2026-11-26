@@ -8,26 +8,26 @@ use wasm_bindgen_test::wasm_bindgen_test as test;
 
 use rudof_wasm::{generate, validate_shacl, validate_shex};
 
-const SHEX: &str = "
+const SHEX: &str = r#"
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person { :name xsd:string ; :age xsd:integer ? ; :worksFor @:Org }
 :Org { :label xsd:string }
-";
+"#;
 
-const SHACL: &str = "
+const SHACL: &str = r#"
 @prefix : <http://example.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 :PersonShape a sh:NodeShape ; sh:targetClass :Person ;
   sh:property [ sh:path :name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] .
-";
+"#;
 
-const PGSCHEMA: &str = "
+const PGSCHEMA: &str = r#"
 CREATE NODE TYPE ( PersonType : Person { name: STRING }) ;
 CREATE NODE TYPE ( OrgType : Org { label: STRING }) ;
 CREATE EDGE TYPE (:@PersonType) -[WorksForType : worksFor]-> (:@OrgType)
-";
+"#;
 
 #[test]
 fn shex_data_is_valid_against_its_schema() {

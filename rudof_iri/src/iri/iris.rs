@@ -54,7 +54,7 @@ impl IriS {
 
     pub fn new(str: &str) -> Result<IriS, IriSError> {
         let iri = NamedNode::new(str).map_err(|e| IriSError::IriParseError {
-            str: str.to_owned(),
+            str: str.to_string(),
             error: e.to_string(),
         })?;
         Ok(IriS { iri })
@@ -63,12 +63,12 @@ impl IriS {
     /// Join a string to the current IRI
     pub fn join(self, str: &str) -> Result<Self, IriSError> {
         let url = Url::from_str(self.as_str()).map_err(|e| IriSError::IriParseError {
-            str: str.to_owned(),
+            str: str.to_string(),
             error: e.to_string(),
         })?;
 
         let joined = url.join(str).map_err(|e| IriSError::JoinError {
-            str: str.to_owned(),
+            str: str.to_string(),
             current: Box::new(self),
             error: e.to_string(),
         })?;
@@ -81,7 +81,7 @@ impl IriS {
     /// This function checks for possible errors returning a `Result`
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let current_str = self.iri.as_str();
-        let extend_str = if current_str.ends_with('/') || current_str.ends_with('#') {
+        let extend_str = if current_str.ends_with("/") || current_str.ends_with("#") {
             format!("{current_str}{str}")
         } else {
             format!("{current_str}/{str}")
@@ -111,7 +111,6 @@ impl IriS {
     }
 
     /// Extend an IRI with a new string without checking for possible syntactic errors
-    #[must_use]
     pub fn extend_unchecked(&self, str: &str) -> Self {
         let extended_str = format!("{}{}", self.iri.as_str(), str);
         let iri = NamedNode::new_unchecked(extended_str);
@@ -143,20 +142,20 @@ impl IriS {
         let other_ref = IriRef::parse(other).map_err(|e| IriSError::IriResolveError {
             error: e.to_string(),
             base: Box::new(IriS::new_unchecked(base.as_str())),
-            other: other.to_owned(),
+            other: other.to_string(),
         })?;
 
         base.resolve(&other_ref).map_err(|e| IriSError::IriResolveError {
             error: e.to_string(),
             base: Box::new(IriS::new_unchecked(base.as_str())),
-            other: other.to_owned(),
+            other: other.to_string(),
         })
     }
 
     /// Create a `NamedNode` from an IRI
     pub fn namednode_from_iri(iri: Iri<String>) -> Result<NamedNode, IriSError> {
         NamedNode::new(iri.as_str()).map_err(|e| IriSError::IriParseError {
-            str: iri.as_str().to_owned(),
+            str: iri.as_str().to_string(),
             error: e.to_string(),
         })
     }
@@ -168,8 +167,8 @@ impl IriS {
             IriS::new(inner_str)
         } else {
             Err(IriSError::TurtleParseError {
-                str: str.to_owned(),
-                error: "IRI must be enclosed in angle brackets".to_owned(),
+                str: str.to_string(),
+                error: "IRI must be enclosed in angle brackets".to_string(),
             })
         }
     }
@@ -186,13 +185,13 @@ impl IriS {
                     .base_url(Some(&base))
                     .parse(self.iri.as_str())
                     .map_err(|e| IriSError::IriParseErrorWithBase {
-                        str: self.iri.as_str().to_owned(),
+                        str: self.iri.as_str().to_string(),
                         base: format!("{base}"),
                         error: e.to_string(),
                     })?
             },
             None => Url::from_str(self.iri.as_str()).map_err(|e| IriSError::UrlParseError {
-                str: self.iri.as_str().to_owned(),
+                str: self.iri.as_str().to_string(),
                 error: e.to_string(),
             })?,
         };
@@ -210,36 +209,39 @@ impl IriS {
         use std::fs;
 
         let url = self.dereference_url(base)?;
-        if url.scheme() == "file" {
-            let path = url
-                .to_file_path()
-                .map_err(|()| IriSError::ConvertingFileUrlToPath { url: url.to_string() })?;
-            let path_name = path.to_string_lossy().to_string();
-            let body = fs::read_to_string(path).map_err(|e| IriSError::IOErrorFile {
-                path: path_name,
-                url: url.to_string(),
-                error: e.to_string(),
-            })?;
-            Ok(body)
-        } else {
-            let mut headers = HeaderMap::new();
-            /* TODO: Add a parameter with the Accept header ?
-            headers.insert(
-                ACCEPT,
-                header::HeaderValue::from_static(""),
-            );*/
-            headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-            let client = Client::builder()
-                .default_headers(headers)
-                .build()
-                .map_err(|e| IriSError::ReqwestClientCreation { error: e.to_string() })?;
-            let res = client
-                .get(url)
-                .send()
-                .map_err(|e| IriSError::ReqwestError { error: e.to_string() })?
-                .text()
-                .map_err(|e| IriSError::ReqwestTextError { error: e.to_string() })?;
-            Ok(res)
+        match url.scheme() {
+            "file" => {
+                let path = url
+                    .to_file_path()
+                    .map_err(|_| IriSError::ConvertingFileUrlToPath { url: url.to_string() })?;
+                let path_name = path.to_string_lossy().to_string();
+                let body = fs::read_to_string(path).map_err(|e| IriSError::IOErrorFile {
+                    path: path_name,
+                    url: url.to_string(),
+                    error: e.to_string(),
+                })?;
+                Ok(body)
+            },
+            _ => {
+                let mut headers = HeaderMap::new();
+                /* TODO: Add a parameter with the Accept header ?
+                headers.insert(
+                    ACCEPT,
+                    header::HeaderValue::from_static(""),
+                );*/
+                headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
+                let client = Client::builder()
+                    .default_headers(headers)
+                    .build()
+                    .map_err(|e| IriSError::ReqwestClientCreation { error: e.to_string() })?;
+                let res = client
+                    .get(url)
+                    .send()
+                    .map_err(|e| IriSError::ReqwestError { error: e.to_string() })?
+                    .text()
+                    .map_err(|e| IriSError::ReqwestTextError { error: e.to_string() })?;
+                Ok(res)
+            },
         }
     }
 
@@ -278,9 +280,9 @@ impl IriS {
     pub fn relative_from(&self, base: &IriS) -> String {
         if self.as_str().starts_with(base.as_str()) {
             let relative_str = &self.as_str()[base.as_str().len()..];
-            relative_str.to_owned()
+            relative_str.to_string()
         } else {
-            self.as_str().to_owned()
+            self.as_str().to_string()
         }
     }
 }
@@ -328,13 +330,13 @@ impl TryFrom<&Path> for IriS {
             })
         }?;
 
-        let url = Url::from_file_path(&abs_path).map_err(|()| IriSError::ConvertingPathToIri {
+        let url = Url::from_file_path(&abs_path).map_err(|_| IriSError::ConvertingPathToIri {
             path: abs_path.to_string_lossy().to_string(),
             error: String::from("Cannot convert path to file URL"),
         })?;
 
         let iri = NamedNode::new(url.as_str()).map_err(|e| IriSError::IriParseError {
-            str: url.as_str().to_owned(),
+            str: url.as_str().to_string(),
             error: e.to_string(),
         })?;
 
@@ -347,7 +349,7 @@ impl FromStr for IriS {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri = NamedNode::new(s).map_err(|e| IriSError::IriParseError {
-            str: s.to_owned(),
+            str: s.to_string(),
             error: e.to_string(),
         })?;
         Ok(IriS { iri })

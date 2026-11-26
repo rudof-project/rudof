@@ -250,7 +250,7 @@ impl ConfigV2 {
             }) => Some(*n),
             Some(_) => {
                 return Err(config_error(
-                    "run.scale takes either `entities` (a total) or `per_shape`, not both or neither".to_owned(),
+                    "run.scale takes either `entities` (a total) or `per_shape`, not both or neither".to_string(),
                 ));
             },
         };
@@ -290,7 +290,7 @@ impl ConfigV2 {
         config.generation.entity_distribution = match (counts.is_empty(), weights.is_empty()) {
             _ if per_shape.is_some() && !weights.is_empty() => {
                 return Err(config_error(
-                    "`weight` splits a total; with run.scale.per_shape use `count` on [[shape]] tables".to_owned(),
+                    "`weight` splits a total; with run.scale.per_shape use `count` on [[shape]] tables".to_string(),
                 ));
             },
             (_, true) if per_shape.is_some() => EntityDistribution::PerShape {
@@ -302,7 +302,7 @@ impl ConfigV2 {
             (true, false) => EntityDistribution::Weighted(weights),
             (false, false) => {
                 return Err(config_error(
-                    "use either `count` or `weight` on [[shape]] tables, not both".to_owned(),
+                    "use either `count` or `weight` on [[shape]] tables, not both".to_string(),
                 ));
             },
         };
@@ -332,7 +332,11 @@ impl ConfigV2 {
 
         // output
         let dir = self.output.dir.clone().unwrap_or_else(|| PathBuf::from("."));
-        let formats = self.output.formats.clone().unwrap_or_else(|| vec!["turtle".to_owned()]);
+        let formats = self
+            .output
+            .formats
+            .clone()
+            .unwrap_or_else(|| vec!["turtle".to_string()]);
         for format in &formats {
             if !["turtle", "ntriples", "pg"].contains(&format.as_str()) {
                 return Err(config_error(format!(
@@ -344,13 +348,13 @@ impl ConfigV2 {
         let pg = has("pg");
         if has("turtle") && has("ntriples") {
             return Err(config_error(
-                "output.formats: choose one RDF format, \"turtle\" or \"ntriples\"".to_owned(),
+                "output.formats: choose one RDF format, \"turtle\" or \"ntriples\"".to_string(),
             ));
         }
         if pg && has("ntriples") {
             return Err(config_error(
                 "output.formats: the RDF copy of a property graph is written as Turtle; use [\"pg\", \"turtle\"]"
-                    .to_owned(),
+                    .to_string(),
             ));
         }
         let rdf_copy = pg && has("turtle");
@@ -392,7 +396,7 @@ impl ConfigV2 {
             }
             if targets.coherence.is_none() {
                 return Err(config_error(
-                    "[targets] sets no metric; supported: `coherence`".to_owned(),
+                    "[targets] sets no metric; supported: `coherence`".to_string(),
                 ));
             }
             config.generation.targets = Some(TargetsConfig {
@@ -446,7 +450,8 @@ impl ConfigV2 {
                     (false, None) => None,
                     (false, Some(_)) => {
                         return Err(config_error(
-                            "[violations.rdf] reads the RDF copy of a property graph: set output.formats = [\"pg\", \"turtle\"]".to_owned(),
+                            "[violations.rdf] reads the RDF copy of a property graph: set output.formats = [\"pg\", \"turtle\"]"
+                                .to_string(),
                         ));
                     },
                 },
@@ -469,10 +474,10 @@ impl ConfigV2 {
 /// Expand a CURIE (`ex:Thing`), strip `<…>`, or pass a full IRI through.
 fn expand_curie(value: &str, prefixes: &BTreeMap<String, String>) -> Result<String> {
     if let Some(iri) = value.strip_prefix('<').and_then(|v| v.strip_suffix('>')) {
-        return Ok(iri.to_owned());
+        return Ok(iri.to_string());
     }
     if value.contains("://") {
-        return Ok(value.to_owned());
+        return Ok(value.to_string());
     }
     match value.split_once(':') {
         Some((prefix, local)) => prefixes.get(prefix).map(|ns| format!("{ns}{local}")).ok_or_else(|| {
@@ -507,7 +512,7 @@ fn cardinality(value: &str, key: &str) -> Result<CardinalityStrategy> {
 fn missing_version() -> DataGeneratorError {
     config_error(
         "the generator config needs `version = 2` (the v1 format was removed; see rudof_generate/examples/configs)"
-            .to_owned(),
+            .to_string(),
     )
 }
 

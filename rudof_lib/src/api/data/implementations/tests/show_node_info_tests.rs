@@ -44,7 +44,7 @@ fn setup_test_rudof() -> Rudof {
 fn setup_deep_graph_rudof() -> Rudof {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf_data_str = "
+    let rdf_data_str = r#"
             @prefix ex: <http://example.org/> .
             @prefix rel: <http://example.org/rel/> .
 
@@ -55,7 +55,7 @@ fn setup_deep_graph_rudof() -> Rudof {
 
             ex:level0 rel:child ex:level1b .
             ex:level1b rel:child ex:level2b .
-        ";
+        "#;
 
     let rdf_data = InputSpec::str(rdf_data_str);
 
@@ -85,14 +85,15 @@ fn test_show_node_info_basic_outgoing() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("Outgoing arcs"));
     assert!(output_str.contains("foaf:name"));
     assert!(output_str.contains("Alice"));
 
     println!(
-        "\n===== test_show_node_info_basic_outgoing =====\n{output_str}============================================"
+        "\n===== test_show_node_info_basic_outgoing =====\n{}============================================",
+        output_str
     );
 }
 
@@ -113,13 +114,14 @@ fn test_show_node_info_basic_incoming() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("Incoming arcs"));
     assert!(output_str.contains("foaf:knows"));
 
     println!(
-        "\n===== test_show_node_info_basic_incoming =====\n{output_str}============================================"
+        "\n===== test_show_node_info_basic_incoming =====\n{}============================================",
+        output_str
     );
 }
 
@@ -140,13 +142,14 @@ fn test_show_node_info_both_directions() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("Outgoing arcs"));
     assert!(output_str.contains("Incoming arcs"));
 
     println!(
-        "\n===== test_show_node_info_both_directions =====\n{output_str}============================================"
+        "\n===== test_show_node_info_both_directions =====\n{}============================================",
+        output_str
     );
 }
 
@@ -154,7 +157,7 @@ fn test_show_node_info_both_directions() {
 fn test_show_node_info_with_predicate_filter() {
     let mut rudof = setup_test_rudof();
     let mut output = Cursor::new(Vec::new());
-    let predicates = vec!["foaf:name".to_owned()];
+    let predicates = vec!["foaf:name".to_string()];
 
     let result = show_node_info(
         &mut rudof,
@@ -168,7 +171,7 @@ fn test_show_node_info_with_predicate_filter() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("foaf:name"));
     assert!(output_str.contains("Alice"));
@@ -176,7 +179,8 @@ fn test_show_node_info_with_predicate_filter() {
     assert!(!output_str.contains("foaf:knows") || output_str.matches("foaf:knows").count() == 0);
 
     println!(
-        "\n===== test_show_node_info_with_predicate_filter =====\n{output_str}============================================"
+        "\n===== test_show_node_info_with_predicate_filter =====\n{}============================================",
+        output_str
     );
 }
 
@@ -184,7 +188,7 @@ fn test_show_node_info_with_predicate_filter() {
 fn test_show_node_info_multiple_predicates_filter() {
     let mut rudof = setup_test_rudof();
     let mut output = Cursor::new(Vec::new());
-    let predicates = vec!["foaf:name".to_owned(), "foaf:age".to_owned()];
+    let predicates = vec!["foaf:name".to_string(), "foaf:age".to_string()];
 
     let result = show_node_info(
         &mut rudof,
@@ -198,13 +202,14 @@ fn test_show_node_info_multiple_predicates_filter() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("foaf:name"));
     assert!(output_str.contains("foaf:age"));
 
     println!(
-        "\n===== test_show_node_info_multiple_predicates_filter =====\n{output_str}============================================"
+        "\n===== test_show_node_info_multiple_predicates_filter =====\n{}============================================",
+        output_str
     );
 }
 
@@ -225,14 +230,17 @@ fn test_show_node_info_depth_1() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("level1a"));
     assert!(output_str.contains("level1b"));
     // Should not show deeper levels at depth 1
     assert!(!output_str.contains("level2a"));
 
-    println!("\n===== test_show_node_info_depth_1 =====\n{output_str}============================================");
+    println!(
+        "\n===== test_show_node_info_depth_1 =====\n{}============================================",
+        output_str
+    );
 }
 
 #[test]
@@ -252,14 +260,17 @@ fn test_show_node_info_depth_2() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("level1a"));
     assert!(output_str.contains("level2a"));
     // Should not show level 3 at depth 2
     assert!(!output_str.contains("level3a"));
 
-    println!("\n===== test_show_node_info_depth_2 =====\n{output_str}============================================");
+    println!(
+        "\n===== test_show_node_info_depth_2 =====\n{}============================================",
+        output_str
+    );
 }
 
 #[test]
@@ -279,14 +290,17 @@ fn test_show_node_info_depth_3() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("level1a"));
     assert!(output_str.contains("level2a"));
     assert!(output_str.contains("level3a"));
     assert!(!output_str.contains("level4a"));
 
-    println!("\n===== test_show_node_info_depth_3 =====\n{output_str}============================================");
+    println!(
+        "\n===== test_show_node_info_depth_3 =====\n{}============================================",
+        output_str
+    );
 }
 
 #[test]
@@ -306,13 +320,14 @@ fn test_show_node_info_incoming_depth_2() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     assert!(output_str.contains("level1a"));
     assert!(output_str.contains("level0"));
 
     println!(
-        "\n===== test_show_node_info_incoming_depth_2 =====\n{output_str}============================================"
+        "\n===== test_show_node_info_incoming_depth_2 =====\n{}============================================",
+        output_str
     );
 }
 
@@ -333,14 +348,15 @@ fn test_show_node_info_without_colors() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     // No ANSI escape codes should leak in when colors are explicitly disabled.
     assert!(!output_str.contains('\u{1b}'));
     assert!(output_str.contains("foaf:name"));
 
     println!(
-        "\n===== test_show_node_info_without_colors =====\n{output_str}============================================"
+        "\n===== test_show_node_info_without_colors =====\n{}============================================",
+        output_str
     );
 }
 
@@ -365,7 +381,7 @@ fn test_show_node_info_with_colors_is_deterministic() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     // The predicate is colorized, so it's split across separate escape
     // sequences and no longer appears as one contiguous "foaf:name" run.
@@ -391,7 +407,7 @@ fn test_show_node_info_non_existent_node() {
     );
 
     // Should succeed but produce no output (empty node)
-    result.unwrap();
+    assert!(result.is_ok());
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     // Output should be minimal or empty
     assert!(output_str.is_empty() || !output_str.contains("Outgoing arcs"));
@@ -415,12 +431,13 @@ fn test_show_node_info_default_values() {
         &mut output,
     );
 
-    result.unwrap();
+    assert!(result.is_ok());
 
     // Should use default mode (Outgoing), depth (1), no hyperlinks, colors enabled
     let output_str = String::from_utf8(output.into_inner()).unwrap();
     println!(
-        "\n===== test_show_node_info_default_values =====\n{output_str}============================================"
+        "\n===== test_show_node_info_default_values =====\n{}============================================",
+        output_str
     );
 }
 

@@ -47,7 +47,7 @@ impl ValueType {
                         count: values.len(),
                     }]);
                 }
-                check_all(values, Value::is_string, "is_string")
+                check_all(values, |v| v.is_string(), "is_string")
             },
             ValueType::IntegerType(card) => {
                 if !card.contains(values.len()) {
@@ -56,7 +56,7 @@ impl ValueType {
                         count: values.len(),
                     }]);
                 }
-                check_all(values, Value::is_integer, "is_integer")
+                check_all(values, |v| v.is_integer(), "is_integer")
             },
             ValueType::DateType(card) => {
                 if !card.contains(values.len()) {
@@ -65,7 +65,7 @@ impl ValueType {
                         count: values.len(),
                     }]);
                 }
-                check_all(values, Value::is_date, "is_date")
+                check_all(values, |v| v.is_date(), "is_date")
             },
             ValueType::Intersection(a, b) => {
                 let a_evidence = a.conforms(values);
@@ -94,23 +94,23 @@ impl ValueType {
             ValueType::Cond(cond) => {
                 for value in values {
                     match cond.check(value) {
-                        Ok(true) => {},
+                        Ok(true) => continue,
                         Ok(false) => {
                             return Either::Left(vec![PgsError::ConditionFailed {
-                                condition: format!("{cond}"),
-                                value: format!("{value}"),
+                                condition: format!("{}", cond),
+                                value: format!("{}", value),
                             }]);
                         },
                         Err(e) => return Either::Left(vec![e]),
                     }
                 }
                 Either::Right(vec![Evidence::ConditionPassed {
-                    condition: format!("{cond}"),
-                    values: format!("{values:?}"),
+                    condition: format!("{}", cond),
+                    values: format!("{:?}", values),
                 }])
             },
             ValueType::Any => Either::Right(vec![Evidence::Any {
-                values: format!("{values:?}"),
+                values: format!("{:?}", values),
             }]),
             ValueType::BoolType(card) => {
                 if !card.contains(values.len()) {
@@ -119,7 +119,7 @@ impl ValueType {
                         count: values.len(),
                     }]);
                 }
-                check_all(values, Value::is_bool, "is_bool")
+                check_all(values, |v| v.is_bool(), "is_bool")
             },
         }
     }
@@ -133,12 +133,12 @@ where
         Either::Right(vec![]) // All values conform
     } else {
         Either::Left(vec![PgsError::PredicateFailed {
-            predicate_name: predicate_name.to_owned(),
+            predicate_name: predicate_name.to_string(),
             value: values
                 .iter()
                 .find(|v| !predicate(v))
                 .cloned()
-                .unwrap_or(Value::String(String::new())),
+                .unwrap_or(Value::String("".to_string())),
         }])
     }
 }
@@ -146,14 +146,14 @@ where
 impl Display for ValueType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ValueType::StringType(card) => write!(f, "String({card})"),
-            ValueType::IntegerType(card) => write!(f, "Integer({card})"),
-            ValueType::DateType(card) => write!(f, "Date({card})"),
-            ValueType::Intersection(a, b) => write!(f, "({a} ∩ {b})"),
-            ValueType::Union(a, b) => write!(f, "({a} ∪ {b})"),
-            ValueType::Cond(expr) => write!(f, "Condition({expr})"),
+            ValueType::StringType(card) => write!(f, "String({})", card),
+            ValueType::IntegerType(card) => write!(f, "Integer({})", card),
+            ValueType::DateType(card) => write!(f, "Date({})", card),
+            ValueType::Intersection(a, b) => write!(f, "({} ∩ {})", a, b),
+            ValueType::Union(a, b) => write!(f, "({} ∪ {})", a, b),
+            ValueType::Cond(expr) => write!(f, "Condition({})", expr),
             ValueType::Any => write!(f, "ANY"),
-            ValueType::BoolType(card) => write!(f, "Bool({card})"),
+            ValueType::BoolType(card) => write!(f, "Bool({})", card),
         }
     }
 }

@@ -33,7 +33,7 @@ impl FromStr for DdlDialect {
             "cypher" => Ok(DdlDialect::Cypher),
             "gql" => Ok(DdlDialect::Gql),
             other => Err(PgDbError::UnsupportedDialect {
-                dialect: other.to_owned(),
+                dialect: other.to_string(),
             }),
         }
     }

@@ -41,7 +41,7 @@ fn serialize_pg_data<W: io::Write>(
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if !data.is_pg() {
-        return Err(Box::new(DataError::NoPgDataLoaded).into());
+        Err(Box::new(DataError::NoPgDataLoaded))?
     }
 
     let graph = data.unwrap_pg_mut();
@@ -75,7 +75,7 @@ fn serialize_rdf_data<W: io::Write>(
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoRdfDataLoaded))?;
 
     if !data.is_rdf() {
-        return Err(Box::new(DataError::NoRdfDataLoaded).into());
+        Err(Box::new(DataError::NoRdfDataLoaded))?
     }
 
     if result_data_format.is_rdf_format() {

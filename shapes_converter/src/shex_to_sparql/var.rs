@@ -9,7 +9,7 @@ pub struct Var {
 
 impl Var {
     pub fn new(name: &str) -> Var {
-        Var { name: name.to_owned() }
+        Var { name: name.to_string() }
     }
 
     pub fn new_from_iri(_iri: &IriS, var_builder: &mut VarBuilder) -> Var {
@@ -32,7 +32,7 @@ impl VarBuilder {
     pub fn new() -> VarBuilder {
         VarBuilder {
             counter: 0,
-            pattern: "var".to_owned(),
+            pattern: "var".to_string(),
         }
     }
 

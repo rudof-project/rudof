@@ -36,26 +36,22 @@ impl Shacl2ShExConfig {
         }
     }
 
-    #[must_use]
     pub fn with_starting_shapes_mode(mut self, mode: StartShapeMode) -> Self {
         self.starting_shapes_mode = mode;
         self
     }
 
-    #[must_use]
     pub fn with_embed_bnodes(mut self, flag: bool) -> Self {
         self.embed_bnodes = flag;
         self
     }
 
     #[cfg(not(target_family = "wasm"))]
-    #[must_use]
     pub fn with_shacl(mut self, cfg: ShaclConfig) -> Self {
         self.shacl = cfg;
         self
     }
 
-    #[must_use]
     pub fn with_add_target_class(mut self, flag: bool) -> Self {
         self.add_target_class = flag;
         self
@@ -123,7 +119,7 @@ mod tests {
 
     #[test]
     fn partial_toml_fills_remaining_defaults() {
-        let c = Shacl2ShExConfig::from_toml_str("embed_bnodes = true").unwrap();
+        let c = Shacl2ShExConfig::from_toml_str(r#"embed_bnodes = true"#).unwrap();
         assert!(c.embed_bnodes());
         assert_eq!(c.add_target_class(), Shacl2ShExConfig::default_add_target_class());
     }

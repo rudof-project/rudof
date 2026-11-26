@@ -29,6 +29,6 @@ impl PyRudofConfig {
     }
 
     fn __repr__(&self) -> String {
-        "RudofConfig()".to_owned()
+        "RudofConfig()".to_string()
     }
 }

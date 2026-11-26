@@ -20,7 +20,7 @@ pub fn materialize<W: io::Write>(
     let initial_node = match initial_node_iri {
         Some(iri_str) => {
             let iri = IriS::from_str(iri_str).map_err(|e| MaterializeError::InvalidIri {
-                iri: iri_str.to_owned(),
+                iri: iri_str.to_string(),
                 error: e.to_string(),
             })?;
             Some(Node::iri(iri))
@@ -40,7 +40,7 @@ pub fn materialize<W: io::Write>(
             .try_into()
             .map_err(
                 |e: Box<crate::errors::DataError>| MaterializeError::FailedSerializingGraph {
-                    format: result_format.map_or_else(|| "turtle".to_owned(), ToString::to_string),
+                    format: result_format.map_or_else(|| "turtle".to_string(), |f| f.to_string()),
                     error: e.to_string(),
                 },
             )?;
@@ -48,7 +48,7 @@ pub fn materialize<W: io::Write>(
     graph
         .serialize(&rdf_format, writer)
         .map_err(|e| MaterializeError::FailedSerializingGraph {
-            format: result_format.map_or_else(|| "turtle".to_owned(), ToString::to_string),
+            format: result_format.map_or_else(|| "turtle".to_string(), |f| f.to_string()),
             error: e.to_string(),
         })?;
 

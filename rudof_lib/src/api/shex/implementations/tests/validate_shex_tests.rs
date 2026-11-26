@@ -54,11 +54,11 @@ fn test_validate_shex_success() {
 
     // Load ShEx schema
     let schema = InputSpec::str(
-        "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        r#"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            <PersonShape> {
              <name> xsd:string ;
              <age> xsd:integer
-           }",
+           }"#,
     );
 
     load_shex_schema(
@@ -71,7 +71,7 @@ fn test_validate_shex_success() {
     .unwrap();
 
     // Load ShapeMap
-    let shapemap = InputSpec::str("<alice>@<PersonShape>");
+    let shapemap = InputSpec::str(r#"<alice>@<PersonShape>"#);
 
     load_shapemap(
         &mut rudof,
@@ -90,11 +90,14 @@ fn test_validate_shex_success() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    let re = Regex::new(r"(?m)^\x{2502}\s+Node\s+\x{2502}\s+Shape\s+\x{2502}\s+Status\s+\x{2502}$").unwrap();
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
 
     assert!(re.is_match(&serialized));
 
-    println!("\n===== test_validate_shex_success =====\n{serialized}============================================");
+    println!(
+        "\n===== test_validate_shex_success =====\n{}============================================",
+        serialized
+    );
 }
 
 #[test]
@@ -160,9 +163,9 @@ fn test_validate_shex_no_shapemap_error() {
     .unwrap();
 
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-           ex:PersonShape { ex:name xsd:string }",
+           ex:PersonShape { ex:name xsd:string }"#,
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
@@ -199,18 +202,18 @@ fn test_validate_shex_validation_failure() {
 
     // Load ShEx schema expecting integer
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
-           }",
+           }"#,
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load ShapeMap
-    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -223,7 +226,8 @@ fn test_validate_shex_validation_failure() {
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
     println!(
-        "\n===== test_validate_shex_validation_failure =====\n{serialized}============================================"
+        "\n===== test_validate_shex_validation_failure =====\n{}============================================",
+        serialized
     );
 }
 
@@ -252,17 +256,17 @@ fn test_serialize_validation_results_compact() {
     .unwrap();
 
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
-           }",
+           }"#,
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -272,12 +276,13 @@ fn test_serialize_validation_results_compact() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    let re = Regex::new(r"(?m)^\x{2502}\s+Node\s+\x{2502}\s+Shape\s+\x{2502}\s+Status\s+\x{2502}$").unwrap();
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
 
     assert!(re.is_match(&serialized));
 
     println!(
-        "\n===== test_serialize_validation_results_compact =====\n{serialized}============================================"
+        "\n===== test_serialize_validation_results_compact =====\n{}============================================",
+        serialized
     );
 }
 
@@ -306,17 +311,17 @@ fn test_serialize_validation_results_json() {
     .unwrap();
 
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
-           }",
+           }"#,
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -325,11 +330,12 @@ fn test_serialize_validation_results_json() {
     // Test JSON format
     let serialized = serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Json));
 
-    assert!(serialized.contains('{'));
-    assert!(serialized.contains('}'));
+    assert!(serialized.contains("{"));
+    assert!(serialized.contains("}"));
 
     println!(
-        "\n===== test_serialize_validation_results_json =====\n{serialized}============================================"
+        "\n===== test_serialize_validation_results_json =====\n{}============================================",
+        serialized
     );
 }
 
@@ -358,17 +364,17 @@ fn test_serialize_validation_results_csv() {
     .unwrap();
 
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
-           }",
+           }"#,
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -378,10 +384,11 @@ fn test_serialize_validation_results_csv() {
     let serialized = serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Csv));
 
     // CSV should have comma-separated values
-    assert!(serialized.contains(','));
+    assert!(serialized.contains(","));
 
     println!(
-        "\n===== test_serialize_validation_results_csv =====\n{serialized}============================================"
+        "\n===== test_serialize_validation_results_csv =====\n{}============================================",
+        serialized
     );
 }
 
@@ -410,17 +417,17 @@ fn test_serialize_validation_results_details() {
     .unwrap();
 
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
-           }",
+           }"#,
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -430,14 +437,13 @@ fn test_serialize_validation_results_details() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Details));
 
-    let re =
-        Regex::new(r"(?m)^\x{2502}\s+Node\s+\x{2502}\s+Shape\s+\x{2502}\s+Status\s+\x{2502}\s+Summary\s+\x{2502}$")
-            .unwrap();
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Summary\s+│$").unwrap();
 
     assert!(re.is_match(&serialized));
 
     println!(
-        "\n===== test_serialize_validation_results_details =====\n{serialized}============================================"
+        "\n===== test_serialize_validation_results_details =====\n{}============================================",
+        serialized
     );
 }
 
@@ -479,15 +485,15 @@ fn details_of_alice_without_age(layout: ShExDetailsLayout) -> String {
     )
     .unwrap();
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
-           }",
+           }"#,
     );
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
-    let shapemap = InputSpec::str("ex:alice@ex:PersonShape");
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
     validate_shex(&mut rudof, None, None, None).unwrap();
 
@@ -506,9 +512,7 @@ fn details_of_alice_without_age(layout: ShExDetailsLayout) -> String {
 #[test]
 fn test_serialize_validation_results_details_below_the_table() {
     let serialized = details_of_alice_without_age(ShExDetailsLayout::Below);
-    let header =
-        Regex::new(r"(?m)^\x{2502}\s+Node\s+\x{2502}\s+Shape\s+\x{2502}\s+Status\s+\x{2502}\s+Summary\s+\x{2502}$")
-            .unwrap();
+    let header = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Summary\s+│$").unwrap();
     assert!(header.is_match(&serialized), "{serialized}");
     // The details are written below the table, each in one line, with the ShExPath whole.
     assert!(
@@ -521,12 +525,10 @@ fn test_serialize_validation_results_details_below_the_table() {
 #[test]
 fn test_serialize_validation_results_details_in_the_table() {
     let serialized = details_of_alice_without_age(ShExDetailsLayout::Table);
-    let header =
-        Regex::new(r"(?m)^\x{2502}\s+Node\s+\x{2502}\s+Shape\s+\x{2502}\s+Status\s+\x{2502}\s+Details\s+\x{2502}$")
-            .unwrap();
+    let header = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│\s+Details\s+│$").unwrap();
     assert!(header.is_match(&serialized), "{serialized}");
     // Nothing is written below the table: it ends the output.
-    assert!(serialized.trim_end().ends_with('\u{256f}'), "{serialized}");
+    assert!(serialized.trim_end().ends_with('╯'), "{serialized}");
 }
 
 #[test]
@@ -557,20 +559,20 @@ fn test_validate_shex_multiple_nodes() {
 
     // Load ShEx schema
     let schema = InputSpec::str(
-        "PREFIX ex: <http://example.org/>
+        r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
-           }",
+           }"#,
     );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load ShapeMap with multiple associations
     let shapemap = InputSpec::str(
-        "ex:alice@ex:PersonShape,
-           ex:bob@ex:PersonShape",
+        r#"ex:alice@ex:PersonShape,
+           ex:bob@ex:PersonShape"#,
     );
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
@@ -583,12 +585,13 @@ fn test_validate_shex_multiple_nodes() {
     let serialized =
         serialize_validation_results_to_string(&mut rudof, None, Some(ResultShExValidationFormat::Compact));
 
-    let re = Regex::new(r"(?m)^\x{2502}\s+Node\s+\x{2502}\s+Shape\s+\x{2502}\s+Status\s+\x{2502}$").unwrap();
+    let re = Regex::new(r"(?m)^│\s+Node\s+│\s+Shape\s+│\s+Status\s+│$").unwrap();
 
     assert!(re.is_match(&serialized));
 
     println!(
-        "\n===== test_validate_shex_multiple_nodes =====\n{serialized}============================================"
+        "\n===== test_validate_shex_multiple_nodes =====\n{}============================================",
+        serialized
     );
 }
 
@@ -615,9 +618,9 @@ fn test_validate_shex_iri_pattern_with_base_schema() {
     .unwrap();
 
     let schema = InputSpec::str(
-        r"<http://a.example/S1> IRI /^https?:\/\// {
+        r#"<http://a.example/S1> IRI /^https?:\/\// {
              <http://a.example/p1> <http://a.example/dt1>
-           }",
+           }"#,
     );
     load_shex_schema(
         &mut rudof,
@@ -628,7 +631,7 @@ fn test_validate_shex_iri_pattern_with_base_schema() {
     )
     .unwrap();
 
-    let shapemap = InputSpec::str("<http://a.example/n1>@<http://a.example/S1>");
+    let shapemap = InputSpec::str(r#"<http://a.example/n1>@<http://a.example/S1>"#);
     load_shapemap(
         &mut rudof,
         &shapemap,
@@ -653,7 +656,7 @@ fn test_validate_shex_iri_pattern_with_base_schema() {
 fn test_validate_shex_bnode_focus_in_shapemap() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let data = InputSpec::str("_:abcd <http://a.example/p1> <http://a.example/o1> .");
+    let data = InputSpec::str(r#"_:abcd <http://a.example/p1> <http://a.example/o1> ."#);
     load_data(
         &mut rudof,
         Some(&[data]),
@@ -668,13 +671,13 @@ fn test_validate_shex_bnode_focus_in_shapemap() {
     .unwrap();
 
     let schema = InputSpec::str(
-        "<http://a.example/S1> IRI {
+        r#"<http://a.example/S1> IRI {
              <http://a.example/p1> .
-           }",
+           }"#,
     );
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::str("_:abcd@<http://a.example/S1>");
+    let shapemap = InputSpec::str(r#"_:abcd@<http://a.example/S1>"#);
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
     validate_shex(&mut rudof, None, None, None).unwrap();
@@ -731,7 +734,7 @@ fn serve_mock_endpoint() -> String {
                 "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                 body.len()
             );
-            drop(stream.write_all(response.as_bytes()));
+            let _ = stream.write_all(response.as_bytes());
         }
     });
     format!("http://{addr}/sparql")
@@ -787,7 +790,7 @@ fn validate_shapemap_against_mock_endpoint(limits: rudof_rdf::rdf_core::Endpoint
 #[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_validate_shex_endpoint_batches_shapemap_nodes() {
-    let requests = validate_shapemap_against_mock_endpoint(rudof_rdf::rdf_core::EndpointLimits::default());
+    let requests = validate_shapemap_against_mock_endpoint(Default::default());
     assert_eq!(requests, 1);
 }
 
@@ -841,7 +844,7 @@ fn serve_triples_endpoint(triples: Vec<(String, String, String)>) -> String {
                 "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                 body.len()
             );
-            drop(stream.write_all(response.as_bytes()));
+            let _ = stream.write_all(response.as_bytes());
         }
     });
     format!("http://{addr}/sparql")
@@ -934,7 +937,7 @@ fn test_validate_shex_read_sink_is_removed_after_the_run() {
         EndpointStrategy::default(),
     )
     .unwrap();
-    let schema = InputSpec::str("<PersonShape> { <name> . ; <age> . }");
+    let schema = InputSpec::str(r#"<PersonShape> { <name> . ; <age> . }"#);
     load_shex_schema(
         &mut rudof,
         &schema,
@@ -943,7 +946,7 @@ fn test_validate_shex_read_sink_is_removed_after_the_run() {
         None,
     )
     .unwrap();
-    let shapemap = InputSpec::str("<alice>@<PersonShape>");
+    let shapemap = InputSpec::str(r#"<alice>@<PersonShape>"#);
     load_shapemap(
         &mut rudof,
         &shapemap,
@@ -954,7 +957,7 @@ fn test_validate_shex_read_sink_is_removed_after_the_run() {
     .unwrap();
 
     let sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
-    validate_shex(&mut rudof, Some(TriplesSink::new(Arc::clone(&sink))), None, None).unwrap();
+    validate_shex(&mut rudof, Some(TriplesSink::new(sink.clone())), None, None).unwrap();
     assert_eq!(sink.lock().unwrap().report().triples, 2);
 
     validate_shex(&mut rudof, None, None, None).unwrap();
@@ -988,8 +991,8 @@ fn test_validate_shex_valid_sink_keeps_only_the_valid_triples() {
     )
     .unwrap();
     let schema = InputSpec::str(
-        "prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-           <Person> { <name> xsd:string }",
+        r#"prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+           <Person> { <name> xsd:string }"#,
     );
     load_shex_schema(
         &mut rudof,
@@ -999,7 +1002,7 @@ fn test_validate_shex_valid_sink_keeps_only_the_valid_triples() {
         None,
     )
     .unwrap();
-    let shapemap = InputSpec::str("<alice>@<Person>, <bob>@<Person>");
+    let shapemap = InputSpec::str(r#"<alice>@<Person>, <bob>@<Person>"#);
     load_shapemap(
         &mut rudof,
         &shapemap,
@@ -1014,9 +1017,9 @@ fn test_validate_shex_valid_sink_keeps_only_the_valid_triples() {
     let invalid = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
     validate_shex(
         &mut rudof,
-        Some(TriplesSink::new(Arc::clone(&read))),
-        Some(TriplesSink::new(Arc::clone(&valid))),
-        Some(TriplesSink::new(Arc::clone(&invalid))),
+        Some(TriplesSink::new(read.clone())),
+        Some(TriplesSink::new(valid.clone())),
+        Some(TriplesSink::new(invalid.clone())),
     )
     .unwrap();
     let triples = |sink: &Arc<Mutex<GraphSink>>| {
@@ -1055,7 +1058,7 @@ fn test_validate_shex_sinks_against_an_endpoint() {
     use std::sync::{Arc, Mutex};
 
     let wd = |local: &str| format!("http://www.wikidata.org/entity/{local}");
-    let p31 = "http://www.wikidata.org/prop/direct/P31".to_owned();
+    let p31 = "http://www.wikidata.org/prop/direct/P31".to_string();
     let url = serve_triples_endpoint(vec![
         (wd("Q42"), p31.clone(), wd("Q5")),
         (wd("Q42"), p31.clone(), wd("Q999")),
@@ -1081,9 +1084,9 @@ wdt = "http://www.wikidata.org/prop/direct/"
         .execute()
         .unwrap();
     let schema = InputSpec::str(
-        "prefix wd: <http://www.wikidata.org/entity/>
+        r#"prefix wd: <http://www.wikidata.org/entity/>
            prefix wdt: <http://www.wikidata.org/prop/direct/>
-           <Human> EXTRA wdt:P31 { wdt:P31 [ wd:Q5 ] }",
+           <Human> EXTRA wdt:P31 { wdt:P31 [ wd:Q5 ] }"#,
     );
     load_shex_schema(
         &mut rudof,
@@ -1108,9 +1111,9 @@ wdt = "http://www.wikidata.org/prop/direct/"
     let (read, valid, invalid) = (new_sink(), new_sink(), new_sink());
     validate_shex(
         &mut rudof,
-        Some(TriplesSink::new(Arc::clone(&read))),
-        Some(TriplesSink::new(Arc::clone(&valid))),
-        Some(TriplesSink::new(Arc::clone(&invalid))),
+        Some(TriplesSink::new(read.clone())),
+        Some(TriplesSink::new(valid.clone())),
+        Some(TriplesSink::new(invalid.clone())),
     )
     .unwrap();
 

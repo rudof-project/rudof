@@ -107,7 +107,7 @@ impl AST2IR {
         // Root schema prefixmap wins (imported schemas' prefix maps are scoped to their own file).
         compiled_schema.set_prefixmap(schema_ast.prefixmap());
 
-        compiled_schema.set_semantic_actions_registry(Arc::clone(&self.semantic_actions_registry));
+        compiled_schema.set_semantic_actions_registry(self.semantic_actions_registry.clone());
 
         // Collect start actions
         if let Some(start_actions) = schema_ast.start_actions() {
@@ -124,14 +124,14 @@ impl AST2IR {
         let local_shapes = self.collect_shape_labels(schema_ast, compiled_schema, source_iri, base)?;
         // trace!("Collected shape labels for root schema {source_iri}: {local_shapes} shapes");
         self.triple_expr_labels.clear();
-        for (ast, _) in &imported_asts {
+        for (ast, _) in imported_asts.iter() {
             self.collect_triple_expr_labels_schema(ast)?;
         }
         self.collect_triple_expr_labels_schema(schema_ast)?;
 
         // Phase 2: compile shape expressions in the order they were collected
         // (imports bottom-up, then root).
-        for (ast, src) in &imported_asts {
+        for (ast, src) in imported_asts.iter() {
             self.collect_shape_exprs(ast, compiled_schema, src, &schema_ast.base())?;
         }
         self.collect_shape_exprs(schema_ast, compiled_schema, source_iri, &schema_ast.base())?;
@@ -318,7 +318,7 @@ impl AST2IR {
         Ok(se)
     }
 
-    fn ref2idx(&self, sref: &ShapeExprLabel, compiled_schema: &mut SchemaIR) -> CResult<ShapeLabelIdx> {
+    fn ref2idx(&self, sref: &ast::ShapeExprLabel, compiled_schema: &mut SchemaIR) -> CResult<ShapeLabelIdx> {
         let idx = self.get_shape_label_idx(sref, compiled_schema)?;
         Ok(idx)
     }
@@ -518,11 +518,12 @@ impl AST2IR {
     ) -> CResult<RbeStruct<Component>> {
         match triple_expr {
             ast::TripleExpr::EachOf {
+                id: _,
                 expressions,
                 min,
                 max,
                 sem_acts,
-                ..
+                annotations: _,
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
@@ -547,11 +548,12 @@ impl AST2IR {
                 Ok(Self::mk_card_group(RbeStruct::and(cs), card))
             },
             ast::TripleExpr::OneOf {
+                id: _,
                 expressions,
                 min,
                 max,
                 sem_acts,
-                ..
+                annotations: _,
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
@@ -573,13 +575,14 @@ impl AST2IR {
             },
             ast::TripleExpr::TripleConstraint {
                 id,
+                negated: _,
                 inverse,
                 predicate,
                 value_expr,
                 min,
                 max,
                 sem_acts,
-                ..
+                annotations: _,
             } => {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
@@ -746,7 +749,7 @@ impl AST2IR {
                     locate_operands(compiled_schema, &idx_and, &ands);
                     let display = format!(
                         "AND({})",
-                        ands.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                        ands.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
                     );
                     Ok((mk_cond_ref(idx_and), display))
                 },
@@ -761,7 +764,7 @@ impl AST2IR {
                     let or_se = ShapeExpr::ShapeOr { exprs: ors.clone() };
                     let display = format!(
                         "OR({})",
-                        ors.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                        ors.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
                     );
                     let idx_or = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_or, or_se);
@@ -797,17 +800,17 @@ impl AST2IR {
         } else {
             Ok((
                 MatchCond::single(SingleCond::new().with_name(".").with_kind(CondKind::Any)),
-                ".".to_owned(),
+                ".".to_string(),
             ))
         }?;
-        if sem_actions_conds.is_empty() {
-            Ok((cond, display))
-        } else {
+        if !sem_actions_conds.is_empty() {
             sem_actions_conds.push(cond);
             Ok((
                 MatchCond::and(sem_actions_conds),
-                format!("value expression {display} + semantic actions"),
+                format!("value expression {} + semantic actions", display),
             ))
+        } else {
+            Ok((cond, display))
         }
     }
 
@@ -1022,8 +1025,8 @@ fn valueset2match_cond(vs: ValueSet, prefixmap: &PrefixMap) -> (Cond, String) {
 
 fn options2match_cond<T: IntoIterator<Item = Option<(Cond, String)>>>(os: T) -> (Cond, String) {
     let vec: Vec<(Cond, String)> = os.into_iter().flatten().collect();
-    match &*vec {
-        [] => (MatchCond::empty(), ".".to_owned()),
+    match &vec[..] {
+        [] => (MatchCond::empty(), ".".to_string()),
         [(c, s)] => (c.clone(), s.clone()),
         _ => (
             MatchCond::And(vec.iter().map(|(c, _)| c.clone()).collect()),
@@ -1037,7 +1040,7 @@ fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
 }
 
 fn mk_cond_sem_act(name: IriS, code: Option<String>) -> Cond {
-    let display = name.as_str().to_owned();
+    let display = name.as_str().to_string();
     MatchCond::single(
         SingleCond::new()
             .with_name(display.as_str())
@@ -1046,7 +1049,7 @@ fn mk_cond_sem_act(name: IriS, code: Option<String>) -> Cond {
 }
 
 fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
-    let qualified = prefixmap.qualify(datatype).clone();
+    let qualified = prefixmap.qualify(datatype).to_string();
     MatchCond::single(
         SingleCond::new()
             .with_name(qualified.as_str())
@@ -1144,8 +1147,8 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
 fn mk_cond_pattern(regex: &str, flags: Option<&str>, base: &Option<IriS>) -> Cond {
     let name = format!("/{regex}/{}", flags.unwrap_or(""));
     MatchCond::single(SingleCond::new().with_name(name.as_str()).with_kind(CondKind::Pattern {
-        regex: regex.to_owned(),
-        flags: flags.map(ToOwned::to_owned),
+        regex: regex.to_string(),
+        flags: flags.map(|f| f.to_string()),
         base: base.clone(),
     }))
 }
@@ -1193,7 +1196,7 @@ fn cnv_value(v: &ast::ValueSetValue, prefixmap: &PrefixMap) -> CResult<ValueSetV
         ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
             language_tag: language_tag.clone(),
         }),
-        ast::ValueSetValue::LiteralStem { stem, .. } => Ok(ValueSetValue::LiteralStem { stem: stem.clone() }),
+        ast::ValueSetValue::LiteralStem { stem, .. } => Ok(ValueSetValue::LiteralStem { stem: stem.to_string() }),
         ast::ValueSetValue::LiteralStemRange { stem, exclusions } => {
             let stem = cnv_string_or_wildcard(stem)?;
             let exclusions = cnv_literal_exclusions(exclusions)?;
@@ -1216,32 +1219,36 @@ fn cnv_value(v: &ast::ValueSetValue, prefixmap: &PrefixMap) -> CResult<ValueSetV
     }
 }
 
-fn cnv_lang_or_wildcard(stem: &ast::LangOrWildcard) -> CResult<ir::value_set_value::LangOrWildcard> {
+fn cnv_lang_or_wildcard(stem: &ast::LangOrWildcard) -> CResult<crate::ir::value_set_value::LangOrWildcard> {
     match stem {
-        ast::LangOrWildcard::Lang(s) => Ok(ir::value_set_value::LangOrWildcard::Lang(s.clone())),
-        ast::LangOrWildcard::Wildcard => Ok(ir::value_set_value::LangOrWildcard::Wildcard {
-            type_: "Lang wildcard".to_owned(),
+        ast::LangOrWildcard::Lang(s) => Ok(crate::ir::value_set_value::LangOrWildcard::Lang(s.clone())),
+        ast::LangOrWildcard::Wildcard => Ok(crate::ir::value_set_value::LangOrWildcard::Wildcard {
+            type_: "Lang wildcard".to_string(),
         }),
     }
 }
 
-fn cnv_string_or_wildcard(stem: &ast::StringOrWildcard) -> CResult<ir::value_set_value::StringOrWildcard> {
+fn cnv_string_or_wildcard(stem: &ast::StringOrWildcard) -> CResult<crate::ir::value_set_value::StringOrWildcard> {
     match stem {
-        ast::StringOrWildcard::String(s) => Ok(ir::value_set_value::StringOrWildcard::String(s.clone())),
-        ast::StringOrWildcard::Wildcard => Ok(ir::value_set_value::StringOrWildcard::Wildcard { type_: String::new() }),
+        ast::StringOrWildcard::String(s) => Ok(crate::ir::value_set_value::StringOrWildcard::String(s.to_string())),
+        ast::StringOrWildcard::Wildcard => {
+            Ok(crate::ir::value_set_value::StringOrWildcard::Wildcard { type_: "".to_string() })
+        },
     }
 }
 
 fn cnv_iriref_or_wildcard(
     stem: &ast::IriRefOrWildcard,
     prefixmap: &PrefixMap,
-) -> CResult<ir::value_set_value::IriOrWildcard> {
+) -> CResult<crate::ir::value_set_value::IriOrWildcard> {
     match stem {
         ast::IriRefOrWildcard::IriRef(iri) => {
             let cnv_iri = cnv_iri_ref(iri, prefixmap)?;
-            Ok(ir::value_set_value::IriOrWildcard::Iri(cnv_iri))
+            Ok(crate::ir::value_set_value::IriOrWildcard::Iri(cnv_iri))
         },
-        ast::IriRefOrWildcard::Wildcard => Ok(ir::value_set_value::IriOrWildcard::Wildcard { type_: String::new() }),
+        ast::IriRefOrWildcard::Wildcard => {
+            Ok(crate::ir::value_set_value::IriOrWildcard::Wildcard { type_: "".to_string() })
+        },
     }
 }
 
@@ -1277,7 +1284,9 @@ fn cnv_literal_exclusions(
     }
 }
 
-fn cnv_iri_exclusions(exclusions: &Option<Vec<IriExclusion>>) -> CResult<Option<Vec<ir::exclusion::IriExclusion>>> {
+fn cnv_iri_exclusions(
+    exclusions: &Option<Vec<ast::iri_exclusion::IriExclusion>>,
+) -> CResult<Option<Vec<ir::exclusion::IriExclusion>>> {
     match exclusions {
         None => Ok(None),
         Some(exs) => {
@@ -1334,37 +1343,41 @@ fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<St
     }
 }*/
 
-fn cnv_literal_exclusion(le: &ast::literal_exclusion::LiteralExclusion) -> CResult<ir::exclusion::LiteralExclusion> {
+fn cnv_literal_exclusion(
+    le: &ast::literal_exclusion::LiteralExclusion,
+) -> CResult<crate::ir::exclusion::LiteralExclusion> {
     match le {
-        ast::literal_exclusion::LiteralExclusion::Literal(s) => Ok(ir::exclusion::LiteralExclusion::Literal(s.clone())),
+        ast::literal_exclusion::LiteralExclusion::Literal(s) => {
+            Ok(crate::ir::exclusion::LiteralExclusion::Literal(s.to_string()))
+        },
         ast::literal_exclusion::LiteralExclusion::LiteralStem(s) => {
-            Ok(ir::exclusion::LiteralExclusion::LiteralStem(s.clone()))
+            Ok(crate::ir::exclusion::LiteralExclusion::LiteralStem(s.to_string()))
         },
     }
 }
 
-fn cnv_iri_exclusion(le: &IriExclusion) -> CResult<ir::exclusion::IriExclusion> {
+fn cnv_iri_exclusion(le: &IriExclusion) -> CResult<crate::ir::exclusion::IriExclusion> {
     match le {
-        IriExclusion::Iri(s) => {
+        ast::iri_exclusion::IriExclusion::Iri(s) => {
             let iri_s = iri_ref2iri_s(s);
-            Ok(ir::exclusion::IriExclusion::Iri(iri_s))
+            Ok(crate::ir::exclusion::IriExclusion::Iri(iri_s))
         },
-        IriExclusion::IriStem(s) => {
+        ast::iri_exclusion::IriExclusion::IriStem(s) => {
             let iri_s = iri_ref2iri_s(s);
-            Ok(ir::exclusion::IriExclusion::IriStem(iri_s))
+            Ok(crate::ir::exclusion::IriExclusion::IriStem(iri_s))
         },
     }
 }
 
 fn cnv_language_exclusion(
     le: &ast::language_exclusion::LanguageExclusion,
-) -> CResult<ir::exclusion::LanguageExclusion> {
+) -> CResult<crate::ir::exclusion::LanguageExclusion> {
     match le {
         ast::language_exclusion::LanguageExclusion::Language(s) => {
-            Ok(ir::exclusion::LanguageExclusion::Language(s.clone()))
+            Ok(crate::ir::exclusion::LanguageExclusion::Language(s.clone()))
         },
         ast::language_exclusion::LanguageExclusion::LanguageStem(s) => {
-            Ok(ir::exclusion::LanguageExclusion::LanguageStem(s.clone()))
+            Ok(crate::ir::exclusion::LanguageExclusion::LanguageStem(s.clone()))
         },
     }
 }

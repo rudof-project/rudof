@@ -43,7 +43,8 @@ fn shape_and() -> ShExJDocument {
 fn predicates_of(shape: &Value) -> Vec<&str> {
     shape["expression"]["expressions"]
         .as_array()
-        .map_or_default(|expressions| expressions.iter().filter_map(|tc| tc["predicate"].as_str()).collect())
+        .map(|expressions| expressions.iter().filter_map(|tc| tc["predicate"].as_str()).collect())
+        .unwrap_or_default()
 }
 
 // The first two entries expect the ShExJ of before `ShapeDecl`, where a shape expression carried

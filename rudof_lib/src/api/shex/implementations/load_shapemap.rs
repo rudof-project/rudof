@@ -51,7 +51,7 @@ fn validate_loaded_data_and_schema(rudof: &mut Rudof) -> Result<(&mut Data, &ShE
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;
 
     if !data.is_rdf() {
-        return Err(Box::new(DataError::NoRdfDataLoaded).into());
+        Err(Box::new(DataError::NoRdfDataLoaded))?
     }
 
     let shex_validator = rudof.shex_validator.as_ref().ok_or(ShExError::NoShExSchemaLoaded)?;
@@ -90,7 +90,7 @@ fn read_shapemap_compact(
         &Some(base_shapes),
     )
     .map_err(|e| ShExError::FailedParsingShapeMap {
-        source_name: shapemap.source_name().clone(),
+        source_name: shapemap.source_name().to_string(),
         error: e.to_string(),
     })?;
 

@@ -9,7 +9,6 @@
 //! Prints one line: `format=… entities=… secs=… load_secs=… validate_secs=… conformant=… violations=…`,
 //! followed by the most frequent violation reasons.
 
-use std::fmt::Write as _;
 #[cfg(target_family = "wasm")]
 fn main() {}
 
@@ -85,23 +84,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let validation_started = Instant::now();
 
     let mut reasons: BTreeMap<String, usize> = BTreeMap::new();
-    let (mut conformant, mut violations) = (0_usize, 0_usize);
+    let (mut conformant, mut violations) = (0usize, 0usize);
     match format {
         SchemaFormat::ShEx => {
             // The generator's exact ShapeMap when it wrote one (each node against the
             // shape that generated it); otherwise one query association per shape
             // with a target class, which also checks a node typed with several
             // classes against every one of their shapes.
-            let shapemap = if let Some(path) = type_map.as_ref().filter(|p| p.exists()) {
-                tokio::fs::read_to_string(path).await?
-            } else {
-                let (model, _) = ShExToUnified.convert_schema(schema_text.clone()).await?;
-                model
-                    .shapes
-                    .values()
-                    .filter_map(|s| s.target_class.as_ref().map(|c| format!("{{FOCUS a <{c}>}}@<{}>", s.id)))
-                    .collect::<Vec<_>>()
-                    .join(",\n")
+            let shapemap = match type_map.as_ref().filter(|p| p.exists()) {
+                Some(path) => tokio::fs::read_to_string(path).await?,
+                None => {
+                    let (model, _) = ShExToUnified.convert_schema(schema_text.clone()).await?;
+                    model
+                        .shapes
+                        .values()
+                        .filter_map(|s| s.target_class.as_ref().map(|c| format!("{{FOCUS a <{c}>}}@<{}>", s.id)))
+                        .collect::<Vec<_>>()
+                        .join(",\n")
+                },
             };
             rudof
                 .load_shex_schema(&InputSpec::str(&schema_text))
@@ -137,7 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             }
                             if let Some((_, why)) = next.split_once("rejected: ") {
                                 let why = why.trim_end_matches('"');
-                                let key = why.split(" but got").next().unwrap_or(why).to_owned();
+                                let key = why.split(" but got").next().unwrap_or(why).to_string();
                                 *reasons.entry(key).or_default() += 1;
                             }
                             lines.next();
@@ -171,7 +171,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if line.contains("<http://www.w3.org/ns/shacl#sourceConstraintComponent>")
                     && let Some(component) = line.split_whitespace().nth(2)
                 {
-                    *reasons.entry(component.to_owned()).or_default() += 1;
+                    *reasons.entry(component.to_string()).or_default() += 1;
                 }
             }
         },
@@ -214,7 +214,7 @@ fn validate_property_graph(
     let validate_secs = validation_started.elapsed().as_secs_f64();
 
     let mut report = String::new();
-    let (mut conformant, mut violations) = (0_usize, 0_usize);
+    let (mut conformant, mut violations) = (0usize, 0usize);
     for a in &result.associations {
         if a.conforms {
             conformant += 1;
@@ -223,7 +223,11 @@ fn validate_property_graph(
         }
         let status = if a.conforms { "OK" } else { "FAIL" };
         let details = format!("{:?}", a.details).replace('"', "'");
-        writeln!(report, "{},{},{status},\"{details}\"", a.node_id, a.type_name).unwrap();
+        report.push_str(&format!(
+            "{},{},{status},\"{details}\"
+",
+            a.node_id, a.type_name
+        ));
     }
     if let Ok(path) = std::env::var("VALIDATION_REPORT") {
         std::fs::write(path, &report)?;

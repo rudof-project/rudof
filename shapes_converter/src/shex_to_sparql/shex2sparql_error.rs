@@ -28,6 +28,6 @@ pub enum ShEx2SparqlError {
 
 impl ShEx2SparqlError {
     pub fn not_implemented(msg: &str) -> ShEx2SparqlError {
-        ShEx2SparqlError::NotImplemented { msg: msg.to_owned() }
+        ShEx2SparqlError::NotImplemented { msg: msg.to_string() }
     }
 }

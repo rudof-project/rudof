@@ -5,7 +5,6 @@ use crate::rdf_impl::{OxigraphInMemory, ReaderMode};
 use oxrdf::NamedNode as OxNamedNode;
 use oxrdf::Term as OxTerm;
 use rudof_iri::IriS;
-use std::fmt::Write as _;
 
 /// Parses `_:p` as the `sh:path` of `:s`, given the triples in `paths`.
 fn parse_path(paths: &str) -> Result<Option<SHACLPath>, RDFError> {
@@ -38,10 +37,10 @@ fn cyclic_paths_are_rejected() {
 #[test]
 fn exploding_shared_path_is_rejected() {
     // _:l1 is ( :q :q ) and each _:lN is ( _:lN-1 _:lN-1 ), so _:l30 has 2^30 steps
-    let mut paths = "_:p sh:zeroOrMorePath _:l30 . _:l1 rdf:first :q ; rdf:rest ( :q ) .".to_owned();
+    let mut paths = "_:p sh:zeroOrMorePath _:l30 . _:l1 rdf:first :q ; rdf:rest ( :q ) .".to_string();
     for n in 2..=30 {
         let m = n - 1;
-        write!(paths, " _:l{n} rdf:first _:l{m} ; rdf:rest ( _:l{m} ) .").unwrap();
+        paths.push_str(&format!(" _:l{n} rdf:first _:l{m} ; rdf:rest ( _:l{m} ) ."));
     }
     let err = parse_path(&paths).unwrap_err().to_string();
     assert!(err.contains("more than 4096 steps plus 16 per triple"), "{err}");

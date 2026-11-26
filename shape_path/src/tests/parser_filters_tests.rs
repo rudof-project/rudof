@@ -44,8 +44,8 @@ fn functions_may_be_tested_alone_or_compared() {
 
 #[test]
 fn functions_are_case_sensitive() {
-    ShExPathParser::parse_syntax("/*[INDEX() = 1]").unwrap_err();
-    ShExPathParser::parse_syntax("/*[Count()]").unwrap_err();
+    assert!(ShExPathParser::parse_syntax("/*[INDEX() = 1]").is_err());
+    assert!(ShExPathParser::parse_syntax("/*[Count()]").is_err());
 }
 
 #[test]

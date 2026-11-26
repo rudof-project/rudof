@@ -99,7 +99,7 @@ fn build_filter(directives: &str) -> Result<EnvFilter, ParseError> {
 /// Must be called at most once per process (a second call is a no-op:
 /// `tracing`'s global default subscriber can only be installed once).
 pub fn init() {
-    let requested = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_owned());
+    let requested = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
     let env_filter =
         build_filter(&requested).unwrap_or_else(|_| EnvFilter::try_new("info").expect("\"info\" is always valid"));
 
@@ -115,7 +115,7 @@ pub fn init() {
     tracing_subscriber::registry().with(reload_layer).with(fmt_layer).init();
 
     // Only fails if called twice; `init` documents that it must not be.
-    drop(RELOAD_HANDLE.set(handle));
+    let _ = RELOAD_HANDLE.set(handle);
 
     tracing::trace!("rudof running with tracing filter {}", env_filter);
 }
@@ -132,7 +132,7 @@ pub fn set_level(directives: &str) -> Result<(), ParseError> {
     if let Some(handle) = RELOAD_HANDLE.get() {
         // Only fails if the subscriber was dropped, which can't happen: the
         // handle and the subscriber it points at live for the process.
-        drop(handle.reload(filter));
+        let _ = handle.reload(filter);
     }
     Ok(())
 }
@@ -162,8 +162,8 @@ mod tests {
     fn scoped_and_multi_directive_filters_pass_through_unscoped() {
         // A filter the user wrote themselves — containing '=' or ',' — is
         // left untouched, so they can opt back into a dependency's logs.
-        build_filter("rudof_rdf=debug,info").unwrap();
-        build_filter("debug,reqwest=trace").unwrap();
+        assert!(build_filter("rudof_rdf=debug,info").is_ok());
+        assert!(build_filter("debug,reqwest=trace").is_ok());
     }
 
     #[test]

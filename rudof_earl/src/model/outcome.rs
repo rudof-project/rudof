@@ -73,7 +73,7 @@ impl FromStr for Outcome {
             "canttell" => Ok(Outcome::CantTell),
             "inapplicable" => Ok(Outcome::Inapplicable),
             "untested" => Ok(Outcome::Untested),
-            other => Err(EarlError::UnknownOutcome(other.to_owned())),
+            other => Err(EarlError::UnknownOutcome(other.to_string())),
         }
     }
 }

@@ -23,9 +23,7 @@ static CANCELLATION_LOCK: Mutex<()> = Mutex::new(());
 
 fn serialize() -> std::sync::MutexGuard<'static, ()> {
     // A panicking test poisons the lock; later tests should still run.
-    let guard = CANCELLATION_LOCK
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let guard = CANCELLATION_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     // ...and must not inherit a cancellation it left set before panicking.
     rudof_rdf::cancellation::reset();
     guard
@@ -78,10 +76,10 @@ impl rudof_typing::TypingObserver<Node, shex_ast::ShapeLabelIdx, ValidatorError,
     }
 }
 
-const NESTED_SCHEMA: &str = "
+const NESTED_SCHEMA: &str = r#"
 <http://a.example/T> { <http://a.example/q> . }
 <http://a.example/S> { <http://a.example/p> @<http://a.example/T> }
-";
+"#;
 const NESTED_DATA: &str = r#"<http://a.example/n1> <http://a.example/p> <http://a.example/n2> .
 <http://a.example/n2> <http://a.example/q> "x" ."#;
 
@@ -89,7 +87,7 @@ const NESTED_DATA: &str = r#"<http://a.example/n1> <http://a.example/p> <http://
 fn observer_sees_dependency_result_before_the_shape_that_needed_it() {
     let _guard = serialize();
     let observer = Arc::new(RecordingObserver::default());
-    let config = ValidatorConfig::default().with_typing_observer(Arc::<RecordingObserver>::clone(&observer));
+    let config = ValidatorConfig::default().with_typing_observer(observer.clone());
     let compiled = compile(NESTED_SCHEMA, &config);
     let mut validator = Validator::new(&compiled, &config).expect("validator");
     let graph =
@@ -143,7 +141,7 @@ fn explicit_observer_wins_over_show_intermediate_results() {
     let observer = Arc::new(RecordingObserver::default());
     let config = ValidatorConfig::default()
         .with_show_intermediate_results(true)
-        .with_typing_observer(Arc::<RecordingObserver>::clone(&observer));
+        .with_typing_observer(observer.clone());
     let compiled = compile(NESTED_SCHEMA, &config);
     let mut validator = Validator::new(&compiled, &config).expect("validator");
     let graph =
@@ -162,10 +160,10 @@ fn explicit_observer_wins_over_show_intermediate_results() {
     );
 }
 
-const INDEPENDENT_SCHEMA: &str = "
+const INDEPENDENT_SCHEMA: &str = r#"
 <http://a.example/S1> { <http://a.example/p1> . }
 <http://a.example/S2> { <http://a.example/p2> . }
-";
+"#;
 const INDEPENDENT_DATA: &str = r#"<http://a.example/n1> <http://a.example/p1> "x" .
 <http://a.example/n2> <http://a.example/p2> "y" ."#;
 

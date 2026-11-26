@@ -27,6 +27,6 @@ pub enum UmlError {
 
 impl UmlError {
     pub fn not_implemented(msg: &str) -> UmlError {
-        UmlError::NotImplemented { msg: msg.to_owned() }
+        UmlError::NotImplemented { msg: msg.to_string() }
     }
 }

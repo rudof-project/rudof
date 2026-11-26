@@ -8,11 +8,11 @@ use shex_ast::{Node, ResolveMethod, ShExParser, ir::ast2ir::AST2IR};
 use shex_validation::{Validator, ValidatorConfig};
 use std::sync::{Arc, Mutex};
 
-const SCHEMA: &str = "
+const SCHEMA: &str = r#"
 prefix : <http://a.example/>
 
 :Person { :name . ; ^:knows . * }
-";
+"#;
 
 const DATA: &str = r#"
 prefix : <http://a.example/>
@@ -45,7 +45,7 @@ fn compile(config: &ValidatorConfig) -> SchemaIR {
 /// Validates `:alice@:Person` `runs` times with the same sink and returns it.
 fn validate_alice(runs: usize) -> Arc<Mutex<GraphSink>> {
     let sink = Arc::new(Mutex::new(GraphSink::new(OxigraphInMemory::new())));
-    let config = ValidatorConfig::default().with_read_sink(TriplesSink::new(Arc::clone(&sink)));
+    let config = ValidatorConfig::default().with_read_sink(TriplesSink::new(sink.clone()));
     let compiled = compile(&config);
     let mut validator = Validator::new(&compiled, &config).expect("validator");
     let graph = OxigraphInMemory::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::Strict).expect("parse graph");
@@ -55,10 +55,7 @@ fn validate_alice(runs: usize) -> Arc<Mutex<GraphSink>> {
         let result = validator
             .validate_node_shape(&node, &shape, &graph, &compiled, &None)
             .expect("validate");
-        assert!(
-            result.get_info(&node, &shape).expect("status").is_conformant(),
-            "{node} should conform to {shape}"
-        );
+        assert!(result.get_info(&node, &shape).expect("status").is_conformant());
     }
     sink
 }
@@ -76,8 +73,8 @@ fn the_sink_receives_the_outgoing_and_incoming_arcs_read() {
     assert_eq!(
         sorted_triples(&sink),
         vec![
-            r#"<http://a.example/alice> <http://a.example/name> "Alice""#.to_owned(),
-            "<http://a.example/bob> <http://a.example/knows> <http://a.example/alice>".to_owned(),
+            r#"<http://a.example/alice> <http://a.example/name> "Alice""#.to_string(),
+            "<http://a.example/bob> <http://a.example/knows> <http://a.example/alice>".to_string(),
         ]
     );
     assert_eq!(sink.report().triples, 2);

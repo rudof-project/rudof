@@ -43,7 +43,6 @@ impl MessageMap {
         Self::default()
     }
 
-    #[must_use]
     pub fn with_message(mut self, lang: Option<Lang>, message: String) -> Self {
         self.messages.insert(lang, message);
         self
@@ -69,7 +68,6 @@ impl MessageMap {
         self.messages.get(&lang.cloned())
     }
 
-    #[must_use]
     pub fn merge(mut self, other: Self, over: bool) -> Self {
         other.into_iter().for_each(|(lang, msg)| {
             if over || !self.messages.contains_key(&lang) {
@@ -92,7 +90,7 @@ impl IntoIterator for MessageMap {
 impl From<&str> for MessageMap {
     fn from(value: &str) -> Self {
         Self {
-            messages: HashMap::from([(None, value.to_owned())]),
+            messages: HashMap::from([(None, value.to_string())]),
         }
     }
 }

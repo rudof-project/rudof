@@ -46,7 +46,7 @@ fn test_compare_identical_shex_schemas() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema = InputSpec::str(
-        "
+        r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -55,7 +55,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:age xsd:integer ?
 }
-        ",
+        "#,
     );
 
     let serialized = serialize_comparison_to_string(
@@ -75,7 +75,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     assert!(!serialized.is_empty());
 
     println!(
-        "\n===== test_compare_identical_shex_schemas =====\n{serialized}\n============================================"
+        "\n===== test_compare_identical_shex_schemas =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -84,7 +85,7 @@ fn test_compare_different_shex_schemas() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema1 = InputSpec::str(
-        "
+        r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -93,11 +94,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:age xsd:integer ?
 }
-        ",
+        "#,
     );
 
     let schema2 = InputSpec::str(
-        "
+        r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -106,7 +107,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:email xsd:string
 }
-        ",
+        "#,
     );
 
     let serialized = serialize_comparison_to_string(
@@ -126,7 +127,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     assert!(!serialized.is_empty());
 
     println!(
-        "\n===== test_compare_different_shex_schemas =====\n{serialized}\n============================================"
+        "\n===== test_compare_different_shex_schemas =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -135,7 +137,7 @@ fn test_compare_shex_schemas_json_output() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema1 = InputSpec::str(
-        "
+        r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -143,11 +145,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 :Person {
     schema:name xsd:string
 }
-        ",
+        "#,
     );
 
     let schema2 = InputSpec::str(
-        "
+        r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -156,7 +158,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:age xsd:integer
 }
-        ",
+        "#,
     );
 
     let serialized = serialize_comparison_to_string(
@@ -173,10 +175,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     );
 
     // JSON output should be valid JSON
-    assert!(serialized.contains('{') && serialized.contains('}'));
+    assert!(serialized.contains("{") && serialized.contains("}"));
 
     println!(
-        "\n===== test_compare_shex_schemas_json_output =====\n{serialized}\n============================================"
+        "\n===== test_compare_shex_schemas_json_output =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -185,7 +188,7 @@ fn test_compare_complex_shex_schemas() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let schema1 = InputSpec::str(
-        "
+        r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -200,11 +203,11 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string ;
     schema:employee @:Person +
 }
-        ",
+        "#,
     );
 
     let schema2 = InputSpec::str(
-        "
+        r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -219,7 +222,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:legalName xsd:string ;
     schema:member @:Person +
 }
-        ",
+        "#,
     );
 
     let serialized = serialize_comparison_to_string(
@@ -236,9 +239,10 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     );
 
     // Complex comparison with multiple shapes and properties
-    assert!(serialized.contains('{') && serialized.contains('}'));
+    assert!(serialized.contains("{") && serialized.contains("}"));
 
     println!(
-        "\n===== test_compare_complex_shex_schemas =====\n{serialized}\n============================================"
+        "\n===== test_compare_complex_shex_schemas =====\n{}\n============================================",
+        serialized
     );
 }

@@ -65,11 +65,11 @@ fn numeric_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
             .prop_filter("finite double", |d| d.is_finite())
             .prop_map(ConcreteLiteral::double),
         // Positive integers
-        (1_u128..=u128::MAX).prop_filter_map("positive integer", |n| { ConcreteLiteral::positive_integer(n).ok() }),
+        (1u128..=u128::MAX).prop_filter_map("positive integer", |n| { ConcreteLiteral::positive_integer(n).ok() }),
         // Negative integers
-        (i128::MIN..=-1_i128).prop_filter_map("negative integer", |n| { ConcreteLiteral::negative_integer(n).ok() }),
+        (i128::MIN..=-1i128).prop_filter_map("negative integer", |n| { ConcreteLiteral::negative_integer(n).ok() }),
         // Non-positive integers
-        (i128::MIN..=0_i128).prop_filter_map("non-positive integer", |n| {
+        (i128::MIN..=0i128).prop_filter_map("non-positive integer", |n| {
             ConcreteLiteral::non_positive_integer(n).ok()
         }),
         // Decimals from i64 range
@@ -340,7 +340,7 @@ proptest! {
         let s = n.to_string();
         let result = ConcreteLiteral::parse_integer(&s);
         prop_assert!(result.is_ok());
-        prop_assert_eq!(result.unwrap(), i128::from(n));
+        prop_assert_eq!(result.unwrap(), n as i128);
     }
 
     /// parse_double should round-trip for finite doubles
@@ -480,8 +480,8 @@ proptest! {
     /// Numeric literals should be comparable
     #[test]
     fn numeric_literals_comparable(n1 in any::<i32>(), n2 in any::<i32>()) {
-        let lit1 = ConcreteLiteral::integer(i128::from(n1));
-        let lit2 = ConcreteLiteral::integer(i128::from(n2));
+        let lit1 = ConcreteLiteral::integer(n1 as i128);
+        let lit2 = ConcreteLiteral::integer(n2 as i128);
 
         match lit1.partial_cmp(&lit2) {
             Some(ord) => prop_assert_eq!(ord, n1.cmp(&n2)),
@@ -546,7 +546,7 @@ proptest! {
     /// as_checked_literal on numeric literals should succeed
     #[test]
     fn checked_literal_numeric(n in any::<i64>()) {
-        let lit = ConcreteLiteral::integer(i128::from(n));
+        let lit = ConcreteLiteral::integer(n as i128);
         let checked = lit.into_checked_literal();
         prop_assert!(checked.is_ok());
     }
@@ -561,7 +561,7 @@ proptest! {
     /// lang() should return None for non-language-tagged literals
     #[test]
     fn lang_returns_none_for_non_lang_literals(n in any::<i64>()) {
-        let lit = ConcreteLiteral::integer(i128::from(n));
+        let lit = ConcreteLiteral::integer(n as i128);
         prop_assert_eq!(lit.lang(), None);
     }
 
@@ -575,7 +575,7 @@ proptest! {
     /// numeric_value() should return Some for numeric literals
     #[test]
     fn numeric_value_returns_some_for_numeric(n in any::<i64>()) {
-        let lit = ConcreteLiteral::integer(i128::from(n));
+        let lit = ConcreteLiteral::integer(n as i128);
         prop_assert!(lit.numeric_value().is_some());
     }
 
@@ -601,15 +601,15 @@ mod edge_case_tests {
     #[test]
     fn test_zero_boundary_cases() {
         // Zero should be accepted by non-positive and non-negative
-        ConcreteLiteral::non_positive_integer(0).unwrap();
+        assert!(ConcreteLiteral::non_positive_integer(0).is_ok());
         assert_eq!(
             ConcreteLiteral::non_negative_integer(0),
             ConcreteLiteral::NumericLiteral(NumericLiteral::NonNegativeInteger(0))
         );
 
         // Zero should be rejected by positive and negative
-        ConcreteLiteral::positive_integer(0).unwrap_err();
-        ConcreteLiteral::negative_integer(0).unwrap_err();
+        assert!(ConcreteLiteral::positive_integer(0).is_err());
+        assert!(ConcreteLiteral::negative_integer(0).is_err());
     }
 
     #[test]
@@ -680,9 +680,9 @@ mod edge_case_tests {
         assert_eq!(ConcreteLiteral::parse_bool("1"), Ok(true));
         assert_eq!(ConcreteLiteral::parse_bool("0"), Ok(false));
 
-        ConcreteLiteral::parse_bool("TRUE").unwrap_err();
-        ConcreteLiteral::parse_bool("yes").unwrap_err();
-        ConcreteLiteral::parse_bool("no").unwrap_err();
+        assert!(ConcreteLiteral::parse_bool("TRUE").is_err());
+        assert!(ConcreteLiteral::parse_bool("yes").is_err());
+        assert!(ConcreteLiteral::parse_bool("no").is_err());
     }
 
     #[test]
@@ -702,11 +702,11 @@ mod edge_case_tests {
     fn test_float_special_values() {
         // NaN and infinity should not be allowed by our filter
         // but let's test that finite values work
-        #[expect(clippy::approx_constant)]
-        let lit = ConcreteLiteral::float(3.14_f32);
+        #[allow(clippy::approx_constant)]
+        let lit = ConcreteLiteral::float(3.14f32);
         assert!(lit.numeric_value().is_some());
 
-        #[expect(clippy::approx_constant)]
+        #[allow(clippy::approx_constant)]
         let lit2 = ConcreteLiteral::double(2.718);
         assert!(lit2.numeric_value().is_some());
     }
@@ -715,9 +715,9 @@ mod edge_case_tests {
     fn test_wrong_datatype_literal_structure() {
         // This would typically be created internally during validation
         let wrong_lit = ConcreteLiteral::WrongDatatypeLiteral {
-            lexical_form: "not_a_number".to_owned(),
+            lexical_form: "not_a_number".to_string(),
             datatype: IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer")),
-            error: "parse error".to_owned(),
+            error: "parse error".to_string(),
         };
 
         assert_eq!(wrong_lit.lexical_form(), "not_a_number");

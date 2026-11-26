@@ -41,7 +41,7 @@ impl Display for SimpleIriSRegistry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "SimpleIriRegistry {{")?;
         for (idx, iri) in self.registry.iter().enumerate() {
-            write!(f, " {idx}: {iri},")?;
+            write!(f, " {}: {},", idx, iri)?;
         }
         write!(f, " }}")
     }

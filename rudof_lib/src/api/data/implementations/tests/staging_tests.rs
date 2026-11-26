@@ -38,7 +38,7 @@ fn session() -> Rudof {
 /// iteration order of the graph.
 fn all(rudof: &Rudof) -> Vec<String> {
     let mut triples: Vec<Triple> = rudof.triples().execute().unwrap().collect();
-    triples.sort_by_key(ToString::to_string);
+    triples.sort_by_key(|triple| triple.to_string());
     triples.iter().map(Triple::to_string).collect()
 }
 
@@ -246,10 +246,10 @@ fn test_begin_staging_is_refused_on_endpoint_data() {
 fn test_rollback_clears_the_results_of_the_graph_it_discards() {
     let mut rudof = session();
     let query = InputSpec::str(
-        "
+        r#"
         prefix : <http://example.org/>
         SELECT ?name WHERE { ?who :name ?name }
-        ",
+        "#,
     );
 
     rudof.begin_staging().execute().unwrap();
@@ -294,7 +294,7 @@ fn test_commit_keeps_the_results_of_the_graph_it_keeps() {
 fn test_a_rollback_leaves_the_loaded_shapes_alone() {
     let mut rudof = session();
     let shapes = InputSpec::str(
-        "
+        r#"
         @prefix :    <http://example.org/> .
         @prefix sh:  <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -302,7 +302,7 @@ fn test_a_rollback_leaves_the_loaded_shapes_alone() {
         :PersonShape a sh:NodeShape ;
             sh:targetClass :Person ;
             sh:property [ sh:path :name ; sh:datatype xsd:string ; sh:minCount 1 ] .
-        ",
+        "#,
     );
 
     rudof.begin_staging().execute().unwrap();
@@ -369,13 +369,6 @@ fn test_shapes_read_out_of_the_data_survive_a_rollback_of_that_data() {
 
 #[test]
 fn test_the_guard_rolls_back_when_it_is_dropped() {
-    fn stage_then_fail(rudof: &mut Rudof) -> Result<()> {
-        let mut tx = rudof.staging().execute()?;
-        tx.add_triple(":dave", ":name", "\"Dave\"").execute()?;
-        tx.add_triple("\"not a subject\"", ":name", "\"Dave\"").execute()?;
-        tx.commit()
-    }
-
     let mut rudof = session();
     let before = all(&rudof);
 
@@ -389,6 +382,12 @@ fn test_the_guard_rolls_back_when_it_is_dropped() {
     assert_eq!(all(&rudof), before);
 
     // Leaving the frame through an error rolls it back the same way.
+    fn stage_then_fail(rudof: &mut Rudof) -> Result<()> {
+        let mut tx = rudof.staging().execute()?;
+        tx.add_triple(":dave", ":name", "\"Dave\"").execute()?;
+        tx.add_triple("\"not a subject\"", ":name", "\"Dave\"").execute()?;
+        tx.commit()
+    }
     assert!(stage_then_fail(&mut rudof).is_err());
     assert_eq!(rudof.staging_depth().execute(), 0);
     assert_eq!(all(&rudof), before);

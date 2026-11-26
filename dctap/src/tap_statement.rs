@@ -41,7 +41,6 @@ impl TapStatement {
         TapStatement::default().with_property_id(property_id)
     }
 
-    #[must_use]
     pub fn with_source_line_number(mut self, line: u64) -> Self {
         self.source_line_number = Some(line);
         self
@@ -51,7 +50,6 @@ impl TapStatement {
         self.source_line_number.unwrap_or_default()
     }
 
-    #[must_use]
     pub fn with_property_id(mut self, property_id: PropertyId) -> Self {
         self.property_id = property_id;
         self
@@ -82,11 +80,11 @@ impl TapStatement {
     }
 
     pub fn set_property_label(&mut self, property_label: &str) {
-        self.property_label = Some(property_label.to_owned());
+        self.property_label = Some(property_label.to_string());
     }
 
     pub fn set_note(&mut self, note: &str) {
-        self.note = Some(note.to_owned());
+        self.note = Some(note.to_string());
     }
 
     pub fn property_id(&self) -> PropertyId {
@@ -171,10 +169,10 @@ fn show_cardinality(mandatory: Option<bool>, repeatable: Option<bool>) -> String
     let mandatory = mandatory.unwrap_or(false);
     let repeatable = repeatable.unwrap_or(false);
     match (mandatory, repeatable) {
-        (false, false) => "?".to_owned(),
-        (false, true) => "*".to_owned(),
-        (true, false) => String::new(),
-        (true, true) => "+".to_owned(),
+        (false, false) => "?".to_string(),
+        (false, true) => "*".to_string(),
+        (true, false) => "".to_string(),
+        (true, true) => "+".to_string(),
     }
 }
 
@@ -182,6 +180,6 @@ fn show_note(note: &Option<String>) -> String {
     if let Some(note) = note {
         format!(" // {note}")
     } else {
-        String::new()
+        "".to_string()
     }
 }

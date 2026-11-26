@@ -34,7 +34,7 @@ impl Display for Iri {
             Iri::String(s) => s,
             Iri::IriS(iri_s) => iri_s.as_str(),
         };
-        write!(f, "{str}")
+        write!(f, "{}", str)
     }
 }
 
@@ -43,7 +43,7 @@ impl From<Iri> for String {
     fn from(val: Iri) -> Self {
         match val {
             Iri::String(s) => s,
-            Iri::IriS(iri_s) => iri_s.as_str().to_owned(),
+            Iri::IriS(iri_s) => iri_s.as_str().to_string(),
         }
     }
 }

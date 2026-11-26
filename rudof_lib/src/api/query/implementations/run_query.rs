@@ -28,7 +28,7 @@ pub fn run_query(rudof: &mut Rudof, result_query_format: Option<&ResultQueryForm
                 .unwrap_rdf_mut()
                 .query_select(&query.serialize())
                 .map_err(|error| QueryError::FailedExecutingQuery {
-                    query_type: "select".to_owned(),
+                    query_type: "select".to_string(),
                     error: error.to_string(),
                 })?;
 
@@ -49,7 +49,7 @@ pub fn run_query(rudof: &mut Rudof, result_query_format: Option<&ResultQueryForm
         QueryType::Ask => {
             let results = data.unwrap_rdf_mut().query_ask(&query.serialize()).map_err(|error| {
                 QueryError::FailedExecutingQuery {
-                    query_type: "ask".to_owned(),
+                    query_type: "ask".to_string(),
                     error: error.to_string(),
                 }
             })?;

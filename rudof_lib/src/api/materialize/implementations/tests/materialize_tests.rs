@@ -22,7 +22,7 @@ fn materialize_to_string(
 fn setup_rudof(schema_json: &str, map_entries: Vec<(&str, Node)>) -> Rudof {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let input = InputSpec::Str(schema_json.to_owned());
+    let input = InputSpec::Str(schema_json.to_string());
     rudof
         .load_shex_schema(&input)
         .with_shex_schema_format(&ShExFormat::ShExJ)
@@ -87,7 +87,7 @@ fn test_materialize_fails_without_map_state() {
     }"#;
 
     let mut rudof = Rudof::new(RudofConfig::default());
-    let input = InputSpec::Str(schema_json.to_owned());
+    let input = InputSpec::Str(schema_json.to_string());
     rudof
         .load_shex_schema(&input)
         .with_shex_schema_format(&ShExFormat::ShExJ)

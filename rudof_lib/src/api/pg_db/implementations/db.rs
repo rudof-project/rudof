@@ -32,7 +32,7 @@ pub(crate) fn verify_connection(conn_info: &PgDbConnection) -> Result<()> {
 pub(crate) fn verify_in_memory(read_only: bool) -> Result<()> {
     let db = Database::in_memory(SystemConfig::default().read_only(read_only)).map_err(|error| {
         PgDbError::FailedOpenDatabase {
-            path: "<in-memory>".to_owned(),
+            path: "<in-memory>".to_string(),
             error: error.to_string(),
         }
     })?;
@@ -103,7 +103,7 @@ pub(crate) fn run_cypher_query(conn_info: &PgDbConnection, cypher: &str) -> Resu
 // rudof_cli/src/commands/pg_mapping.rs)
 // ============================================================================
 
-fn apply_ddl<W: Write>(conn: &Connection<'_>, model: &PgSchemaModel, writer: &mut W) -> Result<()> {
+fn apply_ddl<W: Write>(conn: &Connection, model: &PgSchemaModel, writer: &mut W) -> Result<()> {
     for table in model.node_tables.values() {
         let sql = format!(
             "CREATE NODE TABLE IF NOT EXISTS {} ({}, PRIMARY KEY(id));",
@@ -140,7 +140,7 @@ fn apply_ddl<W: Write>(conn: &Connection<'_>, model: &PgSchemaModel, writer: &mu
     Ok(())
 }
 
-fn insert_nodes(conn: &Connection<'_>, triples: &[OxTriple], model: &PgSchemaModel) -> Result<usize> {
+fn insert_nodes(conn: &Connection, triples: &[OxTriple], model: &PgSchemaModel) -> Result<usize> {
     let mut subject_triples: HashMap<String, Vec<&OxTriple>> = HashMap::new();
     for triple in triples {
         let s = subject_str(&triple.subject);
@@ -194,7 +194,7 @@ fn insert_nodes(conn: &Connection<'_>, triples: &[OxTriple], model: &PgSchemaMod
                 Err(e) => {
                     if !e.to_string().contains("duplicate key") {
                         return Err(PgDbError::FailedInsertNode {
-                            table: (*table_name).to_owned(),
+                            table: (*table_name).to_string(),
                             error: e.to_string(),
                         });
                     }
@@ -207,7 +207,7 @@ fn insert_nodes(conn: &Connection<'_>, triples: &[OxTriple], model: &PgSchemaMod
 }
 
 fn insert_rels<W: Write>(
-    conn: &Connection<'_>,
+    conn: &Connection,
     triples: &[OxTriple],
     model: &PgSchemaModel,
     writer: &mut W,
@@ -326,32 +326,32 @@ fn value_to_json(value: LbugValue) -> serde_json::Value {
 fn node_to_json(node: &NodeVal) -> serde_json::Value {
     let mut map = serde_json::Map::new();
     map.insert(
-        "id".to_owned(),
+        "id".to_string(),
         serde_json::Value::String(node.get_node_id().to_string()),
     );
     map.insert(
-        "label".to_owned(),
+        "label".to_string(),
         serde_json::Value::String(node.get_label_name().clone()),
     );
-    map.insert("properties".to_owned(), properties_to_json(node.get_properties()));
+    map.insert("properties".to_string(), properties_to_json(node.get_properties()));
     serde_json::Value::Object(map)
 }
 
 fn rel_to_json(rel: &RelVal) -> serde_json::Value {
     let mut map = serde_json::Map::new();
     map.insert(
-        "src".to_owned(),
+        "src".to_string(),
         serde_json::Value::String(rel.get_src_node().to_string()),
     );
     map.insert(
-        "dst".to_owned(),
+        "dst".to_string(),
         serde_json::Value::String(rel.get_dst_node().to_string()),
     );
     map.insert(
-        "label".to_owned(),
+        "label".to_string(),
         serde_json::Value::String(rel.get_label_name().clone()),
     );
-    map.insert("properties".to_owned(), properties_to_json(rel.get_properties()));
+    map.insert("properties".to_string(), properties_to_json(rel.get_properties()));
     serde_json::Value::Object(map)
 }
 

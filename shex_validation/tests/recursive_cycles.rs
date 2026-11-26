@@ -11,7 +11,6 @@ use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_re
 use shex_ast::shapemap::{NodeSelector, QueryShapeMap, ShapeSelector};
 use shex_ast::{Node, ResolveMethod, ShExParser, ShapeExprLabel, ir::ast2ir::AST2IR};
 use shex_validation::{Validator, ValidatorConfig};
-use std::fmt::Write as _;
 
 const KNOWS: &str = "prefix : <http://example.org/>\n:P { :knows @:P {1,2} }";
 
@@ -63,7 +62,7 @@ fn conforming(schema: &str, data: &str, nodes: &[String], config: ValidatorConfi
     nodes
         .iter()
         .filter(|node| result.get_info(node, &shape_label).unwrap().is_conformant())
-        .map(|node| node.to_string().trim_start_matches("http://example.org/").to_owned())
+        .map(|node| node.to_string().trim_start_matches("http://example.org/").to_string())
         .collect()
 }
 
@@ -71,7 +70,7 @@ fn conforming(schema: &str, data: &str, nodes: &[String], config: ValidatorConfi
 fn ring(n: usize) -> (String, Vec<String>) {
     let mut data = String::from("prefix : <http://example.org/>\n");
     for i in 0..n {
-        writeln!(data, ":n{i} :knows :n{}, :n{} .", (i + 1) % n, (i + 2) % n).unwrap();
+        data.push_str(&format!(":n{i} :knows :n{}, :n{} .\n", (i + 1) % n, (i + 2) % n));
     }
     (data, (0..n).map(|i| format!("n{i}")).collect())
 }
@@ -100,9 +99,9 @@ fn a_result_proved_under_a_hypothesis_that_fails_is_not_kept() {
     // so :b must fail too when it is validated afterwards.
     let schema = "prefix : <http://example.org/>\n:P { :knows @:P ; :p [1] }";
     let data = "prefix : <http://example.org/>\n:a :knows :b .\n:b :knows :a ; :p 1 .\n";
-    let order = ["a".to_owned(), "b".to_owned()];
+    let order = ["a".to_string(), "b".to_string()];
     assert!(conforming(schema, data, &order, ValidatorConfig::default()).is_empty());
-    let reversed = ["b".to_owned(), "a".to_owned()];
+    let reversed = ["b".to_string(), "a".to_string()];
     assert!(conforming(schema, data, &reversed, ValidatorConfig::default()).is_empty());
 }
 

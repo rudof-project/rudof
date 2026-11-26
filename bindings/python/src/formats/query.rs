@@ -252,7 +252,7 @@ impl PyQueryResults {
         if let Some(answer) = self.boolean {
             format!("QueryResults(boolean={})", if answer { "True" } else { "False" })
         } else if self.graph.is_some() {
-            "QueryResults(graph=...)".to_owned()
+            "QueryResults(graph=...)".to_string()
         } else {
             format!("QueryResults(variables={:?}, rows={})", self.variables, self.rows.len())
         }

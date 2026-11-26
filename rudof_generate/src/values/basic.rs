@@ -40,7 +40,7 @@ impl FieldGenerator for StringGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_STRING.to_owned()]
+        vec![XSD_STRING.to_string()]
     }
 }
 
@@ -52,17 +52,9 @@ impl FieldGenerator for IntegerGenerator {
         let mut rng = context.rng();
 
         // Get range from parameters or use defaults
-        let min = context
-            .parameters
-            .get("min")
-            .and_then(serde_json::Value::as_i64)
-            .unwrap_or(-1000) as i32;
+        let min = context.parameters.get("min").and_then(|v| v.as_i64()).unwrap_or(-1000) as i32;
 
-        let max = context
-            .parameters
-            .get("max")
-            .and_then(serde_json::Value::as_i64)
-            .unwrap_or(10000) as i32;
+        let max = context.parameters.get("max").and_then(|v| v.as_i64()).unwrap_or(10000) as i32;
 
         let value = rng.random_range(min..=max);
         Ok(value.to_string())
@@ -73,7 +65,7 @@ impl FieldGenerator for IntegerGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_INTEGER.to_owned()]
+        vec![XSD_INTEGER.to_string()]
     }
 }
 
@@ -84,22 +76,14 @@ impl FieldGenerator for DecimalGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
         let mut rng = context.rng();
 
-        let min = context
-            .parameters
-            .get("min")
-            .and_then(serde_json::Value::as_f64)
-            .unwrap_or(-500.0);
+        let min = context.parameters.get("min").and_then(|v| v.as_f64()).unwrap_or(-500.0);
 
-        let max = context
-            .parameters
-            .get("max")
-            .and_then(serde_json::Value::as_f64)
-            .unwrap_or(500.0);
+        let max = context.parameters.get("max").and_then(|v| v.as_f64()).unwrap_or(500.0);
 
         let precision = context
             .parameters
             .get("precision")
-            .and_then(serde_json::Value::as_u64)
+            .and_then(|v| v.as_u64())
             .unwrap_or(2) as usize;
 
         let value = rng.random_range(min..=max);
@@ -111,7 +95,7 @@ impl FieldGenerator for DecimalGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_DECIMAL.to_owned()]
+        vec![XSD_DECIMAL.to_string()]
     }
 }
 
@@ -125,7 +109,7 @@ impl FieldGenerator for BooleanGenerator {
         let true_probability = context
             .parameters
             .get("true_probability")
-            .and_then(serde_json::Value::as_f64)
+            .and_then(|v| v.as_f64())
             .unwrap_or(0.5);
 
         let value = rng.random_bool(true_probability);
@@ -137,7 +121,7 @@ impl FieldGenerator for BooleanGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_BOOLEAN.to_owned()]
+        vec![XSD_BOOLEAN.to_string()]
     }
 }
 
@@ -151,13 +135,13 @@ impl FieldGenerator for DateGenerator {
         let start_year = context
             .parameters
             .get("start_year")
-            .and_then(serde_json::Value::as_u64)
+            .and_then(|v| v.as_u64())
             .unwrap_or(1950) as i32;
 
         let end_year = context
             .parameters
             .get("end_year")
-            .and_then(serde_json::Value::as_u64)
+            .and_then(|v| v.as_u64())
             .unwrap_or(2024) as i32;
 
         let year = rng.random_range(start_year..=end_year);
@@ -172,7 +156,7 @@ impl FieldGenerator for DateGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_DATE.to_owned()]
+        vec![XSD_DATE.to_string()]
     }
 }
 
@@ -186,13 +170,13 @@ impl FieldGenerator for DateTimeGenerator {
         let start_year = context
             .parameters
             .get("start_year")
-            .and_then(serde_json::Value::as_u64)
+            .and_then(|v| v.as_u64())
             .unwrap_or(1950) as i32;
 
         let end_year = context
             .parameters
             .get("end_year")
-            .and_then(serde_json::Value::as_u64)
+            .and_then(|v| v.as_u64())
             .unwrap_or(2024) as i32;
 
         let year = rng.random_range(start_year..=end_year);
@@ -212,7 +196,7 @@ impl FieldGenerator for DateTimeGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_DATETIME.to_owned()]
+        vec![XSD_DATETIME.to_string()]
     }
 }
 
@@ -244,7 +228,7 @@ impl FieldGenerator for UriGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_ANYURI.to_owned()]
+        vec![XSD_ANYURI.to_string()]
     }
 }
 
@@ -253,24 +237,15 @@ impl FieldGenerator for UriGenerator {
 fn generate_name(rng: &mut impl Rng, locale: &str) -> String {
     let first_names = match locale {
         "es" => &[
-            "Ana",
-            "Carlos",
-            "Mar\u{ed}a",
-            "Diego",
-            "Elena",
-            "Fernando",
-            "Isabel",
-            "Jorge",
-            "Laura",
-            "Miguel",
+            "Ana", "Carlos", "María", "Diego", "Elena", "Fernando", "Isabel", "Jorge", "Laura", "Miguel",
         ],
         "fr" => &[
             "Alice",
             "Bernard",
             "Claire",
             "David",
-            "\u{c9}lise",
-            "Fran\u{e7}ois",
+            "Élise",
+            "François",
             "Gabrielle",
             "Henri",
             "Isabelle",
@@ -283,15 +258,15 @@ fn generate_name(rng: &mut impl Rng, locale: &str) -> String {
 
     let last_names = match locale {
         "es" => &[
-            "Garc\u{ed}a",
-            "Rodr\u{ed}guez",
-            "Gonz\u{e1}lez",
-            "Fern\u{e1}ndez",
-            "L\u{f3}pez",
-            "Mart\u{ed}nez",
-            "S\u{e1}nchez",
-            "P\u{e9}rez",
-            "G\u{f3}mez",
+            "García",
+            "Rodríguez",
+            "González",
+            "Fernández",
+            "López",
+            "Martínez",
+            "Sánchez",
+            "Pérez",
+            "Gómez",
             "Ruiz",
         ],
         "fr" => &[
@@ -324,18 +299,18 @@ fn generate_title(rng: &mut impl Rng, locale: &str) -> String {
             "Avanzado",
             "Eficiente",
             "Innovador",
-            "Pr\u{e1}ctico",
-            "Te\u{f3}rico",
+            "Práctico",
+            "Teórico",
             "Aplicado",
         ],
         "fr" => &[
             "Moderne",
-            "Avanc\u{e9}",
+            "Avancé",
             "Efficace",
             "Innovant",
             "Pratique",
-            "Th\u{e9}orique",
-            "Appliqu\u{e9}",
+            "Théorique",
+            "Appliqué",
         ],
         _ => &[
             "Modern",
@@ -352,17 +327,17 @@ fn generate_title(rng: &mut impl Rng, locale: &str) -> String {
         "es" => &[
             "Sistema",
             "Proyecto",
-            "An\u{e1}lisis",
-            "Investigaci\u{f3}n",
+            "Análisis",
+            "Investigación",
             "Desarrollo",
             "Plataforma",
         ],
         "fr" => &[
-            "Syst\u{e8}me",
+            "Système",
             "Projet",
             "Analyse",
             "Recherche",
-            "D\u{e9}veloppement",
+            "Développement",
             "Plateforme",
         ],
         _ => &["System", "Project", "Analysis", "Research", "Development", "Platform"],
@@ -452,7 +427,7 @@ impl FieldGenerator for OtherXsdGenerator {
                 rng.random_range(0..60),
                 rng.random_range(0..60)
             ),
-            _ => "AAAA".to_owned(), // base64Binary
+            _ => "AAAA".to_string(), // base64Binary
         })
     }
 

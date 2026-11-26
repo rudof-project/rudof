@@ -79,7 +79,7 @@ impl SchemaIR {
     }
 
     pub fn set_default_base_prefixes(&mut self, default_base: Option<IriS>) {
-        self.base.clone_from(&default_base);
+        self.base = default_base.clone();
         self.prefixmap.set_base(default_base);
     }
 
@@ -175,7 +175,7 @@ impl SchemaIR {
     /// Returns the shape expression corresponding to the given shape label, if it exists.
     pub fn get_shape_expr(&self, shape_label: &ShapeLabel) -> Option<&ShapeExpr> {
         if let Some(idx) = self.find_shape_label_idx(shape_label) {
-            self.shapes.get(idx).map(ShapeExprInfo::expr)
+            self.shapes.get(idx).map(|info| info.expr())
         } else {
             None
         }
@@ -291,7 +291,7 @@ impl SchemaIR {
             // contribute a neutral alternative so resolution terminates.
             return vec![ExtendAlternative::default()];
         }
-        let result = match self.find_shape_idx(&idx).map(ShapeExprInfo::expr) {
+        let result = match self.find_shape_idx(&idx).map(|info| info.expr()) {
             Some(ShapeExpr::Shape(shape)) => {
                 let mut acc = vec![ExtendAlternative::with_bucket(idx)];
                 for parent in shape.extends() {
@@ -336,7 +336,7 @@ impl SchemaIR {
         let mut current = *idx;
         let mut seen = HashSet::new();
         while seen.insert(current) {
-            match self.find_shape_idx(&current).map(ShapeExprInfo::expr) {
+            match self.find_shape_idx(&current).map(|info| info.expr()) {
                 Some(ShapeExpr::Ref { idx: next }) => current = *next,
                 _ => break,
             }
@@ -390,7 +390,7 @@ impl SchemaIR {
         // Reuse the registry that was already set up on this SchemaIR (cloning it shares the
         // same Arc<dyn SemanticActionExtension> instances, so closures compiled below hold the
         // same Arc<Mutex<MapState>> that callers can later read back via get_map_state_arc).
-        let registry = Arc::clone(&self.semantic_actions_registry);
+        let registry = self.semantic_actions_registry.clone();
         let mut compiler = AST2IR::with_registry(resolve_method, registry);
         // `AST2IR::compile` applies `external_resolvers` to the root and imported schemas.
         compiler.compile(schema_json, &schema_json.source_iri(), base, self, external_resolvers)?;
@@ -509,7 +509,7 @@ impl SchemaIR {
         }
     }
 
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     fn cnv_closed(closed: &Option<bool>) -> bool {
         match closed {
             None => false,
@@ -517,14 +517,17 @@ impl SchemaIR {
         }
     }
 
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     fn cnv_extra(&self, extra: &Option<Vec<IriRef>>) -> CResult<Vec<IriS>> {
-        extra.as_ref().map_or(Ok(vec![]), |extra| {
-            extra
-                .iter()
-                .map(|iri| self.cnv_iri_ref(iri))
-                .collect::<CResult<Vec<_>>>()
-        })
+        extra
+            .as_ref()
+            .map(|extra| {
+                extra
+                    .iter()
+                    .map(|iri| self.cnv_iri_ref(iri))
+                    .collect::<CResult<Vec<_>>>()
+            })
+            .unwrap_or(Ok(vec![]))
     }
 
     fn cnv_iri_ref(&self, iri_ref: &IriRef) -> Result<IriS> {
@@ -615,7 +618,7 @@ impl SchemaIR {
         match label {
             ShapeLabel::Iri(iri) => self.prefixmap.qualify(iri),
             ShapeLabel::BNode(bnode) => format!("{bnode}"),
-            ShapeLabel::Start => "START".to_owned(),
+            ShapeLabel::Start => "START".to_string(),
         }
     }
 
@@ -628,8 +631,8 @@ impl SchemaIR {
         // A shape points to the shapes it extends and to the shapes it combines
         // (AND, OR, NOT and references). Triple constraints are not followed.
         let edges = |idx: &ShapeLabelIdx| -> Vec<ShapeLabelIdx> {
-            match self.find_shape_idx(idx).map(ShapeExprInfo::expr) {
-                Some(ShapeExpr::Shape(shape)) => shape.extends().clone(),
+            match self.find_shape_idx(idx).map(|info| info.expr()) {
+                Some(ShapeExpr::Shape(shape)) => shape.extends().to_vec(),
                 Some(se) => se.direct_references(),
                 None => Vec::new(),
             }
@@ -639,7 +642,7 @@ impl SchemaIR {
         let mut cycles = Vec::new();
         let mut in_cycle = HashSet::new();
         for source in indexes {
-            let Some(ShapeExpr::Shape(shape)) = self.find_shape_idx(&source).map(ShapeExprInfo::expr) else {
+            let Some(ShapeExpr::Shape(shape)) = self.find_shape_idx(&source).map(|info| info.expr()) else {
                 continue;
             };
             if in_cycle.contains(&source) {
@@ -705,7 +708,7 @@ impl SchemaIR {
 
     pub(crate) fn build_dependency_graph(&mut self) {
         let mut dep_graph = DependencyGraph::new();
-        for (idx, info) in &self.shapes {
+        for (idx, info) in self.shapes.iter() {
             let mut visited = Vec::new();
             info.expr()
                 .add_edges(*idx, &mut dep_graph, PosNeg::pos(), self, &mut visited);
@@ -715,11 +718,14 @@ impl SchemaIR {
 
     pub(crate) fn build_inheritance_graph(&mut self) {
         let mut inheritance_graph = InheritanceGraph::new();
-        for (idx, info) in &self.shapes {
-            if let ShapeExpr::Shape(shape) = info.expr() {
-                for e in shape.extends() {
-                    inheritance_graph.add_edge(*idx, *e);
-                }
+        for (idx, info) in self.shapes.iter() {
+            match info.expr() {
+                ShapeExpr::Shape(shape) => {
+                    for e in shape.extends() {
+                        inheritance_graph.add_edge(*idx, *e);
+                    }
+                },
+                _ => continue,
             }
         }
         self.inheritance_graph = inheritance_graph
@@ -728,12 +734,13 @@ impl SchemaIR {
     pub fn dependencies(&self) -> Vec<(ShapeLabel, PosNeg, ShapeLabel)> {
         let mut deps = Vec::new();
         for (source, posneg, target) in self.dependency_graph().all_edges() {
-            if let (Some(source_label), Some(target_label)) =
-                (self.shape_label_from_idx(&source), self.shape_label_from_idx(&target))
-            {
-                deps.push((source_label.clone(), posneg, target_label.clone()));
-            } else {
-                // We ignore dependencies between shapes that have no labels
+            match (self.shape_label_from_idx(&source), self.shape_label_from_idx(&target)) {
+                (Some(source_label), Some(target_label)) => {
+                    deps.push((source_label.clone(), posneg, target_label.clone()));
+                },
+                _ => {
+                    // We ignore dependencies between shapes that have no labels
+                },
             }
         }
         deps
@@ -743,7 +750,7 @@ impl SchemaIR {
         if let Some(label) = self.shape_label_from_idx(idx) {
             self.show_label(label)
         } else {
-            format!("_:{idx}")
+            format!("_:{}", idx)
         }
     }
 
@@ -757,7 +764,7 @@ impl SchemaIR {
                     result.push_str(&self.show_label(label));
                 },
                 None => {
-                    result.push_str(&self.show_shape_expr(info.expr(), width).clone());
+                    result.push_str(&self.show_shape_expr(info.expr(), width).to_string());
                 },
             }
         } else {
@@ -787,15 +794,15 @@ impl SchemaIR {
             ShapeExpr::ShapeNot { expr } => format!("NOT ({})", self.show_shape_idx(expr, width)),
             ShapeExpr::NodeConstraint(nc) => format!("{nc}"),
             ShapeExpr::Shape(shape) => self.show_shape(shape, width),
-            ShapeExpr::External {} => "EXTERNAL".to_owned(),
+            ShapeExpr::External {} => "EXTERNAL".to_string(),
             ShapeExpr::Ref { idx } => format!("@{}", self.show_idx(idx)),
-            ShapeExpr::Empty => "{}".to_owned(),
+            ShapeExpr::Empty => "{}".to_string(),
         }
     }
 
     pub fn show_shape(&self, shape: &Shape, width: usize) -> String {
         let extends = if shape.extends().is_empty() {
-            String::new()
+            "".to_string()
         } else {
             format!(
                 " {}",
@@ -809,7 +816,7 @@ impl SchemaIR {
         };
         let closed = if shape.is_closed() { " CLOSED " } else { "" };
         let extra = if shape.extra().is_empty() {
-            String::new()
+            "".to_string()
         } else {
             format!(
                 " EXTRA {}",
@@ -822,7 +829,7 @@ impl SchemaIR {
             )
         };
         let show_pred = |p: &Pred| self.prefixmap.qualify(p.iri());
-        let show_cond = |node: &Node| node.show_qualified(&self.prefixmap()).clone();
+        let show_cond = |node: &Node| node.show_qualified(&self.prefixmap()).to_string();
         let rbe = shape.triple_expr().show_rbe_table(show_pred, show_cond, width);
         format!("{extends}{closed}{extra} {{{rbe}}}")
     }
@@ -852,7 +859,7 @@ impl SchemaIR {
                 if let Some(label) = self.shape_label_from_idx(idx) {
                     self.show_label(label)
                 } else {
-                    format!("@{idx}")
+                    format!("@{}", idx)
                 }
             })
             .collect();
@@ -866,13 +873,13 @@ impl SchemaIR {
             let from_str = if let Some(label) = self.shape_label_from_idx(&from_resolved) {
                 self.show_label(label)
             } else {
-                format!("@{from_resolved}")
+                format!("@{}", from_resolved)
             };
 
             let to_str = if let Some(label) = self.shape_label_from_idx(&to_resolved) {
                 self.show_label(label)
             } else {
-                format!("@{to_resolved}")
+                format!("@{}", to_resolved)
             };
 
             let mut path_parts = vec![from_str.clone()];
@@ -886,7 +893,7 @@ impl SchemaIR {
                 let shape_str = if let Some(label) = self.shape_label_from_idx(&resolved) {
                     self.show_label(label)
                 } else {
-                    format!("@{resolved}")
+                    format!("@{}", resolved)
                 };
                 path_parts.push(shape_str);
             }
@@ -896,7 +903,7 @@ impl SchemaIR {
             let first_part = format!("{} <--[NOT]-- {}", path_parts[0], path_parts[1]);
             let positive_path = path_parts[2..path_parts.len()].join(" <-- ");
 
-            let path = format!("{first_part} <-- {positive_path}");
+            let path = format!("{} <-- {}", first_part, positive_path);
 
             edges.push(path);
         }
@@ -944,7 +951,7 @@ impl SchemaIR {
 
     /// Returns a shared handle to the semantic actions registry.
     pub fn semantic_actions_registry_arc(&self) -> Arc<SemanticActionsRegistry> {
-        Arc::clone(&self.semantic_actions_registry)
+        self.semantic_actions_registry.clone()
     }
 
     pub fn write<W: Write>(&self, mut w: W, fmt: CacheFormat) -> Result<()> {
@@ -961,7 +968,7 @@ impl SchemaIR {
 
         if reader_mode.is_strict() && header.has_neg_cycle {
             return Err(Box::new(SchemaIRError::CacheReadError {
-                msg: "Cache built for a schema with negation cycles cannot be loaded in Strict mode".to_owned(),
+                msg: "Cache built for a schema with negation cycles cannot be loaded in Strict mode".to_string(),
             }));
         }
 
@@ -977,7 +984,7 @@ impl Display for SchemaIR {
     fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         if self.sources_counter > 1 {
             writeln!(dest, "Sources:")?;
-            for (idx, iri) in &self.sources {
+            for (idx, iri) in self.sources.iter() {
                 writeln!(dest, "{idx} -> {iri}")?;
             }
         } else if self.sources_counter == 1 {
@@ -994,21 +1001,21 @@ impl Display for SchemaIR {
                 "Start actions: [{}]",
                 self.start_acts()
                     .iter()
-                    .map(ToString::to_string)
+                    .map(|a| a.to_string())
                     .collect::<Vec<_>>()
                     .join(", ")
             )?;
         }
         writeln!(dest, "SchemaIR with {} shapes", self.shape_label_counter)?;
         writeln!(dest, "Labels to indexes:")?;
-        for (label, idx) in &self.labels_idx_map {
+        for (label, idx) in self.labels_idx_map.iter() {
             let label = self.show_label(label);
             writeln!(dest, "{label} -> {idx}")?;
         }
         writeln!(dest, "Indexes to Shape Expressions:")?;
-        for (idx, info) in &self.shapes {
+        for (idx, info) in self.shapes.iter() {
             let label_str = match info.label() {
-                None => String::new(),
+                None => "".to_string(),
                 Some(label) => format!("{} = ", self.show_label(label)),
             };
             writeln!(
@@ -1017,7 +1024,7 @@ impl Display for SchemaIR {
                 if self.sources_counter > 1 {
                     format!(" (source: {})", info.source_idx())
                 } else {
-                    String::new()
+                    "".to_string()
                 },
                 info.expr()
             )?;
@@ -1071,7 +1078,7 @@ mod tests {
             &None,
         )
         .unwrap();
-        let s1_label = ShapeLabel::iri(iri!("http://a.example/S1"));
+        let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
         let s1 = ir
             .shape_label_from_idx(&ir.get_shape_label_idx(&s1_label).unwrap())
             .unwrap();
@@ -1129,7 +1136,7 @@ mod tests {
         )
         .unwrap();
         println!("Schema IR: {ir}");
-        let s = ShapeLabel::iri(iri!("http://example.org/S"));
+        let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
         let references = ir.references(&idx);
         let expected: HashMap<Pred, Vec<ShapeLabelIdx>> = vec![(
@@ -1200,7 +1207,7 @@ mod tests {
             &None,
         )
         .unwrap();
-        let s = ShapeLabel::iri(iri!("http://example.org/S"));
+        let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
         println!("Schema IR: {ir}");
         println!("Idx: {idx}");
@@ -1218,12 +1225,6 @@ mod tests {
     }
 
     fn round_trip_schema_json(name: &str, schema_json_str: &str) {
-        fn sorted_lines(s: &str) -> Vec<String> {
-            let mut lines: Vec<String> = s.lines().map(str::to_owned).collect();
-            lines.sort();
-            lines
-        }
-
         let schema: SchemaJson =
             serde_json::from_str(schema_json_str).unwrap_or_else(|e| panic!("[{name}] parse ShEx JSON: {e}"));
 
@@ -1240,6 +1241,11 @@ mod tests {
         let restored: SchemaIR =
             postcard::from_bytes(&bytes).unwrap_or_else(|e| panic!("[{name}] postcard decode: {e}"));
 
+        fn sorted_lines(s: &str) -> Vec<String> {
+            let mut lines: Vec<String> = s.lines().map(str::to_string).collect();
+            lines.sort();
+            lines
+        }
         assert_eq!(
             sorted_lines(&format!("{ir}")),
             sorted_lines(&format!("{restored}")),
@@ -1256,7 +1262,7 @@ mod tests {
             "[{name}] label count changed",
         );
 
-        for (label, idx) in &ir.labels_idx_map {
+        for (label, idx) in ir.labels_idx_map.iter() {
             let restored_idx = restored
                 .get_shape_label_idx(label)
                 .unwrap_or_else(|_| panic!("[{name}] restored missing label {label}"));
@@ -1373,14 +1379,14 @@ mod tests {
         use rudof_iri::IriS;
         use std::io::Cursor;
 
-        let shexc = "prefix : <http://example.org/>
+        let shexc = r#"prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :S {
   :age xsd:integer MININCLUSIVE 0 MAXINCLUSIVE 150 ;
   :ratio xsd:decimal MINEXCLUSIVE 0.0 ;
 }
-";
+"#;
         let base = IriS::new_unchecked("file:///tmp/numeric_facets.shex");
         let schema = ShExParser::parse(shexc, Some(base.clone()), &base).expect("parse ShExC");
 

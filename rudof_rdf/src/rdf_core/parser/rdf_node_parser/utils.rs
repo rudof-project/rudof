@@ -252,7 +252,7 @@ where
     let subj: R::Subject = <R::Term as TryInto<R::Subject>>::try_into(term.clone()).map_err(|_| {
         RDFError::ExpectedIriOrBlankNodeError {
             term: format!("{term}"),
-            error: "Expected IRI or BlankNode".to_owned(),
+            error: "Expected IRI or BlankNode".to_string(),
         }
     })?;
     let iri_or_bnode: IriOrBlankNode = subj
@@ -292,7 +292,7 @@ where
         <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| RDFError::ExpectedLiteralError {
             term: format!("{term}"),
         })?;
-    Ok(literal.lexical_form().to_owned())
+    Ok(literal.lexical_form().to_string())
 }
 
 pub fn parse_list_recursive<RDF>(visited: Vec<RDF::Term>, rdf: &mut RDF) -> Result<Vec<RDF::Term>, RDFError>
@@ -312,7 +312,7 @@ where
         let first = SingleValuePropertyParser::new(RdfVocab::rdf_first())
             .parse_focused(rdf)
             .map_err(|e| RDFError::PropertyNotFoundError {
-                property: RdfVocab::RDF_FIRST.to_owned(),
+                property: RdfVocab::RDF_FIRST.to_string(),
                 subject: focus.to_string(),
                 err: Box::new(e),
             })?;
@@ -320,7 +320,7 @@ where
         let rest = SingleValuePropertyParser::new(RdfVocab::rdf_rest())
             .parse_focused(rdf)
             .map_err(|e| RDFError::PropertyNotFoundError {
-                property: RdfVocab::RDF_REST.to_owned(),
+                property: RdfVocab::RDF_REST.to_string(),
                 subject: focus.to_string(),
                 err: Box::new(e),
             })?;

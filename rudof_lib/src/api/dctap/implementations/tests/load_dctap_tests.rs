@@ -20,14 +20,14 @@ fn test_load_and_serialize_basic_dctap_csv() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let dctap_input = InputSpec::str(
-        "shapeID,propertyID,mandatory,repeatable,valueDataType
+        r#"shapeID,propertyID,mandatory,repeatable,valueDataType
 :Person,rdf:type,true,false,
 :Person,schema:name,true,false,xsd:string
 :Person,schema:age,false,false,xsd:integer
 :Person,schema:memberOf,false,true,:Organization
 :Organization,rdf:type,true,false,
 :Organization,schema:name,true,false,xsd:string
-:Organization,schema:location,false,false,xsd:string",
+:Organization,schema:location,false,false,xsd:string"#,
     );
 
     load_dctap(&mut rudof, &dctap_input, None).unwrap();
@@ -40,7 +40,8 @@ fn test_load_and_serialize_basic_dctap_csv() {
     assert!(serialized.contains("schema:age") || serialized.contains("age"));
 
     println!(
-        "\n===== test_load_and_serialize_basic_dctap_csv =====\n{serialized}\n============================================"
+        "\n===== test_load_and_serialize_basic_dctap_csv =====\n{}\n============================================",
+        serialized
     );
 }
 
@@ -49,10 +50,10 @@ fn test_serialize_dctap_json_format() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let dctap_input = InputSpec::str(
-        "shapeID,propertyID,mandatory,repeatable
+        r#"shapeID,propertyID,mandatory,repeatable
 :Book,dc:title,true,false
 :Book,dc:creator,true,true
-:Book,dc:date,false,false",
+:Book,dc:date,false,false"#,
     );
 
     load_dctap(&mut rudof, &dctap_input, None).unwrap();
@@ -64,9 +65,10 @@ fn test_serialize_dctap_json_format() {
     assert!(serialized.contains("dc:creator") || serialized.contains("creator"));
 
     // Verify it's valid JSON
-    serde_json::from_str::<serde_json::Value>(&serialized).unwrap();
+    assert!(serde_json::from_str::<serde_json::Value>(&serialized).is_ok());
 
     println!(
-        "\n===== test_serialize_dctap_json_format =====\n{serialized}\n============================================"
+        "\n===== test_serialize_dctap_json_format =====\n{}\n============================================",
+        serialized
     );
 }

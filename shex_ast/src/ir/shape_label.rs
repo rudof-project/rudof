@@ -36,11 +36,11 @@ impl ShapeLabel {
             Object::BlankNode(bnode_id) => Ok(ShapeLabel::BNode(BNode::new(bnode_id))),
             Object::Literal(_) => Err(SchemaJsonError::InvalidShapeLabel {
                 value: obj.to_string(),
-                error: "Literal cannot be a ShapeLabel".to_owned(),
+                error: "Literal cannot be a ShapeLabel".to_string(),
             }),
             Object::Triple { .. } => Err(SchemaJsonError::InvalidShapeLabel {
                 value: obj.to_string(),
-                error: "Triple cannot be a ShapeLabel".to_owned(),
+                error: "Triple cannot be a ShapeLabel".to_string(),
             }),
         }
     }
@@ -114,7 +114,7 @@ impl<'de> Deserialize<'de> for ShapeLabel {
         impl Visitor<'_> for ShapeLabelVisitor {
             type Value = ShapeLabel;
 
-            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("a ShapeLabel encoded as a string (\"Start\", an IRI, or a blank node label)")
             }
 

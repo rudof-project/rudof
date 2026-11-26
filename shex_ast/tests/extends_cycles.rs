@@ -16,13 +16,7 @@ fn compile(schema_src: &str) -> Result<SchemaIR, String> {
     let mut compiler = AST2IR::new(&ResolveMethod::default(), map_state);
     let mut compiled = SchemaIR::new(registry);
     compiler
-        .compile(
-            &ast,
-            &base,
-            &Some(base.clone()),
-            &mut compiled,
-            &shex_ast::ExternalShapeResolverRegistry::default(),
-        )
+        .compile(&ast, &base, &Some(base.clone()), &mut compiled, &Default::default())
         .map_err(|e| e.to_string())?;
     Ok(compiled)
 }

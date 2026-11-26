@@ -9,12 +9,12 @@ pub(crate) fn name<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = MessageMa
         // TODO: Check that the values of name are only of type xsd:string, rdf:langString or rdf:dirLangString according to SHACL 1.2
         if lits.is_empty() {
             return Err(RDFError::ParseFailError {
-                msg: "No value for sh:name found".to_owned(),
+                msg: "No value for sh:name found".to_string(),
             });
         }
         let map = lits.into_iter().fold(MessageMap::new(), |acc, lit| {
             let lang = lit.lang();
-            let text = lit.lexical_form().clone();
+            let text = lit.lexical_form().to_string();
             acc.with_message(lang, text)
         });
         Ok(map)

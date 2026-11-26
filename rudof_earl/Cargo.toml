@@ -17,6 +17,3 @@ prefixmap.workspace = true
 rudof_iri.workspace = true
 rudof_rdf.workspace = true
 thiserror.workspace = true
-
-[lints]
-workspace = true

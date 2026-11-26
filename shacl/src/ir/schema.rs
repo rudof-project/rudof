@@ -67,7 +67,6 @@ impl IRSchema {
         Self::from_reader(&mut Cursor::new(data), "String", format, base, reader_mode)
     }
 
-    #[must_use]
     pub fn with_base(mut self, base: Option<IriS>) -> Self {
         self.base = base;
         self
@@ -381,7 +380,7 @@ impl Display for IRSchema {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "SHACL shapes graph IR")?;
 
-        for (node, shape) in &self.shapes {
+        for (node, shape) in self.shapes.iter() {
             writeln!(f, "[{node}] -> {shape}")?;
         }
         writeln!(f, "Dependency graph: {}", self.dependency_graph)?;

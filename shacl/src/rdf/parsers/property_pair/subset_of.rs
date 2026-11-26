@@ -28,7 +28,7 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for SubsetOfParser<RDF> {
         let mut components = Vec::new();
         for value in values {
             // Parsing a path moves the focus to the path node
-            let path = ShaclPathParser::with_budget(value, Arc::clone(&self.budget)).parse_focused(rdf)?;
+            let path = ShaclPathParser::with_budget(value, self.budget.clone()).parse_focused(rdf)?;
             components.push(ASTComponent::SubsetOf(path));
         }
 

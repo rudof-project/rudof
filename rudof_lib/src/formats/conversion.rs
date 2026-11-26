@@ -102,7 +102,9 @@ impl FromStr for ConversionMode {
             "shacl" => Ok(ConversionMode::Shacl),
             "shex" => Ok(ConversionMode::ShEx),
             "dctap" => Ok(ConversionMode::Dctap),
-            other => Err(ConversionError::UnsupportedConversionMode { mode: other.to_owned() }),
+            other => Err(ConversionError::UnsupportedConversionMode {
+                mode: other.to_string(),
+            }),
         }
     }
 }
@@ -164,7 +166,7 @@ impl FromStr for ConversionFormat {
             "shexj" => Ok(ConversionFormat::ShExJ),
             "turtle" => Ok(ConversionFormat::Turtle),
             other => Err(ConversionError::UnsupportedConversionFormat {
-                format: other.to_owned(),
+                format: other.to_string(),
             }),
         }
     }
@@ -208,7 +210,9 @@ impl FromStr for ResultConversionMode {
             "uml" => Ok(ResultConversionMode::Uml),
             "html" => Ok(ResultConversionMode::Html),
             "shacl" => Ok(ResultConversionMode::Shacl),
-            other => Err(ConversionError::UnsupportedResultConversionMode { mode: other.to_owned() }),
+            other => Err(ConversionError::UnsupportedResultConversionMode {
+                mode: other.to_string(),
+            }),
         }
     }
 }
@@ -277,7 +281,7 @@ impl FromStr for ResultConversionFormat {
             "html" => Ok(ResultConversionFormat::Html),
             "svg" => Ok(ResultConversionFormat::Svg),
             "png" => Ok(ResultConversionFormat::Png),
-            _ => Err(ConversionError::UnsupportedResultConversionFormat { format: s.to_owned() }),
+            _ => Err(ConversionError::UnsupportedResultConversionFormat { format: s.to_string() }),
         }
     }
 }

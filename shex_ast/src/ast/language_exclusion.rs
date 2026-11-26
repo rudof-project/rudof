@@ -2,6 +2,7 @@ use rudof_rdf::rdf_core::term::literal::Lang;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use std::fmt::Display;
+use std::result;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum LanguageExclusion {
@@ -10,7 +11,7 @@ pub enum LanguageExclusion {
 }
 
 impl Serialize for LanguageExclusion {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

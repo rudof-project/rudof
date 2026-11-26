@@ -51,7 +51,7 @@ impl<T: Hash + Eq + PartialEq> Display for Bag<T>
 where
     T: Display,
 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let v: Vec<String> = self.bag.set_iter().map(|(t, n)| format!("{t}/{n}")).collect();
         write!(f, "Bag [{}]", v.join(", "))
     }
@@ -61,7 +61,7 @@ impl<T> Debug for Bag<T>
 where
     T: Hash + Eq + Debug,
 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let v: Vec<String> = self.bag.set_iter().map(|(t, n)| format!("{t:?}/{n}")).collect();
         write!(f, "Bag [{}]", v.join(", "))
     }
@@ -146,7 +146,7 @@ where
 {
     type Value = Bag<T>;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str("a Bag")
     }
 

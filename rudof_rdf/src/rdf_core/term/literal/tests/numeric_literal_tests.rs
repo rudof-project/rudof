@@ -19,19 +19,19 @@ use crate::rdf_core::term::literal::NumericLiteral;
 /// Strategy for generating valid positive integers (> 0)
 #[cfg(not(target_arch = "wasm32"))]
 fn positive_integer_strategy() -> impl Strategy<Value = NumericLiteral> {
-    (1_u128..=u128::MAX).prop_map(|n| NumericLiteral::positive_integer(n).unwrap())
+    (1u128..=u128::MAX).prop_map(|n| NumericLiteral::positive_integer(n).unwrap())
 }
 
 /// Strategy for generating valid negative integers (< 0)
 #[cfg(not(target_arch = "wasm32"))]
 fn negative_integer_strategy() -> impl Strategy<Value = NumericLiteral> {
-    (i128::MIN..=-1_i128).prop_map(|n| NumericLiteral::negative_integer(n).unwrap())
+    (i128::MIN..=-1i128).prop_map(|n| NumericLiteral::negative_integer(n).unwrap())
 }
 
 /// Strategy for generating valid non-positive integers (<= 0)
 #[cfg(not(target_arch = "wasm32"))]
 fn non_positive_integer_strategy() -> impl Strategy<Value = NumericLiteral> {
-    (i128::MIN..=0_i128).prop_map(|n| NumericLiteral::non_positive_integer(n).unwrap())
+    (i128::MIN..=0i128).prop_map(|n| NumericLiteral::non_positive_integer(n).unwrap())
 }
 
 /// Strategy for generating non-negative integers (>= 0)
@@ -210,10 +210,10 @@ proptest! {
     /// Integer to Decimal conversion should preserve value
     #[test]
     fn integer_to_decimal_roundtrip(n in any::<i64>()) {
-        let lit = NumericLiteral::integer(i128::from(n));
+        let lit = NumericLiteral::integer(n as i128);
         let decimal = lit.to_decimal();
         prop_assert!(decimal.is_some());
-        prop_assert_eq!(decimal.unwrap().to_i128(), Some(i128::from(n)));
+        prop_assert_eq!(decimal.unwrap().to_i128(), Some(n as i128));
     }
 
     /// Long to Decimal conversion should preserve value
@@ -276,14 +276,14 @@ proptest! {
     /// Decimal from parts should preserve value
     #[test]
     fn decimal_from_parts_preserves_value(
-        whole in -1_000_000_i64..1_000_000_i64,
-        fraction in 0_u32..999_999_u32
+        whole in -1000000i64..1000000i64,
+        fraction in 0u32..999999u32
     ) {
         let result = NumericLiteral::decimal_from_parts(whole, fraction);
         prop_assert!(result.is_ok());
 
         if let Ok(NumericLiteral::Decimal(d)) = result {
-            let str_repr = format!("{whole}.{fraction}");
+            let str_repr = format!("{}.{}", whole, fraction);
             let expected = Decimal::from_str_exact(&str_repr).unwrap();
             prop_assert_eq!(d, expected);
         }
@@ -358,7 +358,7 @@ proptest! {
     /// Integer types should have 0 fraction digits
     #[test]
     fn integer_types_have_zero_fraction_digits(n in any::<i64>()) {
-        let lit = NumericLiteral::integer(i128::from(n));
+        let lit = NumericLiteral::integer(n as i128);
         prop_assert_eq!(lit.fraction_digits(), Some(0));
     }
 
@@ -372,7 +372,7 @@ proptest! {
     /// total_digits should match actual digit count for integers
     #[test]
     fn total_digits_matches_string_length(n in any::<i32>()) {
-        let lit = NumericLiteral::integer(i128::from(n));
+        let lit = NumericLiteral::integer(n as i128);
         let expected_digits = n.abs().to_string().len();
         prop_assert_eq!(lit.total_digits(), Some(expected_digits));
     }
@@ -381,8 +381,8 @@ proptest! {
     /// in the XSD canonical form (i.e. with trailing zeros stripped).
     #[test]
     fn decimal_fraction_digits_correct(
-        whole in -1000_i64..1000_i64,
-        fraction in 0_u32..999_999_u32
+        whole in -1000i64..1000i64,
+        fraction in 0u32..999999u32
     ) {
         if let Ok(NumericLiteral::Decimal(d)) = NumericLiteral::decimal_from_parts(whole, fraction) {
             let lit = NumericLiteral::Decimal(d);
@@ -403,15 +403,15 @@ proptest! {
     #[test]
     fn datatype_is_valid_iri(lit in numeric_literal_strategy()) {
         let datatype = lit.datatype();
-        let iri_str = datatype.to_owned();
+        let iri_str = datatype.to_string();
         prop_assert!(iri_str.starts_with("http://www.w3.org/2001/XMLSchema#"));
     }
 
     /// Same variant types should have same datatype
     #[test]
     fn same_variant_same_datatype(n1 in any::<i64>(), n2 in any::<i64>()) {
-        let lit1 = NumericLiteral::integer(i128::from(n1));
-        let lit2 = NumericLiteral::integer(i128::from(n2));
+        let lit1 = NumericLiteral::integer(n1 as i128);
+        let lit2 = NumericLiteral::integer(n2 as i128);
         prop_assert_eq!(lit1.datatype(), lit2.datatype());
     }
 }
@@ -425,7 +425,7 @@ proptest! {
     /// Integer(n) and Long(n) should have same decimal representation for i64 range
     #[test]
     fn integer_long_decimal_consistency(n in any::<i64>()) {
-        let int_lit = NumericLiteral::integer(i128::from(n));
+        let int_lit = NumericLiteral::integer(n as i128);
         let long_lit = NumericLiteral::long(n);
 
         let int_dec = int_lit.to_decimal();
@@ -440,7 +440,7 @@ proptest! {
     #[test]
     fn byte_integer_comparison_consistency(n in any::<i8>()) {
         let byte_lit = NumericLiteral::byte(n);
-        let int_lit = NumericLiteral::integer(i128::from(n));
+        let int_lit = NumericLiteral::integer(n as i128);
 
         let byte_dec = byte_lit.to_decimal().unwrap();
         let int_dec = int_lit.to_decimal().unwrap();
@@ -452,7 +452,7 @@ proptest! {
     #[test]
     fn unsigned_int_non_negative_consistency(n in any::<u32>()) {
         let uint_lit = NumericLiteral::unsigned_int(n);
-        let non_neg_lit = NumericLiteral::non_negative_integer(u128::from(n));
+        let non_neg_lit = NumericLiteral::non_negative_integer(n as u128);
 
         let uint_dec = uint_lit.to_decimal().unwrap();
         let non_neg_dec = non_neg_lit.to_decimal().unwrap();
@@ -511,7 +511,7 @@ proptest! {
     /// Integer conversion to oxrdf should preserve value in lexical form
     #[test]
     fn oxrdf_preserves_integer_value(n in any::<i64>()) {
-        let lit = NumericLiteral::integer(i128::from(n));
+        let lit = NumericLiteral::integer(n as i128);
         let oxrdf_lit: oxrdf::Literal = lit.into();
         prop_assert_eq!(oxrdf_lit.value(), n.to_string());
     }
@@ -543,8 +543,8 @@ mod edge_case_tests {
     #[test]
     fn test_extreme_values() {
         // Test with i64 range
-        let max_i64 = NumericLiteral::integer(i128::from(i64::MAX));
-        let min_i64 = NumericLiteral::integer(i128::from(i64::MIN));
+        let max_i64 = NumericLiteral::integer(i64::MAX as i128);
+        let min_i64 = NumericLiteral::integer(i64::MIN as i128);
 
         assert!(max_i64.to_decimal().is_some());
         assert!(min_i64.to_decimal().is_some());
@@ -558,9 +558,9 @@ mod edge_case_tests {
         assert!(min_i128.to_decimal().is_none() || min_i128.to_decimal().is_some());
 
         // Zero edge cases
-        NumericLiteral::positive_integer(0).unwrap_err();
-        NumericLiteral::negative_integer(0).unwrap_err();
-        NumericLiteral::non_positive_integer(0).unwrap();
+        assert!(NumericLiteral::positive_integer(0).is_err());
+        assert!(NumericLiteral::negative_integer(0).is_err());
+        assert!(NumericLiteral::non_positive_integer(0).is_ok());
         assert_eq!(
             NumericLiteral::non_negative_integer(0),
             NumericLiteral::NonNegativeInteger(0)
@@ -570,13 +570,13 @@ mod edge_case_tests {
     #[test]
     fn test_boundary_transitions() {
         // Test values around zero for signed types
-        NumericLiteral::negative_integer(-1).unwrap();
-        NumericLiteral::negative_integer(0).unwrap_err();
-        NumericLiteral::negative_integer(1).unwrap_err();
+        assert!(NumericLiteral::negative_integer(-1).is_ok());
+        assert!(NumericLiteral::negative_integer(0).is_err());
+        assert!(NumericLiteral::negative_integer(1).is_err());
 
-        NumericLiteral::non_positive_integer(-1).unwrap();
-        NumericLiteral::non_positive_integer(0).unwrap();
-        NumericLiteral::non_positive_integer(1).unwrap_err();
+        assert!(NumericLiteral::non_positive_integer(-1).is_ok());
+        assert!(NumericLiteral::non_positive_integer(0).is_ok());
+        assert!(NumericLiteral::non_positive_integer(1).is_err());
     }
 
     /// Test that i128 extreme values are representable as NumericLiterals
@@ -590,11 +590,11 @@ mod edge_case_tests {
         assert!(!max_i128.lexical_form().is_empty());
         assert!(!min_i128.lexical_form().is_empty());
         assert_eq!(
-            max_i128.datatype().to_owned(),
+            max_i128.datatype().to_string(),
             "http://www.w3.org/2001/XMLSchema#integer"
         );
         assert_eq!(
-            min_i128.datatype().to_owned(),
+            min_i128.datatype().to_string(),
             "http://www.w3.org/2001/XMLSchema#integer"
         );
     }

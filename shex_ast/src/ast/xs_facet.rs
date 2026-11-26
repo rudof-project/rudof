@@ -1,3 +1,5 @@
+use std::result;
+
 use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use rust_decimal::prelude::*;
 use serde::ser::SerializeMap;
@@ -74,7 +76,7 @@ pub enum StringFacet {
     Pattern(Pattern),
 }
 
-fn serialize_pattern<S>(p: &Pattern, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_pattern<S>(p: &Pattern, serializer: S) -> result::Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -103,15 +105,15 @@ pub struct Pattern {
 impl Pattern {
     pub fn new(str: &str) -> Pattern {
         Pattern {
-            str: str.to_owned(),
+            str: str.to_string(),
             flags: None,
         }
     }
 
     pub fn new_flags(str: &str, flags: &str) -> Pattern {
         Pattern {
-            str: str.to_owned(),
-            flags: Some(flags.to_owned()),
+            str: str.to_string(),
+            flags: Some(flags.to_string()),
         }
     }
 
@@ -129,7 +131,7 @@ impl FromStr for Pattern {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Pattern {
-            str: s.to_owned(),
+            str: s.to_string(),
             flags: None,
         })
     }
@@ -158,7 +160,7 @@ mod tests {
     #[test]
     fn test_serde_xsfacet_pattern() {
         let pattern = StringFacet::Pattern(Pattern {
-            str: "o*".to_owned(),
+            str: "o*".to_string(),
             flags: None,
         });
 
@@ -169,8 +171,8 @@ mod tests {
     #[test]
     fn test_serde_xsfacet_pattern_flags() {
         let pattern = StringFacet::Pattern(Pattern {
-            str: "o*".to_owned(),
-            flags: Some("i".to_owned()),
+            str: "o*".to_string(),
+            flags: Some("i".to_string()),
         });
 
         let json_pattern = serde_json::to_string(&pattern).unwrap();

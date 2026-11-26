@@ -50,14 +50,14 @@ pub async fn validation_guide_prompt_impl(
             "SHEX",
             "validate_shex",
             "shexc, shexj, turtle",
-            "prefix : <http://example.org/>
+            r#"prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :Person {
   :name xsd:string ;
   :age xsd:integer ? ;
   :knows @:Person *
-}",
+}"#,
             "compact, details, json, csv",
         ),
         ValidationTechnology::Shacl => (
@@ -65,7 +65,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
             "SHACL",
             "validate_shacl",
             "turtle, ntriples, rdfxml, jsonld",
-            "@prefix sh: <http://www.w3.org/ns/shacl#> .
+            r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix : <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
@@ -80,7 +80,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     sh:path :age ;
     sh:datatype xsd:integer ;
     sh:maxCount 1 ;
-  ] .",
+  ] ."#,
             "compact, details, minimal, json, csv, turtle",
         ),
     };
@@ -88,7 +88,10 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     let messages = vec![
         PromptMessage::new_text(
             Role::User,
-            format!("Guide me through {technology_label} validation.\nNode: {node_display}\nShape: {shape_display}"),
+            format!(
+                "Guide me through {} validation.\nNode: {}\nShape: {}",
+                technology_label, node_display, shape_display
+            ),
         ),
         PromptMessage::new_text(
             Role::Assistant,
@@ -141,7 +144,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
                 if let Some(s) = shape.as_deref() {
                     format!(",\n  \"maybe_shape\": \"{s}\",\n",)
                 } else {
-                    ",\n".to_owned()
+                    ",\n".to_string()
                 },
                 schema_formats,
                 result_formats,

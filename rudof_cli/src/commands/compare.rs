@@ -118,23 +118,26 @@ impl CompareCommand {
         let reader_mode: DataReaderMode = args.reader_mode.into();
         let mode: SubgraphMode = args.subgraph_mode.into();
 
-        let mut b = if let Some(data1) = &args.data1 {
-            let mut b = ctx.rudof.compare_data(data1, data2);
-            if let Some(f) = &format1 {
-                b = b.with_format1(f);
-            }
-            if let Some(base) = args.base1.as_deref() {
-                b = b.with_base1(base);
-            }
-            b
-        } else {
-            if !ctx.rudof.has_data() {
-                bail!(
-                    "Comparing data needs --data1 and --data2, or only --data2 to compare it with the \
-                     loaded data (load some with `data` in the shell)"
-                );
-            }
-            ctx.rudof.compare_loaded_data(data2)
+        let mut b = match &args.data1 {
+            Some(data1) => {
+                let mut b = ctx.rudof.compare_data(data1, data2);
+                if let Some(f) = &format1 {
+                    b = b.with_format1(f);
+                }
+                if let Some(base) = args.base1.as_deref() {
+                    b = b.with_base1(base);
+                }
+                b
+            },
+            None => {
+                if !ctx.rudof.has_data() {
+                    bail!(
+                        "Comparing data needs --data1 and --data2, or only --data2 to compare it with the \
+                         loaded data (load some with `data` in the shell)"
+                    );
+                }
+                ctx.rudof.compare_loaded_data(data2)
+            },
         };
         if let Some(f) = &format2 {
             b = b.with_format2(f);

@@ -19,12 +19,12 @@ fn test_load_and_serialize_pgschema() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     let pgschema_input = InputSpec::str(
-        "
+        r#"
 CREATE NODE TYPE ( AdultStudentType: Student {
     name: STRING ,
     age: INTEGER CHECK > 18
 })
-        ",
+        "#,
     );
 
     load_pgschema(&mut rudof, &pgschema_input, None).unwrap();
@@ -32,6 +32,7 @@ CREATE NODE TYPE ( AdultStudentType: Student {
     let serialized = serialize_to_string(&rudof, None);
 
     println!(
-        "\n===== test_load_and_serialize_pgschema =====\n{serialized}\n============================================"
+        "\n===== test_load_and_serialize_pgschema =====\n{}\n============================================",
+        serialized
     );
 }

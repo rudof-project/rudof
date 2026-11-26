@@ -20,19 +20,16 @@ impl BasicSparql {
         }
     }
 
-    #[must_use]
     pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
         self.message = message;
         self
     }
 
-    #[must_use]
     pub fn with_deactivated(mut self, deactivated: Option<bool>) -> Self {
         self.deactivated = deactivated;
         self
     }
 
-    #[must_use]
     pub fn with_prefixes(mut self, prefixes: Option<PrefixMap>) -> Self {
         self.prefixes = prefixes;
         self

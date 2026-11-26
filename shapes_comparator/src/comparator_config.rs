@@ -28,13 +28,11 @@ impl ComparatorConfig {
         }
     }
 
-    #[must_use]
     pub fn with_prefixes_equivalences(mut self, value: HashSet<(IriS, IriS)>) -> Self {
         self.prefixes_equivalences = value;
         self
     }
 
-    #[must_use]
     pub fn with_ignore_value_constraints(mut self, flag: bool) -> Self {
         self.ignore_value_constraints = flag;
         self
@@ -79,7 +77,7 @@ mod tests {
 
     #[test]
     fn partial_toml_fills_remaining_defaults() {
-        let c = ComparatorConfig::from_toml_str("ignore_value_constraints = true").unwrap();
+        let c = ComparatorConfig::from_toml_str(r#"ignore_value_constraints = true"#).unwrap();
         assert!(c.ignore_value_constraints());
     }
 

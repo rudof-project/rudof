@@ -9,8 +9,8 @@ pub struct Name {
 impl Name {
     pub fn new(str: &str, href: Option<&str>) -> Name {
         Name {
-            str: str.to_owned(),
-            href: href.map(ToOwned::to_owned),
+            str: str.to_string(),
+            href: href.map(|c| c.to_string()),
             local_href: None,
             label: None,
         }
@@ -33,14 +33,14 @@ impl Name {
     }
 
     pub fn add_href(&mut self, href: &str) {
-        self.href = Some(href.to_owned());
+        self.href = Some(href.to_string());
     }
 
     pub fn add_local_href(&mut self, local_href: &str) {
-        self.local_href = Some(local_href.to_owned());
+        self.local_href = Some(local_href.to_string());
     }
 
     pub fn add_label(&mut self, label: &str) {
-        self.label = Some(label.to_owned());
+        self.label = Some(label.to_string());
     }
 }

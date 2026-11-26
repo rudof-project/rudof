@@ -78,11 +78,7 @@ async fn assert_equivalent(group: &str) {
         base,
         "{group}: SHACL and PG-Schema generate different graphs"
     );
-    assert_eq!(
-        shex_map.lines().count(),
-        pg_shapemap.lines().count(),
-        "both shape maps should have the same number of entries"
-    );
+    assert_eq!(shex_map.lines().count(), pg_shapemap.lines().count());
 
     // Valid in the three languages.
     let pg = validate_pgschema(&pg_graph, &pgs, &type_map);

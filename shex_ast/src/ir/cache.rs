@@ -72,7 +72,7 @@ impl CacheHeader {
     pub fn new(fmt: CacheFormat, has_neg_cycle: bool) -> Self {
         CacheHeader {
             body_format: fmt,
-            rudof_version: env!("CARGO_PKG_VERSION").to_owned(),
+            rudof_version: env!("CARGO_PKG_VERSION").to_string(),
             has_neg_cycle,
         }
     }
@@ -86,7 +86,7 @@ impl CacheHeader {
             postcard::to_stdvec(self).map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
         let header_len: u32 = header_bytes.len().try_into().map_err(|_| {
             Box::new(SchemaIRError::CacheWriteError {
-                msg: "cache header exceeds u32::MAX bytes".to_owned(),
+                msg: "cache header exceeds u32::MAX bytes".to_string(),
             })
         })?;
 
@@ -111,15 +111,15 @@ impl CacheHeader {
             })
         };
 
-        let mut magic = [0_u8; 4];
+        let mut magic = [0u8; 4];
         read_exact(reader, &mut magic, "magic bytes")?;
         if &magic != MAGIC {
             return Err(Box::new(SchemaIRError::CacheReadError {
-                msg: format!("Not a SchemaIR cache: expected magic {MAGIC:?}, found {magic:?}"),
+                msg: format!("Not a SchemaIR cache: expected magic {:?}, found {:?}", MAGIC, magic),
             }));
         }
 
-        let mut version_bytes = [0_u8; 4];
+        let mut version_bytes = [0u8; 4];
         read_exact(reader, &mut version_bytes, "cache version")?;
         let version = u32::from_le_bytes(version_bytes);
         if version != CACHE_VERSION {
@@ -128,10 +128,10 @@ impl CacheHeader {
             }));
         }
 
-        let mut len_bytes = [0_u8; 4];
+        let mut len_bytes = [0u8; 4];
         read_exact(reader, &mut len_bytes, "header length")?;
         let header_len = u32::from_le_bytes(len_bytes) as usize;
-        let mut header_bytes = vec![0_u8; header_len];
+        let mut header_bytes = vec![0u8; header_len];
         read_exact(reader, &mut header_bytes, "header body")?;
 
         let header: CacheHeader = postcard::from_bytes(&header_bytes).map_err(|e| {

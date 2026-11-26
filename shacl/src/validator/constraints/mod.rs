@@ -266,7 +266,7 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
 ) -> Result<ValidationOutcome, ValidationError> {
     let outcome = strategy
         .iterate(value_nodes)
-        .filter_map(|(focus_node, item)| {
+        .flat_map(|(focus_node, item)| {
             let focus = S::term_as_object(focus_node).ok()?;
             let component_obj = Object::iri(component.into());
             let shape_id = shape.id();
@@ -317,7 +317,7 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
 ) -> Result<ValidationOutcome, ValidationError> {
     let outcome = strategy
         .iterate(value_nodes)
-        .filter_map(|(focus_node, item)| {
+        .flat_map(|(focus_node, item)| {
             let focus = S::term_as_object(focus_node).ok()?;
             let component_obj = Object::iri(component.into());
             let shape_id = shape.id();

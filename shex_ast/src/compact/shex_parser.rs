@@ -107,9 +107,9 @@ struct StatementIterator<'a> {
 }
 
 impl StatementIterator<'_> {
-    pub fn new(src: Span<'_>) -> Result<StatementIterator<'_>> {
+    pub fn new(src: Span) -> Result<StatementIterator> {
         match tws0(src) {
-            Ok((left, ())) => Ok(StatementIterator { src: left, done: false }),
+            Ok((left, _)) => Ok(StatementIterator { src: left, done: false }),
             Err(Err::Incomplete(_)) => Ok(StatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
                 msg: format!("cannot start parsing. Error: {e}"),
@@ -140,7 +140,7 @@ impl<'a> Iterator for StatementIterator<'a> {
                 self.done = true;
                 r = None;
             },
-            Err(Err::Error(e) | Err::Failure(e)) => {
+            Err(Err::Error(e)) | Err(Err::Failure(e)) => {
                 r = Some(Err(ParseError::NomError { err: Box::new(e) }));
                 self.done = true;
             },
@@ -148,7 +148,7 @@ impl<'a> Iterator for StatementIterator<'a> {
 
         // Skip extra whitespace
         match tws0(self.src) {
-            Ok((left, ())) => {
+            Ok((left, _)) => {
                 self.src = left;
             },
             Err(Err::Incomplete(needed)) => {
@@ -181,7 +181,7 @@ fn check_schema(schema: &Schema) -> Result<()> {
         }
     }
     let mut result = Ok(());
-    let mut check = |item: Item<'_>| {
+    let mut check = |item: Item| {
         if result.is_err() {
             return;
         }
@@ -234,7 +234,9 @@ fn check_node_constraint(nc: &NodeConstraint) -> Result<()> {
     for facet in &facets {
         let name = facet_name(facet);
         if !kinds.insert(name) {
-            return Err(ParseError::DuplicateFacet { facet: name.to_owned() });
+            return Err(ParseError::DuplicateFacet {
+                facet: name.to_string(),
+            });
         }
     }
     if let Some(datatype) = nc.datatype() {
@@ -244,7 +246,7 @@ fn check_node_constraint(nc: &NodeConstraint) -> Result<()> {
             .is_some_and(|local| NUMERIC_DATATYPES.contains(&local));
         if !numeric && let Some(facet) = facets.iter().find(|f| is_numeric_range(f)) {
             return Err(ParseError::NumericFacetWithoutNumericDatatype {
-                facet: facet_name(facet).to_owned(),
+                facet: facet_name(facet).to_string(),
                 datatype,
             });
         }
@@ -286,7 +288,7 @@ enum Item<'a> {
     NodeConstraint(&'a NodeConstraint),
 }
 
-fn visit_shape_expr(se: &ShapeExpr, f: &mut impl FnMut(Item<'_>)) {
+fn visit_shape_expr(se: &ShapeExpr, f: &mut impl FnMut(Item)) {
     match se {
         ShapeExpr::ShapeOr { shape_exprs } | ShapeExpr::ShapeAnd { shape_exprs } => {
             for se in shape_exprs {
@@ -304,7 +306,7 @@ fn visit_shape_expr(se: &ShapeExpr, f: &mut impl FnMut(Item<'_>)) {
     }
 }
 
-fn visit_triple_expr(te: &TripleExpr, f: &mut impl FnMut(Item<'_>)) {
+fn visit_triple_expr(te: &TripleExpr, f: &mut impl FnMut(Item)) {
     match te {
         TripleExpr::EachOf { id, expressions, .. } | TripleExpr::OneOf { id, expressions, .. } => {
             if let Some(id) = id {
@@ -336,10 +338,10 @@ mod tests {
 
     #[test]
     fn test_prefix() {
-        let str = "
+        let str = r#"
  prefix e: <http://example.org/>
  e:S {}
- ";
+ "#;
         let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
         let mut expected = Schema::new(&iri!("http://default/"));
         expected.add_prefix("e", &IriS::new_unchecked("http://example.org/"));
@@ -353,10 +355,10 @@ mod tests {
 
     #[test]
     fn test_node_constraint_annotations_and_sem_acts() {
-        let str = "
+        let str = r#"
  prefix e: <http://example.org/>
  e:NC [1 2] // e:a 7 %e:Test{ print(n) %}
- ";
+ "#;
         let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
         // The trailing code declaration belongs to the node constraint, not
         // to the schema's start actions.
@@ -424,10 +426,10 @@ mod tests {
 
     #[test]
     fn test_shape_qualifiers_case_insensitive() {
-        let str = "
+        let str = r#"
  prefix : <http://example.org/>
  :S Closed Extra :p { :p . }
- ";
+ "#;
         let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
         let shape = match schema.shapes().unwrap()[0].shape_expr.clone() {
             ShapeExpr::Shape(shape) => shape,

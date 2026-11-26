@@ -10,21 +10,21 @@ use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_re
 use shex_ast::{Node, ResolveMethod, ShExParser, ir::ast2ir::AST2IR};
 use shex_validation::{Validator, ValidatorConfig};
 
-const SCHEMA: &str = "
+const SCHEMA: &str = r#"
 prefix : <http://example.org/>
 
 :T { :p @:U ; :q [ 1 ] }
 :U { :r . }
-";
+"#;
 
-const DATA: &str = "
+const DATA: &str = r#"
 prefix : <http://example.org/>
 
 :ok :p :u ; :q 1 .
 :u :r 2 .
 
 :ko :p :y ; :q 1 .
-";
+"#;
 
 fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
     let base = IriS::new_unchecked("http://example.org/");
@@ -65,7 +65,7 @@ fn app_info_entries(node: &str) -> Vec<String> {
         .map(|entry| {
             let entry = entry.as_object().expect("info entry");
             let text = entry.get("error").or_else(|| entry.get("reason")).expect("info text");
-            text.as_str().expect("info text").to_owned()
+            text.as_str().expect("info text").to_string()
         })
         .collect()
 }
@@ -82,5 +82,5 @@ fn errors_show_shape_labels_and_prefixed_names() {
 #[test]
 fn reasons_show_shape_labels_and_prefixed_names() {
     let reasons = app_info_entries("ok");
-    assert_eq!(reasons, vec!["Shape passed :ok@:T".to_owned()]);
+    assert_eq!(reasons, vec!["Shape passed :ok@:T".to_string()]);
 }

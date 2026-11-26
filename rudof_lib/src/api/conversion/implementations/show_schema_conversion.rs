@@ -20,7 +20,7 @@ use std::{
 #[cfg(feature = "dctap")]
 use {crate::api::dctap::implementations::load_dctap, shapes_converter::Tap2ShEx};
 
-#[expect(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn show_schema_conversion<W: io::Write>(
     rudof: &mut Rudof,
     schema: &InputSpec,
@@ -83,13 +83,12 @@ pub fn show_schema_conversion<W: io::Write>(
                 of,
             ),
             None => Err(ConversionError::FailedConversion {
-                input_mode: "shex".to_owned(),
-                output_mode: "html".to_owned(),
+                input_mode: "shex".to_string(),
+                output_mode: "html".to_string(),
                 input_format: input_format.to_string(),
                 output_format: output_format.to_string(),
-                error: "Output folder must be specified for HTML conversion".to_owned(),
-            }
-            .into()),
+                error: "Output folder must be specified for HTML conversion".to_string(),
+            })?,
         },
         (ConversionMode::Shacl, ResultConversionMode::Shacl) => {
             show_schema_conversion_shacl_to_shacl(rudof, schema, base, reader_mode, input_format, output_format, writer)
@@ -128,19 +127,17 @@ pub fn show_schema_conversion<W: io::Write>(
                 show_schema_conversion_dctap_to_html(rudof, schema, input_format, output_format, templates_folder, of)
             },
             None => Err(ConversionError::FailedConversion {
-                input_mode: "dctap".to_owned(),
-                output_mode: "html".to_owned(),
+                input_mode: "dctap".to_string(),
+                output_mode: "html".to_string(),
                 input_format: input_format.to_string(),
                 output_format: output_format.to_string(),
-                error: "Output folder must be specified for HTML conversion".to_owned(),
-            }
-            .into()),
+                error: "Output folder must be specified for HTML conversion".to_string(),
+            })?,
         },
         _ => Err(ConversionError::UnsupportedConversion {
             input_mode: input_mode.to_string(),
             output_mode: output_mode.to_string(),
-        }
-        .into()),
+        })?,
     }
 }
 
@@ -188,8 +185,8 @@ fn show_schema_conversion_shex_to_sparql<W: io::Write>(
         Some(shape_str) => {
             let iri_shape =
                 ShapeMapParser::parse_iri_ref(shape_str).map_err(|error| ConversionError::FailedConversion {
-                    input_mode: "shex".to_owned(),
-                    output_mode: "sparql".to_owned(),
+                    input_mode: "shex".to_string(),
+                    output_mode: "sparql".to_string(),
                     input_format: input_format.to_string(),
                     output_format: output_format.to_string(),
                     error: error.to_string(),
@@ -204,16 +201,16 @@ fn show_schema_conversion_shex_to_sparql<W: io::Write>(
     let sparql = converter
         .convert(rudof.shex_schema.as_ref().unwrap(), shape)
         .map_err(|error| ConversionError::FailedConversion {
-            input_mode: "shex".to_owned(),
-            output_mode: "sparql".to_owned(),
+            input_mode: "shex".to_string(),
+            output_mode: "sparql".to_string(),
             input_format: input_format.to_string(),
             output_format: output_format.to_string(),
             error: error.to_string(),
         })?;
 
     write!(writer, "{sparql}").map_err(|error| ConversionError::FailedConversion {
-        input_mode: "shex".to_owned(),
-        output_mode: "sparql".to_owned(),
+        input_mode: "shex".to_string(),
+        output_mode: "sparql".to_string(),
         input_format: input_format.to_string(),
         output_format: output_format.to_string(),
         error: error.to_string(),
@@ -239,8 +236,8 @@ fn show_schema_conversion_shex_to_uml<W: io::Write>(
     converter
         .convert(rudof.shex_schema.as_ref().unwrap())
         .map_err(|error| ConversionError::FailedConversion {
-            input_mode: "shex".to_owned(),
-            output_mode: "uml".to_owned(),
+            input_mode: "shex".to_string(),
+            output_mode: "uml".to_string(),
             input_format: input_format.to_string(),
             output_format: output_format.to_string(),
             error: error.to_string(),
@@ -277,8 +274,8 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
             uml_converter
                 .as_plantuml(writer, &mode)
                 .map_err(|error| ConversionError::FailedConversion {
-                    input_mode: "shex".to_owned(),
-                    output_mode: "uml".to_owned(),
+                    input_mode: "shex".to_string(),
+                    output_mode: "uml".to_string(),
                     input_format: input_format.to_string(),
                     output_format: result_format.to_string(),
                     error: error.to_string(),
@@ -289,8 +286,8 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
             uml_converter
                 .as_image(writer, ImageFormat::Svg, &mode, viz_engine, plantuml_path)
                 .map_err(|error| ConversionError::FailedConversion {
-                    input_mode: "shex".to_owned(),
-                    output_mode: "uml".to_owned(),
+                    input_mode: "shex".to_string(),
+                    output_mode: "uml".to_string(),
                     input_format: input_format.to_string(),
                     output_format: result_format.to_string(),
                     error: error.to_string(),
@@ -301,8 +298,8 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
             uml_converter
                 .as_image(writer, ImageFormat::Png, &mode, viz_engine, plantuml_path)
                 .map_err(|error| ConversionError::FailedConversion {
-                    input_mode: "shex".to_owned(),
-                    output_mode: "uml".to_owned(),
+                    input_mode: "shex".to_string(),
+                    output_mode: "uml".to_string(),
                     input_format: input_format.to_string(),
                     output_format: result_format.to_string(),
                     error: error.to_string(),
@@ -310,13 +307,12 @@ fn generate_uml_output<P: AsRef<Path>, W: io::Write>(
             Ok(())
         },
         _ => Err(ConversionError::FailedConversion {
-            input_mode: "shex".to_owned(),
-            output_mode: "uml".to_owned(),
+            input_mode: "shex".to_string(),
+            output_mode: "uml".to_string(),
             input_format: input_format.to_string(),
             output_format: result_format.to_string(),
-            error: "Unsupported UML output format".to_owned(),
-        }
-        .into()),
+            error: "Unsupported UML output format".to_string(),
+        })?,
     }
 }
 
@@ -338,8 +334,8 @@ fn show_schema_conversion_shex_to_html<P: AsRef<Path>>(
     converter
         .convert(rudof.shex_schema.as_ref().unwrap())
         .map_err(|error| ConversionError::FailedConversion {
-            input_mode: "shex".to_owned(),
-            output_mode: "html".to_owned(),
+            input_mode: "shex".to_string(),
+            output_mode: "html".to_string(),
             input_format: input_format.to_string(),
             output_format: output_format.to_string(),
             error: error.to_string(),
@@ -351,19 +347,19 @@ fn show_schema_conversion_shex_to_html<P: AsRef<Path>>(
             .template_folder()
             .map(PathBuf::from)
             .ok_or(ConversionError::FailedConversion {
-                input_mode: "shex".to_owned(),
-                output_mode: "html".to_owned(),
+                input_mode: "shex".to_string(),
+                output_mode: "html".to_string(),
                 input_format: input_format.to_string(),
                 output_format: output_format.to_string(),
                 error: "Templates folder must be specified for HTML conversion if not configured in RudofConfig"
-                    .to_owned(),
+                    .to_string(),
             })?,
     };
     converter
         .export_schema(resolved_template)
         .map_err(|error| ConversionError::FailedConversion {
-            input_mode: "shex".to_owned(),
-            output_mode: "html".to_owned(),
+            input_mode: "shex".to_string(),
+            output_mode: "html".to_string(),
             input_format: input_format.to_string(),
             output_format: output_format.to_string(),
             error: error.to_string(),
@@ -417,8 +413,8 @@ fn show_schema_conversion_shacl_to_shex<W: io::Write>(
     converter
         .convert(rudof.shacl_shapes.as_ref().unwrap())
         .map_err(|error| ConversionError::FailedConversion {
-            input_mode: "shacl".to_owned(),
-            output_mode: "shex".to_owned(),
+            input_mode: "shacl".to_string(),
+            output_mode: "shex".to_string(),
             input_format: input_format.to_string(),
             output_format: output_format.to_string(),
             error: error.to_string(),
@@ -462,8 +458,8 @@ fn show_schema_conversion_dctap_to_shex<W: io::Write>(
         converter
             .convert(rudof.dctap.as_ref().unwrap())
             .map_err(|error| ConversionError::FailedConversion {
-                input_mode: "dctap".to_owned(),
-                output_mode: "shex".to_owned(),
+                input_mode: "dctap".to_string(),
+                output_mode: "shex".to_string(),
                 input_format: input_format.to_string(),
                 output_format: output_format.to_string(),
                 error: error.to_string(),
@@ -505,8 +501,8 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
         converter
             .convert(rudof.dctap.as_ref().unwrap())
             .map_err(|error| ConversionError::FailedConversion {
-                input_mode: "dctap".to_owned(),
-                output_mode: "shex".to_owned(),
+                input_mode: "dctap".to_string(),
+                output_mode: "shex".to_string(),
                 input_format: input_format.to_string(),
                 output_format: output_format.to_string(),
                 error: error.to_string(),
@@ -516,8 +512,8 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
     converter
         .convert(&shex_schema)
         .map_err(|error| ConversionError::FailedConversion {
-            input_mode: "dctap".to_owned(),
-            output_mode: "uml".to_owned(),
+            input_mode: "dctap".to_string(),
+            output_mode: "uml".to_string(),
             input_format: input_format.to_string(),
             output_format: output_format.to_string(),
             error: error.to_string(),
@@ -535,7 +531,7 @@ fn show_schema_conversion_dctap_to_uml<W: io::Write>(
 }
 
 #[cfg(feature = "dctap")]
-fn show_schema_conversion_dctap_to_html<P: AsRef<Path>>(
+fn show_schema_conversion_dctap_to_html<P: AsRef<std::path::Path>>(
     rudof: &mut Rudof,
     schema: &InputSpec,
     input_format: &ConversionFormat,
@@ -550,8 +546,8 @@ fn show_schema_conversion_dctap_to_html<P: AsRef<Path>>(
         converter
             .convert(rudof.dctap.as_ref().unwrap())
             .map_err(|error| ConversionError::FailedConversion {
-                input_mode: "dctap".to_owned(),
-                output_mode: "shex".to_owned(),
+                input_mode: "dctap".to_string(),
+                output_mode: "shex".to_string(),
                 input_format: input_format.to_string(),
                 output_format: output_format.to_string(),
                 error: error.to_string(),
@@ -563,8 +559,8 @@ fn show_schema_conversion_dctap_to_html<P: AsRef<Path>>(
     converter
         .convert(&shex_schema)
         .map_err(|error| ConversionError::FailedConversion {
-            input_mode: "shex".to_owned(),
-            output_mode: "html".to_owned(),
+            input_mode: "shex".to_string(),
+            output_mode: "html".to_string(),
             input_format: input_format.to_string(),
             output_format: output_format.to_string(),
             error: error.to_string(),
@@ -576,19 +572,19 @@ fn show_schema_conversion_dctap_to_html<P: AsRef<Path>>(
             .template_folder()
             .map(PathBuf::from)
             .ok_or(ConversionError::FailedConversion {
-                input_mode: "shex".to_owned(),
-                output_mode: "html".to_owned(),
+                input_mode: "shex".to_string(),
+                output_mode: "html".to_string(),
                 input_format: input_format.to_string(),
                 output_format: output_format.to_string(),
                 error: "Templates folder must be specified for HTML conversion if not configured in RudofConfig"
-                    .to_owned(),
+                    .to_string(),
             })?,
     };
     converter
         .export_schema(resolved_template)
         .map_err(|error| ConversionError::FailedConversion {
-            input_mode: "shex".to_owned(),
-            output_mode: "html".to_owned(),
+            input_mode: "shex".to_string(),
+            output_mode: "html".to_string(),
             input_format: input_format.to_string(),
             output_format: output_format.to_string(),
             error: error.to_string(),

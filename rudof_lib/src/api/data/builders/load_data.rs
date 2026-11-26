@@ -109,7 +109,7 @@ impl<'a> LoadDataBuilder<'a> {
     /// Provided so callers that only need the endpoint case don't have to
     /// construct a `BackendSpec` themselves.
     pub fn with_endpoint(mut self, endpoint: &str) -> Self {
-        self.backend = BackendSpec::Endpoint(endpoint.to_owned());
+        self.backend = BackendSpec::Endpoint(endpoint.to_string());
         self
     }
 
@@ -162,7 +162,7 @@ impl<'a> LoadDataBuilder<'a> {
                           Use `rudof connect`/`load`/`query --dialect cypher` to work with LadybugDB \
                           directly, or pick --backend memory|qlever|endpoint=... for RDF sources. \
                           See https://github.com/rudof-project/rudof/discussions/747"
-                    .to_owned(),
+                    .to_string(),
             })
             .into()),
         }

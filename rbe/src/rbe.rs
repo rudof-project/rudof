@@ -66,7 +66,7 @@ type MandatoryValues<A> = Either<Vec<DerivError<A>>, Vec<A>>;
 
 impl<A> Rbe<A>
 where
-    A: PartialEq + Eq + Hash + Clone + Debug + Display,
+    A: PartialEq + Eq + Hash + Clone + fmt::Debug + fmt::Display,
 {
     pub fn match_bag_deriv(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {
         tracing::trace!("Matching bag {bag} against RBE {self} with open={open}");
@@ -93,7 +93,7 @@ where
             Rbe::Fail { .. } => false,
             Rbe::Empty => false,
             Rbe::Symbol { .. } => false,
-            Rbe::And { values } | Rbe::Or { values } => values.iter().any(Rbe::has_repeated_symbols),
+            Rbe::And { values } | Rbe::Or { values } => values.iter().any(|v| v.has_repeated_symbols()),
             Rbe::Star { value } | Rbe::Plus { value } => value.has_repeated_symbols(),
             Rbe::Repeat { .. } => true,
         }
@@ -106,7 +106,7 @@ where
     pub fn interval(&self, bag: &Bag<A>) -> Interval {
         // trace!("Computing interval of RBE {self} with bag {bag}");
         match self {
-            Rbe::Fail { .. } => Interval::fail(),
+            Rbe::Fail { error: _ } => Interval::fail(),
             Rbe::Empty => Interval::zero_any(),
             Rbe::Symbol { value, card } => {
                 let wa = bag.contains(value);
@@ -228,18 +228,14 @@ where
         match &self {
             Rbe::Fail { .. } => (),
             Rbe::Empty => (),
-            Rbe::Symbol { value, .. } => {
+            Rbe::Symbol { value, card: _ } => {
                 set.insert(value.clone());
             },
             Rbe::And { values } => {
-                for v in values {
-                    v.symbols_aux(set);
-                }
+                values.iter().for_each(|v| v.symbols_aux(set));
             },
             Rbe::Or { values } => {
-                for v in values {
-                    v.symbols_aux(set);
-                }
+                values.iter().for_each(|v| v.symbols_aux(set));
             },
             Rbe::Plus { value } => {
                 value.symbols_aux(set);
@@ -247,7 +243,7 @@ where
             Rbe::Star { value } => {
                 value.symbols_aux(set);
             },
-            Rbe::Repeat { value, .. } => {
+            Rbe::Repeat { value, card: _ } => {
                 value.symbols_aux(set);
             },
         }
@@ -257,7 +253,6 @@ where
         self.symbols().iter().all(|symbol| bag.contains(symbol) == 0)
     }
 
-    #[must_use]
     pub fn deriv_bag(&self, bag: &Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut current = (*self).clone();
         let mut processed = Bag::new();
@@ -265,22 +260,26 @@ where
             for _ in 0..count {
                 let deriv = current.deriv(x, 1, open, controlled);
                 // trace!("Deriv of RBE {current} with symbol {x} and open={open} is {deriv}");
-                if let Rbe::Fail { error } = deriv {
-                    current = Rbe::Fail {
-                        error: DerivError::DerivBagError {
-                            error_msg: format!("{error}"),
-                            processed: Box::new(processed.clone()),
-                            bag: Box::new((*bag).clone()),
-                            expr: Box::new((*self).clone()),
-                            current: Box::new(current.clone()),
-                            value: (*x).clone(),
-                            open,
-                        },
-                    };
-                    break;
+                match deriv {
+                    Rbe::Fail { error } => {
+                        current = Rbe::Fail {
+                            error: DerivError::DerivBagError {
+                                error_msg: format!("{error}"),
+                                processed: Box::new(processed.clone()),
+                                bag: Box::new((*bag).clone()),
+                                expr: Box::new((*self).clone()),
+                                current: Box::new(current.clone()),
+                                value: (*x).clone(),
+                                open,
+                            },
+                        };
+                        break;
+                    },
+                    _ => {
+                        processed.insert((*x).clone());
+                        current = deriv;
+                    },
                 }
-                processed.insert((*x).clone());
-                current = deriv;
             }
             if matches!(current, Rbe::Fail { .. }) {
                 break;
@@ -315,7 +314,7 @@ where
                 }
             },
             Rbe::Or { values } => {
-                let results: Vec<_> = values.iter().map(Rbe::mandatory_values).collect();
+                let results: Vec<_> = values.iter().map(|v| v.mandatory_values()).collect();
                 if results.iter().any(|r| matches!(r, Either::Right(vs) if vs.is_empty())) {
                     Either::Right(Vec::new())
                 } else {
@@ -336,8 +335,8 @@ where
             },
             Rbe::Star { .. } => Either::Right(Vec::new()),
             Rbe::Plus { value } => value.mandatory_values(),
-            Rbe::Repeat { card, .. } if card.min.is_0() => Either::Right(Vec::new()),
-            Rbe::Repeat { value, .. } => value.mandatory_values(),
+            Rbe::Repeat { value: _, card } if card.min.is_0() => Either::Right(Vec::new()),
+            Rbe::Repeat { value, card: _ } => value.mandatory_values(),
         }
     }
 
@@ -347,13 +346,12 @@ where
         matches!(self.mandatory_values(), Either::Right(values) if values.is_empty())
     }
 
-    #[must_use]
     pub fn deriv(&self, x: &A, n: usize, open: bool, controlled: &HashSet<A>) -> Rbe<A>
     where
         A: Eq + Hash + Clone,
     {
-        match self {
-            fail @ Rbe::Fail { .. } => fail.clone(),
+        match *self {
+            ref fail @ Rbe::Fail { .. } => fail.clone(),
             Rbe::Empty => {
                 if open && !(controlled.contains(x)) {
                     Rbe::Empty
@@ -363,7 +361,7 @@ where
                     }
                 }
             },
-            Rbe::Symbol { value, card } => {
+            Rbe::Symbol { ref value, ref card } => {
                 if *x == *value {
                     if card.max == Max::IntMax(0) {
                         Rbe::Fail {
@@ -394,13 +392,13 @@ where
                     }
                 }
             },
-            Rbe::And { values } => Self::deriv_and(values, x, n, open, controlled),
-            Rbe::Or { values } => Self::mk_or_values(values.iter().map(|rbe| rbe.deriv(x, n, open, controlled))),
-            Rbe::Plus { value } => {
+            Rbe::And { ref values } => Self::deriv_and(values, x, n, open, controlled),
+            Rbe::Or { ref values } => Self::mk_or_values(values.iter().map(|rbe| rbe.deriv(x, n, open, controlled))),
+            Rbe::Plus { ref value } => {
                 let d = value.deriv(x, n, open, controlled);
                 Self::mk_and(&d, &Rbe::Star { value: value.clone() })
             },
-            Rbe::Repeat { value, card } if card.is_0_0() => {
+            Rbe::Repeat { ref value, ref card } if card.is_0_0() => {
                 let d = value.deriv(x, n, open, controlled);
                 if d.is_nullable() {
                     Rbe::Fail {
@@ -410,13 +408,13 @@ where
                     Rbe::Empty
                 }
             },
-            Rbe::Repeat { value, card } => {
+            Rbe::Repeat { ref value, ref card } => {
                 let d = value.deriv(x, n, open, controlled);
                 let card = card.minus(n);
                 let rest = Self::mk_range(value, &card);
                 Self::mk_and(&d, &rest)
             },
-            Rbe::Star { value } => {
+            Rbe::Star { ref value } => {
                 if open && !controlled.contains(x) {
                     // Extra symbol (not controlled): the Star stays in its current state.
                     // No iteration is forced; zero-or-more semantics still holds.
@@ -592,9 +590,9 @@ where
 
 impl<A> Debug for Rbe<A>
 where
-    A: Debug + Hash + Eq + Display,
+    A: Debug + Hash + Eq + fmt::Display,
 {
-    fn fmt(&self, dest: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Rbe::Fail { error } => write!(dest, "Fail {{{error:?}}}"),
             Rbe::Empty => write!(dest, "Empty"),
@@ -630,7 +628,7 @@ impl<A> Display for Rbe<A>
 where
     A: Display + Hash + Eq,
 {
-    fn fmt(&self, dest: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
             Rbe::Fail { error } => write!(dest, "Fail {{{error}}}"),
             Rbe::Empty => write!(dest, "Empty"),
@@ -888,7 +886,7 @@ mod tests {
                 "card": {"min": 1, "max": 2 }
             }
         }"#;
-        let expected = sym("foo".to_owned(), 1, Max::IntMax(2));
+        let expected = sym("foo".to_string(), 1, Max::IntMax(2));
         let rbe: Rbe<String> = serde_json::from_str(str).unwrap();
         assert_eq!(rbe, expected);
     }

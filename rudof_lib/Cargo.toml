@@ -94,6 +94,3 @@ sparesults.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 wasm-bindgen-test.workspace = true
-
-[lints]
-workspace = true

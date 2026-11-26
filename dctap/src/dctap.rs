@@ -31,7 +31,7 @@ impl Default for DCTap {
 impl DCTap {
     pub fn new() -> DCTap {
         DCTap {
-            version: "0.1".to_owned(),
+            version: "0.1".to_string(),
             shapes: Vec::new(),
         }
     }

@@ -211,7 +211,7 @@ where
                     <RDF::Term as TryInto<RDF::Subject>>::try_into(focus.clone()).map_err(|_| {
                         RDFError::ExpectedIriOrBlankNodeError {
                             term: focus.to_string(),
-                            error: "Expected IRI or BlankNode".to_owned(),
+                            error: "Expected IRI or BlankNode".to_string(),
                         }
                     })?;
 

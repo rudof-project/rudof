@@ -39,13 +39,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                     node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph)?
                 };
 
-                if inner_outcome.conforms() {
-                    let ev = Evidence::new(fnode_obj.clone(), component_obj.clone())
-                        .with_path(maybe_path.cloned())
-                        .with_value(Some(node_object.clone()))
-                        .with_source(Some(shape.id().clone()));
-                    outcome.push_evidence(ev);
-                } else {
+                if !inner_outcome.conforms() {
                     let msg = format!(
                         "Shape {}: value {node} does not conform to node shape {} (sh:node)",
                         shape.id(),
@@ -65,6 +59,12 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                                 .collect(),
                         );
                     outcome.push_violation(vr);
+                } else {
+                    let ev = Evidence::new(fnode_obj.clone(), component_obj.clone())
+                        .with_path(maybe_path.cloned())
+                        .with_value(Some(node_object.clone()))
+                        .with_source(Some(shape.id().clone()));
+                    outcome.push_evidence(ev);
                 }
             }
         }

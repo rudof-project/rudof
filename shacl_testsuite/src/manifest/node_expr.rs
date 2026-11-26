@@ -28,7 +28,8 @@ impl ManifestEntry for NodeExprTest {
     fn parse(manifest: &mut ManifestGraph, entry: NamedOrBlankNode) -> Result<Self, TestSuiteError> {
         let label = manifest
             .value(&entry, &RdfsVocab::rdfs_label().into())?
-            .map_or_else(|| entry.to_string(), |label| label.to_string());
+            .map(|label| label.to_string())
+            .unwrap_or_else(|| entry.to_string());
 
         let action: NamedOrBlankNode = manifest
             .required_value(&entry, &TestManifestVocab::mf_action().into())?
@@ -39,13 +40,14 @@ impl ManifestEntry for NodeExprTest {
 
         let ignore_order = manifest
             .value(&action, &ShaclTestVocab::sht_ignore_order().into())?
-            .is_some_and(|t| t.to_string().contains("true"));
+            .map(|t| t.to_string().contains("true"))
+            .unwrap_or(false);
 
         let mut scope = HashMap::new();
         for triple in manifest.store().triples_matching(&action, &Any, &Any)? {
-            let predicate = triple.pred().as_str().to_owned();
+            let predicate = triple.pred().as_str().to_string();
             if let Some(name) = predicate.strip_prefix(ShaclTestVocab::SHT_SCOPE_PREFIX) {
-                scope.insert(name.to_owned(), triple.obj().clone());
+                scope.insert(name.to_string(), triple.obj().clone());
             }
         }
 

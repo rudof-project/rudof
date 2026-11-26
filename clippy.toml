@@ -2,10 +2,3 @@ avoid-breaking-exported-api = false
 cognitive-complexity-threshold = 50
 too-many-arguments-threshold = 10
 type-complexity-threshold = 500
-# Tests may panic, unwrap, expect and print: a failing test should stop with a
-# clear message.
-allow-expect-in-tests = true
-allow-unwrap-in-tests = true
-allow-panic-in-tests = true
-allow-print-in-tests = true
-allow-dbg-in-tests = true

@@ -67,7 +67,7 @@ impl DerefIri for RValue {
     fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             RValue::Iri(iri) => Ok(RValue::Iri(iri.deref_iri(base, prefixmap)?)),
-            other @ RValue::Integer(_) => Ok(other),
+            other => Ok(other),
         }
     }
 }

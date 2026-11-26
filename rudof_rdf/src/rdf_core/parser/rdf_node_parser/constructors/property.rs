@@ -81,7 +81,7 @@ where
         let vals = self.inner.parse_focused(rdf)?;
         if vals.is_empty() {
             Err(RDFError::NoValuesPredicateError {
-                node: "focus node".to_owned(),
+                node: "focus node".to_string(),
                 pred: format!("{}", self.inner.property),
             })
         } else {
@@ -121,7 +121,8 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let focus_str = rdf
             .get_focus()
-            .map_or_else(|| "No focus node".to_owned(), ToString::to_string);
+            .map(|f| f.to_string())
+            .unwrap_or_else(|| "No focus node".to_string());
 
         let vals: HashSet<_> = ValuesPropertyParser {
             property: self.property.clone(),
@@ -163,7 +164,7 @@ where
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         SingleValuePropertyParser::new(self.property.clone())
-            .then(|node| SetFocusParser::new(node).then(|()| ListParser::new()))
+            .then(|node| SetFocusParser::new(node).then(|_| ListParser::new()))
             .parse_focused(rdf)
     }
 }
@@ -396,7 +397,7 @@ where
                 let rdf_lit: RDF::Literal = term_to_literal::<RDF>(&t)?;
 
                 let slit: ConcreteLiteral = rdf_lit.clone().try_into().map_err(|_| RDFError::DefaultError {
-                    msg: format!("Error converting literal {rdf_lit} to SLiteral"),
+                    msg: format!("Error converting literal {} to SLiteral", rdf_lit),
                 })?;
 
                 Ok(slit)

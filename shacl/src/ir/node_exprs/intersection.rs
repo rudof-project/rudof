@@ -57,7 +57,7 @@ impl Display for Intersection {
         let items = self
             .intersection()
             .iter()
-            .map(ToString::to_string)
+            .map(|ne| ne.to_string())
             .collect::<Vec<_>>()
             .join(", ");
         write!(f, "Intersection[{items}]")

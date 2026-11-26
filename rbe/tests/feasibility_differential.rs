@@ -130,7 +130,7 @@ fn matches_some(table: &Table, values: &[(C, C, C)]) -> bool {
 /// Exhaustively checks refutation soundness over every sub-bag of the pool.
 fn check_sound(table: &Table, pool: &[(char, char)]) {
     let n = pool.len();
-    for mask in 0..(1_u32 << n) {
+    for mask in 0..(1u32 << n) {
         let values: Vec<(C, C, C)> = (0..n)
             .filter(|i| mask & (1 << i) != 0)
             .map(|i| (C(pool[i].0), C(pool[i].1), C(' ')))

@@ -191,7 +191,7 @@ impl Command for ShexValidateCommand {
         let valid_graph = self.args.valid.as_ref().map(|_| new_sink(ctx)).transpose()?;
         let invalid_graph = self.args.invalid.as_ref().map(|_| new_sink(ctx)).transpose()?;
         let graph_or_count = |graph: &Option<Arc<Mutex<GraphSink>>>| match graph {
-            Some(graph) => Some(TriplesSink::new(Arc::clone(graph))),
+            Some(graph) => Some(TriplesSink::new(graph.clone())),
             None if self.args.statistics => Some(TriplesSink::new(Arc::new(Mutex::new(CountingSink::new())))),
             None => None,
         };
@@ -200,7 +200,7 @@ impl Command for ShexValidateCommand {
 
         let mut validation = ctx.rudof.validate_shex();
         if let Some(sink) = &read_graph {
-            validation = validation.with_read_sink(TriplesSink::new(Arc::clone(sink)));
+            validation = validation.with_read_sink(TriplesSink::new(sink.clone()));
         }
         if let Some(sink) = &valid_sink {
             validation = validation.with_valid_sink(sink.clone());
@@ -251,7 +251,7 @@ impl Command for ShexValidateCommand {
 
         if let Some(map_state_path) = map_state {
             ctx.rudof
-                .serialize_map_state(&mut File::create(map_state_path)?)
+                .serialize_map_state(&mut std::fs::File::create(map_state_path)?)
                 .execute()?;
         }
 

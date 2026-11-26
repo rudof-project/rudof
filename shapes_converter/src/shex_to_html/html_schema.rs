@@ -23,10 +23,9 @@ pub struct HtmlSchema {
 
 impl HtmlSchema {
     pub fn new() -> HtmlSchema {
-        HtmlSchema::default()
+        Default::default()
     }
 
-    #[must_use]
     pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
         self.prefixmap = prefixmap;
         self
@@ -34,7 +33,7 @@ impl HtmlSchema {
 
     /// Tries to get a node from a label. If it exists returns the node and true, otherwise, adds the node and returns false
     pub fn get_node_adding_label(&mut self, label: &str) -> (NodeId, bool) {
-        match self.labels.entry(label.to_owned()) {
+        match self.labels.entry(label.to_string()) {
             Entry::Occupied(c) => (*c.get(), true),
             Entry::Vacant(v) => {
                 self.labels_counter += 1;
@@ -46,7 +45,7 @@ impl HtmlSchema {
     }
 
     pub fn set_svg_schema(&mut self, svg_schema: &str) {
-        svg_schema.clone_into(&mut self.svg_schema)
+        self.svg_schema = svg_schema.to_string()
     }
 
     #[allow(clippy::result_large_err)]
@@ -72,8 +71,6 @@ impl HtmlSchema {
     }
 
     pub fn to_landing_html_schema(&self, config: &ShEx2HtmlConfig) -> LandingHtmlTemplate {
-        const VERSION: &str = env!("CARGO_PKG_VERSION");
-
         let mut shapes = Vec::new();
         for shape in self.shapes.values() {
             shapes.push(ShapeRef::new(
@@ -82,13 +79,14 @@ impl HtmlSchema {
                 shape.name().label().unwrap_or_default().as_str(),
             ))
         }
+        const VERSION: &str = env!("CARGO_PKG_VERSION");
         let curr_time = SystemTime::now();
         let dt: DateTime<Utc> = curr_time.into();
         let created_time = dt.format("%Y-&m-%d %H:%M:%S").to_string();
 
         LandingHtmlTemplate {
             title: config.title.clone(),
-            rudof_version: VERSION.to_owned(),
+            rudof_version: VERSION.to_string(),
             created_time,
             svg_schema: self.svg_schema.clone(),
             shapes,

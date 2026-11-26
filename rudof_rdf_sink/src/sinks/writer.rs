@@ -103,7 +103,7 @@ fn declare_base<S: Clone>(
     add: impl FnOnce(S, String) -> Result<S, oxrdf::IriParseError>,
 ) -> S {
     let fallback = serializer.clone();
-    add(serializer, base.as_str().to_owned()).unwrap_or_else(|error| {
+    add(serializer, base.as_str().to_string()).unwrap_or_else(|error| {
         tracing::warn!(%base, %error, "base IRI left out of the serialized output");
         fallback
     })
@@ -117,7 +117,7 @@ fn declare_prefix<S: Clone>(
     add: impl FnOnce(S, String, String) -> Result<S, oxrdf::IriParseError>,
 ) -> S {
     let fallback = serializer.clone();
-    add(serializer, alias.to_owned(), iri.as_str().to_owned()).unwrap_or_else(|error| {
+    add(serializer, alias.to_string(), iri.as_str().to_string()).unwrap_or_else(|error| {
         tracing::warn!(alias, %iri, %error, "prefix left out of the serialized output");
         fallback
     })
@@ -384,8 +384,10 @@ mod tests {
         let mut sink = WriterSink::new(Vec::new());
         sink.push(Triple::new(iri("alice"), iri("knows"), iri("bob"))).unwrap();
 
-        sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"))
-            .unwrap();
+        assert!(
+            sink.declare_prefix("ex", &IriS::new_unchecked("http://example.org/"))
+                .is_ok()
+        );
     }
 
     #[test]

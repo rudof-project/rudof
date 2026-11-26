@@ -59,60 +59,49 @@ impl IRPropertyShape {
         }
     }
 
-    #[must_use]
     pub fn with_components(mut self, components: Vec<IRComponent>) -> Self {
         self.components = components;
         self
     }
-    #[must_use]
     pub fn with_targets(mut self, targets: Vec<IRTarget>) -> Self {
         self.targets = targets;
         self
     }
-    #[must_use]
     pub fn with_property_shapes(mut self, property_shapes: Vec<ShapeLabelIdx>) -> Self {
         self.property_shapes = property_shapes;
         self
     }
-    #[must_use]
     pub fn with_deactivated(mut self, deactivated: Option<IRNodeExpr>) -> Self {
         self.deactivated = deactivated;
         self
     }
-    #[must_use]
     pub fn with_severity(mut self, severity: Option<Severity>) -> Self {
         self.severity = severity;
         self
     }
-    #[must_use]
     pub fn with_reifier_info(mut self, reifier_info: Option<ReifierInfo>) -> Self {
         self.reifier_info = reifier_info;
         self
     }
 
-    #[must_use]
     pub fn with_name(mut self, name: Option<MessageMap>) -> Self {
         self.name = name;
         self
     }
-    #[must_use]
     pub fn with_description(mut self, description: Option<MessageMap>) -> Self {
         self.description = description;
         self
     }
-    #[must_use]
     pub fn with_order(mut self, order: Option<OrderValue>) -> Self {
         self.order = order;
         self
     }
 
-    #[must_use]
     pub fn with_group(mut self, group: Option<Object>) -> Self {
         self.group = group;
         self
     }
 
-    #[must_use]
     pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
         self.message = message;
         self
@@ -258,7 +247,8 @@ impl IRPropertyShape {
                 OrderValue::Integer(i) => (*i).into(),
                 OrderValue::Decimal(d) => {
                     let decimal_literal = ConcreteLiteral::NumericLiteral(NumericLiteral::Decimal(*d));
-                    let literal: RDF::Literal = <ConcreteLiteral as Into<RDF::Literal>>::into(decimal_literal);
+                    let literal: RDF::Literal =
+                        <ConcreteLiteral as std::convert::Into<RDF::Literal>>::into(decimal_literal);
                     literal
                 },
             };
@@ -342,7 +332,7 @@ impl Display for IRPropertyShape {
                 reifier_info
                     .reifier_shape()
                     .iter()
-                    .map(ToString::to_string)
+                    .map(|s| s.to_string())
                     .collect::<Vec<_>>()
                     .join(", ")
             )?;
@@ -361,7 +351,7 @@ impl Display for IRPropertyShape {
         }
 
         if let Some(deactivated) = self.deactivated() {
-            writeln!(f, " Deactivated: {deactivated}")?;
+            writeln!(f, " Deactivated: {}", deactivated)?;
         }
         if self.severity() != &Severity::Violation {
             writeln!(f, " Severity: {}", self.severity())?;
@@ -388,7 +378,7 @@ impl Display for IRPropertyShape {
             writeln!(
                 f,
                 " Property Shapes: [{}]",
-                property_shapes.map(ToString::to_string).collect::<Vec<_>>().join(", ")
+                property_shapes.map(|ps| ps.to_string()).collect::<Vec<_>>().join(", ")
             )?;
         }
         Ok(())

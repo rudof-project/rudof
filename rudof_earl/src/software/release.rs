@@ -20,13 +20,11 @@ impl Release {
         }
     }
 
-    #[must_use]
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
     }
 
-    #[must_use]
     pub fn with_created(mut self, created: impl Into<String>) -> Self {
         self.created = Some(created.into());
         self

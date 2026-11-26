@@ -9,7 +9,6 @@ use rudof_lib::types::{ResultShapeMap, ShExNode, ShExShapeLabel, ShExValidationS
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::fmt::Write as _;
 use std::io::Cursor;
 
 use super::helpers::*;
@@ -18,14 +17,14 @@ use super::params::{ResultShExValidationFormatParam, ShExFormatParam, ShExSortBy
 fn normalize_iri_str(s: &str, strict: bool) -> String {
     let trimmed = s.trim();
     if strict {
-        return trimmed.to_owned();
+        return trimmed.to_string();
     }
     let is_bare_iri =
         !trimmed.starts_with('<') && !trimmed.starts_with('_') && !trimmed.starts_with('{') && trimmed.contains("://");
     if is_bare_iri {
-        format!("<{trimmed}>")
+        format!("<{}>", trimmed)
     } else {
-        trimmed.to_owned()
+        trimmed.to_string()
     }
 }
 
@@ -213,7 +212,7 @@ pub async fn validate_shex_impl(
         for spec in specs {
             if let Err(e) = rudof.add_external_resolver(spec) {
                 return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid external resolver spec '{spec}': {e}"),
+                    format!("Invalid external resolver spec '{}': {}", spec, e),
                     "Read the rudof://shex/external-resolvers resource to enumerate valid kinds",
                 )
                 .into_call_tool_result());
@@ -229,7 +228,7 @@ pub async fn validate_shex_impl(
     }
     if let Err(e) = shex_schema_loading.execute() {
         return Ok(ToolExecutionError::with_hint(
-            format!("Failed to load ShEx schema: {e}"),
+            format!("Failed to load ShEx schema: {}", e),
             "Check the schema content and schema_format parameter",
         )
         .into_call_tool_result());
@@ -244,7 +243,7 @@ pub async fn validate_shex_impl(
     }
     if let Err(e) = shapemap_loading.execute() {
         return Ok(ToolExecutionError::with_hint(
-            format!("Failed to load ShapeMap: {e}"),
+            format!("Failed to load ShapeMap: {}", e),
             "Check shapemap syntax (e.g. ':alice@:Person') or the auto-generated ShapeMap from maybe_node/maybe_shape",
         )
         .into_call_tool_result());
@@ -252,7 +251,7 @@ pub async fn validate_shex_impl(
 
     if let Err(e) = rudof.validate_shex().execute() {
         return Ok(ToolExecutionError::with_hint(
-            format!("ShEx validation failed: {e}"),
+            format!("ShEx validation failed: {}", e),
             "Ensure the RDF data is loaded and the schema/shapemap are correct",
         )
         .into_call_tool_result());
@@ -319,7 +318,7 @@ pub async fn validate_shex_impl(
 
     // Add ShapeMap source info
     if maybe_node.is_some() || maybe_shape.is_some() {
-        write!(summary, "\nShapeMap (auto-generated): {effective_shapemap}").unwrap();
+        summary.push_str(&format!("\nShapeMap (auto-generated): {}", effective_shapemap));
     }
 
     let mut result = CallToolResult::success(vec![ContentBlock::text(summary)]);
@@ -354,13 +353,13 @@ mod tests {
         let result = validate_shex_impl(
             &service,
             Parameters(ValidateShexRequest {
-                schema: SCHEMA.to_owned(),
+                schema: SCHEMA.to_string(),
                 schema_format: None,
                 base_schema: None,
                 base_data: None,
                 maybe_node: None,
                 maybe_shape: None,
-                shapemap: Some(":bob@:Person, :alice@:Person".to_owned()),
+                shapemap: Some(":bob@:Person, :alice@:Person".to_string()),
                 result_format: None,
                 sort_by: None,
                 strict_iris: None,

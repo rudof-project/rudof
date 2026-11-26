@@ -21,7 +21,7 @@ use std::{collections::HashSet, fmt::Display, hash::Hash};
 ///
 /// All associated types must implement `Sync + Send` to enable safe concurrent access
 /// across thread boundaries, which is essential for asynchronous operations.
-#[expect(async_fn_in_trait)]
+#[allow(async_fn_in_trait)]
 pub trait AsyncRDF {
     /// The type representing an RDF subject.
     type Subject: Display + Sync + Send;

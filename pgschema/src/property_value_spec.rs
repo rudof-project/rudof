@@ -28,7 +28,7 @@ impl PropertyValueSpec {
         let content_semantics = match self {
             PropertyValueSpec::Closed(pv) => pv.semantics(),
             PropertyValueSpec::Open(pv) => {
-                let open_semantics: HashSet<_> = pv.semantics().into_iter().map(RecordType::with_open).collect();
+                let open_semantics: HashSet<_> = pv.semantics().into_iter().map(|v| v.with_open()).collect();
                 open_semantics
             },
         };
@@ -95,11 +95,11 @@ impl PropertyValue {
 impl Display for PropertyValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PropertyValue::EachOf(left, right) => write!(f, "{left} , {right}"),
-            PropertyValue::OneOf(left, right) => write!(f, "({left} | {right})"),
-            PropertyValue::Property(key, type_spec) => write!(f, "{key}: {type_spec}"),
+            PropertyValue::EachOf(left, right) => write!(f, "{} , {}", left, right),
+            PropertyValue::OneOf(left, right) => write!(f, "({} | {})", left, right),
+            PropertyValue::Property(key, type_spec) => write!(f, "{}: {}", key, type_spec),
             PropertyValue::OptionalProperty(key, type_spec) => {
-                write!(f, "{key}: {type_spec} (optional)")
+                write!(f, "{}: {} (optional)", key, type_spec)
             },
             PropertyValue::Empty => write!(f, "Empty"),
         }
@@ -132,8 +132,8 @@ impl PropertyValueSpec {}
 impl Display for PropertyValueSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PropertyValueSpec::Closed(pv) => write!(f, "{pv}"),
-            PropertyValueSpec::Open(pv) => write!(f, "{pv} OPEN"),
+            PropertyValueSpec::Closed(pv) => write!(f, "{}", pv),
+            PropertyValueSpec::Open(pv) => write!(f, "{} OPEN", pv),
         }
     }
 }
@@ -216,8 +216,8 @@ impl Type {
         match self {
             Type::ValueType(value_type) => value_type.clone(),
             Type::Conjunction(a, b) => {
-                let avt = (*a).to_value_type();
-                let bvt = (*b).to_value_type();
+                let avt: ValueType = (*a).to_value_type();
+                let bvt: ValueType = (*b).to_value_type();
                 ValueType::intersection(avt, bvt)
             },
             Type::Disjunction(a, b) => ValueType::union(a.to_value_type(), b.to_value_type()),

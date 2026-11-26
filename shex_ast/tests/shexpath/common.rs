@@ -50,7 +50,7 @@ pub fn predicates(doc: &ShExJDocument, path: &str) -> Vec<String> {
     select(doc, path)
         .iter()
         .map(|item| match item.value()["predicate"].as_str() {
-            Some(predicate) => predicate.rsplit(['/', '#']).next().unwrap_or(predicate).to_owned(),
+            Some(predicate) => predicate.rsplit(['/', '#']).next().unwrap_or(predicate).to_string(),
             None => panic!("{} has no predicate", item.value()),
         })
         .collect()
@@ -63,14 +63,15 @@ pub fn described(items: &[ShExPathItem<'_>]) -> Vec<String> {
         .map(|item| {
             let value = item.value();
             let short = |v: &serde_json::Value| v.as_str().map(|s| s.replace("http://a.example/", ":"));
-            if let Some(s) = value.as_str() {
-                format!("{:?}", s.replace("http://a.example/", ":"))
-            } else {
-                let ty = value["type"].as_str().unwrap_or("?").to_owned();
-                match short(&value["predicate"]).or_else(|| short(&value["id"])) {
-                    Some(name) => format!("{ty}({name})"),
-                    None => ty,
-                }
+            match value.as_str() {
+                Some(s) => format!("{:?}", s.replace("http://a.example/", ":")),
+                None => {
+                    let ty = value["type"].as_str().unwrap_or("?").to_string();
+                    match short(&value["predicate"]).or_else(|| short(&value["id"])) {
+                        Some(name) => format!("{ty}({name})"),
+                        None => ty,
+                    }
+                },
             }
         })
         .collect()
@@ -106,7 +107,7 @@ pub fn labelled(items: &[ShExPathItem<'_>]) -> Vec<String> {
             let ty = value["type"].as_str().unwrap_or("?");
             match value["id"].as_str().or_else(|| value["predicate"].as_str()) {
                 Some(name) => format!("{ty}({})", name.replace("http://a.example/", ":")),
-                None => ty.to_owned(),
+                None => ty.to_string(),
             }
         })
         .collect()

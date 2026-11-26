@@ -96,7 +96,7 @@ pub fn load_shex_schema(
             return Err(ShExError::FailedParsingShExSchema {
                 source_name: schema.source_name(),
                 format: schema_format.to_string(),
-                error: "ShEx schemas can't be read in this format".to_owned(),
+                error: "ShEx schemas can't be read in this format".to_string(),
             }
             .into());
         },
@@ -114,13 +114,13 @@ fn source_iri(schema: &InputSpec) -> Result<IriS> {
     }
 
     let cwd = env::current_dir().map_err(|e| IriError::PathConversionError {
-        path: ".".to_owned(),
+        path: ".".to_string(),
         error: format!("Error resolving source IRI. Failed to get current directory: {e}"),
     })?;
 
-    let url = Url::from_directory_path(&cwd).map_err(|()| IriError::PathConversionError {
+    let url = Url::from_directory_path(&cwd).map_err(|_| IriError::PathConversionError {
         path: cwd.to_string_lossy().to_string(),
-        error: "Error resolving source IRI. Cannot convert current directory to a file URL".to_owned(),
+        error: "Error resolving source IRI. Cannot convert current directory to a file URL".to_string(),
     })?;
 
     let source_name = schema.source_name();
@@ -170,16 +170,16 @@ fn load_shex_schema_shexc<R: io::Read>(
         .read_to_string(&mut content)
         .map_err(|error| ShExError::FailedParsingShExSchema {
             error: error.to_string(),
-            source_name: source_name.to_owned(),
-            format: "ShExC".to_owned(),
+            source_name: source_name.to_string(),
+            format: "ShExC".to_string(),
         })?;
     let header = default_prefix_header(rudof, &content, PrefixDirective::Sparql);
     let prefixed_reader = io::Cursor::new(format!("{header}{content}"));
     let schema = ShExParser::from_reader(prefixed_reader, Some(base_schema.clone()), source_iri).map_err(|error| {
         ShExError::FailedParsingShExSchema {
             error: error.to_string(),
-            source_name: source_name.to_owned(),
-            format: "ShExC".to_owned(),
+            source_name: source_name.to_string(),
+            format: "ShExC".to_string(),
         }
     })?;
 
@@ -197,8 +197,8 @@ fn load_shex_schema_shexj<R: io::Read>(
 ) -> Result<()> {
     let schema = ShExSchema::from_reader(schema_reader).map_err(|error| ShExError::FailedParsingShExSchema {
         error: error.to_string(),
-        source_name: source_name.to_owned(),
-        format: "ShExJ".to_owned(),
+        source_name: source_name.to_string(),
+        format: "ShExJ".to_string(),
     })?;
 
     compile_shex_schema(rudof, base_schema, schema, reader_mode)?;
@@ -223,8 +223,8 @@ fn load_shex_schema_shexr<R: io::Read>(
         return Err(ShExError::FailedParsingShExSchema {
             error: "reading RDF in this format is not yet implemented; use turtle, ntriples, rdfxml or nquads \
                     instead"
-                .to_owned(),
-            source_name: source_name.to_owned(),
+                .to_string(),
+            source_name: source_name.to_string(),
             format: schema_format.to_string(),
         }
         .into());
@@ -239,7 +239,7 @@ fn load_shex_schema_shexr<R: io::Read>(
             .read_to_string(&mut content)
             .map_err(|error| ShExError::FailedParsingShExSchema {
                 error: error.to_string(),
-                source_name: source_name.to_owned(),
+                source_name: source_name.to_string(),
                 format: schema_format.to_string(),
             })?;
         let header = default_prefix_header(rudof, &content, PrefixDirective::Turtle);
@@ -262,7 +262,7 @@ fn load_shex_schema_shexr<R: io::Read>(
     };
     merge_result.map_err(|error| ShExError::FailedParsingShExSchema {
         error: error.to_string(),
-        source_name: source_name.to_owned(),
+        source_name: source_name.to_string(),
         format: schema_format.to_string(),
     })?;
 
@@ -270,7 +270,7 @@ fn load_shex_schema_shexr<R: io::Read>(
         .parse()
         .map_err(|error| ShExError::FailedParsingShExSchema {
             error: error.to_string(),
-            source_name: source_name.to_owned(),
+            source_name: source_name.to_string(),
             format: schema_format.to_string(),
         })?;
 
@@ -314,12 +314,12 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
                     .map(|cycle| format!("[{}]", schema_ir.format_cycle_details(cycle).0.join(", ")))
                     .collect::<Vec<_>>()
                     .join(", ");
-                return Err(ShExError::FailedCompilingShExSchema {
+                Err(ShExError::FailedCompilingShExSchema {
                     error: format!(
                         "Schema contains negative cycles in its dependency graph. Found {} negative cycle(s): {cycles_str}",
                         neg_cycles.len()
                     ),
-                }.into());
+                })?
             }
         },
         DataReaderMode::Lax => {},

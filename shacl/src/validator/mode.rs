@@ -35,7 +35,7 @@ impl FromStr for ShaclValidationMode {
             "native" => Ok(Self::Native),
             #[cfg(feature = "sparql")]
             "sparql" => Ok(Self::Sparql),
-            other => Err(Self::Err::UnsupportedMode(other.to_owned())),
+            other => Err(Self::Err::UnsupportedMode(other.to_string())),
         }
     }
 }

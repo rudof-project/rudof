@@ -36,5 +36,5 @@ pub(crate) fn new_subject<RDF: BuildRDF>(writer: &mut RDF) -> Result<RDF::Subjec
 /// Reads an [`Object`] as a subject
 pub(crate) fn subject_for<RDF: BuildRDF>(object: &Object) -> Result<RDF::Subject, EarlError> {
     RDF::Subject::try_from(object.clone())
-        .map_err(|_| EarlError::CastError(format!("term ({object})"), "subject".to_owned()))
+        .map_err(|_| EarlError::CastError(format!("term ({object})"), "subject".to_string()))
 }

@@ -28,7 +28,7 @@ impl Display for Xone {
             "Xone[{}]",
             self.shapes()
                 .iter()
-                .map(ToString::to_string)
+                .map(|s| s.to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
         )

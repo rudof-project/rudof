@@ -31,7 +31,7 @@ fn serve() -> (String, Arc<AtomicUsize>) {
                     "HTTP/1.1 200 OK\r\nContent-Type: application/sparql-results+json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{RESULTS}",
                     RESULTS.len()
                 );
-                drop((&stream).write_all(response.as_bytes()));
+                let _ = (&stream).write_all(response.as_bytes());
             }
         });
     }
@@ -52,7 +52,7 @@ fn query_service(endpoint: &str) -> Result<Vec<String>, String> {
         .map_err(|e| e.to_string())?;
     Ok(solutions
         .iter()
-        .filter_map(|solution| solution.find_solution("o").map(ToString::to_string))
+        .filter_map(|solution| solution.find_solution("o").map(|o| o.to_string()))
         .collect())
 }
 
@@ -61,7 +61,7 @@ fn query_service(endpoint: &str) -> Result<Vec<String>, String> {
 fn service_reaches_the_endpoint_with_the_http_client() {
     let (endpoint, requests) = serve();
     let values = query_service(&endpoint).unwrap();
-    assert_eq!(values, vec!["\"remote\"".to_owned()]);
+    assert_eq!(values, vec!["\"remote\"".to_string()]);
     assert!(requests.load(Ordering::SeqCst) > 0);
 }
 

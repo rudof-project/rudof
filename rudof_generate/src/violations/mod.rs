@@ -251,9 +251,9 @@ fn edge_failures(
         };
         labels.push(ViolationLabel {
             node: edge_id(s, label, o),
-            shape: edge_type.to_owned(),
+            shape: edge_type.to_string(),
             kind,
-            property: label.to_owned(),
+            property: label.to_string(),
             operator,
             cause,
         });
@@ -304,14 +304,14 @@ fn class_traps(
         });
         if by_class {
             traps.insert(
-                s.as_str().to_owned(),
+                s.as_str().to_string(),
                 ViolationLabel {
-                    node: s.as_str().to_owned(),
-                    shape: shape_id.to_owned(),
+                    node: s.as_str().to_string(),
+                    shape: shape_id.to_string(),
                     kind: "trap",
-                    property: t.predicate.as_str().to_owned(),
+                    property: t.predicate.as_str().to_string(),
                     operator: Some("class-of-failing"),
-                    cause: Some(o.as_str().to_owned()),
+                    cause: Some(o.as_str().to_string()),
                 },
             );
         }
@@ -365,14 +365,14 @@ fn induced_failures(
             // when fewer than its minimum of conforming targets remain.
             if !prop.all_values_match {
                 tolerant.insert(
-                    (s.as_str().to_owned(), t.predicate.as_str().to_owned()),
+                    (s.as_str().to_string(), t.predicate.as_str().to_string()),
                     prop.min_cardinality.unwrap_or(0) as usize,
                 );
             }
             refs.push((
-                s.as_str().to_owned(),
-                t.predicate.as_str().to_owned(),
-                o.as_str().to_owned(),
+                s.as_str().to_string(),
+                t.predicate.as_str().to_string(),
+                o.as_str().to_string(),
             ));
         }
     }
@@ -416,7 +416,7 @@ fn induced_failures(
             if failing.insert(referrer.to_string()) {
                 labels.push(ViolationLabel {
                     node: referrer.to_string(),
-                    shape: shape_of.get(referrer).copied().unwrap_or_default().to_owned(),
+                    shape: shape_of.get(referrer).copied().unwrap_or_default().to_string(),
                     kind: "induced",
                     property: property.to_string(),
                     operator: None,
@@ -441,7 +441,7 @@ impl Indexed {
         let mut by_subject: HashMap<String, Vec<usize>> = HashMap::new();
         for (i, t) in triples.iter().enumerate() {
             if let NamedOrBlankNode::NamedNode(s) = &t.subject {
-                by_subject.entry(s.as_str().to_owned()).or_default().push(i);
+                by_subject.entry(s.as_str().to_string()).or_default().push(i);
             }
         }
         Self {
@@ -460,7 +460,7 @@ impl Indexed {
             .filter(|t| t.predicate.as_str() == property)
             .map(|t| t.object.clone())
             .collect();
-        values.sort_by_key(ToString::to_string);
+        values.sort_by_key(|v| v.to_string());
         values
     }
 
@@ -479,7 +479,7 @@ impl Indexed {
     fn add(&mut self, triple: Triple) {
         if let NamedOrBlankNode::NamedNode(s) = &triple.subject {
             self.by_subject
-                .entry(s.as_str().to_owned())
+                .entry(s.as_str().to_string())
                 .or_default()
                 .push(self.triples.len());
         }
@@ -518,7 +518,7 @@ fn apply(
             "not allowed by the closed shape",
         ))])
         .apply(triples, node, UNDECLARED_PROPERTY, &[]);
-        return Some(UNDECLARED_PROPERTY.to_owned());
+        return Some(UNDECLARED_PROPERTY.to_string());
     }
     let mut props: Vec<&UnifiedPropertyConstraint> =
         shape.properties.iter().filter(|p| p.property_iri != RDF_TYPE).collect();
@@ -543,7 +543,7 @@ fn apply(
             ViolationOperator::ClosedExtra => None,
             ViolationOperator::WrongLanguage => wrong_language(prop, &values),
             ViolationOperator::DuplicateLanguage => duplicate_language(prop, &values),
-            ViolationOperator::TrapLanguageCase => relabel_language(prop, &values, str::to_ascii_uppercase, false),
+            ViolationOperator::TrapLanguageCase => relabel_language(prop, &values, |t| t.to_ascii_uppercase(), false),
             ViolationOperator::TrapLanguageSubtag => relabel_language(prop, &values, |t| format!("{t}-zz"), true),
             ViolationOperator::TrapNumericLexical => numeric_lexical_variant(prop, &values),
             ViolationOperator::LangStringForString => lang_string_for_string(prop, &values),
@@ -684,7 +684,7 @@ fn tagged(lexical: &str, tag: &str) -> Term {
 /// The first value as (lexical form, tag), if it is a language-tagged literal.
 fn first_tagged(values: &[Term]) -> Option<(String, String)> {
     match values.first()? {
-        Term::Literal(lit) => lit.language().map(|tag| (lit.value().to_owned(), tag.to_owned())),
+        Term::Literal(lit) => lit.language().map(|tag| (lit.value().to_string(), tag.to_string())),
         _ => None,
     }
 }
@@ -1007,7 +1007,7 @@ fn no_data_node(node: &str, suffix: &str) -> Term {
 pub fn summary(labels: &[ViolationLabel]) -> BTreeMap<String, usize> {
     let mut counts = BTreeMap::new();
     for label in labels {
-        let key = label.operator.unwrap_or("induced").to_owned();
+        let key = label.operator.unwrap_or("induced").to_string();
         *counts.entry(key).or_insert(0) += 1;
     }
     counts

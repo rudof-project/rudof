@@ -13,7 +13,7 @@ use std::io;
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
 
-#[expect(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn show_schema_comparison<W: io::Write>(
     rudof: &mut Rudof,
     schema1: &InputSpec,
@@ -134,7 +134,7 @@ fn get_coshamo<R: io::Read>(
                 converter
                     .populate_from_shex(&shex, label)
                     .map_err(|e| ComparisonError::CoShaMoFromShExError {
-                        source_name: source_name.to_owned(),
+                        source_name: source_name.to_string(),
                         error: e.to_string(),
                     })?;
             Ok(coshamo)
@@ -151,11 +151,11 @@ fn source_iri(source_name: &str, _base: &IriS) -> Result<IriS> {
     let cwd = env::current_dir().map_err(|e| ComparisonError::CurrentDirError { error: format!("{e}") })?;
     // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
     // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
-    let url = Url::from_directory_path(&cwd).map_err(|()| ComparisonError::CurrentDirError {
+    let url = Url::from_directory_path(&cwd).map_err(|_| ComparisonError::CurrentDirError {
         error: "Failed to convert current directory to URL".into(),
     })?;
     let source_iri = IriS::from_str_base(source_name, Some(url.as_str())).map_err(|e| IriError::ParseError {
-        iri: source_name.to_owned(),
+        iri: source_name.to_string(),
         error: e.to_string(),
     })?;
     Ok(source_iri)
@@ -179,7 +179,7 @@ pub fn read_shex_only<R: io::Read>(reader: R, format: &ShExFormat, base: IriS, s
             let schema_json = ShExParser::from_reader(reader, Some(base), &source_iri).map_err(|e| {
                 ShExError::FailedParsingShExSchema {
                     error: e.to_string(),
-                    source_name: source_name.to_owned(),
+                    source_name: source_name.to_string(),
                     format: format.to_string(),
                 }
             })?;
@@ -188,7 +188,7 @@ pub fn read_shex_only<R: io::Read>(reader: R, format: &ShExFormat, base: IriS, s
         ShExFormat::ShExJ => {
             let schema_json = Schema::from_reader(reader).map_err(|e| ShExError::FailedParsingShExSchema {
                 error: e.to_string(),
-                source_name: source_name.to_owned(),
+                source_name: source_name.to_string(),
                 format: format.to_string(),
             })?;
             Ok(schema_json)

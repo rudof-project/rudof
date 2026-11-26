@@ -101,19 +101,19 @@ impl From<IriS> for Node {
 }
 
 impl TryFrom<&Node> for ObjectValue {
-    type Error = SchemaJsonError;
+    type Error = crate::SchemaJsonError;
 
     fn try_from(node: &Node) -> Result<Self, Self::Error> {
         match &node.node {
             Object::Iri(iri) => Ok(ObjectValue::IriRef(IriRef::iri(iri.clone()))),
             Object::Literal(lit) => Ok(ObjectValue::Literal(lit.clone())),
-            Object::BlankNode(bnode_id) => Err(SchemaJsonError::InvalidNodeInObjectValue {
+            Object::BlankNode(bnode_id) => Err(crate::SchemaJsonError::InvalidNodeInObjectValue {
                 node: node.to_string(),
                 error: format!("Blank node _:{bnode_id}"),
             }),
             Object::Triple { .. } => Err(SchemaJsonError::InvalidNodeInObjectValue {
                 node: node.to_string(),
-                error: "RDF triples are not supported in ObjectValue".to_owned(),
+                error: "RDF triples are not supported in ObjectValue".to_string(),
             }),
         }
     }

@@ -45,7 +45,7 @@ impl VisualRDFNode {
             VisualRDFNode::Reifies
         } else {
             let iri_label = rdf.qualify_iri(predicate);
-            let iri_str = predicate.as_str().to_owned();
+            let iri_str = predicate.as_str().to_string();
             VisualRDFNode::Predicate {
                 label: iri_label,
                 url: iri_str,
@@ -129,7 +129,7 @@ impl VisualRDFNode {
                     .with_href(url.clone())
                     .with_stereotype("uri"),
             ),
-            VisualRDFNode::BlankNode { .. } => {
+            VisualRDFNode::BlankNode { label: _ } => {
                 Some(DiagramBox::new(id, Shape::Rectangle, " ").with_stereotype("bnode"))
             },
             VisualRDFNode::Literal { value } => {
@@ -141,13 +141,23 @@ impl VisualRDFNode {
             VisualRDFNode::AssertedTriple(_subj, _pred, _obj) => {
                 Some(DiagramBox::new(id, Shape::Rectangle, " ").with_stereotype("asserted"))
             },
-            VisualRDFNode::Predicate { label, url } => show_if_predicate.then(|| {
-                DiagramBox::new(id, Shape::Rectangle, label.clone())
-                    .with_href(url.clone())
-                    .with_stereotype("uri")
-            }),
+            VisualRDFNode::Predicate { label, url } => {
+                if show_if_predicate {
+                    Some(
+                        DiagramBox::new(id, Shape::Rectangle, label.clone())
+                            .with_href(url.clone())
+                            .with_stereotype("uri"),
+                    )
+                } else {
+                    None
+                }
+            },
             VisualRDFNode::Reifies => {
-                show_if_predicate.then(|| DiagramBox::new(id, Shape::Rectangle, "reifies").with_stereotype("reifies"))
+                if show_if_predicate {
+                    Some(DiagramBox::new(id, Shape::Rectangle, "reifies").with_stereotype("reifies"))
+                } else {
+                    None
+                }
             },
         }
     }
@@ -193,10 +203,12 @@ fn object_to_visual_node<R: NeighsRDF>(
             let iri: R::IRI = iri_s.clone().into();
             Ok(VisualRDFNode::Iri {
                 label: rdf.qualify_iri(&iri),
-                url: iri_s.as_str().to_owned(),
+                url: iri_s.as_str().to_string(),
             })
         },
-        Object::BlankNode(bnode) => Ok(VisualRDFNode::BlankNode { label: bnode.clone() }),
+        Object::BlankNode(bnode) => Ok(VisualRDFNode::BlankNode {
+            label: bnode.to_string(),
+        }),
         Object::Literal(literal) => Ok(VisualRDFNode::Literal {
             value: literal.to_string(),
         }),

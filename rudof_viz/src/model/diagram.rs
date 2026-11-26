@@ -83,7 +83,7 @@ impl DiagramScope {
     }
 
     pub fn neighs(title: &str) -> DiagramScope {
-        DiagramScope::Neighs(title.to_owned())
+        DiagramScope::Neighs(title.to_string())
     }
 }
 
@@ -113,19 +113,16 @@ impl DiagramBox {
         }
     }
 
-    #[must_use]
     pub fn with_href(mut self, href: impl Into<String>) -> Self {
         self.href = Some(href.into());
         self
     }
 
-    #[must_use]
     pub fn with_stereotype(mut self, stereotype: impl Into<String>) -> Self {
         self.stereotype = Some(stereotype.into());
         self
     }
 
-    #[must_use]
     pub fn with_compartments(mut self, compartments: Vec<String>) -> Self {
         self.compartments = compartments;
         self
@@ -182,25 +179,21 @@ impl Connector {
         }
     }
 
-    #[must_use]
     pub fn with_label(mut self, label: impl Into<String>) -> Self {
         self.label = Some(label.into());
         self
     }
 
-    #[must_use]
     pub fn with_target_decoration(mut self, decoration: impl Into<String>) -> Self {
         self.target_decoration = Some(decoration.into());
         self
     }
 
-    #[must_use]
     pub fn with_style(mut self, style: ArrowStyle) -> Self {
         self.style = Some(style);
         self
     }
 
-    #[must_use]
     pub fn with_href(mut self, href: impl Into<String>) -> Self {
         self.href = Some(href.into());
         self
@@ -263,43 +256,36 @@ impl Diagram {
         self.connectors.push(c);
     }
 
-    #[must_use]
     pub fn with_style_sheet(mut self, style_sheet: StyleSheet) -> Self {
         self.style_sheet = style_sheet;
         self
     }
 
-    #[must_use]
     pub fn with_direction(mut self, direction: Direction) -> Self {
         self.direction = Some(direction);
         self
     }
 
-    #[must_use]
     pub fn with_line_type(mut self, line_type: LineType) -> Self {
         self.line_type = line_type;
         self
     }
 
-    #[must_use]
     pub fn with_hide_empty_members(mut self, hide: bool) -> Self {
         self.hide_empty_members = hide;
         self
     }
 
-    #[must_use]
     pub fn with_hide_circles(mut self, hide: bool) -> Self {
         self.hide_circles = hide;
         self
     }
 
-    #[must_use]
     pub fn with_shadowing(mut self, shadowing: bool) -> Self {
         self.shadowing = Some(shadowing);
         self
     }
 
-    #[must_use]
     pub fn with_class_skin(mut self, skin: ClassSkin) -> Self {
         self.class_skin = Some(skin);
         self
@@ -349,12 +335,11 @@ impl Diagram {
     /// the target box's [`BoxId`] (e.g. because it resolved a name through its own lookup table)
     /// should prefer [`Self::scoped_by_id`], which cannot be confused by two boxes sharing a
     /// display title.
-    #[must_use]
     pub fn scoped(&self, scope: &DiagramScope) -> Diagram {
         let DiagramScope::Neighs(title) = scope else {
             return self.clone();
         };
-        match self.boxes.iter().find(|b| b.title() == title).map(DiagramBox::id) {
+        match self.boxes.iter().find(|b| b.title() == title).map(|b| b.id()) {
             Some(target_id) => self.scoped_by_id(target_id),
             None => Diagram {
                 boxes: Vec::new(),
@@ -366,7 +351,6 @@ impl Diagram {
 
     /// Restricts this diagram to the box identified by `target_id`, its direct neighbours (as
     /// connector source/target), and the connectors between them.
-    #[must_use]
     pub fn scoped_by_id(&self, target_id: BoxId) -> Diagram {
         let neigh_connectors: Vec<Connector> = self
             .connectors
@@ -436,7 +420,7 @@ mod tests {
     fn scope_neighs_keeps_only_target_and_neighbours() {
         let d = sample_diagram();
         let scoped = d.scoped(&DiagramScope::neighs("A"));
-        let titles: std::collections::HashSet<_> = scoped.boxes().map(DiagramBox::title).collect();
+        let titles: std::collections::HashSet<_> = scoped.boxes().map(|b| b.title()).collect();
         assert_eq!(titles, std::collections::HashSet::from(["A", "B"]));
         assert_eq!(scoped.connectors().count(), 1);
     }
@@ -466,7 +450,7 @@ mod tests {
         d.add_connector(Connector::new(BoxId::new(1), BoxId::new(2), ConnectorKind::Association));
 
         let scoped = d.scoped_by_id(BoxId::new(1));
-        let ids: std::collections::HashSet<_> = scoped.boxes().map(DiagramBox::id).collect();
+        let ids: std::collections::HashSet<_> = scoped.boxes().map(|b| b.id()).collect();
         assert_eq!(ids, std::collections::HashSet::from([BoxId::new(1), BoxId::new(2)]));
     }
 
@@ -475,11 +459,11 @@ mod tests {
         let b = DiagramBox::new(BoxId::new(0), Shape::Class, "Person")
             .with_href("http://example.org/Person")
             .with_stereotype("(S,#FF7700)")
-            .with_compartments(vec![":name xsd:string".to_owned()]);
+            .with_compartments(vec![":name xsd:string".to_string()]);
         assert_eq!(b.title(), "Person");
         assert_eq!(b.href(), Some("http://example.org/Person"));
         assert_eq!(b.stereotype(), Some("(S,#FF7700)"));
-        assert_eq!(b.compartments(), &[":name xsd:string".to_owned()]);
+        assert_eq!(b.compartments(), &[":name xsd:string".to_string()]);
     }
 
     #[test]

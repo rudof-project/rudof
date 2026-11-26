@@ -13,7 +13,7 @@ use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shexpath::shexj_document;
 use shex_ast::{ResolveMethod, ShExParser};
 
-const SCHEMA: &str = "
+const SCHEMA: &str = r#"
 PREFIX : <http://a.example/>
 :S { :p . ; ( :q . | :p { :r . } ) }
 :A IRI AND { :p . }
@@ -22,7 +22,7 @@ PREFIX : <http://a.example/>
 :B { :p [ 1 ] ; ^:p . }
 :L { $:lbl :p { :q . } ; :p . }
 start = { :p . }
-";
+"#;
 
 fn compile(shexc: &str) -> (Schema, SchemaIR) {
     let source = iri!("http://a.example/schema.shex");
@@ -39,10 +39,6 @@ fn compile(shexc: &str) -> (Schema, SchemaIR) {
 }
 
 /// Every index of the schema.
-#[expect(
-    clippy::maybe_infinite_iter,
-    reason = "`take_while` stops at the first index that is not in the schema"
-)]
 fn indexes(ir: &SchemaIR) -> Vec<ShapeLabelIdx> {
     (0..)
         .map(ShapeLabelIdx::from)
@@ -52,10 +48,7 @@ fn indexes(ir: &SchemaIR) -> Vec<ShapeLabelIdx> {
 
 /// The components of the shape at `idx`, if it is a shape.
 fn components(ir: &SchemaIR, idx: &ShapeLabelIdx) -> Vec<Component> {
-    match ir
-        .find_shape_idx(idx)
-        .map(shex_ast::ir::shape_expr_info::ShapeExprInfo::expr)
-    {
+    match ir.find_shape_idx(idx).map(|info| info.expr()) {
         Some(ShapeExpr::Shape(shape)) => shape.triple_expr().components().map(|(c, _, _)| c).collect(),
         _ => Vec::new(),
     }

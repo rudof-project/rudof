@@ -122,12 +122,13 @@ pub fn generate(
             )));
         },
     };
-    let mut generator_config = if let Some(toml) = config {
-        GeneratorConfig::from_toml_str(toml).map_err(generate_error)?
-    } else {
-        let mut c = GeneratorConfig::default();
-        c.generation.entity_count = 20;
-        c
+    let mut generator_config = match config {
+        Some(toml) => GeneratorConfig::from_toml_str(toml).map_err(generate_error)?,
+        None => {
+            let mut c = GeneratorConfig::default();
+            c.generation.entity_count = 20;
+            c
+        },
     };
     if let Some(n) = entities {
         generator_config.generation.entity_count = n;

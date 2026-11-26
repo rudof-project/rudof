@@ -71,13 +71,11 @@ impl ResultShapeMap {
         self.config.shapes_prefixmap()
     }
 
-    #[must_use]
     pub fn with_nodes_prefixmap(mut self, prefixmap: &PrefixMap) -> Self {
         self.config = self.config.with_nodes_prefixmap(prefixmap.clone());
         self
     }
 
-    #[must_use]
     pub fn with_shapes_prefixmap(mut self, prefixmap: &PrefixMap) -> Self {
         self.config = self.config.with_shapes_prefixmap(prefixmap.clone());
         self
@@ -219,7 +217,7 @@ impl ResultShapeMap {
                 ValidationStatus::NonConformant(non_conformant_info) => {
                     (non_conformant_info.to_string(), self.fail_text().clone())
                 },
-                ValidationStatus::Pending => (String::new(), "Pending".to_owned()),
+                ValidationStatus::Pending => ("".to_owned(), "Pending".to_owned()),
                 ValidationStatus::Inconsistent(ci, nci) => (
                     format!("Conformant: {ci}, Non-conformant: {nci}"),
                     "Inconsistent".to_owned(),
@@ -264,7 +262,7 @@ impl ResultShapeMap {
                     self.fail_text().color(*self.fail_color()),
                 ),
                 ValidationStatus::Pending => (
-                    String::new(),
+                    "".to_owned(),
                     "Pending".to_owned(),
                     "Pending".color(*self.pending_color()),
                 ),
@@ -373,14 +371,14 @@ fn summarize(details: &str, node: &str, shape: &str, width: usize) -> (String, b
     let (summary, rest) = match first.strip_prefix(&header) {
         Some("") => {
             let next = lines.next().unwrap_or("");
-            let next = next.trim_start_matches(|c: char| "\u{251c}\u{2514}\u{2502}\u{2500} ".contains(c));
+            let next = next.trim_start_matches(|c: char| "├└│─ ".contains(c));
             (next, true)
         },
         Some(cause) => (cause.trim_start_matches(':').trim_start(), lines.next().is_some()),
         None => (first, lines.next().is_some()),
     };
     if summary.chars().count() <= width {
-        (summary.to_owned(), !rest)
+        (summary.to_string(), !rest)
     } else {
         let cut: String = summary.chars().take(width.saturating_sub(1)).collect();
         (format!("{}…", cut.trim_end()), false)
@@ -468,16 +466,17 @@ mod tests {
         let details = ":a does not conform to :S: property :p: expected exactly 1 value, found 0";
         assert_eq!(
             summarize(details, ":a", ":S", 80),
-            ("property :p: expected exactly 1 value, found 0".to_owned(), true)
+            ("property :p: expected exactly 1 value, found 0".to_string(), true)
         );
     }
 
     #[test]
     fn a_summary_of_a_tree_is_its_first_branch() {
-        let details = ":a does not conform to :S\n\u{2514}\u{2500}\u{2500} property :p value :b does not conform to :T\n    \u{2514}\u{2500}\u{2500} property :q: ...";
+        let details =
+            ":a does not conform to :S\n└── property :p value :b does not conform to :T\n    └── property :q: ...";
         assert_eq!(
             summarize(details, ":a", ":S", 80),
-            ("property :p value :b does not conform to :T".to_owned(), false)
+            ("property :p value :b does not conform to :T".to_string(), false)
         );
     }
 
@@ -485,11 +484,11 @@ mod tests {
     fn a_long_summary_is_cut() {
         assert_eq!(
             summarize("Closed shape :S does not allow :z", ":a", ":S", 20),
-            ("Closed shape :S doe\u{2026}".to_owned(), false)
+            ("Closed shape :S doe…".to_string(), false)
         );
         assert_eq!(
             summarize("Shape passed :a@:S", ":a", ":S", 20),
-            ("Shape passed :a@:S".to_owned(), true)
+            ("Shape passed :a@:S".to_string(), true)
         );
     }
 }

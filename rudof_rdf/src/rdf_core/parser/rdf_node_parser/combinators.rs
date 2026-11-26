@@ -221,7 +221,7 @@ where
     /// Returns an error immediately if the first parser fails,
     /// otherwise returns the error from the second parser if it fails.
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        drop(self.first.parse_focused(rdf)?);
+        let _ = self.first.parse_focused(rdf)?;
         self.second.parse_focused(rdf)
     }
 }
@@ -472,7 +472,7 @@ where
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let mut result = Vec::new();
-        for p in &self.parsers {
+        for p in self.parsers.iter() {
             let vs = p.parse_focused(rdf)?;
             result.extend(vs);
         }
@@ -524,7 +524,7 @@ where
     /// Returns immediately with the first parsing error encountered.
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let mut results = Vec::new();
-        for node in &self.nodes {
+        for node in self.nodes.iter() {
             rdf.set_focus(node);
             let value = self.parser.parse_focused(rdf)?;
             results.push(value);
@@ -640,7 +640,7 @@ where
         }
 
         // Restore focus node
-        if let Some(focus) = &saved_focus {
+        if let Some(ref focus) = saved_focus {
             rdf.set_focus(focus);
         }
 
@@ -687,7 +687,7 @@ where
     /// or propagates errors from the dynamically selected parser.
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let mut result = Err(RDFError::DefaultError {
-            msg: "Opaque parser failed".to_owned(),
+            msg: "Opaque parser failed".to_string(),
         });
         (self.0.borrow_mut())(&mut |parser| {
             result = parser.parse_focused(rdf);
@@ -710,7 +710,7 @@ where
 /// * `RDF` - The RDF graph type.
 /// * `P` - The predicate function type.
 #[derive(Clone)]
-#[expect(dead_code)]
+#[allow(dead_code)]
 pub struct SatisfyParser<RDF, P> {
     /// The validation predicate.
     predicate: P,
@@ -731,7 +731,7 @@ where
     ///
     /// * `predicate` - The validation function.
     /// * `condition_name` - A descriptive name for the condition used in error messages.
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     pub fn new(predicate: P, condition_name: impl Into<String>) -> Self {
         Self {
             predicate,
